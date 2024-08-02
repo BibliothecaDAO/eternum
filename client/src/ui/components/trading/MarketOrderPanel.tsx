@@ -8,6 +8,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
+  ID,
   MarketInterface,
   ONE_MONTH,
   Resources,
@@ -15,7 +16,7 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
+import { getTotalResourceWeight } from "@/ui/utils/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useRealm } from "@/hooks/helpers/useRealm";
 
@@ -28,7 +29,7 @@ export const MarketResource = ({
   bidPrice,
   depth,
 }: {
-  entityId: bigint;
+  entityId: ID;
   resource: Resources;
   active: boolean;
   onClick: (value: number) => void;
@@ -75,8 +76,8 @@ export const MarketOrderPanel = ({
   resourceAskOffers,
   resourceBidOffers,
 }: {
-  resourceId: number;
-  entityId: bigint;
+  resourceId: ResourcesIds;
+  entityId: ID;
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
@@ -100,14 +101,14 @@ export const MarketOrderPanel = ({
   );
 };
 
-export const MarketOrders = ({
+const MarketOrders = ({
   resourceId,
   entityId,
   isBuy = false,
   offers,
 }: {
-  resourceId: number;
-  entityId: bigint;
+  resourceId: ResourcesIds;
+  entityId: ID;
   isBuy?: boolean;
   offers: MarketInterface[];
 }) => {
@@ -148,7 +149,7 @@ export const MarketOrders = ({
   );
 };
 
-export const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
+const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
   return (
     <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs font-bold ">
       <div>qty.</div>
@@ -169,7 +170,7 @@ export const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
   );
 };
 
-export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: bigint; isBuy: boolean }) => {
+const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: ID; isBuy: boolean }) => {
   const { computeTravelTime } = useTravel();
   const {
     account: { account },
@@ -345,15 +346,15 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
   );
 };
 
-export const OrderCreation = ({
+const OrderCreation = ({
   initialBid,
   entityId,
   resourceId,
   isBuy = false,
 }: {
   initialBid: number;
-  entityId: bigint;
-  resourceId: number;
+  entityId: ID;
+  resourceId: ResourcesIds;
   isBuy?: boolean;
 }) => {
   const [loading, setLoading] = useState(false);
@@ -397,7 +398,7 @@ export const OrderCreation = ({
 
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
-      { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: resource },
+      { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: isBuy ? resource : lords },
     ]);
     return multiplyByPrecision(totalWeight);
   }, [resource, lords]);
@@ -454,11 +455,7 @@ export const OrderCreation = ({
             <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
             {isBuy ? "Buy" : "Sell"}
           </div>
-          {/* {!isBuy ? ( */}
           <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
-          {/* // ) : (
-          //   <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
-          // )} */}
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
@@ -477,11 +474,7 @@ export const OrderCreation = ({
           <div className="uppercase text-sm flex gap-2 font-bold">
             <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Cost
           </div>
-          {/* {!isBuy ? ( */}
           <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
-          {/* // ) : (
-          //   <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
-          // )} */}
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.

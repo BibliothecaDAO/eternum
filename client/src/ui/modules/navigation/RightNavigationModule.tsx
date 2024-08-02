@@ -12,6 +12,7 @@ import { BaseContainer } from "../../containers/BaseContainer";
 
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { useArrivalsWithResources } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -22,7 +23,6 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import { useArrivalsWithResources } from "@/hooks/helpers/useResources";
 
 export enum View {
   None,
@@ -114,7 +114,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ];
-  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources]);
+  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources, realmEntityId]);
 
   const slideRight = {
     hidden: { x: "100%" },
@@ -124,7 +124,7 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] right-4 self-center pointer-events-auto ${
+        className={`max-h-full transition-all z-0 duration-200 space-x-1 flex z-0 w-[400px] right-4 self-center pointer-events-none ${
           isOffscreen(view) ? "translate-x-[79%]" : ""
         }`}
       >
@@ -132,7 +132,7 @@ export const RightNavigationModule = () => {
           variants={slideRight}
           initial="hidden"
           animate="visible"
-          className="gap-2 flex flex-col justify-center self-center"
+          className="gap-2 flex flex-col justify-center self-center pointer-events-auto"
         >
           <div>
             <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
@@ -146,7 +146,9 @@ export const RightNavigationModule = () => {
           </div>
         </motion.div>
 
-        <BaseContainer className={`w-full  overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
+        <BaseContainer
+          className={`w-full pointer-events-auto overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}
+        >
           {view === View.ResourceTable ? (
             <div className="px-2 flex flex-col space-y-1 overflow-y-auto">
               <Headline>

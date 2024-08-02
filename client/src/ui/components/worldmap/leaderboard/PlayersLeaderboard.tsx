@@ -67,7 +67,7 @@ export const PlayersLeaderboard = () => {
                   <div className="col-span-1 ">{`#${rank}`}</div>
                   <div className="col-span-1">{addressName}</div>
                   <OrderIcon className="col-span-1" order={order} size="xs" />
-                  <div className="col-span-2">{displayAddress(address)}</div>
+                  <div className="col-span-2">{displayAddress(address.toString(16))}</div>
                   <div className="col-span-1"> {currencyIntlFormat(totalPoints, 0)}</div>
                 </div>
               );

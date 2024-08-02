@@ -1,3 +1,4 @@
+import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
@@ -7,14 +8,13 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
-import { MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ID, MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { BankPanel } from "../bank/BankList";
 import { HintModal } from "../hints/HintModal";
 import { ModalContainer } from "../ModalContainer";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
-import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
 
 export const MarketModal = () => {
@@ -86,14 +86,14 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-brown border-gold/30 clip-angled h-full row-span-12 ">
+      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30 clip-angled h-full row-span-12 ">
         <div className="col-span-12  p-2 flex justify-between row-span-2">
           <div className="self-center text-xl">
-            <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(BigInt(trait))}>
+            <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(ID(trait))}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Realm" />
               </SelectTrigger>
-              <SelectContent className="bg-brown ">
+              <SelectContent className="bg-black/90 bg-hex-bg">
                 {playerRealms().map((realm, index) => (
                   <SelectItem key={index} value={realm.entity_id?.toString() || ""}>
                     {realm.name}
@@ -154,7 +154,7 @@ export const MarketModal = () => {
   );
 };
 
-export const MarketResourceSidebar = ({
+const MarketResourceSidebar = ({
   entityId,
   search,
   onClick,
@@ -162,7 +162,7 @@ export const MarketResourceSidebar = ({
   resourceAskOffers,
   resourceBidOffers,
 }: {
-  entityId: bigint;
+  entityId: ID;
   search: string;
   onClick: (value: number) => void;
   selectedResource: number;
@@ -205,7 +205,7 @@ export const MarketResourceSidebar = ({
             return (
               <MarketResource
                 key={resource.id}
-                entityId={entityId || BigInt("0")}
+                entityId={entityId || 0}
                 resource={resource}
                 active={selectedResource == resource.id}
                 onClick={onClick}
@@ -220,7 +220,7 @@ export const MarketResourceSidebar = ({
   );
 };
 
-export const TransferView = () => {
+const TransferView = () => {
   const { playerRealms, playerStructures, otherRealms } = useEntities();
 
   return (

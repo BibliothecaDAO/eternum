@@ -7,7 +7,7 @@ import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
@@ -16,7 +16,7 @@ import { ConfirmationPopup } from "./ConfirmationPopup";
 const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
 const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.banks.lpFeesDenominator;
 
-export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint; entityId: bigint }) => {
+export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; entityId: ID }) => {
   const {
     account: { account },
     setup: {
@@ -30,7 +30,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
 
   const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [resourceId, setResourceId] = useState<bigint>(1n);
+  const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
@@ -38,9 +38,9 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
 
   const lordsFee = lordsAmount * OWNER_FEE;
 
-  const market = useComponentValue(Market, getEntityIdFromKeys([bankEntityId, resourceId]));
+  const market = useComponentValue(Market, getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]));
   const marketManager = useMemo(
-    () => new MarketManager(Market, Liquidity, bankEntityId, BigInt(account.address), resourceId),
+    () => new MarketManager(Market, Liquidity, bankEntityId, ContractAddress(account.address), resourceId),
     [Market, Liquidity, bankEntityId, resourceId, account.address, market],
   );
 
@@ -99,7 +99,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
           lordsFee={lordsFee}
           amount={amount}
           setAmount={isLords ? setLordsAmount : setResourceAmount}
-          resourceId={isLords ? BigInt(ResourcesIds.Lords) : resourceId}
+          resourceId={resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
         />

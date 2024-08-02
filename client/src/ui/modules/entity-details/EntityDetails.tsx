@@ -4,7 +4,7 @@ import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
-import { Position } from "@bibliothecadao/eternum";
+import { ID, Position } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
@@ -28,8 +28,8 @@ export const EntityDetails = () => {
     [ownArmiesAtPosition],
   );
 
-  const [ownArmySelected, setOwnArmySelected] = useState<{ id: bigint; position: Position } | undefined>({
-    id: userArmies?.[0]?.entity_id || 0n,
+  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>({
+    id: userArmies?.[0]?.entity_id || 0,
     position: {
       x: selectedHex.col,
       y: selectedHex.row,
@@ -96,18 +96,18 @@ export const EntityDetails = () => {
   );
 };
 
-export const SelectActiveArmy = ({
+const SelectActiveArmy = ({
   selectedEntity,
   setOwnArmySelected,
   userAttackingArmies,
 }: {
   selectedEntity:
     | {
-        id: bigint;
+        id: ID;
         position: Position;
       }
     | undefined;
-  setOwnArmySelected: (val: any) => void;
+  setOwnArmySelected: (val: { id: ID; position: Position } | undefined) => void;
   userAttackingArmies: ArmyInfo[];
 }) => {
   return (
@@ -115,7 +115,7 @@ export const SelectActiveArmy = ({
       <Select
         value={selectedEntity?.id.toString() || ""}
         onValueChange={(a: string) => {
-          setOwnArmySelected({ id: BigInt(a), position: selectedEntity?.position || { x: 0, y: 0 } });
+          setOwnArmySelected({ id: ID(a), position: selectedEntity?.position || { x: 0, y: 0 } });
         }}
       >
         <SelectTrigger className="w-[31rem] px-2">

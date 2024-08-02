@@ -1,4 +1,4 @@
-import { Resource } from "@bibliothecadao/eternum";
+import { Resource, ID } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { useDojo } from "../context/DojoContext";
@@ -12,7 +12,7 @@ export function useExplore() {
     },
   } = useDojo();
 
-  const useFoundResources = (entityId: bigint | undefined) => {
+  const useFoundResources = (entityId: ID | undefined) => {
     const [foundResources, setFoundResources] = useState<Resource | undefined>();
 
     const subscriptionRef = useRef<Subscription | undefined>();

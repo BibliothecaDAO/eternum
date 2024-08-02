@@ -1,12 +1,15 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { BattleSide, StructureType } from "@bibliothecadao/eternum";
+import { Structure } from "@/hooks/helpers/useStructures";
+import { BattleSide, ID, StructureType } from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 
 export const CURRENT_TIMESTAMP = 2;
 export const DURATION_LEFT_IF_ONGOING = 1000n;
 export const LAST_UPDATED = 0n;
 
-export const ARMY_ENTITY_ID = 1n;
-export const BATTLE_ENTITY_ID = 10n;
+export const ARMY_ENTITY_ID = 1;
+export const BATTLE_ENTITY_ID = 10;
 
 const getTroopHeathSimplified = (troopCount: bigint): bigint => {
   return troopCount * 2n;
@@ -18,18 +21,22 @@ export const BATTLE_INITIAL_HEALTH = getTroopHeathSimplified(BATTLE_TROOP_COUNT)
 export const ARMY_TROOP_COUNT = 5n;
 export const ARMY_INITIAL_HEALTH = getTroopHeathSimplified(ARMY_TROOP_COUNT);
 
-export const generateMockBatle = (isOngoing: boolean, lastUpdated?: number, loser?: BattleSide) => {
+export const generateMockBatle = (
+  isOngoing: boolean,
+  lastUpdated?: number,
+  loser?: BattleSide,
+): ComponentValue<ClientComponents["Battle"]["schema"]> => {
   return {
     entity_id: BATTLE_ENTITY_ID,
     attack_army: {
       troops: { knight_count: BATTLE_TROOP_COUNT, paladin_count: BATTLE_TROOP_COUNT, crossbowman_count: 0n },
-      battle_id: 0n,
-      battle_side: 0,
+      battle_id: 0,
+      battle_side: "Attack",
     },
     defence_army: {
       troops: { knight_count: BATTLE_TROOP_COUNT, paladin_count: BATTLE_TROOP_COUNT, crossbowman_count: 0n },
-      battle_id: 0n,
-      battle_side: 0,
+      battle_id: 0,
+      battle_side: "Defence",
     },
     attack_army_lifetime: {
       troops: {
@@ -37,8 +44,8 @@ export const generateMockBatle = (isOngoing: boolean, lastUpdated?: number, lose
         paladin_count: isOngoing ? 2n * BATTLE_TROOP_COUNT : BATTLE_TROOP_COUNT,
         crossbowman_count: isOngoing ? 2n * BATTLE_TROOP_COUNT : BATTLE_TROOP_COUNT,
       },
-      battle_id: 0n,
-      battle_side: 0,
+      battle_id: 0,
+      battle_side: "Attack",
     },
     defence_army_lifetime: {
       troops: {
@@ -46,11 +53,11 @@ export const generateMockBatle = (isOngoing: boolean, lastUpdated?: number, lose
         paladin_count: isOngoing ? 2n * BATTLE_TROOP_COUNT : BATTLE_TROOP_COUNT,
         crossbowman_count: isOngoing ? 2n * BATTLE_TROOP_COUNT : BATTLE_TROOP_COUNT,
       },
-      battle_id: 0n,
-      battle_side: 0,
+      battle_id: 0,
+      battle_side: "Defence",
     },
-    attackers_resources_escrow_id: 0n,
-    defenders_resources_escrow_id: 0n,
+    attackers_resources_escrow_id: 0,
+    defenders_resources_escrow_id: 0,
     attack_army_health: {
       current: loser === BattleSide.Attack ? 0n : BATTLE_INITIAL_HEALTH,
       lifetime: BATTLE_INITIAL_HEALTH,
@@ -66,10 +73,10 @@ export const generateMockBatle = (isOngoing: boolean, lastUpdated?: number, lose
   };
 };
 
-export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleId?: bigint): ArmyInfo => {
+export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleEntityId?: ID): ArmyInfo => {
   return {
     entity_id: ARMY_ENTITY_ID,
-    battle_id: battleId ?? BATTLE_ENTITY_ID,
+    battle_id: battleEntityId ?? BATTLE_ENTITY_ID,
     battle_side: BattleSide[BattleSide.Attack],
     troops: {
       knight_count: alive ? ARMY_TROOP_COUNT : 0n,
@@ -84,8 +91,8 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleId
     offset: { x: 0, y: 0 },
     position: { entity_id: ARMY_ENTITY_ID, x: 0, y: 0 },
     owner: { entity_id: ARMY_ENTITY_ID, address: 0n },
-    entityOwner: { entity_id: ARMY_ENTITY_ID, entity_owner_id: 0n },
-    protectee: { army_id: ARMY_ENTITY_ID, protectee_id: 0n },
+    entityOwner: { entity_id: ARMY_ENTITY_ID, entity_owner_id: 0 },
+    protectee: { army_id: ARMY_ENTITY_ID, protectee_id: 0 },
     quantity: { entity_id: ARMY_ENTITY_ID, value: 10n },
     movable: {
       entity_id: ARMY_ENTITY_ID,
@@ -98,11 +105,12 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleId
       intermediate_coord_y: 0,
     },
     capacity: { entity_id: ARMY_ENTITY_ID, weight_gram: 10n },
-    arrivalTime: { entity_id: ARMY_ENTITY_ID, arrives_at: 0 },
-    stamina: { entity_id: ARMY_ENTITY_ID, amount: 1, last_refill_tick: 0 },
+    weight: { entity_id: ARMY_ENTITY_ID, value: 0n },
+    arrivalTime: { entity_id: ARMY_ENTITY_ID, arrives_at: 0n },
+    stamina: { entity_id: ARMY_ENTITY_ID, amount: 1, last_refill_tick: 0n },
     realm: {
       entity_id: ARMY_ENTITY_ID,
-      realm_id: 1n,
+      realm_id: 1,
       resource_types_packed: 1n,
       resource_types_count: 1,
       cities: 1,
@@ -116,21 +124,21 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleId
   };
 };
 
-export const generateMockStructure = (structureType: StructureType, isMine?: boolean) => {
+export const generateMockStructure = (structureType: StructureType, isMine?: boolean): Structure => {
   return {
-    entity_id: 1n,
+    entity_id: 1,
     category: StructureType[structureType],
     isMine: isMine ?? false,
     isMercenary: false,
     name: "Mock Structure",
     protector: undefined,
     owner: {
-      entity_id: 1n,
+      entity_id: 1,
       address: 0n,
     },
     entityOwner: {
-      entity_id: 1n,
-      entity_owner_id: 0n,
+      entity_id: 1,
+      entity_owner_id: 0,
     },
   };
 };

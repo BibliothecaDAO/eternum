@@ -13,6 +13,7 @@ import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 
@@ -26,7 +27,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const existingBuildings = useUIStore((state) => state.existingBuildings);
 
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
-    entity_owner_entity_id: structure?.entity_id || 0n,
+    entity_owner_entity_id: structure?.entity_id || 0,
   });
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -75,7 +76,6 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       is_defensive_army,
     }).finally(() => setLoading(Loading.None));
   };
-
   return (
     <>
       <EntityList
@@ -128,7 +128,10 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         }
         title="armies"
         panel={({ entity, setSelectedEntity }) => (
-          <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
+          <>
+            <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
+            <ArmyCapacity army={entity} className="my-2 ml-5" />
+          </>
         )}
         questing={selectedQuest?.id === QuestId.CreateArmy}
       />
@@ -149,7 +152,7 @@ const ArmyItem = ({
 
   const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
 
-  const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0n, dojo), [entity?.battle_id, dojo]);
+  const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0, dojo), [entity?.battle_id, dojo]);
 
   const updatedArmy = useMemo(() => {
     if (!currentTimestamp) throw new Error("Current timestamp is undefined");
@@ -161,11 +164,11 @@ const ArmyItem = ({
   return (
     <React.Fragment key={entity?.entity_id || 0}>
       <ArmyManagementCard
-        owner_entity={structure?.entity_id || 0n}
+        owner_entity={structure?.entity_id || 0}
         army={updatedArmy}
         setSelectedEntity={setSelectedEntity}
       />
-      <InventoryResources entityIds={[entity?.entity_id || 0n]} />
+      <InventoryResources entityIds={[entity?.entity_id || 0]} />
     </React.Fragment>
   );
 };

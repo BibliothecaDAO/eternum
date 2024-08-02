@@ -17,14 +17,13 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "dependencies": {
-    "@dojoengine/core": "^0.7.9",
+    "@dojoengine/core": "^v1.0.0-alpha.0",
     "eventemitter3": "^5.0.1"
   },
   "peerDependencies": {
     "starknet": "6.7.0"
   },
   "devDependencies": {
-    "@types/elliptic": "^6.4.14",
     "tsup": "^8.0.2",
     "typescript": "^5.4.4"
   }

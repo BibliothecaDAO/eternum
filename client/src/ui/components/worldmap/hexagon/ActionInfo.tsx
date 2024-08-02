@@ -5,6 +5,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { FELT_CENTER } from "@/ui/config";
+import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -44,13 +45,26 @@ export const ActionInfo = () => {
               />
             </div>
           )}
-          {showTooltip && (
-            <StaminaResourceCost
-              travelingEntityId={BigInt(selectedEntityId!)}
-              isExplored={isExplored}
-              travelLength={travelPath!.path.length - 1}
-            />
-          )}
+          <StaminaResourceCost
+            travelingEntityId={BigInt(selectedEntityId!)}
+            isExplored={isExplored}
+            travelLength={travelPath!.path.length - 1}
+          />
+          <div className="flex flex-row text-xs">
+            <div
+              style={{
+                backgroundImage: `url(${BuildingThumbs.resources})`,
+                backgroundSize: "calc(100% - 10px)",
+                backgroundPosition: "center",
+              }}
+              className="w-8 h-8 bg-no-repeat"
+            ></div>
+
+            <div className="flex flex-col p-1 text-xs">
+              <div>+{EternumGlobalConfig.exploration.reward}</div>
+              <div>Reward</div>
+            </div>
+          </div>
         </BaseThreeTooltip>
       )}
     </>

@@ -1,2 +1,2 @@
-mod biomes;
-mod constants;
+pub mod biomes;
+pub mod constants;

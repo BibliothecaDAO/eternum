@@ -29,7 +29,7 @@ export const TroopRow = ({
   );
 };
 
-export const TroopCard = ({
+const TroopCard = ({
   count,
   id,
   className,

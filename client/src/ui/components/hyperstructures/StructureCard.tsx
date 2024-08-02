@@ -6,7 +6,7 @@ import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, Position, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
@@ -54,7 +54,7 @@ type MergeTroopsPanelProps = {
   giverArmy: ArmyInfo;
   takerArmy?: ArmyInfo;
   setShowMergeTroopsPopup: (val: boolean) => void;
-  structureEntityId?: bigint;
+  structureEntityId?: ID;
 };
 
 export const MergeTroopsPanel = ({
@@ -71,7 +71,7 @@ export const MergeTroopsPanel = ({
       <TroopExchange
         giverArmy={giverArmy}
         takerArmy={takerArmy}
-        giverArmyEntityId={BigInt(giverArmy.entity_id)}
+        giverArmyEntityId={giverArmy.entity_id}
         structureEntityId={structureEntityId}
       />
     </div>
@@ -81,8 +81,8 @@ export const MergeTroopsPanel = ({
 type TroopsProps = {
   giverArmy: ArmyInfo;
   takerArmy?: ArmyInfo;
-  giverArmyEntityId: bigint;
-  structureEntityId?: bigint;
+  giverArmyEntityId: ID;
+  structureEntityId?: ID;
 };
 
 const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint }) => {
@@ -110,7 +110,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
     [ResourcesIds.Paladin]: 0n,
   });
 
-  const protector = useComponentValue(Protector, getEntityIdFromKeys([structureEntityId || 0n]));
+  const protector = useComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId || 0)]));
 
   const createProtector = async () => {
     setLoading(true);
@@ -149,10 +149,10 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
     setTroopsGiven((prev) => ({ ...prev, [resourceId]: amount }));
   };
 
-  const giverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([giverArmyEntityId]))!.troops;
+  const giverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([BigInt(giverArmyEntityId)]))!.troops;
   const receiverArmyTroops = useComponentValue(
     Army,
-    getEntityIdFromKeys([takerArmy?.entity_id || protector?.army_id || 0n]),
+    getEntityIdFromKeys([BigInt(takerArmy?.entity_id || protector?.army_id || 0)]),
   )?.troops;
 
   return (

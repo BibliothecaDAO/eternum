@@ -1,8 +1,8 @@
-mod map;
-mod math;
-mod number;
-mod random;
+pub mod map;
+pub mod math;
+pub mod number;
+pub mod random;
 #[cfg(test)]
-mod testing;
-mod unpack;
-mod vrgda;
+pub mod testing;
+pub mod unpack;
+pub mod vrgda;

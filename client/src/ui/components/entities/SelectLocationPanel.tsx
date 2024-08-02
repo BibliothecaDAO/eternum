@@ -6,7 +6,7 @@ import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import TextInput from "@/ui/elements/TextInput";
 import { getRealm } from "@/ui/utils/realms";
-import { SelectableLocationInterface, getOrderName } from "@bibliothecadao/eternum";
+import { ID, SelectableLocationInterface, getOrderName } from "@bibliothecadao/eternum";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -17,10 +17,10 @@ export const SelectLocationPanel = ({
   selectedEntityId,
   setSelectedEntityId,
 }: {
-  travelingEntityId: bigint;
+  travelingEntityId: ID;
   entityIds: Entity[];
-  selectedEntityId: bigint | undefined;
-  setSelectedEntityId: (selectedEntityId: bigint) => void;
+  selectedEntityId: ID | undefined;
+  setSelectedEntityId: (selectedEntityId: ID) => void;
 }) => {
   const [nameFilter, setNameFilter] = useState("");
   const [originalLocations, setOriginalLocations] = useState<SelectableLocationInterface[]>([]);
@@ -59,7 +59,7 @@ export const SelectLocationPanel = ({
 
   useEffect(() => {
     const buildSelectableLocations = () => {
-      const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([travelingEntityId]));
+      const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(travelingEntityId)]));
       let locations = Array.from(entityIds)
         .map((entity) => {
           const realm = getComponentValue(Realm, entity);
@@ -76,7 +76,7 @@ export const SelectLocationPanel = ({
             takerRealmId = realmId;
           }
           const entityId = realm?.entity_id || bank?.entity_id;
-          const distance = entityId ? (calculateDistance(travelingEntityId, BigInt(entityId)) ?? 0) : 0;
+          const distance = entityId ? (calculateDistance(travelingEntityId, entityId) ?? 0) : 0;
           const addressName = entityId ? getRealmAddressName(entityId) : "";
           return {
             entityId,
@@ -181,7 +181,7 @@ export const SelectLocationPanel = ({
 /**
  * sort realms based on active filters
  */
-export function sortLocations(
+function sortLocations(
   locations: SelectableLocationInterface[],
   activeSort: SortInterface,
 ): SelectableLocationInterface[] {

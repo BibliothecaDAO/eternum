@@ -2,8 +2,9 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { quests } from "@/ui/components/navigation/Config";
 import { QuestPanel } from "@/ui/components/quest/QuestPanel";
+import { ID } from "@bibliothecadao/eternum";
 
-export const Questing = ({ entityId }: { entityId: bigint | undefined }) => {
+export const Questing = ({ entityId }: { entityId: ID | undefined }) => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(quests));
 

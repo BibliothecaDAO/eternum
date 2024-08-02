@@ -6,13 +6,14 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
-import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { InventoryResources } from "../../resources/InventoryResources";
 import useUIStore from "@/hooks/store/useUIStore";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 export const ArmyInfoLabel = () => {
   const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
@@ -49,7 +50,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     [arrivalTime?.arrives_at, nextBlockTimestamp],
   );
 
-  const realmId = realm?.realm_id || 0n;
+  const realmId = realm?.realm_id || 0;
 
   const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
 
@@ -83,7 +84,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             {arrivalTime && arrivalTime.arrives_at !== undefined && isTraveling && nextBlockTimestamp && (
               <div className="flex italic text-light-pink">
                 {isPassiveTravel
-                  ? formatSecondsLeftInDaysHours(arrivalTime.arrives_at - nextBlockTimestamp)
+                  ? formatSecondsLeftInDaysHours(Number(arrivalTime.arrives_at) - nextBlockTimestamp)
                   : "Arrives Next Tick"}
                 {army.battle_id ? `In Battle` : ""}
               </div>
@@ -107,7 +108,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <div className="text-green text-xs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
-
+        <ArmyCapacity army={army} />
         <div className="flex flex-row justify-between">
           <InventoryResources max={2} entityIds={[entity_id]} />
         </div>

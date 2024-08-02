@@ -10,6 +10,7 @@ import React, { useMemo, useState } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 export const ArmyChip = ({
   army,
@@ -45,7 +46,7 @@ export const ArmyChip = ({
           <Button className="my-2" size="xs" onClick={() => setEditMode(!editMode)}>
             Close Manager
           </Button>
-          <ArmyManagementCard army={updatedArmy!} owner_entity={BigInt(updatedArmy!.entityOwner.entity_owner_id)} />
+          <ArmyManagementCard army={updatedArmy!} owner_entity={updatedArmy!.entityOwner.entity_owner_id} />
         </>
       ) : (
         <>
@@ -81,6 +82,7 @@ export const ArmyChip = ({
                 </div>
                 <div className="font-bold text-xs">
                   <StaminaResource entityId={updatedArmy!.entity_id} />
+                  <ArmyCapacity army={updatedArmy} />
                 </div>
               </div>
               <div className="flex flex-col content-center w-[55%]">

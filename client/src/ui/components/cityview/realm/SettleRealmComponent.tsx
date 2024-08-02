@@ -14,7 +14,7 @@ import { getPosition } from "@/ui/utils/utils";
 
 export const MAX_REALMS = 1;
 
-export const SettleRealmComponent = () => {
+const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(1);
 

@@ -15,9 +15,6 @@ export enum Position {
   CENTER = "-left-1/2 -mt-[150px]",
   TOP_CENTER = "-left-1/2 -mt-[300px]",
   BOTTOM_RIGHT = "rounded-bl-xl rounded-br-xl rounded-tr-xl -left-1",
-  TOP_RIGHT = "rounded-tl-xl rounded-br-xl rounded-tr-xl -left-1 -mt-[300px]",
-  TOP_LEFT = "rounded-tl-xl rounded-bl-xl rounded-tr-xl right-[220px] -mt-[280px]",
-  BOTTOM_LEFT = "rounded-tl-xl rounded-bl-xl rounded-br-xl right-[220px]",
 }
 
 export const BaseThreeTooltip = ({

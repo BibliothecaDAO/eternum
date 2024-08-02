@@ -7,8 +7,9 @@ import { Check, ShieldQuestion } from "lucide-react";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
+import { ID } from "@bibliothecadao/eternum";
 
-export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
+export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) => {
   const {
     setup: {
       systemCalls: { mint_resources_and_claim_quest },
@@ -86,12 +87,19 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: bigint 
 };
 
 const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
+  const [showRewards, setShowRewards] = useState(false);
   const { getQuestResources } = useRealm();
 
   return (
     <div className="w-full">
-      <div className="mb-1 font-bold">Quest Rewards</div>
-      {prizes &&
+      <div className="flex flex-row items-baseline mb-1 ">
+        <div className="font-bold mr-5">Quest Rewards</div>
+        <Button size="xs" onClick={() => setShowRewards(!showRewards)}>
+          {showRewards ? "Hide" : "Show"}
+        </Button>
+      </div>
+      {showRewards &&
+        prizes &&
         prizes.map((prize, index) => (
           <div key={index} className="grid grid-cols-3 gap-3">
             {getQuestResources()[prize.id].map((resource, i) => (

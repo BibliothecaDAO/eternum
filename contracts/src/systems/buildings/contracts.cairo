@@ -1,33 +1,32 @@
+use eternum::alias::ID;
+
 #[dojo::interface]
 trait IBuildingContract<TContractState> {
     fn create(
         ref world: IWorldDispatcher,
-        entity_id: u128,
+        entity_id: ID,
         building_coord: eternum::models::position::Coord,
         building_category: eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
     );
-    fn destroy(
-        ref world: IWorldDispatcher,
-        entity_id: u128,
-        building_coord: eternum::models::position::Coord
-    );
+    fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: eternum::models::position::Coord);
 }
 
 #[dojo::contract]
 mod building_systems {
+    use eternum::alias::ID;
     use eternum::models::{
-        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
-        position::{Coord, Position, PositionTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingImpl},
-        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
+        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
+        position::{Coord, Position, PositionCustomTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingCustomImpl}, production::{Production, ProductionRateTrait},
+        realm::{Realm, RealmCustomImpl}
     };
 
     #[abi(embed_v0)]
     impl BuildingContractImpl of super::IBuildingContract<ContractState> {
         fn create(
             ref world: IWorldDispatcher,
-            entity_id: u128,
+            entity_id: ID,
             building_coord: Coord,
             building_category: BuildingCategory,
             produce_resource_type: Option<u8>,
@@ -43,18 +42,18 @@ mod building_systems {
             get!(world, entity_id, EntityOwner).assert_caller_owner(world);
 
             // todo: check that entity is a realm
-            let building: Building = BuildingImpl::create(
+            let building: Building = BuildingCustomImpl::create(
                 world, entity_id, building_category, produce_resource_type, building_coord
             );
 
             // make payment for building
-            BuildingImpl::make_payment(
+            BuildingCustomImpl::make_payment(
                 world, building.outer_entity_id, building.category, building.produced_resource_type
             );
         }
 
-        fn destroy(ref world: IWorldDispatcher, entity_id: u128, building_coord: Coord) {
-            BuildingImpl::destroy(world, entity_id, building_coord);
+        fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            BuildingCustomImpl::destroy(world, entity_id, building_coord);
         }
     }
 }

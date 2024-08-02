@@ -23,7 +23,7 @@ describe("getBattle", () => {
     expect(battle).toBeUndefined();
   });
 
-  it("should return a battle for a valid battleId", () => {
+  it("should return a battle for a valid battleEntityId", () => {
     const mockBattle = generateMockBattle(true, true, false);
     vi.mocked(getComponentValue).mockReturnValueOnce(mockBattle);
 

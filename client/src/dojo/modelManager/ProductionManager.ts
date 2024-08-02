@@ -2,7 +2,9 @@ import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   BuildingType,
   EternumGlobalConfig,
+  ID,
   RESOURCE_INPUTS_SCALED,
+  ResourcesIds,
   STOREHOUSE_CAPACITY,
 } from "@bibliothecadao/eternum";
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
@@ -18,8 +20,8 @@ export class ProductionManager {
   buildingQuantity:
     | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
     | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>;
-  entityId: bigint;
-  resourceId: bigint;
+  entityId: ID;
+  resourceId: ResourcesIds;
 
   constructor(
     productionModel:
@@ -31,8 +33,8 @@ export class ProductionManager {
     buildingQuantity:
       | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
       | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>,
-    entityId: bigint,
-    resourceId: bigint,
+    entityId: ID,
+    resourceId: ResourcesIds,
   ) {
     this.productionModel = productionModel;
     this.buildingQuantity = buildingQuantity;
@@ -41,7 +43,6 @@ export class ProductionManager {
     this.resourceModel = resourceModel;
   }
 
-  // Retrieves the production data for the current entity
   public getProduction() {
     return this._getProduction(this.resourceId);
   }
@@ -104,8 +105,8 @@ export class ProductionManager {
     const quantity =
       getComponentValue(
         this.buildingQuantity,
-        getEntityIdFromKeys([BigInt(this.entityId || "0"), BigInt(BuildingType.Storehouse)]),
-      )?.value || "0";
+        getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
+      )?.value || 0;
     return (
       (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * EternumGlobalConfig.resources.resourcePrecision
     );
@@ -117,7 +118,7 @@ export class ProductionManager {
     return production?.production_rate > 0n && !this._inputs_available(currentTick, this.resourceId);
   }
 
-  private _balance(currentTick: number, resourceId: bigint): number {
+  private _balance(currentTick: number, resourceId: ResourcesIds): number {
     const resource = this._getResource(resourceId);
 
     const [sign, rate] = this._netRate(resourceId);
@@ -125,10 +126,8 @@ export class ProductionManager {
     if (rate !== 0) {
       if (sign) {
         // Positive net rate, increase balance
-
         const balance = Number(resource?.balance || 0n) + this._productionDuration(currentTick, resourceId) * rate;
-
-        return balance > this.getStoreCapacity() ? this.getStoreCapacity() : balance;
+        return Math.min(balance, this.getStoreCapacity());
       } else {
         // Negative net rate, decrease balance but not below zero
         let balance = Number(resource?.balance || 0n) - -this._depletionDuration(currentTick, resourceId) * rate;
@@ -144,7 +143,7 @@ export class ProductionManager {
     }
   }
 
-  private _productionDuration(currentTick: number, resourceId: bigint): number {
+  private _productionDuration(currentTick: number, resourceId: ResourcesIds): number {
     const production = this._getProduction(resourceId);
 
     if (!production) return 0;
@@ -160,19 +159,19 @@ export class ProductionManager {
     }
   }
 
-  private _depletionDuration(currentTick: number, resourceId: bigint): number {
+  private _depletionDuration(currentTick: number, resourceId: ResourcesIds): number {
     const production = this._getProduction(resourceId);
     return Number(currentTick) - Number(production?.last_updated_tick);
   }
 
-  private _netRate(resourceId: bigint): [boolean, number] {
+  private _netRate(resourceId: ResourcesIds): [boolean, number] {
     const production = this._getProduction(resourceId);
     if (!production) return [false, 0];
     const difference = Number(production.production_rate) - Number(production.consumption_rate);
     return [difference > 0, difference];
   }
 
-  private _balanceExhaustionTick(currentTick: number, resourceId: bigint): number {
+  private _balanceExhaustionTick(currentTick: number, resourceId: ResourcesIds): number {
     const production = this._getProduction(resourceId);
     const resource = this._getResource(resourceId);
 
@@ -199,8 +198,8 @@ export class ProductionManager {
     }
   }
 
-  private _inputs_available(currentTick: number, resourceId: bigint): boolean {
-    const inputs = RESOURCE_INPUTS_SCALED[Number(resourceId.toString())];
+  private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
+    const inputs = RESOURCE_INPUTS_SCALED[resourceId];
 
     // Ensure inputs is an array before proceeding
     if (inputs.length == 0) {
@@ -208,7 +207,7 @@ export class ProductionManager {
     }
 
     for (const input of inputs) {
-      const balance = this._balance(currentTick, BigInt(input.resource));
+      const balance = this._balance(currentTick, input.resource);
       if (balance === undefined || balance <= 0) {
         return false;
       }
@@ -216,11 +215,11 @@ export class ProductionManager {
     return true;
   }
 
-  private _getProduction(resourceId: bigint) {
-    return getComponentValue(this.productionModel, getEntityIdFromKeys([this.entityId, resourceId]));
+  private _getProduction(resourceId: ResourcesIds) {
+    return getComponentValue(this.productionModel, getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]));
   }
 
-  private _getResource(resourceId: bigint) {
-    return getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, resourceId]));
+  private _getResource(resourceId: ResourcesIds) {
+    return getComponentValue(this.resourceModel, getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]));
   }
 }

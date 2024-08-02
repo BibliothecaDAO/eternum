@@ -1,6 +1,8 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
+// Knip ignore tag
+/** @public */
 export enum StructureType {
   Realm = 1,
   Hyperstructure = 2,
@@ -177,7 +179,7 @@ export enum EntityState {
 export function determineEntityState(
   nextBlockTimestamp: number | undefined,
   blocked: boolean | undefined,
-  arrivalTime: number | undefined,
+  arrivalTime: bigint | undefined,
   hasResources: boolean,
 ): EntityState {
   const isTraveling =

@@ -1,10 +1,9 @@
-import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 type LiquidityTableProps = {
-  bank_entity_id: bigint | undefined;
-  entity_id: bigint;
+  bank_entity_id: ID | undefined;
+  entity_id: ID;
 };
 
 export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProps) => {

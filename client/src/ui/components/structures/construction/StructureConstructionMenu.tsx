@@ -5,6 +5,7 @@ import {
   BuildingType,
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  ID,
   RESOURCE_INFORMATION,
   RESOURCE_INPUTS_SCALED,
   STRUCTURE_COSTS_SCALED,
@@ -90,77 +91,13 @@ export const StructureConstructionMenu = () => {
   );
 };
 
-export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; entityId: bigint | undefined }) => {
-  const cost = RESOURCE_INPUTS_SCALED[resourceId];
-
-  const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
-
-  const population = BUILDING_POPULATION[BuildingType.Resource];
-
-  const capacity = BUILDING_CAPACITY[BuildingType.Resource];
-
-  const information = RESOURCE_INFORMATION[resourceId];
-
-  const { getBalance } = getResourceBalance();
-
-  return (
-    <div className="flex flex-col text-gold text-sm p-1 space-y-1">
-      <Headline className="py-3"> Building </Headline>
-
-      {population !== 0 && <div className="font-bold">Increases Population: +{population}</div>}
-
-      {capacity !== 0 && <div className=" pt-3 font-bold">Increases Capacity: +{capacity}</div>}
-
-      {findResourceById(resourceId)?.trait && (
-        <div className=" flex pt-3 font-bold">
-          <div>Produces: +10</div>
-          <ResourceIcon className="self-center ml-1" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-          {findResourceById(resourceId)?.trait || ""} every cycle
-        </div>
-      )}
-
-      <div className="pt-3 font-bold">consumed per/s</div>
-      <div className="grid grid-cols-2 gap-2">
-        {Object.keys(cost).map((resourceId) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
-
-          return (
-            <ResourceCost
-              key={resourceId}
-              resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount}
-              balance={balance.balance}
-            />
-          );
-        })}
-      </div>
-
-      <div className="pt-3 font-bold">One Time Cost</div>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        {Object.keys(buildingCost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, buildingCost[Number(resourceId)].resource);
-          return (
-            <ResourceCost
-              key={index}
-              resourceId={buildingCost[Number(resourceId)].resource}
-              amount={buildingCost[Number(resourceId)].amount}
-              balance={balance.balance}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-export const StructureInfo = ({
+const StructureInfo = ({
   structureId,
   entityId,
   extraButtons = [],
 }: {
   structureId: number;
-  entityId: bigint | undefined;
+  entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
   const cost = STRUCTURE_COSTS_SCALED[structureId];
@@ -183,7 +120,7 @@ export const StructureInfo = ({
       <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
       <div className="grid grid-cols-1 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
           return (
             <ResourceCost
               key={index}
