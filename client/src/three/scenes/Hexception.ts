@@ -4,11 +4,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { SetupResult } from "@/dojo/setup";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { BuildingType, ResourcesIds, StructureType, getNeighborHexes } from "@bibliothecadao/eternum";
-import InstancedModel from "../components/InstancedModel";
 import { getComponentValue } from "@dojoengine/recs";
-import { biomeModelPaths } from "./Worldmap";
 import { Biome, BiomeType } from "../components/Biome";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
@@ -42,8 +39,6 @@ const buildingModelPaths: Record<BuildingType, string> = {
 const loader = new GLTFLoader();
 export default class HexceptionScene extends HexagonScene {
   private buildingModels: Map<BuildingType, InstancedBuilding> = new Map();
-  private modelLoadPromises: Promise<void>[] = [];
-  private biomeModels: Map<BiomeType, InstancedModel> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
   centerColRow: number[] = [0, 0];
@@ -73,7 +68,7 @@ export default class HexceptionScene extends HexagonScene {
     this.scene.add(this.pillars);
 
     this.loadBuildingModels();
-    this.loadBiomeModels();
+    this.loadBiomeModels(900);
 
     this.setup({ col: 0, row: 0 });
 
@@ -118,42 +113,6 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     Promise.all(this.modelLoadPromises).then(() => {});
-  }
-
-  private loadBiomeModels() {
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/");
-    dracoLoader.preload();
-    loader.setDRACOLoader(dracoLoader);
-
-    for (const [biome, path] of Object.entries(biomeModelPaths)) {
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          path,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-            model.position.set(0, 0, 0);
-            model.rotation.y = Math.PI;
-
-            const tmp = new InstancedModel(model, 900);
-            this.biomeModels.set(biome as BiomeType, tmp);
-            this.scene.add(tmp.group);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`Error loading ${biome} model:`, error);
-            reject(error);
-          },
-        );
-      });
-      this.modelLoadPromises.push(loadPromise);
-    }
-
-    Promise.all(this.modelLoadPromises).then(() => {
-      //this.updateExistingChunks();
-    });
   }
 
   setup(hexCoords: HexPosition) {

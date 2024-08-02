@@ -11,6 +11,29 @@ import gsap from "gsap";
 
 import _ from "lodash";
 import { SystemManager } from "../systems/SystemManager";
+import { DRACOLoader, GLTFLoader } from "three-stdlib";
+import InstancedModel from "../components/InstancedModel";
+import { BiomeType } from "../components/Biome";
+
+const BASE_PATH = "/models/bevel-biomes/";
+export const biomeModelPaths: Record<BiomeType, string> = {
+  DeepOcean: BASE_PATH + "deepocean.glb",
+  Ocean: BASE_PATH + "ocean.glb",
+  Beach: BASE_PATH + "beach.glb",
+  Scorched: BASE_PATH + "scorched.glb",
+  Bare: BASE_PATH + "bare.glb",
+  Tundra: BASE_PATH + "tundra.glb",
+  Snow: BASE_PATH + "snow.glb",
+  TemperateDesert: BASE_PATH + "temperatedessert.glb",
+  Shrubland: BASE_PATH + "shrublands.glb",
+  Taiga: BASE_PATH + "taiga.glb",
+  Grassland: BASE_PATH + "grassland.glb",
+  TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
+  TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
+  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
+  TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
+  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
+};
 
 export const HEX_SIZE = 1;
 export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
@@ -29,6 +52,8 @@ export class HexagonScene {
   private hemisphereLight!: THREE.HemisphereLight;
   private lightHelper!: THREE.DirectionalLightHelper;
   protected GUIFolder: any;
+  protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
+  protected modelLoadPromises: Promise<void>[] = [];
 
   constructor(
     protected sceneName: string,
@@ -240,6 +265,36 @@ export class HexagonScene {
       this.mainDirectionalLight.target.updateMatrixWorld();
     }
   }, 30);
+
+  loadBiomeModels(maxInstances: number) {
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/");
+    dracoLoader.preload();
+    loader.setDRACOLoader(dracoLoader);
+
+    for (const [biome, path] of Object.entries(biomeModelPaths)) {
+      const loadPromise = new Promise<void>((resolve, reject) => {
+        loader.load(
+          path,
+          (gltf) => {
+            const model = gltf.scene as THREE.Group;
+
+            const tmp = new InstancedModel(model, maxInstances);
+            this.biomeModels.set(biome as BiomeType, tmp);
+            this.scene.add(tmp.group);
+            resolve();
+          },
+          undefined,
+          (error) => {
+            console.error(`Error loading ${biome} model:`, error);
+            reject(error);
+          },
+        );
+      });
+      this.modelLoadPromises.push(loadPromise);
+    }
+  }
 
   update(deltaTime: number) {
     this.interactiveHexManager.update();

@@ -1,22 +1,13 @@
 import * as THREE from "three";
 import { Raycaster } from "three";
 
-import { Entity } from "@dojoengine/recs";
-
 import { SetupResult } from "@/dojo/setup";
 import { FELT_CENTER } from "@/ui/config";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { Biome, BiomeType } from "../components/Biome";
-import InstancedModel from "../components/InstancedModel";
-import { SystemManager } from "../systems/SystemManager";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { InteractiveHexManager } from "../components/InteractiveHexManager";
-import { HighlightHexManager } from "../components/HighlightHexManager";
 import { GUIManager } from "../helpers/GUIManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { InputManager } from "../components/InputManager";
 import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
@@ -28,26 +19,6 @@ import { HexPosition } from "@/types";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { HEX_SIZE, HexagonScene } from "./HexagonScene";
 
-const BASE_PATH = "/models/bevel-biomes/";
-export const biomeModelPaths: Record<BiomeType, string> = {
-  DeepOcean: BASE_PATH + "deepocean.glb",
-  Ocean: BASE_PATH + "ocean.glb",
-  Beach: BASE_PATH + "beach.glb",
-  Scorched: BASE_PATH + "scorched.glb",
-  Bare: BASE_PATH + "bare.glb",
-  Tundra: BASE_PATH + "tundra.glb",
-  Snow: BASE_PATH + "snow.glb",
-  TemperateDesert: BASE_PATH + "temperatedessert.glb",
-  Shrubland: BASE_PATH + "shrublands.glb",
-  Taiga: BASE_PATH + "taiga.glb",
-  Grassland: BASE_PATH + "grassland.glb",
-  TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
-  TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
-  TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
-  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
-};
-
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
 
@@ -56,18 +27,12 @@ export default class WorldmapScene extends HexagonScene {
     width: 40,
     height: 30,
   };
-  private loadedChunks: Map<string, THREE.Group> = new Map();
-
-  private biomeModels: Map<BiomeType, InstancedModel> = new Map();
-  private modelLoadPromises: Promise<void>[] = [];
 
   private currentChunk: string = "null";
 
   // Store
   private state: AppStore;
   private unsubscribe: () => void;
-
-  private entities: Entity[] = [];
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
@@ -93,7 +58,7 @@ export default class WorldmapScene extends HexagonScene {
     this.scene.background = new THREE.Color(0x8790a1);
     GUIManager.addColor(this.scene, "background");
 
-    this.loadBiomeModels();
+    this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
     this.state = useUIStore.getState();
     this.unsubscribe = useUIStore.subscribe((state) => {
@@ -180,40 +145,6 @@ export default class WorldmapScene extends HexagonScene {
 
   setup() {
     this.moveCameraToURLLocation();
-  }
-
-  private loadBiomeModels() {
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/");
-    dracoLoader.preload();
-    loader.setDRACOLoader(dracoLoader);
-
-    for (const [biome, path] of Object.entries(biomeModelPaths)) {
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          path,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-
-            const tmp = new InstancedModel(model, this.renderChunkSize.width * this.renderChunkSize.height);
-            this.biomeModels.set(biome as BiomeType, tmp);
-            this.scene.add(tmp.group);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`Error loading ${biome} model:`, error);
-            reject(error);
-          },
-        );
-      });
-      this.modelLoadPromises.push(loadPromise);
-    }
-
-    Promise.all(this.modelLoadPromises).then(() => {
-      //this.updateExistingChunks();
-    });
   }
 
   public updateStructures(update: StructureSystemUpdate) {
