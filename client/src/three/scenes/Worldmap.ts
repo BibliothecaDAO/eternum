@@ -192,7 +192,6 @@ export default class WorldmapScene extends HexagonScene {
 
     await Promise.all(this.modelLoadPromises);
     const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-    console.log({ hexMesh });
     const currentCount = hexMesh.getCount();
     hexMesh.setMatrixAt(currentCount, dummy.matrix);
     hexMesh.setCount(currentCount + 1);

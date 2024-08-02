@@ -75,7 +75,6 @@ export default class HexceptionScene extends HexagonScene {
       (building) => {
         if (building) {
           this.previewBuilding = building;
-          console.log("building", this.highlights);
           this.highlightHexManager.highlightHexes(this.highlights);
         } else {
           this.previewBuilding = null;
@@ -117,9 +116,6 @@ export default class HexceptionScene extends HexagonScene {
     const { col, row } = hexCoords;
     this.locationManager.addRowColToQueryString(row, col);
     this.moveCameraToColRow(0, 0, 0);
-    console.log("clickedHex", row, col);
-    console.log(this.locationManager.getCol(), this.locationManager.getRow());
-    console.log("store", useRealmStore.getState());
 
     this.centerColRow = [this.locationManager.getCol()! + FELT_CENTER, this.locationManager.getRow()! + FELT_CENTER];
 
@@ -214,7 +210,6 @@ export default class HexceptionScene extends HexagonScene {
 
             let withBuilding = false;
             if (isMainHex) {
-              console.log("dummy", dummy.position.x, dummy.position.y, dummy.position.z);
               this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
               //highlights.push({ col: q + r / 2, row: r });
               const isCenter = q === 0 && r === 0;
@@ -257,15 +252,12 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       this.buildings = buildings;
-      console.log(this.buildings);
       let counts: Record<string, number> = {};
       //const color = new THREE.Color(0xff0000);
       for (const building of this.buildings) {
         const buildingMesh = this.buildingModels.get(BuildingType[building.category].toString() as any);
-        //console.log(building.matrix?.scale?.set(0.1, 0.1, 0.1));
         if (buildingMesh) {
           counts[building.category] = (counts[building.category] || 0) + 1;
-          console.log("counts", counts[building.category]);
           buildingMesh.setMatrixAt(counts[building.category] - 1, building.matrix);
           buildingMesh.setCount(counts[building.category]);
         }

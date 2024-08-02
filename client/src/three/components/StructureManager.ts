@@ -5,6 +5,7 @@ import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { StructureSystemUpdate } from "../systems/types";
+import { FELT_CENTER } from "@/ui/config";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -48,9 +49,10 @@ export class StructureManager {
   }
 
   async onUpdate(update: StructureSystemUpdate) {
+    await this.loadPromise;
     const { entityId, hexCoords, isMine } = update;
-    await this.isLoaded;
-    const position = getWorldPositionForHex(hexCoords);
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const position = getWorldPositionForHex(normalizedCoord);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
