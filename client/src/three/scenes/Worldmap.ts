@@ -72,21 +72,6 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Structure.onUpdate((value) => this.structureManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
 
-    this.inputManager.addListener(
-      "mousemove",
-      throttle((raycaster) => {
-        const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
-        hoveredHex && this.onMouseMove(hoveredHex);
-      }, 10),
-    );
-    this.inputManager.addListener("dblclick", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onDoubleClick(clickedHex);
-    });
-    this.inputManager.addListener("click", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onClick(clickedHex);
-    });
     this.inputManager.addListener("mousemove", throttle(this.armyManager.onMouseMove, 10));
     this.inputManager.addListener("contextmenu", (raycaster) => {
       const selectedEntityId = this.armyManager.onRightClick(raycaster);
@@ -95,26 +80,18 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // methods needed to add worldmap specific behavior to the click events
-  private onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }) {
+  protected onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
       this.state.updateHoveredHex(hoveredHex);
     }
   }
 
-  private onRightClick(selectedEntityId: number | undefined) {
-    if (!selectedEntityId) {
-      this.clearEntitySelection();
-      return;
-    }
-    this.state.updateSelectedEntityId(selectedEntityId);
-    const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-    const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
-    this.state.updateTravelPaths(travelPaths.getPaths());
-    this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
+  protected onDoubleClick(hexCoords: HexPosition) {
+    this.sceneManager.switchScene("hexception", hexCoords);
   }
 
-  private onClick(hexCoords: HexPosition) {
+  protected onClick(hexCoords: HexPosition) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
@@ -133,14 +110,22 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private onRightClick(selectedEntityId: number | undefined) {
+    if (!selectedEntityId) {
+      this.clearEntitySelection();
+      return;
+    }
+    this.state.updateSelectedEntityId(selectedEntityId);
+    const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
+    const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
+    this.state.updateTravelPaths(travelPaths.getPaths());
+    this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
+  }
+
   private clearEntitySelection() {
     this.state.updateSelectedEntityId(null);
     this.highlightHexManager.highlightHexes([]);
     this.state.updateTravelPaths(new Map());
-  }
-
-  private onDoubleClick(hexCoords: HexPosition) {
-    this.sceneManager.switchScene("hexception", hexCoords);
   }
 
   setup() {

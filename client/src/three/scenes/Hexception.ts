@@ -58,8 +58,6 @@ export default class HexceptionScene extends HexagonScene {
 
     this.biome = new Biome();
 
-    this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
-
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
     this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial({ color: 0xffce31 }), 1000);

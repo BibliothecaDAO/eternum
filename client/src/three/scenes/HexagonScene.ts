@@ -9,11 +9,12 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GUIManager } from "../helpers/GUIManager";
 import gsap from "gsap";
 
-import _ from "lodash";
+import _, { throttle } from "lodash";
 import { SystemManager } from "../systems/SystemManager";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import InstancedModel from "../components/InstancedModel";
 import { BiomeType } from "../components/Biome";
+import { HexPosition } from "@/types";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -39,7 +40,7 @@ export const HEX_SIZE = 1;
 export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
 export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 
-export class HexagonScene {
+export abstract class HexagonScene {
   protected scene: THREE.Scene;
   protected camera: THREE.PerspectiveCamera;
   protected dojo: SetupResult;
@@ -120,7 +121,27 @@ export class HexagonScene {
 
     this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
     this.scene.add(this.lightHelper);
+
+    this.inputManager.addListener(
+      "mousemove",
+      throttle((raycaster) => {
+        const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
+        hoveredHex && this.onMouseMove(hoveredHex);
+      }, 10),
+    );
+    this.inputManager.addListener("dblclick", (raycaster) => {
+      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      clickedHex && this.onDoubleClick(clickedHex);
+    });
+    this.inputManager.addListener("click", (raycaster) => {
+      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      clickedHex && this.onClick(clickedHex);
+    });
   }
+
+  protected abstract onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void;
+  protected abstract onDoubleClick(hexCoords: HexPosition): void;
+  protected abstract onClick(hexCoords: HexPosition): void;
 
   public getScene() {
     return this.scene;
