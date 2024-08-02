@@ -1,13 +1,10 @@
 import { SetupResult } from "@/dojo/setup";
-import gsap from "gsap";
-import GUI from "lil-gui";
 import _ from "lodash";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { TransitionManager } from "./components/TransitionManager";
 import { LocationManager } from "./helpers/LocationManager";
-import { MouseHandler } from "./MouseHandler";
 import { SceneManager } from "./SceneManager";
 import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
@@ -15,10 +12,6 @@ import { GUIManager } from "./helpers/GUIManager";
 import { CSS2DRenderer } from "three-stdlib";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SystemManager } from "./systems/SystemManager";
-
-export const HEX_SIZE = 1;
-export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
-export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -35,7 +28,7 @@ export default class GameRenderer {
   }
 
   private handleURLChange = () => {
-    this.moveCameraToURLLocation();
+    this.worldmapScene.moveCameraToURLLocation();
   };
 
   // Store
@@ -64,7 +57,6 @@ export default class GameRenderer {
 
   private dojo: SetupResult;
 
-  private mouseHandler!: MouseHandler;
   private sceneManager!: SceneManager;
   private systemManager!: SystemManager;
 
@@ -99,10 +91,7 @@ export default class GameRenderer {
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
 
-    const buttonsFolder = GUIManager.addFolder("Buttons");
-    buttonsFolder.add(this, "goToRandomColRow");
-    buttonsFolder.add(this, "moveCameraToURLLocation");
-    buttonsFolder.add(this, "switchScene");
+    GUIManager.add(this, "switchScene");
 
     // Add new button for moving camera to specific col and row
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
@@ -112,7 +101,7 @@ export default class GameRenderer {
     moveCameraFolder
       .add(
         {
-          move: () => this.moveCameraToColRow(moveCameraParams.col, moveCameraParams.row, 0),
+          move: () => this.worldmapScene.moveCameraToColRow(moveCameraParams.col, moveCameraParams.row, 0),
         },
         "move",
       )
@@ -154,7 +143,6 @@ export default class GameRenderer {
       _.throttle(() => {
         if (this.sceneManager?.currentScene === "worldmap") {
           this.worldmapScene.updateVisibleChunks();
-          this.worldmapScene.updateLights(this.controls.target);
         }
       }, 30),
     );
@@ -165,72 +153,20 @@ export default class GameRenderer {
 
     this.systemManager = new SystemManager(this.dojo);
 
-    // Change camera settings for 75-degree view
-    this.hexceptionScene = new HexceptionScene(
-      this.renderer,
-      this.controls,
-      this.dojo,
-      this.mouse,
-      this.raycaster,
-      this.sceneManager,
-      this.cameraAngle,
-      this.cameraDistance,
-      this.systemManager,
-    );
+    this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
     this.sceneManager.addScene("hexception", this.hexceptionScene);
 
     // Add grid
-    this.worldmapScene = new WorldmapScene(
-      this.dojo,
-      this.raycaster,
-      this.controls,
-      this.mouse,
-      this.sceneManager,
-      this.systemManager,
-    );
+    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene("worldmap", this.worldmapScene);
 
     this.worldmapScene.createGroundMesh();
 
-    this.moveCameraToURLLocation();
+    this.worldmapScene.moveCameraToURLLocation();
 
     // Init animation
     this.animate();
-  }
-
-  private moveCameraToURLLocation() {
-    const col = this.locationManager.getCol();
-    const row = this.locationManager.getRow();
-    if (col && row) {
-      this.moveCameraToColRow(col, row, 0);
-    }
-  }
-
-  private moveCameraToColRow(col: number, row: number, duration: number = 2) {
-    const colOffset = col;
-    const rowOffset = row;
-    const newTargetX = colOffset * HEX_HORIZONTAL_SPACING + (rowOffset % 2) * (HEX_HORIZONTAL_SPACING / 2);
-    const newTargetZ = -rowOffset * HEX_VERTICAL_SPACING;
-    const newTargetY = 0;
-
-    const newTarget = new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
-
-    const target = this.controls.target;
-    const pos = this.controls.object.position;
-
-    // go to new target with but keep same view angle
-    const deltaX = newTarget.x - target.x;
-    const deltaZ = newTarget.z - target.z;
-    if (duration) {
-      this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, duration);
-    } else {
-      target.set(newTarget.x, newTarget.y, newTarget.z);
-      pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
-    }
-    // target.set(newTarget.x, newTarget.y, newTarget.z);
-    // pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
-    this.controls.update();
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
@@ -247,14 +183,6 @@ export default class GameRenderer {
       default:
         break;
     }
-  }
-
-  getLocationCoordinates() {
-    const col = this.locationManager.getCol()!;
-    const row = this.locationManager.getRow()!;
-    const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
-    const z = -row * HEX_VERTICAL_SPACING;
-    return { col, row, x, z };
   }
 
   switchScene() {
@@ -281,45 +209,6 @@ export default class GameRenderer {
     }
   }
 
-  cameraAnimate(
-    newPosition: THREE.Vector3,
-    newTarget: THREE.Vector3,
-    transitionDuration: number,
-    onFinish?: () => void,
-  ) {
-    const camera = this.controls.object;
-    const target = this.controls.target;
-    gsap.killTweensOf(camera.position);
-    gsap.killTweensOf(target);
-
-    const duration = transitionDuration || 2;
-
-    gsap.timeline().to(camera.position, {
-      duration,
-      repeat: 0,
-      x: newPosition.x,
-      y: newPosition.y,
-      z: newPosition.z,
-      ease: "power3.inOut",
-      onComplete: () => {
-        onFinish?.();
-      },
-    });
-
-    gsap.timeline().to(
-      target,
-      {
-        duration,
-        repeat: 0,
-        x: newTarget.x,
-        y: newTarget.y,
-        z: newTarget.z,
-        ease: "power3.inOut",
-      },
-      "<",
-    );
-  }
-
   animate() {
     const currentTime = performance.now();
     const deltaTime = (currentTime - this.lastTime) / 1000; // Convert to seconds
@@ -333,14 +222,13 @@ export default class GameRenderer {
     if (this.sceneManager.currentScene === "worldmap") {
       this.worldmapScene.update(deltaTime);
       // this.hexGrid.updateVisibleChunks();
-      this.worldmapScene.contextMenuManager.checkHexagonHover();
-      this.renderer.render(this.worldmapScene.scene, this.camera);
-      this.labelRenderer.render(this.worldmapScene.scene, this.camera);
+      this.renderer.render(this.worldmapScene.getScene(), this.camera);
+      this.labelRenderer.render(this.worldmapScene.getScene(), this.camera);
     } else {
       // this.detailedScene.update(deltaTime);
       this.hexceptionScene.update(deltaTime);
-      this.renderer.render(this.hexceptionScene.scene, this.camera);
-      this.labelRenderer.render(this.hexceptionScene.scene, this.camera);
+      this.renderer.render(this.hexceptionScene.getScene(), this.camera);
+      this.labelRenderer.render(this.hexceptionScene.getScene(), this.camera);
     }
 
     requestAnimationFrame(() => {
