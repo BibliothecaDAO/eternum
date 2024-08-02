@@ -93,6 +93,8 @@ export default class WorldmapScene extends HexagonScene {
     this.scene.background = new THREE.Color(0x8790a1);
     GUIManager.addColor(this.scene, "background");
 
+    this.loadBiomeModels();
+
     this.state = useUIStore.getState();
     this.unsubscribe = useUIStore.subscribe((state) => {
       this.state = state;
@@ -287,7 +289,8 @@ export default class WorldmapScene extends HexagonScene {
     this.interactiveHexManager.renderHexes();
   }
 
-  updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
+  async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
+    await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) return;
 
     const dummy = new THREE.Object3D();
