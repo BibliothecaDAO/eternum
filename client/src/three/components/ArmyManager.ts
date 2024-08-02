@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import InstancedModel from "./InstancedModel";
-import WorldmapScene from "../scenes/Worldmap";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
@@ -14,6 +13,7 @@ const MODEL_PATH = "models/biomes/Horse.glb";
 const MAX_INSTANCES = 1000;
 
 export class ArmyManager {
+  private scene: THREE.Scene;
   private instancedModel: InstancedModel | undefined;
   private dummy: THREE.Mesh;
   private isLoaded: boolean = false;
@@ -29,7 +29,8 @@ export class ArmyManager {
   private labels: Map<number, THREE.Points> = new Map<number, THREE.Points>();
   private state: AppStore;
 
-  constructor(private worldMapScene: WorldmapScene) {
+  constructor(scene: THREE.Scene) {
+    this.scene = scene;
     this.state = useUIStore.getState();
     this.dummy = new THREE.Mesh();
     this.mesh = new THREE.InstancedMesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial(), 0);
@@ -41,7 +42,6 @@ export class ArmyManager {
     this.onRightClick = this.onRightClick.bind(this);
 
     this.loadPromise = new Promise<void>((resolve, reject) => {
-      this.worldMapScene = worldMapScene;
       const loader = new GLTFLoader();
       loader.load(
         MODEL_PATH,
@@ -58,7 +58,7 @@ export class ArmyManager {
           this.mesh.count = 0;
           this.mesh.instanceMatrix.needsUpdate = true;
 
-          worldMapScene.scene.add(this.mesh);
+          this.scene.add(this.mesh);
           this.isLoaded = true;
 
           this.mixer = new THREE.AnimationMixer(gltf.scene);
@@ -145,7 +145,7 @@ export class ArmyManager {
     // Add label on top of the army
     const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
     this.labels.set(entityId, label);
-    this.worldMapScene.scene.add(label);
+    this.scene.add(label);
   }
 
   moveArmy(entityId: number, hexCoords: { col: number; row: number }) {

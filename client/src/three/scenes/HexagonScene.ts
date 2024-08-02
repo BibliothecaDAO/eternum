@@ -10,6 +10,7 @@ import { GUIManager } from "../helpers/GUIManager";
 import gsap from "gsap";
 
 import _ from "lodash";
+import { SystemManager } from "../systems/SystemManager";
 
 export const HEX_SIZE = 1;
 export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
@@ -21,6 +22,7 @@ export class HexagonScene {
   protected dojo: SetupResult;
   protected inputManager: InputManager;
   protected interactiveHexManager: InteractiveHexManager;
+  protected systemManager: SystemManager;
   protected highlightHexManager: HighlightHexManager;
   protected locationManager!: LocationManager;
   private mainDirectionalLight!: THREE.DirectionalLight;
@@ -34,7 +36,7 @@ export class HexagonScene {
     private dojoContext: SetupResult,
     private mouse: THREE.Vector2,
     private raycaster: THREE.Raycaster,
-    private sceneManager: SceneManager,
+    protected sceneManager: SceneManager,
   ) {
     this.GUIFolder = GUIManager.addFolder(sceneName);
     this.scene = new THREE.Scene();
@@ -42,7 +44,8 @@ export class HexagonScene {
     this.dojo = dojoContext;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
-    this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
+    this.interactiveHexManager = new InteractiveHexManager(this.scene);
+    this.systemManager = new SystemManager(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.scene.background = new THREE.Color(0x8790a1);
     this.GUIFolder.addColor(this.scene, "background");

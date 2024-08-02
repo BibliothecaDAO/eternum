@@ -14,7 +14,7 @@ const LABEL_PATH = "textures/realm_label.png";
 const MAX_INSTANCES = 1000;
 
 export class StructureManager {
-  private worldMapScene: WorldmapScene;
+  private scene: THREE.Scene;
   private instancedModel: InstancedModel | undefined;
   private dummy: THREE.Object3D = new THREE.Object3D();
   private isLoaded: boolean = false;
@@ -22,8 +22,8 @@ export class StructureManager {
   structures: Structures = new Structures();
   private labelManager: LabelManager;
 
-  constructor(worldMapScene: WorldmapScene) {
-    this.worldMapScene = worldMapScene;
+  constructor(scene: THREE.Scene) {
+    this.scene = scene;
     this.labelManager = new LabelManager(LABEL_PATH);
 
     this.loadPromise = new Promise<void>((resolve, reject) => {
@@ -34,7 +34,7 @@ export class StructureManager {
           const model = gltf.scene as THREE.Group;
           this.instancedModel = new InstancedModel(model, MAX_INSTANCES);
           this.instancedModel.setCount(0);
-          this.worldMapScene.scene.add(this.instancedModel.group);
+          this.scene.add(this.instancedModel.group);
           this.isLoaded = true;
           resolve();
         },
@@ -64,7 +64,7 @@ export class StructureManager {
       // Add label on top of the structure with appropriate color
       const labelColor = isMine ? myColor : neutralColor;
       const label = this.labelManager.createLabel(position as any, labelColor);
-      this.worldMapScene.scene.add(label);
+      this.scene.add(label);
     }
   }
 }
