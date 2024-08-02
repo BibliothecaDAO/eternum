@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export const borderHexMaterial = new THREE.MeshStandardMaterial({
+export const interactiveHexMaterial = new THREE.MeshStandardMaterial({
   color: "green",
   vertexColors: false,
   transparent: true,

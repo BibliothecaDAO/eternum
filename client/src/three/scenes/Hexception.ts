@@ -215,7 +215,7 @@ export default class HexceptionScene extends HexagonScene {
             let withBuilding = false;
             if (isMainHex) {
               console.log("dummy", dummy.position.x, dummy.position.y, dummy.position.z);
-              this.interactiveHexManager.addExploredHex(getHexForWorldPosition(dummy.position));
+              this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
               //highlights.push({ col: q + r / 2, row: r });
               const isCenter = q === 0 && r === 0;
               const building = isCenter

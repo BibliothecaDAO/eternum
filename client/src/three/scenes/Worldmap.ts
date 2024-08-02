@@ -166,7 +166,7 @@ export default class WorldmapScene extends HexagonScene {
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
     }
 
-    this.interactiveHexManager.addExploredHex({ col, row });
+    this.interactiveHexManager.addHex({ col, row });
 
     // Add border hexes for newly explored hex
     const neighborOffsets = row % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
@@ -177,7 +177,7 @@ export default class WorldmapScene extends HexagonScene {
       const isNeighborExplored = this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
 
       if (!isNeighborExplored) {
-        this.interactiveHexManager.addBorderHex({ col: neighborCol, row: neighborRow });
+        this.interactiveHexManager.addHex({ col: neighborCol, row: neighborRow });
       }
     });
 
@@ -263,10 +263,10 @@ export default class WorldmapScene extends HexagonScene {
           });
 
           if (isBorder) {
-            this.interactiveHexManager.addBorderHex({ col: globalCol, row: globalRow });
+            this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
           }
         } else {
-          this.interactiveHexManager.addExploredHex({ col: globalCol, row: globalRow });
+          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
         }
 
         const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);

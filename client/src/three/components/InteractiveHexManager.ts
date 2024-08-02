@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
-import { borderHexMaterial } from "@/three/shaders/borderHexMaterial";
-import { transparentHexMaterial } from "@/three/shaders/transparentHexMaterial";
+import { interactiveHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { getHexagonCoordinates, getWorldPositionForHex } from "@/ui/utils/utils";
 import { HEX_SIZE } from "../scenes/HexagonScene";
 
@@ -9,10 +8,8 @@ const matrix = new THREE.Matrix4();
 const position = new THREE.Vector3();
 export class InteractiveHexManager {
   private scene: THREE.Scene;
-  private borderHexes: Set<string> = new Set();
-  private exploredHexes: Set<string> = new Set();
-  private borderInstanceMesh: THREE.InstancedMesh | null = null;
-  private exploredInstanceMesh: THREE.InstancedMesh | null = null;
+  private hexes: Set<string> = new Set();
+  private instanceMesh: THREE.InstancedMesh | null = null;
   private auraMesh: THREE.Mesh | null = null;
 
   constructor(scene: THREE.Scene) {
@@ -43,8 +40,8 @@ export class InteractiveHexManager {
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
-    if (!this.borderInstanceMesh || !this.exploredInstanceMesh) return;
-    const intersects = raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
+    if (!this.instanceMesh) return;
+    const intersects = raycaster.intersectObjects([this.instanceMesh], true);
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
@@ -73,9 +70,9 @@ export class InteractiveHexManager {
   }
 
   public onDoubleClick(raycaster: THREE.Raycaster) {
-    if (!this.borderInstanceMesh || !this.exploredInstanceMesh) return;
+    if (!this.instanceMesh) return;
 
-    const intersects = raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
+    const intersects = raycaster.intersectObjects([this.instanceMesh], true);
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
@@ -95,65 +92,40 @@ export class InteractiveHexManager {
     }
   }
 
-  addBorderHex(hex: { col: number; row: number }) {
-    this.borderHexes.add(`${hex.col},${hex.row}`);
-  }
-
-  addExploredHex(hex: { col: number; row: number }) {
-    // Fixed typo in method name
-    this.exploredHexes.add(`${hex.col},${hex.row}`);
+  addHex(hex: { col: number; row: number }) {
+    this.hexes.add(`${hex.col},${hex.row}`);
   }
 
   clearHexes() {
-    this.borderHexes.clear();
-    this.exploredHexes.clear();
+    this.hexes.clear();
   }
 
   renderHexes() {
     // Remove existing instanced mesh if it exists
-    if (this.borderInstanceMesh) {
-      this.scene.remove(this.borderInstanceMesh);
-      this.borderInstanceMesh.dispose();
+    if (this.instanceMesh) {
+      this.scene.remove(this.instanceMesh);
+      this.instanceMesh.dispose();
     }
 
-    if (this.exploredInstanceMesh) {
-      this.scene.remove(this.exploredInstanceMesh);
-      this.exploredInstanceMesh.dispose();
-    }
-
-    // Create new highlight meshes using InstancedMesh
+    // Create new highlight mesh using InstancedMesh
     const bigHexagonShape = createHexagonShape(HEX_SIZE);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
-    const borderInstanceCount = this.borderHexes.size;
-    const exploredInstanceCount = this.exploredHexes.size;
-    this.borderInstanceMesh = new THREE.InstancedMesh(hexagonGeometry, borderHexMaterial, borderInstanceCount);
-    this.exploredInstanceMesh = new THREE.InstancedMesh(hexagonGeometry, transparentHexMaterial, exploredInstanceCount);
+    const instanceCount = this.hexes.size;
+    this.instanceMesh = new THREE.InstancedMesh(hexagonGeometry, interactiveHexMaterial, instanceCount);
 
     const dummy = new THREE.Object3D();
     let index = 0;
-    this.borderHexes.forEach((hexString) => {
+    this.hexes.forEach((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
       const position = getWorldPositionForHex({ col, row });
       dummy.position.set(position.x, 0.1, position.z);
       dummy.rotation.x = -Math.PI / 2;
       dummy.updateMatrix();
-      this.borderInstanceMesh!.setMatrixAt(index, dummy.matrix);
+      this.instanceMesh!.setMatrixAt(index, dummy.matrix);
       index++;
     });
 
-    index = 0; // Reset index for explored hexes
-    this.exploredHexes.forEach((hexString) => {
-      const [col, row] = hexString.split(",").map(Number);
-      const position = getWorldPositionForHex({ col, row });
-      dummy.position.set(position.x, 0.1, position.z);
-      dummy.rotation.x = -Math.PI / 2;
-      dummy.updateMatrix();
-      this.exploredInstanceMesh!.setMatrixAt(index, dummy.matrix);
-      index++;
-    });
-
-    this.scene.add(this.borderInstanceMesh);
-    this.scene.add(this.exploredInstanceMesh);
+    this.scene.add(this.instanceMesh);
   }
 
   update() {
