@@ -114,7 +114,7 @@ const useUIStore = create(
     mouseCoords: { x: 0, y: 0 },
     setMouseCoords: (coords) => set({ mouseCoords: coords }),
     moveCameraToRealm: (realmId, speed = undefined) => {
-      const pos = getRealmUIPosition(BigInt(realmId));
+      const pos = getRealmUIPosition(realmId);
       const x = pos.x;
       const y = pos.y * -1;
       const targetPos = new Vector3(x, 0, y);

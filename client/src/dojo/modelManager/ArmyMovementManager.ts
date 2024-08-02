@@ -1,5 +1,6 @@
 import {
   EternumGlobalConfig,
+  ID,
   ResourcesIds,
   WORLD_CONFIG_ID,
   getNeighborHexes,
@@ -7,7 +8,7 @@ import {
   neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
 import { FELT_CENTER } from "@/ui/config";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { Component, Entity, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
@@ -74,12 +75,12 @@ export class ArmyMovementManager {
   private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
   private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
   private entity: Entity;
-  private entityId: bigint;
+  private entityId: ID;
   private address: bigint;
   private fishManager: ProductionManager;
   private wheatManager: ProductionManager;
 
-  constructor(private dojo: SetupResult, entityId: number) {
+  constructor(private dojo: SetupResult, entityId: ID) {
     const {
       Tile,
       Stamina,
@@ -100,7 +101,7 @@ export class ArmyMovementManager {
     this.entityOwnerModel = EntityOwner;
     this.staminaConfigModel = StaminaConfig;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
-    this.entityId = BigInt(entityId);
+    this.entityId = entityId;
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
     const entityOwnerId = getComponentValue(EntityOwner, this.entity);
     this.wheatManager = new ProductionManager(
@@ -108,14 +109,14 @@ export class ArmyMovementManager {
       Resource,
       BuildingQuantityv2,
       entityOwnerId!.entity_owner_id,
-      254n,
+      ResourcesIds.Wheat,
     );
     this.fishManager = new ProductionManager(
       Production,
       Resource,
       BuildingQuantityv2,
       entityOwnerId!.entity_owner_id,
-      253n,
+      ResourcesIds.Fish,
     );
   }
 
@@ -152,14 +153,17 @@ export class ArmyMovementManager {
 
   getStamina() {
     let staminaEntity = getComponentValue(this.staminaModel, this.entity);
+    if (!staminaEntity) {
+      throw Error("no stamina for entity");
+    }
     const armyEntity = getComponentValue(this.armyModel, this.entity);
 
     const currentArmiesTick = getCurrentArmiesTick();
 
-    if (currentArmiesTick !== staminaEntity?.last_refill_tick) {
+    if (currentArmiesTick !== Number(staminaEntity?.last_refill_tick)) {
       staminaEntity = {
         ...staminaEntity!,
-        last_refill_tick: currentArmiesTick,
+        last_refill_tick: BigInt(currentArmiesTick),
         amount: this._maxStamina(armyEntity!.troops),
       };
     }
@@ -277,11 +281,11 @@ export class ArmyMovementManager {
     this.tileModel.addOverride(overrideId, {
       entity,
       value: {
-        col: BigInt(col),
-        row: BigInt(row),
+        col: col,
+        row: row,
         explored_by_id: this.entityId,
-        explored_at: Date.now() / 1000,
-        biome: 0,
+        explored_at: BigInt(Date.now() / 1000),
+        biome: "None",
       },
     });
   };

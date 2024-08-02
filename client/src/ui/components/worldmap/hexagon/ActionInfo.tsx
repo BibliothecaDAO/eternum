@@ -46,7 +46,7 @@ export const ActionInfo = () => {
             </div>
           )}
           <StaminaResourceCost
-            travelingEntityId={BigInt(selectedEntityId!)}
+            travelingEntityId={selectedEntityId!}
             isExplored={isExplored}
             travelLength={travelPath!.path.length - 1}
           />

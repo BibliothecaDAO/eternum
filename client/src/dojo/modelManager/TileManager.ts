@@ -1,5 +1,5 @@
-import { BuildingStringToEnum, BuildingType } from "@bibliothecadao/eternum";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { BuildingStringToEnum, BuildingType, ID } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   Component,
   Has,
@@ -54,8 +54,8 @@ export class TileManager {
     const builtBuildings = Array.from(
       runQuery([
         Has(this.models.building),
-        HasValue(this.models.building, { outer_col: BigInt(this.col), outer_row: BigInt(this.row) }),
-        NotValue(this.models.building, { entity_id: 0n }),
+        HasValue(this.models.building, { outer_col: this.col, outer_row: this.row }),
+        NotValue(this.models.building, { entity_id: 0 }),
       ]),
     );
 
@@ -109,7 +109,7 @@ export class TileManager {
   };
 
   private _optimisticBuilding = (
-    entityId: bigint,
+    entityId: ID,
     col: number,
     row: number,
     buildingType: BuildingType,
@@ -120,13 +120,13 @@ export class TileManager {
     this.models.building.addOverride(overrideId, {
       entity,
       value: {
-        outer_col: BigInt(this.col),
-        outer_row: BigInt(this.row),
-        inner_col: BigInt(col),
-        inner_row: BigInt(row),
+        outer_col: this.col,
+        outer_row: this.row,
+        inner_col: col,
+        inner_row: row,
         category: BuildingType[buildingType],
         produced_resource_type: resourceType ? resourceType : 0,
-        bonus_percent: 0n,
+        bonus_percent: 0,
         entity_id: entityId,
         outer_entity_id: entityId,
       },
@@ -134,23 +134,23 @@ export class TileManager {
     return overrideId;
   };
 
-  private _optimisticDestroy = (entityId: bigint, col: number, row: number) => {
+  private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
     const overrideId = uuid();
-    const realmPosition = getComponentValue(this.models.position, getEntityIdFromKeys([entityId]));
+    const realmPosition = getComponentValue(this.models.position, getEntityIdFromKeys([BigInt(entityId)]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
     this.models.building.addOverride(overrideId, {
       entity,
       value: {
-        outer_col: BigInt(outercol),
-        outer_row: BigInt(outerrow),
-        inner_col: BigInt(col),
-        inner_row: BigInt(row),
+        outer_col: outercol,
+        outer_row: outerrow,
+        inner_col: col,
+        inner_row: row,
         category: "None",
         produced_resource_type: 0,
-        bonus_percent: 0n,
-        entity_id: 0n,
-        outer_entity_id: 0n,
+        bonus_percent: 0,
+        entity_id: 0,
+        outer_entity_id: 0,
       },
     });
     return overrideId;

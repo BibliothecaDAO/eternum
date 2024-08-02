@@ -20,7 +20,7 @@ export const ArmyInfoLabel = () => {
   const { getArmy } = getArmyByEntityId();
 
   const army = useMemo(() => {
-    if (hoveredArmyEntityId) return getArmy(BigInt(hoveredArmyEntityId));
+    if (hoveredArmyEntityId) return getArmy(hoveredArmyEntityId);
     return undefined;
   }, [hoveredArmyEntityId, getArmy]);
 
