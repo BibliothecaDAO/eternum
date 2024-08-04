@@ -284,7 +284,7 @@ export class ArmyMovementManager {
         col: col,
         row: row,
         explored_by_id: this.entityId,
-        explored_at: BigInt(Date.now() / 1000),
+        explored_at: BigInt(Math.floor(Date.now() / 1000)),
         biome: "None",
       },
     });

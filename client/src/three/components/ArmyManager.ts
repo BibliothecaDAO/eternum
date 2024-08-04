@@ -58,11 +58,10 @@ export class ArmyManager {
           this.mesh.count = 0;
           this.mesh.instanceMatrix.needsUpdate = true;
 
-          this.scene.add(this.mesh);
           this.isLoaded = true;
 
           this.mixer = new THREE.AnimationMixer(gltf.scene);
-          const action = this.mixer.clipAction(gltf.animations[0]);
+          // const action = this.mixer.clipAction(gltf.animations[0]);
           // cannot play is count = 0
           // action.play();
           // action.paused = true;
@@ -146,6 +145,11 @@ export class ArmyManager {
     const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
     this.labels.set(entityId, label);
     this.scene.add(label);
+
+    // Add the mesh to the scene if it's the first army
+    if (this.mesh.count === 1) {
+      this.scene.add(this.mesh);
+    }
   }
 
   moveArmy(entityId: number, hexCoords: { col: number; row: number }) {
