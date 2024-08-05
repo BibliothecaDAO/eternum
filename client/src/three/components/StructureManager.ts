@@ -6,6 +6,7 @@ import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { StructureSystemUpdate } from "../systems/types";
 import { FELT_CENTER } from "@/ui/config";
+import { ID } from "@bibliothecadao/eternum";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -75,7 +76,7 @@ class Structures {
   private structures: Map<number, number> = new Map();
   counter: number = 0;
 
-  addStructure(entityId: number): number {
+  addStructure(entityId: ID): number {
     if (!this.structures.has(entityId)) {
       this.structures.set(entityId, this.counter);
       this.counter++;
@@ -83,7 +84,7 @@ class Structures {
     return this.structures.get(entityId)!;
   }
 
-  getStructureIndex(entityId: number) {
+  getStructureIndex(entityId: ID) {
     return this.structures.get(entityId);
   }
 }

@@ -30,7 +30,7 @@ export class SystemManager {
           const isMine = this.isOwner(owner);
 
           return {
-            entityId: Number(army.entity_id),
+            entityId: army.entity_id,
             hexCoords: this.getHexCoords(update.value),
             isMine,
           };
@@ -52,7 +52,7 @@ export class SystemManager {
           const categoryKey = structure.category as keyof typeof StructureType;
 
           return {
-            entityId: Number(structure.entity_id),
+            entityId: structure.entity_id,
             hexCoords: this.getHexCoords(update.value),
             structureType: StructureType[categoryKey],
             isMine,

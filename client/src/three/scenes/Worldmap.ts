@@ -5,7 +5,7 @@ import { SetupResult } from "@/dojo/setup";
 import { FELT_CENTER } from "@/ui/config";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { Biome, BiomeType } from "../components/Biome";
-import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { GUIManager } from "../helpers/GUIManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { throttle } from "lodash";
@@ -111,7 +111,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private onRightClick(selectedEntityId: number | undefined) {
+  private onRightClick(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {
       this.clearEntitySelection();
       return;
