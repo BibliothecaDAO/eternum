@@ -130,7 +130,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const create_building = async (props: SystemProps.CreateBuildingProps) => {
     console.log({ props });
-    return;
     await provider.create_building(props);
   };
 
