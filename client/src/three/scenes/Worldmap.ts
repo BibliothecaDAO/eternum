@@ -72,27 +72,41 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Structure.onUpdate((value) => this.structureManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
 
-    this.inputManager.addListener("mousemove", throttle(this.armyManager.onMouseMove, 10));
+    this.inputManager.addListener(
+      "mousemove",
+      throttle((raycaster) => {
+        const entityId = this.armyManager.onMouseMove(raycaster);
+        this.onArmyMouseMove(entityId);
+      }, 10),
+    );
     this.inputManager.addListener("contextmenu", (raycaster) => {
       const selectedEntityId = this.armyManager.onRightClick(raycaster);
-      this.onRightClick(selectedEntityId);
+      this.onArmyRightClick(selectedEntityId);
     });
   }
 
+  private onArmyMouseMove(entityId: ID | undefined) {
+    if (entityId) {
+      this.state.setHoveredArmyEntityId(entityId);
+    } else {
+      this.state.setHoveredArmyEntityId(null);
+    }
+  }
+
   // methods needed to add worldmap specific behavior to the click events
-  protected onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }) {
+  protected onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
       this.state.updateHoveredHex(hoveredHex);
     }
   }
 
-  protected onDoubleClick(hexCoords: HexPosition) {
+  protected onHexagonDoubleClick(hexCoords: HexPosition) {
     console.log("click");
     this.sceneManager.switchScene("hexception", hexCoords);
   }
 
-  protected onClick(hexCoords: HexPosition) {
+  protected onHexagonClick(hexCoords: HexPosition) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
@@ -111,7 +125,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private onRightClick(selectedEntityId: ID | undefined) {
+  private onArmyRightClick(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {
       this.clearEntitySelection();
       return;
@@ -131,18 +145,6 @@ export default class WorldmapScene extends HexagonScene {
 
   setup() {
     this.moveCameraToURLLocation();
-  }
-
-  public updateStructures(update: StructureSystemUpdate) {
-    const col = update.hexCoords.col - FELT_CENTER;
-    const row = update.hexCoords.row - FELT_CENTER;
-
-    if (!this.structures.has(col)) {
-      this.structures.set(col, new Set());
-    }
-    if (!this.structures.get(col)!.has(row)) {
-      this.structures.get(col)!.add(row);
-    }
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {

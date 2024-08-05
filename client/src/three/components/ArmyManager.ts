@@ -17,7 +17,6 @@ export class ArmyManager {
   private scene: THREE.Scene;
   private instancedModel: InstancedModel | undefined;
   private dummy: THREE.Mesh;
-  private isLoaded: boolean = false;
   loadPromise: Promise<void>;
   private animationClip: THREE.AnimationClip | undefined;
   private mixer: THREE.AnimationMixer | undefined;
@@ -28,11 +27,9 @@ export class ArmyManager {
   private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
   private labels: Map<number, THREE.Points> = new Map<number, THREE.Points>();
-  private state: AppStore;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.state = useUIStore.getState();
     this.dummy = new THREE.Mesh();
     this.mesh = new THREE.InstancedMesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial(), 0);
     this.scale = new THREE.Vector3(0.005, 0.005, 0.005);
@@ -59,8 +56,6 @@ export class ArmyManager {
           this.mesh.count = 0;
           this.mesh.instanceMatrix.needsUpdate = true;
 
-          this.isLoaded = true;
-
           this.mixer = new THREE.AnimationMixer(gltf.scene);
           // const action = this.mixer.clipAction(gltf.animations[0]);
           // cannot play is count = 0
@@ -85,11 +80,9 @@ export class ArmyManager {
       const instanceId = intersects[0].instanceId;
       if (instanceId !== undefined) {
         const entityId = this.mesh.userData.entityIdMap[instanceId];
-        this.state.setHoveredArmyEntityId(entityId);
-        return;
+        return entityId;
       }
     }
-    this.state.setHoveredArmyEntityId(null);
   }
 
   public onRightClick(raycaster: THREE.Raycaster) {

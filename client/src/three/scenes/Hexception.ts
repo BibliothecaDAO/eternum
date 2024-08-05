@@ -122,11 +122,11 @@ export default class HexceptionScene extends HexagonScene {
     this.updateHexceptionGrid(4);
   }
 
-  protected onClick(hexCoords: HexPosition): void {}
-  protected onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {
+  protected onHexagonClick(hexCoords: HexPosition): void {}
+  protected onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {
     console.log(hoveredHex);
   }
-  protected onDoubleClick(hexCoords: HexPosition): void {}
+  protected onHexagonDoubleClick(hexCoords: HexPosition): void {}
 
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();

@@ -126,22 +126,22 @@ export abstract class HexagonScene {
       "mousemove",
       throttle((raycaster) => {
         const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
-        hoveredHex && this.onMouseMove(hoveredHex);
+        hoveredHex && this.onHexagonMouseMove(hoveredHex);
       }, 100),
     );
     this.inputManager.addListener("dblclick", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onDoubleClick(clickedHex);
+      clickedHex && this.onHexagonDoubleClick(clickedHex);
     });
     this.inputManager.addListener("click", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onClick(clickedHex);
+      clickedHex && this.onHexagonClick(clickedHex);
     });
   }
 
-  protected abstract onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void;
-  protected abstract onDoubleClick(hexCoords: HexPosition): void;
-  protected abstract onClick(hexCoords: HexPosition): void;
+  protected abstract onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void;
+  protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
+  protected abstract onHexagonClick(hexCoords: HexPosition): void;
 
   public getScene() {
     return this.scene;
