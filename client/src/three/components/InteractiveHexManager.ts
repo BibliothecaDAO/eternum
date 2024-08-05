@@ -71,15 +71,13 @@ export class InteractiveHexManager {
 
   public onDoubleClick(raycaster: THREE.Raycaster) {
     if (!this.instanceMesh) return;
-
     const intersects = raycaster.intersectObjects([this.instanceMesh], true);
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
-
       if (intersectedObject instanceof THREE.InstancedMesh) {
         const instanceId = intersect.instanceId;
-        if (instanceId) {
+        if (instanceId >= 0) {
           return getHexagonCoordinates(intersectedObject, instanceId);
         }
       }

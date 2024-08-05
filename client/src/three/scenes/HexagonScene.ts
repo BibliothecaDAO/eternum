@@ -69,7 +69,7 @@ export abstract class HexagonScene {
     this.camera = controls.object as THREE.PerspectiveCamera;
     this.dojo = dojoContext;
     this.locationManager = new LocationManager();
-    this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
+    this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.systemManager = new SystemManager(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
@@ -127,7 +127,7 @@ export abstract class HexagonScene {
       throttle((raycaster) => {
         const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
         hoveredHex && this.onMouseMove(hoveredHex);
-      }, 10),
+      }, 100),
     );
     this.inputManager.addListener("dblclick", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);

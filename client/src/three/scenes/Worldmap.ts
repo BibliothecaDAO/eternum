@@ -49,7 +49,7 @@ export default class WorldmapScene extends HexagonScene {
     mouse: THREE.Vector2,
     sceneManager: SceneManager,
   ) {
-    super("Worldmap", controls, dojoContext, mouse, raycaster, sceneManager);
+    super("worldmap", controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -88,6 +88,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onDoubleClick(hexCoords: HexPosition) {
+    console.log("click");
     this.sceneManager.switchScene("hexception", hexCoords);
   }
 

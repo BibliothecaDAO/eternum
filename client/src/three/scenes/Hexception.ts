@@ -54,7 +54,7 @@ export default class HexceptionScene extends HexagonScene {
     raycaster: THREE.Raycaster,
     sceneManager: SceneManager,
   ) {
-    super("Hexception", controls, dojoContext, mouse, raycaster, sceneManager);
+    super("hexception", controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.biome = new Biome();
 
@@ -123,7 +123,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   protected onClick(hexCoords: HexPosition): void {}
-  protected onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {}
+  protected onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {
+    console.log(hoveredHex);
+  }
   protected onDoubleClick(hexCoords: HexPosition): void {}
 
   updateHexceptionGrid(radius: number) {

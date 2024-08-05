@@ -4,9 +4,13 @@ import { TransitionManager } from "./components/TransitionManager";
 export type SceneName = string;
 
 export class SceneManager {
-  public currentScene: SceneName = "worldmap";
+  private currentScene: SceneName = "worldmap";
   private scenes = new Map<SceneName, any>();
   constructor(private transitionManager: TransitionManager) {}
+
+  getCurrentScene() {
+    return this.currentScene;
+  }
 
   _updateCurrentScene(name: SceneName) {
     this.currentScene = name;

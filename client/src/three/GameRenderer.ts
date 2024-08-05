@@ -23,8 +23,9 @@ export default class GameRenderer {
 
   private locationManager!: LocationManager;
 
-  private setupURLChangeListener() {
+  private setupListeners() {
     window.addEventListener("urlChanged", this.handleURLChange);
+    window.addEventListener("resize", this.onWindowResize.bind(this));
   }
 
   private handleURLChange = () => {
@@ -122,7 +123,7 @@ export default class GameRenderer {
   }
 
   initScene() {
-    this.setupURLChangeListener();
+    this.setupListeners();
 
     document.body.style.background = "black";
     document.body.appendChild(this.renderer.domElement);
@@ -194,6 +195,7 @@ export default class GameRenderer {
   }
 
   onWindowResize() {
+    console.log("resize");
     const container = document.getElementById("three-container");
     if (container) {
       const width = container.clientWidth;
