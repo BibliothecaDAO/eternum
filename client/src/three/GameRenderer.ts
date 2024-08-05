@@ -142,7 +142,7 @@ export default class GameRenderer {
     this.controls.addEventListener(
       "change",
       _.throttle(() => {
-        if (this.sceneManager?.currentScene === "worldmap") {
+        if (this.sceneManager?.getCurrentScene() === "worldmap") {
           this.worldmapScene.updateVisibleChunks();
         }
       }, 30),
@@ -177,7 +177,7 @@ export default class GameRenderer {
       case "e":
         break;
       case "Escape":
-        if (this.sceneManager?.currentScene === "hexception") {
+        if (this.sceneManager?.getCurrentScene() === "hexception") {
           this.sceneManager.switchScene("worldmap");
         }
         break;
@@ -187,7 +187,7 @@ export default class GameRenderer {
   }
 
   switchScene() {
-    if (this.sceneManager.currentScene === "worldmap") {
+    if (this.sceneManager?.getCurrentScene() === "worldmap") {
       this.sceneManager.switchScene("hexception");
     } else {
       this.sceneManager.switchScene("worldmap");
@@ -221,7 +221,7 @@ export default class GameRenderer {
       this.controls.update();
     }
 
-    if (this.sceneManager.currentScene === "worldmap") {
+    if (this.sceneManager?.getCurrentScene() === "worldmap") {
       this.worldmapScene.update(deltaTime);
       // this.hexGrid.updateVisibleChunks();
       this.renderer.render(this.worldmapScene.getScene(), this.camera);

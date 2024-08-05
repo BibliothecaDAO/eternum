@@ -77,7 +77,7 @@ export class InteractiveHexManager {
       const intersectedObject = intersect.object;
       if (intersectedObject instanceof THREE.InstancedMesh) {
         const instanceId = intersect.instanceId;
-        if (instanceId >= 0) {
+        if (instanceId !== undefined) {
           return getHexagonCoordinates(intersectedObject, instanceId);
         }
       }
