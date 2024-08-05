@@ -131,9 +131,12 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   protected onHexagonClick(hexCoords: HexPosition): void {
+    console.log({ hexCoords });
+    const normalizedCoords = { col: BUILDINGS_CENTER[0] - hexCoords.col, row: BUILDINGS_CENTER[1] - hexCoords.row };
+    console.log({ normalizedCoords });
     const buildingType = this.buildingPreview?.getPreviewBuilding();
-    if (buildingType && !this.tileManager.isHexOccupied(hexCoords)) {
-      this.tileManager.placeBuilding(buildingType.type, hexCoords, buildingType.resource);
+    if (buildingType && !this.tileManager.isHexOccupied(normalizedCoords)) {
+      this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
     }
   }
   protected onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {
