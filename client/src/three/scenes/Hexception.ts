@@ -18,6 +18,7 @@ import { SceneManager } from "../SceneManager";
 import { HexPosition } from "@/types";
 import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING, HexagonScene } from "./HexagonScene";
 import { BuildingPreview } from "../components/BuildingPreview";
+import { BUILDINGS_CENTER, TileManager } from "@/dojo/modelManager/TileManager";
 
 export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -46,6 +47,7 @@ export default class HexceptionScene extends HexagonScene {
   private biome!: Biome;
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
+  private tileManager: TileManager;
 
   constructor(
     controls: MapControls,
@@ -68,6 +70,8 @@ export default class HexceptionScene extends HexagonScene {
 
     this.loadBuildingModels();
     this.loadBiomeModels(900);
+
+    this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
 
     this.setup({ col: 0, row: 0 });
 
@@ -121,12 +125,18 @@ export default class HexceptionScene extends HexagonScene {
 
     this.centerColRow = [this.locationManager.getCol()! + FELT_CENTER, this.locationManager.getRow()! + FELT_CENTER];
 
+    this.tileManager.setTile(hexCoords);
+
     this.updateHexceptionGrid(4);
   }
 
-  protected onHexagonClick(hexCoords: HexPosition): void {}
+  protected onHexagonClick(hexCoords: HexPosition): void {
+    const buildingType = this.buildingPreview?.getPreviewBuilding();
+    if (buildingType && !this.tileManager.isHexOccupied(hexCoords)) {
+      this.tileManager.placeBuilding(buildingType.type, hexCoords, buildingType.resource);
+    }
+  }
   protected onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {
-    console.log(hoveredHex);
     this.buildingPreview?.setBuildingPosition(new THREE.Vector3(hoveredHex.x, 0, hoveredHex.z));
   }
   protected onHexagonDoubleClick(hexCoords: HexPosition): void {}
@@ -181,8 +191,9 @@ export default class HexceptionScene extends HexagonScene {
         [-0.5, -13.5], //0, -1
         [6.5, -7.5], //1, -1
       ];
-      const BUILDINGS_CENTER = [10, 10];
       const buildings = [];
+      const existingBuildings = this.tileManager.existingBuildings();
+      console.log({ existingBuildings });
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
       const label = new THREE.Group();
       this.scene.add(label);
@@ -217,18 +228,21 @@ export default class HexceptionScene extends HexagonScene {
             if (isMainHex) {
               this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
               //highlights.push({ col: q + r / 2, row: r });
-              const isCenter = q === 0 && r === 0;
-              const building = isCenter
-                ? { category: "Castle" }
-                : getComponentValue(
-                    this.dojo.components.Building,
-                    getEntityIdFromKeys([
-                      BigInt(this.centerColRow[0]),
-                      BigInt(this.centerColRow[1]),
-                      BigInt(BUILDINGS_CENTER[0] - q),
-                      BigInt(BUILDINGS_CENTER[1] - r),
-                    ]),
-                  );
+              // const isCenter = q === 0 && r === 0;
+              // const building = isCenter
+              //   ? { category: "Castle" }
+              //   : getComponentValue(
+              //       this.dojo.components.Building,
+              //       getEntityIdFromKeys([
+              //         BigInt(this.centerColRow[0]),
+              //         BigInt(this.centerColRow[1]),
+              //         BigInt(BUILDINGS_CENTER[0] - q),
+              //         BigInt(BUILDINGS_CENTER[1] - r),
+              //       ]),
+              //     );
+              const building = existingBuildings.find(
+                (value) => value.col === BUILDINGS_CENTER[0] - q && value.row === BUILDINGS_CENTER[1] - r,
+              );
               if (building) {
                 withBuilding = true;
                 const buildingObj = dummy.clone();

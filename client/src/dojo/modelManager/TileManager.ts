@@ -15,6 +15,9 @@ import { HexPosition } from "@/types";
 import { uuid } from "@latticexyz/utils";
 import { HexType } from "@/hooks/helpers/useHexPosition";
 import { CairoOption, CairoOptionVariant } from "starknet";
+import { FELT_CENTER } from "@/ui/config";
+
+export const BUILDINGS_CENTER = [10, 10];
 
 export class TileManager {
   private models: {
@@ -50,6 +53,11 @@ export class TileManager {
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
   }
 
+  setTile(hexCoords: HexPosition) {
+    this.col = hexCoords.col + FELT_CENTER;
+    this.row = hexCoords.row + FELT_CENTER;
+  }
+
   existingBuildings = () => {
     const builtBuildings = Array.from(
       runQuery([
@@ -59,24 +67,32 @@ export class TileManager {
       ]),
     );
 
-    return builtBuildings.map((entity) => {
+    const buildings = builtBuildings.map((entity) => {
       const productionModelValue = getComponentValue(this.models.building, entity);
-      const type = BuildingStringToEnum[productionModelValue!.category as keyof typeof BuildingStringToEnum];
+      const category = productionModelValue!.category;
 
       return {
         col: Number(productionModelValue?.inner_col),
         row: Number(productionModelValue?.inner_row),
-        type: type as BuildingType,
-        entity: entity,
+        category,
         resource: productionModelValue?.produced_resource_type,
       };
     });
+
+    buildings.push({
+      col: BUILDINGS_CENTER[0],
+      row: BUILDINGS_CENTER[1],
+      category: "Castle",
+      resource: undefined,
+    });
+
+    return buildings;
   };
 
-  isHexOccupied = (col: number, row: number) => {
+  isHexOccupied = (hexCoords: HexPosition) => {
     const building = getComponentValue(
       this.models.building,
-      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(col), BigInt(row)]),
+      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
     );
     return building?.category !== undefined;
   };
@@ -156,9 +172,10 @@ export class TileManager {
     return overrideId;
   };
 
-  placeBuilding = async (buildingType: BuildingType, col: number, row: number, resourceType?: number) => {
+  placeBuilding = async (buildingType: BuildingType, hexCoords: HexPosition, resourceType?: number) => {
     const entityId = this._getOwnerEntityId();
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+    const { col, row } = hexCoords;
 
     // add optimistic rendering
     let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
