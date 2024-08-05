@@ -17,8 +17,9 @@ import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
 import { HexPosition } from "@/types";
 import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING, HexagonScene } from "./HexagonScene";
+import { BuildingPreview } from "../components/BuildingPreview";
 
-const buildingModelPaths: Record<BuildingType, string> = {
+export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
@@ -44,8 +45,7 @@ export default class HexceptionScene extends HexagonScene {
   centerColRow: number[] = [0, 0];
   private biome!: Biome;
   private highlights: { col: number; row: number }[] = [];
-  private previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null = null;
-  private buildingModel!: THREE.Object3D | null;
+  private buildingPreview: BuildingPreview | null = null;
 
   constructor(
     controls: MapControls,
@@ -57,6 +57,7 @@ export default class HexceptionScene extends HexagonScene {
     super("hexception", controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.biome = new Biome();
+    this.buildingPreview = new BuildingPreview(this.scene);
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
@@ -74,10 +75,11 @@ export default class HexceptionScene extends HexagonScene {
       (state) => state.previewBuilding,
       (building) => {
         if (building) {
-          this.previewBuilding = building;
+          console.log("Setting preview building", building);
+          this.buildingPreview?.setPreviewBuilding(building as any);
           this.highlightHexManager.highlightHexes(this.highlights);
         } else {
-          this.previewBuilding = null;
+          this.buildingPreview?.clearPreviewBuilding();
           this.highlightHexManager.highlightHexes([]);
         }
       },
@@ -125,6 +127,7 @@ export default class HexceptionScene extends HexagonScene {
   protected onClick(hexCoords: HexPosition): void {}
   protected onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {
     console.log(hoveredHex);
+    this.buildingPreview?.setBuildingPosition(new THREE.Vector3(hoveredHex.x, 0, hoveredHex.z));
   }
   protected onDoubleClick(hexCoords: HexPosition): void {}
 

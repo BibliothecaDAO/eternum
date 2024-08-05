@@ -127,7 +127,7 @@ export abstract class HexagonScene {
       throttle((raycaster) => {
         const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
         hoveredHex && this.onMouseMove(hoveredHex);
-      }, 100),
+      }, 50),
     );
     this.inputManager.addListener("dblclick", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
