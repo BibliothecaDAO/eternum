@@ -8,6 +8,7 @@ export class InputManager {
   private isDragged = false;
   private mouseX = 0; // Add this flag
   private mouseY = 0;
+  private clickTimer: NodeJS.Timeout | null = null; // Add this property
 
   constructor(
     private sceneName: string,
@@ -23,16 +24,30 @@ export class InputManager {
   addListener(event: ListenerTypes, callback: (raycaster: THREE.Raycaster) => void): void {
     const handler = (e: MouseEvent) => {
       if (this.sceneManager.getCurrentScene() !== this.sceneName) return;
+
       if (event === "click") {
         if (this.isDragged) {
           this.isDragged = false;
           return;
         }
+        // Check if a double-click occurred
+        if (this.clickTimer) {
+          clearTimeout(this.clickTimer);
+          this.clickTimer = null;
+          return; // Suppress the click event
+        }
+        // Set a timer to check for double-click
+        this.clickTimer = setTimeout(() => {
+          this.clickTimer = null;
+          this.raycaster.setFromCamera(this.mouse, this.camera);
+          callback(this.raycaster);
+        }, 200); // Adjust the delay as needed
+      } else {
+        this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        callback(this.raycaster);
       }
-      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      callback(this.raycaster);
     };
     this.listeners.push({ event, handler });
     window.addEventListener(event, handler);
