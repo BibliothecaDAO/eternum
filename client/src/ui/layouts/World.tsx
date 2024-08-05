@@ -44,7 +44,12 @@ export const World = () => {
   }, [realmEntityIds]);
 
   return (
-    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ornate-borders pointer-events-none">
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+      className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ornate-borders pointer-events-none"
+    >
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
       <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
