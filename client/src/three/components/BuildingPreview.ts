@@ -84,4 +84,21 @@ export class BuildingPreview {
       }
     }
   }
+
+  public setBuildingColor(color: THREE.Color) {
+    if (this.previewBuilding) {
+      const model = this.getBuildingModel(this.previewBuilding.type);
+      if (model) {
+        model.traverse((child: any) => {
+          if (child.isMesh) {
+            child.material.color.copy(color);
+          }
+        });
+      }
+    }
+  }
+
+  public resetBuildingColor() {
+    this.setBuildingColor(new THREE.Color(0x00ff00));
+  }
 }
