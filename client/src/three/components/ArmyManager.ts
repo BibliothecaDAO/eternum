@@ -6,6 +6,7 @@ import { getWorldPositionForHex } from "@/ui/utils/utils";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
 import { ArmySystemUpdate } from "../systems/types";
+import { ID } from "@bibliothecadao/eternum";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -123,7 +124,7 @@ export class ArmyManager {
     }
   }
 
-  addArmy(entityId: number, hexCoords: { col: number; row: number }, isMine: boolean) {
+  addArmy(entityId: ID, hexCoords: { col: number; row: number }, isMine: boolean) {
     console.log("add army: ", entityId, hexCoords);
     const index = this.mesh.count;
     this.mesh.count++;
@@ -152,7 +153,7 @@ export class ArmyManager {
     }
   }
 
-  moveArmy(entityId: number, hexCoords: { col: number; row: number }) {
+  moveArmy(entityId: ID, hexCoords: { col: number; row: number }) {
     console.log("move army: ", entityId, hexCoords);
     const index = this.armies.get(entityId);
     if (index === undefined) {

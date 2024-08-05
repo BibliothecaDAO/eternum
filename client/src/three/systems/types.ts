@@ -1,14 +1,14 @@
 import { HexPosition } from "@/types";
-import { StructureType } from "@bibliothecadao/eternum";
+import { ID, StructureType } from "@bibliothecadao/eternum";
 
 export type ArmySystemUpdate = {
-  entityId: number;
+  entityId: ID;
   hexCoords: HexPosition;
   isMine: boolean;
 };
 
 export type StructureSystemUpdate = {
-  entityId: number;
+  entityId: ID;
   hexCoords: HexPosition;
   structureType: StructureType;
   isMine: boolean;
