@@ -83,7 +83,7 @@ export default class HexceptionScene extends HexagonScene {
           this.buildingPreview?.setPreviewBuilding(building as any);
           this.highlightHexManager.highlightHexes(this.highlights);
         } else {
-          this.clearBuildingMode()
+          this.clearBuildingMode();
         }
       },
     );
@@ -141,7 +141,7 @@ export default class HexceptionScene extends HexagonScene {
     const buildingType = this.buildingPreview?.getPreviewBuilding();
     if (buildingType && !this.tileManager.isHexOccupied(normalizedCoords)) {
       this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
-      this.clearBuildingMode()
+      this.clearBuildingMode();
       this.updateHexceptionGrid(4);
     }
   }
