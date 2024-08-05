@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { SceneManager } from "../SceneManager";
 
 type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mouseup" | "mousedown";
 
@@ -8,13 +9,20 @@ export class InputManager {
   private mouseX = 0; // Add this flag
   private mouseY = 0;
 
-  constructor(private raycaster: THREE.Raycaster, private mouse: THREE.Vector2, private camera: THREE.Camera) {
+  constructor(
+    private sceneName: string,
+    private sceneManager: SceneManager,
+    private raycaster: THREE.Raycaster,
+    private mouse: THREE.Vector2,
+    private camera: THREE.Camera,
+  ) {
     window.addEventListener("mousedown", this.handleMouseDown.bind(this));
     window.addEventListener("mouseup", this.handleMouseUp.bind(this));
   }
 
   addListener(event: ListenerTypes, callback: (raycaster: THREE.Raycaster) => void): void {
     const handler = (e: MouseEvent) => {
+      if (this.sceneManager.getCurrentScene() !== this.sceneName) return;
       if (event === "click") {
         if (this.isDragged) {
           this.isDragged = false;
