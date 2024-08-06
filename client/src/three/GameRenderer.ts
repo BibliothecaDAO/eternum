@@ -191,6 +191,7 @@ export default class GameRenderer {
       this.sceneManager.switchScene("hexception");
     } else {
       this.sceneManager.switchScene("worldmap");
+      this.worldmapScene.moveCameraToURLLocation();
     }
   }
 
