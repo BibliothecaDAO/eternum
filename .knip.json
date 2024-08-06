@@ -18,6 +18,6 @@
     "config/bank/index.ts",
 
     "client/src/three/components/FogManager.ts",
-    "client/src/hooks/useUISound.tsx",
+    "client/src/hooks/useUISound.tsx"
   ]
 }

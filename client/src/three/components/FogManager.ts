@@ -5,7 +5,10 @@ export class FogManager {
   private fog: THREE.Fog;
   private fogRadius: number = 30; // Adjust this value to change the size of the clear area
 
-  constructor(private scene: Scene, private camera: THREE.PerspectiveCamera) {
+  constructor(
+    private scene: Scene,
+    private camera: THREE.PerspectiveCamera,
+  ) {
     const fogColor = new THREE.Color(0xcccccc); // Light gray fog
     this.fog = new THREE.Fog(fogColor, 0.1, this.fogRadius);
     //this.scene.fog = this.fog;
