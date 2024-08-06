@@ -53,6 +53,7 @@
     "three-csg-ts": "^3.1.14",
     "three-stdlib": "^2.29.5",
     "use-sound": "^4.0.1",
+    "vitest-canvas-mock": "^0.3.3",
     "wouter": "^2.12.1",
     "zustand": "^4.5.2"
   },
