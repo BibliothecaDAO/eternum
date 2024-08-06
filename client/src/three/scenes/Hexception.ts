@@ -19,6 +19,7 @@ import { HexPosition } from "@/types";
 import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING, HexagonScene } from "./HexagonScene";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { BUILDINGS_CENTER, TileManager } from "@/dojo/modelManager/TileManager";
+import { CSS2DObject } from "three-stdlib";
 
 export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -26,7 +27,7 @@ export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
   [BuildingType.Castle]: "/models/buildings/castle2.glb",
   [BuildingType.Farm]: "/models/buildings/farm.glb",
-  [BuildingType.FishingVillage]: "/models/buildings/farm.glb",
+  [BuildingType.FishingVillage]: "/models/buildings/fishery.glb",
   [BuildingType.FragmentMine]: "/models/buildings/mine.glb",
   [BuildingType.Market]: "/models/buildings/market.glb",
   [BuildingType.Resource]: "/models/buildings/mine.glb",
@@ -35,7 +36,7 @@ export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.TradingPost]: "/models/buildings/market.glb",
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
-  [BuildingType.WorkersHut]: "/models/buildings/stable.glb",
+  [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
 };
 
 const loader = new GLTFLoader();
@@ -223,15 +224,20 @@ export default class HexceptionScene extends HexagonScene {
             dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
             dummy.updateMatrix();
 
-            // const posDiv = document.createElement("div");
-            // posDiv.className = "label";
-            // posDiv.textContent = `${BUILDINGS_CENTER[0] - q}, ${BUILDINGS_CENTER[1] - r}`;
-            // posDiv.style.backgroundColor = "transparent";
+            const { col, row } = getHexForWorldPosition(dummy.position);
+            const normalizedCoords = { col: BUILDINGS_CENTER[0] - col, row: BUILDINGS_CENTER[1] - row };
 
-            // const posLabel = new CSS2DObject(posDiv);
-            // posLabel.position.set(dummy.position.x, dummy.position.y, dummy.position.z);
-            // posLabel.center.set(0, 1);
-            // label.add(posLabel);
+            // if (isMainHex) {
+            //   const posDiv = document.createElement("div");
+            //   posDiv.className = "label";
+            //   posDiv.textContent = `${normalizedCoords.col}, ${normalizedCoords.row}`;
+            //   posDiv.style.backgroundColor = "transparent";
+
+            //   const posLabel = new CSS2DObject(posDiv);
+            //   posLabel.position.set(dummy.position.x, dummy.position.y, dummy.position.z);
+            //   posLabel.center.set(0, 1);
+            //   label.add(posLabel);
+            // }
 
             let withBuilding = false;
             if (isMainHex) {
@@ -250,7 +256,7 @@ export default class HexceptionScene extends HexagonScene {
               //       ]),
               //     );
               const building = existingBuildings.find(
-                (value) => value.col === BUILDINGS_CENTER[0] - q && value.row === BUILDINGS_CENTER[1] - r,
+                (value) => value.col === normalizedCoords.col && value.row === normalizedCoords.row,
               );
               if (building) {
                 withBuilding = true;
