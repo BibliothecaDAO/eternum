@@ -1,4 +1,5 @@
 import {
+  ContractAddress,
   EternumGlobalConfig,
   ID,
   ResourcesIds,
@@ -76,14 +77,11 @@ export class ArmyMovementManager {
   private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
   private entity: Entity;
   private entityId: ID;
-  private address: bigint;
+  private address: ContractAddress;
   private fishManager: ProductionManager;
   private wheatManager: ProductionManager;
 
-  constructor(
-    private dojo: SetupResult,
-    entityId: ID,
-  ) {
+  constructor(private dojo: SetupResult, entityId: ID) {
     const {
       Tile,
       Stamina,
@@ -105,7 +103,7 @@ export class ArmyMovementManager {
     this.staminaConfigModel = StaminaConfig;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
+    this.address = ContractAddress(this.dojo.network.burnerManager.account?.address || 0n);
     const entityOwnerId = getComponentValue(EntityOwner, this.entity);
     this.wheatManager = new ProductionManager(
       Production,
@@ -176,15 +174,15 @@ export class ArmyMovementManager {
   private _canExplore(): boolean {
     const stamina = this.getStamina().amount;
 
-    const currentTick = getCurrentTick();
-
     if (stamina < EternumGlobalConfig.stamina.exploreCost) {
       return false;
     }
-    if (this.fishManager.balance(currentTick) < EternumGlobalConfig.exploration.fishBurn) {
+    const { wheat, fish } = this.getFood();
+
+    if (fish < EternumGlobalConfig.exploration.fishBurn) {
       return false;
     }
-    if (this.wheatManager.balance(currentTick) < EternumGlobalConfig.exploration.wheatBurn) {
+    if (wheat < EternumGlobalConfig.exploration.wheatBurn) {
       return false;
     }
 
@@ -329,8 +327,6 @@ export class ArmyMovementManager {
   };
 
   private _exploreHex = async (path: HexPosition[]) => {
-    // setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
-
     const direction = this._findDirection(path);
     if (direction === undefined) return;
 
@@ -343,7 +339,6 @@ export class ArmyMovementManager {
         signer: this.dojo.network.burnerManager.account!,
       })
       .catch((e) => {
-        // removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
         this.positionModel.removeOverride(overrideId);
         this.staminaModel.removeOverride(overrideId);
       });

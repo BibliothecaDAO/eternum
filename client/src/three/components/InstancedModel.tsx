@@ -1,27 +1,30 @@
 import * as THREE from "three";
 
+const BIG_DETAILS_NAME = "big_details";
+const LAND_NAME = "land";
+const SMALL_DETAILS_NAME = "small_details";
+
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
-  private count: number = 0; // Add a private count property
+  private count: number = 0;
 
   constructor(model: THREE.Group, count: number, enableRaycast: boolean = false) {
     this.group = new THREE.Group();
-    this.count = count; // Initialize the count
+    this.count = count;
 
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        // initial count set max number of instances
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
 
-        if (child.name.includes("big_details") || child.parent?.name.includes("big_details")) {
+        if (child.name.includes(BIG_DETAILS_NAME) || child.parent?.name.includes(BIG_DETAILS_NAME)) {
           tmp.castShadow = true;
-          tmp.name = "big_details";
+          tmp.name = BIG_DETAILS_NAME;
         }
 
-        if (child.name.includes("land") || child.parent?.name.includes("land")) {
+        if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
           tmp.receiveShadow = true;
-          tmp.name = "land";
+          tmp.name = LAND_NAME;
         }
 
         tmp.userData.isInstanceModel = true;
@@ -30,9 +33,8 @@ export default class InstancedModel {
           tmp.raycast = () => {};
         }
 
-        // we can set lower count later if we have less hexes with that biome and change it at any time
         tmp.count = 0;
-        if (!child.name.includes("small_details") && !child.parent?.name.includes("small_details")) {
+        if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
           this.group.add(tmp);
         }
         this.instancedMeshes.push(tmp);
@@ -45,7 +47,7 @@ export default class InstancedModel {
   }
 
   getLandColor() {
-    const land = this.group.children.find((child) => child.name === "land");
+    const land = this.group.children.find((child) => child.name === LAND_NAME);
     if (land instanceof THREE.InstancedMesh) {
       return (land.material as THREE.MeshStandardMaterial).color;
     }
@@ -86,7 +88,7 @@ export default class InstancedModel {
   }
 
   setCount(count: number) {
-    this.count = count; // Update the private count property
+    this.count = count;
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
         child.count = count;

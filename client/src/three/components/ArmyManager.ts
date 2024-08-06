@@ -47,7 +47,6 @@ export class ArmyManager {
           this.dummy = gltf.scene.children[0] as THREE.Mesh;
           this.mesh = new THREE.InstancedMesh(this.dummy.geometry, this.dummy.material, MAX_INSTANCES);
           this.mesh.castShadow = true;
-          // this.mesh.scale.set(0.005, 0.005, 0.005);
 
           this.dummy.position.set(0, 0, 0);
           this.dummy.updateMatrix();
@@ -57,10 +56,6 @@ export class ArmyManager {
           this.mesh.instanceMatrix.needsUpdate = true;
 
           this.mixer = new THREE.AnimationMixer(gltf.scene);
-          // const action = this.mixer.clipAction(gltf.animations[0]);
-          // cannot play is count = 0
-          // action.play();
-          // action.paused = true;
 
           resolve();
         },

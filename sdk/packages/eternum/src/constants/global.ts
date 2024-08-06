@@ -3,9 +3,7 @@ import { ResourcesIds } from "./resources";
 export const EternumGlobalConfig = {
   stamina: {
     travelCost: 5,
-    // testing
-    exploreCost: 0,
-    // exploreCost: 15,
+    exploreCost: 15,
   },
   resources: {
     resourcePrecision: 1000,

@@ -29,7 +29,6 @@ export const useHexPosition = () => {
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
 
   const hexPosition = useMemo(() => {
-    console.log("searchString", searchString);
     const params = new URLSearchParams(searchString);
     const x = params.get("col");
     const y = params.get("row");
@@ -42,7 +41,6 @@ export const useHexPosition = () => {
   ]);
 
   const structure = useMemo(() => {
-    console.log("structures", structures);
     if (structures?.length === 0) return null;
     return getComponentValue(Structure, structures[0]);
   }, [structures]);
