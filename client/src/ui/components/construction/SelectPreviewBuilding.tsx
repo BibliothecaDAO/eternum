@@ -32,10 +32,11 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
+import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
+import { ResourceMiningTypes } from "@/types";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 

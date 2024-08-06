@@ -1,26 +1,17 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import {
-  BUILDING_CAPACITY,
-  BUILDING_POPULATION,
-  BuildingType,
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   ID,
-  RESOURCE_INFORMATION,
-  RESOURCE_INPUTS_SCALED,
   STRUCTURE_COSTS_SCALED,
   StructureType,
-  findResourceById,
 } from "@bibliothecadao/eternum";
-
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React from "react";
 import { StructureCard } from "./StructureCard";

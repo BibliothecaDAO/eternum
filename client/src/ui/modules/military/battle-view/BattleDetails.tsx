@@ -6,7 +6,7 @@ export const BattleDetails = ({ armies }: { armies: (ArmyInfo | undefined)[] | u
   const { getAddressName } = useRealm();
   return (
     <div className="w-full">
-      <div className="p-2 w-full grid grid-cols-2 text-gold border-gold/20 border-gradient clip-angled p-2">
+      <div className="w-full grid grid-cols-2 text-gold border-gold/20 border-gradient clip-angled p-2">
         <div key={0} className="mb-4 tile h-6 text-left border border-gold/20">
           Army
         </div>
