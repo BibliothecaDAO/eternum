@@ -1,5 +1,5 @@
-import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
-import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
+import { HyperstructureFinishedEvent } from "@/dojo/modelManager/LeaderboardManager";
+import { useLeaderBoardStore } from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
@@ -82,7 +82,7 @@ const BuiltStructure = ({
     setModel(model.scene.clone());
 
     if (structureCategory === StructureType.Hyperstructure) {
-      category = finishedHyperstructures.some((evt: HyperstructureEventInterface) => {
+      category = finishedHyperstructures.some((evt: HyperstructureFinishedEvent) => {
         return evt.hyperstructureEntityId == structure.entityId;
       })
         ? structureCategory

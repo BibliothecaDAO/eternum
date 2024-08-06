@@ -2,8 +2,9 @@ import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 import { CoOwners } from "./CoOwners";
 import { Leaderboard } from "./Leaderboard";
+import { ID } from "@bibliothecadao/eternum";
 
-export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructureEntityId: bigint }) => {
+export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID }) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(
@@ -15,7 +16,7 @@ export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructu
             <div>Leaderboard</div>
           </div>
         ),
-        component: <Leaderboard hyperstructureEntityId={hyperstructureEntityId} />,
+        component: <Leaderboard hyperstructureEntityId={hyperstructureEntityId} setSelectedTab={setSelectedTab} />,
       },
       {
         key: "coOwners",
@@ -24,7 +25,7 @@ export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructu
             <div>Co Owners</div>
           </div>
         ),
-        component: <CoOwners />,
+        component: <CoOwners hyperstructureEntityId={hyperstructureEntityId} />,
       },
     ],
     [hyperstructureEntityId],

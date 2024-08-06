@@ -8,11 +8,10 @@ export const NAMESPACE = "eternum";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.tag === name);
-  if (contract) {
-    return contract.address;
-  } else {
-    return "";
+  if (!contract) {
+    throw new Error(`Contract ${name} not found in manifest`);
   }
+  return contract.address;
 };
 
 function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
@@ -874,7 +873,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_co_owners(props: SystemProps.SetCoOwnersProps) {
     const { hyperstructure_entity_id, co_owners, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "set_co_owners",
       calldata: [hyperstructure_entity_id, co_owners],
     });

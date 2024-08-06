@@ -1,25 +1,37 @@
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import useLeaderBoardStore, { PlayerPointsLeaderboardInterface } from "@/hooks/store/useLeaderBoardStore";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
-import { displayAddress } from "@/ui/utils/utils";
+import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import { ContractAddress, getOrderName, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
-import { useCallback, useMemo, useState } from "react";
-import { BigNumberish, cairo } from "starknet";
+import { useMemo, useState } from "react";
 
-export const Leaderboard = ({ hyperstructureEntityId }: { hyperstructureEntityId: bigint }) => {
+export const Leaderboard = ({
+  hyperstructureEntityId,
+  setSelectedTab,
+}: {
+  hyperstructureEntityId: ID;
+  setSelectedTab: (tab: number) => void;
+}) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { set_co_owners },
       components: { HyperstructureUpdate },
     },
   } = useDojo();
 
-  const playerPointsLeaderboard = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
+  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const { getAddressName, getAddressOrder } = useRealm();
+
+  const playerPointsLeaderboard = useMemo(() => {
+    return LeaderboardManager.instance().getPlayersByRank(currentTimestamp || 0, hyperstructureEntityId);
+  }, [currentTimestamp, hyperstructureEntityId]);
 
   const updateEntityIds = useEntityQuery([
     HasValue(HyperstructureUpdate, { hyperstructure_entity_id: hyperstructureEntityId }),
@@ -28,16 +40,6 @@ export const Leaderboard = ({ hyperstructureEntityId }: { hyperstructureEntityId
   const update = useMemo(() => {
     return getComponentValue(HyperstructureUpdate, updateEntityIds[0]);
   }, [updateEntityIds]);
-
-  console.log(update);
-
-  const setCoOwners = useCallback(() => {
-    set_co_owners({
-      signer: account,
-      hyperstructure_entity_id: hyperstructureEntityId,
-      co_owners: [cairo.tuple(account.address, 10000) as Record<number, BigNumberish>],
-    });
-  }, [hyperstructureEntityId, playerPointsLeaderboard]);
 
   const sortingParams = useMemo(() => {
     return [
@@ -72,27 +74,31 @@ export const Leaderboard = ({ hyperstructureEntityId }: { hyperstructureEntityId
           />
         ))}
       </SortPanel>
-      {playerPointsLeaderboard
-        .sort((playerPointsA, playerPointsB) => playerPointsB.totalPoints - playerPointsA.totalPoints)
-        .map((playerPoints: PlayerPointsLeaderboardInterface) => {
-          return (
-            <div className="flex mt-1">
-              <div className={`flex relative group items-center text-xs px-2 p-1 w-full`}>
-                <div className="flex w-full grid grid-cols-4">
-                  <div className="text-sm font-bold">{playerPoints.addressName}</div>
-                  <OrderIcon containerClassName="" order={playerPoints.order} size="xs" />
-                  <div className=" text-sm font-bold">{displayAddress(playerPoints.address)}</div>
-                  <div className="text-right">{playerPoints.totalPoints.toFixed(2)}</div>
-                </div>
+      {playerPointsLeaderboard.map(([address, points], index) => {
+        const playerName = getAddressName(address) || "Player not found";
+
+        const isOwner = address === ContractAddress(account.address);
+
+        const order = getAddressOrder(address) || 0;
+        const orderName = getOrderName(order);
+
+        return (
+          <div key={index} className={`flex mt-1 ${isOwner ? "bg-green/20" : ""} text-xxs text-gold`}>
+            <div className={`flex relative group items-center text-xs px-2 p-1 w-full`}>
+              <div className="flex w-full grid grid-cols-4">
+                <div className="text-sm font-bold">{playerName}</div>
+                <OrderIcon containerClassName="" order={orderName} size="xs" />
+                <div className=" text-sm font-bold">{displayAddress(address.toString(16))}</div>
+                <div className="text-right">{currencyIntlFormat(points)}</div>
               </div>
             </div>
-          );
-        })}
+          </div>
+        );
+      })}
     </>
   ) : (
-    <div>
-      <div>Set the first co-owners</div>
-      <Button onClick={setCoOwners}>Set co-owners</Button>
+    <div className="w-full h-full flex flex-col justify-center items-center">
+      <Button onClick={() => setSelectedTab(1)}>Set first co-owners</Button>
     </div>
   );
 };

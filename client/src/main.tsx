@@ -1,13 +1,13 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.css";
-import { setup } from "./dojo/setup";
-import { DojoProvider } from "./hooks/context/DojoContext";
-import { LoadingScreen } from "./ui/modules/LoadingScreen";
-import { dojoConfig } from "../dojoConfig";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { dojoConfig } from "../dojoConfig";
+import App from "./App";
+import { setup } from "./dojo/setup";
+import { DojoProvider } from "./hooks/context/DojoContext";
+import "./index.css";
+import { LoadingScreen } from "./ui/modules/LoadingScreen";
 
 declare global {
   interface Window {

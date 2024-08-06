@@ -48,8 +48,8 @@ mod hyperstructure_systems {
     #[dojo::event]
     struct HyperstructureCoOwnersChange {
         hyperstructure_entity_id: ID,
-        co_owners: Span<(ContractAddress, u16)>,
         timestamp: u64,
+        co_owners: Span<(ContractAddress, u16)>,
     }
 
 
@@ -126,7 +126,9 @@ mod hyperstructure_systems {
             };
 
             if (resource_was_completed
-                && InternalHyperstructureSystemsImpl::check_if_construction_done(world, hyperstructure_entity_id)) {
+                && InternalHyperstructureSystemsImpl::check_if_construction_done(
+                    world, hyperstructure_entity_id
+                )) {
                 let timestamp = starknet::get_block_timestamp();
                 emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp }),);
             }
@@ -175,7 +177,7 @@ mod hyperstructure_systems {
             assert!(total == 10000, "total percentage must be 10000");
             emit!(
                 world,
-                (HyperstructureCoOwnersChange { hyperstructure_entity_id, co_owners, timestamp })
+                (HyperstructureCoOwnersChange { hyperstructure_entity_id, timestamp, co_owners })
             );
         }
     }
@@ -183,11 +185,15 @@ mod hyperstructure_systems {
     #[generate_trait]
     pub impl InternalHyperstructureSystemsImpl of InternalHyperstructureSystemsTrait {
         fn handle_contribution(
-            world: IWorldDispatcher, hyperstructure_entity_id: ID, contribution: (u8, u128), contributor_entity_id: ID
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: ID,
+            contribution: (u8, u128),
+            contributor_entity_id: ID
         ) -> bool {
             let (resource_type, contribution_amount) = contribution;
 
-            let (max_contributable_amount, will_complete_resource) = Self::get_max_contribution_size(
+            let (max_contributable_amount, will_complete_resource) =
+                Self::get_max_contribution_size(
                 world, hyperstructure_entity_id, resource_type, contribution_amount
             );
 
@@ -195,63 +201,100 @@ mod hyperstructure_systems {
                 return false;
             }
 
-            Self::add_contribution(world, hyperstructure_entity_id, resource_type, max_contributable_amount,);
-            Self::burn_player_resources(world, resource_type, max_contributable_amount, contributor_entity_id);
+            Self::add_contribution(
+                world, hyperstructure_entity_id, resource_type, max_contributable_amount,
+            );
+            Self::burn_player_resources(
+                world, resource_type, max_contributable_amount, contributor_entity_id
+            );
 
-            Self::update_progress(world, hyperstructure_entity_id, resource_type, max_contributable_amount);
+            Self::update_progress(
+                world, hyperstructure_entity_id, resource_type, max_contributable_amount
+            );
 
             return will_complete_resource;
         }
 
         fn burn_player_resources(
-            world: IWorldDispatcher, resource_type: u8, resource_amount: u128, contributor_entity_id: ID
+            world: IWorldDispatcher,
+            resource_type: u8,
+            resource_amount: u128,
+            contributor_entity_id: ID
         ) {
-            let mut creator_resources = ResourceCustomImpl::get(world, (contributor_entity_id, resource_type));
+            let mut creator_resources = ResourceCustomImpl::get(
+                world, (contributor_entity_id, resource_type)
+            );
 
             creator_resources.burn(resource_amount);
             creator_resources.save(world);
         }
 
         fn get_max_contribution_size(
-            world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: ID,
+            resource_type: u8,
+            resource_amount: u128
         ) -> (u128, bool) {
-            let resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
-            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(world, resource_type);
-            let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
+            let resource_progress = get!(
+                world, (hyperstructure_entity_id, resource_type), Progress
+            );
+            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(
+                world, resource_type
+            );
+            let resource_amount_for_completion = hyperstructure_resource_config
+                .amount_for_completion;
 
-            let amount_left_for_completion = resource_amount_for_completion - resource_progress.amount;
+            let amount_left_for_completion = resource_amount_for_completion
+                - resource_progress.amount;
 
-            let max_contributable_amount = core::cmp::min(amount_left_for_completion, resource_amount);
+            let max_contributable_amount = core::cmp::min(
+                amount_left_for_completion, resource_amount
+            );
 
             let will_complete_resource = resource_amount >= amount_left_for_completion;
             (max_contributable_amount, will_complete_resource)
         }
 
         fn add_contribution(
-            world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128,
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: ID,
+            resource_type: u8,
+            resource_amount: u128,
         ) {
             let player_address = starknet::get_caller_address();
-            let mut contribution = get!(world, (hyperstructure_entity_id, player_address, resource_type), Contribution);
+            let mut contribution = get!(
+                world, (hyperstructure_entity_id, player_address, resource_type), Contribution
+            );
             contribution.amount += resource_amount;
 
             set!(world, (contribution,));
         }
 
         fn update_progress(
-            world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128,
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: ID,
+            resource_type: u8,
+            resource_amount: u128,
         ) {
-            let mut resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
+            let mut resource_progress = get!(
+                world, (hyperstructure_entity_id, resource_type), Progress
+            );
             resource_progress.amount += resource_amount;
             set!(world, (resource_progress,));
         }
 
-        fn check_if_construction_done(world: IWorldDispatcher, hyperstructure_entity_id: ID) -> bool {
+        fn check_if_construction_done(
+            world: IWorldDispatcher, hyperstructure_entity_id: ID
+        ) -> bool {
             let mut done = true;
             let all_resources = get_resources_without_earthenshards();
 
             let mut i = 0;
             while (i < all_resources.len()) {
-                done = Self::check_if_resource_completed(world, hyperstructure_entity_id, *all_resources.at(i));
+                done =
+                    Self::check_if_resource_completed(
+                        world, hyperstructure_entity_id, *all_resources.at(i)
+                    );
                 if (done == false) {
                     break;
                 }
@@ -264,10 +307,15 @@ mod hyperstructure_systems {
         fn check_if_resource_completed(
             world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8
         ) -> bool {
-            let mut resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
+            let mut resource_progress = get!(
+                world, (hyperstructure_entity_id, resource_type), Progress
+            );
 
-            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(world, resource_type);
-            let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
+            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(
+                world, resource_type
+            );
+            let resource_amount_for_completion = hyperstructure_resource_config
+                .amount_for_completion;
 
             resource_progress.amount == resource_amount_for_completion
         }

@@ -5,7 +5,7 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
-import useLeaderBoardStore from "../store/useLeaderBoardStore";
+import { useLeaderBoardStore } from "../store/useLeaderBoardStore";
 import useRealmStore from "../store/useRealmStore";
 
 export enum HexType {

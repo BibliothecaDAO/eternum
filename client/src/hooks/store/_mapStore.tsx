@@ -1,14 +1,13 @@
-import {
-  HyperstructureEventInterface,
-  parseHyperstructureFinishedEventData,
-} from "@/dojo/events/hyperstructureEventQueries";
+import { HyperstructureFinishedEvent, LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { ContractAddress, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Subscription } from "rxjs";
 import { ClickedHex, HexPosition, Hexagon, HighlightPositions, TravelPath } from "../../types";
 import { useDojo } from "../context/DojoContext";
-import useLeaderBoardStore from "./useLeaderBoardStore";
+import { useContributions } from "../helpers/useContributions";
+import { useLeaderBoardStore } from "./useLeaderBoardStore";
 import useUIStore from "./useUIStore";
 
 enum ArmyMode {
@@ -95,19 +94,32 @@ export const createMapStoreSlice = (set: any) => ({
 });
 
 export const useSetExistingStructures = () => {
-  const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureEventInterface | null>(null);
+  const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureFinishedEvent | null>(null);
   const {
-    setup,
+    setup: {
+      components: { Structure, Position, Owner },
+      updates: {
+        eventUpdates: { createHyperstructureFinishedEvents, createHyperstructureCoOwnerChangeEvents },
+      },
+    },
     account: { account },
     masterAccount,
   } = useDojo();
-  const subCreated = useRef<boolean>(false);
+
+  const { getContributions } = useContributions();
+
+  const subEventFinishedCreated = useRef<boolean>(false);
+  const eventFinishedSubscriptionRef = useRef<Subscription | undefined>();
+
+  const subEventCoOwnerChangedCreated = useRef<boolean>(false);
+  const eventCoOwnerChangedSubscriptionRef = useRef<Subscription | undefined>();
 
   const setExistingStructures = useUIStore((state) => state.setExistingStructures);
+
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
   const setFinishedHyperstructures = useLeaderBoardStore((state) => state.setFinishedHyperstructures);
 
-  const builtStructures = useEntityQuery([Has(setup.components.Structure)]);
+  const builtStructures = useEntityQuery([Has(Structure)]);
 
   useEffect(() => {
     if (newFinishedHs === null) return;
@@ -115,35 +127,66 @@ export const useSetExistingStructures = () => {
   }, [newFinishedHs]);
 
   useEffect(() => {
-    const subscription = async () => {
-      const observable = await setup.updates.eventUpdates.hyperstructureFinishedEvents();
-      let events: HyperstructureEventInterface[] = [];
+    if (!createHyperstructureFinishedEvents) return;
 
+    const subscription = async () => {
+      const observable = await createHyperstructureFinishedEvents();
+      let events: HyperstructureFinishedEvent[] = [];
       const sub = observable.subscribe((event) => {
         if (event) {
-          const parsedEvent: HyperstructureEventInterface = parseHyperstructureFinishedEventData(event);
-          events.push(parsedEvent);
+          const parsedEvent: HyperstructureFinishedEvent =
+            LeaderboardManager.instance().processHyperstructureFinishedEventData(event, getContributions);
           setNewFinishedHs(parsedEvent);
+          events.push(parsedEvent);
         }
       });
       setFinishedHyperstructures(events);
 
-      // Cleanup function to unsubscribe on unmount
-      return () => {
-        sub.unsubscribe();
-      };
+      eventFinishedSubscriptionRef.current = sub;
     };
-    if (subCreated.current) return;
+
+    if (subEventFinishedCreated.current) return;
+
+    subEventFinishedCreated.current = true;
     subscription();
-    subCreated.current = true;
+
+    return () => {
+      eventFinishedSubscriptionRef.current?.unsubscribe();
+      subEventFinishedCreated.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!createHyperstructureCoOwnerChangeEvents) return;
+
+    const subscription = async () => {
+      const observable = await createHyperstructureCoOwnerChangeEvents();
+      const sub = observable.subscribe((event) => {
+        if (event) {
+          LeaderboardManager.instance().processHyperstructureCoOwnersChangeEvent(event);
+        }
+      });
+
+      eventCoOwnerChangedSubscriptionRef.current = sub;
+    };
+
+    if (subEventCoOwnerChangedCreated.current) return;
+
+    subEventCoOwnerChangedCreated.current = true;
+    subscription();
+
+    return () => {
+      eventCoOwnerChangedSubscriptionRef.current?.unsubscribe();
+      subEventCoOwnerChangedCreated.current = false;
+    };
   }, []);
 
   useEffect(() => {
     const _tmp = builtStructures
       .map((entity) => {
-        const position = getComponentValue(setup.components.Position, entity);
-        const structure = getComponentValue(setup.components.Structure, entity);
-        const owner = getComponentValue(setup.components.Owner, entity);
+        const position = getComponentValue(Position, entity);
+        const structure = getComponentValue(Structure, entity);
+        const owner = getComponentValue(Owner, entity);
         const type = StructureType[structure!.category as keyof typeof StructureType];
         if (account.address === masterAccount.address) return null;
         if (!position || !structure || !owner) return null;

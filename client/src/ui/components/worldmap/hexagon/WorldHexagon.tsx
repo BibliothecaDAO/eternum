@@ -5,11 +5,11 @@ import { COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
 import { Subscription } from "rxjs";
 import { create } from "zustand";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { Banks } from "../../models/buildings/worldmap/Banks";
 import { Battles } from "../../models/buildings/worldmap/Battles";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 import { Armies } from "../armies/Armies.js";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
-import { Banks } from "../../models/buildings/worldmap/Banks";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -74,10 +74,13 @@ export const WorldMap = () => {
 
   useEffect(() => {
     if (!exploreMapEvents) return;
+
     const subscribeToExploreEvents = async () => {
       const observable = await exploreMapEvents();
       const subscription = observable.subscribe((event) => {
-        if (!isComponentMounted.current) return;
+        if (!isComponentMounted.current) {
+          return;
+        }
         if (event) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
