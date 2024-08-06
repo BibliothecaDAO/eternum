@@ -2,7 +2,7 @@ import useSound from "use-sound";
 import useUIStore from "./store/useUIStore";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
-import { ResourceMiningTypes } from "@/ui/config";
+import { ResourceMiningTypes } from "@/types";
 
 const dir = "/sound/";
 

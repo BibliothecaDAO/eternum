@@ -1,13 +1,7 @@
+import { ResourceMiningTypes } from "@/types";
 import { BuildingType } from "@bibliothecadao/eternum";
 
 export const FELT_CENTER = 2147483647;
-
-export enum ResourceMiningTypes {
-  Forge = "forge",
-  Mine = "mine",
-  LumberMill = "lumber_mill",
-  Dragonhide = "dragonhide",
-}
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {

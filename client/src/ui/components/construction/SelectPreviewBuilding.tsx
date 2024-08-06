@@ -36,7 +36,7 @@ import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
-import { ResourceMiningTypes } from "@/ui/config";
+import { ResourceMiningTypes } from "@/types";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
