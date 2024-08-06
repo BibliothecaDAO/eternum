@@ -1,13 +1,13 @@
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import { useModal } from "@/hooks/store/useModal";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import useUIStore from "@/hooks/store/useUIStore";
 import { settings } from "@/ui/components/navigation/Config";
 import { SettingsWindow } from "../settings/Settings";
 
 export const TopLeftNavigation = () => {
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const togglePopup = useUIStore((state) => state.togglePopup);

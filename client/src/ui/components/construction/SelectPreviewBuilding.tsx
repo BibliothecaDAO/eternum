@@ -357,7 +357,7 @@ const BuildingCard = ({
   );
 };
 
-export const ResourceInfo = ({
+const ResourceInfo = ({
   resourceId,
   entityId,
   extraButtons = [],
@@ -428,7 +428,7 @@ export const ResourceInfo = ({
   );
 };
 
-export const BuildingInfo = ({
+const BuildingInfo = ({
   buildingId,
   entityId,
   extraButtons = [],

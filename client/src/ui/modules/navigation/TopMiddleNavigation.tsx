@@ -55,6 +55,8 @@ export const TopMiddleNavigation = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
+  const selectedHex = useUIStore((state) => state.selectedHex);
+
   // realms always first
   const structures = useMemo(() => {
     return playerStructures().sort((a, b) => {
@@ -74,6 +76,7 @@ export const TopMiddleNavigation = () => {
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
       setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
+      window.dispatchEvent(new Event("urlChanged"));
       setRealmEntityId(entityId);
     }, 300);
   };
@@ -98,8 +101,11 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className=" bg-black/60 backdrop-blur-2xl bg-hex-bg rounded-b-2xl border border-gradient">
+    <div className=" bg-black/60 backdrop-blur-2xl bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
+        <div>
+          {selectedHex.col},{selectedHex.row}
+        </div>
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />
         </div>

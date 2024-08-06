@@ -8,6 +8,7 @@ import { LoadingScreen } from "./ui/modules/LoadingScreen";
 import { dojoConfig } from "../dojoConfig";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
+import GameRenderer from "./three/GameRenderer";
 
 declare global {
   interface Window {
@@ -25,6 +26,11 @@ async function init() {
   root.render(<LoadingScreen />);
 
   const setupResult = await setup(dojoConfig);
+
+  const graphic = new GameRenderer(setupResult);
+
+  graphic.initScene();
+  graphic.initStats();
 
   inject();
   root.render(

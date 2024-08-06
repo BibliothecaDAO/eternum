@@ -3,6 +3,8 @@ import {
   ID,
   Position,
   ResourcesIds,
+  Resource,
+  WEIGHTS,
   UIPosition,
   neighborOffsetsEven,
   neighborOffsetsOdd,
@@ -14,7 +16,8 @@ import {
 } from "../../data/geodata/hex/realmHexPositions.json";
 import { FELT_CENTER } from "../config";
 import { SortInterface } from "../elements/SortButton";
-import { Resource, WEIGHTS } from "@bibliothecadao/eternum";
+import * as THREE from "three";
+import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/HexagonScene";
 
 export { getEntityIdFromKeys };
 
@@ -89,6 +92,47 @@ export function calculateDistance(start: Position, destination: Position): numbe
   }
 }
 
+export const getHexagonCoordinates = (
+  instancedMesh: THREE.InstancedMesh,
+  instanceId: number,
+): { row: number; col: number; x: number; z: number } => {
+  const matrix = new THREE.Matrix4();
+  instancedMesh.getMatrixAt(instanceId, matrix);
+  const position = new THREE.Vector3();
+  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+
+  const { row, col } = getHexForWorldPosition(position);
+
+  return { row, col, x: position.x, z: position.z };
+};
+
+export const getWorldPositionForHex = (hexCoords: {
+  row: number;
+  col: number;
+}): { x: number; y: number; z: number } => {
+  const { row, col } = hexCoords;
+  // Calculate the x and z coordinates
+  const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
+  const z = -row * HEX_VERTICAL_SPACING;
+
+  // y coordinate is half of the hexagon height
+  const y = 0;
+
+  return new THREE.Vector3(x, y, z);
+};
+
+export const getHexForWorldPosition = (worldPosition: {
+  x: number;
+  y: number;
+  z: number;
+}): { row: number; col: number } => {
+  const { x, y, z } = worldPosition;
+  const row = -Math.round(z / HEX_VERTICAL_SPACING);
+  const col = Math.round((x - ((row % 2) * HEX_HORIZONTAL_SPACING) / 2) / HEX_HORIZONTAL_SPACING);
+
+  return { row, col };
+};
+
 export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
@@ -110,28 +154,6 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized?: b
   };
 };
 
-export const getColRowFromUIPosition = (x: number, y: number, normalized?: boolean): { col: number; row: number } => {
-  const hexRadius = 3;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const rowNorm = Math.round(y / vertDist);
-  // hexception offsets hack
-  const colNorm = normalized
-    ? Math.round((x + ((rowNorm % 2) * horizDist) / 2) / horizDist)
-    : Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
-
-  const col = colNorm + (!normalized ? FELT_CENTER : 0);
-  const row = rowNorm + (!normalized ? FELT_CENTER : 0);
-
-  return {
-    col,
-    row,
-  };
-};
-
 interface HexPositions {
   [key: string]: { col: number; row: number }[];
 }
@@ -143,36 +165,10 @@ export const getRealmUIPosition = (realm_id: ID): Position => {
   return getUIPositionFromColRow(colrow.col, colrow.row, false);
 };
 
-export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
-  // give the direction
-  const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-  for (let offset of neighborOffsets) {
-    if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
-      return offset.direction;
-    }
-  }
-};
-
 export const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
-
-function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
-  if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];
-  const resourceIds: number[] = [];
-  const totalBits = 256; // Assuming u256, hence 256 bits
-  const packedNumberBigInt = BigInt(packedNumber);
-
-  for (let position = 0; position < totalBits; position++) {
-    // Shift 1 to the left by 'position' places and perform bitwise AND
-    if ((packedNumberBigInt & (1n << BigInt(position))) !== 0n) {
-      resourceIds.push(position + 1);
-    }
-  }
-
-  return resourceIds;
-}
 
 export enum ResourceMiningTypes {
   Forge = "forge",

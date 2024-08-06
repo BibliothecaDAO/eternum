@@ -32,7 +32,7 @@ export async function getHyperstructureEvents(): Promise<HyperstructureEventInte
   });
 }
 
-export function parseHyperstructureFinishedEventData(eventData: Event): HyperstructureEventInterface {
+function parseHyperstructureFinishedEventData(eventData: Event): HyperstructureEventInterface {
   const [hyperstructureEntityId, timestamp] = eventData.data;
 
   return {
