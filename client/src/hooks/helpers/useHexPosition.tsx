@@ -1,11 +1,9 @@
-import useUIStore from "@/hooks/store/useUIStore";
-import { getNeighborHexes } from "@bibliothecadao/eternum";
+import { FELT_CENTER } from "@/ui/config";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
-import { useLeaderBoardStore } from "../store/useLeaderBoardStore";
 import useRealmStore from "../store/useRealmStore";
 
 export enum HexType {
@@ -18,9 +16,6 @@ export enum HexType {
 }
 
 export const useHexPosition = () => {
-  const hexData = useUIStore((state) => state.hexData);
-  const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
-
   const {
     setup: {
       components: { Structure, Position, Owner },
@@ -37,27 +32,15 @@ export const useHexPosition = () => {
     return { col: Number(x), row: Number(y) };
   }, [searchString]);
 
-  const structures = useEntityQuery([Has(Structure), HasValue(Position, { x: hexPosition.col, y: hexPosition.row })]);
+  const structures = useEntityQuery([
+    Has(Structure),
+    HasValue(Position, { x: hexPosition.col + FELT_CENTER, y: hexPosition.row + FELT_CENTER }),
+  ]);
 
   const structure = useMemo(() => {
     if (structures?.length === 0) return null;
     return getComponentValue(Structure, structures[0]);
   }, [structures]);
-
-  const hexType: HexType = useMemo(() => {
-    if (!structure) return HexType.EMPTY;
-
-    let category = structure.category.toUpperCase();
-    if (structure.category === HexType.HYPERSTRUCTURE) {
-      category = finishedHyperstructures.some((evt) => {
-        return evt.hyperstructureEntityId == structure.entity_id;
-      })
-        ? category
-        : HexType.UNFINISHEDHYPERSTRUCTURE.toUpperCase();
-      finishedHyperstructures;
-    }
-    return HexType[category as keyof typeof HexType];
-  }, [structure]);
 
   useEffect(() => {
     const owner = getComponentValue(Owner, structures[0]);
@@ -65,23 +48,4 @@ export const useHexPosition = () => {
       setRealmEntityId(owner.entity_id);
     }
   }, [structure]);
-
-  const { neighborHexes, mainHex } = useMemo(() => {
-    const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);
-
-    const neighborHexes = getNeighborHexes(hexPosition.col, hexPosition.row);
-    return { neighborHexes, mainHex };
-  }, [hexPosition]);
-
-  const neighborHexesInsideView = useMemo(() => {
-    return neighborHexes.map((neighborHex) => {
-      return hexData?.find((hex) => hex.col === neighborHex.col && hex.row === neighborHex.row);
-    });
-  }, [hexData, neighborHexes]);
-
-  return {
-    mainHex,
-    neighborHexesInsideView,
-    hexType,
-  };
 };

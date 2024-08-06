@@ -34,12 +34,6 @@ export const getRealmNameById = (realmId: ID): string => {
   return features["name"];
 };
 
-export const getRealmOrderNameById = (realmId: ID): string => {
-  const orderName = realmsOrdersJson[Number(realmId) - 1];
-  if (!orderName) return "";
-  return orderName.order.toLowerCase().replace("the ", "");
-};
-
 export function getRealm(realmId: ID): RealmInterface | undefined {
   const realmsData = realms;
   const realm = realmsData[realmId.toString()];

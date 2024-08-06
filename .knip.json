@@ -15,6 +15,9 @@
     "client/src/hooks/store/useBankStore.tsx",
     "client/src/ui/components/bank/BankEntityList.tsx",
     "client/src/ui/components/bank/BankStats.tsx",
-    "config/bank/index.ts"
+    "config/bank/index.ts",
+
+    "client/src/three/components/FogManager.ts",
+    "client/src/hooks/useUISound.tsx"
   ]
 }

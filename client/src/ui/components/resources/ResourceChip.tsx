@@ -53,16 +53,14 @@ export const ResourceChip = ({
   useEffect(() => {
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
-        const difference = balance - prevDisplayBalance;
-        if (Math.abs(difference) > 0) {
-          const stepSize = difference * 0.1;
-          return prevDisplayBalance + stepSize;
+        if (Math.abs(netRate) > 0) {
+          return prevDisplayBalance + netRate;
         }
         return prevDisplayBalance;
       });
-    }, 2);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [balance]);
+  }, [balance, netRate]);
 
   return (
     <div

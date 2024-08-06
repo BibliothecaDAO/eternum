@@ -1,5 +1,3 @@
-import { Background as BackgroundContainer } from "../containers/Background";
-import { MainScene } from "../modules/scenes/MainScene";
 import useUIStore from "../../hooks/store/useUIStore";
 import { Leva } from "leva";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
@@ -20,11 +18,12 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { BattleContainer } from "../containers/BattleContainer";
-import { LoadingContainer } from "../containers/LoadingContainer";
 import { Redirect } from "wouter";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
+import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
+import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -45,38 +44,33 @@ export const World = () => {
   }, [realmEntityIds]);
 
   return (
-    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ">
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+      className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ornate-borders pointer-events-none"
+    >
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
       <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
       </BlankOverlayContainer>
       <HooksComponent />
-
-      <BackgroundContainer className=" clip-angled relative  ">
-        <div className="h-full w-full main-scene z-100">
-          <MainScene />
-        </div>
-      </BackgroundContainer>
-
-      <LoadingContainer />
-
+      <ActionInfo />
+      <ArmyInfoLabel />
       {battleView ? (
         <BattleContainer>
           <BattleView />
         </BattleContainer>
       ) : (
         <>
-          {/* TOP */}
           <TopMiddleContainer>
             <TopMiddleNavigation />
           </TopMiddleContainer>
 
-          {/* LEFT */}
           <LeftMiddleContainer>
             <LeftNavigationModule />
           </LeftMiddleContainer>
 
-          {/* BOTTOM */}
           <BottomMiddleContainer>
             <BottomNavigation />
           </BottomMiddleContainer>
@@ -85,7 +79,6 @@ export const World = () => {
             <Transactions />
           </BottomRightContainer>
 
-          {/* RIGHT */}
           <RightMiddleContainer>
             <RightNavigationModule />
           </RightMiddleContainer>

@@ -1,5 +1,4 @@
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
-import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -9,17 +8,18 @@ import { ID, Position } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const EntityDetails = () => {
-  const clickedHex = useUIStore((state) => state.clickedHex);
+  const selectedHex = useUIStore((state) => state.selectedHex);
   const [selectedTab, setSelectedTab] = useState(0);
 
   const hexPosition = useMemo(() => {
-    if (clickedHex) return { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row };
-  }, [clickedHex]);
+    return { x: selectedHex.col, y: selectedHex.row };
+  }, [selectedHex]);
 
   const ownArmiesAtPosition = useOwnArmiesByPosition({
-    position: { x: hexPosition?.x || 0, y: hexPosition?.y || 0 },
+    position: { x: selectedHex.col, y: selectedHex.row },
     inBattle: false,
   });
 
@@ -31,15 +31,15 @@ export const EntityDetails = () => {
   const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>({
     id: userArmies?.[0]?.entity_id || 0,
     position: {
-      x: clickedHex?.contractPos.col || 0,
-      y: clickedHex?.contractPos.row || 0,
+      x: selectedHex.col,
+      y: selectedHex.row,
     },
   });
 
   const ownArmy = useMemo(() => {
     if (!ownArmySelected) return;
     return userArmies.find((army) => army.entity_id === ownArmySelected.id);
-  }, [userArmies, ownArmySelected, clickedHex?.contractPos.col, clickedHex?.contractPos.row]);
+  }, [userArmies, ownArmySelected, selectedHex.col, selectedHex.row]);
 
   const tabs = useMemo(
     () => [
@@ -50,7 +50,7 @@ export const EntityDetails = () => {
             <div>Entities</div>
           </div>
         ),
-        component: <Entities position={hexPosition!} ownArmy={ownArmy} />,
+        component: <Entities position={hexPosition} ownArmy={ownArmy} />,
       },
       {
         key: "battles",
@@ -59,10 +59,10 @@ export const EntityDetails = () => {
             <div>Battles</div>
           </div>
         ),
-        component: <Battles position={hexPosition!} ownArmy={ownArmy} />,
+        component: <Battles position={hexPosition} ownArmy={ownArmy} />,
       },
     ],
-    [clickedHex, userArmies, ownArmy],
+    [selectedHex, userArmies, ownArmy],
   );
 
   return (

@@ -13,6 +13,7 @@ import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
 import { TravelEntityPopup } from "./TravelEntityPopup";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -123,6 +124,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
         </div>
       </div>
+      {entity.entityType === EntityType.TROOP && <ArmyCapacity army={army} className="my-2 ml-5" />}
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
       {entityState !== EntityState.Traveling && (
         <DepositResources

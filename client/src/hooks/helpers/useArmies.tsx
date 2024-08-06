@@ -29,9 +29,10 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
-  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]> | undefined;
+  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
   movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
-  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]> | undefined;
+  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>;
+  weight: ComponentValue<ClientComponents["Weight"]["schema"]>;
   arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
   stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
@@ -48,6 +49,7 @@ const formatArmies = (
   Quantity: Component<ClientComponents["Quantity"]["schema"]>,
   Movable: Component<ClientComponents["Movable"]["schema"]>,
   Capacity: Component<ClientComponents["Capacity"]["schema"]>,
+  Weight: Component<ClientComponents["Weight"]["schema"]>,
   ArrivalTime: Component<ClientComponents["ArrivalTime"]["schema"]>,
   Position: Component<ClientComponents["Position"]["schema"]>,
   EntityOwner: Component<ClientComponents["EntityOwner"]["schema"]>,
@@ -89,9 +91,42 @@ const formatArmies = (
         };
       }
       const protectee = getComponentValue(Protectee, armyEntityId);
+
       const quantity = getComponentValue(Quantity, armyEntityId);
+      let quantityClone = structuredClone(quantity);
+      if (quantityClone) {
+        quantityClone.value = BigInt(quantityClone.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+      } else {
+        quantityClone = {
+          entity_id: army.entity_id,
+          value: 0n,
+        };
+      }
+
       const movable = getComponentValue(Movable, armyEntityId);
+
       const capacity = getComponentValue(Capacity, armyEntityId);
+      let capacityClone = structuredClone(capacity);
+      if (capacityClone) {
+        capacityClone.weight_gram = capacityClone.weight_gram * quantityClone.value;
+      } else {
+        capacityClone = {
+          entity_id: army.entity_id,
+          weight_gram: BigInt(EternumGlobalConfig.carryCapacity.army) * quantityClone.value,
+        };
+      }
+
+      const weight = getComponentValue(Weight, armyEntityId);
+      let weightClone = structuredClone(weight);
+      if (weightClone) {
+        weightClone.value = weightClone.value / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+      } else {
+        weightClone = {
+          entity_id: army.entity_id,
+          value: 0n,
+        };
+      }
+
       const arrivalTime = getComponentValue(ArrivalTime, armyEntityId);
       const stamina = getComponentValue(Stamina, armyEntityId);
       const name = getComponentValue(Name, armyEntityId);
@@ -111,7 +146,8 @@ const formatArmies = (
         health: healthClone,
         quantity,
         movable,
-        capacity,
+        capacity: capacityClone,
+        weight: weightClone,
         arrivalTime,
         position,
         entityOwner,
@@ -131,59 +167,6 @@ const formatArmies = (
     .filter((army): army is ArmyInfo => army !== undefined);
 };
 
-export const useMovableArmies = () => {
-  const {
-    setup: {
-      components: {
-        Position,
-        EntityOwner,
-        Owner,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Realm,
-        Army,
-        Protectee,
-        EntityName,
-        Stamina,
-      },
-    },
-    account: { account },
-  } = useDojo();
-
-  const armies = useEntityQuery([
-    Has(Position),
-    Has(Army),
-    Has(Health),
-    Not(Protectee),
-    NotValue(Movable, { sec_per_km: 0 }),
-    HasValue(Army, { battle_id: 0 }),
-  ]);
-
-  return {
-    getArmies: () =>
-      formatArmies(
-        armies,
-        account.address,
-        Army,
-        Protectee,
-        EntityName,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Position,
-        EntityOwner,
-        Owner,
-        Realm,
-        Stamina,
-      ),
-  };
-};
-
 export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owner_entity_id: ID }) => {
   const {
     setup: {
@@ -195,6 +178,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -219,6 +203,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -244,6 +229,7 @@ export const getArmiesByBattleId = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -267,6 +253,7 @@ export const getArmiesByBattleId = () => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -289,6 +276,7 @@ export const useArmyByArmyEntityId = (entityId: ID) => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -311,6 +299,7 @@ export const useArmyByArmyEntityId = (entityId: ID) => {
     Quantity,
     Movable,
     Capacity,
+    Weight,
     ArrivalTime,
     Position,
     EntityOwner,
@@ -332,6 +321,7 @@ export const getUserArmyInBattle = (battle_id: ID) => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -360,6 +350,7 @@ export const getUserArmyInBattle = (battle_id: ID) => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -385,6 +376,7 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
           Quantity,
           Movable,
           Capacity,
+          Weight,
           ArrivalTime,
           Realm,
           Army,
@@ -414,6 +406,7 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Position,
         EntityOwner,
@@ -440,6 +433,7 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
           Quantity,
           Movable,
           Capacity,
+          Weight,
           ArrivalTime,
           Realm,
           Army,
@@ -468,6 +462,7 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Position,
         EntityOwner,
@@ -492,6 +487,7 @@ export const getArmyByEntityId = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -516,6 +512,7 @@ export const getArmyByEntityId = () => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -538,6 +535,7 @@ export const getArmyByEntityId = () => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -550,84 +548,6 @@ export const getArmyByEntityId = () => {
   return { getAliveArmy, getArmy };
 };
 
-export const getArmiesAtPosition = () => {
-  const {
-    setup: {
-      components: {
-        Position,
-        EntityOwner,
-        Owner,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Realm,
-        Army,
-        Protectee,
-        EntityName,
-        Stamina,
-      },
-    },
-    account: { account },
-  } = useDojo();
-
-  const armiesAtPosition = ({ x, y }: Position) => {
-    const allArmiesAtPosition = runQuery([Has(Army), HasValue(Position, { x, y }), HasValue(Army, { battle_id: 0 })]);
-
-    const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
-      const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
-      return owner?.address === ContractAddress(account.address);
-    });
-
-    const opponentArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
-      const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
-      return owner?.address !== ContractAddress(account.address);
-    });
-
-    return {
-      userArmiesAtPosition: formatArmies(
-        userArmies,
-        account.address,
-        Army,
-        Protectee,
-        EntityName,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Position,
-        EntityOwner,
-        Owner,
-        Realm,
-        Stamina,
-      ),
-
-      opponentArmiesAtPosition: formatArmies(
-        opponentArmies,
-        account.address,
-        Army,
-        Protectee,
-        EntityName,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Position,
-        EntityOwner,
-        Owner,
-        Realm,
-        Stamina,
-      ),
-    };
-  };
-
-  return armiesAtPosition;
-};
 const calculateOffset = (index: number, total: number) => {
   if (total === 1) return { x: 0, y: 0 };
 

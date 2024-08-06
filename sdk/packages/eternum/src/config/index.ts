@@ -221,7 +221,8 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txArmy = await provider.set_capacity_config({
     signer: account,
     entity_type: ARMY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacity.army * EternumGlobalConfig.resources.resourcePrecision,
+    // No precision mod used because weight check in contract uses army qty x precision
+    weight_gram: EternumGlobalConfig.carryCapacity.army,
   });
 
   console.log(`Configuring capacity Army config ${txArmy.statusReceipt}...`);

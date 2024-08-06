@@ -398,7 +398,7 @@ const OrderCreation = ({
 
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
-      { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: resource },
+      { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: isBuy ? resource : lords },
     ]);
     return multiplyByPrecision(totalWeight);
   }, [resource, lords]);

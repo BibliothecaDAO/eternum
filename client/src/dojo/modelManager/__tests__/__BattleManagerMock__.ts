@@ -105,6 +105,7 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleEn
       intermediate_coord_y: 0,
     },
     capacity: { entity_id: ARMY_ENTITY_ID, weight_gram: 10n },
+    weight: { entity_id: ARMY_ENTITY_ID, value: 0n },
     arrivalTime: { entity_id: ARMY_ENTITY_ID, arrives_at: 0n },
     stamina: { entity_id: ARMY_ENTITY_ID, amount: 1, last_refill_tick: 0n },
     realm: {

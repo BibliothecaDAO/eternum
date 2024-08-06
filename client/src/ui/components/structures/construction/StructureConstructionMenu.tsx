@@ -37,7 +37,6 @@ export const STRUCTURE_IMAGE_PATHS = {
 export const StructureConstructionMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const clearSelection = useUIStore((state) => state.clearSelection);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -79,7 +78,6 @@ export const StructureConstructionMenu = () => {
                 setPreviewBuilding(null);
               } else {
                 setPreviewBuilding({ type: building });
-                clearSelection();
               }
             }}
             active={previewBuilding !== null && previewBuilding.type === building}

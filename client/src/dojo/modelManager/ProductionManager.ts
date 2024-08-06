@@ -126,10 +126,8 @@ export class ProductionManager {
     if (rate !== 0) {
       if (sign) {
         // Positive net rate, increase balance
-
         const balance = Number(resource?.balance || 0n) + this._productionDuration(currentTick, resourceId) * rate;
-
-        return balance > this.getStoreCapacity() ? this.getStoreCapacity() : balance;
+        return Math.min(balance, this.getStoreCapacity());
       } else {
         // Negative net rate, decrease balance but not below zero
         let balance = Number(resource?.balance || 0n) - -this._depletionDuration(currentTick, resourceId) * rate;

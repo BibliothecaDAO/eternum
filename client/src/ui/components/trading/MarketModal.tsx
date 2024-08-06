@@ -1,7 +1,8 @@
+import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
-import { useModal } from "@/hooks/store/useModal";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import CircleButton from "@/ui/elements/CircleButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -14,7 +15,6 @@ import { HintModal } from "../hints/HintModal";
 import { ModalContainer } from "../ModalContainer";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
-import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
 
 export const MarketModal = () => {
@@ -22,7 +22,7 @@ export const MarketModal = () => {
 
   const { playerRealms } = useEntities();
 
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   const banks = useGetBanks();
   const bank = banks.length === 1 ? banks[0] : null;
@@ -86,14 +86,14 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-brown border-gold/30 clip-angled h-full row-span-12 ">
+      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30 clip-angled h-full row-span-12 ">
         <div className="col-span-12  p-2 flex justify-between row-span-2">
           <div className="self-center text-xl">
             <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(ID(trait))}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Realm" />
               </SelectTrigger>
-              <SelectContent className="bg-brown ">
+              <SelectContent className="bg-black/90 bg-hex-bg">
                 {playerRealms().map((realm, index) => (
                   <SelectItem key={index} value={realm.entity_id?.toString() || ""}>
                     {realm.name}

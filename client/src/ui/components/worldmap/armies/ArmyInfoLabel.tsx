@@ -1,7 +1,7 @@
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { currencyFormat } from "../../../utils/utils";
 
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -12,22 +12,26 @@ import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
 import { InventoryResources } from "../../resources/InventoryResources";
+import useUIStore from "@/hooks/store/useUIStore";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
-interface ArmyInfoLabelProps {
-  army: ArmyInfo;
-  visible?: boolean;
-}
+export const ArmyInfoLabel = () => {
+  const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
+  const { getArmy } = getArmyByEntityId();
 
-export const ArmyInfoLabel = ({ army, visible }: ArmyInfoLabelProps) => {
+  const army = useMemo(() => {
+    if (hoveredArmyEntityId) return getArmy(hoveredArmyEntityId);
+    return undefined;
+  }, [hoveredArmyEntityId, getArmy]);
+
   return (
-    <BaseThreeTooltip
-      visible={visible}
-      position={Position.TOP_CENTER}
-      distanceFactor={50}
-      className={`bg-transparent pointer-events-none -mt-[320px]`}
-    >
-      <RaiderInfo key={army.entity_id} army={army} />
-    </BaseThreeTooltip>
+    <>
+      {army && (
+        <BaseThreeTooltip position={Position.CLEAN} className={`bg-transparent pointer-events-none w-[250px]`}>
+          <RaiderInfo key={army.entity_id} army={army} />
+        </BaseThreeTooltip>
+      )}
+    </>
   );
 };
 
@@ -104,7 +108,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <div className="text-green text-xs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
-
+        <ArmyCapacity army={army} />
         <div className="flex flex-row justify-between">
           <InventoryResources max={2} entityIds={[entity_id]} />
         </div>
