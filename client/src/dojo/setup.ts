@@ -1,9 +1,9 @@
+import { DojoConfig } from "@dojoengine/core";
+import { getSyncEntities } from "@dojoengine/state";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
-import { setupNetwork } from "./setupNetwork";
 import { createUpdates } from "./createUpdates";
-import { getSyncEntities } from "@dojoengine/state";
-import { DojoConfig } from "@dojoengine/core";
+import { setupNetwork } from "./setupNetwork";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -14,7 +14,20 @@ export async function setup({ ...config }: DojoConfig) {
   const updates = await createUpdates();
 
   // fetch all existing entities from torii
-  const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, [], 1000);
+  const sync = await getSyncEntities(
+    network.toriiClient,
+    network.contractComponents as any,
+    [
+      {
+        Keys: {
+          keys: [],
+          pattern_matching: "VariableLen",
+          models: [],
+        },
+      },
+    ],
+    1000,
+  );
 
   return {
     network,
