@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
+import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { interactiveHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { getHexagonCoordinates, getWorldPositionForHex } from "@/ui/utils/utils";
 import { HEX_SIZE } from "../scenes/HexagonScene";

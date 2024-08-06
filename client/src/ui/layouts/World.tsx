@@ -22,8 +22,8 @@ import { Redirect } from "wouter";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
-import { ActionInfo } from "../components/worldmap/hexagon/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
+import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);

@@ -7,7 +7,7 @@ import { BuildingType, ResourcesIds, StructureType, getNeighborHexes } from "@bi
 import { getComponentValue } from "@dojoengine/recs";
 import { Biome, BiomeType } from "../components/Biome";
 import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
-import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
+import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
