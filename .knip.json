@@ -9,6 +9,7 @@
     "sdk/packages/eternum/global.d.ts",
     "config/bank/index.ts",
     "**/**__test__**/**",
+    "**/**__tests__**/**",
 
     "client/src/three/components/FogManager.ts",
     "client/src/hooks/useUISound.tsx"
