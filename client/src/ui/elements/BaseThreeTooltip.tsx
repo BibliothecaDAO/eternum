@@ -13,8 +13,6 @@ type BaseThreeTooltipProps = {
 export enum Position {
   CLEAN = "",
   CENTER = "-left-1/2 -mt-[150px]",
-  TOP_CENTER = "-left-1/2 -mt-[300px]",
-  BOTTOM_RIGHT = "rounded-bl-xl rounded-br-xl rounded-tr-xl -left-1",
 }
 
 export const BaseThreeTooltip = ({

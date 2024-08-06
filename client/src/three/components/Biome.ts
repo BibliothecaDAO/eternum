@@ -1,9 +1,9 @@
 import { snoise } from "@dojoengine/utils";
 
-export const MAP_AMPLITUDE = 60;
-export const MOISTURE_OCTAVE = 2;
-export const ELEVATION_OCTAVES = [1, 0.25, 0.1];
-export const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a + b, 0);
+const MAP_AMPLITUDE = 60;
+const MOISTURE_OCTAVE = 2;
+const ELEVATION_OCTAVES = [1, 0.25, 0.1];
+const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a + b, 0);
 
 export type BiomeType =
   | "DeepOcean"
@@ -23,7 +23,7 @@ export type BiomeType =
   | "TropicalSeasonalForest"
   | "TropicalRainForest";
 
-export const LEVEL = {
+const LEVEL = {
   DEEP_OCEAN: 0.25,
   OCEAN: 0.5,
   SAND: 0.53,

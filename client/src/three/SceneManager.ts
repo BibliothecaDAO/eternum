@@ -1,7 +1,7 @@
 import { HexPosition } from "@/types";
 import { TransitionManager } from "./components/TransitionManager";
 
-export type SceneName = string;
+type SceneName = string;
 
 export class SceneManager {
   private currentScene: SceneName = "worldmap";

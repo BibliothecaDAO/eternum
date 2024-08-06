@@ -154,28 +154,6 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized?: b
   };
 };
 
-export const getColRowFromUIPosition = (x: number, y: number, normalized?: boolean): { col: number; row: number } => {
-  const hexRadius = 3;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const rowNorm = Math.round(y / vertDist);
-  // hexception offsets hack
-  const colNorm = normalized
-    ? Math.round((x + ((rowNorm % 2) * horizDist) / 2) / horizDist)
-    : Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
-
-  const col = colNorm + (!normalized ? FELT_CENTER : 0);
-  const row = rowNorm + (!normalized ? FELT_CENTER : 0);
-
-  return {
-    col,
-    row,
-  };
-};
-
 interface HexPositions {
   [key: string]: { col: number; row: number }[];
 }
@@ -187,36 +165,10 @@ export const getRealmUIPosition = (realm_id: ID): Position => {
   return getUIPositionFromColRow(colrow.col, colrow.row, false);
 };
 
-export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
-  // give the direction
-  const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-  for (let offset of neighborOffsets) {
-    if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
-      return offset.direction;
-    }
-  }
-};
-
 export const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
-
-function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
-  if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];
-  const resourceIds: number[] = [];
-  const totalBits = 256; // Assuming u256, hence 256 bits
-  const packedNumberBigInt = BigInt(packedNumber);
-
-  for (let position = 0; position < totalBits; position++) {
-    // Shift 1 to the left by 'position' places and perform bitwise AND
-    if ((packedNumberBigInt & (1n << BigInt(position))) !== 0n) {
-      resourceIds.push(position + 1);
-    }
-  }
-
-  return resourceIds;
-}
 
 export enum ResourceMiningTypes {
   Forge = "forge",

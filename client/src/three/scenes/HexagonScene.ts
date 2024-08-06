@@ -17,7 +17,7 @@ import { BiomeType } from "../components/Biome";
 import { HexPosition } from "@/types";
 
 const BASE_PATH = "/models/bevel-biomes/";
-export const biomeModelPaths: Record<BiomeType, string> = {
+const biomeModelPaths: Record<BiomeType, string> = {
   DeepOcean: BASE_PATH + "deepocean.glb",
   Ocean: BASE_PATH + "ocean.glb",
   Beach: BASE_PATH + "beach.glb",
