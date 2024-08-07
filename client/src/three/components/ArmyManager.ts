@@ -104,7 +104,6 @@ export class ArmyManager {
     await this.loadPromise;
     const { entityId, hexCoords, isMine } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
-    console.log("updating armies");
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, normalizedCoord);
     } else {
@@ -113,7 +112,6 @@ export class ArmyManager {
   }
 
   addArmy(entityId: ID, hexCoords: { col: number; row: number }, isMine: boolean) {
-    console.log("add army: ", entityId, hexCoords);
     const index = this.mesh.count;
     this.mesh.count++;
     this.armies.set(entityId, index);
@@ -142,7 +140,6 @@ export class ArmyManager {
   }
 
   moveArmy(entityId: ID, hexCoords: { col: number; row: number }) {
-    console.log("move army: ", entityId, hexCoords);
     const index = this.armies.get(entityId);
     if (index === undefined) {
       console.error(`No army found with entityId: ${entityId}`);
@@ -163,10 +160,6 @@ export class ArmyManager {
       endPos: newPosition as any,
       progress: 0,
     });
-  }
-
-  printModel() {
-    console.log({ instancedModel: this.instancedModel });
   }
 
   update(deltaTime: number) {

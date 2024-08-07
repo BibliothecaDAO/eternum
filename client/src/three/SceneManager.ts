@@ -1,11 +1,10 @@
-import { HexPosition } from "@/types";
+import { HexPosition, SceneName } from "@/types";
 import { TransitionManager } from "./components/TransitionManager";
-
-type SceneName = string;
+import { HexagonScene } from "./scenes/HexagonScene";
 
 export class SceneManager {
-  private currentScene: SceneName = "worldmap";
-  private scenes = new Map<SceneName, any>();
+  private currentScene: SceneName = SceneName.Hexception;
+  private scenes = new Map<SceneName, HexagonScene>();
   constructor(private transitionManager: TransitionManager) {}
 
   getCurrentScene() {
@@ -16,22 +15,30 @@ export class SceneManager {
     this.currentScene = name;
   }
 
-  addScene(newScene: SceneName, scene: any) {
+  addScene(newScene: SceneName, scene: HexagonScene) {
     this.scenes.set(newScene, scene);
   }
 
-  switchScene(name: SceneName, hexCoords?: HexPosition) {
-    console.log("switch scene");
-    const scene = this.scenes.get(name);
+  switchScene(sceneName: SceneName, hexCoords?: HexPosition) {
+    const scene = this.scenes.get(sceneName);
 
     if (scene) {
+      this._updateCurrentScene(sceneName);
+
+      this.scenes.get(this.getCurrentScene())?.changeScene(sceneName);
       this.transitionManager.fadeOut(() => {
-        this._updateCurrentScene(name);
         if (scene.setup && hexCoords) {
           scene.setup(hexCoords);
         }
         this.transitionManager.fadeIn();
       });
+    }
+  }
+
+  moveCameraForScene() {
+    const scene = this.scenes.get(this.currentScene);
+    if (scene) {
+      scene.moveCameraToURLLocation();
     }
   }
 }

@@ -1,20 +1,20 @@
-import { InputManager } from "../components/InputManager";
-import * as THREE from "three";
-import { InteractiveHexManager } from "../components/InteractiveHexManager";
-import { HighlightHexManager } from "../components/HighlightHexManager";
 import { SetupResult } from "@/dojo/setup";
+import gsap from "gsap";
+import * as THREE from "three";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { HighlightHexManager } from "../components/HighlightHexManager";
+import { InputManager } from "../components/InputManager";
+import { InteractiveHexManager } from "../components/InteractiveHexManager";
+import { GUIManager } from "../helpers/GUIManager";
 import { LocationManager } from "../helpers/LocationManager";
 import { SceneManager } from "../SceneManager";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { GUIManager } from "../helpers/GUIManager";
-import gsap from "gsap";
 
+import { HexPosition, SceneName } from "@/types";
 import _, { throttle } from "lodash";
-import { SystemManager } from "../systems/SystemManager";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
-import InstancedModel from "../components/InstancedModel";
 import { BiomeType } from "../components/Biome";
-import { HexPosition } from "@/types";
+import InstancedModel from "../components/InstancedModel";
+import { SystemManager } from "../systems/SystemManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
 const biomeModelPaths: Record<BiomeType, string> = {
@@ -57,7 +57,7 @@ export abstract class HexagonScene {
   protected modelLoadPromises: Promise<void>[] = [];
 
   constructor(
-    protected sceneName: string,
+    protected sceneName: SceneName,
     protected controls: MapControls,
     private dojoContext: SetupResult,
     private mouse: THREE.Vector2,
@@ -143,12 +143,18 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
 
+  public abstract setup(hexCoords: HexPosition): void;
+
   public getScene() {
     return this.scene;
   }
 
   public getCamera() {
     return this.camera;
+  }
+
+  public changeScene(sceneName: SceneName) {
+    this.inputManager.changeScene(sceneName);
   }
 
   protected hashCoordinates(x: number, y: number): number {
@@ -190,13 +196,7 @@ export abstract class HexagonScene {
     return { row, col, x: position.x, z: position.z };
   }
 
-  public moveCameraToURLLocation() {
-    const col = this.locationManager.getCol();
-    const row = this.locationManager.getRow();
-    if (col && row) {
-      this.moveCameraToColRow(col, row, 0);
-    }
-  }
+  public abstract moveCameraToURLLocation(): void;
 
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;

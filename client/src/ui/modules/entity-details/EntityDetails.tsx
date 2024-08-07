@@ -1,4 +1,5 @@
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
+import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -8,7 +9,6 @@ import { ID, Position } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
-import useUIStore from "@/hooks/store/useUIStore";
 
 export const EntityDetails = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -37,7 +37,9 @@ export const EntityDetails = () => {
   });
 
   const ownArmy = useMemo(() => {
-    if (!ownArmySelected) return;
+    if (!ownArmySelected) {
+      return;
+    }
     return userArmies.find((army) => army.entity_id === ownArmySelected.id);
   }, [userArmies, ownArmySelected, selectedHex.col, selectedHex.row]);
 

@@ -22,6 +22,7 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { Position } from "@/types/Position";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
@@ -51,7 +52,6 @@ export const TopMiddleNavigation = () => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
@@ -73,20 +73,37 @@ export const TopMiddleNavigation = () => {
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
 
+    const position = new Position(structure!.position).getNormalized();
+
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
-      setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
+      setLocation(`/hex?col=${position.x}&row=${position.y}`);
       window.dispatchEvent(new Event("urlChanged"));
       setRealmEntityId(entityId);
     }, 300);
   };
 
-  const goToMapView = (entityId: ID) => {
-    const contractPosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-    moveCameraToColRow(Number(contractPosition?.x), Number(contractPosition?.y));
+  const goToMapView = (entityId?: ID) => {
+    const newPosition = entityId
+      ? getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]))
+      : { x: hexPosition.col, y: hexPosition.row };
 
-    setRealmEntityId(entityId);
+    if (!newPosition) throw new Error("No position found");
+
+    const position = new Position({ x: newPosition.x, y: newPosition.y }).getNormalized();
+
+    setIsLoadingScreenEnabled(true);
+    setTimeout(() => {
+      setPreviewBuilding(null);
+      if (entityId) {
+        setRealmEntityId(entityId);
+      }
+
+      setLocation(`/map?col=${position.x}&row=${position.y}`);
+      window.dispatchEvent(new Event("urlChanged"));
+    }, 300);
   };
+
   const setTooltip = useUIStore((state) => state.setTooltip);
   const population = useComponentValue(setup.components.Population, getEntityIdFromKeys([BigInt(realmEntityId || 0)]));
 
@@ -147,18 +164,7 @@ export const TopMiddleNavigation = () => {
             })}
             onClick={() => {
               if (location !== "/map") {
-                setIsLoadingScreenEnabled(true);
-                setTimeout(() => {
-                  setPreviewBuilding(null);
-                  setLocation("/map");
-                  if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                    const { col, row } = hexPosition;
-                    moveCameraToColRow(col, row, 0.01, true);
-                    setTimeout(() => {
-                      moveCameraToColRow(col, row, 1.5);
-                    }, 10);
-                  }
-                }, 300);
+                goToMapView();
               } else {
                 goToHexView(realmEntityId);
               }

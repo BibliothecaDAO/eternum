@@ -17,6 +17,7 @@ import { useLocation } from "wouter";
 
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
+import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
@@ -324,28 +325,20 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+
+  const positionNormalized = new PositionInterface(position).getNormalized();
+
   return (
     <Map
       className={className}
       onClick={() => {
-        if (location !== "/map") {
-          setIsLoadingScreenEnabled(true);
-          setTimeout(() => {
-            setLocation("/map");
-            if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-              moveCameraToColRow(position.x, position.y, 0.01, true);
-              setTimeout(() => {
-                moveCameraToColRow(position.x, position.y, 1.5);
-              }, 10);
-            }
-          }, 100);
+        setLocation(`/map?col=${positionNormalized.x}&row=${positionNormalized.y}`);
+        if (location === "/map") {
+          window.dispatchEvent(new Event("urlChanged"));
         } else {
-          if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-            moveCameraToColRow(position.x, position.y);
-          }
+          setIsLoadingScreenEnabled(true);
+          window.dispatchEvent(new Event("urlChanged"));
         }
-        moveCameraToColRow(position.x, position.y, 1.5);
       }}
     />
   );
@@ -354,7 +347,8 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
 export const ViewOnMapButton = ({ position, className }: { position: Position; className?: string }) => {
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+
+  const positionNormalized = new PositionInterface(position).getNormalized();
 
   return (
     <Button
@@ -362,26 +356,16 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
       variant="primary"
       size="xs"
       onClick={() => {
-        if (location !== "/map") {
-          setIsLoadingScreenEnabled(true);
-          setTimeout(() => {
-            setLocation("/map");
-            if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-              moveCameraToColRow(position.x, position.y, 0.01, true);
-              setTimeout(() => {
-                moveCameraToColRow(position.x, position.y, 1.5);
-              }, 10);
-            }
-          }, 100);
+        setLocation(`/map?col=${positionNormalized.x}&row=${positionNormalized.y}`);
+        if (location === "/map") {
+          window.dispatchEvent(new Event("urlChanged"));
         } else {
-          if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-            moveCameraToColRow(position.x, position.y);
-          }
+          setIsLoadingScreenEnabled(true);
+          window.dispatchEvent(new Event("urlChanged"));
         }
-        moveCameraToColRow(position.x, position.y, 1.5);
       }}
     >
-      <span> map</span>
+      <span>map</span>
     </Button>
   );
 };

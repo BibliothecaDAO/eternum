@@ -1,7 +1,7 @@
-import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
-import { buildingModelPaths } from "../scenes/Hexception";
-import { GLTFLoader } from "three-stdlib";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { GLTFLoader } from "three-stdlib";
+import { buildingModelPaths } from "../scenes/Hexception";
 
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
@@ -53,10 +53,8 @@ export class BuildingPreview {
       this.clearPreviewBuilding();
     }
     this.previewBuilding = building;
-    console.log("Setting preview building", this.buildingModels, building);
     const model = this.getBuildingModel(building.type);
     if (model) {
-      console.log("Adding model to scene", model);
       this.scene.add(model);
     }
   }

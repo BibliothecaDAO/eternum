@@ -33,9 +33,7 @@ const LEVEL = {
 };
 
 export class Biome {
-  constructor() {
-    console.log("Biome component");
-  }
+  constructor() {}
 
   getBiome(col: number, row: number): BiomeType {
     const elevation = this.calculateElevation(col, row, MAP_AMPLITUDE, ELEVATION_OCTAVES, ELEVATION_OCTAVES_SUM);
