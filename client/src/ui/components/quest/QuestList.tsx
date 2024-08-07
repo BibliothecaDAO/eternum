@@ -5,7 +5,7 @@ import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { Prize, Quest, QuestStatus, useQuests } from "@/hooks/helpers/useQuests";
+import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { ID } from "@bibliothecadao/eternum";
 
 export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID | undefined }) => {
@@ -14,6 +14,7 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
   const [maxDepthToShow, setMaxDepthToShow] = useState(0);
 
   const groupedQuests = useMemo(() => groupQuestsByDepth(quests), [quests]);
+  const unclaimedQuests = quests?.filter((quest) => quest.status !== QuestStatus.Claimed);
 
   useEffect(() => {
     const newMaxDepth = Object.keys(groupedQuests)
@@ -39,12 +40,16 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
           {showCompletedQuests ? "Hide Completed" : "Show Completed"}
         </Button>
 
-        <Button className={"w-1/4"} size={"xs"} variant={"red"} onClick={() => setSkipTutorial(!skipTutorial)}>
-          Skip Tutorial
-        </Button>
+        {Boolean(unclaimedQuests?.length) && (
+          <Button className={"w-1/4"} size={"xs"} variant={"red"} onClick={() => setSkipTutorial(!skipTutorial)}>
+            Skip Tutorial
+          </Button>
+        )}
       </div>
 
-      {skipTutorial && <SkipTutorial entityId={entityId!} />}
+      {skipTutorial && unclaimedQuests?.length && (
+        <SkipTutorial entityId={entityId!} setSkipTutorial={setSkipTutorial} unclaimedQuests={unclaimedQuests} />
+      )}
 
       <div className="flex flex-col gap-1 p-4">
         {Object.entries(groupedQuests)
@@ -83,7 +88,15 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
   );
 };
 
-const SkipTutorial = ({ entityId }: { entityId: ID }) => {
+const SkipTutorial = ({
+  entityId,
+  setSkipTutorial,
+  unclaimedQuests,
+}: {
+  entityId: ID;
+  setSkipTutorial: (skip: boolean) => void;
+  unclaimedQuests: Quest[];
+}) => {
   const {
     setup: {
       systemCalls: { mint_resources_and_claim_quest },
@@ -92,12 +105,9 @@ const SkipTutorial = ({ entityId }: { entityId: ID }) => {
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const { quests } = useQuests();
   const { getQuestResources } = useRealm();
 
   const questResources = getQuestResources();
-
-  const unclaimedQuests = quests?.filter((quest) => quest.status !== QuestStatus.Claimed);
 
   const resourcesToMint =
     unclaimedQuests?.flatMap((quest: Quest) =>
@@ -121,6 +131,7 @@ const SkipTutorial = ({ entityId }: { entityId: ID }) => {
         console.error(`Failed to claim resources for quests:`, error);
       } finally {
         setIsLoading(false);
+        setSkipTutorial(false);
       }
     }
   };
