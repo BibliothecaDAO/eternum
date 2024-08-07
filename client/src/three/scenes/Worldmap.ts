@@ -117,7 +117,7 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonClick(hexCoords: HexPosition) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
 
-	if (selectedEntityId && travelPaths.size > 0) {
+    if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
       if (travelPath) {
         const selectedPath = travelPath.path;
