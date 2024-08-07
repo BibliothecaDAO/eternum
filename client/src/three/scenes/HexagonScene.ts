@@ -157,7 +157,7 @@ export abstract class HexagonScene {
     return hash - Math.floor(hash);
   }
 
-  private getHexFromWorldPosition(position: THREE.Vector3): { row: number; col: number } {
+  private getHexFromWorldPosition(position: THREE.Vector3): HexPosition {
     const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
     const verticalSpacing = (HEX_SIZE * 3) / 2;
 
@@ -179,7 +179,7 @@ export abstract class HexagonScene {
   getHexagonCoordinates(
     instancedMesh: THREE.InstancedMesh,
     instanceId: number,
-  ): { row: number; col: number; x: number; z: number } {
+  ): HexPosition & { x: number; z: number } {
     const matrix = new THREE.Matrix4();
     instancedMesh.getMatrixAt(instanceId, matrix);
     const position = new THREE.Vector3();

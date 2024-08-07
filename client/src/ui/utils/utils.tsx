@@ -18,7 +18,7 @@ import { FELT_CENTER } from "../config";
 import { SortInterface } from "../elements/SortButton";
 import * as THREE from "three";
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/HexagonScene";
-import { ResourceMiningTypes } from "@/types";
+import { HexPosition, ResourceMiningTypes } from "@/types";
 
 export { getEntityIdFromKeys };
 
@@ -96,7 +96,7 @@ export function calculateDistance(start: Position, destination: Position): numbe
 export const getHexagonCoordinates = (
   instancedMesh: THREE.InstancedMesh,
   instanceId: number,
-): { row: number; col: number; x: number; z: number } => {
+): HexPosition & { x: number; z: number } => {
   const matrix = new THREE.Matrix4();
   instancedMesh.getMatrixAt(instanceId, matrix);
   const position = new THREE.Vector3();
@@ -107,7 +107,7 @@ export const getHexagonCoordinates = (
   return { row, col, x: position.x, z: position.z };
 };
 
-export const getWorldPositionForHex = (hexCoords: { row: number; col: number }) => {
+export const getWorldPositionForHex = (hexCoords: HexPosition) => {
   const { row, col } = hexCoords;
   // Calculate the x and z coordinates
   const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
@@ -119,11 +119,7 @@ export const getWorldPositionForHex = (hexCoords: { row: number; col: number }) 
   return new THREE.Vector3(x, y, z);
 };
 
-export const getHexForWorldPosition = (worldPosition: {
-  x: number;
-  y: number;
-  z: number;
-}): { row: number; col: number } => {
+export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
   const { x, y, z } = worldPosition;
   const row = -Math.round(z / HEX_VERTICAL_SPACING);
   const col = Math.round((x - ((row % 2) * HEX_HORIZONTAL_SPACING) / 2) / HEX_HORIZONTAL_SPACING);
