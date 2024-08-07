@@ -1,16 +1,13 @@
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
 import { ArmySystemUpdate } from "../systems/types";
 import { ID } from "@bibliothecadao/eternum";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
-const MODEL_PATH = "models/biomes/Horse.glb";
 const MAX_INSTANCES = 1000;
 
 export class ArmyManager {
@@ -18,9 +15,6 @@ export class ArmyManager {
   private instancedModel: InstancedModel | undefined;
   private dummy: THREE.Mesh;
   loadPromise: Promise<void>;
-  private animationClip: THREE.AnimationClip | undefined;
-  private mixer: THREE.AnimationMixer | undefined;
-  private interval: any;
   private mesh: THREE.InstancedMesh;
   private armies: Map<number, number> = new Map<number, number>();
   private scale: THREE.Vector3;
@@ -30,42 +24,29 @@ export class ArmyManager {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.dummy = new THREE.Mesh();
-    this.mesh = new THREE.InstancedMesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial(), 0);
-    this.scale = new THREE.Vector3(0.005, 0.005, 0.005);
+    this.dummy = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.5, 32));
+    this.mesh = new THREE.InstancedMesh(this.dummy.geometry, this.dummy.material, MAX_INSTANCES);
+    this.scale = new THREE.Vector3(1, 1, 1);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
 
     // bind
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
 
-    this.loadPromise = new Promise<void>((resolve, reject) => {
-      const loader = new GLTFLoader();
-      loader.load(
-        MODEL_PATH,
-        (gltf) => {
-          this.dummy = gltf.scene.children[0] as THREE.Mesh;
-          this.mesh = new THREE.InstancedMesh(this.dummy.geometry, this.dummy.material, MAX_INSTANCES);
-          this.mesh.castShadow = true;
+    this.loadPromise = Promise.resolve();
 
-          this.dummy.position.set(0, 0, 0);
-          this.dummy.updateMatrix();
-          this.mesh.setMatrixAt(0, this.dummy.matrix);
+    this.mesh.castShadow = true;
 
-          this.mesh.count = 0;
-          this.mesh.instanceMatrix.needsUpdate = true;
+    this.mesh.morphTargetInfluences?.fill(0);
+    this.mesh.morphTargetDictionary = {};
+    this.mesh.geometry.morphTargetsRelative = false;
 
-          this.mixer = new THREE.AnimationMixer(gltf.scene);
+    this.dummy.position.set(0, 0, 0);
+    this.dummy.updateMatrix();
+    this.mesh.setMatrixAt(0, this.dummy.matrix);
 
-          resolve();
-        },
-        undefined,
-        (error) => {
-          console.error("An error occurred while loading the model:", error);
-          reject(error);
-        },
-      );
-    });
+    this.mesh.count = 0;
+    this.mesh.instanceMatrix.needsUpdate = true;
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -170,9 +151,6 @@ export class ArmyManager {
   }
 
   update(deltaTime: number) {
-    if (this.mixer) {
-      this.mixer.update(deltaTime); // Slow down animation by reducing deltaTime
-    }
     this.movingArmies.forEach((movement, index) => {
       movement.progress += deltaTime * 0.5; // Adjust this value to change movement speed
       if (movement.progress >= 1) {
@@ -195,12 +173,6 @@ export class ArmyManager {
 
     if (this.movingArmies.size > 0) {
       this.mesh.instanceMatrix.needsUpdate = true;
-    }
-    for (let i = 0; i < this.mesh.count; i++) {
-      this.mesh.setMorphAt(i, this.dummy);
-    }
-    if (this.mesh.morphTexture) {
-      this.mesh.morphTexture.needsUpdate = true;
     }
   }
 }
