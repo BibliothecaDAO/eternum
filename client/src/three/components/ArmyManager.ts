@@ -1,26 +1,38 @@
 import * as THREE from "three";
-import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { ArmySystemUpdate } from "../systems/types";
 import { ID } from "@bibliothecadao/eternum";
+import { HexPosition } from "@/types";
+import { calculateOffset } from "@/ui/utils/utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
 const MAX_INSTANCES = 1000;
+const RADIUS_OFFSET = 0.09;
 
 export class ArmyManager {
   private scene: THREE.Scene;
-  private instancedModel: InstancedModel | undefined;
   private dummy: THREE.Mesh;
   loadPromise: Promise<void>;
   private mesh: THREE.InstancedMesh;
-  private armies: Map<number, number> = new Map<number, number>();
+  private armies: Map<number, { index: number; hexCoords: HexPosition }> = new Map();
   private scale: THREE.Vector3;
   private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
-  private labels: Map<number, THREE.Points> = new Map<number, THREE.Points>();
+  private labels: Map<number, THREE.Points> = new Map();
+
+  private getArmyWorldPosition = (armyEntityId: ID, hexCoords: HexPosition) => {
+    const totalOnSameHex = Array.from(this.armies.values()).filter((army) => {
+      return army.hexCoords.col === hexCoords.col && army.hexCoords.row === hexCoords.row;
+    }).length;
+    const basePosition = getWorldPositionForHex(hexCoords);
+    if (totalOnSameHex === 1) return basePosition;
+    const { x, z } = calculateOffset(armyEntityId, totalOnSameHex, RADIUS_OFFSET);
+    const offset = new THREE.Vector3(x, 0, z);
+    return basePosition.add(offset);
+  };
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -29,7 +41,6 @@ export class ArmyManager {
     this.scale = new THREE.Vector3(1, 1, 1);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
 
-    // bind
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
 
@@ -85,7 +96,6 @@ export class ArmyManager {
     await this.loadPromise;
     const { entityId, hexCoords, isMine } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
-    console.log("updating armies");
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, normalizedCoord);
     } else {
@@ -93,48 +103,49 @@ export class ArmyManager {
     }
   }
 
-  addArmy(entityId: ID, hexCoords: { col: number; row: number }, isMine: boolean) {
-    console.log("add army: ", entityId, hexCoords);
+  addArmy(entityId: ID, hexCoords: HexPosition, isMine: boolean) {
     const index = this.mesh.count;
     this.mesh.count++;
-    this.armies.set(entityId, index);
-    const position = getWorldPositionForHex(hexCoords);
+    this.armies.set(entityId, { index, hexCoords });
+    const position = this.getArmyWorldPosition(entityId, hexCoords);
     this.dummy.position.copy(position);
     this.dummy.scale.copy(this.scale);
     this.dummy.updateMatrix();
     this.mesh.setMatrixAt(index, this.dummy.matrix);
     this.mesh.instanceMatrix.needsUpdate = true;
 
-    // Map the index to the entityId in the instancedMesh userData
     if (!this.mesh.userData.entityIdMap) {
       this.mesh.userData.entityIdMap = {};
     }
     this.mesh.userData.entityIdMap[index] = entityId;
 
-    // Add label on top of the army
     const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
     this.labels.set(entityId, label);
     this.scene.add(label);
 
-    // Add the mesh to the scene if it's the first army
     if (this.mesh.count === 1) {
       this.scene.add(this.mesh);
     }
   }
 
-  moveArmy(entityId: ID, hexCoords: { col: number; row: number }) {
-    console.log("move army: ", entityId, hexCoords);
-    const index = this.armies.get(entityId);
-    if (index === undefined) {
+  moveArmy(entityId: ID, hexCoords: HexPosition) {
+    const armyData = this.armies.get(entityId);
+    if (!armyData) {
       console.error(`No army found with entityId: ${entityId}`);
       return;
     }
-    const newPosition = getWorldPositionForHex(hexCoords);
+    if (armyData.hexCoords.col === hexCoords.col && armyData.hexCoords.row === hexCoords.row) {
+      return;
+    }
+    console.log("move army", entityId, hexCoords);
+
+    const index = armyData.index;
+    this.armies.set(entityId, { index, hexCoords });
+    const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
     const currentPosition = new THREE.Vector3();
     this.mesh.getMatrixAt(index, this.dummy.matrix);
     currentPosition.setFromMatrixPosition(this.dummy.matrix);
 
-    // Calculate direction and set rotation
     const direction = new THREE.Vector3().subVectors(newPosition, currentPosition).normalize();
     const angle = Math.atan2(direction.x, direction.z);
     this.dummy.rotation.set(0, angle, 0);
@@ -146,13 +157,9 @@ export class ArmyManager {
     });
   }
 
-  printModel() {
-    console.log({ instancedModel: this.instancedModel });
-  }
-
   update(deltaTime: number) {
     this.movingArmies.forEach((movement, index) => {
-      movement.progress += deltaTime * 0.5; // Adjust this value to change movement speed
+      movement.progress += deltaTime * 0.5;
       if (movement.progress >= 1) {
         this.dummy.position.copy(movement.endPos);
         this.movingArmies.delete(index);
@@ -163,7 +170,6 @@ export class ArmyManager {
       this.dummy.updateMatrix();
       this.mesh.setMatrixAt(index, this.dummy.matrix);
 
-      // Update label position continuously during movement
       const entityId = this.mesh.userData.entityIdMap[index];
       const label = this.labels.get(entityId);
       if (label) {

@@ -107,10 +107,7 @@ export const getHexagonCoordinates = (
   return { row, col, x: position.x, z: position.z };
 };
 
-export const getWorldPositionForHex = (hexCoords: {
-  row: number;
-  col: number;
-}): { x: number; y: number; z: number } => {
+export const getWorldPositionForHex = (hexCoords: { row: number; col: number }) => {
   const { row, col } = hexCoords;
   // Calculate the x and z coordinates
   const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
@@ -152,6 +149,25 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized?: b
     x,
     y,
     z,
+  };
+};
+
+export const calculateOffset = (index: number, total: number, radius: number) => {
+  if (total === 1) return { x: 0, y: 0 };
+
+  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
+  let angle = angleIncrement * (index % 6);
+  let offsetRadius = radius;
+
+  if (index >= 6) {
+    // Adjustments for more than 6 armies, placing them in another layer
+    offsetRadius += 0.5; // Increase radius for each new layer
+    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
+  }
+
+  return {
+    x: offsetRadius * Math.cos(angle),
+    z: offsetRadius * Math.sin(angle),
   };
 };
 
