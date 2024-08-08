@@ -1,23 +1,24 @@
 import * as THREE from "three";
 import { Raycaster } from "three";
 
+import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { SetupResult } from "@/dojo/setup";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import { HexPosition, SceneName } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { Biome, BiomeType } from "../components/Biome";
-import { ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { GUIManager } from "../helpers/GUIManager";
+import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
+import { Biome, BiomeType } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
-import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
-import { StructureSystemUpdate, TileSystemUpdate } from "../systems/types";
-import { HexPosition } from "@/types";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { GUIManager } from "../helpers/GUIManager";
+import { TileSystemUpdate } from "../systems/types";
 import { HEX_SIZE, HexagonScene } from "./HexagonScene";
+import { c } from "vite/dist/node/types.d-aGj9QkWt";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -49,7 +50,7 @@ export default class WorldmapScene extends HexagonScene {
     mouse: THREE.Vector2,
     sceneManager: SceneManager,
   ) {
-    super("worldmap", controls, dojoContext, mouse, raycaster, sceneManager);
+    super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -85,6 +86,14 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
+  public moveCameraToURLLocation() {
+    const col = this.locationManager.getCol();
+    const row = this.locationManager.getRow();
+    if (col && row) {
+      this.moveCameraToColRow(col, row, 0);
+    }
+  }
+
   private onArmyMouseMove(entityId: ID | undefined) {
     if (entityId) {
       this.state.setHoveredArmyEntityId(entityId);
@@ -102,12 +111,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    console.log("click");
-    this.sceneManager.switchScene("hexception", hexCoords);
+    this.sceneManager.switchScene(SceneName.Hexception, hexCoords);
   }
 
   protected onHexagonClick(hexCoords: HexPosition) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
+
     if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
       if (travelPath) {
@@ -409,7 +418,6 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     if (this.currentChunk !== chunkKey) {
       this.currentChunk = chunkKey;
-      console.log("currentChunk", this.currentChunk);
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
     }

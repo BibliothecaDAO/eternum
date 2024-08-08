@@ -1,5 +1,9 @@
 export type HexPosition = { col: number; row: number };
 
+export enum SceneName {
+  WorldMap = "map",
+  Hexception = "hex",
+}
 export interface Health {
   current: bigint;
   lifetime: bigint;

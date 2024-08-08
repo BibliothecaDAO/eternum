@@ -1,21 +1,20 @@
 import * as THREE from "three";
 
+const FADE_DURATION = 500;
+
 export class TransitionManager {
-  constructor(private renderer: THREE.WebGLRenderer) {
-    console.log("Transition manager");
-  }
+  constructor(private renderer: THREE.WebGLRenderer) {}
 
   fadeOut(onComplete: () => void) {
     let opacity = 1;
     const startTime = performance.now();
-    const duration = 500; // 500ms for the fade
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
-      opacity = 1 - Math.min(elapsed / duration, 1);
+      opacity = 1 - Math.min(elapsed / FADE_DURATION, 1);
       this.renderer.domElement.style.opacity = opacity.toString();
 
-      if (elapsed < duration) {
+      if (elapsed < FADE_DURATION) {
         requestAnimationFrame(animate);
       } else {
         this.renderer.domElement.style.opacity = "0";
@@ -29,14 +28,13 @@ export class TransitionManager {
   fadeIn() {
     let opacity = 0;
     const startTime = performance.now();
-    const duration = 500; // 500ms for the fade
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
-      opacity = Math.min(elapsed / duration, 1);
+      opacity = Math.min(elapsed / FADE_DURATION, 1);
       this.renderer.domElement.style.opacity = opacity.toString();
 
-      if (elapsed < duration) {
+      if (elapsed < FADE_DURATION) {
         requestAnimationFrame(animate);
       } else {
         this.renderer.domElement.style.opacity = "1";

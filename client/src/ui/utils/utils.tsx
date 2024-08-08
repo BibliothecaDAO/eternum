@@ -1,24 +1,14 @@
-import {
-  ContractAddress,
-  ID,
-  Position,
-  ResourcesIds,
-  Resource,
-  WEIGHTS,
-  UIPosition,
-  neighborOffsetsEven,
-  neighborOffsetsOdd,
-} from "@bibliothecadao/eternum";
+import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/HexagonScene";
+import { HexPosition, ResourceMiningTypes } from "@/types";
+import { ContractAddress, ID, Position, Resource, ResourcesIds, UIPosition, WEIGHTS } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import * as THREE from "three";
 import {
   default as realmHexPositions,
   default as realmsHexPositions,
 } from "../../data/geodata/hex/realmHexPositions.json";
 import { FELT_CENTER } from "../config";
 import { SortInterface } from "../elements/SortButton";
-import * as THREE from "three";
-import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/HexagonScene";
-import { HexPosition, ResourceMiningTypes } from "@/types";
 
 export { getEntityIdFromKeys };
 
