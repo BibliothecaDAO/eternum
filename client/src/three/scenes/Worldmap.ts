@@ -169,21 +169,6 @@ export default class WorldmapScene extends HexagonScene {
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
     }
 
-    this.interactiveHexManager.addHex({ col, row });
-
-    // Add border hexes for newly explored hex
-    const neighborOffsets = row % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
-
-    neighborOffsets.forEach(({ i, j }) => {
-      const neighborCol = col + i;
-      const neighborRow = row + j;
-      const isNeighborExplored = this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
-
-      if (!isNeighborExplored) {
-        this.interactiveHexManager.addHex({ col: neighborCol, row: neighborRow });
-      }
-    });
-
     const rotationSeed = this.hashCoordinates(col, row);
     const rotationIndex = Math.floor(rotationSeed * 6);
     const randomRotation = (rotationIndex * Math.PI) / 3;
@@ -193,24 +178,66 @@ export default class WorldmapScene extends HexagonScene {
 
     dummy.updateMatrix();
 
-    await Promise.all(this.modelLoadPromises);
-    const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-    const currentCount = hexMesh.getCount();
-    hexMesh.setMatrixAt(currentCount, dummy.matrix);
-    hexMesh.setCount(currentCount + 1);
-    hexMesh.needsUpdate();
-
-    // Cache the updated matrices for the chunk
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(pos.x, pos.z);
-    this.cacheMatricesForChunk(chunkZ * this.chunkSize, chunkX * this.chunkSize);
+    const hexCol = chunkX * this.chunkSize;
+    const hexRow = chunkZ * this.chunkSize;
+    const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
+    const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
 
-    this.interactiveHexManager.renderHexes();
+    // if the hex is within the chunk, add it to the interactive hex manager and to the biome
+    if (
+      hexCol >= renderedChunkCenterCol - this.renderChunkSize.width / 2 &&
+      hexCol <= renderedChunkCenterCol + this.renderChunkSize.width / 2 &&
+      hexRow >= renderedChunkCenterRow - this.renderChunkSize.height / 2 &&
+      hexRow <= renderedChunkCenterRow + this.renderChunkSize.height / 2
+    ) {
+      this.interactiveHexManager.addHex({ col, row });
+
+      // Add border hexes for newly explored hex
+      const neighborOffsets = row % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
+
+      neighborOffsets.forEach(({ i, j }) => {
+        const neighborCol = col + i;
+        const neighborRow = row + j;
+        const isNeighborExplored = this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
+
+        if (!isNeighborExplored) {
+          this.interactiveHexManager.addHex({ col: neighborCol, row: neighborRow });
+        }
+      });
+
+      await Promise.all(this.modelLoadPromises);
+      const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+      const currentCount = hexMesh.getCount();
+      hexMesh.setMatrixAt(currentCount, dummy.matrix);
+      hexMesh.setCount(currentCount + 1);
+      hexMesh.needsUpdate();
+
+      // Cache the updated matrices for the chunk
+
+      this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
+
+      this.interactiveHexManager.renderHexes();
+    }
+
+    // remove the cached matrices for the explored hexes that are not in the visible chunk
+    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
+      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
+        if (i === 0 && j === 0) {
+          continue;
+        }
+        this.removeCachedMatricesForChunk(renderedChunkCenterRow + i, renderedChunkCenterCol + j);
+      }
+    }
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     await Promise.all(this.modelLoadPromises);
-    if (this.applyCachedMatricesForChunk(startRow, startCol)) return;
-
+    if (this.applyCachedMatricesForChunk(startRow, startCol)) {
+      console.log("applyCachedMatricesForChunk", startRow, startCol);
+      return;
+    }
+    console.log("create new grid", startRow, startCol);
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],
@@ -344,6 +371,11 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  removeCachedMatricesForChunk(startRow: number, startCol: number) {
+    const chunkKey = `${startRow},${startCol}`;
+    this.cachedMatrices.delete(chunkKey);
+  }
+
   private applyCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
@@ -372,15 +404,13 @@ export default class WorldmapScene extends HexagonScene {
     const adjustedZ = cameraPosition.z - (this.chunkSize * HEX_SIZE * 1.5) / 3;
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
-
-    const chunkKey = `${chunkX},${chunkZ}`;
+    const startCol = chunkX * this.chunkSize;
+    const startRow = chunkZ * this.chunkSize;
+    const chunkKey = `${startRow},${startCol}`;
     if (this.currentChunk !== chunkKey) {
       this.currentChunk = chunkKey;
       console.log("currentChunk", this.currentChunk);
-
       // Calculate the starting position for the new chunk
-      const startCol = chunkX * this.chunkSize;
-      const startRow = chunkZ * this.chunkSize;
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
     }
   }
