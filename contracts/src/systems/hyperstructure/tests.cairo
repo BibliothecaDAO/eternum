@@ -32,6 +32,7 @@ use eternum::utils::testing::{
 use starknet::contract_address_const;
 
 const TEST_AMOUNT: u128 = 1_000_000;
+const TIME_BETWEEN_SHARES_CHANGE: u64 = 1000;
 
 fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     let world = spawn_eternum();
@@ -67,7 +68,8 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
         i += 1;
     };
 
-    hyperstructure_config_dispatcher.set_hyperstructure_config(resources_for_completion.span());
+    hyperstructure_config_dispatcher
+        .set_hyperstructure_config(resources_for_completion.span(), TIME_BETWEEN_SHARES_CHANGE);
 
     (world, realm_entity_id, hyperstructure_systems_dispatcher)
 }
