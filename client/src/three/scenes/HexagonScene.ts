@@ -131,15 +131,21 @@ export abstract class HexagonScene {
     );
     this.inputManager.addListener("dblclick", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onHexagonDoubleClick(clickedHex);
+      clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
     });
     this.inputManager.addListener("click", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onHexagonClick(clickedHex);
+      clickedHex && this.onHexagonClick(clickedHex.hexCoords);
     });
   }
 
-  protected abstract onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void;
+  protected abstract onHexagonMouseMove({
+    hexCoords,
+    position,
+  }: {
+    hexCoords: HexPosition;
+    position: THREE.Vector3;
+  }): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
 

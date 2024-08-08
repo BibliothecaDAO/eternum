@@ -96,15 +96,15 @@ export function calculateDistance(start: Position, destination: Position): numbe
 export const getHexagonCoordinates = (
   instancedMesh: THREE.InstancedMesh,
   instanceId: number,
-): HexPosition & { x: number; z: number } => {
+): { hexCoords: HexPosition; position: THREE.Vector3 } => {
   const matrix = new THREE.Matrix4();
   instancedMesh.getMatrixAt(instanceId, matrix);
   const position = new THREE.Vector3();
   matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
 
-  const { row, col } = getHexForWorldPosition(position);
+  const hexCoords = getHexForWorldPosition(position);
 
-  return { row, col, x: position.x, z: position.z };
+  return { hexCoords, position };
 };
 
 export const getWorldPositionForHex = (hexCoords: HexPosition) => {
