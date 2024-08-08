@@ -14,6 +14,7 @@ import { displayAddress } from "@/ui/utils/utils";
 import { ContractAddress, getOrderName, ID } from "@bibliothecadao/eternum";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CoOwnersWithTimestamp } from "./types";
 
 export const CoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID }) => {
   const [isChangingCoOwners, setIsChangingCoOwners] = useState(false);
@@ -48,15 +49,7 @@ const CoOwnersRows = ({
   hyperstructureEntityId,
   setIsChangingCoOwners,
 }: {
-  coOwnersWithTimestamp:
-    | {
-        coOwners: {
-          address: ContractAddress;
-          percentage: number;
-        }[];
-        timestamp: number;
-      }
-    | undefined;
+  coOwnersWithTimestamp: CoOwnersWithTimestamp | undefined;
   hyperstructureEntityId: ID;
   setIsChangingCoOwners: (isChangingCoOwners: boolean) => void;
 }) => {

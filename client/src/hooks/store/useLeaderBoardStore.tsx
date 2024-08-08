@@ -28,7 +28,7 @@ interface LeaderboardStore {
   setFinishedHyperstructures: (val: HyperstructureFinishedEvent[]) => void;
 }
 
-export const useLeaderBoardStore = create<LeaderboardStore>((set) => {
+const useLeaderBoardStore = create<LeaderboardStore>((set) => {
   return {
     finishedHyperstructures: [],
     setFinishedHyperstructures: (val: HyperstructureFinishedEvent[]) => set({ finishedHyperstructures: val }),

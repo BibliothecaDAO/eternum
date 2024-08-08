@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getAddressNameFromEntityIds, getAllPlayers, getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getAddressNameFromEntityIds, getEntitiesUtils, useGetAllPlayers } from "@/hooks/helpers/useEntities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { HasValue, runQuery } from "@dojoengine/recs";
@@ -26,7 +26,7 @@ export const AddressSelect = ({
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
-  const getPlayers = getAllPlayers();
+  const getPlayers = useGetAllPlayers();
 
   const players = useMemo(() => {
     if (addressList) {

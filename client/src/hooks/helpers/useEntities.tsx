@@ -154,7 +154,7 @@ export const getEntitiesUtils = () => {
   return { getEntityName, getEntityInfo, getAddressNameFromEntity, getPlayerAddressFromEntity };
 };
 
-export const getAllPlayers = () => {
+export const useGetAllPlayers = () => {
   const {
     setup: {
       components: { Owner, Realm },

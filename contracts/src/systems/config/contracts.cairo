@@ -50,9 +50,7 @@ trait ITransportConfig {
 #[dojo::interface]
 trait IHyperstructureConfig {
     fn set_hyperstructure_config(
-        ref world: IWorldDispatcher,
-        resources_for_completion: Span<(u8, u128)>,
-        time_between_shares_change: u64
+        ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>, time_between_shares_change: u64
     );
 }
 
@@ -144,10 +142,10 @@ mod config_systems {
     use eternum::models::combat::{Troops};
 
     use eternum::models::config::{
-        CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
-        RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
-        TroopConfig, BuildingConfig, BuildingCategoryPopConfig, PopulationConfig,
-        HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, MercenariesConfig
+        CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig,
+        MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig,
+        BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig,
+        MercenariesConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -474,9 +472,7 @@ mod config_systems {
     #[abi(embed_v0)]
     impl HyperstructureConfigCustomImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
-            ref world: IWorldDispatcher,
-            resources_for_completion: Span<(u8, u128)>,
-            time_between_shares_change: u64
+            ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>, time_between_shares_change: u64
         ) {
             assert_caller_is_admin(world);
             let mut i = 0;
@@ -494,12 +490,7 @@ mod config_systems {
                 i += 1;
             };
 
-            set!(
-                world,
-                (HyperstructureConfig {
-                    config_id: HYPERSTRUCTURE_CONFIG_ID, time_between_shares_change
-                })
-            );
+            set!(world, (HyperstructureConfig { config_id: HYPERSTRUCTURE_CONFIG_ID, time_between_shares_change }));
         }
     }
 
