@@ -12,13 +12,14 @@ export class SystemManager {
     component: Component,
     callback: (value: T) => void,
     getUpdate: (update: any) => T | undefined,
+    runOnInit: boolean = true,
   ) {
     const handleUpdate = (update: any) => {
       const value = getUpdate(update);
       if (value) callback(value);
     };
 
-    defineComponentSystem(this.dojo.network.world, component, handleUpdate);
+    defineComponentSystem(this.dojo.network.world, component, handleUpdate, { runOnInit });
   }
 
   public get Army() {

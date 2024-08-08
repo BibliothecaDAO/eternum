@@ -146,10 +146,10 @@ export default class HexceptionScene extends HexagonScene {
       this.updateHexceptionGrid(4);
     }
   }
-  protected onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {
-    this.buildingPreview?.setBuildingPosition(new THREE.Vector3(hoveredHex.x, 0, hoveredHex.z));
+  protected onHexagonMouseMove({ position }: { position: THREE.Vector3 }): void {
+    this.buildingPreview?.setBuildingPosition(position);
   }
-  protected onHexagonDoubleClick(hexCoords: HexPosition): void {}
+  protected onHexagonDoubleClick(): void {}
 
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();

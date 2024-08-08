@@ -135,10 +135,6 @@ const formatArmies = (
 
       const isMine = (owner?.address || 0n) === ContractAddress(playerAddress);
       const isMercenary = owner === undefined;
-      const ownGroupIndex = Number(army.entity_id) % 12;
-      const offset = calculateOffset(ownGroupIndex, 12);
-      const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;
-      offset.y += offsetToAvoidOverlapping;
 
       return {
         ...army,
@@ -157,7 +153,6 @@ const formatArmies = (
         homePosition,
         isMine,
         isMercenary,
-        offset,
         uiPos: { ...getUIPositionFromColRow(Number(position?.x || 0), Number(position?.y || 0)), z: 0.32 },
         name: name
           ? shortString.decodeShortString(name.name.toString())
@@ -546,24 +541,4 @@ export const getArmyByEntityId = () => {
   };
 
   return { getAliveArmy, getArmy };
-};
-
-const calculateOffset = (index: number, total: number) => {
-  if (total === 1) return { x: 0, y: 0 };
-
-  const radius = 1.5; // Radius where the armies will be placed
-  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
-  let angle = angleIncrement * (index % 6);
-  let offsetRadius = radius;
-
-  if (index >= 6) {
-    // Adjustments for more than 6 armies, placing them in another layer
-    offsetRadius += 0.5; // Increase radius for each new layer
-    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
-  }
-
-  return {
-    x: offsetRadius * Math.cos(angle),
-    y: offsetRadius * Math.sin(angle),
-  };
 };

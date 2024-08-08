@@ -94,10 +94,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // methods needed to add worldmap specific behavior to the click events
-  protected onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }) {
+  protected onHexagonMouseMove({ hexCoords }: { hexCoords: HexPosition }) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
-      this.state.updateHoveredHex(hoveredHex);
+      this.state.updateHoveredHex(hexCoords);
     }
   }
 
