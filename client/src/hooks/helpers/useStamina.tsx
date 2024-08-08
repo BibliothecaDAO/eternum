@@ -106,6 +106,7 @@ const getMaxStamina = (troops: any, StaminaConfig: Component): number => {
       StaminaConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),
     );
+    if (!knightConfig) return 0;
     maxStaminas.push(knightConfig!.max_stamina);
   }
   if (troops.crossbowman_count > 0) {
@@ -113,6 +114,7 @@ const getMaxStamina = (troops: any, StaminaConfig: Component): number => {
       StaminaConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
     );
+    if (!crossbowmanConfig) return 0;
     maxStaminas.push(crossbowmanConfig!.max_stamina);
   }
   if (troops.paladin_count > 0) {
@@ -120,6 +122,7 @@ const getMaxStamina = (troops: any, StaminaConfig: Component): number => {
       StaminaConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Paladin)]),
     );
+    if (!paladinConfig) return 0;
     maxStaminas.push(paladinConfig!.max_stamina);
   }
 

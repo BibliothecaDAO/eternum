@@ -3,6 +3,7 @@ import { highlightHexMaterial } from "@/three/shaders/highlightHexMaterial";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { HEX_SIZE } from "../scenes/HexagonScene";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
+import { HexPosition } from "@/types";
 
 export class HighlightHexManager {
   private highlightedHexes: THREE.Mesh[] = [];
@@ -12,7 +13,7 @@ export class HighlightHexManager {
     this.material = highlightHexMaterial;
   }
 
-  highlightHexes(hexes: { row: number; col: number }[]) {
+  highlightHexes(hexes: HexPosition[]) {
     // Remove existing highlights
     this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
     this.highlightedHexes = [];

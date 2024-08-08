@@ -131,15 +131,21 @@ export abstract class HexagonScene {
     );
     this.inputManager.addListener("dblclick", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onHexagonDoubleClick(clickedHex);
+      clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
     });
     this.inputManager.addListener("click", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onHexagonClick(clickedHex);
+      clickedHex && this.onHexagonClick(clickedHex.hexCoords);
     });
   }
 
-  protected abstract onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void;
+  protected abstract onHexagonMouseMove({
+    hexCoords,
+    position,
+  }: {
+    hexCoords: HexPosition;
+    position: THREE.Vector3;
+  }): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
 
@@ -163,7 +169,7 @@ export abstract class HexagonScene {
     return hash - Math.floor(hash);
   }
 
-  private getHexFromWorldPosition(position: THREE.Vector3): { row: number; col: number } {
+  private getHexFromWorldPosition(position: THREE.Vector3): HexPosition {
     const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
     const verticalSpacing = (HEX_SIZE * 3) / 2;
 
@@ -185,7 +191,7 @@ export abstract class HexagonScene {
   getHexagonCoordinates(
     instancedMesh: THREE.InstancedMesh,
     instanceId: number,
-  ): { row: number; col: number; x: number; z: number } {
+  ): HexPosition & { x: number; z: number } {
     const matrix = new THREE.Matrix4();
     instancedMesh.getMatrixAt(instanceId, matrix);
     const position = new THREE.Vector3();
