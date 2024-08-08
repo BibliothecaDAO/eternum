@@ -304,20 +304,6 @@ const DONKEY_ENTITY_TYPE: u32 = 256;
 const REALM_ENTITY_TYPE: u32 = 257;
 const ARMY_ENTITY_TYPE: u32 = 258;
 
-
-// TODO: change to consts
-enum BuildingTypes {
-    HOUSE: u8,
-    STORE_HOUSE: u8,
-    GRANARY: u8,
-    FARM: u8,
-    FISHING_VILLAGE: u8,
-    BARACKS: u8,
-    MAGE_TOWER: u8,
-    ARCHER_TOWER: u8,
-    CASTLE: u8,
-}
-
 mod LevelIndex {
     const FOOD: u8 = 1;
     const RESOURCE: u8 = 2;

@@ -15,5 +15,7 @@ export const BattleContainer = ({ children }: { children: React.ReactNode }) => 
     return () => document.removeEventListener("keydown", (e) => handleEscapePress(e));
   }, []);
 
-  return <div className="w-screen h-screen z-[200] bg-transparent top-0 left-0 absolute">{children}</div>;
+  return (
+    <div className="w-screen h-screen z-[200] bg-transparent top-0 left-0 absolute pointer-events-auto">{children}</div>
+  );
 };
