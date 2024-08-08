@@ -90,7 +90,7 @@ export const TopMiddleNavigation = () => {
 
     if (!newPosition) throw new Error("No position found");
 
-    const position = new Position({ x: newPosition.x, y: newPosition.y }).getNormalized();
+    const url = new Position({ x: newPosition.x, y: newPosition.y }).toLocationUrl();
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
@@ -99,7 +99,7 @@ export const TopMiddleNavigation = () => {
         setRealmEntityId(entityId);
       }
 
-      setLocation(`/map?col=${position.x}&row=${position.y}`);
+      setLocation(url);
       window.dispatchEvent(new Event("urlChanged"));
     }, 300);
   };

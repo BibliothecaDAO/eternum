@@ -326,13 +326,13 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
-  const positionNormalized = new PositionInterface(position).getNormalized();
+  const url = new PositionInterface(position).toLocationUrl();
 
   return (
     <Map
       className={className}
       onClick={() => {
-        setLocation(`/map?col=${positionNormalized.x}&row=${positionNormalized.y}`);
+        setLocation(url);
         if (location === "/map") {
           window.dispatchEvent(new Event("urlChanged"));
         } else {
@@ -348,7 +348,7 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
-  const positionNormalized = new PositionInterface(position).getNormalized();
+  const url = new PositionInterface(position).toLocationUrl();
 
   return (
     <Button
@@ -356,7 +356,7 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
       variant="primary"
       size="xs"
       onClick={() => {
-        setLocation(`/map?col=${positionNormalized.x}&row=${positionNormalized.y}`);
+        setLocation(url);
         if (location === "/map") {
           window.dispatchEvent(new Event("urlChanged"));
         } else {

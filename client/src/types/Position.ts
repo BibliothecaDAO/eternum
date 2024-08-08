@@ -11,7 +11,7 @@ export class Position {
     this.normalized = x < FELT_CENTER && y < FELT_CENTER;
   }
 
-  public getcontract() {
+  public getContract() {
     return {
       x: this.normalized ? this.x + FELT_CENTER : this.x,
       y: this.normalized ? this.y + FELT_CENTER : this.y,
@@ -23,5 +23,10 @@ export class Position {
       x: this.normalized ? this.x : this.x - FELT_CENTER,
       y: this.normalized ? this.y : this.y - FELT_CENTER,
     };
+  }
+
+  public toLocationUrl() {
+    const normalized = this.getNormalized();
+    return `/map?col=${normalized.x}&row=${normalized.y}`;
   }
 }
