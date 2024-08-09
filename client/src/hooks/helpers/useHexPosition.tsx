@@ -6,15 +6,6 @@ import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
 
-export enum HexType {
-  BANK = "bank",
-  REALM = "realm",
-  SHARDSMINE = "shardsmine",
-  HYPERSTRUCTURE = "Hyperstructure",
-  UNFINISHEDHYPERSTRUCTURE = "UnfinishedHyperstructure",
-  EMPTY = "empty",
-}
-
 export const useHexPosition = () => {
   const {
     setup: {

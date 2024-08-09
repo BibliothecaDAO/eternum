@@ -1,16 +1,17 @@
 import { SetupResult } from "@/dojo/setup";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import { SceneName } from "@/types";
 import _ from "lodash";
 import * as THREE from "three";
+import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { TransitionManager } from "./components/TransitionManager";
+import { GUIManager } from "./helpers/GUIManager";
 import { LocationManager } from "./helpers/LocationManager";
 import { SceneManager } from "./SceneManager";
 import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
-import { GUIManager } from "./helpers/GUIManager";
-import { CSS2DRenderer } from "three-stdlib";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SystemManager } from "./systems/SystemManager";
 
 export default class GameRenderer {
@@ -29,7 +30,14 @@ export default class GameRenderer {
   }
 
   private handleURLChange = () => {
-    this.worldmapScene.moveCameraToURLLocation();
+    const url = new URL(window.location.href);
+    const scene = url.pathname.split("/").pop();
+
+    if (scene === this.sceneManager.getCurrentScene()) {
+      this.sceneManager.moveCameraForScene();
+    } else {
+      this.switchScene(scene as SceneName);
+    }
   };
 
   // Store
@@ -142,7 +150,7 @@ export default class GameRenderer {
     this.controls.addEventListener(
       "change",
       _.throttle(() => {
-        if (this.sceneManager?.getCurrentScene() === "worldmap") {
+        if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
           this.worldmapScene.updateVisibleChunks();
         }
       }, 30),
@@ -155,16 +163,16 @@ export default class GameRenderer {
     this.systemManager = new SystemManager(this.dojo);
 
     this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
-    this.sceneManager.addScene("hexception", this.hexceptionScene);
+    this.sceneManager.addScene(SceneName.Hexception, this.hexceptionScene);
 
     // Add grid
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
-    this.sceneManager.addScene("worldmap", this.worldmapScene);
+    this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
 
     this.worldmapScene.createGroundMesh();
 
-    this.worldmapScene.moveCameraToURLLocation();
+    this.sceneManager.moveCameraForScene();
 
     // Init animation
     this.animate();
@@ -177,8 +185,8 @@ export default class GameRenderer {
       case "e":
         break;
       case "Escape":
-        if (this.sceneManager?.getCurrentScene() === "hexception") {
-          this.sceneManager.switchScene("worldmap");
+        if (this.sceneManager?.getCurrentScene() === SceneName.Hexception) {
+          this.switchScene(SceneName.WorldMap);
         }
         break;
       default:
@@ -186,17 +194,12 @@ export default class GameRenderer {
     }
   }
 
-  switchScene() {
-    if (this.sceneManager?.getCurrentScene() === "worldmap") {
-      this.sceneManager.switchScene("hexception");
-    } else {
-      this.sceneManager.switchScene("worldmap");
-      this.worldmapScene.moveCameraToURLLocation();
-    }
+  switchScene(sceneName: SceneName) {
+    this.sceneManager.switchScene(sceneName);
+    this.sceneManager.moveCameraForScene();
   }
 
   onWindowResize() {
-    console.log("resize");
     const container = document.getElementById("three-container");
     if (container) {
       const width = container.clientWidth;
@@ -222,7 +225,7 @@ export default class GameRenderer {
       this.controls.update();
     }
 
-    if (this.sceneManager?.getCurrentScene() === "worldmap") {
+    if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
       this.worldmapScene.update(deltaTime);
       // this.hexGrid.updateVisibleChunks();
       this.renderer.render(this.worldmapScene.getScene(), this.camera);

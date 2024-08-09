@@ -1,44 +1,21 @@
-import { InputManager } from "../components/InputManager";
-import * as THREE from "three";
-import { InteractiveHexManager } from "../components/InteractiveHexManager";
-import { HighlightHexManager } from "../components/HighlightHexManager";
 import { SetupResult } from "@/dojo/setup";
+import gsap from "gsap";
+import * as THREE from "three";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { HighlightHexManager } from "../components/HighlightHexManager";
+import { InputManager } from "../components/InputManager";
+import { InteractiveHexManager } from "../components/InteractiveHexManager";
+import { GUIManager } from "../helpers/GUIManager";
 import { LocationManager } from "../helpers/LocationManager";
 import { SceneManager } from "../SceneManager";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { GUIManager } from "../helpers/GUIManager";
-import gsap from "gsap";
 
+import { HexPosition, SceneName } from "@/types";
 import _, { throttle } from "lodash";
-import { SystemManager } from "../systems/SystemManager";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
-import InstancedModel from "../components/InstancedModel";
 import { BiomeType } from "../components/Biome";
-import { HexPosition } from "@/types";
-
-const BASE_PATH = "/models/bevel-biomes/";
-const biomeModelPaths: Record<BiomeType, string> = {
-  DeepOcean: BASE_PATH + "deepocean.glb",
-  Ocean: BASE_PATH + "ocean.glb",
-  Beach: BASE_PATH + "beach.glb",
-  Scorched: BASE_PATH + "scorched.glb",
-  Bare: BASE_PATH + "bare.glb",
-  Tundra: BASE_PATH + "tundra.glb",
-  Snow: BASE_PATH + "snow.glb",
-  TemperateDesert: BASE_PATH + "temperatedessert.glb",
-  Shrubland: BASE_PATH + "shrublands.glb",
-  Taiga: BASE_PATH + "taiga.glb",
-  Grassland: BASE_PATH + "grassland.glb",
-  TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
-  TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
-  TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
-  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
-};
-
-export const HEX_SIZE = 1;
-export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
-export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
+import InstancedModel from "../components/InstancedModel";
+import { SystemManager } from "../systems/SystemManager";
+import { biomeModelPaths, HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "./constants";
 
 export abstract class HexagonScene {
   protected scene: THREE.Scene;
@@ -57,7 +34,7 @@ export abstract class HexagonScene {
   protected modelLoadPromises: Promise<void>[] = [];
 
   constructor(
-    protected sceneName: string,
+    protected sceneName: SceneName,
     protected controls: MapControls,
     private dojoContext: SetupResult,
     private mouse: THREE.Vector2,
@@ -131,17 +108,25 @@ export abstract class HexagonScene {
     );
     this.inputManager.addListener("dblclick", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onHexagonDoubleClick(clickedHex);
+      clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
     });
     this.inputManager.addListener("click", (raycaster) => {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
-      clickedHex && this.onHexagonClick(clickedHex);
+      clickedHex && this.onHexagonClick(clickedHex.hexCoords);
     });
   }
 
-  protected abstract onHexagonMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void;
+  protected abstract onHexagonMouseMove({
+    hexCoords,
+    position,
+  }: {
+    hexCoords: HexPosition;
+    position: THREE.Vector3;
+  }): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
+
+  public abstract setup(hexCoords: HexPosition): void;
 
   public getScene() {
     return this.scene;
@@ -151,13 +136,17 @@ export abstract class HexagonScene {
     return this.camera;
   }
 
+  public changeScene(sceneName: SceneName) {
+    this.inputManager.changeScene(sceneName);
+  }
+
   protected hashCoordinates(x: number, y: number): number {
     // Simple hash function to generate a deterministic value between 0 and 1
     const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
     return hash - Math.floor(hash);
   }
 
-  private getHexFromWorldPosition(position: THREE.Vector3): { row: number; col: number } {
+  private getHexFromWorldPosition(position: THREE.Vector3): HexPosition {
     const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
     const verticalSpacing = (HEX_SIZE * 3) / 2;
 
@@ -179,7 +168,7 @@ export abstract class HexagonScene {
   getHexagonCoordinates(
     instancedMesh: THREE.InstancedMesh,
     instanceId: number,
-  ): { row: number; col: number; x: number; z: number } {
+  ): HexPosition & { x: number; z: number } {
     const matrix = new THREE.Matrix4();
     instancedMesh.getMatrixAt(instanceId, matrix);
     const position = new THREE.Vector3();
@@ -190,13 +179,7 @@ export abstract class HexagonScene {
     return { row, col, x: position.x, z: position.z };
   }
 
-  public moveCameraToURLLocation() {
-    const col = this.locationManager.getCol();
-    const row = this.locationManager.getRow();
-    if (col && row) {
-      this.moveCameraToColRow(col, row, 0);
-    }
-  }
+  public abstract moveCameraToURLLocation(): void;
 
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;

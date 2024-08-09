@@ -1,3 +1,4 @@
+import { SceneName } from "@/types";
 import * as THREE from "three";
 import { SceneManager } from "../SceneManager";
 
@@ -11,7 +12,7 @@ export class InputManager {
   private clickTimer: NodeJS.Timeout | null = null; // Add this property
 
   constructor(
-    private sceneName: string,
+    private sceneName: SceneName,
     private sceneManager: SceneManager,
     private raycaster: THREE.Raycaster,
     private mouse: THREE.Vector2,
@@ -23,7 +24,9 @@ export class InputManager {
 
   addListener(event: ListenerTypes, callback: (raycaster: THREE.Raycaster) => void): void {
     const handler = (e: MouseEvent) => {
-      if (this.sceneManager.getCurrentScene() !== this.sceneName) return;
+      if (this.sceneManager.getCurrentScene() !== this.sceneName) {
+        return;
+      }
 
       if (event === "click") {
         if (this.isDragged) {
@@ -63,6 +66,10 @@ export class InputManager {
     for (const listener of this.listeners) {
       window.removeEventListener(listener.event, listener.handler);
     }
+  }
+
+  public changeScene(sceneName: SceneName): void {
+    this.sceneName = sceneName;
   }
 
   private handleMouseDown(e: MouseEvent): void {
