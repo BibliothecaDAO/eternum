@@ -8,11 +8,10 @@ import { Tabs } from "../../elements/tab";
 import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { ShardMinePanel } from "@/ui/components/shardMines/ShardMinePanel";
 
-import { useContributions } from "@/hooks/helpers/useContributions";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useShardMines } from "@/hooks/helpers/useShardMines";
 
-import { calculateShares } from "@/hooks/store/useLeaderBoardStore";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -126,13 +125,11 @@ const HyperStructureExtraContent = ({
   x: number;
   y: number;
 }) => {
-  const { getContributionsByPlayerAddress } = useContributions();
+  const {
+    account: { account },
+  } = useDojo();
   const { useProgress } = useHyperstructures();
   const progress = useProgress(hyperstructureEntityId);
-  const playerContributions = getContributionsByPlayerAddress(
-    ContractAddress(useDojo().account.account.address),
-    hyperstructureEntityId,
-  );
 
   return (
     <div className="flex space-x-5 items-center text-xs">
@@ -145,7 +142,13 @@ const HyperStructureExtraContent = ({
       <div>
         Progress: {`${progress.percentage}%`}
         <br />
-        Shares: {currencyIntlFormat(calculateShares(playerContributions) * 100, 0)}%
+        Shares:{" "}
+        {currencyIntlFormat(
+          (LeaderboardManager.instance().getShares(ContractAddress(account.address), hyperstructureEntityId) || 0) *
+            100,
+          0,
+        )}
+        %
       </div>
     </div>
   );

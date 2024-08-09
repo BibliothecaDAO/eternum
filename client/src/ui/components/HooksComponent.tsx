@@ -1,10 +1,10 @@
-import { useFetchBlockchainData } from "../../hooks/store/useBlockchainStore";
-import { useComputePointsLeaderboards } from "@/hooks/store/useLeaderBoardStore";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
+import { useFetchBlockchainData } from "../../hooks/store/useBlockchainStore";
 
 export const HooksComponent = () => {
   useFetchBlockchainData();
-  useComputePointsLeaderboards();
+  useSubscriptionToHyperstructureEvents();
   useHexPosition();
 
   return <></>;

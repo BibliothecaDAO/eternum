@@ -7,6 +7,7 @@ import {
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
+  HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   ResourcesIds,
   TROOPS_STAMINAS,
   WEIGHTS,
@@ -248,6 +249,7 @@ export const setSpeedConfig = async (account: Account, provider: EternumProvider
 export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {
   const tx = await provider.set_hyperstructure_config({
     signer: account,
+    time_between_shares_change: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
     resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map((resource) => ({
       ...resource,
       amount: resource.amount * EternumGlobalConfig.resources.resourcePrecision,

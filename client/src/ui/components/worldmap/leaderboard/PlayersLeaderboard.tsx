@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import useLeaderBoardStore, { PlayerPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
-import Button from "../../../elements/Button";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { ContractAddress, getOrderName } from "@bibliothecadao/eternum";
+import { useMemo, useState } from "react";
+import { PlayerPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { currencyIntlFormat, displayAddress, sortItems } from "../../../utils/utils";
 
 type PlayerPointsLeaderboardKeys = keyof PlayerPointsLeaderboardInterface;
+
 interface SortingParamPlayerPointsLeaderboard {
   label: string;
   sortKey: PlayerPointsLeaderboardKeys;
@@ -14,13 +19,20 @@ interface SortingParamPlayerPointsLeaderboard {
 }
 
 export const PlayersLeaderboard = () => {
-  const [loading, _] = useState(false);
+  const {
+    account: { account },
+  } = useDojo();
+
+  const { getAddressName, getAddressOrder } = useRealm();
+
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
   });
 
-  const playerPointsLeaderboard = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
+  const playerLeaderboard = useMemo(() => {
+    return LeaderboardManager.instance().getPlayersByRank(useBlockchainStore.getState().nextBlockTimestamp!);
+  }, []);
 
   const sortingParams: SortingParamPlayerPointsLeaderboard[] = useMemo(() => {
     return [
@@ -31,8 +43,6 @@ export const PlayersLeaderboard = () => {
       { label: "Points", sortKey: "totalPoints", className: "col-span-1" },
     ];
   }, []);
-
-  useEffect(() => {}, [loading]);
 
   return (
     <div className="flex flex-col">
@@ -53,38 +63,31 @@ export const PlayersLeaderboard = () => {
           />
         ))}
       </SortPanel>
-      {!loading && (
-        <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
-          {sortItems(playerPointsLeaderboard, activeSort).map(
-            ({ order, addressName, address, isYours, totalPoints, rank }) => {
-              return (
-                <div
-                  key={rank}
-                  className={`grid grid-cols-6 gap-4 clip-angled-sm p-1 ${
-                    isYours ? "bg-green/20" : ""
-                  }  text-xxs text-gold`}
-                >
-                  <div className="col-span-1 ">{`#${rank}`}</div>
-                  <div className="col-span-1">{addressName}</div>
-                  <OrderIcon className="col-span-1" order={order} size="xs" />
-                  <div className="col-span-2">{displayAddress(address.toString(16))}</div>
-                  <div className="col-span-1"> {currencyIntlFormat(totalPoints, 0)}</div>
-                </div>
-              );
-            },
-          )}
-        </div>
-      )}
-      {loading && (
-        <div className="flex justify-center items-center min-h-[50px]">
-          (
-          <Button isLoading={true} onClick={() => {}} variant="danger" className="p-2 !h-4 text-xxs !rounded-md">
-            {" "}
-            {}{" "}
-          </Button>
-          )
-        </div>
-      )}
+      <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
+        {sortItems(playerLeaderboard, activeSort).map(([address, points], index) => {
+          const playerName = getAddressName(address) || "Player not found";
+
+          const isOwner = address === ContractAddress(account.address);
+
+          const order = getAddressOrder(address) || 0;
+          const orderName = getOrderName(order);
+
+          return (
+            <div
+              key={index}
+              className={`grid grid-cols-6 gap-4 clip-angled-sm p-1 ${
+                isOwner ? "bg-green/20" : ""
+              }  text-xxs text-gold`}
+            >
+              <div className="col-span-1 ">{`#${index + 1}`}</div>
+              <div className="col-span-1">{playerName}</div>
+              <OrderIcon className="col-span-1" order={orderName} size="xs" />
+              <div className="col-span-2">{displayAddress(address.toString(16))}</div>
+              <div className="col-span-1"> {currencyIntlFormat(points)}</div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

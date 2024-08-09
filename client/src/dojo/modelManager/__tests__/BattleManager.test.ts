@@ -14,7 +14,7 @@ import {
   generateMockBatle,
   generateMockStructure,
   LAST_UPDATED,
-} from "./__mock__";
+} from "./__BattleManagerMock__";
 
 vi.mock("@dojoengine/recs", async () => {
   const actual = await vi.importActual("@dojoengine/recs");

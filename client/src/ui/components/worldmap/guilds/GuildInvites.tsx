@@ -29,10 +29,10 @@ export const GuildInvites = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0, name: "" });
 
-  const { getAddressWhitelist, getAddressGuild } = useGuilds();
+  const { getAddressWhitelist, getGuildFromPlayerAddress } = useGuilds();
 
   const { addressWhitelist } = getAddressWhitelist(ContractAddress(account.address));
-  const { userGuildEntityId } = getAddressGuild(ContractAddress(account.address));
+  const guild = getGuildFromPlayerAddress(ContractAddress(account.address));
 
   const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
     return [{ label: "Guild Name", sortKey: "name", className: "col-span-1" }];
@@ -59,7 +59,7 @@ export const GuildInvites = () => {
 
   return (
     <div className="flex flex-col">
-      {selectedGuild.guildEntityId ? (
+      {guild && selectedGuild.guildEntityId ? (
         <>
           <p className="flex justify-center py-2">{selectedGuild.name}</p>
           <div className="flex flex-col">
@@ -70,7 +70,7 @@ export const GuildInvites = () => {
                 </Button>
               </div>
 
-              {!hasGuild(userGuildEntityId) && (
+              {!hasGuild(guild.guildEntityId) && (
                 <div className="px-4">
                   <Button onClick={() => joinGuild(selectedGuild.guildEntityId)}>Join Guild</Button>
                 </div>

@@ -1,11 +1,11 @@
-import { defineConfig } from "vite";
-import { resolve } from "path";
 import react from "@vitejs/plugin-react";
+import { resolve } from "path";
+import { defineConfig } from "vite";
 
-import wasm from "vite-plugin-wasm";
-import topLevelAwait from "vite-plugin-top-level-await";
 import svgr from "@svgr/rollup";
 import path from "path";
+import topLevelAwait from "vite-plugin-top-level-await";
+import wasm from "vite-plugin-wasm";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [svgr({ dimensions: false, svgo: false, typescript: true }), react(), wasm(), topLevelAwait()],
@@ -46,6 +46,9 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ["js-big-decimal"],
+    exclude: [
+      "js-big-decimal",
+      "@bibliothecadao/eternum", // Add your dependency here
+    ],
   },
 });

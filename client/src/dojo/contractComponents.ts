@@ -473,6 +473,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    HyperstructureUpdate: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.Number,
+          last_updated_timestamp: RecsType.BigInt,
+          last_updated_by: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "eternum-HyperstructureUpdate",
+            types: ["u32", "u64", "contractaddress"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Level: (() => {
       return defineComponent(
         world,

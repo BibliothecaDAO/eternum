@@ -3,7 +3,16 @@ import { getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
 import { ContractAddress, EntityType, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
+import {
+  Component,
+  ComponentValue,
+  Entity,
+  Has,
+  HasValue,
+  NotValue,
+  getComponentValue,
+  runQuery,
+} from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getResourcesUtils } from "./useResources";
@@ -143,4 +152,40 @@ export const getEntitiesUtils = () => {
   };
 
   return { getEntityName, getEntityInfo, getAddressNameFromEntity, getPlayerAddressFromEntity };
+};
+
+export const useGetAllPlayers = () => {
+  const {
+    setup: {
+      components: { Owner, Realm },
+    },
+  } = useDojo();
+
+  const playersEntityIds = runQuery([Has(Owner), Has(Realm)]);
+  const { getAddressNameFromEntity } = getEntitiesUtils();
+
+  const getPlayers = () => {
+    return getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
+  };
+
+  return getPlayers;
+};
+
+export const getAddressNameFromEntityIds = (
+  entityId: Array<Entity>,
+  Owner: Component<ClientComponents["Owner"]["schema"]>,
+  getAddressNameFromEntity: (entityId: ID) => string | undefined,
+) => {
+  return Array.from(entityId)
+    .map((id) => {
+      const owner = getComponentValue(Owner, id);
+      if (!owner) return;
+
+      const addressName = getAddressNameFromEntity(owner?.entity_id);
+      return { ...owner, addressName };
+    })
+    .filter(
+      (owner): owner is ComponentValue<ClientComponents["Owner"]["schema"]> & { addressName: string | undefined } =>
+        owner !== undefined,
+    );
 };
