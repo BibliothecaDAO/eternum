@@ -42,9 +42,6 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
-    // increment to start with a realm_entity_id != 0
-    world.uuid();
-
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
@@ -115,7 +112,7 @@ fn test_create_hyperstructure() {
 #[available_gas(3000000000000)]
 #[should_panic(
     expected: (
-        "not enough resources, Resource (entity id: 2, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
+        "not enough resources, Resource (entity id: 1, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
         'ENTRYPOINT_FAILED'
     )
 )]

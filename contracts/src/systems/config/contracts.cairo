@@ -489,7 +489,6 @@ mod config_systems {
                 );
                 i += 1;
             };
-
             set!(world, (HyperstructureConfig { config_id: HYPERSTRUCTURE_CONFIG_ID, time_between_shares_change }));
         }
     }

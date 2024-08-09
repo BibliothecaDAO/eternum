@@ -52,7 +52,7 @@ pub struct HyperstructureResourceConfig {
     amount_for_completion: u128,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 struct HyperstructureConfig {
     #[key]
@@ -351,7 +351,7 @@ impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCust
 }
 
 #[generate_trait]
-impl HyperstructureConfigCustomImpl of HyperstructureConfigCustomTrait {
+impl HyperstructureResourceConfigCustomImpl of HyperstructureResourceConfigCustomTrait {
     fn get(world: IWorldDispatcher, resource_id: u8) -> HyperstructureResourceConfig {
         get!(world, (HYPERSTRUCTURE_CONFIG_ID, resource_id), HyperstructureResourceConfig)
     }

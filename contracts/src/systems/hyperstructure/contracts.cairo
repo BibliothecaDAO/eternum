@@ -23,7 +23,7 @@ mod hyperstructure_systems {
     use eternum::{
         alias::ID, constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards},
         models::{
-            config::{HyperstructureConfigCustomTrait, HyperstructureConfig},
+            config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig},
             hyperstructure::{Progress, Contribution, HyperstructureUpdate},
             owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
@@ -61,7 +61,7 @@ mod hyperstructure_systems {
             let structure_count: StructureCount = get!(world, coord, StructureCount);
             structure_count.assert_none();
 
-            let hyperstructure_shards_config = HyperstructureConfigCustomTrait::get(
+            let hyperstructure_shards_config = HyperstructureResourceConfigCustomTrait::get(
                 world, ResourceTypes::EARTHEN_SHARD
             );
 
@@ -206,7 +206,7 @@ mod hyperstructure_systems {
             world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128
         ) -> (u128, bool) {
             let resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
-            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(world, resource_type);
+            let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
             let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
 
             let amount_left_for_completion = resource_amount_for_completion - resource_progress.amount;
@@ -256,7 +256,7 @@ mod hyperstructure_systems {
         ) -> bool {
             let mut resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
 
-            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(world, resource_type);
+            let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
             let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
 
             resource_progress.amount == resource_amount_for_completion

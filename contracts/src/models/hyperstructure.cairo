@@ -25,7 +25,7 @@ pub struct Contribution {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct HyperstructureUpdate {
+pub struct HyperstructureUpdate {
     #[key]
     hyperstructure_entity_id: ID,
     last_updated_timestamp: u64,
