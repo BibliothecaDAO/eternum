@@ -197,7 +197,6 @@ export default class HexceptionScene extends HexagonScene {
       let i = 0;
       const tmpCol = new THREE.Color(0xffce31);
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
-        console.log({ biome, matrices });
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
