@@ -5,6 +5,7 @@ import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMoveme
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
+import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
@@ -18,7 +19,6 @@ import { StructureManager } from "../components/StructureManager";
 import { GUIManager } from "../helpers/GUIManager";
 import { TileSystemUpdate } from "../systems/types";
 import { HEX_SIZE, HexagonScene } from "./HexagonScene";
-import { c } from "vite/dist/node/types.d-aGj9QkWt";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -111,7 +111,9 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    this.sceneManager.switchScene(SceneName.Hexception, hexCoords);
+	const url = new Position({ x: hexCoords.col, y: hexCoords.row }).toHexLocationUrl();
+	window.history.replaceState({}, "", url);
+    window.dispatchEvent(new Event("urlChanged"));
   }
 
   protected onHexagonClick(hexCoords: HexPosition) {
@@ -152,9 +154,7 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateTravelPaths(new Map());
   }
 
-  setup() {
-    this.moveCameraToURLLocation();
-  }
+  setup() {}
 
   public async updateExploredHex(update: TileSystemUpdate) {
     const col = update.hexCoords.col - FELT_CENTER;
@@ -183,7 +183,8 @@ export default class WorldmapScene extends HexagonScene {
     const randomRotation = (rotationIndex * Math.PI) / 3;
     dummy.rotation.y = randomRotation;
 
-    const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+    const biomePosition = new Position({ x: col, y: row }).getContract();
+    const biome = this.biome.getBiome(biomePosition.x, biomePosition.y);
 
     dummy.updateMatrix();
 
@@ -246,7 +247,7 @@ export default class WorldmapScene extends HexagonScene {
       console.log("applyCachedMatricesForChunk", startRow, startCol);
       return;
     }
-    console.log("create new grid", startRow, startCol);
+
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],

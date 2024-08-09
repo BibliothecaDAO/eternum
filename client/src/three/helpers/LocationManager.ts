@@ -9,12 +9,12 @@ export class LocationManager {
     this.urlParams = new URLSearchParams(window.location.search);
   }
 
-  public getCol(): number | null {
+  public getCol(): number {
     this.updateUrlParams();
     return Number(this.urlParams.get("col"));
   }
 
-  public getRow(): number | null {
+  public getRow(): number {
     this.updateUrlParams();
     return Number(this.urlParams.get("row"));
   }
