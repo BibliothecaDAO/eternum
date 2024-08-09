@@ -10,7 +10,7 @@ import { ID, StructureType } from "@bibliothecadao/eternum";
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
 
-export const StructureModelPaths: Record<StructureType, string> = {
+const StructureModelPaths: Record<StructureType, string> = {
   [StructureType.Realm]: "models/buildings/castle2.glb",
   [StructureType.Hyperstructure]: "models/buildings/farm.glb", // USING PLACEHOLDER MODEL
   // [StructureType.Hyperstructure]: "models/buildings/hyperstructure-half-transformed.glb",
@@ -20,7 +20,7 @@ export const StructureModelPaths: Record<StructureType, string> = {
   [StructureType.Settlement]: "",
 };
 
-export const StructureLabelPaths: Record<StructureType, string> = {
+const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Realm]: "textures/realm_label.png",
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/shard_label.png",
