@@ -1,4 +1,4 @@
-import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/HexagonScene";
+import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
 import { ContractAddress, ID, Position, Resource, ResourcesIds, UIPosition, WEIGHTS } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

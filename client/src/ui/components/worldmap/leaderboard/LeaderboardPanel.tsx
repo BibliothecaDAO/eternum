@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import { PlayersLeaderboard } from "./PlayersLeaderboard";
 import { GuildsLeaderboard } from "./GuildsLeaderboard";
+import { PlayersLeaderboard } from "./PlayersLeaderboard";
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);

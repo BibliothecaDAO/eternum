@@ -1,6 +1,7 @@
 import {
   COMBAT_EVENT,
   CREATE_ORDER_EVENT,
+  HYPERSTRUCTURE_CO_OWNER_CHANGE,
   HYPERSTRUCTURE_FINISHED_EVENT,
   ID,
   MAP_EXPLORED_EVENT,
@@ -12,7 +13,8 @@ import { createEventSubscription } from "./events/createEventSubscription";
 
 export const createUpdates = async () => {
   const eventUpdates = {
-    hyperstructureFinishedEvents: async () => createEventSubscription([HYPERSTRUCTURE_FINISHED_EVENT, "*"]),
+    createHyperstructureFinishedEvents: async () => createEventSubscription([HYPERSTRUCTURE_FINISHED_EVENT]),
+    createHyperstructureCoOwnerChangeEvents: async () => createEventSubscription([HYPERSTRUCTURE_CO_OWNER_CHANGE]),
     createCombatEvents: async (entityId: ID) =>
       createEventSubscription([COMBAT_EVENT, "*", numberToHex(Number(entityId)), "*"]),
     createTravelEvents: async (x: number, y: number) =>

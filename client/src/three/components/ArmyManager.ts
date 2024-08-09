@@ -1,11 +1,10 @@
-import * as THREE from "three";
-import { LabelManager } from "./LabelManager";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { FELT_CENTER } from "@/ui/config";
-import { ArmySystemUpdate } from "../systems/types";
-import { ID } from "@bibliothecadao/eternum";
 import { HexPosition } from "@/types";
-import { calculateOffset } from "@/ui/utils/utils";
+import { FELT_CENTER } from "@/ui/config";
+import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
+import { ID } from "@bibliothecadao/eternum";
+import * as THREE from "three";
+import { ArmySystemUpdate } from "../systems/types";
+import { LabelManager } from "./LabelManager";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -94,8 +93,11 @@ export class ArmyManager {
 
   async onUpdate(update: ArmySystemUpdate) {
     await this.loadPromise;
+
     const { entityId, hexCoords, isMine } = update;
+
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, normalizedCoord);
     } else {
