@@ -1,4 +1,4 @@
-import { BuildingStringToEnum, BuildingType, ID } from "@bibliothecadao/eternum";
+import { BuildingStringToEnum, BuildingType, ID, StructureType } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   Component,
@@ -13,7 +13,6 @@ import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 import { HexPosition } from "@/types";
 import { uuid } from "@latticexyz/utils";
-import { HexType } from "@/hooks/helpers/useHexPosition";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { FELT_CENTER } from "@/ui/config";
 
@@ -35,10 +34,7 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(
-    private dojo: SetupResult,
-    hexCoords: HexPosition,
-  ) {
+  constructor(private dojo: SetupResult, hexCoords: HexPosition) {
     const { Tile, Building, Stamina, Position, Army, Owner, EntityOwner, StaminaConfig, Structure } = dojo.components;
     this.models = {
       tile: Tile,
@@ -82,13 +78,6 @@ export class TileManager {
       };
     });
 
-    buildings.push({
-      col: BUILDINGS_CENTER[0],
-      row: BUILDINGS_CENTER[1],
-      category: "Castle",
-      resource: undefined,
-    });
-
     return buildings;
   };
 
@@ -100,16 +89,14 @@ export class TileManager {
     return building?.category !== undefined;
   };
 
-  hexType = () => {
+  structureType = () => {
     const structures = Array.from(
       runQuery([Has(this.models.structure), HasValue(this.models.position, { x: this.col, y: this.row })]),
     );
     if (structures?.length === 1) {
       const structure = getComponentValue(this.models.structure, structures[0])!;
-      let category = structure.category.toUpperCase();
-      return HexType[category as keyof typeof HexType];
-    } else {
-      return HexType.EMPTY;
+      let category = structure.category;
+      return StructureType[category as keyof typeof StructureType];
     }
   };
 

@@ -6,7 +6,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
-import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
+import { BuildingType, getNeighborHexes, StructureType } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Biome, BiomeType } from "../components/Biome";
@@ -15,6 +15,14 @@ import InstancedBuilding from "../components/InstancedBuilding";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
 import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING, HexagonScene } from "./HexagonScene";
+
+export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
+  [StructureType.Bank]: BuildingType.Bank,
+  [StructureType.Realm]: BuildingType.Castle,
+  [StructureType.FragmentMine]: BuildingType.FragmentMine,
+  [StructureType.Settlement]: BuildingType.Castle,
+  [StructureType.Hyperstructure]: BuildingType.Castle,
+};
 
 export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -198,6 +206,17 @@ export default class HexceptionScene extends HexagonScene {
       ];
       const buildings = [];
       const existingBuildings = this.tileManager.existingBuildings();
+
+      // add a building in the center depending on the structure type
+      const structureType = this.tileManager.structureType();
+      if (structureType) {
+        existingBuildings.push({
+          col: BUILDINGS_CENTER[0],
+          row: BUILDINGS_CENTER[1],
+          category: BuildingType[structureTypeToBuildingType[structureType]],
+          resource: undefined,
+        });
+      }
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
       const label = new THREE.Group();
       this.scene.add(label);
@@ -256,7 +275,7 @@ export default class HexceptionScene extends HexagonScene {
                 withBuilding = true;
                 const buildingObj = dummy.clone();
                 const rotation = Math.PI / 3;
-                if (building.category === "Castle") {
+                if (building.category === BuildingType[BuildingType.Castle]) {
                   buildingObj.rotation.y = rotation * 3;
                 } else {
                   buildingObj.rotation.y = rotation * 4;
