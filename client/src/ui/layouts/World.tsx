@@ -1,13 +1,6 @@
 import { Leva } from "leva";
 import { useEffect } from "react";
 import useUIStore from "../../hooks/store/useUIStore";
-import BottomMiddleContainer from "../containers/BottomMiddleContainer";
-import { BottomRightContainer } from "../containers/BottomRightContainer";
-import LeftMiddleContainer from "../containers/LeftMiddleContainer";
-import TopMiddleContainer from "../containers/TopMiddleContainer";
-import { BottomNavigation } from "../modules/navigation/BottomNavigation";
-import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
-import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { Redirect } from "wouter";
@@ -16,14 +9,21 @@ import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
-import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { Tooltip } from "../elements/Tooltip";
 import { BattleView } from "../modules/military/battle-view/BattleView";
-import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
-import { Transactions } from "../modules/transactions/Transactions";
 import { Onboarding } from "./Onboarding";
+import LeftMiddleContainer from "../containers/LeftMiddleContainer";
+import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
+import BottomMiddleContainer from "../containers/BottomMiddleContainer";
+import { BottomNavigation } from "../modules/navigation/BottomNavigation";
+import TopMiddleContainer from "../containers/TopMiddleContainer";
+import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
+import { BottomRightContainer } from "../containers/BottomRightContainer";
+import { Transactions } from "../modules/transactions/Transactions";
+import RightMiddleContainer from "../containers/RightMiddleContainer";
+import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);

@@ -118,7 +118,7 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className=" bg-black/60 backdrop-blur-2xl bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
+    <div className=" bg-black/60 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div>
           {selectedHex.col},{selectedHex.row}
