@@ -37,6 +37,8 @@ export class StructureManager {
   private dummy: THREE.Object3D = new THREE.Object3D();
   modelLoadPromises: Promise<void>[] = [];
   structures: Structures = new Structures();
+  structuresMap: Map<number, Set<number>> = new Map();
+  totalStructures: number = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -88,6 +90,14 @@ export class StructureManager {
     const position = getWorldPositionForHex(normalizedCoord);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
+
+    if (!this.structuresMap.has(normalizedCoord.col)) {
+      this.structuresMap.set(normalizedCoord.col, new Set());
+    }
+    if (!this.structuresMap.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
+      this.structuresMap.get(normalizedCoord.col)!.add(normalizedCoord.row);
+      this.totalStructures++;
+    }
 
     const key = StructureType[structureType] as unknown as StructureType;
 
