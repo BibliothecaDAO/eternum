@@ -17,6 +17,25 @@ export const biomes = {
   tropical_rain_forest: { color: "#6B4927", depth: 0.6, name: "Tropical Rain Forest" },
 };
 
+export enum BiomeType {
+  DeepOcean = "DeepOcean",
+  Ocean = "Ocean",
+  Beach = "Beach",
+  Scorched = "Scorched",
+  Bare = "Bare",
+  Tundra = "Tundra",
+  Snow = "Snow",
+  TemperateDesert = "TemperateDesert",
+  Shrubland = "Shrubland",
+  Taiga = "Taiga",
+  Grassland = "Grassland",
+  TemperateDeciduousForest = "TemperateDeciduousForest",
+  TemperateRainForest = "TemperateRainForest",
+  SubtropicalDesert = "SubtropicalDesert",
+  TropicalSeasonalForest = "TropicalSeasonalForest",
+  TropicalRainForest = "TropicalRainForest",
+}
+
 export enum Direction {
   EAST,
   NORTH_EAST,

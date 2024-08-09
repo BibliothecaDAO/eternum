@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { interactiveHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { getHexagonCoordinates, getWorldPositionForHex } from "@/ui/utils/utils";
-import { HEX_SIZE } from "../scenes/HexagonScene";
+import { HEX_SIZE } from "../scenes/constants";
 
 const matrix = new THREE.Matrix4();
 const position = new THREE.Vector3();

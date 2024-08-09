@@ -17,8 +17,8 @@ import { Biome, BiomeType } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
 import { GUIManager } from "../helpers/GUIManager";
 import { TileSystemUpdate } from "../systems/types";
-import { HEX_SIZE, HexagonScene } from "./HexagonScene";
-import { c } from "vite/dist/node/types.d-aGj9QkWt";
+import { HexagonScene } from "./HexagonScene";
+import { HEX_SIZE } from "./constants";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;

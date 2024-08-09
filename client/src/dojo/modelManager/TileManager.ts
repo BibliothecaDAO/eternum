@@ -16,8 +16,6 @@ import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { FELT_CENTER } from "@/ui/config";
 
-export const BUILDINGS_CENTER = [10, 10];
-
 export class TileManager {
   private models: {
     tile: OverridableComponent<ClientComponents["Tile"]["schema"]>;
@@ -51,6 +49,10 @@ export class TileManager {
     this.row = hexCoords.row;
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
   }
+
+  getHexCoords = () => {
+    return { col: this.col, row: this.row };
+  };
 
   setTile(hexCoords: HexPosition) {
     this.col = hexCoords.col + FELT_CENTER;
