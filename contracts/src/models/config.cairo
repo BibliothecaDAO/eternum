@@ -52,6 +52,14 @@ pub struct HyperstructureResourceConfig {
     amount_for_completion: u128,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+struct HyperstructureConfig {
+    #[key]
+    config_id: ID,
+    time_between_shares_change: u64,
+}
+
 // capacity
 // TODO: should rename into something that shows
 // that it's a config for one specific entity type?
@@ -343,7 +351,7 @@ impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCust
 }
 
 #[generate_trait]
-impl HyperstructureConfigCustomImpl of HyperstructureConfigCustomTrait {
+impl HyperstructureResourceConfigCustomImpl of HyperstructureResourceConfigCustomTrait {
     fn get(world: IWorldDispatcher, resource_id: u8) -> HyperstructureResourceConfig {
         get!(world, (HYPERSTRUCTURE_CONFIG_ID, resource_id), HyperstructureResourceConfig)
     }

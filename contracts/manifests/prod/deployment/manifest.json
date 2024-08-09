@@ -2794,6 +2794,10 @@
                 {
                   "name": "resources_for_completion",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "time_between_shares_change",
+                  "type": "core::integer::u64"
                 }
               ],
               "outputs": [],
@@ -4428,6 +4432,16 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<(core::starknet::contract_address::ContractAddress, core::integer::u16)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::starknet::contract_address::ContractAddress, core::integer::u16)>"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "eternum::systems::hyperstructure::contracts::IHyperstructureSystems",
           "items": [
@@ -4466,6 +4480,22 @@
                 {
                   "name": "contributions",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "set_co_owners",
+              "inputs": [
+                {
+                  "name": "hyperstructure_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "co_owners",
+                  "type": "core::array::Span::<(core::starknet::contract_address::ContractAddress, core::integer::u16)>"
                 }
               ],
               "outputs": [],

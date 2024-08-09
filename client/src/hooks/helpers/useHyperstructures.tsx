@@ -1,11 +1,12 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
+import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -76,6 +77,21 @@ export const useHyperstructures = () => {
   };
 
   return { hyperstructures, useProgress, getHyperstructureProgress };
+};
+
+export const useUpdates = (hyperstructureEntityId: ID) => {
+  const {
+    setup: {
+      components: { HyperstructureUpdate },
+    },
+  } = useDojo();
+
+  const updates = useEntityQuery([
+    Has(HyperstructureUpdate),
+    HasValue(HyperstructureUpdate, { hyperstructure_entity_id: hyperstructureEntityId }),
+  ]);
+
+  return updates.map((updateEntityId) => getComponentValue(HyperstructureUpdate, updateEntityId));
 };
 
 const getContributions = (hyperstructureEntityId: ID, Contribution: Component) => {

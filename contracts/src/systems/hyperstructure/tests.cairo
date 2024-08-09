@@ -32,6 +32,7 @@ use eternum::utils::testing::{
 use starknet::contract_address_const;
 
 const TEST_AMOUNT: u128 = 1_000_000;
+const TIME_BETWEEN_SHARES_CHANGE: u64 = 1000;
 
 fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     let world = spawn_eternum();
@@ -40,9 +41,6 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
-
-    // increment to start with a realm_entity_id != 0
-    world.uuid();
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
@@ -67,7 +65,8 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
         i += 1;
     };
 
-    hyperstructure_config_dispatcher.set_hyperstructure_config(resources_for_completion.span());
+    hyperstructure_config_dispatcher
+        .set_hyperstructure_config(resources_for_completion.span(), TIME_BETWEEN_SHARES_CHANGE);
 
     (world, realm_entity_id, hyperstructure_systems_dispatcher)
 }
@@ -113,7 +112,7 @@ fn test_create_hyperstructure() {
 #[available_gas(3000000000000)]
 #[should_panic(
     expected: (
-        "not enough resources, Resource (entity id: 2, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
+        "not enough resources, Resource (entity id: 1, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
         'ENTRYPOINT_FAILED'
     )
 )]
