@@ -1,7 +1,7 @@
-import { Component, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
 import { SetupResult } from "@/dojo/setup";
 import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
-import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "./types";
+import { Component, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
+import { ArmySystemUpdate, BattleSystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "./types";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -66,6 +66,25 @@ export class SystemManager {
             hexCoords: this.getHexCoords(update.value),
             structureType: StructureType[categoryKey],
             isMine,
+          };
+        });
+      },
+    };
+  }
+
+  public get Battle() {
+    return {
+      onUpdate: (callback: (value: BattleSystemUpdate) => void) => {
+        this.setupSystem(this.dojo.components.Battle, callback, (update: any) => {
+          const battle = getComponentValue(this.dojo.components.Battle, update.entity);
+          if (!battle) return;
+
+          const position = getComponentValue(this.dojo.components.Position, update.entity);
+          if (!position) return;
+
+          return {
+            entityId: battle.entity_id,
+            hexCoords: { col: position.x, row: position.y },
           };
         });
       },
