@@ -32,7 +32,7 @@ export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
 };
 
-export const BASE_PATH = "/models/bevel-biomes/";
+const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
   DeepOcean: BASE_PATH + "deepocean.glb",
   Ocean: BASE_PATH + "ocean.glb",
