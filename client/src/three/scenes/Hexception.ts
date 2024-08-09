@@ -111,8 +111,6 @@ export default class HexceptionScene extends HexagonScene {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
 
-    this.locationManager.addRowColToQueryString(row, col);
-
     const contractPosition = new Position({ x: col, y: row }).getContract();
 
     this.centerColRow = [contractPosition.x, contractPosition.y];
