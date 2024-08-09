@@ -5,18 +5,8 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
-import useLeaderBoardStore from "../store/useLeaderBoardStore";
 import { FELT_CENTER } from "@/ui/config";
 import useRealmStore from "../store/useRealmStore";
-
-export enum HexType {
-  BANK = "bank",
-  REALM = "realm",
-  SHARDSMINE = "shardsmine",
-  HYPERSTRUCTURE = "Hyperstructure",
-  UNFINISHEDHYPERSTRUCTURE = "UnfinishedHyperstructure",
-  EMPTY = "empty",
-}
 
 export const useHexPosition = () => {
   const {

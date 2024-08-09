@@ -1,11 +1,19 @@
 import * as THREE from "three";
 
-import { BUILDINGS_CENTER, TileManager } from "@/dojo/modelManager/TileManager";
+import {
+  buildingModelPaths,
+  BUILDINGS_CENTER,
+  HEX_HORIZONTAL_SPACING,
+  HEX_SIZE,
+  HEX_VERTICAL_SPACING,
+  structureTypeToBuildingType,
+} from "./constants";
+import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -14,25 +22,7 @@ import { BuildingPreview } from "../components/BuildingPreview";
 import InstancedBuilding from "../components/InstancedBuilding";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
-import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING, HexagonScene } from "./HexagonScene";
-
-export const buildingModelPaths: Record<BuildingType, string> = {
-  [BuildingType.Bank]: "/models/buildings/bank.glb",
-  [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
-  [BuildingType.Barracks]: "/models/buildings/barracks.glb",
-  [BuildingType.Castle]: "/models/buildings/castle2.glb",
-  [BuildingType.Farm]: "/models/buildings/farm.glb",
-  [BuildingType.FishingVillage]: "/models/buildings/fishery.glb",
-  [BuildingType.FragmentMine]: "/models/buildings/mine.glb",
-  [BuildingType.Market]: "/models/buildings/market.glb",
-  [BuildingType.Resource]: "/models/buildings/mine.glb",
-  [BuildingType.Stable]: "/models/buildings/stable.glb",
-  [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
-  [BuildingType.TradingPost]: "/models/buildings/market.glb",
-  [BuildingType.Walls]: "/models/buildings/market.glb",
-  [BuildingType.WatchTower]: "/models/buildings/market.glb",
-  [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
-};
+import { HexagonScene } from "./HexagonScene";
 
 const loader = new GLTFLoader();
 export default class HexceptionScene extends HexagonScene {
@@ -167,28 +157,9 @@ export default class HexceptionScene extends HexagonScene {
       TropicalRainForest: [],
     };
 
-    const buildingHexes: Record<BuildingType, THREE.Matrix4[]> = {
-      [BuildingType.Bank]: [],
-      [BuildingType.ArcheryRange]: [],
-      [BuildingType.Barracks]: [],
-      [BuildingType.Castle]: [],
-      [BuildingType.Farm]: [],
-      [BuildingType.FishingVillage]: [],
-      [BuildingType.FragmentMine]: [],
-      [BuildingType.Market]: [],
-      [BuildingType.Resource]: [],
-      [BuildingType.Stable]: [],
-      [BuildingType.Storehouse]: [],
-      [BuildingType.TradingPost]: [],
-      [BuildingType.Walls]: [],
-      [BuildingType.WatchTower]: [],
-      [BuildingType.WorkersHut]: [],
-    };
-
-    const hexPositions: THREE.Vector3[] = [];
     Promise.all(this.modelLoadPromises).then(() => {
       let centers = [
-        [0, 0], //0, 0
+        [0, 0], //0, 0 (Main hex)
         [-6.5, 7.5], //-1, 1
         [7, 6], //1, 0
         [0.5, 13.5], //0, 1
@@ -196,92 +167,23 @@ export default class HexceptionScene extends HexagonScene {
         [-0.5, -13.5], //0, -1
         [6.5, -7.5], //1, -1
       ];
-      const buildings = [];
-      const existingBuildings = this.tileManager.existingBuildings();
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
       const label = new THREE.Group();
       this.scene.add(label);
       this.highlights = [];
+
+      // compute matrices to update biome models for each of the large hexes
       for (const center in centers) {
         const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
-        for (let q = -radius; q <= radius; q++) {
-          for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
-            const s = -q - r;
-            const isBorderHex =
-              q === radius ||
-              q === -radius ||
-              r === Math.max(-radius, -q - radius) ||
-              r === Math.min(radius, -q + radius);
-            dummy.position.x = (q + r / 2) * HEX_HORIZONTAL_SPACING + centers[center][0] * HEX_HORIZONTAL_SPACING;
-            dummy.position.z = r * HEX_VERTICAL_SPACING + centers[center][1] * HEX_SIZE;
-            dummy.position.y = isBorderHex || isMainHex ? 0 : pseudoRandom(q, r);
-            dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-            dummy.updateMatrix();
-
-            const { col, row } = getHexForWorldPosition(dummy.position);
-            const normalizedCoords = { col: BUILDINGS_CENTER[0] - col, row: BUILDINGS_CENTER[1] - row };
-
-            // if (isMainHex) {
-            //   const posDiv = document.createElement("div");
-            //   posDiv.className = "label";
-            //   posDiv.textContent = `${normalizedCoords.col}, ${normalizedCoords.row}`;
-            //   posDiv.style.backgroundColor = "transparent";
-
-            //   const posLabel = new CSS2DObject(posDiv);
-            //   posLabel.position.set(dummy.position.x, dummy.position.y, dummy.position.z);
-            //   posLabel.center.set(0, 1);
-            //   label.add(posLabel);
-            // }
-
-            let withBuilding = false;
-            if (isMainHex) {
-              this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
-              //highlights.push({ col: q + r / 2, row: r });
-              // const isCenter = q === 0 && r === 0;
-              // const building = isCenter
-              //   ? { category: "Castle" }
-              //   : getComponentValue(
-              //       this.dojo.components.Building,
-              //       getEntityIdFromKeys([
-              //         BigInt(this.centerColRow[0]),
-              //         BigInt(this.centerColRow[1]),
-              //         BigInt(BUILDINGS_CENTER[0] - q),
-              //         BigInt(BUILDINGS_CENTER[1] - r),
-              //       ]),
-              //     );
-              const building = existingBuildings.find(
-                (value) => value.col === normalizedCoords.col && value.row === normalizedCoords.row,
-              );
-              if (building) {
-                withBuilding = true;
-                const buildingObj = dummy.clone();
-                const rotation = Math.PI / 3;
-                if (building.category === "Castle") {
-                  buildingObj.rotation.y = rotation * 3;
-                } else {
-                  buildingObj.rotation.y = rotation * 4;
-                }
-                buildingObj.updateMatrix();
-                buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
-              } else {
-                this.highlights.push(getHexForWorldPosition(dummy.position));
-              }
-            }
-
-            const targetHex = isMainHex
-              ? [this.centerColRow[0], this.centerColRow[1]]
-              : [neighbors[Number(center) - 1].col, neighbors[Number(center) - 1].row];
-            const biome = isMainHex ? "Grassland" : this.biome.getBiome(targetHex[0], targetHex[1]);
-            if (!withBuilding) {
-              biomeHexes[biome].push(dummy.matrix.clone());
-            }
-          }
+        if (isMainHex) {
+          this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
+        } else {
+          this.computeNeighborHexMatrices(radius, dummy, centers[center], neighbors[Number(center) - 1], biomeHexes);
         }
       }
 
-      this.buildings = buildings;
+      // add buildings to the instance meshes in the center hex
       let counts: Record<string, number> = {};
-      //const color = new THREE.Color(0xff0000);
       for (const building of this.buildings) {
         const buildingMesh = this.buildingModels.get(BuildingType[building.category].toString() as any);
         if (buildingMesh) {
@@ -291,6 +193,7 @@ export default class HexceptionScene extends HexagonScene {
         }
       }
 
+      // update neighbor hexes around the center hex
       let i = 0;
       const tmpCol = new THREE.Color(0xffce31);
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
@@ -307,16 +210,90 @@ export default class HexceptionScene extends HexagonScene {
         i += matrices.length;
       }
 
-      //   for (const [buildingType, matrices] of Object.entries(buildingHexes)) {
-      //     const buildingMesh = this.buildingModels.get(buildingType as any);
-      //     if (buildingMesh && matrices.length > 0) {
-      //       matrices.forEach((matrix, index) => {
-      //         buildingMesh.setMatrixAt(index, matrix);
-      //       });
-      //       buildingMesh.setCount(matrices.length);
-      //     }
-      //   }
       this.interactiveHexManager.renderHexes();
     });
   }
+
+  computeHexMatrices = (
+    radius: number,
+    dummy: THREE.Object3D,
+    center: number[],
+    targetHex: HexPosition,
+    isMainHex: boolean,
+    existingBuildings: any[],
+    biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
+  ) => {
+    const biome = existingBuildings.length === 0 ? this.biome.getBiome(targetHex.col, targetHex.row) : "Grassland";
+    const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
+
+    for (let q = -radius; q <= radius; q++) {
+      for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
+        const isBorderHex =
+          q === radius || q === -radius || r === Math.max(-radius, -q - radius) || r === Math.min(radius, -q + radius);
+        dummy.position.x = (q + r / 2) * HEX_HORIZONTAL_SPACING + center[0] * HEX_HORIZONTAL_SPACING;
+        dummy.position.z = r * HEX_VERTICAL_SPACING + center[1] * HEX_SIZE;
+        dummy.position.y = isBorderHex || isFlat ? 0 : pseudoRandom(q, r);
+        dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+        dummy.updateMatrix();
+
+        const { col, row } = getHexForWorldPosition(dummy.position);
+        const normalizedCoords = { col: BUILDINGS_CENTER[0] - col, row: BUILDINGS_CENTER[1] - row };
+
+        let withBuilding = false;
+        this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
+
+        const building = existingBuildings.find(
+          (value) => value.col === normalizedCoords.col && value.row === normalizedCoords.row,
+        );
+        if (building) {
+          withBuilding = true;
+          const buildingObj = dummy.clone();
+          const rotation = Math.PI / 3;
+          if (building.category === BuildingType[BuildingType.Castle]) {
+            buildingObj.rotation.y = rotation * 3;
+          } else {
+            buildingObj.rotation.y = rotation * 4;
+          }
+          buildingObj.updateMatrix();
+          this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
+        } else {
+          this.highlights.push(getHexForWorldPosition(dummy.position));
+        }
+
+        if (!withBuilding) {
+          biomeHexes[biome].push(dummy.matrix.clone());
+        }
+      }
+    }
+  };
+
+  computeMainHexMatrices = (
+    radius: number,
+    dummy: THREE.Object3D,
+    center: number[],
+    targetHex: HexPosition,
+    biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
+  ) => {
+    const existingBuildings = this.tileManager.existingBuildings();
+    const structureType = this.tileManager.structureType();
+    if (structureType) {
+      existingBuildings.push({
+        col: BUILDINGS_CENTER[0],
+        row: BUILDINGS_CENTER[1],
+        category: BuildingType[structureTypeToBuildingType[structureType]],
+        resource: undefined,
+      });
+    }
+    this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, biomeHexes);
+  };
+
+  computeNeighborHexMatrices = (
+    radius: number,
+    dummy: THREE.Object3D,
+    center: number[],
+    targetHex: HexPosition,
+    biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
+  ) => {
+    this.computeHexMatrices(radius, dummy, center, targetHex, false, [], biomeHexes);
+  };
 }

@@ -15,30 +15,7 @@ import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
-
-const BASE_PATH = "/models/bevel-biomes/";
-const biomeModelPaths: Record<BiomeType, string> = {
-  DeepOcean: BASE_PATH + "deepocean.glb",
-  Ocean: BASE_PATH + "ocean.glb",
-  Beach: BASE_PATH + "beach.glb",
-  Scorched: BASE_PATH + "scorched.glb",
-  Bare: BASE_PATH + "bare.glb",
-  Tundra: BASE_PATH + "tundra.glb",
-  Snow: BASE_PATH + "snow.glb",
-  TemperateDesert: BASE_PATH + "temperatedessert.glb",
-  Shrubland: BASE_PATH + "shrublands.glb",
-  Taiga: BASE_PATH + "taiga.glb",
-  Grassland: BASE_PATH + "grassland.glb",
-  TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
-  TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
-  TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
-  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
-};
-
-export const HEX_SIZE = 1;
-export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
-export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
+import { biomeModelPaths, HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "./constants";
 
 export abstract class HexagonScene {
   protected scene: THREE.Scene;

@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import { highlightHexMaterial } from "@/three/shaders/highlightHexMaterial";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { HEX_SIZE } from "../scenes/HexagonScene";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { HexPosition } from "@/types";
+import { HEX_SIZE } from "../scenes/constants";
 
 export class HighlightHexManager {
   private highlightedHexes: THREE.Mesh[] = [];
