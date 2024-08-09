@@ -17,3 +17,8 @@ export type StructureSystemUpdate = {
 export type TileSystemUpdate = {
   hexCoords: HexPosition;
 };
+
+export type BattleSystemUpdate = {
+  entityId: ID;
+  hexCoords: HexPosition;
+};

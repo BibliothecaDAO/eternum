@@ -13,6 +13,7 @@ import { throttle } from "lodash";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
+import { BattleManager } from "../components/BattleManager";
 import { Biome, BiomeType } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
 import { GUIManager } from "../helpers/GUIManager";
@@ -37,8 +38,10 @@ export default class WorldmapScene extends HexagonScene {
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
+  private battleManager: BattleManager;
   private exploredTiles: Map<number, Set<number>> = new Map();
   private structures: Map<number, Set<number>> = new Map();
+  private battles: Map<number, Set<number>> = new Map();
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -68,9 +71,11 @@ export default class WorldmapScene extends HexagonScene {
 
     this.armyManager = new ArmyManager(this.scene);
     this.structureManager = new StructureManager(this.scene);
+    this.battleManager = new BattleManager(this.scene);
 
     this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
     this.systemManager.Structure.onUpdate((value) => this.structureManager.onUpdate(value));
+    this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
 
     this.inputManager.addListener(
@@ -285,8 +290,9 @@ export default class WorldmapScene extends HexagonScene {
         dummy.position.copy(pos);
 
         const isStructure = this.structures.get(col)?.has(row) || false;
+        const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-        if (isStructure || !isExplored) {
+        if (isStructure || !isExplored || !isBattle) {
           dummy.scale.set(0, 0, 0);
         } else {
           dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
