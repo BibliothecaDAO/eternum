@@ -326,7 +326,7 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
-  const url = new PositionInterface(position).toLocationUrl();
+  const url = new PositionInterface(position).toMapLocationUrl();
 
   return (
     <Map
@@ -348,7 +348,7 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
-  const url = new PositionInterface(position).toLocationUrl();
+  const url = new PositionInterface(position).toMapLocationUrl();
 
   return (
     <Button
