@@ -1,7 +1,7 @@
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
-import { buildingModelPaths } from "../scenes/Hexception";
+import { buildingModelPaths } from "../scenes/constants";
 
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
