@@ -77,7 +77,7 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
-    this.systemManager.Structure.onUpdate((value: StructureSystemUpdate) => {
+    this.systemManager.Structure.onUpdate((value) => {
       this.structureManager.onUpdate(value);
       if (this.totalStructures !== this.structureManager.totalStructures) {
         const { col, row } = value.hexCoords;
