@@ -114,6 +114,10 @@ export abstract class HexagonScene {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
       clickedHex && this.onHexagonClick(clickedHex.hexCoords);
     });
+    this.inputManager.addListener("contextmenu", (raycaster) => {
+      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      clickedHex && this.onHexagonRightClick(clickedHex.hexCoords);
+    });
   }
 
   protected abstract onHexagonMouseMove({
@@ -125,6 +129,7 @@ export abstract class HexagonScene {
   }): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
+  protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
 
   public abstract setup(hexCoords: HexPosition): void;
 
