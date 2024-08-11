@@ -31,6 +31,8 @@ export default class WorldmapScene extends HexagonScene {
     height: 30,
   };
 
+  private totalStructures: number = 0;
+
   private currentChunk: string = "null";
 
   // Store
@@ -41,7 +43,6 @@ export default class WorldmapScene extends HexagonScene {
   private structureManager: StructureManager;
   private battleManager: BattleManager;
   private exploredTiles: Map<number, Set<number>> = new Map();
-  private structures: Map<number, Set<number>> = new Map();
   private battles: Map<number, Set<number>> = new Map();
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
@@ -75,9 +76,25 @@ export default class WorldmapScene extends HexagonScene {
     this.battleManager = new BattleManager(this.scene);
 
     this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
-    this.systemManager.Structure.onUpdate((value) => this.structureManager.onUpdate(value));
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
+    this.systemManager.Structure.onUpdate((value) => {
+      this.structureManager.onUpdate(value);
+      if (this.totalStructures !== this.structureManager.totalStructures) {
+        const { col, row } = value.hexCoords;
+        const { chunkX, chunkZ } = this.worldToChunkCoordinates(
+          getWorldPositionForHex({ col: col - FELT_CENTER, row: row - FELT_CENTER }).x,
+          getWorldPositionForHex({ col: col - FELT_CENTER, row: row - FELT_CENTER }).z,
+        );
+        const startRow = chunkZ * this.chunkSize;
+        const startCol = chunkX * this.chunkSize;
+
+        this.totalStructures = this.structureManager.totalStructures;
+
+        this.removeCachedMatricesForChunk(startRow, startCol);
+        this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+      }
+    });
 
     this.inputManager.addListener(
       "mousemove",
@@ -176,7 +193,7 @@ export default class WorldmapScene extends HexagonScene {
     const pos = getWorldPositionForHex({ row, col });
     dummy.position.copy(pos);
 
-    const isStructure = this.structures.get(col)?.has(row) || false;
+    const isStructure = this.structureManager.structuresMap.get(col)?.has(row) || false;
 
     if (isStructure) {
       dummy.scale.set(0, 0, 0);
@@ -291,7 +308,7 @@ export default class WorldmapScene extends HexagonScene {
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
 
-        const isStructure = this.structures.get(col)?.has(row) || false;
+        const isStructure = this.structureManager.structuresMap.get(globalCol)?.has(globalRow) || false;
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
         if (isStructure || !isExplored || !isBattle) {
