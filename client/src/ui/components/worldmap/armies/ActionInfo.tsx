@@ -1,14 +1,14 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useRealmStore from "@/hooks/store/useRealmStore";
+import useUIStore from "@/hooks/store/useUIStore";
+import { FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
-import { FELT_CENTER } from "@/ui/config";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import useUIStore from "@/hooks/store/useUIStore";
 
 export const ActionInfo = () => {
   const { hoveredHex, selectedEntityId, travelPaths } = useUIStore((state) => state.armyActions);
