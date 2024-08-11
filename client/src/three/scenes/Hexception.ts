@@ -1,5 +1,18 @@
 import * as THREE from "three";
 
+import { TileManager } from "@/dojo/modelManager/TileManager";
+import { SetupResult } from "@/dojo/setup";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import { HexPosition, SceneName } from "@/types";
+import { Position } from "@/types/Position";
+import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
+import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { Biome, BiomeType } from "../components/Biome";
+import InstancedBuilding from "../components/InstancedBuilding";
+import { createHexagonShape } from "../geometry/HexagonGeometry";
+import { SceneManager } from "../SceneManager";
 import {
   buildingModelPaths,
   BUILDINGS_CENTER,
@@ -8,22 +21,9 @@ import {
   HEX_VERTICAL_SPACING,
   structureTypeToBuildingType,
 } from "./constants";
-import { getHexForWorldPosition, getWorldPositionForHex, pseudoRandom } from "@/ui/utils/utils";
-import { TileManager } from "@/dojo/modelManager/TileManager";
-import { SetupResult } from "@/dojo/setup";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
-import { HexPosition, SceneName } from "@/types";
-import { FELT_CENTER } from "@/ui/config";
-import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Biome, BiomeType } from "../components/Biome";
-import { BuildingPreview } from "../components/BuildingPreview";
-import InstancedBuilding from "../components/InstancedBuilding";
-import { createHexagonShape } from "../geometry/HexagonGeometry";
-import { SceneManager } from "../SceneManager";
 import { HexagonScene } from "./HexagonScene";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { BuildingPreview } from "../components/BuildingPreview";
 
 const loader = new GLTFLoader();
 export default class HexceptionScene extends HexagonScene {
@@ -63,7 +63,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
 
-    this.setup({ col: 0, row: 0 });
+    this.setup();
 
     this.state = useUIStore.getState();
     useUIStore.subscribe(
@@ -112,13 +112,15 @@ export default class HexceptionScene extends HexagonScene {
     Promise.all(this.modelLoadPromises).then(() => {});
   }
 
-  setup(hexCoords: HexPosition) {
-    const { col, row } = hexCoords;
-    this.locationManager.addRowColToQueryString(row, col);
-    this.moveCameraToColRow(0, 0, 0);
-    this.centerColRow = [this.locationManager.getCol()! + FELT_CENTER, this.locationManager.getRow()! + FELT_CENTER];
+  setup() {
+    const col = this.locationManager.getCol();
+    const row = this.locationManager.getRow();
 
-    this.tileManager.setTile(hexCoords);
+    const contractPosition = new Position({ x: col, y: row }).getContract();
+
+    this.centerColRow = [contractPosition.x, contractPosition.y];
+
+    this.tileManager.setTile({ col, row });
 
     this.updateHexceptionGrid(4);
   }

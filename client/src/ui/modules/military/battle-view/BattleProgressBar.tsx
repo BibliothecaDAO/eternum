@@ -95,7 +95,7 @@ export const BattleProgressBar = ({
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
-      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  -top-y">
+      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold bg-[#1b1a1a] px-8 py-2  -top-y">
         <div className="text-left">
           <p>{attackerName}</p>
         </div>

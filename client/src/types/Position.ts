@@ -25,8 +25,13 @@ export class Position {
     };
   }
 
-  public toLocationUrl() {
+  public toMapLocationUrl() {
     const normalized = this.getNormalized();
     return `/map?col=${normalized.x}&row=${normalized.y}`;
+  }
+
+  public toHexLocationUrl() {
+    const normalized = this.getNormalized();
+    return `/hex?col=${normalized.x}&row=${normalized.y}`;
   }
 }

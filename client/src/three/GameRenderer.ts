@@ -31,6 +31,7 @@ export default class GameRenderer {
 
   private handleURLChange = () => {
     const url = new URL(window.location.href);
+
     const scene = url.pathname.split("/").pop();
 
     if (scene === this.sceneManager.getCurrentScene()) {

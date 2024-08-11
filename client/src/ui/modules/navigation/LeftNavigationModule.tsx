@@ -1,7 +1,5 @@
-import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { useStamina } from "@/hooks/helpers/useStamina";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
@@ -9,8 +7,6 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
-import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
-import { Military } from "@/ui/modules/military/Military";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
@@ -20,6 +16,8 @@ import { useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
+import { EntityDetails } from "../entity-details/EntityDetails";
+import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
 
@@ -60,11 +58,6 @@ export const LeftNavigationModule = () => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realmEntityId } = useRealmStore();
-
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId });
-
-  const { useArmiesCanMoveCount } = useStamina();
-  const armiesCanMoveCount = useArmiesCanMoveCount(entityArmies);
 
   const { questClaimStatus } = useQuestClaimStatus();
   const [location, _] = useLocation();
@@ -120,8 +113,6 @@ export const LeftNavigationModule = () => {
               setLastView(View.MilitaryView);
               setView(View.MilitaryView);
             }}
-            notification={armiesCanMoveCount}
-            notificationLocation="topright"
           />
         ),
       },
@@ -184,7 +175,7 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount, questClaimStatus, realmEntityId]);
+  }, [location, view, openedPopups, selectedQuest, questClaimStatus, realmEntityId]);
 
   if (realmEntityId === undefined) {
     return null;

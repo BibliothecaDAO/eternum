@@ -1,5 +1,5 @@
 import { gql } from "graphql-request";
-import { ReplaySubject, Observable } from "rxjs";
+import { Observable, ReplaySubject } from "rxjs";
 import { Event, client, getEventsQuery, wsClient } from "./graphqlClient";
 
 const MAX_EVENTS = 50;
@@ -65,7 +65,7 @@ export async function createEventSubscription(
           console.log({ error });
         }
       },
-      error: () => console.log("ws error"),
+      error: (e) => console.log("ws error", e),
       complete: () => console.log("complete"),
     },
   );

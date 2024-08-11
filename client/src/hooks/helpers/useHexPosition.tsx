@@ -1,11 +1,9 @@
-import useUIStore from "@/hooks/store/useUIStore";
-import { getNeighborHexes } from "@bibliothecadao/eternum";
+import { FELT_CENTER } from "@/ui/config";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
-import { FELT_CENTER } from "@/ui/config";
 import useRealmStore from "../store/useRealmStore";
 
 export const useHexPosition = () => {

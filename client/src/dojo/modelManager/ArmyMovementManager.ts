@@ -73,6 +73,8 @@ export class ArmyMovementManager {
   private positionModel: OverridableComponent<ClientComponents["Position"]["schema"]>;
   private armyModel: Component<ClientComponents["Army"]["schema"]>;
   private ownerModel: Component<ClientComponents["Owner"]["schema"]>;
+  private capacityModel: Component<ClientComponents["Capacity"]["schema"]>;
+  private weightModel: Component<ClientComponents["Weight"]["schema"]>;
   private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
   private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
   private entity: Entity;
@@ -91,6 +93,8 @@ export class ArmyMovementManager {
       Position,
       Army,
       Owner,
+      Capacity,
+      Weight,
       EntityOwner,
       StaminaConfig,
       Production,
@@ -102,6 +106,8 @@ export class ArmyMovementManager {
     this.positionModel = Position;
     this.armyModel = Army;
     this.ownerModel = Owner;
+    this.capacityModel = Capacity;
+    this.weightModel = Weight;
     this.entityOwnerModel = EntityOwner;
     this.staminaConfigModel = StaminaConfig;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
@@ -186,6 +192,10 @@ export class ArmyMovementManager {
       return false;
     }
     if (wheat < EternumGlobalConfig.exploration.wheatBurn) {
+      return false;
+    }
+
+    if (this._getArmyRemainingCapacity() < EternumGlobalConfig.exploration.reward) {
       return false;
     }
 
@@ -394,5 +404,21 @@ export class ArmyMovementManager {
     } else {
       this._travelToHex(path);
     }
+  };
+
+  private _getArmyRemainingCapacity = () => {
+    const armyCapacity = getComponentValue(this.capacityModel, this.entity);
+    const armyWeight = getComponentValue(this.weightModel, this.entity);
+    const armyEntity = getComponentValue(this.armyModel, this.entity);
+
+    const knights = armyEntity?.troops.knight_count || 0n;
+    const crossbowmen = armyEntity?.troops.crossbowman_count || 0n;
+    const paladins = armyEntity?.troops.paladin_count || 0n;
+    const troopQty = (knights + crossbowmen + paladins) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+
+    const capacity = armyCapacity?.weight_gram || 0n;
+    const weight = (armyWeight?.value || 0n) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+
+    return capacity * troopQty - weight;
   };
 }
