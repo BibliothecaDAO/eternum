@@ -138,13 +138,15 @@ export default class HexceptionScene extends HexagonScene {
     } else {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
-      this.state.setSelectedBuildingHex({
-        outerCol,
-        outerRow,
-        innerCol: normalizedCoords.col,
-        innerRow: normalizedCoords.row,
-      });
-      this.state.setLeftNavigationView(View.EntityView);
+      if (this.tileManager.isHexOccupied(normalizedCoords)) {
+        this.state.setSelectedBuildingHex({
+          outerCol,
+          outerRow,
+          innerCol: normalizedCoords.col,
+          innerRow: normalizedCoords.row,
+        });
+        this.state.setLeftNavigationView(View.EntityView);
+      }
     }
   }
   protected onHexagonMouseMove({ position }: { position: THREE.Vector3 }): void {

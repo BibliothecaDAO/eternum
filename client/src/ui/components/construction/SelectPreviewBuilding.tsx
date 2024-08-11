@@ -530,7 +530,7 @@ export const BuildingInfo = ({
           </div>
         </>
       )}
-      <div className="flex justify-center">{...extraButtons}</div>
+      <div className="w-full flex flex-col">{extraButtons}</div>
     </div>
   );
 };

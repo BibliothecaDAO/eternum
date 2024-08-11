@@ -93,13 +93,13 @@ export const BuildingEntityDetails = () => {
   );
 
   return (
-    <div className={`min-w-[${buildingType === BuildingType.Resource ? 400 : 215}px]`}>
+    <div>
       <div className="flex flex-col p-1 space-y-1 text-sm">
         {buildingType === BuildingType.Resource && resource !== undefined && (
           <ResourceInfo resourceId={resource} entityId={ownerEntityId} extraButtons={[destroyButton]} />
         )}
         {buildingType !== undefined && buildingType !== BuildingType.Resource && (
-          <BuildingInfo name={name} buildingId={buildingType} entityId={ownerEntityId} extraButtons={[destroyButton]} />
+          <BuildingInfo buildingId={buildingType} entityId={ownerEntityId} extraButtons={[destroyButton]} />
         )}
       </div>
     </div>

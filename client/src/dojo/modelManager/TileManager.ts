@@ -32,10 +32,7 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(
-    private dojo: SetupResult,
-    hexCoords: HexPosition,
-  ) {
+  constructor(private dojo: SetupResult, hexCoords: HexPosition) {
     const { Tile, Building, Stamina, Position, Army, Owner, EntityOwner, StaminaConfig, Structure } = dojo.components;
     this.models = {
       tile: Tile,
@@ -91,7 +88,7 @@ export class TileManager {
       this.models.building,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
     );
-    return building?.category !== undefined;
+    return building !== undefined && building.category !== BuildingType[BuildingType.None];
   };
 
   structureType = () => {
