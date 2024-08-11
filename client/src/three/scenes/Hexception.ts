@@ -1,19 +1,11 @@
 import * as THREE from "three";
 
-import {
-  buildingModelPaths,
-  BUILDINGS_CENTER,
-  HEX_HORIZONTAL_SPACING,
-  HEX_SIZE,
-  HEX_VERTICAL_SPACING,
-  structureTypeToBuildingType,
-} from "./constants";
-import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
-import { FELT_CENTER } from "@/ui/config";
+import { Position } from "@/types/Position";
+import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -22,6 +14,14 @@ import { BuildingPreview } from "../components/BuildingPreview";
 import InstancedBuilding from "../components/InstancedBuilding";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
+import {
+  buildingModelPaths,
+  BUILDINGS_CENTER,
+  HEX_HORIZONTAL_SPACING,
+  HEX_SIZE,
+  HEX_VERTICAL_SPACING,
+  structureTypeToBuildingType,
+} from "./constants";
 import { HexagonScene } from "./HexagonScene";
 
 const loader = new GLTFLoader();
@@ -59,7 +59,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
 
-    this.setup({ col: 0, row: 0 });
+    this.setup();
 
     useUIStore.subscribe(
       (state) => state.previewBuilding,
@@ -107,13 +107,15 @@ export default class HexceptionScene extends HexagonScene {
     Promise.all(this.modelLoadPromises).then(() => {});
   }
 
-  setup(hexCoords: HexPosition) {
-    const { col, row } = hexCoords;
-    this.locationManager.addRowColToQueryString(row, col);
-    this.moveCameraToColRow(0, 0, 0);
-    this.centerColRow = [this.locationManager.getCol()! + FELT_CENTER, this.locationManager.getRow()! + FELT_CENTER];
+  setup() {
+    const col = this.locationManager.getCol();
+    const row = this.locationManager.getRow();
 
-    this.tileManager.setTile(hexCoords);
+    const contractPosition = new Position({ x: col, y: row }).getContract();
+
+    this.centerColRow = [contractPosition.x, contractPosition.y];
+
+    this.tileManager.setTile({ col, row });
 
     this.updateHexceptionGrid(4);
   }

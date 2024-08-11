@@ -7,8 +7,8 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
-import { FELT_CENTER } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -377,22 +377,18 @@ const NavigateToRealm = ({ text }: { text: string }) => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
-  const [isLoading, setIsLoading] = useState(false);
+
+  const url = new Position(playerRealms()[0]?.position).toHexLocationUrl();
 
   return (
     <Button
       size="md"
       variant="primary"
-      isLoading={isLoading}
       onClick={async () => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
-          setLocation(
-            `/hex?col=${playerRealms()[0]?.position.x - FELT_CENTER}&row=${
-              playerRealms()[0]?.position.y - FELT_CENTER
-            }`,
-          );
+          setLocation(url);
           window.dispatchEvent(new Event("urlChanged"));
         }, 300);
       }}

@@ -126,7 +126,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
 
-  public abstract setup(hexCoords: HexPosition): void;
+  public abstract setup(): void;
 
   public getScene() {
     return this.scene;

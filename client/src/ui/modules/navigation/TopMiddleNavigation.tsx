@@ -73,11 +73,11 @@ export const TopMiddleNavigation = () => {
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
 
-    const position = new Position(structure!.position).getNormalized();
+    const url = new Position(structure!.position).toHexLocationUrl();
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
-      setLocation(`/hex?col=${position.x}&row=${position.y}`);
+      setLocation(url);
       window.dispatchEvent(new Event("urlChanged"));
       setRealmEntityId(entityId);
     }, 300);
@@ -90,7 +90,7 @@ export const TopMiddleNavigation = () => {
 
     if (!newPosition) throw new Error("No position found");
 
-    const url = new Position({ x: newPosition.x, y: newPosition.y }).toLocationUrl();
+    const url = new Position({ x: newPosition.x, y: newPosition.y }).toMapLocationUrl();
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
@@ -120,9 +120,6 @@ export const TopMiddleNavigation = () => {
   return (
     <div className=" bg-black/60 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div>
-          {selectedHex.col},{selectedHex.row}
-        </div>
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />
         </div>
