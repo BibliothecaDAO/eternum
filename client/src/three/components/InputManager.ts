@@ -2,7 +2,7 @@ import { SceneName } from "@/types";
 import * as THREE from "three";
 import { SceneManager } from "../SceneManager";
 
-type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mouseup" | "mousedown";
+type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mousedown";
 
 export class InputManager {
   private listeners: Array<{ event: ListenerTypes; handler: (e: MouseEvent) => void }> = [];
@@ -19,7 +19,6 @@ export class InputManager {
     private camera: THREE.Camera,
   ) {
     window.addEventListener("mousedown", this.handleMouseDown.bind(this));
-    window.addEventListener("mouseup", this.handleMouseUp.bind(this));
   }
 
   addListener(event: ListenerTypes, callback: (raycaster: THREE.Raycaster) => void): void {
@@ -75,9 +74,15 @@ export class InputManager {
   private handleMouseDown(e: MouseEvent): void {
     this.mouseX = e.clientX;
     this.mouseY = e.clientY;
-  }
+    this.isDragged = false;
 
-  private handleMouseUp(e: MouseEvent) {
-    if (this.mouseX - e.clientX > 10 || this.mouseY - e.clientY > 10) this.isDragged = true;
+    const checkDrag = (e: MouseEvent) => {
+      if (Math.abs(this.mouseX - e.clientX) > 10 || Math.abs(this.mouseY - e.clientY) > 10) {
+        this.isDragged = true;
+        window.removeEventListener("mousemove", checkDrag);
+      }
+    };
+
+    window.addEventListener("mousemove", checkDrag);
   }
 }
