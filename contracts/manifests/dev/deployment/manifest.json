@@ -1191,7 +1191,7 @@
     ],
     "address": "0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357",
     "transaction_hash": "0x2f45d848698cb355e272334383bef7bc02541eb271ecefdcae1a27c13e56634",
-    "block_number": 118,
+    "block_number": 269,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -2303,8 +2303,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3ea47c16a9c7b4d08a0a413aa52dfeb0267a837da1481796c8cd11832337894",
-      "class_hash": "0x4c16d7cfb313907a1c697558dbb6acc4f7a80dd81b5508c3ccb76184e83035a",
-      "original_class_hash": "0x4c16d7cfb313907a1c697558dbb6acc4f7a80dd81b5508c3ccb76184e83035a",
+      "class_hash": "0x491b71952f5eaae22c7c9ab0b299e9722fc186502aa454d0cc3da3695147318",
+      "original_class_hash": "0x491b71952f5eaae22c7c9ab0b299e9722fc186502aa454d0cc3da3695147318",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -4271,8 +4271,8 @@
     {
       "kind": "DojoContract",
       "address": "0x54e1acc3b1f4606411430938ef6fc01538feca7c9c91f07d18ceb0caeab5cc3",
-      "class_hash": "0x1e47de9edb61d1be4bfd906bd66d2d1e11fe9c3ba35c8c0c8c015ca96e4da73",
-      "original_class_hash": "0x1e47de9edb61d1be4bfd906bd66d2d1e11fe9c3ba35c8c0c8c015ca96e4da73",
+      "class_hash": "0x7d910f378fe41e1fc9fe7cae06281d1e1e6c8fdaee552ba0838d0466c666895",
+      "original_class_hash": "0x7d910f378fe41e1fc9fe7cae06281d1e1e6c8fdaee552ba0838d0466c666895",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -18488,8 +18488,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x5e3685e37147a187667c1c98209719aba55b6f8ebf10219805ef001c2491434",
-      "original_class_hash": "0x5e3685e37147a187667c1c98209719aba55b6f8ebf10219805ef001c2491434",
+      "class_hash": "0x3d652949de690cd8a5c1ccc771f43608e266e901d0cb2b4d20d0a947ecdc73d",
+      "original_class_hash": "0x3d652949de690cd8a5c1ccc771f43608e266e901d0cb2b4d20d0a947ecdc73d",
       "abi": [
         {
           "type": "impl",

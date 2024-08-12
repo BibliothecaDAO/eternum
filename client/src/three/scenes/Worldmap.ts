@@ -311,7 +311,7 @@ export default class WorldmapScene extends HexagonScene {
         const isStructure = this.structureManager.structuresMap.get(globalCol)?.has(globalRow) || false;
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-        if (isStructure || !isExplored || !isBattle) {
+        if (isStructure || !isExplored || isBattle) {
           dummy.scale.set(0, 0, 0);
         } else {
           dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
