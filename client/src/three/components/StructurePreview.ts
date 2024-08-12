@@ -67,7 +67,7 @@ export class StructurePreview {
   public clearPreviewStructure() {
     if (this.previewStructure) {
       const model = this.getStructureModel(this.previewStructure.type);
-      if (model) {  
+      if (model) {
         this.scene.remove(model);
         this.previewStructure = null;
       }
