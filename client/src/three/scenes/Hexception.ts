@@ -82,6 +82,7 @@ export default class HexceptionScene extends HexagonScene {
   private clearBuildingMode() {
     this.buildingPreview?.clearPreviewBuilding();
     this.highlightHexManager.highlightHexes([]);
+    this.state.setPreviewBuilding(null);
   }
 
   private loadBuildingModels() {
