@@ -7,8 +7,6 @@ type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mouse
 export class InputManager {
   private listeners: Array<{ event: ListenerTypes; handler: (e: MouseEvent) => void }> = [];
   private isDragged = false;
-  private mouseX = 0; // Add this flag
-  private mouseY = 0;
   private clickTimer: NodeJS.Timeout | null = null; // Add this property
 
   constructor(
@@ -27,6 +25,10 @@ export class InputManager {
         return;
       }
 
+      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+
       if (event === "click") {
         if (this.isDragged) {
           this.isDragged = false;
@@ -41,13 +43,9 @@ export class InputManager {
         // Set a timer to check for double-click
         this.clickTimer = setTimeout(() => {
           this.clickTimer = null;
-          this.raycaster.setFromCamera(this.mouse, this.camera);
           callback(this.raycaster);
         }, 200); // Adjust the delay as needed
       } else {
-        this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        this.raycaster.setFromCamera(this.mouse, this.camera);
         callback(this.raycaster);
       }
     };
@@ -72,17 +70,22 @@ export class InputManager {
   }
 
   private handleMouseDown(e: MouseEvent): void {
-    this.mouseX = e.clientX;
-    this.mouseY = e.clientY;
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
     this.isDragged = false;
-
     const checkDrag = (e: MouseEvent) => {
-      if (Math.abs(this.mouseX - e.clientX) > 10 || Math.abs(this.mouseY - e.clientY) > 10) {
+      if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
         this.isDragged = true;
         window.removeEventListener("mousemove", checkDrag);
       }
     };
-
     window.addEventListener("mousemove", checkDrag);
+    window.addEventListener(
+      "mouseup",
+      () => {
+        window.removeEventListener("mousemove", checkDrag);
+      },
+      { once: true },
+    );
   }
 }
