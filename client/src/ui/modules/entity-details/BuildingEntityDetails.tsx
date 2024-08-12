@@ -22,15 +22,12 @@ export const BuildingEntityDetails = () => {
 
   // const selectedBuildingEntityId = useUIStore((state) => state.selectedBuildingEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
-  console.log({ selectedBuildingHex });
 
   useEffect(() => {
     const building = getComponentValue(
       dojo.setup.components.Building,
       getEntityIdFromKeys(Object.values(selectedBuildingHex).map((v) => BigInt(v))),
     );
-
-    console.log({ building });
 
     if (building) {
       setBuildingType(BuildingType[building.category as keyof typeof BuildingType]);
