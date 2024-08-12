@@ -21,6 +21,7 @@ export class ArmyManager {
   private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
   private labels: Map<number, THREE.Points> = new Map();
+  private movingLabels: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
 
   private getArmyWorldPosition = (armyEntityId: ID, hexCoords: HexPosition) => {
     const totalOnSameHex = Array.from(this.armies.values()).filter((army) => {
@@ -157,6 +158,12 @@ export class ArmyManager {
       endPos: newPosition as any,
       progress: 0,
     });
+
+    this.movingLabels.set(entityId, {
+      startPos: currentPosition,
+      endPos: newPosition as any,
+      progress: 0,
+    });
   }
 
   update(deltaTime: number) {
@@ -173,14 +180,23 @@ export class ArmyManager {
       this.mesh.setMatrixAt(index, this.dummy.matrix);
 
       const entityId = this.mesh.userData.entityIdMap[index];
-      const label = this.labels.get(entityId);
-      if (label) {
-        label.position.set(this.dummy.position.x, this.dummy.position.y + 1.5, this.dummy.position.z);
-      }
     });
-
     if (this.movingArmies.size > 0) {
       this.mesh.instanceMatrix.needsUpdate = true;
     }
+
+    this.movingLabels.forEach((movement, entityId) => {
+      movement.progress += deltaTime * 0.5;
+      const label = this.labels.get(entityId);
+      if (label) {
+        if (movement.progress >= 1) {
+          this.labelManager.updateLabelPosition(label, movement.endPos);
+          this.movingLabels.delete(entityId);
+        } else {
+          const newPosition = this.dummy.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
+          this.labelManager.updateLabelPosition(label, newPosition);
+        }
+      }
+    });
   }
 }

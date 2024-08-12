@@ -40,4 +40,14 @@ export class LabelManager {
 
     return label;
   }
+
+  updateLabelPosition(label: THREE.Points, newPosition: THREE.Vector3): void {
+    if (label.userData.isLabel) {
+      const positions = label.geometry.attributes.position;
+      positions.setXYZ(0, newPosition.x, newPosition.y + 1.5, newPosition.z);
+      positions.needsUpdate = true;
+    } else {
+      console.warn("Attempted to update position of a non-label object");
+    }
+  }
 }
