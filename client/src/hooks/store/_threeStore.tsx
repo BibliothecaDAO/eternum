@@ -13,6 +13,20 @@ export interface ThreeStore {
   setHoveredArmyEntityId: (id: ID | null) => void;
   selectedBuilding: BuildingType;
   setSelectedBuilding: (building: BuildingType) => void;
+  selectedBuildingEntityId: ID | null;
+  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => void;
+  selectedBuildingHex: {
+    outerCol: number;
+    outerRow: number;
+    innerCol: number;
+    innerRow: number;
+  };
+  setSelectedBuildingHex: (hexCoords: {
+    outerCol: number;
+    outerRow: number;
+    innerCol: number;
+    innerRow: number;
+  }) => void;
 }
 
 interface ArmyActions {
@@ -37,7 +51,21 @@ export const createThreeStoreSlice = (set: any, get: any) => ({
   selectedHex: { col: 0, row: 0 },
   setSelectedHex: (hex: HexPosition) => set({ selectedHex: hex }),
   hoveredArmyEntityId: null,
-  setHoveredArmyEntityId: (hoveredArmyEntityId: ID | null) => set({ hoveredArmyEntityId }),
+  setHoveredArmyEntityId: (id: ID | null) => set({ hoveredArmyEntityId: id }),
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building: BuildingType) => set({ selectedBuilding: building }),
+  selectedBuildingEntityId: null,
+  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => set({ selectedBuildingEntityId }),
+  selectedBuildingHex: { outerCol: 0, outerRow: 0, innerCol: 0, innerRow: 0 },
+  setSelectedBuildingHex: ({
+    outerCol,
+    outerRow,
+    innerCol,
+    innerRow,
+  }: {
+    outerCol: number;
+    outerRow: number;
+    innerCol: number;
+    innerRow: number;
+  }) => set({ selectedBuildingHex: { outerCol, outerRow, innerCol, innerRow } }),
 });

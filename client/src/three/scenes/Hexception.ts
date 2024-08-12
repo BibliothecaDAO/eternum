@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
@@ -10,7 +10,6 @@ import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Biome, BiomeType } from "../components/Biome";
-import { BuildingPreview } from "../components/BuildingPreview";
 import InstancedBuilding from "../components/InstancedBuilding";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
@@ -23,6 +22,8 @@ import {
   structureTypeToBuildingType,
 } from "./constants";
 import { HexagonScene } from "./HexagonScene";
+import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { BuildingPreview } from "../components/BuildingPreview";
 
 const loader = new GLTFLoader();
 export default class HexceptionScene extends HexagonScene {
@@ -61,6 +62,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.setup();
 
+    this.state = useUIStore.getState();
     useUIStore.subscribe(
       (state) => state.previewBuilding,
       (building) => {
@@ -124,15 +126,31 @@ export default class HexceptionScene extends HexagonScene {
   protected onHexagonClick(hexCoords: HexPosition): void {
     const normalizedCoords = { col: BUILDINGS_CENTER[0] - hexCoords.col, row: BUILDINGS_CENTER[1] - hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
-    if (buildingType && !this.tileManager.isHexOccupied(normalizedCoords)) {
-      this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
-      this.clearBuildingMode();
-      this.updateHexceptionGrid(4);
+    if (buildingType) {
+      // if building mode
+      if (!this.tileManager.isHexOccupied(normalizedCoords)) {
+        this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
+        this.clearBuildingMode();
+        this.updateHexceptionGrid(4);
+      }
+    } else {
+      // if not building mode
+      const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
+      if (this.tileManager.isHexOccupied(normalizedCoords)) {
+        this.state.setSelectedBuildingHex({
+          outerCol,
+          outerRow,
+          innerCol: normalizedCoords.col,
+          innerRow: normalizedCoords.row,
+        });
+        this.state.setLeftNavigationView(View.EntityView);
+      }
     }
   }
   protected onHexagonMouseMove({ position }: { position: THREE.Vector3 }): void {
     this.buildingPreview?.setBuildingPosition(position);
   }
+  protected onHexagonRightClick(): void {}
   protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {

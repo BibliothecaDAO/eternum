@@ -91,7 +91,7 @@ export class TileManager {
       this.models.building,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
     );
-    return building?.category !== undefined;
+    return building !== undefined && building.category !== BuildingType[BuildingType.None];
   };
 
   structureType = () => {

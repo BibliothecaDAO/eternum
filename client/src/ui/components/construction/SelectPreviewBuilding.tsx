@@ -358,7 +358,7 @@ const BuildingCard = ({
   );
 };
 
-const ResourceInfo = ({
+export const ResourceInfo = ({
   resourceId,
   entityId,
   extraButtons = [],
@@ -429,7 +429,7 @@ const ResourceInfo = ({
   );
 };
 
-const BuildingInfo = ({
+export const BuildingInfo = ({
   buildingId,
   entityId,
   extraButtons = [],
@@ -530,7 +530,7 @@ const BuildingInfo = ({
           </div>
         </>
       )}
-      <div className="flex justify-center">{...extraButtons}</div>
+      <div className="w-full flex flex-col">{extraButtons}</div>
     </div>
   );
 };
