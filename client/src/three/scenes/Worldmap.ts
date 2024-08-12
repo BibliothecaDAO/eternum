@@ -159,10 +159,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private _canBuildStructure(hexCoords: HexPosition) {
+    const contractPos = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+
     const isStructure = this.structureManager.structuresMap.get(hexCoords.col)?.has(hexCoords.row) || false;
     const isExplored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) || false;
 
-    const biomeType = this.biome.getBiome(hexCoords.col + FELT_CENTER, hexCoords.row + FELT_CENTER);
+    const biomeType = this.biome.getBiome(contractPos.x, contractPos.y);
     const isOcean = biomeType === BiomeType.Ocean || biomeType === BiomeType.DeepOcean;
 
     return !isStructure && isExplored && !isOcean;
