@@ -35,10 +35,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private currentChunk: string = "null";
 
-  // Store
-  private state: AppStore;
-  private unsubscribe: () => void;
-
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
   private battleManager: BattleManager;
@@ -66,7 +62,6 @@ export default class WorldmapScene extends HexagonScene {
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
-    this.state = useUIStore.getState();
     this.unsubscribe = useUIStore.subscribe((state) => {
       this.state = state;
     });

@@ -16,6 +16,7 @@ import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
 import { biomeModelPaths, HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "./constants";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 
 export abstract class HexagonScene {
   protected scene: THREE.Scene;
@@ -32,6 +33,7 @@ export abstract class HexagonScene {
   protected GUIFolder: any;
   protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
   protected modelLoadPromises: Promise<void>[] = [];
+  protected state: AppStore;
 
   constructor(
     protected sceneName: SceneName,
@@ -114,6 +116,8 @@ export abstract class HexagonScene {
       const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
       clickedHex && this.onHexagonClick(clickedHex.hexCoords);
     });
+
+    this.state = useUIStore.getState();
   }
 
   protected abstract onHexagonMouseMove({
