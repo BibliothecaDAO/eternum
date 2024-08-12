@@ -2,7 +2,6 @@ import { Leva } from "leva";
 import { useEffect } from "react";
 import useUIStore from "../../hooks/store/useUIStore";
 
-import useRealmStore from "@/hooks/store/useRealmStore";
 import { Redirect } from "wouter";
 import { HooksComponent } from "../components/HooksComponent";
 import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
@@ -28,7 +27,7 @@ import { RightNavigationModule } from "../modules/navigation/RightNavigationModu
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const realmEntityIds = useUIStore((state) => state.realmEntityIds);
 
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);

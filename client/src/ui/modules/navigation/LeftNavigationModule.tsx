@@ -13,7 +13,6 @@ import { debounce } from "lodash";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import useRealmStore from "../../../hooks/store/useRealmStore";
 import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { EntityDetails } from "../entity-details/EntityDetails";
@@ -57,7 +56,7 @@ export const LeftNavigationModule = () => {
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId } = useUIStore();
 
   const { questClaimStatus } = useQuestClaimStatus();
   const [location, _] = useLocation();

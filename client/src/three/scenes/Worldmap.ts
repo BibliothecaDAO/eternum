@@ -49,6 +49,8 @@ export default class WorldmapScene extends HexagonScene {
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
 
+  private realmEntityId: ID | null = null;
+
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
@@ -86,6 +88,13 @@ export default class WorldmapScene extends HexagonScene {
         } else {
           this.structurePreview?.clearPreviewStructure();
         }
+      },
+    );
+
+    useUIStore.subscribe(
+      (state) => state.realmEntityId,
+      (realmEntityId) => {
+        this.realmEntityId = realmEntityId;
       },
     );
 
@@ -183,7 +192,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
       const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
-      this.tileManager.placeStructure(buildingType.type, normalizedHexCoords);
+      this.tileManager.placeStructure(this.realmEntityId!, buildingType.type, normalizedHexCoords);
       this.clearEntitySelection();
     } else if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));

@@ -4,7 +4,7 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
-import useRealmStore from "../store/useRealmStore";
+import useUIStore from "../store/useUIStore";
 
 export const useHexPosition = () => {
   const {
@@ -14,7 +14,7 @@ export const useHexPosition = () => {
   } = useDojo();
 
   const searchString = useSearch();
-  const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
+  const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
 
   const hexPosition = useMemo(() => {
     const params = new URLSearchParams(searchString);

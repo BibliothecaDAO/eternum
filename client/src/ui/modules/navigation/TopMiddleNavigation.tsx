@@ -1,7 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -49,8 +48,8 @@ export const TopMiddleNavigation = () => {
   const { playerStructures } = useEntities();
   const { hexPosition } = useQuery();
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);

@@ -1,4 +1,4 @@
-import { BuildingStringToEnum, BuildingType, ID, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, ID, StructureType } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   Component,
@@ -15,7 +15,6 @@ import { HexPosition } from "@/types";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { FELT_CENTER } from "@/ui/config";
-import useRealmStore from "@/hooks/store/useRealmStore";
 
 export class TileManager {
   private models: {
@@ -220,9 +219,7 @@ export class TileManager {
       });
   };
 
-  placeStructure = async (structureType: StructureType, hexCoords: HexPosition) => {
-    const entityId = useRealmStore.getState().realmEntityId;
-
+  placeStructure = async (entityId: ID, structureType: StructureType, hexCoords: HexPosition) => {
     if (structureType == StructureType.Hyperstructure) {
       await this.dojo.systemCalls.create_hyperstructure({
         signer: this.dojo.network.burnerManager.account!,

@@ -9,6 +9,7 @@ import { createPopupsSlice, PopupsStore } from "./_popupsStore";
 import { BattleViewInfo } from "./types";
 import { subscribeWithSelector } from "zustand/middleware";
 import { createThreeStoreSlice, ThreeStore } from "./_threeStore";
+import { createRealmStoreSlice, RealmStore } from "./useRealmStore";
 
 interface UIStore {
   theme: string;
@@ -53,7 +54,7 @@ interface UIStore {
   setRightNavigationView: (view: RightView) => void;
 }
 
-export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore;
+export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore;
 
 const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
@@ -107,6 +108,7 @@ const useUIStore = create(
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
+    ...createRealmStoreSlice(set),
   })),
 );
 

@@ -1,5 +1,4 @@
 import { useModalStore } from "@/hooks/store/useModalStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { trade } from "@/ui/components/navigation/Config";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
@@ -41,7 +40,7 @@ export const RightNavigationModule = () => {
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId } = useUIStore();
   const { questClaimStatus } = useQuestClaimStatus();
 
   const { getEntityInfo } = getEntitiesUtils();

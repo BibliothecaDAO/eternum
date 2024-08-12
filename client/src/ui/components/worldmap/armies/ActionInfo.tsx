@@ -1,5 +1,4 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
@@ -13,7 +12,7 @@ import { useMemo } from "react";
 export const ActionInfo = () => {
   const { hoveredHex, selectedEntityId, travelPaths } = useUIStore((state) => state.armyActions);
   const { getBalance } = getResourceBalance();
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
 
   const travelPath = useMemo(() => {
     if (hoveredHex) return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);

@@ -3,7 +3,6 @@ import { calculateCompletionPoints } from "@/dojo/modelManager/utils/Leaderboard
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { ProgressWithPercentage, useHyperstructures, useUpdates } from "@/hooks/helpers/useHyperstructures";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
@@ -17,6 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
+import useUIStore from "@/hooks/store/useUIStore";
 
 enum Loading {
   None,
@@ -38,7 +38,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const [naming, setNaming] = useState("");
   const [resetContributions, setResetContributions] = useState(false);
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId } = useUIStore();
   const { useProgress } = useHyperstructures();
   const { getContributionsByPlayerAddress } = useContributions();
 
