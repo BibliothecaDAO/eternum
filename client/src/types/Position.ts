@@ -3,6 +3,7 @@ import { FELT_CENTER } from "@/ui/config";
 export class Position {
   private x: number;
   private y: number;
+
   private normalized: boolean;
 
   constructor({ x, y }: { x: number; y: number }) {

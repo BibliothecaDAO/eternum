@@ -8,21 +8,21 @@ import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
+import BottomMiddleContainer from "../containers/BottomMiddleContainer";
+import { BottomRightContainer } from "../containers/BottomRightContainer";
+import LeftMiddleContainer from "../containers/LeftMiddleContainer";
+import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
+import TopMiddleContainer from "../containers/TopMiddleContainer";
 import { Tooltip } from "../elements/Tooltip";
 import { BattleView } from "../modules/military/battle-view/BattleView";
-import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
-import { Onboarding } from "./Onboarding";
-import LeftMiddleContainer from "../containers/LeftMiddleContainer";
-import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
-import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
-import TopMiddleContainer from "../containers/TopMiddleContainer";
-import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
-import { BottomRightContainer } from "../containers/BottomRightContainer";
-import { Transactions } from "../modules/transactions/Transactions";
-import RightMiddleContainer from "../containers/RightMiddleContainer";
+import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
+import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
+import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
+import { Transactions } from "../modules/transactions/Transactions";
+import { Onboarding } from "./Onboarding";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -45,6 +45,12 @@ export const World = () => {
   return (
     <div
       onClick={(e) => {
+        e.stopPropagation();
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+      }}
+      onMouseMove={(e) => {
         e.stopPropagation();
       }}
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"

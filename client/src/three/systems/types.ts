@@ -5,6 +5,9 @@ export type ArmySystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
   isMine: boolean;
+  battleId: ID;
+  health: { lifetime: bigint; current: bigint };
+  defender: boolean;
 };
 
 export type StructureSystemUpdate = {

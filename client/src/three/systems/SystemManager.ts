@@ -29,20 +29,31 @@ export class SystemManager {
           const army = getComponentValue(this.dojo.components.Army, update.entity);
           if (!army) return;
 
-          // filter armies that are in battle
-          if (army.battle_id !== 0) return;
-
-          // filter armies that are dead
-          const health = getComponentValue(this.dojo.components.Health, update.entity);
-          if (!health || health.current / EternumGlobalConfig.troop.healthPrecision === 0n) return;
-
           const owner = getComponentValue(this.dojo.components.Owner, update.entity);
           const isMine = this.isOwner(owner);
+
+          const health = getComponentValue(this.dojo.components.Health, update.entity);
+          if (!health) {
+            console.log(`[MyApp] in here for entity id ${army.entity_id}`);
+            return;
+          }
+
+		  if (army.entity_id === 43) console.log(`[MyApp] got update for ${army.entity_id}`);
+          const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
+
+          const healthMultiplier =
+            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
           return {
             entityId: army.entity_id,
             hexCoords: this.getHexCoords(update.value),
             isMine,
+            health: {
+              current: health.current / healthMultiplier,
+              lifetime: health.lifetime / healthMultiplier,
+            },
+            battleId: army.battle_id,
+            defender: Boolean(protectee),
           };
         });
       },

@@ -32,7 +32,6 @@ export class BattleManager {
           this.instancedModel = new InstancedModel(model, MAX_INSTANCES);
           this.instancedModel.setCount(0);
           this.scene.add(this.instancedModel.group);
-          console.log("loading model");
           resolve();
         },
         undefined,

@@ -1,6 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, Position, UIPosition } from "@bibliothecadao/eternum";
+import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
   Component,
@@ -22,7 +21,6 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;
   isMine: boolean;
   isMercenary: boolean;
-  uiPos: UIPosition;
   offset: Position;
   health: ComponentValue<ClientComponents["Health"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -153,7 +151,6 @@ const formatArmies = (
         homePosition,
         isMine,
         isMercenary,
-        uiPos: { ...getUIPositionFromColRow(Number(position?.x || 0), Number(position?.y || 0)), z: 0.32 },
         name: name
           ? shortString.decodeShortString(name.name.toString())
           : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army.entity_id}`,
