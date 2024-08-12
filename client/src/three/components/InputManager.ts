@@ -74,7 +74,6 @@ export class InputManager {
     const mouseY = e.clientY;
     this.isDragged = false;
     const checkDrag = (e: MouseEvent) => {
-      console.log("check drag");
       if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
         this.isDragged = true;
         window.removeEventListener("mousemove", checkDrag);
