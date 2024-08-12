@@ -15,6 +15,7 @@ import { HexPosition } from "@/types";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { FELT_CENTER } from "@/ui/config";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 export class TileManager {
   private models: {
@@ -32,10 +33,7 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(
-    private dojo: SetupResult,
-    hexCoords: HexPosition,
-  ) {
+  constructor(private dojo: SetupResult, hexCoords: HexPosition) {
     const { Tile, Building, Stamina, Position, Army, Owner, EntityOwner, StaminaConfig, Structure } = dojo.components;
     this.models = {
       tile: Tile,
@@ -217,5 +215,20 @@ export class TileManager {
           this.models.building.removeOverride(overrideId);
         }, 2000);
       });
+  };
+
+  placeStructure = async (structureType: StructureType, hexCoords: HexPosition) => {
+    const entityId = useRealmStore.getState().realmEntityId;
+
+    if (structureType == StructureType.Hyperstructure) {
+      await this.dojo.systemCalls.create_hyperstructure({
+        signer: this.dojo.network.burnerManager.account!,
+        creator_entity_id: BigInt(entityId || 0),
+        coords: {
+          x: hexCoords.col.toString(),
+          y: hexCoords.row.toString(),
+        },
+      });
+    }
   };
 }

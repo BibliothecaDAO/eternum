@@ -1,7 +1,7 @@
 import { ID } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 
-interface Realm {
+export interface Realm {
   realmId: ID | undefined;
   setRealmId: (realmId: ID) => void;
   realmEntityId: ID;

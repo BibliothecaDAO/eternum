@@ -61,6 +61,10 @@ export default class HexceptionScene extends HexagonScene {
 
     this.setup();
 
+    this.inputManager.addListener("contextmenu", (raycaster) => {
+      this.clearBuildingMode();
+    });
+
     useUIStore.subscribe(
       (state) => state.previewBuilding,
       (building) => {
