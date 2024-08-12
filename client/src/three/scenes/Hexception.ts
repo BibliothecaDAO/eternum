@@ -36,9 +36,6 @@ export default class HexceptionScene extends HexagonScene {
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
 
-  // Store
-  private state: AppStore;
-
   constructor(
     controls: MapControls,
     dojoContext: SetupResult,
