@@ -62,7 +62,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
-    this.unsubscribe = useUIStore.subscribe((state) => {
+    useUIStore.subscribe((state) => {
       this.state = state;
     });
 
