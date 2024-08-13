@@ -30,10 +30,12 @@ async function init() {
 
   const graphic = new GameRenderer(setupResult);
 
+  graphic.initScene();
+  graphic.initStats();
+
   // reinit scene game renderer when address changes
   const accountChange = () => {
-    graphic.initScene();
-    graphic.initStats();
+    graphic.renderModels();
   };
   window.addEventListener(ACCOUNT_CHANGE_EVENT, accountChange);
 
