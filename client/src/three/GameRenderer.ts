@@ -126,6 +126,10 @@ export default class GameRenderer {
     document.body.appendChild(this.labelRenderer.domElement);
   }
 
+  updateDojo(setupResult: SetupResult) {
+    this.dojo = setupResult;
+  }
+
   initStats() {
     this.stats = new (Stats as any)();
     document.body.appendChild(this.stats.dom);

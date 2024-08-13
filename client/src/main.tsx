@@ -9,6 +9,7 @@ import { DojoProvider } from "./hooks/context/DojoContext";
 import "./index.css";
 import GameRenderer from "./three/GameRenderer";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
+import { ACCOUNT_CHANGE_EVENT } from "./hooks/helpers/useAccountChange";
 
 declare global {
   interface Window {
@@ -26,11 +27,18 @@ async function init() {
   root.render(<LoadingScreen />);
 
   const setupResult = await setup(dojoConfig);
+  console.log("setupResult: ", setupResult);
 
   const graphic = new GameRenderer(setupResult);
 
   graphic.initScene();
   graphic.initStats();
+
+  // update dojo in game renderer when address changes
+  const updateDojo = () => {
+    graphic.updateDojo(setupResult);
+  };
+  window.addEventListener(ACCOUNT_CHANGE_EVENT, updateDojo);
 
   inject();
   root.render(
