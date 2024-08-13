@@ -157,6 +157,13 @@ export default class GameRenderer {
       }, 30),
     );
 
+    this.renderModels();
+
+    // Init animation
+    this.animate();
+  }
+
+  renderModels() {
     this.transitionManager = new TransitionManager(this.renderer);
 
     this.sceneManager = new SceneManager(this.transitionManager);
@@ -174,9 +181,6 @@ export default class GameRenderer {
     this.worldmapScene.createGroundMesh();
 
     this.sceneManager.moveCameraForScene();
-
-    // Init animation
-    this.animate();
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
