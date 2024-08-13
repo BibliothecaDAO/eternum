@@ -792,9 +792,6 @@ mod combat_systems {
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
 
-            // ensure structure is not a realm
-            assert!(structure.category != StructureCategory::Realm, "realms can not be claimed");
-
             // ensure claimer army is not in battle
             let claimer_army: Army = get!(world, army_id, Army);
             claimer_army.assert_not_in_battle();
@@ -816,17 +813,7 @@ mod combat_systems {
                 // ensure structure army is dead
                 let structure_army_health: Health = get!(world, structure_army_id, Health);
                 assert!(!structure_army_health.is_alive(), "can only claim when structure army is dead");
-
-                let mut structure_army_owner: Owner = get!(world, structure_army_id, Owner);
-                structure_army_owner.address = starknet::get_caller_address();
-                set!(world, (structure_army_owner))
             }
-
-            // pass ownership of structure to claimer
-            let mut structure_owner_entity: EntityOwner = get!(world, structure_id, EntityOwner);
-            let claimer_army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
-            structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
-            set!(world, (structure_owner_entity));
 
             let mut structure_owner: Owner = get!(world, structure_id, Owner);
             structure_owner.address = starknet::get_caller_address();
@@ -1222,7 +1209,6 @@ mod combat_systems {
                         entity_id: army_id, troops: Default::default(), battle_id: 0, battle_side: Default::default()
                     },
                     EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id },
-                    Owner { entity_id: army_id, address: owner_address },
                     Position { entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y }
                 )
             );
