@@ -27,7 +27,7 @@ export enum MenuEnum {
 export const BottomNavigation = () => {
   const [location, _] = useLocation();
 
-  const { realmEntityId } = useUIStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const { quests } = useQuests();
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { questClaimStatus } = useQuestClaimStatus();

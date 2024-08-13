@@ -180,8 +180,8 @@ export class TileManager {
         signer: this.dojo.network.burnerManager.account!,
         entity_id: entityId,
         building_coord: {
-          x: col.toString(),
-          y: row.toString(),
+          x: col,
+          y: row,
         },
         building_category: buildingType,
         produce_resource_type:
@@ -208,8 +208,8 @@ export class TileManager {
         signer: this.dojo.network.burnerManager.account!,
         entity_id: entityId,
         building_coord: {
-          x: col.toString(),
-          y: row.toString(),
+          x: col,
+          y: row,
         },
       })
       .finally(() => {
@@ -223,10 +223,10 @@ export class TileManager {
     if (structureType == StructureType.Hyperstructure) {
       await this.dojo.systemCalls.create_hyperstructure({
         signer: this.dojo.network.burnerManager.account!,
-        creator_entity_id: BigInt(entityId || 0),
+        creator_entity_id: entityId,
         coords: {
-          x: hexCoords.col.toString(),
-          y: hexCoords.row.toString(),
+          x: hexCoords.col,
+          y: hexCoords.row,
         },
       });
     }

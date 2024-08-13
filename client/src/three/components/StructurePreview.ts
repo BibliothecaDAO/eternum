@@ -1,7 +1,7 @@
 import { StructureType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
-import { StructureModelPaths } from "./StructureManager";
+import { StructureModelPaths } from "../scenes/constants";
 
 export class StructurePreview {
   private previewStructure: { type: StructureType; resource?: ResourcesIds } | null = null;

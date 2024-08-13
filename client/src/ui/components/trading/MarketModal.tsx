@@ -30,7 +30,8 @@ export const MarketModal = () => {
   const { bidOffers, askOffers } = useSetMarket();
 
   //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
-  const { realmEntityId, setRealmEntityId } = useUIStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
 
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);

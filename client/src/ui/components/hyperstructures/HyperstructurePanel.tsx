@@ -38,7 +38,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const [naming, setNaming] = useState("");
   const [resetContributions, setResetContributions] = useState(false);
 
-  const { realmEntityId } = useUIStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const { useProgress } = useHyperstructures();
   const { getContributionsByPlayerAddress } = useContributions();
 

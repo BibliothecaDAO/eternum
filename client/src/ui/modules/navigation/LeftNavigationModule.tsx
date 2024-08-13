@@ -56,7 +56,7 @@ export const LeftNavigationModule = () => {
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realmEntityId } = useUIStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
 
   const { questClaimStatus } = useQuestClaimStatus();
   const [location, _] = useLocation();

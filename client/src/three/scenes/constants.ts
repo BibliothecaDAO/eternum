@@ -51,3 +51,21 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
 };
+
+export const StructureModelPaths: Record<StructureType, string> = {
+  [StructureType.Realm]: "models/buildings/castle2.glb",
+  [StructureType.Hyperstructure]: "models/buildings/farm.glb", // USING PLACEHOLDER MODEL
+  // [StructureType.Hyperstructure]: "models/buildings/hyperstructure-half-transformed.glb",
+  // [StructureType.Hyperstructure]: "models/buildings/hyperstructure.glb",
+  [StructureType.Bank]: "models/buildings/bank.glb",
+  [StructureType.FragmentMine]: "models/buildings/mine.glb",
+  [StructureType.Settlement]: "",
+};
+
+export const StructureLabelPaths: Record<StructureType, string> = {
+  [StructureType.Realm]: "textures/realm_label.png",
+  [StructureType.Hyperstructure]: "textures/hyper_label.png",
+  [StructureType.FragmentMine]: "textures/shard_label.png",
+  [StructureType.Bank]: "",
+  [StructureType.Settlement]: "",
+};
