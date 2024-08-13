@@ -15,7 +15,8 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
 };
 
 export const buildingModelPaths: Record<BuildingType, string> = {
-  [BuildingType.None]: "/models/buildings/farm.glb", //Needs to have a model to load
+  // placeholder for now
+  [BuildingType.None]: "/models/buildings/farm.glb",
   [BuildingType.Bank]: "/models/buildings/bank.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
@@ -55,18 +56,22 @@ export const biomeModelPaths: Record<BiomeType, string> = {
 
 export const StructureModelPaths: Record<StructureType, string> = {
   [StructureType.Realm]: "models/buildings/castle2.glb",
-  [StructureType.Hyperstructure]: "models/buildings/farm.glb", // USING PLACEHOLDER MODEL
+  // placeholder for now
+  [StructureType.Hyperstructure]: "models/buildings/farm.glb",
   // [StructureType.Hyperstructure]: "models/buildings/hyperstructure-half-transformed.glb",
   // [StructureType.Hyperstructure]: "models/buildings/hyperstructure.glb",
   [StructureType.Bank]: "models/buildings/bank.glb",
   [StructureType.FragmentMine]: "models/buildings/mine.glb",
-  [StructureType.Settlement]: "",
+  // placeholder for now
+  [StructureType.Settlement]: "models/buildings/mine.glb",
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Realm]: "textures/realm_label.png",
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/shard_label.png",
-  [StructureType.Bank]: "",
-  [StructureType.Settlement]: "",
+  // placeholder for now
+  [StructureType.Bank]: "models/buildings/mine.glb",
+  // placeholder for now
+  [StructureType.Settlement]: "models/buildings/mine.glb",
 };
