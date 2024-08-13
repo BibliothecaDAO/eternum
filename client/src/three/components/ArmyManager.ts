@@ -15,7 +15,7 @@ export class ArmyManager {
   private dummy: THREE.Mesh;
   loadPromise: Promise<void>;
   private mesh: THREE.InstancedMesh;
-  private armies: Map<ID, { matrixIndex: number; hexCoords: Position, isMine: boolean }> = new Map();
+  private armies: Map<ID, { matrixIndex: number; hexCoords: Position; isMine: boolean }> = new Map();
   private scale: THREE.Vector3;
   private movingArmies: Map<ID, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
