@@ -16,7 +16,7 @@ export class ArmyManager {
   private dummy: THREE.Mesh;
   loadPromise: Promise<void>;
   private mesh: THREE.InstancedMesh;
-  private armies: Map<number, { index: number; hexCoords: HexPosition }> = new Map();
+  private armies: Map<number, { index: number; hexCoords: HexPosition; isMine: boolean }> = new Map();
   private scale: THREE.Vector3;
   private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
@@ -88,7 +88,9 @@ export class ArmyManager {
 
     const entityIdMap = clickedObject.userData.entityIdMap;
     if (entityIdMap) {
-      return entityIdMap[instanceId];
+      const entityId = entityIdMap[instanceId];
+      // don't return if the army is not mine
+      if (entityId && this.armies.get(entityId)?.isMine) return entityId;
     }
   }
 
@@ -109,7 +111,7 @@ export class ArmyManager {
   addArmy(entityId: ID, hexCoords: HexPosition, isMine: boolean) {
     const index = this.mesh.count;
     this.mesh.count++;
-    this.armies.set(entityId, { index, hexCoords });
+    this.armies.set(entityId, { index, hexCoords, isMine });
     const position = this.getArmyWorldPosition(entityId, hexCoords);
     this.dummy.position.copy(position);
     this.dummy.scale.copy(this.scale);
@@ -142,8 +144,8 @@ export class ArmyManager {
     }
     console.log("move army", entityId, hexCoords);
 
-    const index = armyData.index;
-    this.armies.set(entityId, { index, hexCoords });
+    const { index, isMine } = armyData;
+    this.armies.set(entityId, { index, hexCoords, isMine });
     const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
     const currentPosition = new THREE.Vector3();
     this.mesh.getMatrixAt(index, this.dummy.matrix);
