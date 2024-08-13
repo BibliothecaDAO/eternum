@@ -45,7 +45,7 @@ export default class WorldmapScene extends HexagonScene {
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
 
-  private realmEntityId: ID | null = null;
+  private realmEntityId: ID = 0;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -94,7 +94,7 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     this.armyManager = new ArmyManager(this.scene);
-    this.structureManager = new StructureManager(this.scene);
+    this.structureManager = new StructureManager(this.scene, this.dojo);
     this.battleManager = new BattleManager(this.scene);
 
     this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
@@ -187,7 +187,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
       const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
-      this.tileManager.placeStructure(this.realmEntityId!, buildingType.type, normalizedHexCoords);
+      this.tileManager.placeStructure(this.realmEntityId, buildingType.type, normalizedHexCoords);
       this.clearEntitySelection();
     } else if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));

@@ -3,10 +3,15 @@ import { GLTFLoader } from "three-stdlib";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { StructureSystemUpdate } from "../systems/types";
+import { HyperstructureProgressSystemUpdate, StructureSystemUpdate } from "../systems/types";
 import { FELT_CENTER } from "@/ui/config";
-import { ID, StructureType } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
 import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
+import { Component, ComponentValue, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { SetupResult } from "@/dojo/setup";
+import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
+import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -14,16 +19,24 @@ const myColor = new THREE.Color("lime");
 const MAX_INSTANCES = 1000;
 
 export class StructureManager {
+  private models: {
+    progress: Component<ClientComponents["Progress"]["schema"]>;
+  };
+
   private scene: THREE.Scene;
-  private structureModels: Map<StructureType, InstancedModel> = new Map();
+  private structureModels: Map<StructureType, InstancedModel[]> = new Map();
   private labelManagers: Map<StructureType, LabelManager> = new Map();
   private dummy: THREE.Object3D = new THREE.Object3D();
-  modelLoadPromises: Promise<void>[] = [];
+  modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
   structuresMap: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, private dojo: SetupResult) {
+    const { Progress } = dojo.components;
+    this.models = {
+      progress: Progress,
+    };
     this.scene = scene;
     this.loadModels();
   }
@@ -31,37 +44,46 @@ export class StructureManager {
   public async loadModels() {
     const loader = new GLTFLoader();
 
-    for (const [key, modelPath] of Object.entries(StructureModelPaths)) {
+    for (const [key, modelPaths] of Object.entries(StructureModelPaths)) {
       const structureType = StructureType[key as keyof typeof StructureType];
 
       if (structureType === undefined) continue;
-      if (!modelPath) continue;
+      if (!modelPaths || modelPaths.length === 0) continue;
 
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          modelPath,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-
-            const instancedModel = new InstancedModel(model, MAX_INSTANCES);
-            instancedModel.setCount(0);
-            this.structureModels.set(structureType, instancedModel);
-            this.scene.add(instancedModel.group);
-
-            const labelManager = new LabelManager(
-              StructureLabelPaths[StructureType[structureType] as unknown as StructureType],
-            );
-            this.labelManagers.set(structureType, labelManager);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`An error occurred while loading the ${StructureType[structureType as any]} model:`, error);
-            reject(error);
-          },
-        );
+      const loadPromises = modelPaths.map((modelPath) => {
+        return new Promise<InstancedModel>((resolve, reject) => {
+          loader.load(
+            modelPath,
+            (gltf) => {
+              const model = gltf.scene as THREE.Group;
+              const instancedModel = new InstancedModel(model, MAX_INSTANCES);
+              instancedModel.setCount(0);
+              resolve(instancedModel);
+            },
+            undefined,
+            (error) => {
+              console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
+              reject(error);
+            },
+          );
+        });
       });
-      this.modelLoadPromises.push(loadPromise);
+
+      Promise.all(loadPromises)
+        .then((instancedModels) => {
+          this.structureModels.set(structureType, instancedModels);
+          instancedModels.forEach((model) => this.scene.add(model.group));
+
+          const labelManager = new LabelManager(
+            StructureLabelPaths[StructureType[structureType] as unknown as StructureType],
+          );
+          this.labelManagers.set(structureType, labelManager);
+        })
+        .catch((error) => {
+          console.error(`Failed to load models for ${StructureType[structureType]}:`, error);
+        });
+
+      this.modelLoadPromises.push(...loadPromises);
     }
   }
 
@@ -88,17 +110,71 @@ export class StructureManager {
     const index = this.structures.addStructure(entityId, key);
 
     if (this.structureModels) {
-      const modelType = this.structureModels.get(key);
-      modelType?.setMatrixAt(index, this.dummy.matrix);
-      modelType?.setCount(this.structures.getCountForType(key)); // Set the count to the current number of structures
+      const models = this.structureModels.get(key);
+      if (models && models.length > 0) {
+        const modelIndex = this.getModelIndex(structureType, entityId);
+        const modelType = models[modelIndex];
 
-      // Add label on top of the structure with appropriate color
-      const labelColor = isMine ? myColor : neutralColor;
-      const label = this.labelManagers.get(key)?.createLabel(position as any, labelColor);
-      this.scene.add(label!);
+        modelType.setMatrixAt(index, this.dummy.matrix);
+        modelType.setCount(this.structures.getCountForType(key));
+
+        // Add label on top of the structure with appropriate color
+        const labelColor = isMine ? myColor : neutralColor;
+        const label = this.labelManagers.get(key)?.createLabel(position as any, labelColor);
+        this.scene.add(label!);
+      }
     }
   }
+
+  getModelIndex(structureType: StructureType, entityId: ID): number {
+    if (structureType === StructureType.Hyperstructure) {
+      const progressQueryResult = Array.from(
+        runQuery([Has(this.models.progress), HasValue(this.models.progress, { hyperstructure_entity_id: entityId })]),
+      );
+
+      const progresses = progressQueryResult.map((progressEntityId) => {
+        return getComponentValue(this.models.progress, progressEntityId);
+      });
+      // CHANGE HARDCODED VALUES
+      const { percentage } = getAllProgressesAndTotalPercentage(progresses, entityId);
+      if (percentage < 0.5) {
+        return 0;
+      }
+      if (percentage < 1 && percentage > 0.5) {
+        return 1;
+      }
+      return 2;
+    }
+    return 0;
+  }
 }
+
+const getAllProgressesAndTotalPercentage = (
+  progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
+  hyperstructureEntityId: ID,
+) => {
+  let percentage = 0;
+  const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
+    let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+    let progress = {
+      hyperstructure_entity_id: hyperstructureEntityId,
+      resource_type: resource,
+      amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
+      percentage: !foundProgress
+        ? 0
+        : Math.floor(
+            (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
+          ),
+      costNeeded: resourceCost,
+    };
+    percentage +=
+      (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+      TOTAL_CONTRIBUTABLE_AMOUNT;
+    return progress;
+  });
+  console.log("percentage", percentage);
+  return { allProgresses, percentage };
+};
 
 class Structures {
   private structures: Map<ID, { index: number; structureType: StructureType }> = new Map();

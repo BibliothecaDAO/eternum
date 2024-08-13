@@ -15,33 +15,34 @@ export class StructurePreview {
   private loadStructureModels() {
     const loader = new GLTFLoader();
 
-    for (const [building, path] of Object.entries(StructureModelPaths)) {
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          path,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-            model.position.set(0, -100, 0);
-            gltf.scene.traverse((child: any) => {
-              if (child.isMesh) {
-                child.material.color.set(0x00ff00);
-                child.material.transparent = true;
-                child.material.opacity = 0.75;
-              }
-            });
-            this.structureModels.set(parseInt(building), model);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`Error loading ${building} model:`, error);
-            reject(error);
-          },
-        );
+    for (const [building, paths] of Object.entries(StructureModelPaths)) {
+      const loadPromises = paths.map((path) => {
+        return new Promise<void>((resolve, reject) => {
+          loader.load(
+            path,
+            (gltf) => {
+              const model = gltf.scene as THREE.Group;
+              model.position.set(0, -100, 0);
+              gltf.scene.traverse((child: any) => {
+                if (child.isMesh) {
+                  child.material.color.set(0x00ff00);
+                  child.material.transparent = true;
+                  child.material.opacity = 0.75;
+                }
+              });
+              this.structureModels.set(parseInt(building), model);
+              resolve();
+            },
+            undefined,
+            (error) => {
+              console.error(`An error occurred while loading the ${[building]} model:`, error);
+              reject(error);
+            },
+          );
+        });
       });
-      this.modelLoadPromises.push(loadPromise);
+      this.modelLoadPromises.push(...loadPromises);
     }
-
     Promise.all(this.modelLoadPromises).then(() => {});
   }
 
