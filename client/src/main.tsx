@@ -36,6 +36,7 @@ async function init() {
   // reinit scene game renderer when address changes
   const accountChange = () => {
     graphic.initScene();
+    graphic.initStats();
   };
   window.addEventListener(ACCOUNT_CHANGE_EVENT, accountChange);
 
