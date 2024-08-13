@@ -21,6 +21,8 @@ import { useEffect, useState } from "react";
 import { shortString } from "starknet";
 import { useLocation } from "wouter";
 
+export const ACCOUNT_CHANGE_EVENT = "addressChanged";
+
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
@@ -390,6 +392,7 @@ const NavigateToRealm = ({ text }: { text: string }) => {
           showBlankOverlay(false);
           setLocation(url);
           window.dispatchEvent(new Event("urlChanged"));
+          window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
         }, 300);
       }}
     >
