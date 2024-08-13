@@ -22,7 +22,7 @@ import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
+
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
@@ -43,7 +43,7 @@ import { ResourceMiningTypes } from "@/types";
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(realmEntityId);

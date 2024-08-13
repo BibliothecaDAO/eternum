@@ -5,12 +5,12 @@ import { useDojo } from "../../../../hooks/context/DojoContext";
 import { getOrderName, orders } from "@bibliothecadao/eternum";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { getRealm } from "../../../utils/realms";
-import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { order_statments } from "../../../../data/orders";
 import { getPosition } from "@/ui/utils/utils";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const MAX_REALMS = 1;
 
@@ -29,7 +29,7 @@ const SettleRealmComponent = () => {
 
   const { play: playSign } = useUiSounds(soundSelector.sign);
 
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const realmEntityIds = useUIStore((state) => state.realmEntityIds);
 
   const chosenOrder = useMemo(
     () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),

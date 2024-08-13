@@ -6,27 +6,10 @@ import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { StructureSystemUpdate } from "../systems/types";
 import { FELT_CENTER } from "@/ui/config";
 import { ID, StructureType } from "@bibliothecadao/eternum";
+import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
-
-const StructureModelPaths: Record<StructureType, string> = {
-  [StructureType.Realm]: "models/buildings/castle2.glb",
-  [StructureType.Hyperstructure]: "models/buildings/farm.glb", // USING PLACEHOLDER MODEL
-  // [StructureType.Hyperstructure]: "models/buildings/hyperstructure-half-transformed.glb",
-  // [StructureType.Hyperstructure]: "models/buildings/hyperstructure.glb",
-  [StructureType.Bank]: "models/buildings/bank.glb",
-  [StructureType.FragmentMine]: "models/buildings/mine.glb",
-  [StructureType.Settlement]: "",
-};
-
-const StructureLabelPaths: Record<StructureType, string> = {
-  [StructureType.Realm]: "textures/realm_label.png",
-  [StructureType.Hyperstructure]: "textures/hyper_label.png",
-  [StructureType.FragmentMine]: "textures/shard_label.png",
-  [StructureType.Bank]: "",
-  [StructureType.Settlement]: "",
-};
 
 const MAX_INSTANCES = 1000;
 

@@ -1,4 +1,4 @@
-import { BuildingStringToEnum, BuildingType, ID, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, ID, StructureType } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   Component,
@@ -180,8 +180,8 @@ export class TileManager {
         signer: this.dojo.network.burnerManager.account!,
         entity_id: entityId,
         building_coord: {
-          x: col.toString(),
-          y: row.toString(),
+          x: col,
+          y: row,
         },
         building_category: buildingType,
         produce_resource_type:
@@ -208,8 +208,8 @@ export class TileManager {
         signer: this.dojo.network.burnerManager.account!,
         entity_id: entityId,
         building_coord: {
-          x: col.toString(),
-          y: row.toString(),
+          x: col,
+          y: row,
         },
       })
       .finally(() => {
@@ -217,5 +217,18 @@ export class TileManager {
           this.models.building.removeOverride(overrideId);
         }, 2000);
       });
+  };
+
+  placeStructure = async (entityId: ID, structureType: StructureType, hexCoords: HexPosition) => {
+    if (structureType == StructureType.Hyperstructure) {
+      await this.dojo.systemCalls.create_hyperstructure({
+        signer: this.dojo.network.burnerManager.account!,
+        creator_entity_id: entityId,
+        coords: {
+          x: hexCoords.col,
+          y: hexCoords.row,
+        },
+      });
+    }
   };
 }

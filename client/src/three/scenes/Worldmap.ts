@@ -9,18 +9,20 @@ import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { BiomeType, ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
-import { Biome, BiomeType } from "../components/Biome";
+import { Biome } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
 import { GUIManager } from "../helpers/GUIManager";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE } from "./constants";
+import { StructurePreview } from "../components/StructurePreview";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -40,6 +42,10 @@ export default class WorldmapScene extends HexagonScene {
   private battleManager: BattleManager;
   private exploredTiles: Map<number, Set<number>> = new Map();
   private battles: Map<number, Set<number>> = new Map();
+  private tileManager: TileManager;
+  private structurePreview: StructurePreview | null = null;
+
+  private realmEntityId: ID | null = null;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -60,11 +66,32 @@ export default class WorldmapScene extends HexagonScene {
     this.scene.background = new THREE.Color(0x8790a1);
     GUIManager.addColor(this.scene, "background");
 
+    this.structurePreview = new StructurePreview(this.scene);
+    this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
+
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
     useUIStore.subscribe((state) => {
       this.state = state;
     });
+
+    useUIStore.subscribe(
+      (state) => state.previewBuilding,
+      (structure) => {
+        if (structure) {
+          this.structurePreview?.setPreviewStructure(structure as any);
+        } else {
+          this.structurePreview?.clearPreviewStructure();
+        }
+      },
+    );
+
+    useUIStore.subscribe(
+      (state) => state.realmEntityId,
+      (realmEntityId) => {
+        this.realmEntityId = realmEntityId;
+      },
+    );
 
     this.armyManager = new ArmyManager(this.scene);
     this.structureManager = new StructureManager(this.scene);
@@ -126,6 +153,25 @@ export default class WorldmapScene extends HexagonScene {
     if (selectedEntityId && travelPaths.size > 0) {
       this.state.updateHoveredHex(hexCoords);
     }
+    this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
+
+    if (!this._canBuildStructure(hexCoords)) {
+      this.structurePreview?.setStructureColor(new THREE.Color(0xff0000));
+    } else {
+      this.structurePreview?.resetStructureColor();
+    }
+  }
+
+  private _canBuildStructure(hexCoords: HexPosition) {
+    const contractPos = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+
+    const isStructure = this.structureManager.structuresMap.get(hexCoords.col)?.has(hexCoords.row) || false;
+    const isExplored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) || false;
+
+    const biomeType = this.biome.getBiome(contractPos.x, contractPos.y);
+    const isOcean = biomeType === BiomeType.Ocean || biomeType === BiomeType.DeepOcean;
+
+    return !isStructure && isExplored && !isOcean;
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
@@ -137,7 +183,13 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonClick(hexCoords: HexPosition) {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
 
-    if (selectedEntityId && travelPaths.size > 0) {
+    const buildingType = this.structurePreview?.getPreviewStructure();
+
+    if (buildingType && this._canBuildStructure(hexCoords)) {
+      const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
+      this.tileManager.placeStructure(this.realmEntityId!, buildingType.type, normalizedHexCoords);
+      this.clearEntitySelection();
+    } else if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
       if (travelPath) {
         const selectedPath = travelPath.path;
@@ -171,6 +223,7 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateSelectedEntityId(null);
     this.highlightHexManager.highlightHexes([]);
     this.state.updateTravelPaths(new Map());
+    this.structurePreview?.clearPreviewStructure();
   }
 
   setup() {}

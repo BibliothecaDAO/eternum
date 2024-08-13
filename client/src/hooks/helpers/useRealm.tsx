@@ -16,7 +16,7 @@ import { unpackResources } from "../../ui/utils/packedData";
 import { getRealm, getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
-import useRealmStore from "../store/useRealmStore";
+import useUIStore from "../store/useUIStore";
 
 type RealmExtended = RealmInterface & {
   entity_id: ID;
@@ -31,7 +31,7 @@ export function useRealm() {
   } = useDojo();
 
   const getQuestResources = () => {
-    const realmEntityId = useRealmStore.getState().realmEntityId;
+    const realmEntityId = useUIStore((state) => state.realmEntityId);
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
     return getStartingResources(resourcesProduced);

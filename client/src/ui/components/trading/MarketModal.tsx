@@ -3,7 +3,6 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import { useModalStore } from "@/hooks/store/useModalStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import CircleButton from "@/ui/elements/CircleButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
@@ -16,6 +15,7 @@ import { ModalContainer } from "../ModalContainer";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const MarketModal = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -30,7 +30,8 @@ export const MarketModal = () => {
   const { bidOffers, askOffers } = useSetMarket();
 
   //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
-  const { realmEntityId, setRealmEntityId } = useRealmStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
 
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);

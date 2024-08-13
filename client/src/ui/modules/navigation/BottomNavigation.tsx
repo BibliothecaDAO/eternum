@@ -1,7 +1,6 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { QuestStatus, useQuestClaimStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import CircleButton from "@/ui/elements/CircleButton";
@@ -28,7 +27,7 @@ export enum MenuEnum {
 export const BottomNavigation = () => {
   const [location, _] = useLocation();
 
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const { quests } = useQuests();
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { questClaimStatus } = useQuestClaimStatus();

@@ -7,8 +7,8 @@ import { shortString } from "starknet";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import useRealmStore from "../store/useRealmStore";
 import { useEntities } from "./useEntities";
+import useUIStore from "../store/useUIStore";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -141,7 +141,7 @@ export function useGetMyOffers(): MarketInterface[] {
 
   const { computeTrades } = useTrade();
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId } = useUIStore();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);

@@ -8,7 +8,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -29,7 +28,7 @@ export const StructureConstructionMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getBalance } = getResourceBalance();
