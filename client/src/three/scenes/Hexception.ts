@@ -128,6 +128,11 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager.setTile({ col, row });
 
+    // remove all previous buildings when switching to a new hex
+    this.buildingModels.forEach((buildingMesh) => {
+      buildingMesh.setCount(0);
+    });
+
     // subscribe to buiding updates (create and destroy)
     this.subscription?.unsubscribe();
     this.subscription = this.systemManager.Buildings.subscribeToHexUpdates(
