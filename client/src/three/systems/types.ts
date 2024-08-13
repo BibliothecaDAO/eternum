@@ -24,4 +24,5 @@ export type TileSystemUpdate = {
 export type BattleSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
+  isEmpty: boolean;
 };

@@ -1,5 +1,5 @@
 import { SetupResult } from "@/dojo/setup";
-import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, StructureType } from "@bibliothecadao/eternum";
 import { Component, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
 import { ArmySystemUpdate, BattleSystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "./types";
 
@@ -34,11 +34,12 @@ export class SystemManager {
 
           const health = getComponentValue(this.dojo.components.Health, update.entity);
           if (!health) {
-            console.log(`[MyApp] in here for entity id ${army.entity_id}`);
+            // console.log(`[MyApp] in here for entity id ${army.entity_id}`);
             return;
           }
 
-		  if (army.entity_id === 43) console.log(`[MyApp] got update for ${army.entity_id}`);
+          //   console.log(`[MyApp] got update for ${army.entity_id}`);
+
           const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
 
           const healthMultiplier =
@@ -93,9 +94,15 @@ export class SystemManager {
           const position = getComponentValue(this.dojo.components.Position, update.entity);
           if (!position) return;
 
+          const healthMultiplier =
+            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+
           return {
             entityId: battle.entity_id,
             hexCoords: { col: position.x, row: position.y },
+            isEmpty:
+              battle.attack_army_health.current < healthMultiplier &&
+              battle.defence_army_health.current < healthMultiplier,
           };
         });
       },
