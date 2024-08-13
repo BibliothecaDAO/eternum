@@ -6,7 +6,13 @@ import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { HyperstructureProgressSystemUpdate, StructureSystemUpdate } from "../systems/types";
 import { FELT_CENTER } from "@/ui/config";
 import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
-import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
+import {
+  PROGRESS_FINAL_THRESHOLD,
+  PROGRESS_HALF_THRESHOLD,
+  StructureLabelPaths,
+  StructureModelPaths,
+  StructureProgress,
+} from "../scenes/constants";
 import { Component, ComponentValue, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { SetupResult } from "@/dojo/setup";
@@ -29,7 +35,7 @@ export class StructureManager {
   private dummy: THREE.Object3D = new THREE.Object3D();
   modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
-  structuresMap: Map<number, Set<number>> = new Map();
+  structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
 
   constructor(scene: THREE.Scene, private dojo: SetupResult) {
@@ -93,14 +99,15 @@ export class StructureManager {
     const { entityId, hexCoords, isMine, structureType } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
+
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
-    if (!this.structuresMap.has(normalizedCoord.col)) {
-      this.structuresMap.set(normalizedCoord.col, new Set());
+    if (!this.structureHexCoords.has(normalizedCoord.col)) {
+      this.structureHexCoords.set(normalizedCoord.col, new Set());
     }
-    if (!this.structuresMap.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
-      this.structuresMap.get(normalizedCoord.col)!.add(normalizedCoord.row);
+    if (!this.structureHexCoords.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
+      this.structureHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
       this.totalStructures++;
     }
 
@@ -135,17 +142,18 @@ export class StructureManager {
       const progresses = progressQueryResult.map((progressEntityId) => {
         return getComponentValue(this.models.progress, progressEntityId);
       });
-      // CHANGE HARDCODED VALUES
+
       const { percentage } = getAllProgressesAndTotalPercentage(progresses, entityId);
-      if (percentage < 0.5) {
-        return 0;
+
+      if (percentage < PROGRESS_HALF_THRESHOLD) {
+        return StructureProgress.INIT;
       }
-      if (percentage < 1 && percentage > 0.5) {
-        return 1;
+      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage > PROGRESS_HALF_THRESHOLD) {
+        return StructureProgress.HALF;
       }
-      return 2;
+      return StructureProgress.FINAL;
     }
-    return 0;
+    return StructureProgress.INIT;
   }
 }
 

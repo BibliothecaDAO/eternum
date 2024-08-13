@@ -54,8 +54,18 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
 };
 
+export const PROGRESS_HALF_THRESHOLD = 0.5;
+export const PROGRESS_FINAL_THRESHOLD = 1;
+
+export enum StructureProgress {
+  INIT = 0,
+  HALF = 1,
+  FINAL = 2,
+}
+
 export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Realm]: ["models/buildings/castle2.glb"],
+  // Order follows StructureProgress
   [StructureType.Hyperstructure]: [
     "models/buildings/hyperstructure_init.glb",
     "models/buildings/hyperstructure_half.glb",

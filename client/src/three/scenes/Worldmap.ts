@@ -165,7 +165,7 @@ export default class WorldmapScene extends HexagonScene {
   private _canBuildStructure(hexCoords: HexPosition) {
     const contractPos = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
 
-    const isStructure = this.structureManager.structuresMap.get(hexCoords.col)?.has(hexCoords.row) || false;
+    const isStructure = this.structureManager.structureHexCoords.get(hexCoords.col)?.has(hexCoords.row) || false;
     const isExplored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) || false;
 
     const biomeType = this.biome.getBiome(contractPos.x, contractPos.y);
@@ -242,7 +242,7 @@ export default class WorldmapScene extends HexagonScene {
     const pos = getWorldPositionForHex({ row, col });
     dummy.position.copy(pos);
 
-    const isStructure = this.structureManager.structuresMap.get(col)?.has(row) || false;
+    const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
 
     if (isStructure) {
       dummy.scale.set(0, 0, 0);
@@ -357,7 +357,7 @@ export default class WorldmapScene extends HexagonScene {
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
 
-        const isStructure = this.structureManager.structuresMap.get(globalCol)?.has(globalRow) || false;
+        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
         if (isStructure || !isExplored || isBattle) {
