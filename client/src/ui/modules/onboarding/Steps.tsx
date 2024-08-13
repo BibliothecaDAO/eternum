@@ -21,6 +21,8 @@ import { useEffect, useState } from "react";
 import { shortString } from "starknet";
 import { useLocation } from "wouter";
 
+import GameRenderer from "@/three/GameRenderer";
+
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
@@ -56,7 +58,8 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
   );
 };
 
-export const Naming = ({ onNext }: { onNext: () => void }) => {
+// export const Naming = ({ onNext }: { onNext: () => void }) => {
+export const Naming = ({ onNext, graphic }: { onNext: () => void; graphic: GameRenderer }) => {
   const {
     masterAccount,
     account: { create, isDeploying, list, account, select, clear },
@@ -256,7 +259,8 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
       <div className="flex space-x-2 mt-8 justify-center">
         {playerRealms().length > 0 ? (
-          <NavigateToRealm text={"begin"} />
+          // <NavigateToRealm text={"begin"} />
+          <NavigateToRealm text={"begin"} graphic={graphic} />
         ) : (
           <Button
             disabled={!addressName || addressIsMaster}
@@ -360,19 +364,30 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   );
 };
 
-export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+// export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+export const StepSix = ({
+  onPrev,
+  onNext,
+  graphic,
+}: {
+  onPrev: () => void;
+  onNext: () => void;
+  graphic: GameRenderer;
+}) => {
   return (
     <StepContainer>
       <ResourceIcon resource="Ancient Fragment" size="xl" withTooltip={false} />
       <p className="text-2xl text-center mb-8">Follow the quests and you will survive the day.</p>
       <div className="flex w-full justify-center">
-        <NavigateToRealm text={"begin"} />
+        {/* <NavigateToRealm text={"begin"} /> */}
+        <NavigateToRealm graphic={graphic} text={"begin"} />
       </div>
     </StepContainer>
   );
 };
 
-const NavigateToRealm = ({ text }: { text: string }) => {
+// const NavigateToRealm = ({ text }: { text: string }) => {
+const NavigateToRealm = ({ text, graphic }: { text: string; graphic: GameRenderer }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const [_location, setLocation] = useLocation();
@@ -385,6 +400,10 @@ const NavigateToRealm = ({ text }: { text: string }) => {
       size="md"
       variant="primary"
       onClick={async () => {
+        // REMOVE WHEN CONTROLLER IS DONE
+        graphic.initScene();
+        graphic.initStats();
+
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);

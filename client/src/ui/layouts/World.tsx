@@ -24,8 +24,10 @@ import { BottomRightContainer } from "../containers/BottomRightContainer";
 import { Transactions } from "../modules/transactions/Transactions";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
+import GameRenderer from "@/three/GameRenderer";
 
-export const World = () => {
+// export const World = () => {
+export const World = ({ graphic }: { graphic: GameRenderer }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
@@ -52,7 +54,8 @@ export const World = () => {
     >
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
       <BlankOverlayContainer open={showBlankOverlay}>
-        <Onboarding />
+        {/* <Onboarding /> */}
+        <Onboarding graphic={graphic} />
       </BlankOverlayContainer>
       <HooksComponent />
       <ActionInfo />
