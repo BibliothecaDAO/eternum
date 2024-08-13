@@ -27,7 +27,6 @@ async function init() {
   root.render(<LoadingScreen />);
 
   const setupResult = await setup(dojoConfig);
-  console.log("setupResult: ", setupResult);
 
   const graphic = new GameRenderer(setupResult);
 
