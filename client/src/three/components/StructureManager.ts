@@ -38,7 +38,10 @@ export class StructureManager {
   structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
 
-  constructor(scene: THREE.Scene, private dojo: SetupResult) {
+  constructor(
+    scene: THREE.Scene,
+    private dojo: SetupResult,
+  ) {
     const { Progress } = dojo.components;
     this.models = {
       progress: Progress,
