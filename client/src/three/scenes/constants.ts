@@ -15,7 +15,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
 };
 
 export const buildingModelPaths: Record<BuildingType, string> = {
-  [BuildingType.None]: "",
+  [BuildingType.None]: "/models/buildings/farm.glb", //Needs to have a model to load
   [BuildingType.Bank]: "/models/buildings/bank.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
