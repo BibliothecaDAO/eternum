@@ -12,13 +12,7 @@ trait ILiquiditySystems {
         resource_amount: u128,
         lords_amount: u128,
     );
-    fn remove(
-        ref world: IWorldDispatcher,
-        bank_entity_id: ID,
-        entity_id: ID,
-        resource_type: u8,
-        shares: Fixed
-    ) -> ID;
+    fn remove(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed) -> ID;
 }
 
 #[dojo::contract]
@@ -64,9 +58,7 @@ mod liquidity_systems {
             let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
             assert(resource.balance >= resource_amount, 'not enough resources');
 
-            let mut player_lords = ResourceCustomImpl::get(
-                world, (entity_id, ResourceTypes::LORDS)
-            );
+            let mut player_lords = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::LORDS));
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
@@ -89,25 +81,17 @@ mod liquidity_systems {
 
             // update player liquidity
             let player = starknet::get_caller_address();
-            let mut player_liquidity = get!(
-                world, (bank_entity_id, player, resource_type), Liquidity
-            );
+            let mut player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
             player_liquidity.shares += liquidity_shares;
 
             set!(world, (player_liquidity,));
 
-            InternalLiquiditySystemsImpl::emit_event(
-                world, market, entity_id, cost_lords, cost_resource_amount, true,
-            );
+            InternalLiquiditySystemsImpl::emit_event(world, market, entity_id, cost_lords, cost_resource_amount, true,);
         }
 
 
         fn remove(
-            ref world: IWorldDispatcher,
-            bank_entity_id: ID,
-            entity_id: ID,
-            resource_type: u8,
-            shares: Fixed
+            ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed
         ) -> ID {
             let player = starknet::get_caller_address();
             get!(world, entity_id, Owner).assert_caller_owner();
@@ -116,8 +100,7 @@ mod liquidity_systems {
             assert(player_liquidity.shares >= shares, 'not enough shares');
 
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
-            let (payout_lords, payout_resource_amount, total_shares) = market
-                .remove_liquidity(shares);
+            let (payout_lords, payout_resource_amount, total_shares) = market.remove_liquidity(shares);
 
             market.lords_amount -= payout_lords;
             market.resource_amount -= payout_resource_amount;
@@ -126,9 +109,7 @@ mod liquidity_systems {
             // update market
             set!(world, (market,));
 
-            let resources = array![
-                (ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)
-            ]
+            let resources = array![(ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)]
                 .span();
 
             // then entity picks up the resources at the bank
@@ -137,9 +118,7 @@ mod liquidity_systems {
             );
 
             // update player liquidity
-            let mut player_liquidity = get!(
-                world, (bank_entity_id, player, resource_type), Liquidity
-            );
+            let mut player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
             player_liquidity.shares -= shares;
             set!(world, (player_liquidity,));
 
@@ -154,12 +133,7 @@ mod liquidity_systems {
     #[generate_trait]
     pub impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
         fn emit_event(
-            world: IWorldDispatcher,
-            market: Market,
-            entity_id: ID,
-            lords_amount: u128,
-            resource_amount: u128,
-            add: bool
+            world: IWorldDispatcher, market: Market, entity_id: ID, lords_amount: u128, resource_amount: u128, add: bool
         ) {
             let resource_price = if market.has_liquidity() {
                 market.quote_amount(1000)
