@@ -3,7 +3,7 @@ import { GLTFLoader } from "three-stdlib";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { HyperstructureProgressSystemUpdate, StructureSystemUpdate } from "../systems/types";
+import { StructureSystemUpdate } from "../systems/types";
 import { FELT_CENTER } from "@/ui/config";
 import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
 import {
