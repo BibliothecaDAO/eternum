@@ -26,3 +26,9 @@ export type BattleSystemUpdate = {
   hexCoords: Position;
   isEmpty: boolean;
 };
+
+export type BuildingSystemUpdate = {
+  buildingType: string;
+  innerCol: number;
+  innerRow: number;
+};

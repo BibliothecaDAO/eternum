@@ -1,8 +1,22 @@
 import { SetupResult } from "@/dojo/setup";
 import { Position } from "@/types/Position";
 import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
-import { Component, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
-import { ArmySystemUpdate, BattleSystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "./types";
+import {
+  Component,
+  defineComponentSystem,
+  defineQuery,
+  getComponentValue,
+  HasValue,
+  isComponentUpdate,
+} from "@dojoengine/recs";
+import {
+  ArmySystemUpdate,
+  BattleSystemUpdate,
+  BuildingSystemUpdate,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+} from "./types";
+import { HexPosition } from "@/types";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -117,6 +131,36 @@ export class SystemManager {
           if (!update.value[0]) return;
 
           return { hexCoords: { col: update.value[0]?.col || 0, row: update.value[0]?.row || 0 } };
+        });
+      },
+    };
+  }
+
+  public get Buildings() {
+    return {
+      subscribeToHexUpdates: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
+        const query = defineQuery([
+          HasValue(this.dojo.components.Building, {
+            outer_col: hexCoords.col,
+            outer_row: hexCoords.row,
+          }),
+        ]);
+
+        return query.update$.subscribe((update) => {
+          if (isComponentUpdate(update, this.dojo.components.Building)) {
+            const building = getComponentValue(this.dojo.components.Building, update.entity);
+            if (!building) return;
+
+            const innerCol = building.inner_col;
+            const innerRow = building.inner_row;
+            const buildingType = building.category;
+
+            callback({
+              buildingType,
+              innerCol,
+              innerRow,
+            });
+          }
         });
       },
     };

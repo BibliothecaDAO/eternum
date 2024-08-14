@@ -18,7 +18,7 @@ import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-
+import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { Position } from "@/types/Position";
@@ -122,6 +122,13 @@ export const TopMiddleNavigation = () => {
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />
         </div>
+
+        {location === "/map" && (
+          <Eye
+            className="fill-gold/50 h-6 w-6 my-auto ml-3 animate-slow transition-all hover:fill-gold hover:scale-125"
+            onClick={() => goToMapView()}
+          />
+        )}
 
         <div className="flex min-w-96 gap-1  clip-angled   py-2 px-4 text-gold bg-map   justify-center border-gold/50 text-center ">
           <div className="self-center flex justify-between w-full">
