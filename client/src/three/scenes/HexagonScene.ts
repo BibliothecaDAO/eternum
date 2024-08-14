@@ -9,6 +9,7 @@ import { GUIManager } from "../helpers/GUIManager";
 import { LocationManager } from "../helpers/LocationManager";
 import { SceneManager } from "../SceneManager";
 
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import _, { throttle } from "lodash";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
@@ -16,7 +17,6 @@ import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
 import { biomeModelPaths, HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "./constants";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 
 export abstract class HexagonScene {
   protected scene: THREE.Scene;
@@ -54,6 +54,7 @@ export abstract class HexagonScene {
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.scene.background = new THREE.Color(0x8790a1);
     this.GUIFolder.addColor(this.scene, "background");
+    this.GUIFolder.close();
 
     const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
     const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light");
