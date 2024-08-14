@@ -11,27 +11,10 @@ alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.g
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
 cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
 
-
-[profile.prod.tool.dojo.world.namespace]
-default = "eternum"
-
-
-## realms.world
-[profile.prod.tool.dojo.env]
-rpc_url = "https://api.cartridge.gg/x/eternum-25/katana"
-account_address = "0x55367f30b4bf2b32a11fd4e3c663d5b34ecade2a19845c942de742c5905dd3e"
-private_key = "0x3791d238d54d62a2f98cb2fc1309112321ceb6cd628606f062ab0a004576c7e"
-world_address = "0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357"
-
 [[target.dojo]]
-
-[profile.prod.tool.dojo.world]
-seed = "eternum"
-name = "Realms: Eternum"
-description = "Rule the Hex"
-cover_uri = "file://assets/bg.webp"
-website = "https://alpha-eternum.realms.world/"
 
 [tool.fmt]
 sort-module-level-items = true
 max-line-length = 120
+
+[profile.prod]
