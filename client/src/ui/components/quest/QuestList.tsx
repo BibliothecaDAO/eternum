@@ -9,7 +9,7 @@ import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { ID } from "@bibliothecadao/eternum";
 
 export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID | undefined }) => {
-  const [showCompletedQuests, setShowCompletedQuests] = useState(false);
+  const [showCompletedQuests, setShowCompletedQuests] = useState(true);
   const [skipTutorial, setSkipTutorial] = useState(false);
   const [maxDepthToShow, setMaxDepthToShow] = useState(0);
 
@@ -31,20 +31,18 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
   return (
     <>
       <div className="flex justify-around m-2">
-        <Button
-          className={"w-1/4"}
-          size={"xs"}
-          variant={"outline"}
-          onClick={() => setShowCompletedQuests(!showCompletedQuests)}
-        >
+        <Button className={"w-1/4"} variant="outline" onClick={() => setShowCompletedQuests(!showCompletedQuests)}>
           {showCompletedQuests ? "Hide Completed" : "Show Completed"}
         </Button>
 
-        {Boolean(unclaimedQuests?.length) && (
-          <Button className={"w-1/4"} size={"xs"} variant={"red"} onClick={() => setSkipTutorial(!skipTutorial)}>
-            Skip Tutorial
-          </Button>
-        )}
+        <Button
+          disabled={!Boolean(unclaimedQuests?.length)}
+          className={"w-1/4"}
+          variant="red"
+          onClick={() => setSkipTutorial(!skipTutorial)}
+        >
+          Skip Tutorial
+        </Button>
       </div>
 
       {skipTutorial && unclaimedQuests?.length && (
@@ -70,7 +68,9 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
   <div className="flex flex-col items-start">
     <div className="flex flex-wrap gap-1">
-      {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
+      {depthQuests?.map((quest: Quest) => (
+        <QuestCard quest={quest} key={quest.name} />
+      ))}
     </div>
   </div>
 );
@@ -79,12 +79,12 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
 
   return (
-    <div
-      className={`p-4 border hover:opacity-70 ${quest.status === QuestStatus.Claimed ? "text-green" : "text-gold"}`}
+    <Button
+      variant={quest.status === QuestStatus.Claimed ? "success" : "outline"}
       onClick={() => setSelectedQuest(quest)}
     >
-      <div className="text-xl">{quest.name}</div>
-    </div>
+      {quest.name}
+    </Button>
   );
 };
 
@@ -139,7 +139,7 @@ const SkipTutorial = ({
   return (
     <div className="flex justify-center items-baseline">
       <p className="mr-2">Are you sure ?</p>
-      <Button variant={"primary"} size={"xs"} isLoading={isLoading} onClick={claimAllQuests}>
+      <Button variant={"primary"} isLoading={isLoading} onClick={claimAllQuests}>
         Confirm
       </Button>
     </div>
