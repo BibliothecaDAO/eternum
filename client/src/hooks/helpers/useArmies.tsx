@@ -69,7 +69,7 @@ const formatArmies = (
       const entityOwner = getComponentValue(EntityOwner, armyEntityId);
       if (!entityOwner) return undefined;
 
-      let owner = getComponentValue(Owner, armyEntityId);
+      let owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
       if (!owner && entityOwner?.entity_owner_id) {
         owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
       }
