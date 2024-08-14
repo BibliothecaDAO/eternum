@@ -7,9 +7,6 @@ import { StructureSystemUpdate } from "../systems/types";
 import { FELT_CENTER } from "@/ui/config";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
-import { Component } from "@dojoengine/recs";
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { SetupResult } from "@/dojo/setup";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -17,10 +14,6 @@ const myColor = new THREE.Color("lime");
 const MAX_INSTANCES = 1000;
 
 export class StructureManager {
-  private models: {
-    progress: Component<ClientComponents["Progress"]["schema"]>;
-  };
-
   private scene: THREE.Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
   private labelManagers: Map<StructureType, LabelManager> = new Map();
@@ -30,14 +23,7 @@ export class StructureManager {
   structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
 
-  constructor(
-    scene: THREE.Scene,
-    private dojo: SetupResult,
-  ) {
-    const { Progress } = dojo.components;
-    this.models = {
-      progress: Progress,
-    };
+  constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.loadModels();
   }

@@ -94,7 +94,7 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     this.armyManager = new ArmyManager(this.scene);
-    this.structureManager = new StructureManager(this.scene, this.dojo);
+    this.structureManager = new StructureManager(this.scene);
     this.battleManager = new BattleManager(this.scene);
 
     this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
