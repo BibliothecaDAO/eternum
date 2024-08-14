@@ -68,6 +68,12 @@ export default class InstancedBuilding {
     this.needsUpdate();
   }
 
+  removeInstance(index: number) {
+    console.log("remove instance");
+    this.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
+    this.needsUpdate();
+  }
+
   needsUpdate() {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {

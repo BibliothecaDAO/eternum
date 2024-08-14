@@ -22,3 +22,9 @@ export type BattleSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
 };
+
+export type BuildingSystemUpdate = {
+  buildingType: string;
+  innerCol: number;
+  innerRow: number;
+};
