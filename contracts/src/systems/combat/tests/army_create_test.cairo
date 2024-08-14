@@ -9,7 +9,9 @@ use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
 
-use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION};
+use eternum::models::resources::{
+    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION
+};
 use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
@@ -17,7 +19,8 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems, general::mint
+    world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems,
+    general::mint
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -48,7 +51,9 @@ fn set_configurations(world: IWorldDispatcher) {
                 army_free_per_structure: 3,
                 army_extra_per_building: 2,
             },
-            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
+            TickConfig {
+                config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1
+            },
             CapacityConfig {
                 config_id: WORLD_CONFIG_ID,
                 carry_capacity_config_id: ARMY_ENTITY_TYPE,
@@ -67,9 +72,12 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID,) {
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
     let realm_id = realm_system_dispatcher
-        .create(1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y });
+        .create(
+            1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y }
+        );
     mint(
         world,
         realm_id,
@@ -89,6 +97,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID,) {
 fn test_army_create___attacking_army() {
     let (world, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = combat_systems_dispatcher.army_create(realm_id, false);
 
     let army: Army = get!(world, army_id, Army);
@@ -119,6 +128,7 @@ fn test_army_create___attacking_army() {
 fn test_army_create_not_owner() {
     let (_, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<'someone_else'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'someone_else'>());
     combat_systems_dispatcher.army_create(realm_id, false);
 }
 
@@ -128,6 +138,7 @@ fn test_army_create_not_owner() {
 fn test_army_create__only_structure_can_create_army() {
     let (_, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<0>());
+    starknet::testing::set_account_contract_address(contract_address_const::<0>());
     combat_systems_dispatcher.army_create(900, false);
 }
 
@@ -136,6 +147,7 @@ fn test_army_create__only_structure_can_create_army() {
 fn test_army_create___defending_army() {
     let (world, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = combat_systems_dispatcher.army_create(realm_id, true);
 
     let army: Army = get!(world, army_id, Army);
@@ -173,6 +185,7 @@ fn test_army_create___defending_army() {
 fn test_army_create_defensive_army__only_one_defensive_army() {
     let (_, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     combat_systems_dispatcher.army_create(realm_id, true);
     combat_systems_dispatcher.army_create(realm_id, true);
 }

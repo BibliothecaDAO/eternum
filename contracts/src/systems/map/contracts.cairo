@@ -7,7 +7,7 @@ trait IMapSystems {
 
 #[dojo::contract]
 mod map_systems {
-    use core::integer::BoundedInt;
+    use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;

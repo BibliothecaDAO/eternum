@@ -1,5 +1,5 @@
 mod resource_approval_system_tests {
-    use core::integer::BoundedInt;
+    use core::num::traits::Bounded;
 
     use core::traits::Into;
 
@@ -125,7 +125,7 @@ mod resource_approval_system_tests {
             .approve(
                 owner_entity_id.into(),
                 approved_entity_id.into(),
-                array![(ResourceTypes::STONE, BoundedInt::max()), (ResourceTypes::WOOD, BoundedInt::max()),].span()
+                array![(ResourceTypes::STONE, Bounded::MAX), (ResourceTypes::WOOD, Bounded::MAX),].span()
             );
 
         // check approval balance
@@ -135,8 +135,8 @@ mod resource_approval_system_tests {
         let approved_entity_wood_allowance = get!(
             world, (owner_entity_id, approved_entity_id, ResourceTypes::WOOD), ResourceAllowance
         );
-        assert(approved_entity_stone_allowance.amount == BoundedInt::max(), 'stone allowance mismatch');
-        assert(approved_entity_wood_allowance.amount == BoundedInt::max(), 'wood allowance mismatch');
+        assert(approved_entity_stone_allowance.amount == Bounded::MAX, 'stone allowance mismatch');
+        assert(approved_entity_wood_allowance.amount == Bounded::MAX, 'wood allowance mismatch');
     }
 
 

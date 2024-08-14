@@ -14,7 +14,9 @@ use starknet::{ContractAddress};
 
 
 fn deploy_system(world: IWorldDispatcher, class_hash_felt: felt252) -> ContractAddress {
-    let contract_address = world.deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap(), array![].span());
+    let contract_address = world.deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap());
+
+    world.grant_writer(dojo::utils::bytearray_hash(@"eternum"), contract_address);
 
     contract_address
 }

@@ -50,6 +50,8 @@ use eternum::models::structure::structure_count;
 use eternum::models::trade::{status, Status, trade, Trade,};
 use eternum::models::weight::weight;
 
+use starknet::contract_address_const;
+
 // used to spawn a test world with all the models and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
     let mut models = array![
@@ -61,8 +63,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         protectee::TEST_CLASS_HASH,
         battle::TEST_CLASS_HASH,
         guild::TEST_CLASS_HASH,
-        guild_member::TEST_CLASS_HASH,
-        guild_whitelist::TEST_CLASS_HASH,
         building_quantityv_2::TEST_CLASS_HASH,
         level::TEST_CLASS_HASH,
         tile::TEST_CLASS_HASH,
@@ -82,7 +82,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         bank::TEST_CLASS_HASH,
         liquidity::TEST_CLASS_HASH,
         market::TEST_CLASS_HASH,
-        guild::TEST_CLASS_HASH,
         guild_member::TEST_CLASS_HASH,
         guild_whitelist::TEST_CLASS_HASH,
         map_explore_config::TEST_CLASS_HASH,
@@ -97,12 +96,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         building_category_pop_config::TEST_CLASS_HASH,
         population_config::TEST_CLASS_HASH,
         has_claimed_starting_resources::TEST_CLASS_HASH,
-        army::TEST_CLASS_HASH,
-        protector::TEST_CLASS_HASH,
-        protectee::TEST_CLASS_HASH,
-        battle::TEST_CLASS_HASH,
-        building_quantityv_2::TEST_CLASS_HASH,
-        building::TEST_CLASS_HASH,
         owner::TEST_CLASS_HASH,
         movable::TEST_CLASS_HASH,
         quantity::TEST_CLASS_HASH,
@@ -136,6 +129,10 @@ fn spawn_eternum() -> IWorldDispatcher {
     let world = spawn_test_world("eternum", models);
 
     world.uuid();
+
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player3'>());
 
     world
 }

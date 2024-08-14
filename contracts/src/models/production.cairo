@@ -1,6 +1,6 @@
 use core::Zeroable;
 use core::debug::PrintTrait;
-use core::integer::BoundedInt;
+use core::num::traits::Bounded;
 use core::option::OptionTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
@@ -114,11 +114,11 @@ impl ProductionRateImpl of ProductionRateTrait {
                 let num_ticks_left = *resource.balance / loss_per_tick;
                 return current_tick + num_ticks_left.try_into().unwrap();
             } else {
-                return (*tick).at(BoundedInt::max());
+                return (*tick).at(Bounded::MAX);
             }
         } else {
             if *resource.balance > 0 {
-                return (*tick).at(BoundedInt::max());
+                return (*tick).at(Bounded::MAX);
             } else {
                 return (*tick).current();
             }
@@ -167,7 +167,7 @@ impl ProductionInputCustomImpl of ProductionInputCustomTrait {
         let production_config = get!(world, *production.resource_type, ProductionConfig);
         let tick_config = TickImpl::get_default_tick_config(world);
 
-        let mut least_tick: u64 = BoundedInt::max();
+        let mut least_tick: u64 = Bounded::MAX;
         let mut count = 0;
 
         loop {
