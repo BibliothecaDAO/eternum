@@ -117,7 +117,7 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className=" bg-black/60 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
+    <div className=" bg-black/75 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />

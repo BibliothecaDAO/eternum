@@ -65,10 +65,6 @@ export class InputManager {
     }
   }
 
-  public changeScene(sceneName: SceneName): void {
-    this.sceneName = sceneName;
-  }
-
   private handleMouseDown(e: MouseEvent): void {
     const mouseX = e.clientX;
     const mouseY = e.clientY;

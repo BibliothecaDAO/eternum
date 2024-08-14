@@ -10,6 +10,8 @@ import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { ResourceMiningTypes } from "@/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { View } from "../navigation/LeftNavigationModule";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
@@ -20,8 +22,11 @@ export const BuildingEntityDetails = () => {
   const [canBeDestroyed, setCanBeDestroyed] = useState<boolean>(false);
   const { playerRealms } = useEntities();
 
-  // const selectedBuildingEntityId = useUIStore((state) => state.selectedBuildingEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
+  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+
+  const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
+  const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
 
   useEffect(() => {
     const building = getComponentValue(
@@ -43,8 +48,6 @@ export const BuildingEntityDetails = () => {
     }
   }, [selectedBuildingHex]);
 
-  const name = "Hello";
-
   const destroyButton = canBeDestroyed && selectedBuildingHex && (
     <Button
       onClick={() => {
@@ -58,10 +61,11 @@ export const BuildingEntityDetails = () => {
           (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge ||
             ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)
         ) {
-          // playDestroyStone();
+          playDestroyStone();
         } else {
-          // playDestroyWooden();
+          playDestroyWooden();
         }
+        setLeftNavigationView(View.None);
       }}
       variant="danger"
       className="mt-3"

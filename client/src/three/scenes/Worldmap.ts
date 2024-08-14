@@ -3,7 +3,7 @@ import { Raycaster } from "three";
 
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { SetupResult } from "@/dojo/setup";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
@@ -316,7 +316,6 @@ export default class WorldmapScene extends HexagonScene {
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
-      console.log("applyCachedMatricesForChunk", startRow, startCol);
       return;
     }
 

@@ -6,7 +6,7 @@ import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
 import { ID, Position } from "@bibliothecadao/eternum";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
 
@@ -64,7 +64,7 @@ export const CombatEntityDetails = () => {
         component: <Battles position={hexPosition} ownArmy={ownArmy} />,
       },
     ],
-    [selectedHex, userArmies, ownArmy],
+    [selectedHex, userArmies, ownArmy?.entity_id, ownArmySelected?.id],
   );
 
   return (
