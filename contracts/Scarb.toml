@@ -6,22 +6,15 @@ version = "1.0.0"
 sierra-replace-ids = true
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.3" }
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
-alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.5" }
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
 cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
 
-[tool.dojo.env]
-## dev
-# world_address = "0x0161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824"
-account_address = "0xb3ff441a68610b30fd5e2abbf3a1548eb6ba6f3559f2862bf2dc757e5828ca"
-private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a"
 
 [profile.prod.tool.dojo.world.namespace]
 default = "eternum"
 
-[tool.dojo.world.namespace]
-default = "eternum"
 
 ## realms.world
 [profile.prod.tool.dojo.env]
@@ -31,13 +24,6 @@ private_key = "0x3791d238d54d62a2f98cb2fc1309112321ceb6cd628606f062ab0a004576c7e
 world_address = "0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357"
 
 [[target.dojo]]
-
-[tool.dojo.world]
-seed = "eternum"
-name = "Realms: Eternum"
-description = "Rule the Hex"
-cover_uri = "file://assets/bg.webp"
-website = "https://alpha-eternum.realms.world/"
 
 [profile.prod.tool.dojo.world]
 seed = "eternum"

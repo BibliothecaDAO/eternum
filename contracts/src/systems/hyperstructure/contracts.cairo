@@ -36,14 +36,18 @@ mod hyperstructure_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct HyperstructureFinished {
+        #[key]
         hyperstructure_entity_id: ID,
         timestamp: u64,
     }
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct HyperstructureCoOwnersChange {
+        #[key]
         hyperstructure_entity_id: ID,
         timestamp: u64,
         co_owners: Span<(ContractAddress, u16)>,

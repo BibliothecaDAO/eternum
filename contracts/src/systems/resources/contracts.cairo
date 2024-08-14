@@ -13,7 +13,7 @@ mod resource_systems {
     use core::array::ArrayTrait;
     use core::array::SpanTrait;
 
-    use core::integer::BoundedInt;
+    use core::num::traits::Bounded;
     use core::poseidon::poseidon_hash_span as hash;
     use core::zeroable::Zeroable;
     use eternum::alias::ID;
@@ -41,6 +41,7 @@ mod resource_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct Transfer {
         #[key]
         recipient_entity_id: ID,
@@ -152,7 +153,7 @@ mod resource_systems {
 
                         assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
-                        if (approved_allowance.amount != BoundedInt::max()) {
+                        if (approved_allowance.amount != Bounded::MAX) {
                             // spend allowance if they don't have infinite approval
                             approved_allowance.amount -= resource_amount;
                             set!(world, (approved_allowance));

@@ -66,6 +66,7 @@ fn test_map_explore() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
     let (initial_realm_wheat, initial_realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
     assert_eq!(initial_realm_wheat.balance, INITIAL_WHEAT_BALANCE, "wrong initial wheat balance");
@@ -149,6 +150,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_weight_config(config_systems_address);
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let combat_systems_dispatcher = deploy_combat_systems(world);

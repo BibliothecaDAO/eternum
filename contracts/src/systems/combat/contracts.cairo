@@ -371,7 +371,7 @@ trait ICombatContract<TContractState> {
 #[dojo::contract]
 mod combat_systems {
     use core::array::SpanTrait;
-    use core::integer::BoundedInt;
+    use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use core::traits::Destruct;
     use core::traits::Into;
@@ -420,6 +420,7 @@ mod combat_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct PillageEvent {
         #[key]
         structure_id: ID,
@@ -1202,7 +1203,7 @@ mod combat_systems {
             set!(world, (structure_protector, Protectee { army_id, protectee_id: army_owner_id }));
 
             // stop the army from sending or receiving resources
-            set!(world, (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() }));
+            set!(world, (ResourceTransferLock { entity_id: army_id, release_at: Bounded::MAX }));
             army_id
         }
 

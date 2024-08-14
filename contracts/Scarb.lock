@@ -2,9 +2,18 @@
 version = 1
 
 [[package]]
+name = "alexandria_bytes"
+version = "0.1.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1b080577aaa6889116fc8be5dde72b2fd21e397#e1b080577aaa6889116fc8be5dde72b2fd21e397"
+dependencies = [
+ "alexandria_data_structures",
+ "alexandria_math",
+]
+
+[[package]]
 name = "alexandria_data_structures"
 version = "0.2.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1b080577aaa6889116fc8be5dde72b2fd21e397#e1b080577aaa6889116fc8be5dde72b2fd21e397"
 dependencies = [
  "alexandria_encoding",
 ]
@@ -12,8 +21,9 @@ dependencies = [
 [[package]]
 name = "alexandria_encoding"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1b080577aaa6889116fc8be5dde72b2fd21e397#e1b080577aaa6889116fc8be5dde72b2fd21e397"
 dependencies = [
+ "alexandria_bytes",
  "alexandria_math",
  "alexandria_numeric",
 ]
@@ -21,7 +31,7 @@ dependencies = [
 [[package]]
 name = "alexandria_math"
 version = "0.2.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1b080577aaa6889116fc8be5dde72b2fd21e397#e1b080577aaa6889116fc8be5dde72b2fd21e397"
 dependencies = [
  "alexandria_data_structures",
 ]
@@ -29,9 +39,18 @@ dependencies = [
 [[package]]
 name = "alexandria_numeric"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1b080577aaa6889116fc8be5dde72b2fd21e397#e1b080577aaa6889116fc8be5dde72b2fd21e397"
 dependencies = [
  "alexandria_math",
+ "alexandria_searching",
+]
+
+[[package]]
+name = "alexandria_searching"
+version = "0.1.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1b080577aaa6889116fc8be5dde72b2fd21e397#e1b080577aaa6889116fc8be5dde72b2fd21e397"
+dependencies = [
+ "alexandria_data_structures",
 ]
 
 [[package]]
@@ -41,16 +60,16 @@ source = "git+https://github.com/dojoengine/cubit?branch=cairo_2.7#53020b6320a10
 
 [[package]]
 name = "dojo"
-version = "0.7.3"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.0-alpha.3#a6a7724380169372336e886fb36f31f56e7d0d8a"
+version = "1.0.0-alpha.4"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.0.0-alpha.5#6878242e120d3135d3bc1bb94135d7135693069b"
 dependencies = [
  "dojo_plugin",
 ]
 
 [[package]]
 name = "dojo_plugin"
-version = "0.7.3"
-source = "git+https://github.com/dojoengine/dojo?rev=71b1f1a4#71b1f1a467534cbeeb901356f41e612ed4187bd1"
+version = "1.0.0-alpha.4"
+source = "git+https://github.com/dojoengine/dojo?rev=f15def33#f15def330c0d099e79351d11c197f63e8cc1ff36"
 
 [[package]]
 name = "eternum"

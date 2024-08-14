@@ -1,5 +1,5 @@
 use core::array::ArrayTrait;
-use core::integer::BoundedInt;
+use core::num::traits::Bounded;
 use core::option::OptionTrait;
 use core::poseidon::poseidon_hash_span;
 use core::traits::Into;
@@ -510,7 +510,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
             world, from_army_protectee_id, ResourceTransferLock
         );
         from_army_resource_lock.assert_not_locked();
-        from_army_resource_lock.release_at = BoundedInt::max();
+        from_army_resource_lock.release_at = Bounded::MAX;
         set!(world, (from_army_resource_lock));
     }
 
@@ -1215,8 +1215,8 @@ mod tests {
 //     let attack_troop_each = 240_000;
 //     let defence_troop_each = 10_000;
 //     let mut battle = mock_battle(attack_troop_each, defence_troop_each);
-//         // starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-//         // battle.update_state();
+//         // starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts
+//         was 1 // battle.update_state();
 //     print!("\n\n Attack Troops each: {} \n\n", attack_troop_each);
 //     print!("\n\n Defence Troops each: {} \n\n", defence_troop_each);
 //     print!("\n\n Attack Army health: {} \n\n", battle.attack_army_health.current);
@@ -1243,8 +1243,10 @@ mod tests {
 //     let defence_ratio = (battle.defence_army_health.current - defence_h_left) * 100 /
 //     battle.defence_army_health.current;
 
-    //     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left, attacker_ratio);
-//     print!("\n\n Pillage Defender Loss: {}, Ratio is {}% \n\n", defence_h_left, defence_ratio);
+    //     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left,
+//     attacker_ratio);
+//     print!("\n\n Pillage Defender Loss: {}, Ratio is {}% \n\n", defence_h_left,
+//     defence_ratio);
 
     // }
 }

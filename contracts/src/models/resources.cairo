@@ -1,5 +1,5 @@
 use core::fmt::{Display, Formatter, Error};
-use core::integer::BoundedInt;
+use core::num::traits::Bounded;
 use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -305,7 +305,7 @@ impl OwnedResourcesTrackerCustomImpl of OwnedResourcesTrackerCustomTrait {
 
 #[cfg(test)]
 mod tests_resource_traits {
-    use core::integer::BoundedInt;
+    use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use debug::PrintTrait;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};

@@ -233,7 +233,7 @@ fn test_battle_start() {
 
     //////////// START BATTLE ////////////////////
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     // player 1 starts battle against player 2
     let battle_id = combat_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
     let battle: Battle = get!(world, battle_id, Battle);
