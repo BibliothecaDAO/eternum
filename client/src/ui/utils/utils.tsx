@@ -1,6 +1,6 @@
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
-import { ContractAddress, ID, Position, Resource, ResourcesIds, UIPosition, WEIGHTS } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, Position, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import {
@@ -117,27 +117,6 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   return { row, col };
 };
 
-export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
-  const hexRadius = 3;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const colNorm = col - (!normalized ? FELT_CENTER : 0);
-  const rowNorm = row - (!normalized ? FELT_CENTER : 0);
-  const x = normalized
-    ? colNorm * horizDist - ((rowNorm % 2) * horizDist) / 2
-    : colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
-  const y = rowNorm * vertDist;
-  const z = pseudoRandom(x, y) * 2;
-  return {
-    x,
-    y,
-    z,
-  };
-};
-
 export const calculateOffset = (index: number, total: number, radius: number) => {
   if (total === 1) return { x: 0, y: 0 };
 
@@ -155,17 +134,6 @@ export const calculateOffset = (index: number, total: number, radius: number) =>
     x: offsetRadius * Math.cos(angle),
     z: offsetRadius * Math.sin(angle),
   };
-};
-
-interface HexPositions {
-  [key: string]: { col: number; row: number }[];
-}
-
-export const getRealmUIPosition = (realm_id: ID): Position => {
-  const realmPositions = realmHexPositions as HexPositions;
-  const colrow = realmPositions[realm_id.toString()][0];
-
-  return getUIPositionFromColRow(colrow.col, colrow.row, false);
 };
 
 export const pseudoRandom = (x: number, y: number) => {

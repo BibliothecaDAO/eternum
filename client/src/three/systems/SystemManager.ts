@@ -1,7 +1,22 @@
 import { SetupResult } from "@/dojo/setup";
+import { Position } from "@/types/Position";
 import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
-import { Component, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
-import { ArmySystemUpdate, BattleSystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "./types";
+import {
+  Component,
+  defineComponentSystem,
+  defineQuery,
+  getComponentValue,
+  HasValue,
+  isComponentUpdate,
+} from "@dojoengine/recs";
+import {
+  ArmySystemUpdate,
+  BattleSystemUpdate,
+  BuildingSystemUpdate,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+} from "./types";
+import { HexPosition } from "@/types";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -29,20 +44,32 @@ export class SystemManager {
           const army = getComponentValue(this.dojo.components.Army, update.entity);
           if (!army) return;
 
-          // filter armies that are in battle
-          if (army.battle_id !== 0) return;
-
-          // filter armies that are dead
           const health = getComponentValue(this.dojo.components.Health, update.entity);
-          if (!health || health.current / EternumGlobalConfig.troop.healthPrecision === 0n) return;
+          if (!health) {
+            // console.log(`[MyApp] in here for entity id ${army.entity_id}`);
+            return;
+          }
+
+          const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
+          if (protectee) {
+            //   console.log(`[MyApp] army is defender ${entityId}`);
+            return;
+          }
+
+          const healthMultiplier =
+            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
           const owner = getComponentValue(this.dojo.components.Owner, update.entity);
           const isMine = this.isOwner(owner);
 
+          //   console.log(`[MyApp] got update for ${army.entity_id}`);
           return {
             entityId: army.entity_id,
             hexCoords: this.getHexCoords(update.value),
             isMine,
+            battleId: army.battle_id,
+            defender: Boolean(protectee),
+            currentHealth: health.current / healthMultiplier,
           };
         });
       },
@@ -82,9 +109,15 @@ export class SystemManager {
           const position = getComponentValue(this.dojo.components.Position, update.entity);
           if (!position) return;
 
+          const healthMultiplier =
+            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+
           return {
             entityId: battle.entity_id,
-            hexCoords: { col: position.x, row: position.y },
+            hexCoords: new Position(position),
+            isEmpty:
+              battle.attack_army_health.current < healthMultiplier &&
+              battle.defence_army_health.current < healthMultiplier,
           };
         });
       },
@@ -98,6 +131,36 @@ export class SystemManager {
           if (!update.value[0]) return;
 
           return { hexCoords: { col: update.value[0]?.col || 0, row: update.value[0]?.row || 0 } };
+        });
+      },
+    };
+  }
+
+  public get Buildings() {
+    return {
+      subscribeToHexUpdates: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
+        const query = defineQuery([
+          HasValue(this.dojo.components.Building, {
+            outer_col: hexCoords.col,
+            outer_row: hexCoords.row,
+          }),
+        ]);
+
+        return query.update$.subscribe((update) => {
+          if (isComponentUpdate(update, this.dojo.components.Building)) {
+            const building = getComponentValue(this.dojo.components.Building, update.entity);
+            if (!building) return;
+
+            const innerCol = building.inner_col;
+            const innerRow = building.inner_row;
+            const buildingType = building.category;
+
+            callback({
+              buildingType,
+              innerCol,
+              innerRow,
+            });
+          }
         });
       },
     };

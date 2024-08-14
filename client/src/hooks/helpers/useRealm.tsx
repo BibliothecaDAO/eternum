@@ -29,9 +29,9 @@ export function useRealm() {
       components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
 
   const getQuestResources = () => {
-    const realmEntityId = useUIStore((state) => state.realmEntityId);
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
     return getStartingResources(resourcesProduced);

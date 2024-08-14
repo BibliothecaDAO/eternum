@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useLocation } from "wouter";
-import { CombatEntityDetails } from "./CombatEntityDetails";
 import { BuildingEntityDetails } from "./BuildingEntityDetails";
+import { CombatEntityDetails } from "./CombatEntityDetails";
 
 export const EntityDetails = () => {
   const [location, _] = useLocation();
