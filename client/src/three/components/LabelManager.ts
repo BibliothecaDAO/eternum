@@ -50,4 +50,25 @@ export class LabelManager {
       console.warn("Attempted to update position of a non-label object");
     }
   }
+
+  removeLabel(label: THREE.Points, scene: THREE.Scene) {
+    if (!(label instanceof THREE.Points)) return false;
+
+    scene.remove(label);
+    if (label.geometry) {
+      label.geometry.dispose();
+    }
+
+    if (label.material) {
+      if (label.material instanceof Array) {
+        label.material.forEach((material) => {
+          material.dispose();
+        });
+      } else {
+        label.material.dispose();
+      }
+    }
+
+    return true;
+  }
 }

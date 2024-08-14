@@ -87,7 +87,6 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleEn
     name: "test army",
     isMine: isMine ?? false,
     isMercenary: false,
-    uiPos: { x: 0, y: 0, z: 0 },
     offset: { x: 0, y: 0 },
     position: { entity_id: ARMY_ENTITY_ID, x: 0, y: 0 },
     owner: { entity_id: ARMY_ENTITY_ID, address: 0n },

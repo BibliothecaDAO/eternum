@@ -19,9 +19,9 @@ export const Tooltip = ({ className }: TooltipProps) => {
         ref.current.style.top = `${e.clientY}px`;
       }
     }, 10); // Throttling the event handler to execute once every 100ms
-    document.addEventListener("mousemove", mouseMoveHandler);
+    document.getElementById("world")?.addEventListener("mousemove", mouseMoveHandler);
     return () => {
-      document.removeEventListener("mousemove", mouseMoveHandler);
+      document.getElementById("world")?.removeEventListener("mousemove", mouseMoveHandler);
       mouseMoveHandler.cancel(); // Cancel any trailing invocation of the throttled function
     };
   }, []);

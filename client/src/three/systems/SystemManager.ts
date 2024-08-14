@@ -1,4 +1,5 @@
 import { SetupResult } from "@/dojo/setup";
+import { Position } from "@/types/Position";
 import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
@@ -43,20 +44,32 @@ export class SystemManager {
           const army = getComponentValue(this.dojo.components.Army, update.entity);
           if (!army) return;
 
-          // filter armies that are in battle
-          if (army.battle_id !== 0) return;
-
-          // filter armies that are dead
           const health = getComponentValue(this.dojo.components.Health, update.entity);
-          if (!health || health.current / EternumGlobalConfig.troop.healthPrecision === 0n) return;
+          if (!health) {
+            // console.log(`[MyApp] in here for entity id ${army.entity_id}`);
+            return;
+          }
+
+          const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
+          if (protectee) {
+            //   console.log(`[MyApp] army is defender ${entityId}`);
+            return;
+          }
+
+          const healthMultiplier =
+            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
           const owner = getComponentValue(this.dojo.components.Owner, update.entity);
           const isMine = this.isOwner(owner);
 
+          //   console.log(`[MyApp] got update for ${army.entity_id}`);
           return {
             entityId: army.entity_id,
             hexCoords: this.getHexCoords(update.value),
             isMine,
+            battleId: army.battle_id,
+            defender: Boolean(protectee),
+            currentHealth: health.current / healthMultiplier,
           };
         });
       },
@@ -96,9 +109,15 @@ export class SystemManager {
           const position = getComponentValue(this.dojo.components.Position, update.entity);
           if (!position) return;
 
+          const healthMultiplier =
+            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+
           return {
             entityId: battle.entity_id,
-            hexCoords: { col: position.x, row: position.y },
+            hexCoords: new Position(position),
+            isEmpty:
+              battle.attack_army_health.current < healthMultiplier &&
+              battle.defence_army_health.current < healthMultiplier,
           };
         });
       },

@@ -1,9 +1,7 @@
 import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import React from "react";
-import { Vector3 } from "three";
 import { create } from "zustand";
-import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createPopupsSlice, PopupsStore } from "./_popupsStore";
 import { BattleViewInfo } from "./types";
