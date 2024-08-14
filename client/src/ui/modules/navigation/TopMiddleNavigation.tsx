@@ -18,7 +18,6 @@ import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { Position } from "@/types/Position";
@@ -26,6 +25,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -124,9 +124,9 @@ export const TopMiddleNavigation = () => {
         </div>
 
         {location === "/map" && (
-          <Eye
-            className="fill-gold/50 h-6 w-6 my-auto ml-3 animate-slow transition-all hover:fill-gold hover:scale-125"
-            onClick={() => goToMapView()}
+          <ViewOnMapIcon
+            className="my-auto ml-3 w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+            position={{ x: hexPosition.col, y: hexPosition.row }}
           />
         )}
 
