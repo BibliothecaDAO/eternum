@@ -104,7 +104,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     );
   };
 
-  const name = entity.entityType === EntityType.TROOP ? army.name : entityName[entity.entityType];
+  const name = entity.entityType === EntityType.TROOP ? army?.name : entityName[entity.entityType];
 
   const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10 animate-pulse";
 
@@ -130,7 +130,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         <DepositResources
           entityId={entityId}
           battleInProgress={battleInProgress}
-          armyInBattle={Boolean(army.battle_id)}
+          armyInBattle={Boolean(army?.battle_id)}
         />
       )}
     </div>
