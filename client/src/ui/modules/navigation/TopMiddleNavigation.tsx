@@ -123,13 +123,6 @@ export const TopMiddleNavigation = () => {
           <TickProgress />
         </div>
 
-        {location === "/map" && (
-          <ViewOnMapIcon
-            className="my-auto ml-3 w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-            position={{ x: hexPosition.col, y: hexPosition.row }}
-          />
-        )}
-
         <div className="flex min-w-96 gap-1  clip-angled   py-2 px-4 text-gold bg-map   justify-center border-gold/50 text-center ">
           <div className="self-center flex justify-between w-full">
             <Select
@@ -156,6 +149,12 @@ export const TopMiddleNavigation = () => {
                 ))}
               </SelectContent>
             </Select>
+            {location === "/map" && (
+              <ViewOnMapIcon
+                className="my-auto m-4 w-7 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                position={{ x: hexPosition.col, y: hexPosition.row }}
+              />
+            )}
           </div>
           <Button
             variant="primary"
