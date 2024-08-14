@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
 
 export default class InstancedBuilding {
   public group: THREE.Group;
@@ -23,7 +24,7 @@ export default class InstancedBuilding {
     if (land instanceof THREE.InstancedMesh) {
       return (land.material as THREE.MeshStandardMaterial).color;
     }
-    return new THREE.Color(0xff0000);
+    return new THREE.Color(PREVIEW_BUILD_COLOR_INVALID);
   }
 
   getMatricesAndCount() {

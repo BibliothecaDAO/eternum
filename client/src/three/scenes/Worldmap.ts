@@ -20,7 +20,7 @@ import { StructureManager } from "../components/StructureManager";
 import { GUIManager } from "../helpers/GUIManager";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
-import { HEX_SIZE } from "./constants";
+import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
 import { StructurePreview } from "../components/StructurePreview";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 
@@ -156,7 +156,7 @@ export default class WorldmapScene extends HexagonScene {
     this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
 
     if (!this._canBuildStructure(hexCoords)) {
-      this.structurePreview?.setStructureColor(new THREE.Color(0xff0000));
+      this.structurePreview?.setStructureColor(new THREE.Color(PREVIEW_BUILD_COLOR_INVALID));
     } else {
       this.structurePreview?.resetStructureColor();
     }
