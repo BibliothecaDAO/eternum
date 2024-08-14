@@ -9,9 +9,7 @@ use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
 
-use eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION
-};
+use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION};
 use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
@@ -19,8 +17,7 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems,
-    general::mint
+    world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems, general::mint
 };
 
 use starknet::ContractAddress;
@@ -53,9 +50,7 @@ fn set_configurations(world: IWorldDispatcher) {
                 army_free_per_structure: 3,
                 army_extra_per_building: 2,
             },
-            TickConfig {
-                config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1
-            },
+            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
             CapacityConfig {
                 config_id: WORLD_CONFIG_ID,
                 carry_capacity_config_id: ARMY_ENTITY_TYPE,
@@ -77,9 +72,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
     let realm_id = realm_system_dispatcher
-        .create(
-            1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y }
-        );
+        .create(1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y });
     mint(
         world,
         realm_id,
@@ -113,15 +106,9 @@ fn test_army_buy() {
     assert_eq!(army.troops.paladin_count, STARTING_PALADIN_COUNT.try_into().unwrap());
     assert_eq!(army.troops.crossbowman_count, STARTING_CROSSBOWMAN_COUNT.try_into().unwrap());
 
-    let knight_resource: Resource = ResourceCustomImpl::get(
-        world, (realm_id, ResourceTypes::KNIGHT)
-    );
-    let paladin_resource: Resource = ResourceCustomImpl::get(
-        world, (realm_id, ResourceTypes::PALADIN)
-    );
-    let crossbowman_resource: Resource = ResourceCustomImpl::get(
-        world, (realm_id, ResourceTypes::CROSSBOWMAN)
-    );
+    let knight_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::KNIGHT));
+    let paladin_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::PALADIN));
+    let crossbowman_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::CROSSBOWMAN));
     assert_eq!(knight_resource.balance, 0);
     assert_eq!(paladin_resource.balance, 0);
     assert_eq!(crossbowman_resource.balance, 0);

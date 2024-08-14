@@ -13,11 +13,10 @@ use eternum::models::combat::health;
 use eternum::models::combat::protectee;
 use eternum::models::combat::protector;
 use eternum::models::config::{
-    world_config, speed_config, capacity_config, weight_config, road_config,
-    hyperstructure_resource_config, stamina_config, tick_config, map_explore_config,
-    realm_free_mint_config, mercenaries_config, leveling_config, production_config, bank_config,
-    building_config, troop_config, battle_config, building_category_pop_config, population_config,
-    has_claimed_starting_resources, hyperstructure_config
+    world_config, speed_config, capacity_config, weight_config, road_config, hyperstructure_resource_config,
+    stamina_config, tick_config, map_explore_config, realm_free_mint_config, mercenaries_config, leveling_config,
+    production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
+    population_config, has_claimed_starting_resources, hyperstructure_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
@@ -131,49 +130,20 @@ fn spawn_eternum() -> IWorldDispatcher {
 
     world.uuid();
 
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>()
-        );
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>()
-        );
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player3'>()
-        );
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"),
-            contract_address_const::<'player_1_realm_owner'>()
-        );
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"),
-            contract_address_const::<'player_2_realm_owner'>()
-        );
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"),
-            contract_address_const::<'player_3_realm_owner'>()
-        );
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player3'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_1_realm_owner'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_2_realm_owner'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_3_realm_owner'>());
 
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realms_owner'>()
-        );
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realms_owner'>());
 
-    world
-        .grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'caller'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'caller'>());
 
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'maker'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'take'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'taker'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'0'>());
-    world
-        .grant_owner(
-            dojo::utils::bytearray_hash(@"eternum"),
-            contract_address_const::<'takers_other_realm'>()
-        );
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'takers_other_realm'>());
     world
 }
