@@ -57,12 +57,12 @@ export const EnemyArmies = ({
         </div>
       );
     },
-    [currentTimestamp, ownArmySelected, position],
+    [currentTimestamp, ownArmySelected, ownArmySelected?.entity_id, position],
   );
 
   const armiesToDisplay = useMemo(() => {
     return armies.map((army: ArmyInfo, index) => getArmyChip(army, index)).filter(Boolean);
-  }, [currentTimestamp]);
+  }, [currentTimestamp, getArmyChip]);
 
   return (
     <div className="flex flex-col mt-2 w-[31rem]">

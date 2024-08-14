@@ -1,4 +1,4 @@
-import { HexPosition, SceneName } from "@/types";
+import { SceneName } from "@/types";
 import { TransitionManager } from "./components/TransitionManager";
 import { HexagonScene } from "./scenes/HexagonScene";
 
@@ -24,7 +24,6 @@ export class SceneManager {
     if (scene) {
       this._updateCurrentScene(sceneName);
 
-      this.scenes.get(this.getCurrentScene()!)?.changeScene(sceneName);
       this.transitionManager.fadeOut(() => {
         if (scene.setup) {
           scene.setup();

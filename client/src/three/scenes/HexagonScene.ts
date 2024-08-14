@@ -145,10 +145,6 @@ export abstract class HexagonScene {
     return this.camera;
   }
 
-  public changeScene(sceneName: SceneName) {
-    this.inputManager.changeScene(sceneName);
-  }
-
   protected hashCoordinates(x: number, y: number): number {
     // Simple hash function to generate a deterministic value between 0 and 1
     const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;

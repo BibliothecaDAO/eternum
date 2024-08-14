@@ -186,7 +186,6 @@ export interface AuctionInterface {
 
 export interface BankStaticInterface {
   name: string;
-  uiPosition: UIPosition;
   position: Position;
   distance: number | undefined;
 }
@@ -196,7 +195,6 @@ export interface BankInterface {
   wheatPrice: number;
   fishPrice: number;
   bankId: ID;
-  uiPosition: UIPosition;
   position: Position;
   wheatAuction: AuctionInterface | undefined;
   fishAuction: AuctionInterface | undefined;
@@ -207,12 +205,6 @@ export interface BankInterface {
 export interface Position {
   x: number;
   y: number;
-}
-
-export interface UIPosition {
-  x: number;
-  y: number;
-  z: number;
 }
 
 export interface IOrder {
