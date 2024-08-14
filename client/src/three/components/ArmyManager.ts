@@ -2,6 +2,7 @@ import { Position } from "@/types/Position";
 import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { GUIManager } from "../helpers/GUIManager";
 import { ArmySystemUpdate } from "../systems/types";
 import { LabelManager } from "./LabelManager";
 
@@ -48,6 +49,45 @@ export class ArmyManager {
     this.mesh.instanceMatrix.needsUpdate = true;
 
     this.scene.add(this.mesh);
+
+    const createArmyFolder = GUIManager.addFolder("Create Army");
+    const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
+
+    createArmyFolder.add(createArmyParams, "entityId").name("Entity ID");
+    createArmyFolder.add(createArmyParams, "col").name("Column");
+    createArmyFolder.add(createArmyParams, "row").name("Row");
+    createArmyFolder.add(createArmyParams, "isMine", [true, false]).name("Is Mine");
+    createArmyFolder
+      .add(
+        {
+          addArmy: () => {
+            this.addArmy(
+              createArmyParams.entityId,
+              new Position({ x: createArmyParams.col, y: createArmyParams.row }),
+              createArmyParams.isMine,
+            );
+          },
+        },
+        "addArmy",
+      )
+      .name("Add army");
+    createArmyFolder.close();
+
+    const deleteArmyFolder = GUIManager.addFolder("Delete Army");
+    const deleteArmyParams = { entityId: 0 };
+
+    deleteArmyFolder.add(deleteArmyParams, "entityId").name("Entity ID");
+    deleteArmyFolder
+      .add(
+        {
+          deleteArmy: () => {
+            this.removeArmy(deleteArmyParams.entityId);
+          },
+        },
+        "deleteArmy",
+      )
+      .name("Delete army");
+    deleteArmyFolder.close();
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
