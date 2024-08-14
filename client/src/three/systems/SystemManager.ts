@@ -1,5 +1,6 @@
 import { SetupResult } from "@/dojo/setup";
-import { EternumGlobalConfig, ID, StructureType } from "@bibliothecadao/eternum";
+import { Position } from "@/types/Position";
+import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
 import { Component, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
 import { ArmySystemUpdate, BattleSystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "./types";
 
@@ -29,32 +30,32 @@ export class SystemManager {
           const army = getComponentValue(this.dojo.components.Army, update.entity);
           if (!army) return;
 
-          const owner = getComponentValue(this.dojo.components.Owner, update.entity);
-          const isMine = this.isOwner(owner);
-
           const health = getComponentValue(this.dojo.components.Health, update.entity);
           if (!health) {
             // console.log(`[MyApp] in here for entity id ${army.entity_id}`);
             return;
           }
 
-          //   console.log(`[MyApp] got update for ${army.entity_id}`);
-
           const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
+          if (protectee) {
+            //   console.log(`[MyApp] army is defender ${entityId}`);
+            return;
+          }
 
           const healthMultiplier =
             EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
+          const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+          const isMine = this.isOwner(owner);
+
+          //   console.log(`[MyApp] got update for ${army.entity_id}`);
           return {
             entityId: army.entity_id,
             hexCoords: this.getHexCoords(update.value),
             isMine,
-            health: {
-              current: health.current / healthMultiplier,
-              lifetime: health.lifetime / healthMultiplier,
-            },
             battleId: army.battle_id,
             defender: Boolean(protectee),
+            currentHealth: health.current / healthMultiplier,
           };
         });
       },
@@ -99,7 +100,7 @@ export class SystemManager {
 
           return {
             entityId: battle.entity_id,
-            hexCoords: { col: position.x, row: position.y },
+            hexCoords: new Position(position),
             isEmpty:
               battle.attack_army_health.current < healthMultiplier &&
               battle.defence_army_health.current < healthMultiplier,

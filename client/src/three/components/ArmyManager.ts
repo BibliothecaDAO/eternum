@@ -96,11 +96,15 @@ export class ArmyManager {
     //     2,
     //   )}`,
     // );
-    const { entityId, hexCoords, isMine, health, battleId, defender } = update;
+    const { entityId, hexCoords, isMine, battleId, currentHealth } = update;
 
-    if (defender) {
-      //   console.log(`[MyApp] army is defender ${entityId}`);
-      return;
+    if (currentHealth <= 0) {
+      if (this.armies.has(entityId)) {
+        this.removeArmy(entityId);
+        return;
+      } else {
+        return;
+      }
     }
 
     if (battleId !== 0) {
@@ -120,7 +124,6 @@ export class ArmyManager {
       this.moveArmy(entityId, position);
     } else {
       //   console.log(`[MyApp] adding army ${entityId}`);
-
       this.addArmy(entityId, position, isMine);
     }
   }

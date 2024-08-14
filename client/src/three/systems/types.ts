@@ -1,4 +1,5 @@
 import { HexPosition } from "@/types";
+import { Position } from "@/types/Position";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 
 export type ArmySystemUpdate = {
@@ -6,8 +7,7 @@ export type ArmySystemUpdate = {
   hexCoords: HexPosition;
   isMine: boolean;
   battleId: ID;
-  health: { lifetime: bigint; current: bigint };
-  defender: boolean;
+  currentHealth: bigint;
 };
 
 export type StructureSystemUpdate = {
@@ -23,6 +23,6 @@ export type TileSystemUpdate = {
 
 export type BattleSystemUpdate = {
   entityId: ID;
-  hexCoords: HexPosition;
+  hexCoords: Position;
   isEmpty: boolean;
 };

@@ -1,5 +1,4 @@
-import { HexPosition } from "@/types";
-import { FELT_CENTER } from "@/ui/config";
+import { Position } from "@/types/Position";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
 import * as THREE from "three";
@@ -63,11 +62,11 @@ export class BattleManager {
     }
   }
 
-  addBattle(entityId: ID, hexCoords: HexPosition) {
+  addBattle(entityId: ID, hexCoords: Position) {
     if (!this.instancedModel) throw new Error("Instanced model not loaded");
 
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
-    const position = getWorldPositionForHex(normalizedCoord);
+    const normalizedCoord = hexCoords.getNormalized();
+    const position = getWorldPositionForHex({ col: normalizedCoord.x, row: normalizedCoord.y });
 
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
