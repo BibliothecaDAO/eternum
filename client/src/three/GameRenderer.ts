@@ -101,8 +101,11 @@ export default class GameRenderer {
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
 
-    GUIManager.add(this, "switchScene");
-
+    const changeSceneFolder = GUIManager.addFolder("Switch scene");
+    const changeSceneParams = { scene: SceneName.WorldMap };
+    changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
+    changeSceneFolder.add({ switchScene: () => this.switchScene(changeSceneParams.scene) }, "switchScene");
+    changeSceneFolder.close();
     // Add new button for moving camera to specific col and row
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
     const moveCameraParams = { col: 0, row: 0 };
@@ -116,7 +119,7 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
-
+    moveCameraFolder.close();
     // Create an instance of CSS2DRenderer
     this.labelRenderer = new CSS2DRenderer();
     this.labelRenderer.setSize(window.innerWidth, window.innerHeight);

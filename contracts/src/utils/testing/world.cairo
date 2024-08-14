@@ -138,7 +138,7 @@ fn spawn_eternum() -> IWorldDispatcher {
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_3_realm_owner'>());
 
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realms_owner'>());
-
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realm_owner'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'caller'>());
 
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'maker'>());

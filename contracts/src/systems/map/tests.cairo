@@ -150,6 +150,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_weight_config(config_systems_address);
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let combat_systems_dispatcher = deploy_combat_systems(world);
