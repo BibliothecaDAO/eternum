@@ -1,4 +1,5 @@
 import { SetupResult } from "@/dojo/setup";
+import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
 import {
@@ -9,6 +10,7 @@ import {
   HasValue,
   isComponentUpdate,
 } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
@@ -16,8 +18,6 @@ import {
   StructureSystemUpdate,
   TileSystemUpdate,
 } from "./types";
-import { HexPosition } from "@/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -61,6 +61,8 @@ export class SystemManager {
             EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
           const entityOwner = getComponentValue(this.dojo.components.EntityOwner, update.entity);
+          if (!entityOwner) return;
+
           const owner = getComponentValue(
             this.dojo.components.Owner,
             getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),

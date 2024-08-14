@@ -24,23 +24,6 @@ export default class GameRenderer {
 
   private locationManager!: LocationManager;
 
-  private setupListeners() {
-    window.addEventListener("urlChanged", this.handleURLChange);
-    window.addEventListener("resize", this.onWindowResize.bind(this));
-  }
-
-  private handleURLChange = () => {
-    const url = new URL(window.location.href);
-
-    const scene = url.pathname.split("/").pop();
-
-    if (scene === this.sceneManager.getCurrentScene()) {
-      this.sceneManager.moveCameraForScene();
-    } else {
-      this.switchScene(scene as SceneName);
-    }
-  };
-
   // Store
   private state: AppStore;
   private unsubscribe: () => void;
@@ -162,6 +145,23 @@ export default class GameRenderer {
     // Init animation
     this.animate();
   }
+
+  private setupListeners() {
+    window.addEventListener("urlChanged", this.handleURLChange);
+    window.addEventListener("resize", this.onWindowResize.bind(this));
+  }
+
+  private handleURLChange = () => {
+    const url = new URL(window.location.href);
+
+    const scene = url.pathname.split("/").pop();
+
+    if (scene === this.sceneManager.getCurrentScene() && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
+      this.sceneManager.moveCameraForScene();
+    } else {
+      this.switchScene(scene as SceneName);
+    }
+  };
 
   renderModels() {
     this.transitionManager = new TransitionManager(this.renderer);
