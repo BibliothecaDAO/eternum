@@ -18,7 +18,6 @@ import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { Position } from "@/types/Position";
@@ -26,6 +25,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -123,13 +123,6 @@ export const TopMiddleNavigation = () => {
           <TickProgress />
         </div>
 
-        {location === "/map" && (
-          <Eye
-            className="fill-gold/50 h-6 w-6 my-auto ml-3 animate-slow transition-all hover:fill-gold hover:scale-125"
-            onClick={() => goToMapView()}
-          />
-        )}
-
         <div className="flex min-w-96 gap-1  clip-angled   py-2 px-4 text-gold bg-map   justify-center border-gold/50 text-center ">
           <div className="self-center flex justify-between w-full">
             <Select
@@ -156,6 +149,12 @@ export const TopMiddleNavigation = () => {
                 ))}
               </SelectContent>
             </Select>
+            {location === "/map" && (
+              <ViewOnMapIcon
+                className="my-auto m-4 w-7 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                position={{ x: hexPosition.col, y: hexPosition.row }}
+              />
+            )}
           </div>
           <Button
             variant="primary"
