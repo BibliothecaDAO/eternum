@@ -9,8 +9,8 @@ import {
   BuildingEnumToString,
   BuildingType,
   EternumGlobalConfig,
-  RESOURCE_INPUTS,
   ID,
+  RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
@@ -24,6 +24,7 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 
 import { usePlayResourceSound } from "@/hooks/useUISound";
+import { ResourceMiningTypes } from "@/types";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
@@ -36,7 +37,6 @@ import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
-import { ResourceMiningTypes } from "@/types";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -444,9 +444,10 @@ export const BuildingInfo = ({
 
   const population = BUILDING_POPULATION[buildingId] || 0;
   const capacity = BUILDING_CAPACITY[buildingId] || 0;
-  const perTick = RESOURCE_OUTPUTS[buildingId] || 0;
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
   const ongoingCost = RESOURCE_INPUTS[resourceProduced] || 0;
+
+  const perTick = RESOURCE_OUTPUTS[resourceProduced] || 0;
 
   const { getBalance } = getResourceBalance();
 
@@ -497,7 +498,7 @@ export const BuildingInfo = ({
                 const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
                 return (
                   <ResourceCost
-                    key={index}
+                    key={`ongoing-cost-${index}`}
                     type="horizontal"
                     resourceId={ongoingCost[Number(resourceId)].resource}
                     amount={ongoingCost[Number(resourceId)].amount}
@@ -519,7 +520,7 @@ export const BuildingInfo = ({
               const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
               return (
                 <ResourceCost
-                  key={index}
+                  key={`fixed-cost-${index}`}
                   type="horizontal"
                   resourceId={cost[Number(resourceId)].resource}
                   amount={cost[Number(resourceId)].amount}

@@ -191,10 +191,17 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
             <div className="flex space-x-2 py-2">
               <ListSelect
                 title="Active Account: "
-                options={list().map((account) => ({
-                  id: account.address,
-                  label: <div className="w-[225px]">{displayAddress(account.address)}</div>,
-                }))}
+                options={list().map((account) => {
+                  const addressName = getAddressName(ContractAddress(account.address));
+                  return {
+                    id: account.address,
+                    label: (
+                      <div className="w-[225px]">{`${addressName || "unknown"} (${displayAddress(
+                        account.address,
+                      )})`}</div>
+                    ),
+                  };
+                })}
                 value={account.address}
                 onChange={select}
               />
