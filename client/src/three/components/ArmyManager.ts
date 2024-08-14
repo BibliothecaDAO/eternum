@@ -118,6 +118,8 @@ export class ArmyManager {
     this.dummy.updateMatrix();
     this.mesh.setMatrixAt(index, this.dummy.matrix);
     this.mesh.instanceMatrix.needsUpdate = true;
+    // Update the bounding sphere of the InstancedMesh
+    this.mesh.computeBoundingSphere();
 
     if (!this.mesh.userData.entityIdMap) {
       this.mesh.userData.entityIdMap = {};
@@ -169,6 +171,8 @@ export class ArmyManager {
   }
 
   update(deltaTime: number) {
+    let needsBoundingUpdate = false;
+
     this.movingArmies.forEach((movement, index) => {
       movement.progress += deltaTime * 0.5;
       if (movement.progress >= 1) {
@@ -180,8 +184,6 @@ export class ArmyManager {
       this.dummy.scale.copy(this.scale);
       this.dummy.updateMatrix();
       this.mesh.setMatrixAt(index, this.dummy.matrix);
-
-      const entityId = this.mesh.userData.entityIdMap[index];
     });
     if (this.movingArmies.size > 0) {
       this.mesh.instanceMatrix.needsUpdate = true;
@@ -194,11 +196,17 @@ export class ArmyManager {
         if (movement.progress >= 1) {
           this.labelManager.updateLabelPosition(label, movement.endPos);
           this.movingLabels.delete(entityId);
+          needsBoundingUpdate = true;
         } else {
           const newPosition = this.dummy.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
           this.labelManager.updateLabelPosition(label, newPosition);
         }
       }
     });
+
+    if (needsBoundingUpdate) {
+      // Update the bounding sphere of the InstancedMesh only when an army has finished moving
+      this.mesh.computeBoundingSphere();
+    }
   }
 }
