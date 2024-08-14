@@ -20,24 +20,19 @@ use eternum::models::stamina::Stamina;
 use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
 use eternum::models::weight::Weight;
 
-use eternum::systems::combat::contracts::{
-    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
-};
+use eternum::systems::combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait};
 
 use eternum::systems::config::contracts::{
-    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait,
-    IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
-    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
+    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait, IMapConfigDispatcher,
+    IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IStaminaConfigDispatcher,
+    IStaminaConfigDispatcherTrait, IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
 };
 
 use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
 use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-use eternum::systems::map::contracts::{
-    map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait
-};
+use eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
 
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
@@ -46,13 +41,12 @@ use eternum::systems::transport::contracts::travel_systems::{
 use eternum::utils::testing::{
     world::{spawn_eternum},
     systems::{
-        deploy_realm_systems, deploy_combat_systems, deploy_system, deploy_map_systems,
-        deploy_dev_resource_systems
+        deploy_realm_systems, deploy_combat_systems, deploy_system, deploy_map_systems, deploy_dev_resource_systems
     },
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
-        set_combat_config, set_stamina_config, set_capacity_config, set_speed_config,
-        set_mercenaries_config, set_tick_config, set_exploration_config, set_weight_config
+        set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
+        set_tick_config, set_exploration_config, set_weight_config
     },
     constants::{MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT}
 };
@@ -88,9 +82,7 @@ fn test_map_explore() {
     let expected_explored_coord = army_coord.neighbor(explore_tile_direction);
 
     // ensure that Tile model is correct
-    let explored_tile: Tile = get!(
-        world, (expected_explored_coord.x, expected_explored_coord.y), Tile
-    );
+    let explored_tile: Tile = get!(world, (expected_explored_coord.x, expected_explored_coord.y), Tile);
     assert_eq!(explored_tile.col, explored_tile.col, "wrong col");
     assert_eq!(explored_tile.row, explored_tile.row, "wrong row");
     assert_eq!(explored_tile.explored_by_id, realm_army_unit_id, "wrong realm owner");
@@ -109,14 +101,7 @@ fn test_map_explore() {
 
 #[test]
 fn test_mercenaries_protector() {
-    let (
-        world,
-        realm_entity_id,
-        realm_army_unit_id,
-        map_systems_dispatcher,
-        combat_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
 
     let mut army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
     let explore_tile_direction: Direction = Direction::West;
@@ -135,8 +120,7 @@ fn test_mercenaries_protector() {
         world, mine_entity_id, army_position
     );
 
-    let battle_entity_id = combat_systems_dispatcher
-        .battle_start(realm_army_unit_id, mercenary_entity_id);
+    let battle_entity_id = combat_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
 
     let battle = get!(world, battle_entity_id, Battle);
 
@@ -187,9 +171,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
         );
 
     let troops = Troops {
-        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(),
-        paladin_count: 0,
-        crossbowman_count: 0
+        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0
     };
     let realm_army_unit_id: ID = create_army_with_troops(
         world, combat_systems_dispatcher, realm_entity_id, troops, false
