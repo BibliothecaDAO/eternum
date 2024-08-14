@@ -16,6 +16,7 @@ import {
   TileSystemUpdate,
 } from "./types";
 import { HexPosition } from "@/types";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
