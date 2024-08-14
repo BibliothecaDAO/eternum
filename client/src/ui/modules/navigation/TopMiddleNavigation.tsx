@@ -18,7 +18,6 @@ import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { Position } from "@/types/Position";
@@ -26,6 +25,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -117,7 +117,7 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className=" bg-black/60 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
+    <div className=" bg-black/75 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />
@@ -149,6 +149,12 @@ export const TopMiddleNavigation = () => {
                 ))}
               </SelectContent>
             </Select>
+            {location === "/map" && (
+              <ViewOnMapIcon
+                className="my-auto m-4 w-7 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                position={{ x: hexPosition.col, y: hexPosition.row }}
+              />
+            )}
           </div>
           <Button
             variant="primary"

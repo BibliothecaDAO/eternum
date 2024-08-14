@@ -24,6 +24,7 @@ import {
 import { HexagonScene } from "./HexagonScene";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { BuildingPreview } from "../components/BuildingPreview";
+import { BuildingSystemUpdate } from "../systems/types";
 
 const loader = new GLTFLoader();
 export default class HexceptionScene extends HexagonScene {
@@ -35,6 +36,8 @@ export default class HexceptionScene extends HexagonScene {
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
+  private subscription: any;
+  private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
 
   constructor(
     controls: MapControls,
@@ -125,6 +128,24 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager.setTile({ col, row });
 
+    // remove all previous buildings when switching to a new hex
+    this.buildingModels.forEach((buildingMesh) => {
+      buildingMesh.setCount(0);
+    });
+
+    // subscribe to buiding updates (create and destroy)
+    this.subscription?.unsubscribe();
+    this.subscription = this.systemManager.Buildings.subscribeToHexUpdates(
+      { col: this.centerColRow[0], row: this.centerColRow[1] },
+      (update: BuildingSystemUpdate) => {
+        const { innerCol, innerRow, buildingType } = update;
+        if (buildingType === BuildingType[BuildingType.None] && innerCol && innerRow) {
+          this.removeBuilding(innerCol, innerRow);
+        }
+        this.updateHexceptionGrid(4);
+      },
+    );
+
     this.updateHexceptionGrid(4);
   }
 
@@ -213,7 +234,15 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const buildingMesh = this.buildingModels.get(BuildingType[building.category].toString() as any);
         if (buildingMesh) {
-          counts[building.category] = (counts[building.category] || 0) + 1;
+          // Store the instanceId for the building based on col and row
+          const instanceId = counts[building.category] || 0;
+          // store the instance id
+          this.buildingInstanceIds.set(`${building.col},${building.row}`, {
+            index: instanceId,
+            category: building.category,
+          });
+
+          counts[building.category] = instanceId + 1;
           buildingMesh.setMatrixAt(counts[building.category] - 1, building.matrix);
           buildingMesh.setCount(counts[building.category]);
         }
@@ -251,6 +280,11 @@ export default class HexceptionScene extends HexagonScene {
   ) => {
     const biome = existingBuildings.length === 0 ? this.biome.getBiome(targetHex.col, targetHex.row) : "Grassland";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
+
+    // reset buildings
+    if (isMainHex) {
+      this.buildings = [];
+    }
 
     for (let q = -radius; q <= radius; q++) {
       for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
@@ -322,4 +356,17 @@ export default class HexceptionScene extends HexagonScene {
   ) => {
     this.computeHexMatrices(radius, dummy, center, targetHex, false, [], biomeHexes);
   };
+
+  removeBuilding(innerCol: number, innerRow: number) {
+    const building = this.buildingInstanceIds.get(`${innerCol},${innerRow}`);
+
+    if (building) {
+      const buildingMesh = this.buildingModels.get(
+        BuildingType[building.category as keyof typeof BuildingType].toString() as any,
+      );
+      console.log({ buildingMesh });
+      buildingMesh?.removeInstance(building.index);
+      this.buildingInstanceIds.delete(`${innerCol},${innerRow}`);
+    }
+  }
 }
