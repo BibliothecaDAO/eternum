@@ -5,19 +5,11 @@ import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { StructureSystemUpdate } from "../systems/types";
 import { FELT_CENTER } from "@/ui/config";
-import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
-import {
-  PROGRESS_FINAL_THRESHOLD,
-  PROGRESS_HALF_THRESHOLD,
-  StructureLabelPaths,
-  StructureModelPaths,
-  StructureProgress,
-} from "../scenes/constants";
-import { Component, ComponentValue, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { ID, StructureType } from "@bibliothecadao/eternum";
+import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
+import { Component } from "@dojoengine/recs";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { SetupResult } from "@/dojo/setup";
-import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
-import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -99,7 +91,7 @@ export class StructureManager {
   async onUpdate(update: StructureSystemUpdate) {
     await Promise.all(this.modelLoadPromises);
 
-    const { entityId, hexCoords, isMine, structureType } = update;
+    const { entityId, hexCoords, isMine, structureType, stage } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
 
@@ -122,8 +114,7 @@ export class StructureManager {
     if (this.structureModels) {
       const models = this.structureModels.get(key);
       if (models && models.length > 0) {
-        const modelIndex = this.getModelIndex(structureType, entityId);
-        const modelType = models[modelIndex];
+        const modelType = models[stage];
 
         modelType.setMatrixAt(index, this.dummy.matrix);
         modelType.setCount(this.structures.getCountForType(key));
@@ -135,57 +126,7 @@ export class StructureManager {
       }
     }
   }
-
-  getModelIndex(structureType: StructureType, entityId: ID): number {
-    if (structureType === StructureType.Hyperstructure) {
-      const progressQueryResult = Array.from(
-        runQuery([Has(this.models.progress), HasValue(this.models.progress, { hyperstructure_entity_id: entityId })]),
-      );
-
-      const progresses = progressQueryResult.map((progressEntityId) => {
-        return getComponentValue(this.models.progress, progressEntityId);
-      });
-
-      const { percentage } = getAllProgressesAndTotalPercentage(progresses, entityId);
-
-      if (percentage < PROGRESS_HALF_THRESHOLD) {
-        return StructureProgress.INIT;
-      }
-      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage > PROGRESS_HALF_THRESHOLD) {
-        return StructureProgress.HALF;
-      }
-      return StructureProgress.FINAL;
-    }
-    return StructureProgress.INIT;
-  }
 }
-
-const getAllProgressesAndTotalPercentage = (
-  progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
-  hyperstructureEntityId: ID,
-) => {
-  let percentage = 0;
-  const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
-    let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
-    let progress = {
-      hyperstructure_entity_id: hyperstructureEntityId,
-      resource_type: resource,
-      amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
-      percentage: !foundProgress
-        ? 0
-        : Math.floor(
-            (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-          ),
-      costNeeded: resourceCost,
-    };
-    percentage +=
-      (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
-      TOTAL_CONTRIBUTABLE_AMOUNT;
-    return progress;
-  });
-  console.log("percentage", percentage);
-  return { allProgresses, percentage };
-};
 
 class Structures {
   private structures: Map<ID, { index: number; structureType: StructureType }> = new Map();

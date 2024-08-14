@@ -58,9 +58,9 @@ export const PROGRESS_HALF_THRESHOLD = 0.5;
 export const PROGRESS_FINAL_THRESHOLD = 1;
 
 export enum StructureProgress {
-  INIT = 0,
-  HALF = 1,
-  FINAL = 2,
+  STAGE_1 = 0,
+  STAGE_2 = 1,
+  STAGE_3 = 2,
 }
 
 export const StructureModelPaths: Record<StructureType, string[]> = {
