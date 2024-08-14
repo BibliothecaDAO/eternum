@@ -1,6 +1,12 @@
 name: test-contracts
 
-on: [pull_request]
+on: 
+  pull_request:
+    paths:
+      - "contracts/**"
+  push:
+    paths:
+      - "contracts/**"
 
 jobs:
   setup-environment:

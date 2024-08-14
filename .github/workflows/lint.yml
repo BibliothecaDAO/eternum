@@ -3,7 +3,13 @@ name: lint
 on:
   push:
     branches: [main]
-  pull_request: {}
+    paths:
+      - "client/**"
+
+  pull_request:
+    paths:
+    - "client/**"
+
 
 jobs:
   prettier:

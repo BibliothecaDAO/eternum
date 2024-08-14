@@ -2,8 +2,13 @@ name: knip
 
 on:
   push:
+    paths:
+      - "client/**"
     branches: [main]
-  pull_request: {}
+  pull_request: 
+    paths:
+      - "client/**"
+
 
 jobs:
   knip:
