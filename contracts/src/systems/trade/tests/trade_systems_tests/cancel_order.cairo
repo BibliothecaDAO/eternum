@@ -81,12 +81,14 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
     set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }));
     set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
     // trade 100 stone and 100 gold for 200 wood and 200 silver
     let trade_id = trade_systems_dispatcher
