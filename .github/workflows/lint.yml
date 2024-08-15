@@ -2,14 +2,14 @@ name: lint
 
 on:
   push:
-    branches: 
-    - main
+    branches:
+      - main
     paths:
-    - "client/**"
+      - "client/**"
 
   pull_request:
     paths:
-    - "client/**"
+      - "client/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

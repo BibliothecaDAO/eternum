@@ -1,6 +1,6 @@
 name: test-contracts
 
-on: 
+on:
   push:
     branches:
       - main

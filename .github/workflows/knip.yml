@@ -2,12 +2,12 @@ name: knip
 
 on:
   push:
-    branches: 
+    branches:
       - main
     paths:
       - "client/**"
 
-  pull_request: 
+  pull_request:
     paths:
       - "client/**"
 

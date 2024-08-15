@@ -179,7 +179,6 @@ export default class GameRenderer {
     this.sceneManager.moveCameraForScene();
   }
 
-
   renderModels() {
     this.transitionManager = new TransitionManager(this.renderer);
 
