@@ -414,7 +414,7 @@ export class ArmyMovementManager {
   };
 }
 
-export const getRemainingCapacity = (
+const getRemainingCapacity = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
   capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>,
   armyWeight: ComponentValue<ClientComponents["Weight"]["schema"]>,
@@ -429,11 +429,11 @@ export const getArmyTotalCapacity = (
   return capacity.weight_gram * getArmyNumberOfTroops(army);
 };
 
-export const getArmyWeight = (weight: ComponentValue<ClientComponents["Weight"]["schema"]>) => {
+const getArmyWeight = (weight: ComponentValue<ClientComponents["Weight"]["schema"]>) => {
   return weight.value / BigInt(EternumGlobalConfig.resources.resourcePrecision);
 };
 
-export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
+const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
   const knights = army.troops.knight_count || 0n;
   const crossbowmen = army.troops.crossbowman_count || 0n;
   const paladins = army.troops.paladin_count || 0n;
