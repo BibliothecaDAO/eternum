@@ -49,12 +49,14 @@ export const ActionInfo = () => {
             isExplored={isExplored}
             travelLength={travelPath!.path.length - 1}
           />
-          <div className="flex flex-row text-xs ml-1">
-            <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
-            <div className="flex flex-col p-1 text-xs">
-              <div>+{EternumGlobalConfig.exploration.reward} Random resource</div>
+          {!isExplored && (
+            <div className="flex flex-row text-xs ml-1">
+              <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
+              <div className="flex flex-col p-1 text-xs">
+                <div>+{EternumGlobalConfig.exploration.reward} Random resource</div>
+              </div>
             </div>
-          </div>
+          )}
         </BaseThreeTooltip>
       )}
     </>
