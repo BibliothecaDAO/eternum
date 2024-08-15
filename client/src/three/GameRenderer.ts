@@ -37,7 +37,7 @@ export default class GameRenderer {
     if (scene === this.sceneManager.getCurrentScene()) {
       this.sceneManager.moveCameraForScene();
     } else {
-      this.switchScene(scene as SceneName);
+      this.sceneManager.switchScene(scene as SceneName);
     }
   };
 
@@ -104,7 +104,7 @@ export default class GameRenderer {
     const changeSceneFolder = GUIManager.addFolder("Switch scene");
     const changeSceneParams = { scene: SceneName.WorldMap };
     changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
-    changeSceneFolder.add({ switchScene: () => this.switchScene(changeSceneParams.scene) }, "switchScene");
+    changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
     // Add new button for moving camera to specific col and row
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
@@ -202,17 +202,12 @@ export default class GameRenderer {
         break;
       case "Escape":
         if (this.sceneManager?.getCurrentScene() === SceneName.Hexception) {
-          this.switchScene(SceneName.WorldMap);
+          this.sceneManager.switchScene(SceneName.WorldMap);
         }
         break;
       default:
         break;
     }
-  }
-
-  switchScene(sceneName: SceneName) {
-    this.sceneManager.switchScene(sceneName);
-    this.sceneManager.moveCameraForScene();
   }
 
   onWindowResize() {

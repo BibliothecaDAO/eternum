@@ -50,7 +50,6 @@ export const TopMiddleNavigation = () => {
 
   const realmEntityId = useUIStore((state) => state.realmEntityId);
   const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
@@ -74,12 +73,9 @@ export const TopMiddleNavigation = () => {
 
     const url = new Position(structure!.position).toHexLocationUrl();
 
-    setIsLoadingScreenEnabled(true);
-    setTimeout(() => {
-      setLocation(url);
-      window.dispatchEvent(new Event("urlChanged"));
-      setRealmEntityId(entityId);
-    }, 300);
+    setLocation(url);
+    window.dispatchEvent(new Event("urlChanged"));
+    setRealmEntityId(entityId);
   };
 
   const goToMapView = (entityId?: ID) => {
@@ -91,16 +87,13 @@ export const TopMiddleNavigation = () => {
 
     const url = new Position({ x: newPosition.x, y: newPosition.y }).toMapLocationUrl();
 
-    setIsLoadingScreenEnabled(true);
-    setTimeout(() => {
-      setPreviewBuilding(null);
-      if (entityId) {
-        setRealmEntityId(entityId);
-      }
+    setPreviewBuilding(null);
+    if (entityId) {
+      setRealmEntityId(entityId);
+    }
 
-      setLocation(url);
-      window.dispatchEvent(new Event("urlChanged"));
-    }, 300);
+    setLocation(url);
+    window.dispatchEvent(new Event("urlChanged"));
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);

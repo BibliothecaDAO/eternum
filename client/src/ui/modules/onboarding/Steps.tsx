@@ -400,7 +400,7 @@ const NavigateToRealm = ({ text }: { text: string }) => {
           setLocation(url);
           window.dispatchEvent(new Event("urlChanged"));
           window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-        }, 300);
+        }, 250);
       }}
     >
       {text}

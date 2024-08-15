@@ -205,3 +205,13 @@ h6 {
   background-size: 100% 100%;
   animation: slideBackground 30s linear infinite;
 }
+
+#root {
+  position: relative;
+  z-index: 2;
+}
+
+canvas {
+  position: relative;
+  z-index: 1;
+}

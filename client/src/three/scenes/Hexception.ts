@@ -147,6 +147,7 @@ export default class HexceptionScene extends HexagonScene {
     );
 
     this.updateHexceptionGrid(4);
+    this.moveCameraToURLLocation();
   }
 
   protected onHexagonClick(hexCoords: HexPosition): void {

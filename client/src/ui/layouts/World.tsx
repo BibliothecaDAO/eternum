@@ -23,10 +23,12 @@ import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { Transactions } from "../modules/transactions/Transactions";
 import { Onboarding } from "./Onboarding";
+import clsx from "clsx";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const realmEntityIds = useUIStore((state) => state.realmEntityIds);
 
   const showModal = useUIStore((state) => state.showModal);
@@ -56,6 +58,14 @@ export const World = () => {
       id="world"
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
     >
+      <div
+        className={clsx(
+          "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-black duration-300 transition-opacity",
+          isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
+        )}
+      >
+        <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
+      </div>
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
       <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />

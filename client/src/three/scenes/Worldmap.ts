@@ -222,7 +222,9 @@ export default class WorldmapScene extends HexagonScene {
     this.structurePreview?.clearPreviewStructure();
   }
 
-  setup() {}
+  setup() {
+    this.moveCameraToURLLocation();
+  }
 
   public async updateExploredHex(update: TileSystemUpdate) {
     const col = update.hexCoords.col - FELT_CENTER;
