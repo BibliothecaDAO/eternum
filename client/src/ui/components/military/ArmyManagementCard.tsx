@@ -357,12 +357,7 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
       size="xs"
       onClick={() => {
         setLocation(url);
-        if (location === "/map") {
-          window.dispatchEvent(new Event("urlChanged"));
-        } else {
-          setIsLoadingScreenEnabled(true);
-          window.dispatchEvent(new Event("urlChanged"));
-        }
+        window.dispatchEvent(new Event("urlChanged"));
       }}
     >
       <span>map</span>

@@ -1,46 +1,21 @@
 import * as THREE from "three";
+import useUIStore from "@/hooks/store/useUIStore";
 
-const FADE_DURATION = 500;
+const FADE_DURATION = 300;
 
 export class TransitionManager {
   constructor(private renderer: THREE.WebGLRenderer) {}
 
   fadeOut(onComplete: () => void) {
-    let opacity = 1;
-    const startTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      opacity = 1 - Math.min(elapsed / FADE_DURATION, 1);
-      this.renderer.domElement.style.opacity = opacity.toString();
-
-      if (elapsed < FADE_DURATION) {
-        requestAnimationFrame(animate);
-      } else {
-        this.renderer.domElement.style.opacity = "0";
-        onComplete();
-      }
-    };
-
-    requestAnimationFrame(animate);
+    const { setIsLoadingScreenEnabled } = useUIStore.getState();
+    setIsLoadingScreenEnabled(true);
+    setTimeout(() => {
+      onComplete();
+    }, FADE_DURATION);
   }
 
   fadeIn() {
-    let opacity = 0;
-    const startTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      opacity = Math.min(elapsed / FADE_DURATION, 1);
-      this.renderer.domElement.style.opacity = opacity.toString();
-
-      if (elapsed < FADE_DURATION) {
-        requestAnimationFrame(animate);
-      } else {
-        this.renderer.domElement.style.opacity = "1";
-      }
-    };
-
-    requestAnimationFrame(animate);
+    const { setIsLoadingScreenEnabled } = useUIStore.getState();
+    setIsLoadingScreenEnabled(false);
   }
 }

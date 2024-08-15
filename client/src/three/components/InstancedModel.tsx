@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
 
 const BIG_DETAILS_NAME = "big_details";
+const BUILDING_NAME = "building";
 const LAND_NAME = "land";
 const SMALL_DETAILS_NAME = "small_details";
 
@@ -13,7 +14,6 @@ export default class InstancedModel {
   constructor(model: THREE.Group, count: number, enableRaycast: boolean = false) {
     this.group = new THREE.Group();
     this.count = count;
-
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
@@ -21,6 +21,11 @@ export default class InstancedModel {
         if (child.name.includes(BIG_DETAILS_NAME) || child.parent?.name.includes(BIG_DETAILS_NAME)) {
           tmp.castShadow = true;
           tmp.name = BIG_DETAILS_NAME;
+        }
+
+        if (child.name.includes(BUILDING_NAME) || child.parent?.name.includes(BUILDING_NAME)) {
+          tmp.castShadow = true;
+          tmp.name = BUILDING_NAME;
         }
 
         if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
@@ -95,6 +100,12 @@ export default class InstancedModel {
         child.count = count;
       }
     });
+    this.needsUpdate();
+  }
+
+  removeInstance(index: number) {
+    console.log("remove instance");
+    this.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
     this.needsUpdate();
   }
 

@@ -17,7 +17,6 @@ import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
-import { GUIManager } from "../helpers/GUIManager";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
@@ -62,9 +61,6 @@ export default class WorldmapScene extends HexagonScene {
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
     this.biome = new Biome();
-
-    this.scene.background = new THREE.Color(0x8790a1);
-    GUIManager.addColor(this.scene, "background");
 
     this.structurePreview = new StructurePreview(this.scene);
     this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
@@ -226,7 +222,9 @@ export default class WorldmapScene extends HexagonScene {
     this.structurePreview?.clearPreviewStructure();
   }
 
-  setup() {}
+  setup() {
+    this.moveCameraToURLLocation();
+  }
 
   public async updateExploredHex(update: TileSystemUpdate) {
     const col = update.hexCoords.col - FELT_CENTER;

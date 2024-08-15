@@ -54,7 +54,7 @@ importers:
         version: 4.5.3
       langchain:
         specifier: '^0.2.7 '
-        version: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0)
+        version: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0)
       node-cron:
         specifier: ^3.0.3
         version: 3.0.3
@@ -10022,13 +10022,13 @@ snapshots:
 
   '@kamilkisiela/fast-url-parser@1.1.4': {}
 
-  '@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))':
+  '@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))':
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.12
-      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       ml-distance: 4.0.1
       mustache: 4.2.0
       p-queue: 6.6.2
@@ -10040,9 +10040,9 @@ snapshots:
       - langchain
       - openai
 
-  '@langchain/openai@0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))':
+  '@langchain/openai@0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))':
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       js-tiktoken: 1.0.12
       openai: 4.53.2(encoding@0.1.13)
       zod: 3.23.8
@@ -10051,9 +10051,9 @@ snapshots:
       - encoding
       - langchain
 
-  '@langchain/textsplitters@0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))':
+  '@langchain/textsplitters@0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))':
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       js-tiktoken: 1.0.12
     transitivePeerDependencies:
       - langchain
@@ -13959,17 +13959,17 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0):
+  langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0):
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
-      '@langchain/openai': 0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))
-      '@langchain/textsplitters': 0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/openai': 0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))
+      '@langchain/textsplitters': 0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       binary-extensions: 2.3.0
       js-tiktoken: 1.0.12
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
       langchainhub: 0.0.11
-      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       ml-distance: 4.0.1
       openapi-types: 12.1.3
       p-retry: 4.6.2
@@ -13983,14 +13983,14 @@ snapshots:
       fast-xml-parser: 4.4.1
       ignore: 5.3.1
       jsdom: 24.1.0
-      ws: 8.18.0
+      ws: 8.13.0
     transitivePeerDependencies:
       - encoding
       - openai
 
   langchainhub@0.0.11: {}
 
-  langsmith@0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)):
+  langsmith@0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)):
     dependencies:
       '@types/uuid': 9.0.8
       commander: 10.0.1
@@ -13998,8 +13998,8 @@ snapshots:
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
-      langchain: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0)
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
+      langchain: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0)
       openai: 4.53.2(encoding@0.1.13)
 
   leva@0.9.35(@types/react-dom@18.3.0)(@types/react@18.2.74)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
