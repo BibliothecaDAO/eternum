@@ -159,6 +159,14 @@ export default class GameRenderer {
         }
       }, 30),
     );
+    this.controls.keys = {
+      LEFT: "KeyA",
+      UP: "KeyW",
+      RIGHT: "KeyD",
+      BOTTOM: "KeyS",
+    };
+    this.controls.keyPanSpeed = 75.0;
+    this.controls.listenToKeyEvents(document.body);
 
     this.renderModels();
 
