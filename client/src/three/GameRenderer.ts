@@ -59,7 +59,7 @@ export default class GameRenderer {
       antialias: true,
     });
     this.renderer.setPixelRatio(1);
-    this.renderer.shadowMap.enabled = false;
+    this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -84,8 +84,11 @@ export default class GameRenderer {
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
 
-    GUIManager.add(this, "switchScene");
-
+    const changeSceneFolder = GUIManager.addFolder("Switch scene");
+    const changeSceneParams = { scene: SceneName.WorldMap };
+    changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
+    changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
+    changeSceneFolder.close();
     // Add new button for moving camera to specific col and row
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
     const moveCameraParams = { col: 0, row: 0 };
@@ -99,7 +102,7 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
-
+    moveCameraFolder.close();
     // Create an instance of CSS2DRenderer
     this.labelRenderer = new CSS2DRenderer();
     this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -139,6 +142,14 @@ export default class GameRenderer {
         }
       }, 30),
     );
+    this.controls.keys = {
+      LEFT: "KeyA",
+      UP: "KeyW",
+      RIGHT: "KeyD",
+      BOTTOM: "KeyS",
+    };
+    this.controls.keyPanSpeed = 75.0;
+    this.controls.listenToKeyEvents(document.body);
 
     this.renderModels();
 
@@ -162,6 +173,12 @@ export default class GameRenderer {
       this.switchScene(scene as SceneName);
     }
   };
+
+  switchScene(sceneName: SceneName) {
+    this.sceneManager.switchScene(sceneName);
+    this.sceneManager.moveCameraForScene();
+  }
+
 
   renderModels() {
     this.transitionManager = new TransitionManager(this.renderer);
@@ -191,17 +208,12 @@ export default class GameRenderer {
         break;
       case "Escape":
         if (this.sceneManager?.getCurrentScene() === SceneName.Hexception) {
-          this.switchScene(SceneName.WorldMap);
+          this.sceneManager.switchScene(SceneName.WorldMap);
         }
         break;
       default:
         break;
     }
-  }
-
-  switchScene(sceneName: SceneName) {
-    this.sceneManager.switchScene(sceneName);
-    this.sceneManager.moveCameraForScene();
   }
 
   onWindowResize() {

@@ -1,7 +1,7 @@
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
-import { buildingModelPaths } from "../scenes/constants";
+import { buildingModelPaths, PREVIEW_BUILD_COLOR_VALID } from "../scenes/constants";
 
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
@@ -23,7 +23,7 @@ export class BuildingPreview {
             model.position.set(0, -100, 0);
             gltf.scene.traverse((child: any) => {
               if (child.isMesh) {
-                child.material.color.set(0x00ff00);
+                child.material.color.set(PREVIEW_BUILD_COLOR_VALID);
                 child.material.transparent = true;
                 child.material.opacity = 0.75;
               }
@@ -97,6 +97,6 @@ export class BuildingPreview {
   }
 
   public resetBuildingColor() {
-    this.setBuildingColor(new THREE.Color(0x00ff00));
+    this.setBuildingColor(new THREE.Color(PREVIEW_BUILD_COLOR_VALID));
   }
 }

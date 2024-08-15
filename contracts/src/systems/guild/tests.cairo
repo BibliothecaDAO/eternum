@@ -30,6 +30,7 @@ fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
     let world = spawn_eternum();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     world.uuid();
 
     let guild_systems_address = deploy_system(world, guild_systems::TEST_CLASS_HASH);
@@ -39,6 +40,7 @@ fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
     let name_systems_dispatcher = INameSystemsDispatcher { contract_address: name_systems_address };
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     name_systems_dispatcher.set_address_name('Player2Name');
 
     (world, guild_systems_dispatcher)
@@ -50,6 +52,7 @@ fn test_create_guild() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
@@ -75,6 +78,7 @@ fn test_create_multiple_guilds() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
     guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
@@ -87,10 +91,12 @@ fn test_join_guild() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
 
     guild_systems_dispatcher.join_guild(guild_entity_id);
 
@@ -108,12 +114,15 @@ fn test_join_guild_when_already_member() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
 }
 
@@ -124,9 +133,11 @@ fn test_join_private_guild_not_whitelisted() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
 }
 
@@ -138,11 +149,13 @@ fn test_whitelist_player() {
     let player2_address = contract_address_const::<'player2'>();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(player2_address, guild_entity_id);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
 }
 
@@ -153,9 +166,11 @@ fn test_whitelist_player_as_not_owner() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
 }
 
@@ -165,9 +180,11 @@ fn test_leave_guild() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
 
     guild_systems_dispatcher.leave_guild();
@@ -182,6 +199,7 @@ fn test_leave_guild_as_owner() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.leave_guild();
@@ -196,11 +214,14 @@ fn test_leave_guild_with_members_as_owner() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
     guild_systems_dispatcher.leave_guild();
 }
@@ -212,6 +233,7 @@ fn test_leave_guild_not_member() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.leave_guild();
 }
 
@@ -222,6 +244,7 @@ fn test_empty_guild_name() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
     guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), '');
 }
@@ -233,6 +256,7 @@ fn test_whitelist_wrong_address() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'NotAPlayer'>(), guild_entity_id);
@@ -244,12 +268,15 @@ fn test_transfer_guild_ownership() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.transfer_guild_ownership(guild_entity_id, contract_address_const::<'player2'>());
 
     let guild_owner = get!(world, guild_entity_id, Owner);
@@ -264,12 +291,15 @@ fn test_transfer_guild_ownership_not_guild_member() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.transfer_guild_ownership(guild_entity_id, contract_address_const::<'player2'>());
 }
 
@@ -279,12 +309,15 @@ fn test_remove_guild_member() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.join_guild(guild_entity_id);
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.remove_guild_member(contract_address_const::<'player2'>());
 }
 
@@ -295,6 +328,7 @@ fn test_remove_guild_member_not_guild_member() {
     let (_, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     guild_systems_dispatcher.remove_guild_member(contract_address_const::<'player2'>());
@@ -306,6 +340,7 @@ fn test_remove_self_from_whitelist() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
@@ -315,6 +350,7 @@ fn test_remove_self_from_whitelist() {
     );
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
     assert(
         get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == false,
@@ -328,6 +364,7 @@ fn test_remove_from_whitelist_as_owner() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
@@ -350,6 +387,7 @@ fn test_remove_from_whitelist_not_whitelisted() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
@@ -366,6 +404,7 @@ fn test_remove_from_whitelist_as_random() {
     let (world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
@@ -375,6 +414,12 @@ fn test_remove_from_whitelist_as_random() {
     );
 
     starknet::testing::set_contract_address(contract_address_const::<'player3'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player3'>());
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
+
+    assert(
+        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == false,
+        'Whitelisted not removed'
+    );
 }

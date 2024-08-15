@@ -391,6 +391,7 @@ fn test_liquidity_no_drain() {
 
     // another player adds liquidity
     starknet::testing::set_contract_address(contract_address_const::<'player3'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player3'>());
     let player3 = starknet::get_contract_address();
 
     // get current reserves

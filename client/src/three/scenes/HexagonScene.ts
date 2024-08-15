@@ -9,6 +9,7 @@ import { GUIManager } from "../helpers/GUIManager";
 import { LocationManager } from "../helpers/LocationManager";
 import { SceneManager } from "../SceneManager";
 
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import _, { throttle } from "lodash";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
@@ -16,7 +17,6 @@ import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
 import { biomeModelPaths, HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "./constants";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 
 export abstract class HexagonScene {
   protected scene: THREE.Scene;
@@ -54,14 +54,15 @@ export abstract class HexagonScene {
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.scene.background = new THREE.Color(0x8790a1);
     this.GUIFolder.addColor(this.scene, "background");
+    this.GUIFolder.close();
 
-    const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
-    const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light");
-    hemisphereLightFolder.addColor(hemisphereLight, "color");
-    hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
-    hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
+    const hemisphereLightFolder = this.GUIFolder.addFolder("Hemisphere Light");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "color");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "groundColor");
+    hemisphereLightFolder.add(this.hemisphereLight, "intensity", 0, 3, 0.1);
     hemisphereLightFolder.close();
-    this.scene.add(hemisphereLight);
+    this.scene.add(this.hemisphereLight);
 
     this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
     this.mainDirectionalLight.castShadow = true;
@@ -76,16 +77,17 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
 
-    const shadowFolder = GUIManager.addFolder("Shadow");
+    const shadowFolder = this.GUIFolder.addFolder("Shadow");
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.001, 0.001, 0.0001);
     shadowFolder.close();
 
-    const directionalLightFolder = GUIManager.addFolder("Directional Light");
+    const directionalLightFolder = this.GUIFolder.addFolder("Directional Light");
     directionalLightFolder.addColor(this.mainDirectionalLight, "color");
     directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);

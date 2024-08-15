@@ -1,15 +1,16 @@
-import useUIStore from "@/hooks/store/useUIStore";
-import { ID } from "@bibliothecadao/eternum";
-import { useState, useEffect } from "react";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
-import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
-import Button from "@/ui/elements/Button";
 import { TileManager } from "@/dojo/modelManager/TileManager";
-import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
-import { ResourceMiningTypes } from "@/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { ResourceMiningTypes } from "@/types";
+import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
+import Button from "@/ui/elements/Button";
+import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
+import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { useEffect, useState } from "react";
+import { View } from "../navigation/LeftNavigationModule";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
@@ -20,8 +21,11 @@ export const BuildingEntityDetails = () => {
   const [canBeDestroyed, setCanBeDestroyed] = useState<boolean>(false);
   const { playerRealms } = useEntities();
 
-  // const selectedBuildingEntityId = useUIStore((state) => state.selectedBuildingEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
+  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+
+  const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
+  const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
 
   useEffect(() => {
     const building = getComponentValue(
@@ -43,10 +47,9 @@ export const BuildingEntityDetails = () => {
     }
   }, [selectedBuildingHex]);
 
-  const name = "Hello";
-
   const destroyButton = canBeDestroyed && selectedBuildingHex && (
     <Button
+      key="destroy-button"
       onClick={() => {
         const tileManager = new TileManager(dojo.setup, {
           col: selectedBuildingHex.outerCol,
@@ -58,10 +61,11 @@ export const BuildingEntityDetails = () => {
           (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge ||
             ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)
         ) {
-          // playDestroyStone();
+          playDestroyStone();
         } else {
-          // playDestroyWooden();
+          playDestroyWooden();
         }
+        setLeftNavigationView(View.None);
       }}
       variant="danger"
       className="mt-3"

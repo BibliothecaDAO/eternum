@@ -32,7 +32,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-black/50 rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground bg-hex-bg ">
+      <div className="self-center bg-black/75 rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground bg-hex-bg ">
         {children}
       </div>
     </motion.div>
@@ -191,10 +191,17 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
             <div className="flex space-x-2 py-2">
               <ListSelect
                 title="Active Account: "
-                options={list().map((account) => ({
-                  id: account.address,
-                  label: <div className="w-[225px]">{displayAddress(account.address)}</div>,
-                }))}
+                options={list().map((account) => {
+                  const addressName = getAddressName(ContractAddress(account.address));
+                  return {
+                    id: account.address,
+                    label: (
+                      <div className="w-[225px]">{`${addressName || "unknown"} (${displayAddress(
+                        account.address,
+                      )})`}</div>
+                    ),
+                  };
+                })}
                 value={account.address}
                 onChange={select}
               />
@@ -393,7 +400,7 @@ const NavigateToRealm = ({ text }: { text: string }) => {
           setLocation(url);
           window.dispatchEvent(new Event("urlChanged"));
           window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-        }, 300);
+        }, 250);
       }}
     >
       {text}

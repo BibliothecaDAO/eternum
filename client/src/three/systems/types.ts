@@ -1,6 +1,7 @@
 import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { ID, StructureType } from "@bibliothecadao/eternum";
+import { StructureProgress } from "../scenes/constants";
 
 export type ArmySystemUpdate = {
   entityId: ID;
@@ -15,6 +16,7 @@ export type StructureSystemUpdate = {
   hexCoords: HexPosition;
   structureType: StructureType;
   isMine: boolean;
+  stage: StructureProgress;
 };
 
 export type TileSystemUpdate = {

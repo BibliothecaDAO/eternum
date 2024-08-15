@@ -36,6 +36,7 @@ mod travel_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct Travel {
         #[key]
         destination_coord_x: u32,

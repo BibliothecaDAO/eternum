@@ -50,6 +50,19 @@ export const ResourceChip = ({
 
   const [displayBalance, setDisplayBalance] = useState(balance);
 
+  const icon = useMemo(
+    () => (
+      <ResourceIcon
+        isLabor={isLabor}
+        withTooltip={false}
+        resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
+        size="sm"
+        className="mr-3 self-center"
+      />
+    ),
+    [resourceId],
+  );
+
   useEffect(() => {
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
@@ -77,14 +90,7 @@ export const ResourceChip = ({
         setTooltip(null);
       }}
     >
-      <ResourceIcon
-        isLabor={isLabor}
-        withTooltip={false}
-        resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
-        size="sm"
-        className="mr-3 self-center"
-      />
-
+      {icon}
       <div className="flex justify-between w-full">
         <div className=" self-center text-sm font-bold">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}

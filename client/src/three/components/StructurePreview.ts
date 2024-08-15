@@ -1,7 +1,7 @@
 import { StructureType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
-import { StructureModelPaths } from "../scenes/constants";
+import { PREVIEW_BUILD_COLOR_VALID, StructureModelPaths } from "../scenes/constants";
 
 export class StructurePreview {
   private previewStructure: { type: StructureType; resource?: ResourcesIds } | null = null;
@@ -15,34 +15,39 @@ export class StructurePreview {
   private loadStructureModels() {
     const loader = new GLTFLoader();
 
-    for (const [building, path] of Object.entries(StructureModelPaths)) {
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          path,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-            model.position.set(0, -100, 0);
-            gltf.scene.traverse((child: any) => {
-              if (child.isMesh) {
-                child.material.color.set(0x00ff00);
-                child.material.transparent = true;
-                child.material.opacity = 0.75;
-              }
-            });
-            this.structureModels.set(parseInt(building), model);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`Error loading ${building} model:`, error);
-            reject(error);
-          },
-        );
+    for (const [building, paths] of Object.entries(StructureModelPaths)) {
+      const loadPromises = paths.map((path) => {
+        return this.loadModel(building, path, loader);
       });
-      this.modelLoadPromises.push(loadPromise);
+      this.modelLoadPromises.push(...loadPromises);
     }
-
     Promise.all(this.modelLoadPromises).then(() => {});
+  }
+
+  private loadModel(building: string, path: string, loader: GLTFLoader): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      loader.load(
+        path,
+        (gltf) => {
+          const model = gltf.scene as THREE.Group;
+          model.position.set(0, -100, 0);
+          gltf.scene.traverse((child: any) => {
+            if (child.isMesh) {
+              child.material.color.set(PREVIEW_BUILD_COLOR_VALID);
+              child.material.transparent = true;
+              child.material.opacity = 0.75;
+            }
+          });
+          this.structureModels.set(parseInt(building), model);
+          resolve();
+        },
+        undefined,
+        (error) => {
+          console.error(`An error occurred while loading the ${[building]} model:`, error);
+          reject(error);
+        },
+      );
+    });
   }
 
   public getStructureModel(structure: StructureType): THREE.Group | null {
@@ -98,6 +103,6 @@ export class StructurePreview {
   }
 
   public resetStructureColor() {
-    this.setStructureColor(new THREE.Color(0x00ff00));
+    this.setStructureColor(new THREE.Color(PREVIEW_BUILD_COLOR_VALID));
   }
 }

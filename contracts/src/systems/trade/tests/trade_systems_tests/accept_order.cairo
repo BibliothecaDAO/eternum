@@ -91,12 +91,14 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }));
     set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
     if direct_trade {
         taker_id
     } else {
@@ -191,6 +193,7 @@ fn test_not_trade_taker_id() {
 
     // create order with a caller that isnt the owner of maker_id
     starknet::testing::set_contract_address(contract_address_const::<'takers_other_realm'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'takers_other_realm'>());
 
     // accept order
     trade_systems_dispatcher
@@ -210,6 +213,7 @@ fn test_caller_not_taker() {
 
     // create order with a caller that isnt the owner of taker_id
     starknet::testing::set_contract_address(contract_address_const::<'some_unknown'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'some_unknown'>());
 
     // accept order
     trade_systems_dispatcher
@@ -235,6 +239,7 @@ fn test_transport_not_enough_donkey_capacity() {
     set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
 
     starknet::testing::set_contract_address(contract_address_const::<'taker'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'taker'>());
 
     // accept order
     trade_systems_dispatcher

@@ -3,6 +3,7 @@ import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
+import { GUIManager } from "../helpers/GUIManager";
 import { BattleSystemUpdate } from "../systems/types";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
@@ -43,6 +44,42 @@ export class BattleManager {
         },
       );
     });
+
+    const createBattleFolder = GUIManager.addFolder("Create Battle");
+    const createBattleParams = { entityId: 0, col: 0, row: 0 };
+
+    createBattleFolder.add(createBattleParams, "entityId").name("Entity ID");
+    createBattleFolder.add(createBattleParams, "col").name("Column");
+    createBattleFolder.add(createBattleParams, "row").name("Row");
+    createBattleFolder
+      .add(
+        {
+          addBattle: () => {
+            this.addBattle(
+              createBattleParams.entityId,
+              new Position({ x: createBattleParams.col, y: createBattleParams.row }),
+            );
+          },
+        },
+        "addBattle",
+      )
+      .name("Add battle");
+    createBattleFolder.close();
+
+    const deleteBattleFolder = GUIManager.addFolder("Delete Battle");
+    const deleteBattleParams = { entityId: 0 };
+    deleteBattleFolder.add(deleteBattleParams, "entityId").name("Entity ID");
+    deleteBattleFolder
+      .add(
+        {
+          deleteBattle: () => {
+            this.removeBattle(deleteBattleParams.entityId);
+          },
+        },
+        "deleteBattle",
+      )
+      .name("Delete battle");
+    deleteBattleFolder.close();
   }
 
   async onUpdate(update: BattleSystemUpdate) {

@@ -18,7 +18,6 @@ import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { Position } from "@/types/Position";
@@ -26,6 +25,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -50,7 +50,6 @@ export const TopMiddleNavigation = () => {
 
   const realmEntityId = useUIStore((state) => state.realmEntityId);
   const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
@@ -74,12 +73,9 @@ export const TopMiddleNavigation = () => {
 
     const url = new Position(structure!.position).toHexLocationUrl();
 
-    setIsLoadingScreenEnabled(true);
-    setTimeout(() => {
-      setLocation(url);
-      window.dispatchEvent(new Event("urlChanged"));
-      setRealmEntityId(entityId);
-    }, 300);
+    setLocation(url);
+    window.dispatchEvent(new Event("urlChanged"));
+    setRealmEntityId(entityId);
   };
 
   const goToMapView = (entityId?: ID) => {
@@ -91,16 +87,13 @@ export const TopMiddleNavigation = () => {
 
     const url = new Position({ x: newPosition.x, y: newPosition.y }).toMapLocationUrl();
 
-    setIsLoadingScreenEnabled(true);
-    setTimeout(() => {
-      setPreviewBuilding(null);
-      if (entityId) {
-        setRealmEntityId(entityId);
-      }
+    setPreviewBuilding(null);
+    if (entityId) {
+      setRealmEntityId(entityId);
+    }
 
-      setLocation(url);
-      window.dispatchEvent(new Event("urlChanged"));
-    }, 300);
+    setLocation(url);
+    window.dispatchEvent(new Event("urlChanged"));
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -117,18 +110,11 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className=" bg-black/60 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
+    <div className=" bg-black/75 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />
         </div>
-
-        {location === "/map" && (
-          <Eye
-            className="fill-gold/50 h-6 w-6 my-auto ml-3 animate-slow transition-all hover:fill-gold hover:scale-125"
-            onClick={() => goToMapView()}
-          />
-        )}
 
         <div className="flex min-w-96 gap-1  clip-angled   py-2 px-4 text-gold bg-map   justify-center border-gold/50 text-center ">
           <div className="self-center flex justify-between w-full">
@@ -156,6 +142,12 @@ export const TopMiddleNavigation = () => {
                 ))}
               </SelectContent>
             </Select>
+            {location === "/map" && (
+              <ViewOnMapIcon
+                className="my-auto m-4 w-7 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                position={{ x: hexPosition.col, y: hexPosition.row }}
+              />
+            )}
           </div>
           <Button
             variant="primary"

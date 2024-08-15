@@ -22,9 +22,8 @@ export class SceneManager {
   switchScene(sceneName: SceneName) {
     const scene = this.scenes.get(sceneName);
     if (scene) {
-      this._updateCurrentScene(sceneName);
-
       this.transitionManager.fadeOut(() => {
+        this._updateCurrentScene(sceneName);
         if (scene.setup) {
           scene.setup();
         }

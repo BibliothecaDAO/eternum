@@ -15,12 +15,12 @@ const MAX_INSTANCES = 1000;
 
 export class StructureManager {
   private scene: THREE.Scene;
-  private structureModels: Map<StructureType, InstancedModel> = new Map();
+  private structureModels: Map<StructureType, InstancedModel[]> = new Map();
   private labelManagers: Map<StructureType, LabelManager> = new Map();
   private dummy: THREE.Object3D = new THREE.Object3D();
-  modelLoadPromises: Promise<void>[] = [];
+  modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
-  structuresMap: Map<number, Set<number>> = new Map();
+  structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
 
   constructor(scene: THREE.Scene) {
@@ -31,54 +31,64 @@ export class StructureManager {
   public async loadModels() {
     const loader = new GLTFLoader();
 
-    for (const [key, modelPath] of Object.entries(StructureModelPaths)) {
+    for (const [key, modelPaths] of Object.entries(StructureModelPaths)) {
       const structureType = StructureType[key as keyof typeof StructureType];
 
       if (structureType === undefined) continue;
-      if (!modelPath) continue;
+      if (!modelPaths || modelPaths.length === 0) continue;
 
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          modelPath,
-          (gltf) => {
-            const model = gltf.scene as THREE.Group;
-
-            const instancedModel = new InstancedModel(model, MAX_INSTANCES);
-            instancedModel.setCount(0);
-            this.structureModels.set(structureType, instancedModel);
-            this.scene.add(instancedModel.group);
-
-            const labelManager = new LabelManager(
-              StructureLabelPaths[StructureType[structureType] as unknown as StructureType],
-            );
-            this.labelManagers.set(structureType, labelManager);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`An error occurred while loading the ${StructureType[structureType as any]} model:`, error);
-            reject(error);
-          },
-        );
+      const loadPromises = modelPaths.map((modelPath) => {
+        return new Promise<InstancedModel>((resolve, reject) => {
+          loader.load(
+            modelPath,
+            (gltf) => {
+              const model = gltf.scene as THREE.Group;
+              const instancedModel = new InstancedModel(model, MAX_INSTANCES);
+              instancedModel.setCount(0);
+              resolve(instancedModel);
+            },
+            undefined,
+            (error) => {
+              console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
+              reject(error);
+            },
+          );
+        });
       });
-      this.modelLoadPromises.push(loadPromise);
+
+      Promise.all(loadPromises)
+        .then((instancedModels) => {
+          this.structureModels.set(structureType, instancedModels);
+          instancedModels.forEach((model) => this.scene.add(model.group));
+
+          const labelManager = new LabelManager(
+            StructureLabelPaths[StructureType[structureType] as unknown as StructureType],
+          );
+          this.labelManagers.set(structureType, labelManager);
+        })
+        .catch((error) => {
+          console.error(`Failed to load models for ${StructureType[structureType]}:`, error);
+        });
+
+      this.modelLoadPromises.push(...loadPromises);
     }
   }
 
   async onUpdate(update: StructureSystemUpdate) {
     await Promise.all(this.modelLoadPromises);
 
-    const { entityId, hexCoords, isMine, structureType } = update;
+    const { entityId, hexCoords, isMine, structureType, stage } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
+
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
-    if (!this.structuresMap.has(normalizedCoord.col)) {
-      this.structuresMap.set(normalizedCoord.col, new Set());
+    if (!this.structureHexCoords.has(normalizedCoord.col)) {
+      this.structureHexCoords.set(normalizedCoord.col, new Set());
     }
-    if (!this.structuresMap.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
-      this.structuresMap.get(normalizedCoord.col)!.add(normalizedCoord.row);
+    if (!this.structureHexCoords.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
+      this.structureHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
       this.totalStructures++;
     }
 
@@ -88,14 +98,18 @@ export class StructureManager {
     const index = this.structures.addStructure(entityId, key);
 
     if (this.structureModels) {
-      const modelType = this.structureModels.get(key);
-      modelType?.setMatrixAt(index, this.dummy.matrix);
-      modelType?.setCount(this.structures.getCountForType(key)); // Set the count to the current number of structures
+      const models = this.structureModels.get(key);
+      if (models && models.length > 0) {
+        const modelType = models[stage];
 
-      // Add label on top of the structure with appropriate color
-      const labelColor = isMine ? myColor : neutralColor;
-      const label = this.labelManagers.get(key)?.createLabel(position as any, labelColor);
-      this.scene.add(label!);
+        modelType.setMatrixAt(index, this.dummy.matrix);
+        modelType.setCount(this.structures.getCountForType(key));
+
+        // Add label on top of the structure with appropriate color
+        const labelColor = isMine ? myColor : neutralColor;
+        const label = this.labelManagers.get(key)?.createLabel(position as any, labelColor);
+        this.scene.add(label!);
+      }
     }
   }
 }

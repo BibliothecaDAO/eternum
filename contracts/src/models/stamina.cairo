@@ -1,4 +1,4 @@
-use alexandria_data_structures::array_ext::ArrayImpl;
+use alexandria_data_structures::array_ext::ArrayTraitExt;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{

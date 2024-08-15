@@ -202,6 +202,7 @@ fn test_mint_starting_resources_as_not_realm() {
     let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
 
     starknet::testing::set_contract_address(contract_address_const::<'caller'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'caller'>());
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 

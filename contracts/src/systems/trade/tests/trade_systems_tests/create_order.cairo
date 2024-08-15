@@ -66,7 +66,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
 
     set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-
+    starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
@@ -81,6 +81,7 @@ fn test_create_order() {
 
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
     let trade_id = trade_systems_dispatcher
         .create_order(
             maker_id,
@@ -122,6 +123,7 @@ fn test_caller_not_maker() {
 
     // create order with a caller that isnt the owner of maker_id
     starknet::testing::set_contract_address(contract_address_const::<'some_unknown'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'some_unknown'>());
     trade_systems_dispatcher
         .create_order(
             maker_id,
@@ -146,6 +148,7 @@ fn test_transport_not_enough_capacity() {
 
     set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
     trade_systems_dispatcher
         .create_order(

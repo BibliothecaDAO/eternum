@@ -531,7 +531,7 @@ export const getArmyByEntityId = () => {
     )[0];
   };
 
-  const getArmy = (entity_id: ID) => {
+  const getArmy = (entity_id: ID): ArmyInfo | undefined => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
     return formatArmies(

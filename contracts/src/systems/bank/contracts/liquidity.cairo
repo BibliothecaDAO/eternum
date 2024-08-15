@@ -30,6 +30,7 @@ mod liquidity_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct LiquidityEvent {
         #[key]
         bank_entity_id: ID,

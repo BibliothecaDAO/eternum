@@ -17,10 +17,9 @@ import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
-import { GUIManager } from "../helpers/GUIManager";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
-import { HEX_SIZE } from "./constants";
+import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
 import { StructurePreview } from "../components/StructurePreview";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 
@@ -45,7 +44,7 @@ export default class WorldmapScene extends HexagonScene {
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
 
-  private realmEntityId: ID | null = null;
+  private realmEntityId: ID = 0;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -62,9 +61,6 @@ export default class WorldmapScene extends HexagonScene {
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
     this.biome = new Biome();
-
-    this.scene.background = new THREE.Color(0x8790a1);
-    GUIManager.addColor(this.scene, "background");
 
     this.structurePreview = new StructurePreview(this.scene);
     this.tileManager = new TileManager(this.dojo, { col: 0, row: 0 });
@@ -156,7 +152,7 @@ export default class WorldmapScene extends HexagonScene {
     this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
 
     if (!this._canBuildStructure(hexCoords)) {
-      this.structurePreview?.setStructureColor(new THREE.Color(0xff0000));
+      this.structurePreview?.setStructureColor(new THREE.Color(PREVIEW_BUILD_COLOR_INVALID));
     } else {
       this.structurePreview?.resetStructureColor();
     }
@@ -165,7 +161,7 @@ export default class WorldmapScene extends HexagonScene {
   private _canBuildStructure(hexCoords: HexPosition) {
     const contractPos = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
 
-    const isStructure = this.structureManager.structuresMap.get(hexCoords.col)?.has(hexCoords.row) || false;
+    const isStructure = this.structureManager.structureHexCoords.get(hexCoords.col)?.has(hexCoords.row) || false;
     const isExplored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) || false;
 
     const biomeType = this.biome.getBiome(contractPos.x, contractPos.y);
@@ -187,7 +183,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
       const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
-      this.tileManager.placeStructure(this.realmEntityId!, buildingType.type, normalizedHexCoords);
+      this.tileManager.placeStructure(this.realmEntityId, buildingType.type, normalizedHexCoords);
       this.clearEntitySelection();
     } else if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
@@ -226,7 +222,9 @@ export default class WorldmapScene extends HexagonScene {
     this.structurePreview?.clearPreviewStructure();
   }
 
-  setup() {}
+  setup() {
+    this.moveCameraToURLLocation();
+  }
 
   public async updateExploredHex(update: TileSystemUpdate) {
     const col = update.hexCoords.col - FELT_CENTER;
@@ -242,7 +240,7 @@ export default class WorldmapScene extends HexagonScene {
     const pos = getWorldPositionForHex({ row, col });
     dummy.position.copy(pos);
 
-    const isStructure = this.structureManager.structuresMap.get(col)?.has(row) || false;
+    const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
 
     if (isStructure) {
       dummy.scale.set(0, 0, 0);
@@ -356,7 +354,7 @@ export default class WorldmapScene extends HexagonScene {
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
 
-        const isStructure = this.structureManager.structuresMap.get(globalCol)?.has(globalRow) || false;
+        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
         if (isStructure || !isExplored || isBattle) {

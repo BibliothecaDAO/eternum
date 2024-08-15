@@ -26,13 +26,13 @@ sozo migrate apply
 
 
 if [[ "$setConfig" == "true" ]]; then
-    bun --env-file=../client/.env.local ../config/index.ts
-
     echo "----- Auth and World Contracts: Set 0.1s ----- "
     source scripts/env_variables.sh dev
     ./scripts/set_writer.sh --interval 0.1  --mode dev
+
+    bun --env-file=../client/.env.local ../config/index.ts
 fi
 
 echo "-----  Started indexer ----- "
 rm torii.db
-torii --world 0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357 --database torii.db --allowed-origins "*"
+torii --world 0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac --database torii.db --allowed-origins "*"
