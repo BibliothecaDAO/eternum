@@ -123,8 +123,8 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={`max-h-full transition-all z-0 duration-200 space-x-1 flex z-0 w-[400px] right-4 self-center pointer-events-none ${
-          isOffscreen(view) ? "translate-x-[79%]" : ""
+        className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 self-center pointer-events-none ${
+          isOffscreen(view) ? "translate-x-[83%]" : ""
         }`}
       >
         <motion.div
