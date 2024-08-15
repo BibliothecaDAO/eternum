@@ -7,15 +7,16 @@ import { useMemo, useState } from "react";
 import AddLiquidity from "./AddLiquidity";
 import { LiquidityTable } from "./LiquidityTable";
 import { ResourceSwap } from "./Swap";
+import { ID } from "@bibliothecadao/eternum";
 
 type BankListProps = {
-  entity: any;
+  entityId: ID;
 };
 
-export const BankPanel = ({ entity }: BankListProps) => {
+export const BankPanel = ({ entityId }: BankListProps) => {
   const {
     setup: {
-      components: { Position, Owner },
+      components: { Position },
     },
   } = useDojo();
 
@@ -24,8 +25,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
   const { playerRealms } = useEntities();
 
   const realmEntityId = playerRealms()[0].entity_id!;
-  const owner = getComponentValue(Owner, getEntityIdFromKeys([entity.id]));
-  const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
+  const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
 
   const tabs = useMemo(
     () => [
@@ -36,7 +36,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Swap</div>
           </div>
         ),
-        component: <ResourceSwap bankEntityId={entity.id} entityId={realmEntityId} />,
+        component: <ResourceSwap bankEntityId={entityId} entityId={realmEntityId} />,
       },
       {
         key: "all",
@@ -47,7 +47,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
         ),
         component: (
           <div className="w-1/2 mx-auto">
-            <AddLiquidity bank_entity_id={entity.id} entityId={realmEntityId!} />
+            <AddLiquidity bank_entity_id={entityId} entityId={realmEntityId!} />
           </div>
         ),
       },
@@ -58,10 +58,10 @@ export const BankPanel = ({ entity }: BankListProps) => {
   const liquidityTable = useMemo(() => {
     return (
       <div className="mt-4">
-        <LiquidityTable bank_entity_id={entity.id} entity_id={realmEntityId} />
+        <LiquidityTable bank_entity_id={entityId} entity_id={realmEntityId} />
       </div>
     );
-  }, [entity.id, realmEntityId]);
+  }, [entityId, realmEntityId]);
 
   return (
     <div className="m-4">

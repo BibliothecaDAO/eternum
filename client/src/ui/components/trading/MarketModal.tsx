@@ -61,7 +61,7 @@ export const MarketModal = () => {
             <div>AMM</div>
           </div>
         ),
-        component: bank && <BankPanel entity={{ id: bank.entityId }} />,
+        component: bank && <BankPanel entityId={bank.entityId} />,
       },
       {
         key: "all",
