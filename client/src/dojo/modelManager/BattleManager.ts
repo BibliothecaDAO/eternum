@@ -172,7 +172,7 @@ export class BattleManager {
       return false;
     }
 
-    if (this.getBattleType(structure) !== BattleType.Structure && this.getBattleType(structure) !== BattleType.Realm) {
+    if (this.getBattleType(structure) !== BattleType.Structure) {
       this.battleIsClaimable = false;
       return false;
     }
