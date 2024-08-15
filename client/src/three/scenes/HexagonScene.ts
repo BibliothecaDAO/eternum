@@ -84,7 +84,7 @@ export abstract class HexagonScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight, "shadow.bias", -0.001, 0.001, 0.0001);
+    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.001, 0.001, 0.0001);
     shadowFolder.close();
 
     const directionalLightFolder = this.GUIFolder.addFolder("Directional Light");
