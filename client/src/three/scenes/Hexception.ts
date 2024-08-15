@@ -10,7 +10,6 @@ import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Biome, BiomeType } from "../components/Biome";
-import InstancedBuilding from "../components/InstancedBuilding";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
 import {
@@ -25,10 +24,11 @@ import { HexagonScene } from "./HexagonScene";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { BuildingSystemUpdate } from "../systems/types";
+import InstancedModel from "../components/InstancedModel";
 
 const loader = new GLTFLoader();
 export default class HexceptionScene extends HexagonScene {
-  private buildingModels: Map<BuildingType, InstancedBuilding> = new Map();
+  private buildingModels: Map<BuildingType, InstancedModel> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
   centerColRow: number[] = [0, 0];
@@ -100,7 +100,7 @@ export default class HexceptionScene extends HexagonScene {
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
 
-            const tmp = new InstancedBuilding(model, 50);
+            const tmp = new InstancedModel(model, 50);
             this.buildingModels.set(building as any, tmp);
             this.scene.add(tmp.group);
             resolve();
