@@ -131,7 +131,7 @@ export const setResourceBuildingConfig = async (account: Account, provider: Eter
 export const setWeightConfig = async (account: Account, provider: EternumProvider) => {
   const calldataArray = Object.entries(WEIGHTS).map(([resourceId, weight]) => ({
     entity_type: resourceId,
-    weight_gram: weight * EternumGlobalConfig.resources.resourceMultiplier,
+    weight_gram: weight,
   }));
 
   const tx = await provider.set_weight_config({
@@ -213,7 +213,7 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txDonkey = await provider.set_capacity_config({
     signer: account,
     entity_type: DONKEY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacity.donkey * EternumGlobalConfig.resources.resourcePrecision,
+    weight_gram: EternumGlobalConfig.carryCapacity.donkey,
   });
 
   console.log(`Configuring capacity Donkey config ${txDonkey.statusReceipt}...`);

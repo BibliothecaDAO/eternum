@@ -43,11 +43,11 @@ export const EternumGlobalConfig = {
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 7200, // 2hrs
+    armiesTickIntervalInSeconds: 30, // 2hrs
   },
   carryCapacity: {
-    donkey: 100,
-    army: 10,
+    donkey: 100_000,
+    army: 10_000,
   },
   speed: {
     donkey: 60,
@@ -78,9 +78,9 @@ export const EternumGlobalConfig = {
   },
   mercenaries: {
     troops: {
-      knight_count: 4000,
-      paladin_count: 4000,
-      crossbowman_count: 4000,
+      knight_count: 1000,
+      paladin_count: 1000,
+      crossbowman_count: 1000,
     },
     rewards: [
       { resource: ResourcesIds.Wheat, amount: 10 },

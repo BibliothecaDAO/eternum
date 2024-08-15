@@ -367,7 +367,7 @@ export const ResourceInfo = ({
   entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
-  const cost = RESOURCE_INPUTS_SCALED[resourceId];
+  const cost = RESOURCE_INPUTS[resourceId];
 
   const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
 
