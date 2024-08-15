@@ -128,8 +128,9 @@ fn test_mercenaries_protector() {
     combat_systems_dispatcher.battle_leave(battle_entity_id, realm_army_unit_id);
     combat_systems_dispatcher.battle_claim(realm_army_unit_id, mine_entity_id);
 
-    let mine_entity_owner = get!(world, mine_entity_id, EntityOwner);
-    assert_eq!(mine_entity_owner.entity_owner_id, realm_entity_id, "wrong final owner");
+    let mine_owner_address = get!(world, mine_entity_id, Owner).address;
+    let realm_owner_address = get!(world, realm_entity_id, Owner).address;
+    assert_eq!(mine_owner_address, realm_owner_address, "wrong final owner");
 }
 
 fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractDispatcher) {
