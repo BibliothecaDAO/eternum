@@ -66,6 +66,9 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Crossbowman: { component: <img src={`/images/icons/251.png`} />, name: "Crossbowman" },
   Paladin: { component: <img src={`/images/icons/252.png`} />, name: "Paladin" },
   AncientFragment: { component: <img src={`/images/resources/29.png`} />, name: "Ancient Fragment" },
+  House: { component: <img src={`/images/buildings/thumb/house.png`} />, name: "House" },
+  Silo: { component: <img src={`/images/buildings/thumb/silo.png`} />, name: "Silo" },
+  Timeglass: { component: <img src={`/images/buildings/thumb/timeglass.png`} />, name: "Timeglass" },
 });
 
 const STYLES = {

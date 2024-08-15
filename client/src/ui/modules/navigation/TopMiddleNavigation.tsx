@@ -26,6 +26,7 @@ import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -110,13 +111,59 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className=" bg-black/75 bg-hex-bg rounded-b-2xl border border-gradient pointer-events-auto">
+    <div className="pointer-events-auto mt-1 ">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div className="self-center px-3 flex space-x-2 ">
-          <TickProgress />
+        <div className=" bg-black/75 rounded-l-xl my-1 border-white/5 border flex gap-1">
+          {storehouses && (
+            <div
+              onMouseEnter={() => {
+                setTooltip({
+                  position: "bottom",
+                  content: (
+                    <div className="whitespace-nowrap pointer-events-none text-sm capitalize">
+                      <span>This is the max per resource you can store</span>
+
+                      <br />
+                      <span>Build Storehouses to increase this.</span>
+                    </div>
+                  ),
+                });
+              }}
+              onMouseLeave={() => setTooltip(null)}
+              className="px-3 flex gap-2 self-center text-xs"
+            >
+              <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
+              <div className="self-center">{storehouses.toLocaleString()}</div>
+            </div>
+          )}
+          {population && (
+            <div
+              onMouseEnter={() => {
+                setTooltip({
+                  position: "bottom",
+                  content: (
+                    <span className="whitespace-nowrap pointer-events-none text-sm capitalize">
+                      <span>
+                        {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
+                      </span>
+                      <br />
+                      <span>Build Workers huts to expand population</span>
+                    </span>
+                  ),
+                });
+              }}
+              onMouseLeave={() => setTooltip(null)}
+              className=" px-3 flex gap-2 self-center"
+            >
+              <ResourceIcon withTooltip={false} resource="House" size="sm" />
+              <div className="self-center">
+                {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex min-w-96 gap-1  clip-angled   py-2 px-4 text-gold bg-map   justify-center border-gold/50 text-center ">
+        <div className="flex min-w-72 gap-1 text-gold bg-map   justify-center border text-center rounded bg-black/90 border-gold/10">
           <div className="self-center flex justify-between w-full">
             <Select
               value={realmEntityId.toString()}
@@ -124,13 +171,13 @@ export const TopMiddleNavigation = () => {
                 !isHexView ? goToMapView(ID(a)) : goToHexView(ID(a));
               }}
             >
-              <SelectTrigger className="">
+              <SelectTrigger>
                 <SelectValue placeholder="Select Realm" />
               </SelectTrigger>
-              <SelectContent className="bg-black ">
+              <SelectContent className="bg-black/90">
                 {structures.map((structure, index) => (
                   <SelectItem
-                    className="flex justify-between text-sm"
+                    className="flex justify-between"
                     key={index}
                     value={structure.entity_id?.toString() || ""}
                   >
@@ -142,16 +189,14 @@ export const TopMiddleNavigation = () => {
                 ))}
               </SelectContent>
             </Select>
-            {location === "/map" && (
-              <ViewOnMapIcon
-                className="my-auto m-4 w-7 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-                position={{ x: hexPosition.col, y: hexPosition.row }}
-              />
-            )}
           </div>
+        </div>
+        <div className=" bg-black/75 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
+          <TickProgress />
           <Button
-            variant="primary"
-            className={clsx({
+            variant="outline"
+            size="xs"
+            className={clsx("self-center", {
               "animate-pulse":
                 (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
                 selectedQuest.status !== QuestStatus.Completed &&
@@ -165,58 +210,16 @@ export const TopMiddleNavigation = () => {
               }
             }}
           >
-            {location === "/map" ? "Hex" : "World"}
+            {location === "/map" ? "Realm" : "World"}
           </Button>
+          {location === "/map" && (
+            <ViewOnMapIcon
+              className="my-auto w-7 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all"
+              position={{ x: hexPosition.col, y: hexPosition.row }}
+            />
+          )}
         </div>
       </motion.div>
-
-      <div className="flex justify-between w-full  text-gold p-1 text-xs">
-        {population && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <span className="whitespace-nowrap pointer-events-none text-sm capitalize">
-                    <span>
-                      {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
-                    </span>
-                    <br />
-                    <span>Build Workers huts to expand population</span>
-                  </span>
-                ),
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className=" px-3 flex gap-2"
-          >
-            <div className="uppercase font-bold">population</div>
-            {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
-          </div>
-        )}
-        {storehouses && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <div className="whitespace-nowrap pointer-events-none text-sm capitalize">
-                    <span>This is the max per resource you can store</span>
-
-                    <br />
-                    <span>Build Storehouses to increase this.</span>
-                  </div>
-                ),
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className="px-3 flex gap-2"
-          >
-            <div className="uppercase font-bold">Store</div>
-            {storehouses.toLocaleString()}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
@@ -245,8 +248,9 @@ const TickProgress = () => {
         });
       }}
       onMouseLeave={() => setTooltip(null)}
-      className="self-center text-center  px-4 py-1 bg-gold text-brown border-gradient  clip-angled"
+      className="self-center text-center px-1 py-1 flex gap-1"
     >
+      <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" />
       {progress.toFixed()}%
     </div>
   );
