@@ -138,9 +138,14 @@ export class SystemManager {
     return {
       onUpdate: (callback: (value: TileSystemUpdate) => void) => {
         this.setupSystem(this.dojo.components.Tile, callback, (update: any) => {
-          if (!update.value[0]) return;
+          const newState = update.value[0];
+          const prevState = update.value[1];
 
-          return { hexCoords: { col: update.value[0]?.col || 0, row: update.value[0]?.row || 0 } };
+          const { col, row } = prevState || newState;
+          return {
+            hexCoords: { col, row },
+            explored: !!newState,
+          };
         });
       },
     };
