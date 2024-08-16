@@ -1255,29 +1255,10 @@ mod combat_systems {
             set!(world, (owner_armies_quantity));
 
             // delete army by resetting components connected to army
-            let (
-                owner,
-                position,
-                quantity,
-                health,
-                stamina,
-                resource_transfer_lock,
-                movable,
-                capacity
-            ) =
-                get!(
+            let (owner, position, quantity, health, stamina, resource_transfer_lock, movable, capacity) = get!(
                 world,
                 army.entity_id,
-                (
-                    Owner,
-                    Position,
-                    Quantity,
-                    Health,
-                    Stamina,
-                    ResourceTransferLock,
-                    Movable,
-                    Capacity
-                )
+                (Owner, Position, Quantity, Health, Stamina, ResourceTransferLock, Movable, Capacity)
             );
             delete!(
                 world,
