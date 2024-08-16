@@ -224,7 +224,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
 
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
         <div className="grid grid-cols-2 gap-16 px-16 h-full">
-          <div className="p-4  clip-angled-sm h-full">
+          <div className="p-4   h-full">
             <SelectResources
               selectedResourceIds={selectedResourceIds}
               setSelectedResourceIds={setSelectedResourceIds}
@@ -235,7 +235,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
           </div>
 
           <div className=" ">
-            <div className="p-10 bg-gold/10 clip-angled-sm h-auto">
+            <div className="p-10 bg-gold/10  h-auto">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
                   entityId={isOriginDonkeys ? selectedEntityIdFrom?.entityId! : selectedEntityIdTo?.entityId!}

@@ -87,7 +87,7 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30 clip-angled h-full row-span-12 ">
+      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30  h-full row-span-12 ">
         <div className="col-span-12  p-2 flex justify-between row-span-2">
           <div className="self-center text-xl">
             <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(ID(trait))}>

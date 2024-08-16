@@ -79,6 +79,7 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
       EventType.ORDER_CANCELLED,
       MAKER_INDEX,
     );
+
     setTradeEvents(
       [...createdOrders, ...myAcceptedOrders, ...ordersIAccepted, ...canceledOrders].sort(
         (a, b) => b.event.eventTime.getTime() - a.event.eventTime.getTime(),

@@ -1,8 +1,14 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
+import { QuestStatus } from "@/hooks/helpers/useQuests";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import {
   BASE_POPULATION_CAPACITY,
@@ -12,21 +18,15 @@ import {
   STOREHOUSE_CAPACITY,
   StructureType,
 } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import clsx from "clsx";
+import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { QuestStatus } from "@/hooks/helpers/useQuests";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
-import { Position } from "@/types/Position";
-import { QuestId } from "@/ui/components/quest/questDetails";
-import { useComponentValue } from "@dojoengine/react";
-import clsx from "clsx";
-import { motion } from "framer-motion";
-import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -53,8 +53,6 @@ export const TopMiddleNavigation = () => {
   const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
-  const selectedHex = useUIStore((state) => state.selectedHex);
 
   // realms always first
   const structures = useMemo(() => {
@@ -110,10 +108,18 @@ export const TopMiddleNavigation = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
+
+  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
+  }, [nextBlockTimestamp]);
+
   return (
     <div className="pointer-events-auto mt-1 ">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div className=" bg-black/75 rounded-l-xl my-1 border-white/5 border flex gap-1">
+        <div className=" bg-black/90 rounded-l-xl my-1 border-white/5 border flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -163,7 +169,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className="flex min-w-72 gap-1 text-gold bg-map   justify-center border text-center rounded bg-black/90 border-gold/10">
+        <div className="flex min-w-72 gap-1 text-gold bg-map justify-center border text-center rounded bg-black/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             <Select
               value={realmEntityId.toString()}
@@ -190,8 +196,12 @@ export const TopMiddleNavigation = () => {
               </SelectContent>
             </Select>
           </div>
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
-        <div className=" bg-black/75 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
+        <div className=" bg-black/90 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
           <TickProgress />
           <Button
             variant="outline"
@@ -212,12 +222,12 @@ export const TopMiddleNavigation = () => {
           >
             {location === "/map" ? "Realm" : "World"}
           </Button>
-          {location === "/map" && (
+          {/* {location === "/map" && (
             <ViewOnMapIcon
               className="my-auto w-7 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all"
               position={{ x: hexPosition.col, y: hexPosition.row }}
             />
-          )}
+          )} */}
         </div>
       </motion.div>
     </div>

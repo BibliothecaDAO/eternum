@@ -81,7 +81,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const price = getPrice(resourceGiven[0], resourceTaken[0]);
 
   return (
-    <div className="grid grid-cols-6 gap-1 flex-grow overflow-y-auto h-14 mb-4 p-1 clip-angled-sm">
+    <div className="grid grid-cols-6 gap-1 flex-grow overflow-y-auto h-14 mb-4 p-1 ">
       <div
         className={`text-xs my-auto`}
       >{`${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`}</div>
