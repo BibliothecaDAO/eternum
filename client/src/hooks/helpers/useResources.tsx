@@ -1,4 +1,4 @@
-import { Position, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, Position, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, Not, NotValue, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
@@ -7,23 +7,22 @@ import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 
-export function useResources() {
+export function getResourcesUtils() {
   const {
-    account: { account },
     setup: {
-      components: { Resource, Position, ResourceCost, Realm, EntityOwner, ArrivalTime, OwnedResourcesTracker, Owner },
+      components: { Resource, ResourceCost, Realm, OwnedResourcesTracker },
     },
   } = useDojo();
 
-  const getResourcesFromBalance = (entityId: bigint): Resource[] => {
+  const getResourcesFromBalance = (entityId: ID): Resource[] => {
     // todo: switch back to items_count when working
-    const ownedResources = getComponentValue(OwnedResourcesTracker, getEntityIdFromKeys([entityId]));
+    const ownedResources = getComponentValue(OwnedResourcesTracker, getEntityIdFromKeys([BigInt(entityId)]));
     if (!ownedResources) return [];
     // const resourceIds = getResourceIdsFromPackedNumber(ownedResources.resource_types);
     const resourceIds = resources.map((r) => r.id);
     return resourceIds
       .map((id) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(id)]));
+        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(id)]));
         return { resourceId: id, amount: Number(resource?.balance) || 0 };
       })
       .filter((r) => r.amount > 0);
@@ -41,16 +40,16 @@ export function useResources() {
   };
 
   const getRealmsWithSpecificResource = (
-    resourceId: number,
+    resourceId: ResourcesIds,
     minAmount: number,
-  ): Array<{ realmEntityId: bigint; realmId: bigint; amount: number }> => {
+  ): Array<{ realmEntityId: ID; realmId: ID; amount: number }> => {
     const allRealms = Array.from(runQuery([Has(Realm)]));
 
     const realmsWithResource = allRealms
       .map((id: Entity) => {
         const realm = getComponentValue(Realm, id);
         const resource = realm
-          ? getComponentValue(Resource, getEntityIdFromKeys([realm?.entity_id, BigInt(resourceId)]))
+          ? getComponentValue(Resource, getEntityIdFromKeys([BigInt(realm?.entity_id), BigInt(resourceId)]))
           : undefined;
 
         if (resource && resource.balance > minAmount) {
@@ -61,10 +60,25 @@ export function useResources() {
           };
         }
       })
-      .filter(Boolean) as Array<{ realmEntityId: bigint; realmId: bigint; amount: number }>;
+      .filter(Boolean) as Array<{ realmEntityId: ID; realmId: ID; amount: number }>;
 
     return realmsWithResource;
   };
+
+  return {
+    getRealmsWithSpecificResource,
+    getResourcesFromBalance,
+    getResourceCosts,
+  };
+}
+
+export const useArrivalsWithResources = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { Position, Owner, EntityOwner, ArrivalTime, OwnedResourcesTracker },
+    },
+  } = useDojo();
 
   const atPositionWithInventory = useEntityQuery([
     Has(EntityOwner),
@@ -72,79 +86,64 @@ export function useResources() {
     Has(ArrivalTime),
   ]);
 
-  const getArrivalsWithResources = useMemo(() => {
-    return (entityId: bigint) => {
-      const entityPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
-
-      if (!entityPosition) {
-        return [];
-      }
-
-      return atPositionWithInventory
-        .filter((id) => {
-          const position = getComponentValue(Position, id);
-          return position?.x === entityPosition.x && position?.y === entityPosition.y;
-        })
-        .map((id) => getComponentValue(Position, id)?.entity_id)
-        .filter(Boolean) as bigint[];
-    };
-  }, [atPositionWithInventory]);
-
   // Get all owned entities with resources
   const getAllArrivalsWithResources = useMemo(() => {
     const currentTime = Date.now();
 
+    type ArrivalInfo = {
+      id: Entity;
+      entityId: ID;
+      arrivesAt: bigint;
+      isOwner: boolean;
+    };
+
     return atPositionWithInventory
       .map((id) => {
         const entityOwner = getComponentValue(EntityOwner, id);
-        const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt(0)]));
+        const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
         const arrivalTime = getComponentValue(ArrivalTime, id);
         const position = getComponentValue(Position, id);
-
         return {
           id,
-          entityId: position?.entity_id || BigInt(""),
-          arrivesAt: Number(arrivalTime?.arrives_at || 0),
-          isOwner: BigInt(owner?.address || "") === BigInt(account.address),
+          entityId: position?.entity_id || 0,
+          arrivesAt: arrivalTime?.arrives_at || 0n,
+          isOwner: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
         };
       })
+      .filter((val: ArrivalInfo | undefined): val is ArrivalInfo => val !== undefined)
       .filter(({ isOwner, arrivesAt }) => isOwner && arrivesAt <= currentTime)
-      .sort((a, b) => a.arrivesAt - b.arrivesAt)
+      .sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt))
       .map(({ entityId }) => entityId)
-      .filter((entityId) => entityId !== BigInt(""));
+      .filter((entityId) => entityId !== 0);
   }, [atPositionWithInventory, account.address]);
 
   return {
-    getRealmsWithSpecificResource,
-    getResourcesFromBalance,
-    getArrivalsWithResources,
     getAllArrivalsWithResources,
-    getResourceCosts,
   };
-}
+};
 
-export function useResourceBalance() {
+export function getResourceBalance() {
   const {
     setup: {
       components: { Resource, Production, BuildingQuantityv2, DetachedResource },
     },
   } = useDojo();
 
-  const getFoodResources = (entityId: bigint): Resource[] => {
+  const getFoodResources = (entityId: ID): Resource[] => {
     const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
     const wheatBalance = new ProductionManager(
       Production,
       Resource,
       BuildingQuantityv2,
       entityId,
-      BigInt(ResourcesIds.Wheat),
+      ResourcesIds.Wheat,
     ).balance(currentDefaultTick);
     const fishBalance = new ProductionManager(
       Production,
       Resource,
       BuildingQuantityv2,
       entityId,
-      BigInt(ResourcesIds.Fish),
+      ResourcesIds.Fish,
     ).balance(currentDefaultTick);
 
     return [
@@ -153,47 +152,29 @@ export function useResourceBalance() {
     ];
   };
 
-  const getResourceProductionInfo = (entityId: bigint, resourceId: number) => {
-    const productionManager = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
-      entityId,
-      BigInt(resourceId),
-    );
+  const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds) => {
+    const productionManager = new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
     return productionManager.getProduction();
   };
 
-  const getBalance = (entityId: bigint, resourceId: number) => {
+  const getBalance = (entityId: ID, resourceId: ResourcesIds) => {
     const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
-    const productionManager = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
-      entityId,
-      BigInt(resourceId),
-    );
+    const productionManager = new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
     return { balance: productionManager.balance(currentDefaultTick), resourceId };
   };
 
-  const getResourceBalance = (entityId: bigint) => {
+  const getResourcesBalance = (entityId: ID) => {
     const detachedResourceEntityIds = runQuery([HasValue(DetachedResource, { entity_id: entityId })]);
     return Array.from(detachedResourceEntityIds).map((entityId) => getComponentValue(DetachedResource, entityId));
   };
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
-  const useBalance = (entityId: bigint, resourceId: number) => {
+  const useBalance = (entityId: ID, resourceId: ResourcesIds) => {
     const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
 
     useEffect(() => {
-      const productionManager = new ProductionManager(
-        Production,
-        Resource,
-        BuildingQuantityv2,
-        entityId,
-        BigInt(resourceId),
-      );
+      const productionManager = new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
       setResourceBalance({ amount: productionManager.balance(currentDefaultTick), resourceId });
     }, []);
 
@@ -204,22 +185,22 @@ export function useResourceBalance() {
     getFoodResources,
     getBalance,
     useBalance,
-    getResourceBalance,
+    getResourcesBalance,
     getResourceProductionInfo,
   };
 }
 
-export const useProductionManager = (entityId: bigint, resourceId: number) => {
+export const useProductionManager = (entityId: ID, resourceId: ResourcesIds) => {
   const {
     setup: {
       components: { Resource, Production, BuildingQuantityv2 },
     },
   } = useDojo();
 
-  const production = useComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+  const production = useComponentValue(Production, getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]));
 
   const productionManager = useMemo(() => {
-    return new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, BigInt(resourceId));
+    return new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
   }, [Production, Resource, entityId, resourceId, production]);
 
   return productionManager;
@@ -229,16 +210,17 @@ export function useOwnedEntitiesOnPosition() {
   const {
     account: { account },
     setup: {
-      components: { Owner, Position, Movable, Bank, Realm },
+      components: { Owner, Position, Movable, Bank, Army },
     },
   } = useDojo();
 
-  const getOwnedEntitiesOnPosition = (address: bigint, position: Position) => {
+  const getOwnedEntitiesOnPosition = (address: ContractAddress, position: Position) => {
     const { x, y } = position;
 
     const entities = runQuery([
       HasValue(Owner, { address }),
       Not(Movable),
+      Not(Army),
       // don't want bank but bank accounts
       Not(Bank),
       // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there
@@ -251,12 +233,14 @@ export function useOwnedEntitiesOnPosition() {
         if (!position) return;
         return position?.entity_id;
       })
-      .filter(Boolean) as bigint[];
+      .filter(Boolean) as ID[];
   };
 
-  const getOwnedEntityOnPosition = (entityId: bigint) => {
-    const position = getComponentValue(Position, getEntityIdFromKeys([entityId]));
-    const depositEntityIds = position ? getOwnedEntitiesOnPosition(BigInt(account.address), position) : [];
+  const getOwnedEntityOnPosition = (entityId: ID) => {
+    const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
+    const depositEntityIds = position
+      ? getOwnedEntitiesOnPosition(BigInt(account.address), { x: Number(position.x), y: Number(position.y) })
+      : [];
     return depositEntityIds[0];
   };
 

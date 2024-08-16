@@ -2,7 +2,7 @@ import useSound from "use-sound";
 import useUIStore from "./store/useUIStore";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
-import { ResourceMiningTypes } from "@/ui/utils/utils";
+import { ResourceMiningTypes } from "@/types";
 
 const dir = "/sound/";
 
@@ -209,7 +209,7 @@ export const usePlayResourceSound = () => {
   };
 };
 
-export const useRunningSound = () => {
+const useRunningSound = () => {
   const { play: playFirst, fade: fadeFirst } = useUiSounds(soundSelector.unitRunning);
   const { play: playSecond, fade: fadeSecond } = useUiSounds(soundSelector.unitRunningAlternative);
   const [isFirst, setIsFirst] = useState(true);
@@ -234,7 +234,7 @@ export const useRunningSound = () => {
   };
 };
 
-export const useMarchingSound = () => {
+const useMarchingSound = () => {
   const { repeat: playFirst, stop: stopFirst } = useUiSounds(soundSelector.unitMarching1);
   const { repeat: playSecond, stop: stopSecond } = useUiSounds(soundSelector.unitMarching2);
   const [isFirst, setIsFirst] = useState(true);
@@ -301,7 +301,7 @@ export const useShovelSound = () => {
 };
 
 // todo: add battle sounds
-export const useBattleSound = () => {
+const useBattleSound = () => {
   const { play: playPillageSucess } = useUiSounds(soundSelector.buildFarm);
 
   return {
@@ -315,11 +315,9 @@ export const useBuildingSound = () => {
   const { play: playBuildFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
   const { play: playBuildMine } = useUiSounds(soundSelector.buildMine);
   const { play: playBuildStables } = useUiSounds(soundSelector.buildStables);
-  const { play: playBuildWorkHut } = useUiSounds(soundSelector.buildWorkHut);
   const { play: playBuildArcherRange } = useUiSounds(soundSelector.buildArcherRange);
   const { play: playBuildBarracks } = useUiSounds(soundSelector.buildBarracks);
   const { play: playBuildMarket } = useUiSounds(soundSelector.buildMarket);
-  const { play: playBuildStorehouse } = useUiSounds(soundSelector.buildStorehouse);
   const { play: playLumberMill } = useUiSounds(soundSelector.buildLumberMill);
 
   const playBuildingSound = (buildingType: BuildingType | ResourceMiningTypes) => {

@@ -2,16 +2,16 @@ use eternum::alias::ID;
 
 
 // Config ID to fetch global configs
-const WORLD_CONFIG_ID: u128 = 999999999999999999;
-const BUILDING_CONFIG_ID: u128 = 999999999999999998;
-const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
-const ROAD_CONFIG_ID: u128 = 999999999999999995;
-const COMBAT_CONFIG_ID: u128 = 999999999999999994;
-const REALM_LEVELING_CONFIG_ID: u128 = 999999999999999993;
-const HYPERSTRUCTURE_CONFIG_ID: u128 = 999999999999999992;
-const REALM_FREE_MINT_CONFIG_ID: u128 = 999999999999999991;
-const BUILDING_CATEGORY_POPULATION_CONFIG_ID: u128 = 999999999999999990;
-const POPULATION_CONFIG_ID: u128 = 999999999999999989;
+const WORLD_CONFIG_ID: ID = 999999999;
+const BUILDING_CONFIG_ID: ID = 999999998;
+const TRANSPORT_CONFIG_ID: ID = 999999996;
+const ROAD_CONFIG_ID: ID = 999999995;
+const COMBAT_CONFIG_ID: ID = 999999994;
+const REALM_LEVELING_CONFIG_ID: ID = 999999993;
+const HYPERSTRUCTURE_CONFIG_ID: ID = 999999992;
+const REALM_FREE_MINT_CONFIG_ID: ID = 999999991;
+const BUILDING_CATEGORY_POPULATION_CONFIG_ID: ID = 999999990;
+const POPULATION_CONFIG_ID: ID = 999999989;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -131,7 +131,7 @@ mod ResourceTypes {
     const LORDS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
-// note: update _resource_type_to_position 
+    // note: update _resource_type_to_position
 //  function is any new resources are added
 }
 
@@ -241,11 +241,8 @@ fn get_resources_without_earthenshards() -> Span<u8> {
 }
 
 fn get_resources_without_earthenshards_probs() -> Span<u128> {
-    // 35 
-    return array![
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-    ]
-        .span();
+    // 35
+    return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span();
 }
 
 
@@ -303,23 +300,9 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
 // DISCUSS: register each new entity_type to the system by creating an entity containing the config components
 // Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
-const DONKEY_ENTITY_TYPE: u128 = 256;
-const REALM_ENTITY_TYPE: u128 = 257;
-const ARMY_ENTITY_TYPE: u128 = 258;
-
-
-// TODO: change to consts
-enum BuildingTypes {
-    HOUSE: u8,
-    STORE_HOUSE: u8,
-    GRANARY: u8,
-    FARM: u8,
-    FISHING_VILLAGE: u8,
-    BARACKS: u8,
-    MAGE_TOWER: u8,
-    ARCHER_TOWER: u8,
-    CASTLE: u8,
-}
+const DONKEY_ENTITY_TYPE: u32 = 256;
+const REALM_ENTITY_TYPE: u32 = 257;
+const ARMY_ENTITY_TYPE: u32 = 258;
 
 mod LevelIndex {
     const FOOD: u8 = 1;

@@ -1,69 +1,69 @@
-mod config {
-    mod contracts;
+pub mod config {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }
-mod realm {
-    mod contracts;
+pub mod realm {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }
-mod trade {
-    mod contracts;
+pub mod trade {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }
-mod resources {
-    mod contracts;
+pub mod resources {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }
-mod transport {
-    mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
-
-mod leveling {
-    mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
-mod name {
-    mod contracts;
-}
-mod hyperstructure {
-    mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
-mod buildings {
-    mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
-mod map {
-    mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
-mod dev {
-    mod contracts;
-}
-mod combat {
-    mod contracts;
+pub mod transport {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }
 
-mod bank {
-    mod contracts;
+pub mod leveling {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+pub mod name {
+    pub mod contracts;
+}
+pub mod hyperstructure {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+pub mod buildings {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+pub mod map {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+pub mod dev {
+    pub mod contracts;
+}
+pub mod combat {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }
 
-mod guild {
-    mod contracts;
+pub mod bank {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+
+pub mod guild {
+    pub mod contracts;
     #[cfg(test)]
     mod tests;
 }

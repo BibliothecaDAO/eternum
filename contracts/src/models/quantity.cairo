@@ -1,19 +1,19 @@
 use eternum::alias::ID;
 
 // not all entities are just a single object, some can be multiple.
-// e.g. a group of free transport units can be a single entity with 
+// e.g. a group of free transport units can be a single entity with
 // a quantity component to show how many there are.
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Quantity {
+pub struct Quantity {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     value: u128,
 }
 
 
 #[generate_trait]
-impl QuantityImpl of QuantityTrait {
+impl QuantityCustomImpl of QuantityCustomTrait {
     /// Get quantity value
     ///
     /// This should be used rather than accessing the value directly
@@ -30,11 +30,14 @@ impl QuantityImpl of QuantityTrait {
 // e.g. for free transport units, we only allow realms to have a maximum of them
 // at the same time. Thus if this component exists for a realm and free transport units
 // we need to update it everytime a free transport unit is created of destroyed.
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct QuantityTracker {
+pub struct QuantityTracker {
     #[key]
     entity_id: felt252,
     count: u128,
 }
 
+mod QuantityTrackerType {
+    const ARMY_COUNT: felt252 = 'army_quantity';
+}

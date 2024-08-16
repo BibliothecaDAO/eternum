@@ -1,5 +1,5 @@
-import devManifest from "../../contracts/manifests/dev/manifest.json";
-import productionManifest from "../../contracts/manifests/prod/manifest.json";
+import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
+import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
 import { EternumGlobalConfig, EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
@@ -23,7 +23,7 @@ const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
 // entity ids
-const ADMIN_BANK_ENTITY_ID = 999999999999999998n;
+const ADMIN_BANK_ENTITY_ID = 999999998n;
 const RESOURCE_LIQUIDITY = 250000;
 const LORDS_LIQUIDITY_PER_RESOURCE = 250000;
 
@@ -40,7 +40,8 @@ export const createAdminBank = async () => {
   const tx = await provider.create_admin_bank({
     signer: account,
     coord: { x: COORD_X, y: COORD_Y },
-    owner_fee_scaled: EternumGlobalConfig.banks.ownerFees,
+    owner_fee_num: EternumGlobalConfig.banks.ownerFeesNumerator,
+    owner_fee_denom: EternumGlobalConfig.banks.ownerFeesDenominator,
   });
   console.log(`Creating admin bank ${tx.statusReceipt}...`);
 };

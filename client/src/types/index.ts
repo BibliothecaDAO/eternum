@@ -1,35 +1,17 @@
-import { Position } from "@bibliothecadao/eternum";
-
-export interface Hexagon {
-  idx: number;
-  col: number;
-  row: number;
-  biome: string;
-  explored: boolean | undefined;
-  // address
-  exploredBy: bigint | undefined;
-}
-
-export type Position3D = [number, number, number];
-export type Position2D = [number, number];
 export type HexPosition = { col: number; row: number };
-export interface ClickedHex {
-  contractPos: HexPosition;
-  uiPos: Position3D;
-  hexIndex: number;
+
+export enum SceneName {
+  WorldMap = "map",
+  Hexception = "hex",
+}
+export interface Health {
+  current: bigint;
+  lifetime: bigint;
 }
 
-export interface HighlightPositions {
-  pos: Position2D[];
-  color: number;
-}
-
-export interface TravelPath {
-  path: Position[];
-  isExplored: boolean;
-}
-
-export enum CombatTarget {
-  Structure,
-  Army,
+export enum ResourceMiningTypes {
+  Forge = "forge",
+  Mine = "mine",
+  LumberMill = "lumber_mill",
+  Dragonhide = "dragonhide",
 }

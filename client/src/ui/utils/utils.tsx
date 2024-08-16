@@ -1,5 +1,8 @@
-import { Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/constants";
+import { HexPosition, ResourceMiningTypes } from "@/types";
+import { ContractAddress, ID, Position, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import * as THREE from "three";
 import {
   default as realmHexPositions,
   default as realmsHexPositions,
@@ -8,11 +11,6 @@ import { FELT_CENTER } from "../config";
 import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
-
-export const getForeignKeyEntityId = (entityId: bigint, key: bigint, index: bigint) => {
-  let keyHash = getEntityIdFromKeys([entityId, key, BigInt(index)]);
-  return getEntityIdFromKeys([BigInt(keyHash)]);
-};
 
 export const formatNumber = (num: any, decimals: number) => {
   return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
@@ -29,47 +27,14 @@ export function currencyIntlFormat(num: any, decimals: number = 2) {
   }).format(num || 0);
 }
 
-// note: temp change because waiting for torii fix
-// export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
-//   return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
-// }
-export function extractAndCleanKey(keys: string | null | undefined | string[]): bigint[] {
-  if (Array.isArray(keys) && keys.length > 0) {
-    return keys.map((key) => BigInt(key as string));
-  } else {
-    let stringKeys = keys as string | null | undefined;
-    return (
-      stringKeys
-        ?.split("/")
-        .slice(0, -1)
-        .map((key) => BigInt(key as string)) || []
-    );
-  }
-}
-
 export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
-};
-
-export const formatTimeLeft = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${hours}h:${minutes}m`;
 };
 
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
-
-export const formatTimeLeftDaysHoursMinutes = (seconds: number) => {
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${days} days ${hours}h:${minutes}m`;
-};
 
 const PRECISION = 1000;
 
@@ -81,7 +46,7 @@ export function divideByPrecision(value: number): number {
   return value / PRECISION;
 }
 
-export function getPosition(realm_id: bigint): { x: number; y: number } {
+export function getPosition(realm_id: ID): { x: number; y: number } {
   let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
   let position = realmPositions[Number(realm_id)][0];
   return { x: position.col, y: position.row };
@@ -89,7 +54,7 @@ export function getPosition(realm_id: bigint): { x: number; y: number } {
 
 export function addressToNumber(address: string) {
   // Convert the address to a big integer
-  let numericValue = BigInt(address);
+  let numericValue = ContractAddress(address);
 
   // Sum the digits of the numeric value
   let sum = 0;
@@ -101,20 +66,6 @@ export function addressToNumber(address: string) {
   // Map the sum to a number between 1 and 10
   return (sum % 5) + 1;
 }
-
-// export const calculateDistance = (start: Position, destination: Position): number => {
-//   const x: number =
-//     start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
-
-//   const y: number =
-//     start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
-
-//   // Using bitwise shift for the square root approximation for BigInt.
-//   // we store coords in x * 10000 to get precise distance
-//   const distance = (x + y) ** 0.5 / 10000;
-
-//   return distance;
-// };
 
 export function calculateDistance(start: Position, destination: Position): number | undefined {
   // d = √((x2-x1)² + (y2-y1)²)
@@ -132,103 +83,63 @@ export function calculateDistance(start: Position, destination: Position): numbe
   }
 }
 
-export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
-  const hexRadius = 3;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+export const getHexagonCoordinates = (
+  instancedMesh: THREE.InstancedMesh,
+  instanceId: number,
+): { hexCoords: HexPosition; position: THREE.Vector3 } => {
+  const matrix = new THREE.Matrix4();
+  instancedMesh.getMatrixAt(instanceId, matrix);
+  const position = new THREE.Vector3();
+  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
 
-  const colNorm = col - (!normalized ? FELT_CENTER : 0);
-  const rowNorm = row - (!normalized ? FELT_CENTER : 0);
-  const x = normalized
-    ? colNorm * horizDist - ((rowNorm % 2) * horizDist) / 2
-    : colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
-  const y = rowNorm * vertDist;
-  const z = pseudoRandom(x, y) * 2;
-  return {
-    x,
-    y,
-    z,
-  };
+  const hexCoords = getHexForWorldPosition(position);
+
+  return { hexCoords, position };
 };
 
-export const getColRowFromUIPosition = (x: number, y: number, normalized?: boolean): { col: number; row: number } => {
-  const hexRadius = 3;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+export const getWorldPositionForHex = (hexCoords: HexPosition) => {
+  const { row, col } = hexCoords;
+  // Calculate the x and z coordinates
+  const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
+  const z = -row * HEX_VERTICAL_SPACING;
 
-  const rowNorm = Math.round(y / vertDist);
-  // hexception offsets hack
-  const colNorm = normalized
-    ? Math.round((x + ((rowNorm % 2) * horizDist) / 2) / horizDist)
-    : Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
+  // y coordinate is half of the hexagon height
+  const y = 0;
 
-  const col = colNorm + (!normalized ? FELT_CENTER : 0);
-  const row = rowNorm + (!normalized ? FELT_CENTER : 0);
-
-  return {
-    col,
-    row,
-  };
+  return new THREE.Vector3(x, y, z);
 };
 
-export interface HexPositions {
-  [key: string]: { col: number; row: number }[];
-}
+export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
+  const { x, y, z } = worldPosition;
+  const row = -Math.round(z / HEX_VERTICAL_SPACING);
+  const col = Math.round((x - ((row % 2) * HEX_HORIZONTAL_SPACING) / 2) / HEX_HORIZONTAL_SPACING);
 
-export const getRealmUIPosition = (realm_id: bigint): Position => {
-  const realmPositions = realmHexPositions as HexPositions;
-  const colrow = realmPositions[Number(realm_id).toString()][0];
-
-  return getUIPositionFromColRow(colrow.col, colrow.row, false);
+  return { row, col };
 };
 
-export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
-  // give the direction
-  const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-  for (let offset of neighborOffsets) {
-    if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
-      return offset.direction;
-    }
+export const calculateOffset = (index: number, total: number, radius: number) => {
+  if (total === 1) return { x: 0, y: 0 };
+
+  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
+  let angle = angleIncrement * (index % 6);
+  let offsetRadius = radius;
+
+  if (index >= 6) {
+    // Adjustments for more than 6 armies, placing them in another layer
+    offsetRadius += 0.5; // Increase radius for each new layer
+    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
   }
-};
 
-export function removeAccents(str: string) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
+  return {
+    x: offsetRadius * Math.cos(angle),
+    z: offsetRadius * Math.sin(angle),
+  };
+};
 
 export const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
-
-export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
-  console.log("packedNumber", packedNumber);
-
-  if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];
-  const resourceIds: number[] = [];
-  const totalBits = 256; // Assuming u256, hence 256 bits
-  const packedNumberBigInt = BigInt(packedNumber);
-
-  for (let position = 0; position < totalBits; position++) {
-    // Shift 1 to the left by 'position' places and perform bitwise AND
-    if ((packedNumberBigInt & (1n << BigInt(position))) !== 0n) {
-      resourceIds.push(position + 1);
-    }
-  }
-
-  return resourceIds;
-}
-
-export enum ResourceMiningTypes {
-  Forge = "forge",
-  Mine = "mine",
-  LumberMill = "lumber_mill",
-  Dragonhide = "dragonhide",
-}
 
 export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {
   [ResourcesIds.Copper]: ResourceMiningTypes.Forge,
@@ -297,7 +208,7 @@ function getPropertyByPath<T>(obj: T, path: string): any {
   return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);
 }
 
-export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
+export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
   navigator.clipboard
     .writeText(address.toString())
     .then(() => {
@@ -308,7 +219,30 @@ export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
     });
 };
 
-export const isRealmSelected = (realmEntityId: bigint, structures: any) => {
+export const isRealmSelected = (realmEntityId: ID, structures: any) => {
   const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
   return selectedStructure?.category === "Realm";
+};
+
+export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
+  return resources.reduce(
+    (total, resource) => total + (resource ? resource.amount * WEIGHTS[resource.resourceId] || 0 : 0),
+    0,
+  );
+};
+
+export const formatSecondsInHoursMinutes = (seconds: number) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  return `${hours}h:${minutes}m`;
+};
+
+export const formatSecondsLeftInDaysHours = (seconds: number) => {
+  const days = Math.floor(seconds / 86400);
+  const secondsLeft = seconds % 86400;
+  const hours = Math.floor(secondsLeft / 3600);
+  const minutes = Math.floor((secondsLeft % 3600) / 60);
+
+  return `${days} days ${hours}h ${minutes}m`;
 };

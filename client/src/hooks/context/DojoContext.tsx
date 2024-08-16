@@ -1,21 +1,31 @@
-import { BurnerManager, BurnerProvider, useBurner, useBurnerManager } from "@dojoengine/create-burner";
+import { SetupNetworkResult } from "@/dojo/setupNetwork";
+import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress } from "../../ui/utils/utils";
 
+interface DojoAccount {
+  create: () => void;
+  list: () => any[];
+  get: (id: string) => any;
+  select: (id: string) => void;
+  account: Account | AccountInterface;
+  isDeploying: boolean;
+  clear: () => void;
+  accountDisplay: string;
+}
+
 interface DojoContextType extends SetupResult {
   masterAccount: Account | AccountInterface;
-  account: {
-    create: () => void;
-    list: () => any[];
-    get: (id: string) => any;
-    select: (id: string) => void;
-    account: Account | AccountInterface;
-    isDeploying: boolean;
-    clear: () => void;
-    accountDisplay: string;
-  };
+  account: DojoAccount;
+}
+
+export interface DojoResult {
+  setup: DojoContextType;
+  account: DojoAccount;
+  network: SetupNetworkResult;
+  masterAccount: Account | AccountInterface;
 }
 
 const DojoContext = createContext<DojoContextType | null>(null);
@@ -61,7 +71,7 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
   );
 };
 
-export const useDojo = () => {
+export const useDojo = (): DojoResult => {
   const contextValue = useContext(DojoContext);
   if (!contextValue) throw new Error("The `useDojo` hook must be used within a `DojoProvider`");
 
@@ -73,7 +83,7 @@ export const useDojo = () => {
   };
 };
 
-export const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
+const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 

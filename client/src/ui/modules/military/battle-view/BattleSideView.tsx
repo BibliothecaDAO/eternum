@@ -1,33 +1,33 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { BattleSide, Troops } from "@bibliothecadao/eternum";
+import { BattleSide, ID } from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
 import { BattleDetails } from "./BattleDetails";
 import { EntityAvatar } from "./EntityAvatar";
-import { SelectActiveArmy } from "./SelectActiveArmy";
 import { TroopRow } from "./Troops";
 
 export const BattleSideView = ({
   battleSide,
-  battleId,
+  battleEntityId,
   showBattleDetails,
   ownSideArmies,
   ownSideTroopsUpdated,
-  userArmiesAtPosition,
-  opposingSideArmies,
+  ownArmyEntityId,
   structure,
+  isActive,
 }: {
   battleSide: BattleSide;
-  battleId: bigint | undefined;
+  battleEntityId: ID | undefined;
   showBattleDetails: boolean;
-  ownSideArmies: ArmyInfo[];
-  ownSideTroopsUpdated: Troops | undefined;
-  userArmiesAtPosition: ArmyInfo[] | undefined;
-  opposingSideArmies: ArmyInfo[];
+  ownSideArmies: (ArmyInfo | undefined)[];
+  ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
+  ownArmyEntityId: ID | undefined;
   structure: Structure | undefined;
+  isActive: boolean;
 }) => {
   const {
     account: { account },
@@ -36,65 +36,50 @@ export const BattleSideView = ({
     },
   } = useDojo();
 
-  const clearSelection = useUIStore((state) => state.clearSelection);
-
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-
-  const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(selectedEntity?.id);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const joinBattle = async (side: BattleSide, armyId: bigint) => {
-    if (localSelectedUnit) {
+  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId || 0);
+
+  const joinBattle = async (side: BattleSide, armyId: ID) => {
+    if (ownArmyEntityId) {
       setLoading(true);
       await battle_join({
         signer: account,
         army_id: armyId,
-        battle_id: battleId!,
+        battle_id: battleEntityId!,
         battle_side: BigInt(side),
       });
       setLoading(false);
-      clearSelection();
-    } else {
-      setLocalSelectedUnit(0n);
     }
   };
 
   return (
     <div
-      className={`flex col-span-5 ornate-borders-bottom-y px-4 bg-[#1b1a1a] bg-map ${
+      className={`flex col-span-5 -bottom-y px-4 bg-[#1b1a1a] bg-map ${
         battleSide === BattleSide.Attack ? "flex-row" : "flex-row-reverse"
       }`}
     >
-      {/* TODO: Could use enemies address */}
       <div className="flex flex-col">
         <EntityAvatar
-          address={battleSide === BattleSide.Attack ? account.address : battleId?.toString()}
+          address={battleSide === BattleSide.Attack ? account.address : battleEntityId?.toString()}
           structure={structure}
           show={ownSideArmies.length > 0}
         />
 
-        {Boolean(battleId) &&
-          opposingSideArmies.length > 0 &&
-          userArmiesAtPosition &&
-          userArmiesAtPosition.length > 0 && (
-            <div className="flex flex-col w-full">
-              <SelectActiveArmy
-                setLocalSelectedUnit={setLocalSelectedUnit}
-                userAttackingArmies={userArmiesAtPosition}
-                localSelectedUnit={localSelectedUnit}
-              />
-              <Button
-                onClick={() => joinBattle(battleSide, localSelectedUnit!)}
-                isLoading={loading}
-                className="size-xs h-10 w-20 self-center"
-              >
-                Join
-              </Button>
-            </div>
-          )}
+        {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (
+          <div className="flex flex-col w-full">
+            <Button
+              onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
+              isLoading={loading}
+              className="size-xs h-10 w-20 self-center"
+            >
+              Join
+            </Button>
+          </div>
+        )}
       </div>
-      {showBattleDetails && battleId ? (
-        <BattleDetails armies={ownSideArmies} battleId={battleId} />
+      {showBattleDetails && battleEntityId ? (
+        <BattleDetails armies={ownSideArmies} />
       ) : (
         <TroopRow troops={ownSideTroopsUpdated} />
       )}

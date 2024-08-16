@@ -1,4 +1,4 @@
-import { Account, AccountInterface, CairoOption, num } from "starknet";
+import { Account, AccountInterface, BigNumberish, CairoOption, num } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 
@@ -204,7 +204,8 @@ export interface CreateBankProps extends SystemSigner {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
-  owner_fee_scaled: num.BigNumberish;
+  owner_fee_num: num.BigNumberish;
+  owner_fee_denom: num.BigNumberish;
 }
 
 export interface CreateAdminBankProps extends SystemSigner {
@@ -212,7 +213,8 @@ export interface CreateAdminBankProps extends SystemSigner {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
-  owner_fee_scaled: num.BigNumberish;
+  owner_fee_num: num.BigNumberish;
+  owner_fee_denom: num.BigNumberish;
 }
 
 export interface OpenAccountProps extends SystemSigner {
@@ -222,7 +224,8 @@ export interface OpenAccountProps extends SystemSigner {
 
 export interface ChangeBankOwnerFeeProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
-  new_swap_fee_unscaled: num.BigNumberish;
+  new_swap_fee_num: num.BigNumberish;
+  new_swap_fee_denom: num.BigNumberish;
 }
 
 export interface BuyResourcesProps extends SystemSigner {
@@ -263,6 +266,10 @@ export interface Troops {
 export interface ArmyCreateProps extends SystemSigner {
   army_owner_id: num.BigNumberish;
   is_defensive_army: boolean;
+}
+
+export interface ArmyDeleteProps extends SystemSigner {
+  army_id: num.BigNumberish;
 }
 
 export interface ArmyBuyTroopsProps extends SystemSigner {
@@ -306,8 +313,8 @@ export interface BattleClaimProps extends SystemSigner {
 type BattleClaimAndLeave = BattleClaimProps & BattleLeaveProps;
 export interface BattleClaimAndLeaveProps extends SystemSigner, BattleClaimAndLeave {}
 
-type BattleRaidAndLeave = BattlePillageProps & BattleLeaveProps;
-export interface BattleRaidAndLeaveProps extends SystemSigner, BattleRaidAndLeave {}
+type BattleLeaveAndRaid = BattlePillageProps & BattleLeaveProps;
+export interface BattleLeaveAndRaidProps extends SystemSigner, BattleLeaveAndRaid {}
 
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;
@@ -386,7 +393,8 @@ export interface SetProductionConfigProps extends SystemSigner {
 
 export interface SetBankConfigProps extends SystemSigner {
   lords_cost: num.BigNumberish;
-  lp_fee_scaled: num.BigNumberish;
+  lp_fee_num: num.BigNumberish;
+  lp_fee_denom: num.BigNumberish;
 }
 
 export interface SetTroopConfigProps extends SystemSigner {
@@ -398,6 +406,8 @@ export interface SetTroopConfigProps extends SystemSigner {
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
   pillage_health_divisor: num.BigNumberish;
+  army_free_per_structure: num.BigNumberish;
+  army_extra_per_military_building: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
@@ -428,6 +438,7 @@ export interface SetSpeedConfigProps extends SystemSigner {
 
 export interface SetHyperstructureConfig extends SystemSigner {
   resources_for_completion: { resource: number; amount: number }[];
+  time_between_shares_change: num.BigNumberish;
 }
 
 export interface CreateHyperstructureProps extends SystemSigner {
@@ -441,10 +452,19 @@ export interface ContributeToConstructionProps extends SystemSigner {
   contributions: { resource: number; amount: number }[];
 }
 
+export interface SetCoOwnersProps extends SystemSigner {
+  hyperstructure_entity_id: num.BigNumberish;
+  co_owners: Record<number, BigNumberish>[];
+}
+
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: num.BigNumberish;
   max_stamina: num.BigNumberish;
 }
 
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
-//  & ArmyMergeTroopsProps;
+
+export interface SetMercenariesConfigProps extends SystemSigner {
+  troops: Troops;
+  rewards: { resource: number; amount: number }[];
+}

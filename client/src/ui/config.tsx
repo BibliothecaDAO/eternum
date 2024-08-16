@@ -1,23 +1,9 @@
+import { ResourceMiningTypes } from "@/types";
 import { BuildingType } from "@bibliothecadao/eternum";
 
-export const DEPTH = 10;
-export const HEX_RADIUS = 3;
-export const ROWS = 300;
-export const COLS = 500;
 export const FELT_CENTER = 2147483647;
-export const EXPLORE_COLOUR = 0x2563eb;
-export const TRAVEL_COLOUR = 0xffce31;
-export const CLICKED_HEX_COLOR = 0xff5733;
-export const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
-export enum ResourceMiningTypes {
-  Forge = "forge",
-  Mine = "mine",
-  LumberMill = "lumber_mill",
-  Dragonhide = "dragonhide",
-}
-
-export const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
+const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {
   [BuildingType.Castle]: "",
   [BuildingType.Bank]: "",
@@ -29,7 +15,6 @@ export const BUILDING_IMAGES_PATH = {
   [BuildingType.Stable]: BUILD_IMAGES_PREFIX + "stable.png",
   [BuildingType.Market]: BUILD_IMAGES_PREFIX + "market.png",
   [BuildingType.ArcheryRange]: BUILD_IMAGES_PREFIX + "archery.png",
-  [BuildingType.DonkeyFarm]: BUILD_IMAGES_PREFIX + "donkey_farm.png",
   [BuildingType.TradingPost]: BUILD_IMAGES_PREFIX + "trading_post.png",
   [BuildingType.WorkersHut]: BUILD_IMAGES_PREFIX + "workers_hut.png",
   [BuildingType.WatchTower]: BUILD_IMAGES_PREFIX + "watch_tower.png",

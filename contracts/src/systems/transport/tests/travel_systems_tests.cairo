@@ -3,6 +3,7 @@ use core::serde::Serde;
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::LevelIndex;
 use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 
@@ -12,48 +13,38 @@ use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, LevelingCon
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::order::{Orders, OrdersTrait};
+use eternum::models::order::{Orders, OrdersCustomTrait};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::CoordTrait;
 use eternum::models::position::{Coord, Position, Direction};
 use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceCost};
-use eternum::models::road::{Road, RoadImpl};
+use eternum::models::road::{Road, RoadCustomImpl};
 
-use eternum::systems::config::contracts::{
-    config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
-};
+use eternum::systems::config::contracts::{config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait};
 
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::contract_address_const;
 
-fn setup() -> (IWorldDispatcher, u128, u64, Position, Coord, ITravelSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set as executor
 
-    let travelling_entity_id = 11_u64;
-    let realm_entity_id = 99;
-    let travelling_entity_position = Position {
-        x: 100_000, y: 200_000, entity_id: travelling_entity_id.into()
-    };
+    let travelling_entity_id: ID = 11;
+    let realm_entity_id: ID = 99;
+    let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id.into() };
 
     set!(world, (travelling_entity_position));
     set!(
         world,
         (
-            Owner {
-                address: contract_address_const::<'travelling_entity'>(),
-                entity_id: travelling_entity_id.into()
-            },
-            Owner {
-                address: contract_address_const::<'travelling_entity'>(),
-                entity_id: realm_entity_id.into()
-            },
+            Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: travelling_entity_id.into() },
+            Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: realm_entity_id.into() },
             EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id }
         )
     );
@@ -67,9 +58,7 @@ fn setup() -> (IWorldDispatcher, u128, u64, Position, Coord, ITravelSystemsDispa
     set!(world, (destination_tile));
 
     let travel_systems_address = deploy_system(world, travel_systems::TEST_CLASS_HASH);
-    let travel_systems_dispatcher = ITravelSystemsDispatcher {
-        contract_address: travel_systems_address
-    };
+    let travel_systems_dispatcher = ITravelSystemsDispatcher { contract_address: travel_systems_address };
 
     (
         world,
@@ -85,15 +74,7 @@ fn setup() -> (IWorldDispatcher, u128, u64, Position, Coord, ITravelSystemsDispa
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel() {
-    let (
-        world,
-        realm_entity_id,
-        travelling_entity_id,
-        _,
-        destination_coord,
-        travel_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -113,7 +94,7 @@ fn test_travel() {
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
@@ -126,15 +107,7 @@ fn test_travel() {
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel_with_realm_bonus() {
-    let (
-        world,
-        realm_entity_id,
-        travelling_entity_id,
-        _,
-        destination_coord,
-        travel_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     ///////////////////////////////
     // create realm and set level
@@ -143,9 +116,7 @@ fn test_travel_with_realm_bonus() {
     set!(
         world,
         (
-            EntityOwner {
-                entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id
-            },
+            EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id },
             Realm {
                 entity_id: realm_entity_id,
                 realm_id: 0,
@@ -158,11 +129,7 @@ fn test_travel_with_realm_bonus() {
                 wonder: 0,
                 order: 0,
             },
-            Level {
-                entity_id: realm_entity_id,
-                level: LevelIndex::TRAVEL.into() + 4,
-                valid_until: 10000000,
-            },
+            Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
             LevelingConfig {
                 config_id: REALM_LEVELING_CONFIG_ID,
                 decay_interval: 0,
@@ -200,7 +167,7 @@ fn test_travel_with_realm_bonus() {
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
     assert(travelling_entity_arrival_time.arrives_at == 6800000, 'arrival time not correct');
@@ -212,15 +179,7 @@ fn test_travel_with_realm_bonus() {
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel_with_realm_and_order_bonus() {
-    let (
-        world,
-        realm_entity_id,
-        travelling_entity_id,
-        _,
-        destination_coord,
-        travel_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     ///////////////////////////////
     // create realm and set level
@@ -231,9 +190,7 @@ fn test_travel_with_realm_and_order_bonus() {
     set!(
         world,
         (
-            EntityOwner {
-                entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id
-            },
+            EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id },
             Realm {
                 entity_id: realm_entity_id,
                 realm_id: 0,
@@ -246,11 +203,7 @@ fn test_travel_with_realm_and_order_bonus() {
                 wonder: 0,
                 order: realm_order_id.into(),
             },
-            Level {
-                entity_id: realm_entity_id,
-                level: LevelIndex::TRAVEL.into() + 4,
-                valid_until: 10000000,
-            },
+            Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
             LevelingConfig {
                 config_id: REALM_LEVELING_CONFIG_ID,
                 decay_interval: 0,
@@ -277,9 +230,7 @@ fn test_travel_with_realm_and_order_bonus() {
     set!(
         world,
         (
-            EntityOwner {
-                entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id
-            },
+            EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id },
             Orders { order_id: realm_order_id.into(), hyperstructure_count: 1 }
         )
     );
@@ -302,7 +253,7 @@ fn test_travel_with_realm_and_order_bonus() {
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
@@ -329,15 +280,8 @@ fn test_travel_with_road() {
     set!(
         world,
         (
-            ResourceCost {
-                entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10,
-            },
-            RoadConfig {
-                config_id: ROAD_CONFIG_ID,
-                resource_cost_id: 1,
-                resource_cost_count: 1,
-                speed_up_by: 2
-            },
+            ResourceCost { entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10, },
+            RoadConfig { config_id: ROAD_CONFIG_ID, resource_cost_id: 1, resource_cost_count: 1, speed_up_by: 2 },
             Road {
                 start_coord_x: travelling_entity_position.x,
                 start_coord_y: travelling_entity_position.y,
@@ -363,19 +307,17 @@ fn test_travel_with_road() {
 
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
-    assert(
-        travelling_entity_arrival_time.arrives_at == 8500000_u64 / 2, 'arrival time not correct'
-    );
+    assert(travelling_entity_arrival_time.arrives_at == 8500000_u64 / 2, 'arrival time not correct');
 
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
 
     // verify road usage count
-    let road = RoadImpl::get(world, travelling_entity_position.into(), destination_coord);
+    let road = RoadCustomImpl::get(world, travelling_entity_position.into(), destination_coord);
     assert(road.usage_count == 1, 'road usage count not correct');
 }
 
@@ -406,15 +348,7 @@ fn test_no_speed() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
 fn test_blocked() {
-    let (
-        world,
-        realm_entity_id,
-        travelling_entity_id,
-        _,
-        destination_coord,
-        travel_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -439,15 +373,7 @@ fn test_blocked() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
 fn test_in_transit() {
-    let (
-        world,
-        realm_entity_id,
-        travelling_entity_id,
-        _,
-        destination_coord,
-        travel_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -478,48 +404,36 @@ fn test_in_transit() {
 const TICK_INTERVAL_IN_SECONDS: u64 = 200;
 const MAX_STAMINA: u16 = 30;
 
-fn setup_hex_travel() -> (IWorldDispatcher, u128, Position, ITravelSystemsDispatcher) {
+fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set tick config
     let tick_config = TickConfig {
-        config_id: WORLD_CONFIG_ID,
-        tick_id: TickIds::ARMIES,
-        tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
+        config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
     };
     set!(world, (tick_config));
 
     set!(
         world,
-        (StaminaConfig {
-            config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::KNIGHT, max_stamina: MAX_STAMINA,
-        })
+        (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::KNIGHT, max_stamina: MAX_STAMINA, })
     );
 
     set!(
         world,
-        (StaminaConfig {
-            config_id: WORLD_CONFIG_ID,
-            unit_type: ResourceTypes::CROSSBOWMAN,
-            max_stamina: MAX_STAMINA,
-        })
+        (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::CROSSBOWMAN, max_stamina: MAX_STAMINA, })
     );
 
     set!(
         world,
-        (StaminaConfig {
-            config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::PALADIN, max_stamina: MAX_STAMINA,
-        })
+        (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::PALADIN, max_stamina: MAX_STAMINA, })
     );
 
     // change time such that we will be in the third tick
     starknet::testing::set_block_timestamp(tick_config.next_tick_timestamp());
 
-    let travelling_entity_id = 11_u128;
-    let owner_entity_id = 12_u128;
-    let travelling_entity_position = Position {
-        x: 100_000, y: 200_000, entity_id: travelling_entity_id
-    };
+    let travelling_entity_id: ID = 11;
+    let owner_entity_id: ID = 12;
+    let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id };
 
     set!(world, (travelling_entity_position));
     set!(
@@ -535,10 +449,7 @@ fn setup_hex_travel() -> (IWorldDispatcher, u128, Position, ITravelSystemsDispat
     set!(
         world,
         (
-            Owner {
-                address: contract_address_const::<'travelling_entity'>(),
-                entity_id: owner_entity_id.into()
-            },
+            Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: owner_entity_id.into() },
             EntityOwner { entity_id: travelling_entity_id, entity_owner_id: owner_entity_id }
         )
     );
@@ -558,9 +469,7 @@ fn setup_hex_travel() -> (IWorldDispatcher, u128, Position, ITravelSystemsDispat
     );
 
     let travel_systems_address = deploy_system(world, travel_systems::TEST_CLASS_HASH);
-    let travel_systems_dispatcher = ITravelSystemsDispatcher {
-        contract_address: travel_systems_address
-    };
+    let travel_systems_dispatcher = ITravelSystemsDispatcher { contract_address: travel_systems_address };
 
     (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher)
 }
@@ -591,15 +500,12 @@ fn get_and_explore_destination_tiles(
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel_hex() {
-    let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) =
-        setup_hex_travel();
+    let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // make destination tile explored
     let travel_directions = array![Direction::East, Direction::East, Direction::East].span();
     let current_coord: Coord = travelling_entity_position.into();
-    let destination_coord: Coord = get_and_explore_destination_tiles(
-        world, current_coord, travel_directions
-    );
+    let destination_coord: Coord = get_and_explore_destination_tiles(world, current_coord, travel_directions);
 
     // travelling entity travels
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
@@ -625,8 +531,7 @@ fn test_travel_hex__destination_tile_not_explored() {
 #[test]
 #[should_panic(expected: ('not enough stamina', 'ENTRYPOINT_FAILED'))]
 fn test_travel_hex__exceed_max_stamina() {
-    let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) =
-        setup_hex_travel();
+    let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // max hex moves per tick is 30 /5 = 6 so we try to travel 7 hexes
     let travel_directions = array![

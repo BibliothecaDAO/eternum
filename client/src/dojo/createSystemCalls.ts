@@ -32,7 +32,7 @@ class PromiseQueue {
   }
 }
 
-export type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
+type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
 type SystemCallFunction = (...args: any[]) => any;
 type WrappedSystemCalls = Record<string, SystemCallFunction>;
 
@@ -168,6 +168,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.create_army(props);
   };
 
+  const delete_army = async (props: SystemProps.ArmyDeleteProps) => {
+    await provider.delete_army(props);
+  };
+
   const army_buy_troops = async (props: SystemProps.ArmyBuyTroopsProps) => {
     await provider.army_buy_troops(props);
   };
@@ -194,6 +198,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const contribute_to_construction = async (props: SystemProps.ContributeToConstructionProps) => {
     await provider.contribute_to_construction(props);
+  };
+
+  const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
+    await provider.set_co_owners(props);
   };
 
   const create_guild = async (props: SystemProps.CreateGuildProps) => {
@@ -240,8 +248,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_claim_and_leave(props);
   };
 
-  const battle_leave_and_raid = async (props: SystemProps.BattleClaimAndLeaveProps) => {
-    await provider.battle_raid_and_leave(props);
+  const battle_leave_and_pillage = async (props: SystemProps.BattleLeaveAndRaidProps) => {
+    await provider.battle_leave_and_pillage(props);
   };
 
   const battle_claim = async (props: SystemProps.BattleClaimProps) => {
@@ -288,9 +296,11 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     destroy_building,
     create_building,
     create_army,
+    delete_army,
     uuid,
     create_hyperstructure,
     contribute_to_construction,
+    set_co_owners,
 
     mint_resources,
     mint_starting_resources,
@@ -313,7 +323,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     battle_claim,
     battle_pillage,
     battle_leave_and_claim,
-    battle_leave_and_raid,
+    battle_leave_and_pillage,
   };
 
   // TODO: Fix Type

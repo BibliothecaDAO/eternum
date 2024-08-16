@@ -1,7 +1,7 @@
-import { ReactNode, useState, forwardRef } from "react";
-import clsx from "clsx";
-import { ReactComponent as Expand } from "@/assets/icons/common/expand.svg";
 import { ReactComponent as Collapse } from "@/assets/icons/common/collapse.svg";
+import { ReactComponent as Expand } from "@/assets/icons/common/expand.svg";
+import clsx from "clsx";
+import { forwardRef, ReactNode, useState } from "react";
 
 interface BaseContainerProps {
   children?: ReactNode;
@@ -17,7 +17,7 @@ export const BaseContainer = forwardRef<HTMLDivElement, BaseContainerProps>(
       <div
         ref={ref}
         className={clsx(
-          " flex shadow-black/30 relative flex-col transition-all duration-400 border-gold  bg-brown border-gradient border-2 clip-angled ornate-borders",
+          " flex relative flex-col transition-all duration-400 bg-black/75 shadow-2xl border-gradient border rounded-sm bg-hex-bg animatedBackground",
           className,
           expanded ? expandedClassName : collapsedClassName,
         )}

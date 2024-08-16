@@ -1,6 +1,8 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
+// Knip ignore tag
+/** @public */
 export enum StructureType {
   Realm = 1,
   Hyperstructure = 2,
@@ -10,6 +12,7 @@ export enum StructureType {
 }
 
 export enum BuildingType {
+  None = 0,
   Castle = 1,
   Resource = 2,
   Farm = 3,
@@ -18,14 +21,13 @@ export enum BuildingType {
   Market = 6,
   ArcheryRange = 7,
   Stable = 8,
-  DonkeyFarm = 9,
-  TradingPost = 10,
-  WorkersHut = 11,
-  WatchTower = 12,
-  Walls = 13,
-  Storehouse = 14,
-  Bank = 15,
-  FragmentMine = 16,
+  TradingPost = 9,
+  WorkersHut = 10,
+  WatchTower = 11,
+  Walls = 12,
+  Storehouse = 13,
+  Bank = 14,
+  FragmentMine = 15,
 }
 export const MAX_BUILDING_TYPE = 14;
 
@@ -69,14 +71,13 @@ export const BuildingEnumToString: { [index: number]: string } = {
   6: "Market",
   7: "Archery Range",
   8: "Stable",
-  9: "Donkey Farm",
-  10: "Trading Post",
-  11: "Workers Hut",
-  12: "Watch Tower",
-  13: "Walls",
-  14: "Storehouse",
-  15: "Bank",
-  16: "Shards Mine",
+  9: "Trading Post",
+  10: "Workers Hut",
+  11: "Watch Tower",
+  12: "Walls",
+  13: "Storehouse",
+  14: "Bank",
+  15: "Shards Mine",
 };
 
 export const BuildingStringToEnum = {
@@ -89,18 +90,19 @@ export const BuildingStringToEnum = {
   Market: 6,
   ArcheryRange: 7,
   Stable: 8,
-  DonkeyFarm: 9,
-  TradingPost: 10,
-  WorkersHut: 11,
-  WatchTower: 12,
-  Walls: 13,
-  Storehouse: 14,
-  Bank: 15,
-  FragmentMine: 16,
+  TradingPost: 9,
+  WorkersHut: 10,
+  WatchTower: 11,
+  Walls: 12,
+  Storehouse: 13,
+  Bank: 14,
+  FragmentMine: 15,
 };
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
   switch (name) {
+    case BuildingType.None:
+      return new CairoCustomEnum({ None: {} });
     case BuildingType.Castle:
       return new CairoCustomEnum({ Castle: {} });
     case BuildingType.Resource:
@@ -117,8 +119,6 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ ArcheryRange: {} });
     case BuildingType.Stable:
       return new CairoCustomEnum({ Stable: {} });
-    case BuildingType.DonkeyFarm:
-      return new CairoCustomEnum({ DonkeyFarm: {} });
     case BuildingType.TradingPost:
       return new CairoCustomEnum({ TradingPost: {} });
     case BuildingType.WorkersHut:
@@ -138,6 +138,8 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
 
 export function getProducedResource(name: BuildingType): number {
   switch (name) {
+    case BuildingType.None:
+      return 0;
     case BuildingType.Castle:
       return 0;
     case BuildingType.Resource:
@@ -154,8 +156,6 @@ export function getProducedResource(name: BuildingType): number {
       return ResourcesIds.Crossbowman;
     case BuildingType.Stable:
       return ResourcesIds.Paladin;
-    case BuildingType.DonkeyFarm:
-      return ResourcesIds.Donkey;
     case BuildingType.TradingPost:
       return 0;
     case BuildingType.WorkersHut:
@@ -184,7 +184,7 @@ export enum EntityState {
 export function determineEntityState(
   nextBlockTimestamp: number | undefined,
   blocked: boolean | undefined,
-  arrivalTime: number | undefined,
+  arrivalTime: bigint | undefined,
   hasResources: boolean,
 ): EntityState {
   const isTraveling =

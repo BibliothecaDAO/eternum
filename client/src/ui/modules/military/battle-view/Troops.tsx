@@ -1,7 +1,15 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ResourcesIds, Troops } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 
-export const TroopRow = ({ troops, defending = false }: { troops: Troops | undefined; defending?: boolean }) => {
+export const TroopRow = ({
+  troops,
+  defending = false,
+}: {
+  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined;
+  defending?: boolean;
+}) => {
   return (
     <div className="self-center m-auto grid grid-cols-3 gap-2 flex">
       <TroopCard
@@ -21,7 +29,7 @@ export const TroopRow = ({ troops, defending = false }: { troops: Troops | undef
   );
 };
 
-export const TroopCard = ({
+const TroopCard = ({
   count,
   id,
   className,

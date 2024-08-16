@@ -1,7 +1,8 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { QuestStatus, useQuestClaimStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
 import clsx from "clsx";
@@ -9,44 +10,38 @@ import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
+import { Assistant } from "../assistant/Assistant";
+import { Guilds } from "../guilds/Guilds";
+import { Leaderboard } from "../leaderboard/LeaderBoard";
+import { Questing } from "../questing/Questing";
 import { BuildingThumbs } from "./LeftNavigationModule";
 
 export enum MenuEnum {
-  realm = "realm",
-  worldMap = "world-map",
   military = "military",
   construction = "construction",
-  trade = "trade",
-  resources = "resources",
-  bank = "bank",
   worldStructures = "worldStructures",
-  structures = "structures",
-  leaderboard = "leaderboard",
   entityDetails = "entityDetails",
 }
 
 export const BottomNavigation = () => {
-  const [location, setLocation] = useLocation();
+  const [location, _] = useLocation();
 
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const { quests } = useQuests();
+  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+  const { questClaimStatus } = useQuestClaimStatus();
+
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
-  const showAllArmies = useUIStore((state) => state.showAllArmies);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const isWorldView = useMemo(() => location === "/map", [location]);
-
-  const quests = useQuestStore((state) => state.quests);
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
-  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
 
-  const questToClaim = quests?.find((quest) => quest.completed && !quest.claimed);
+  const questToClaim = quests?.find((quest: any) => quest.status === QuestStatus.Completed);
 
   const secondaryNavigation = useMemo(() => {
     return [
@@ -60,7 +55,7 @@ export const BottomNavigation = () => {
               active={isPopupOpen(questsWindow)}
               size="lg"
               onClick={() => togglePopup(questsWindow)}
-              notification={isRealmSelected(realmEntityId, structures) ? claimableQuestsLength : undefined}
+              notification={isRealmSelected(realmEntityId, structures) ? unclaimedQuestsCount : undefined}
               notificationLocation={"topleft"}
               disabled={!isRealmSelected(realmEntityId, structures)}
             />
@@ -83,20 +78,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.Travel)?.claimed })}
-          />
-        ),
-      },
-      {
-        button: (
-          <CircleButton
-            tooltipLocation="top"
-            image={BuildingThumbs.military}
-            label={""}
-            active={showAllArmies}
-            size="lg"
-            onClick={toggleShowAllArmies}
-            className={clsx({ hidden: !isWorldView })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.Travel] })}
           />
         ),
       },
@@ -109,36 +91,43 @@ export const BottomNavigation = () => {
             active={isPopupOpen(guilds)}
             size="lg"
             onClick={() => togglePopup(guilds)}
-            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.Travel)?.claimed })}
+            className={clsx({
+              hidden: !questClaimStatus[QuestId.Travel],
+            })}
           />
         ),
       },
     ];
-  }, [claimableQuestsLength, selectedQuest, quests]);
+  }, [unclaimedQuestsCount, selectedQuest, quests, realmEntityId]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },
     visible: { y: "0%", transition: { duration: 0.3 } },
   };
 
-  if (!nextBlockTimestamp) {
-    return null;
-  }
-
   return (
-    <motion.div
-      variants={slideUp}
-      initial="hidden"
-      animate="visible"
-      className="flex justify-center flex-wrap relative w-full duration-300 transition-all"
-    >
-      <div className="">
-        <div className="flex py-2 px-10 gap-1 pointer-events-auto">
-          {secondaryNavigation.map((a, index) => (
-            <div key={index}>{a.button}</div>
-          ))}
-        </div>
+    <>
+      <div className="pointer-events-auto">
+        <Questing entityId={realmEntityId} />
+        <Assistant />
+        <Leaderboard />
+        <Guilds />
       </div>
-    </motion.div>
+
+      <motion.div
+        variants={slideUp}
+        initial="hidden"
+        animate="visible"
+        className="flex justify-center flex-wrap relative w-full duration-300 transition-all"
+      >
+        <div className="">
+          <div className="flex py-2 px-10 gap-1 pointer-events-auto">
+            {secondaryNavigation.map((a, index) => (
+              <div key={index}>{a.button}</div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
 };

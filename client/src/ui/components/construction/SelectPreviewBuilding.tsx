@@ -9,28 +9,33 @@ import {
   BuildingEnumToString,
   BuildingType,
   EternumGlobalConfig,
+  ID,
+  RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
+  RESOURCE_OUTPUTS,
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
+
 import { usePlayResourceSound } from "@/hooks/useUISound";
+import { ResourceMiningTypes } from "@/types";
+import { QuestId } from "@/ui/components/quest/questDetails";
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
+import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { HintSection } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
@@ -38,15 +43,14 @@ import { HintSection } from "../hints/HintModal";
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const quests = useQuestStore((state) => state.quests);
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(realmEntityId);
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
+  const { questClaimStatus } = useQuestClaimStatus();
 
   const buildingTypes = Object.keys(BuildingType).filter(
     (key) =>
@@ -56,7 +60,6 @@ export const SelectPreviewBuildingMenu = () => {
       key !== "Bank" &&
       key !== "FragmentMine" &&
       key !== "None" &&
-      key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
       key !== "WatchTower" &&
       key !== "Walls" &&
@@ -81,11 +84,6 @@ export const SelectPreviewBuildingMenu = () => {
 
   const [selectedTab, setSelectedTab] = useState(1);
 
-  const isQuestClaimedByName = (questName: QuestName) => {
-    const quest = quests?.find((q) => q.name === questName);
-    return quest?.claimed ?? false;
-  };
-
   const tabs = useMemo(
     () => [
       {
@@ -94,8 +92,7 @@ export const SelectPreviewBuildingMenu = () => {
           <div className="flex relative group flex-col items-center">
             <div
               className={clsx({
-                "animate-pulse  border-b border-gold":
-                  selectedTab !== 0 && selectedQuest?.name === QuestName.BuildResource,
+                "animate-pulse  border-b border-gold": selectedTab !== 0 && selectedQuest?.id === QuestId.BuildResource,
               })}
             >
               Resources
@@ -119,7 +116,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: !isQuestClaimedByName(QuestName.BuildFarm),
+                    hidden: !questClaimStatus[QuestId.BuildFarm],
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -138,7 +135,8 @@ export const SelectPreviewBuildingMenu = () => {
                   active={previewBuilding?.resource === resourceId}
                   name={resource?.trait}
                   toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
-                  canBuild={canBuild}
+                  hasFunds={hasBalance}
+                  hasPopulation={hasEnoughPopulation}
                 />
               );
             })}
@@ -174,11 +172,11 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !isQuestClaimedByName(QuestName.BuildResource),
+                      hidden: !isFarm && !questClaimStatus[QuestId.BuildResource],
                       "animate-pulse":
-                        (isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
-                        (isWorkersHut && selectedQuest?.name === QuestName.BuildWorkersHut) ||
-                        (isMarket && selectedQuest?.name === QuestName.Market),
+                        (isFarm && selectedQuest?.id === QuestId.BuildFarm) ||
+                        (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
+                        (isMarket && selectedQuest?.id === QuestId.Market),
                     })}
                     key={index}
                     buildingId={building}
@@ -201,7 +199,8 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={canBuild}
+                    hasFunds={hasBalance}
+                    hasPopulation={hasEnoughPopulation}
                   />
                 );
               })}
@@ -232,7 +231,7 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isQuestClaimedByName(QuestName.BuildResource),
+                      hidden: !questClaimStatus[QuestId.BuildResource],
                     })}
                     key={index}
                     buildingId={building}
@@ -249,7 +248,8 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={canBuild}
+                    hasFunds={hasBalance}
+                    hasPopulation={hasEnoughPopulation}
                   />
                 );
               })}
@@ -275,6 +275,7 @@ export const SelectPreviewBuildingMenu = () => {
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
         </Tabs.List>
+
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab, index) => (
             <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
@@ -285,13 +286,14 @@ export const SelectPreviewBuildingMenu = () => {
   );
 };
 
-export const BuildingCard = ({
+const BuildingCard = ({
   buildingId,
   onClick,
   active,
   name,
   toolTip,
-  canBuild,
+  hasFunds,
+  hasPopulation,
   resourceId,
   className,
 }: {
@@ -300,7 +302,8 @@ export const BuildingCard = ({
   active: boolean;
   name: string;
   toolTip: React.ReactElement;
-  canBuild?: boolean;
+  hasFunds?: boolean;
+  hasPopulation?: boolean;
   resourceId?: ResourcesIds;
   className?: string;
 }) => {
@@ -311,26 +314,28 @@ export const BuildingCard = ({
         backgroundImage: `url(${
           resourceId
             ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
-            : BUILDING_IMAGES_PATH[buildingId as BuildingType]
+            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
         })`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
       onClick={onClick}
       className={clsx(
-        "hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
+        "hover:opacity-90 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
         {
           "!border-lightest": active,
         },
         className,
       )}
     >
-      {!canBuild && (
-        <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient funds or population</div>
+      {(!hasFunds || !hasPopulation) && (
+        <div className="absolute w-full h-full bg-black/75 text-white/60 p-4 text-xs  flex justify-center ">
+          <div className="self-center">{`${!hasFunds ? "Insufficient funds. " : ""} ${
+            !hasPopulation ? "Insufficient population. " : ""
+          }`}</div>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">
+      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/75 ">
         <div className="truncate">{name}</div>
       </div>
       <div className="flex relative flex-col items-start text-xs font-bold p-2">
@@ -359,7 +364,7 @@ export const ResourceInfo = ({
   extraButtons = [],
 }: {
   resourceId: number;
-  entityId: bigint | undefined;
+  entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
   const cost = RESOURCE_INPUTS_SCALED[resourceId];
@@ -370,7 +375,7 @@ export const ResourceInfo = ({
 
   const capacity = BUILDING_CAPACITY[BuildingType.Resource];
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="flex flex-col text-gold text-sm p-1 space-y-1">
@@ -391,7 +396,7 @@ export const ResourceInfo = ({
       <div className="pt-3 font-bold">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
 
           return (
             <ResourceCost
@@ -408,7 +413,7 @@ export const ResourceInfo = ({
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, buildingCost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource);
           return (
             <ResourceCost
               key={index}
@@ -431,7 +436,7 @@ export const BuildingInfo = ({
   name = BuildingEnumToString[buildingId],
 }: {
   buildingId: number;
-  entityId: bigint | undefined;
+  entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
   name?: string;
 }) => {
@@ -439,11 +444,12 @@ export const BuildingInfo = ({
 
   const population = BUILDING_POPULATION[buildingId] || 0;
   const capacity = BUILDING_CAPACITY[buildingId] || 0;
-  const perTick = RESOURCE_OUTPUTS_SCALED[buildingId] || 0;
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
+  const ongoingCost = RESOURCE_INPUTS[resourceProduced] || 0;
 
-  const { getBalance } = useResourceBalance();
+  const perTick = RESOURCE_OUTPUTS[resourceProduced] || 0;
+
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">
@@ -489,10 +495,10 @@ export const BuildingInfo = ({
             {resourceProduced !== 0 &&
               ongoingCost &&
               Object.keys(ongoingCost).map((resourceId, index) => {
-                const balance = getBalance(entityId || 0n, ongoingCost[Number(resourceId)].resource);
+                const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
                 return (
                   <ResourceCost
-                    key={index}
+                    key={`ongoing-cost-${index}`}
                     type="horizontal"
                     resourceId={ongoingCost[Number(resourceId)].resource}
                     amount={ongoingCost[Number(resourceId)].amount}
@@ -511,10 +517,10 @@ export const BuildingInfo = ({
           <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
           <div className="grid grid-cols-1 gap-2 text-sm">
             {Object.keys(cost).map((resourceId, index) => {
-              const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+              const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
               return (
                 <ResourceCost
-                  key={index}
+                  key={`fixed-cost-${index}`}
                   type="horizontal"
                   resourceId={cost[Number(resourceId)].resource}
                   amount={cost[Number(resourceId)].amount}
@@ -525,7 +531,7 @@ export const BuildingInfo = ({
           </div>
         </>
       )}
-      <div className="flex justify-center">{...extraButtons}</div>
+      <div className="w-full flex flex-col">{extraButtons}</div>
     </div>
   );
 };

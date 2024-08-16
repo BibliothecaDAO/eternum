@@ -1,7 +1,7 @@
+import { ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
-import { Position } from "@bibliothecadao/eternum";
+import { useDojo } from "../context/DojoContext";
 
 export function useCaravan() {
   const {
@@ -10,10 +10,10 @@ export function useCaravan() {
     },
   } = useDojo();
 
-  function calculateDistance(startId: bigint, destinationId: bigint): number | undefined {
+  function calculateDistance(startId: ID, destinationId: ID): number | undefined {
     // d = √((x2-x1)² + (y2-y1)²)
-    let start = getComponentValue(Position, getEntityIdFromKeys([startId]));
-    let destination = getComponentValue(Position, getEntityIdFromKeys([destinationId]));
+    let start = getComponentValue(Position, getEntityIdFromKeys([BigInt(startId)]));
+    let destination = getComponentValue(Position, getEntityIdFromKeys([BigInt(destinationId)]));
     if (start && destination) {
       // Calculate the difference in x and y coordinates
       const deltaX = Math.abs(start.x - destination.x);

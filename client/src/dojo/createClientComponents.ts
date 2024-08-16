@@ -1,6 +1,5 @@
 import { overridableComponent } from "@dojoengine/recs";
 import { SetupNetworkResult } from "./setupNetwork";
-import { Position } from "@/ui/elements/BaseThreeTooltip";
 
 export type ClientComponents = ReturnType<typeof createClientComponents>;
 
@@ -10,5 +9,6 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
     Building: overridableComponent(contractComponents.Building),
     Position: overridableComponent(contractComponents.Position),
     Stamina: overridableComponent(contractComponents.Stamina),
+    Tile: overridableComponent(contractComponents.Tile),
   };
 }

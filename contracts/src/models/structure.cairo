@@ -7,15 +7,15 @@ use traits::Into;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Structure {
+pub struct Structure {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     category: StructureCategory
 }
 
 
 #[generate_trait]
-impl StructureImpl of StructureTrait {
+impl StructureCustomImpl of StructureCustomTrait {
     fn assert_is_structure(self: Structure) {
         assert!(self.is_structure(), "entity {} is not a structure", self.entity_id)
     }
@@ -25,7 +25,7 @@ impl StructureImpl of StructureTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Introspect)]
+#[derive(PartialEq, Copy, Drop, Serde, Introspect)]
 enum StructureCategory {
     None,
     Realm,
@@ -47,16 +47,16 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct StructureCount {
+pub struct StructureCount {
     #[key]
     coord: Coord,
     count: u8
 }
 
 #[generate_trait]
-impl StructureCountImpl of StructureCountTrait {
+impl StructureCountCustomImpl of StructureCountCustomTrait {
     fn assert_none(self: StructureCount) {
         assert!(self.count == 0, "structure exists at this location");
     }

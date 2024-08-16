@@ -6,23 +6,23 @@ use eternum::models::config::{RoadConfig};
 use eternum::models::position::Coord;
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Road {
+pub struct Road {
     #[key]
-    start_coord_x: u128,
+    start_coord_x: u32,
     #[key]
-    start_coord_y: u128,
+    start_coord_y: u32,
     #[key]
-    end_coord_x: u128,
+    end_coord_x: u32,
     #[key]
-    end_coord_y: u128,
+    end_coord_y: u32,
     usage_count: u32
 }
 
 
 #[generate_trait]
-impl RoadImpl of RoadTrait {
+impl RoadCustomImpl of RoadCustomTrait {
     #[inline(always)]
     fn get(world: IWorldDispatcher, start_coord: Coord, end_coord: Coord) -> Road {
         let mut road = get!(world, (start_coord.x, start_coord.y, end_coord.x, end_coord.y), Road);
@@ -33,9 +33,7 @@ impl RoadImpl of RoadTrait {
     }
 
     #[inline(always)]
-    fn use_road(
-        world: IWorldDispatcher, travel_time: u64, start_coord: Coord, end_coord: Coord
-    ) -> u64 {
+    fn use_road(world: IWorldDispatcher, travel_time: u64, start_coord: Coord, end_coord: Coord) -> u64 {
         let mut new_travel_time = travel_time;
         let mut road = Self::get(world, start_coord, end_coord);
         if road.usage_count > 0 {
@@ -56,10 +54,11 @@ mod tests {
     use core::serde::Serde;
 
     use dojo::world::IWorldDispatcherTrait;
+    use eternum::alias::ID;
     use eternum::models::position::{Coord};
-    use eternum::models::road::{Road, RoadImpl, RoadTrait};
+    use eternum::models::road::{Road, RoadCustomImpl, RoadCustomTrait};
 
-    use eternum::utils::testing::spawn_eternum;
+    use eternum::utils::testing::world::spawn_eternum;
 
     #[test]
     #[available_gas(3000000000000)]
@@ -81,10 +80,10 @@ mod tests {
             })
         );
 
-        let road = RoadImpl::get(world, start_coord, end_coord);
+        let road = RoadCustomImpl::get(world, start_coord, end_coord);
         assert(road.usage_count == usage_count, 'usage count should be 33');
 
-        let road = RoadImpl::get(world, end_coord, start_coord); // reverse order
+        let road = RoadCustomImpl::get(world, end_coord, start_coord); // reverse order
         assert(road.usage_count == usage_count, 'usage count should be 33');
     }
 }

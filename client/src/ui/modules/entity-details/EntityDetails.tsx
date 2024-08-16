@@ -1,9 +1,12 @@
-import HexagonInformationPanel from "@/ui/components/worldmap/hexagon/HexagonInformationPanel";
+import { useMemo } from "react";
+import { useLocation } from "wouter";
+import { BuildingEntityDetails } from "./BuildingEntityDetails";
+import { CombatEntityDetails } from "./CombatEntityDetails";
 
 export const EntityDetails = () => {
-  return (
-    <>
-      <HexagonInformationPanel />
-    </>
-  );
+  const [location, _] = useLocation();
+  const isWorldView = useMemo(() => {
+    return location === "/map";
+  }, [location]);
+  return <div>{isWorldView ? <CombatEntityDetails /> : <BuildingEntityDetails />}</div>;
 };

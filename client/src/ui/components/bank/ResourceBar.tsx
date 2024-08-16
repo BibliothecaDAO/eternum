@@ -1,30 +1,34 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { Resources, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
+import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
+type ResourceBarProps = {
+  entityId: ID;
+  lordsFee: number;
+  resources: Resources[];
+  resourceId: ResourcesIds;
+  setResourceId: (resourceId: ResourcesIds) => void;
+  amount: number;
+  setAmount: (amount: number) => void;
+  disableInput?: boolean;
+};
+
 export const ResourceBar = ({
   entityId,
+  lordsFee,
   resources,
   resourceId,
   setResourceId,
   amount,
   setAmount,
   disableInput = false,
-}: {
-  entityId: bigint;
-  resources: Resources[];
-  resourceId: bigint;
-  setResourceId: (resourceId: bigint) => void;
-  amount: number;
-  setAmount: (amount: number) => void;
-  disableInput?: boolean;
-}) => {
-  const { getBalance } = useResourceBalance();
+}: ResourceBarProps) => {
+  const { getBalance } = getResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
 
@@ -34,29 +38,36 @@ export const ResourceBar = ({
 
   const handleResourceChange = (trait: string) => {
     const resourceId = findResourceIdByTrait(trait);
-    setResourceId && setResourceId(BigInt(resourceId));
+    setResourceId && setResourceId(resourceId);
   };
 
   const handleAmountChange = (amount: string) => {
     !disableInput && setAmount && setAmount(parseInt(amount));
   };
 
+  const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
+  const finalResourceBalance = hasLordsFees ? selectedResourceBalance - lordsFee : selectedResourceBalance;
+
   return (
     <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap clip-angled-sm">
-      {/* <div className="w-full mb-1  ml-2 font-bold uppercase text-gold/70">{disableInput ? "sell" : "buy"}</div> */}
       <div className="self-center">
         <TextInput
           className="text-2xl border-transparent"
-          value={amount.toString()}
+          value={amount.toLocaleString()}
           onChange={(amount) => handleAmountChange(amount)}
         />
 
         {!disableInput && (
           <div
-            className="text-xs text-gold/70 mt-1 ml-2"
-            onClick={() => handleAmountChange(selectedResourceBalance.toString())}
+            className="flex text-xs text-gold/70 mt-1 ml-2"
+            onClick={() => handleAmountChange(finalResourceBalance.toString())}
           >
             Max: {selectedResourceBalance.toLocaleString()}
+            {hasLordsFees && (
+              <div className="text-danger ml-2">
+                <div>{`[- ${lordsFee.toFixed(2)}]`}</div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,30 +1,31 @@
-import { useMemo, useState } from "react";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { Tabs } from "../../elements/tab";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { ViewOnMapButton } from "@/ui/components/military/ArmyManagementCard";
 import { currencyIntlFormat } from "@/ui/utils/utils";
+import { useMemo, useState } from "react";
+import { Tabs } from "../../elements/tab";
 
 import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { ShardMinePanel } from "@/ui/components/shardMines/ShardMinePanel";
 
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useShardMines } from "@/hooks/helpers/useShardMines";
-import { useContributions } from "@/hooks/helpers/useContributions";
 
-import { calculateShares } from "@/hooks/store/useLeaderBoardStore";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
+import { QuestId } from "@/ui/components/quest/questDetails";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
 
 export const WorldStructuresMenu = ({}: any) => {
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
+
   const { hyperstructures } = useHyperstructures();
   const { shardMines } = useShardMines();
 
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
   const hyperstructureExtraContent = (entityId: any) => {
-    const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === BigInt(entityId));
+    const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
     if (!hyperstructure) return null;
     return (
       <HyperStructureExtraContent
@@ -36,19 +37,12 @@ export const WorldStructuresMenu = ({}: any) => {
   };
 
   const shardMineExtraContent = (entityId: any) => {
-    const shardMine = shardMines.find((shardMine) => shardMine.entity_id === BigInt(entityId));
+    const shardMine = shardMines.find((shardMine) => shardMine.entity_id === entityId);
     if (!shardMine) return null;
 
     shardMine.production_rate;
 
-    return (
-      <ShardMineExtraContent
-        shardMineEntityId={shardMine.entity_id!}
-        x={shardMine.x!}
-        y={shardMine.y!}
-        balance={shardMine.balance!}
-      />
-    );
+    return <ShardMineExtraContent x={Number(shardMine.x!)} y={Number(shardMine.y!)} balance={shardMine.balance!} />;
   };
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -64,7 +58,7 @@ export const WorldStructuresMenu = ({}: any) => {
         ),
         component: (
           <EntityList
-            questing={selectedQuest?.name === QuestName.Contribution}
+            questing={selectedQuest?.id === QuestId.Contribution}
             title="Hyperstructures"
             panel={({ entity }) => <HyperstructurePanel entity={entity} />}
             entityContent={hyperstructureExtraContent}
@@ -127,17 +121,15 @@ const HyperStructureExtraContent = ({
   x,
   y,
 }: {
-  hyperstructureEntityId: bigint;
+  hyperstructureEntityId: ID;
   x: number;
   y: number;
 }) => {
-  const { getContributionsByPlayerAddress } = useContributions();
+  const {
+    account: { account },
+  } = useDojo();
   const { useProgress } = useHyperstructures();
   const progress = useProgress(hyperstructureEntityId);
-  const playerContributions = getContributionsByPlayerAddress(
-    BigInt(useDojo().account.account.address),
-    hyperstructureEntityId,
-  );
 
   return (
     <div className="flex space-x-5 items-center text-xs">
@@ -150,23 +142,19 @@ const HyperStructureExtraContent = ({
       <div>
         Progress: {`${progress.percentage}%`}
         <br />
-        Shares: {currencyIntlFormat(calculateShares(playerContributions) * 100, 0)}%
+        Shares:{" "}
+        {currencyIntlFormat(
+          (LeaderboardManager.instance().getShares(ContractAddress(account.address), hyperstructureEntityId) || 0) *
+            100,
+          0,
+        )}
+        %
       </div>
     </div>
   );
 };
 
-const ShardMineExtraContent = ({
-  shardMineEntityId,
-  x,
-  y,
-  balance,
-}: {
-  shardMineEntityId: bigint;
-  x: number;
-  y: number;
-  balance: bigint;
-}) => {
+const ShardMineExtraContent = ({ x, y, balance }: { x: number; y: number; balance: bigint }) => {
   return (
     <div className="flex space-x-5 items-center text-xs">
       <ViewOnMapButton

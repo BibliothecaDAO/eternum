@@ -1,11 +1,11 @@
-import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, formatTime } from "../../utils/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { useEffect, useMemo, useState } from "react";
+import { ResourceIcon } from "../../elements/ResourceIcon";
+import { currencyFormat, formatTime } from "../../utils/utils";
 
 export const ResourceChip = ({
   isLabor = false,
@@ -13,8 +13,8 @@ export const ResourceChip = ({
   entityId,
 }: {
   isLabor?: boolean;
-  resourceId: number;
-  entityId: bigint;
+  resourceId: ID;
+  entityId: ID;
 }) => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
@@ -50,24 +50,35 @@ export const ResourceChip = ({
 
   const [displayBalance, setDisplayBalance] = useState(balance);
 
+  const icon = useMemo(
+    () => (
+      <ResourceIcon
+        isLabor={isLabor}
+        withTooltip={false}
+        resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
+        size="sm"
+        className="mr-3 self-center"
+      />
+    ),
+    [resourceId],
+  );
+
   useEffect(() => {
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
-        const difference = balance - prevDisplayBalance;
-        if (Math.abs(difference) > 0) {
-          const stepSize = difference * 0.1;
-          return prevDisplayBalance + stepSize;
+        if (Math.abs(netRate) > 0) {
+          return prevDisplayBalance + netRate;
         }
         return prevDisplayBalance;
       });
-    }, 2);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [balance]);
+  }, [balance, netRate]);
 
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
-        netRate && netRate < 0 ? "bg-red/10" : "bg-green/10"
+        netRate && netRate < 0 ? "bg-red/5" : "bg-green/5"
       } `}
       onMouseEnter={() => {
         setTooltip({
@@ -79,14 +90,7 @@ export const ResourceChip = ({
         setTooltip(null);
       }}
     >
-      <ResourceIcon
-        isLabor={isLabor}
-        withTooltip={false}
-        resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
-        size="sm"
-        className="mr-3 self-center"
-      />
-
+      {icon}
       <div className="flex justify-between w-full">
         <div className=" self-center text-sm font-bold">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}

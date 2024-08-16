@@ -18,7 +18,6 @@ mod quantity;
 mod realm;
 mod resources;
 mod road;
-mod settlement;
 mod stamina;
 mod structure;
 mod trade;

@@ -22,17 +22,17 @@ echo "----- Building World -----"
 sozo build
 
 echo "----- Migrating World -----"
-sozo migrate apply --name eternum
+sozo migrate apply
 
 
 if [[ "$setConfig" == "true" ]]; then
-    bun --env-file=../client/.env.local ../config/index.ts
-
     echo "----- Auth and World Contracts: Set 0.1s ----- "
     source scripts/env_variables.sh dev
     ./scripts/set_writer.sh --interval 0.1  --mode dev
+
+    bun --env-file=../client/.env.local ../config/index.ts
 fi
 
 echo "-----  Started indexer ----- "
 rm torii.db
-torii --world 0x0161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824 --database torii.db --allowed-origins "*"
+torii --world 0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac --database torii.db --allowed-origins "*"

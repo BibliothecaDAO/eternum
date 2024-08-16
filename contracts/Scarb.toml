@@ -1,39 +1,20 @@
 [package]
-cairo-version = "2.5.0"
 name = "eternum"
-version = "0.6.8"
+version = "1.0.0"
 
 [cairo]
 sierra-replace-ids = true
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.7.1" }
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
-alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
-cubit = { git = "https://github.com/ponderingdemocritus/cubit" }
-
-[tool.dojo.env]
-## dev
-world_address = "0x0161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824"
-account_address = "0xb3ff441a68610b30fd5e2abbf3a1548eb6ba6f3559f2862bf2dc757e5828ca"
-private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a"
-
-## realms.world
-[profile.prod.tool.dojo.env]
-rpc_url = "https://api.cartridge.gg/x/eternum-23/katana"
-account_address = "0x6bd82a20984e638c8e1d45770e2924e274e315b9609eb15c26384eac0094cf1"
-private_key = "0x15ffe6ee85bcd75f93b395ec4471819d5dbebb77ea2f2a50b30ce7f67372ce4"
-world_address = "0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824"
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.5" }
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
+cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
 
 [[target.dojo]]
 
-[lib]
-
-[tool.dojo.world]
-name = "Realms: Eternum"
-description = "Rule the Hex"
-cover_uri = "file://assets/bg.webp"
-website = "https://alpha-eternum.realms.world/"
-
 [tool.fmt]
 sort-module-level-items = true
+max-line-length = 120
+
+[profile.prod]

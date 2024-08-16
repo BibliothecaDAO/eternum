@@ -11,11 +11,11 @@ import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 export const VARIANTS: any = {
   default: {
     tab: {
-      base: " px-3 py-1 !outline-none border-y-2 border-transparent   transition-color duration-200 hover:bg-gold clip-angled-sm  space-x-1 hover:text-brown font-bold text-gold",
-      active: "    !border-gold border-gradient",
-      inactive: "text-gray-gold",
+      base: " px-3 py-1 !outline-none border-y-2 border-transparent   transition-color duration-200 hover:bg-gold clip-angled-sm  space-x-1 hover:text-brown font-bold ",
+      active: "bg-gold text-brown",
+      inactive: "text-gold",
     },
-    tabList: "flex w-full justify-center bg-gradient-to-t from-brown  p-2 ",
+    tabList: "flex w-full justify-center  p-2 ",
   },
   primary: {
     tab: {
@@ -35,7 +35,7 @@ export const VARIANTS: any = {
   },
 };
 
-export interface TabsProps {
+interface TabsProps {
   children: ReactNode;
   variant?: keyof typeof VARIANTS;
   className?: string;

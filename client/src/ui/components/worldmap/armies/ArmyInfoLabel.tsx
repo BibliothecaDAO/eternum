@@ -1,35 +1,37 @@
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { currencyFormat } from "../../../utils/utils";
 
-import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
+import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { OrderIcon } from "../../../elements/OrderIcon";
-import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
-import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
+import { getRealmNameById } from "../../../utils/realms";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { Headline } from "@/ui/elements/Headline";
+import useUIStore from "@/hooks/store/useUIStore";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
-interface ArmyInfoLabelProps {
-  army: ArmyInfo;
-  visible?: boolean;
-}
+export const ArmyInfoLabel = () => {
+  const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
+  const { getArmy } = getArmyByEntityId();
 
-export const ArmyInfoLabel = ({ army, visible }: ArmyInfoLabelProps) => {
+  const army = useMemo(() => {
+    if (hoveredArmyEntityId) return getArmy(hoveredArmyEntityId);
+    return undefined;
+  }, [hoveredArmyEntityId, getArmy]);
+
   return (
-    <BaseThreeTooltip
-      visible={visible}
-      position={Position.TOP_CENTER}
-      distanceFactor={50}
-      className={`bg-transparent pointer-events-none -mt-[320px]`}
-    >
-      <RaiderInfo key={army.entity_id} army={army} />
-    </BaseThreeTooltip>
+    <>
+      {army && (
+        <BaseThreeTooltip position={Position.CLEAN} className={`bg-transparent pointer-events-none w-[250px]`}>
+          <RaiderInfo key={army.entity_id} army={army} />
+        </BaseThreeTooltip>
+      )}
+    </>
   );
 };
 
@@ -38,24 +40,21 @@ interface ArmyInfoLabelProps {
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
-  const {
-    account: { account },
-  } = useDojo();
-
   const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { entity_id, entity_owner_id, address, arrives_at, realm, troops, battle_id } = army;
+  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+  const { realm, entity_id, entityOwner, troops, arrivalTime } = army;
 
   const isPassiveTravel = useMemo(
-    () => (army.arrives_at && nextBlockTimestamp ? army.arrives_at > nextBlockTimestamp : false),
-    [army.arrives_at, nextBlockTimestamp],
+    () =>
+      arrivalTime && arrivalTime.arrives_at && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false,
+    [arrivalTime?.arrives_at, nextBlockTimestamp],
   );
 
-  const realmId = BigInt(realm?.realm_id || 0);
+  const realmId = realm?.realm_id || 0;
 
-  const attackerAddressName = entity_owner_id ? getRealmAddressName(BigInt(entity_owner_id)) : "";
+  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
 
-  const originRealmName = getRealmNameById(BigInt(realmId));
+  const originRealmName = getRealmNameById(realmId);
 
   const isTraveling = isPassiveTravel;
 
@@ -63,7 +62,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     <div
       className={clsx(
         "w-auto flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold shadow-2xl border-2 border-gradient",
-        account.address ? (BigInt(account.address) === BigInt(address) ? "bg-crimson" : "bg-brown") : undefined,
+        army.isMine ? "bg-crimson" : "bg-brown",
       )}
     >
       <div className="flex items-center w-full mt-1 justify-between text-xs">
@@ -72,21 +71,25 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             {/* <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="md" /> */}
 
             <Headline className="text-center">
-              <div>{originRealmName}</div>
+              <div>
+                <span className="text-lg">{attackerAddressName}</span> ({originRealmName})
+              </div>
 
-              <div className="text-lg">{attackerAddressName}</div>
+              <div className="text-lg">{army.name}</div>
             </Headline>
           </div>
 
           <div className="self-center flex justify-between w-full">
             {!isTraveling && <div className="flex   italic text-gold self-center">Idle</div>}
-            {army.arrives_at && isTraveling && nextBlockTimestamp && (
+            {arrivalTime && arrivalTime.arrives_at !== undefined && isTraveling && nextBlockTimestamp && (
               <div className="flex italic text-light-pink">
-                {isPassiveTravel ? formatSecondsLeftInDaysHours(arrives_at - nextBlockTimestamp) : "Arrives Next Tick"}
-                {battle_id && `In Battle`}
+                {isPassiveTravel
+                  ? formatSecondsLeftInDaysHours(Number(arrivalTime.arrives_at) - nextBlockTimestamp)
+                  : "Arrives Next Tick"}
+                {army.battle_id ? `In Battle` : ""}
               </div>
             )}
-            <StaminaResource entityId={BigInt(entity_id)} />
+            <StaminaResource entityId={entity_id} />
           </div>
         </div>
       </div>
@@ -105,9 +108,9 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <div className="text-green text-xs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
-
+        <ArmyCapacity army={army} />
         <div className="flex flex-row justify-between">
-          <InventoryResources max={2} entityId={BigInt(entity_id)} />
+          <InventoryResources max={2} entityIds={[entity_id]} />
         </div>
       </div>
     </div>

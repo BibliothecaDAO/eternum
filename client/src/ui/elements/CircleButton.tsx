@@ -68,7 +68,8 @@ const CircleButton = ({
           }
         }}
         className={clsx(
-          "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold  rounded    shadow-2xl   group ornate-borders-sm clip-angled-sm",
+          "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold rounded shadow-2xl group rounded bg-hex-bg hover:bg-gold",
+          active ? "bg-gold" : "bg-black/70",
           className,
           sizes[size],
           { "opacity-50 cursor-not-allowed": disabled },
@@ -79,20 +80,9 @@ const CircleButton = ({
         {...props}
       >
         {children}
-        <div
-          style={{
-            backgroundImage: image ? `url(${image})` : active ? "" : "",
-            backgroundSize: "calc(100% - 10px)", // Ensure the image covers the button
-            backgroundPosition: "center", // Center the background image
-            padding: image ? "5px" : "0",
-          }}
-          className={`absolute w-[calc(100%)] h-[calc(100%)] bg-no-repeat z-10 hover:bg-gold duration-300 ${
-            active ? "bg-gold/60" : "bg-brown/80"
-          }`}
-        ></div>
-        <div
-          className={`absolute w-[calc(100%+2px)] h-[calc(100%+2px)] clip-angled-sm ${active ? "bg-gold/40" : " "}`}
-        ></div>
+        <div className={clsx()}>
+          <img src={image} alt="icon" />
+        </div>
       </button>
       {notification && !disabled ? (
         <div

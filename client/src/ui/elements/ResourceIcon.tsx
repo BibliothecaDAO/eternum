@@ -8,7 +8,7 @@ import { ReactComponent as Spores } from "@/assets/icons/resources/Spores.svg";
 import clsx from "clsx";
 import type { ReactElement } from "react";
 
-export type Props = {
+type Props = {
   isLabor?: boolean;
   resource: string;
   size: keyof (typeof STYLES)["size"];
@@ -66,6 +66,9 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Crossbowman: { component: <img src={`/images/icons/251.png`} />, name: "Crossbowman" },
   Paladin: { component: <img src={`/images/icons/252.png`} />, name: "Paladin" },
   AncientFragment: { component: <img src={`/images/resources/29.png`} />, name: "Ancient Fragment" },
+  House: { component: <img src={`/images/buildings/thumb/house.png`} />, name: "House" },
+  Silo: { component: <img src={`/images/buildings/thumb/silo.png`} />, name: "Silo" },
+  Timeglass: { component: <img src={`/images/buildings/thumb/timeglass.png`} />, name: "Timeglass" },
 });
 
 const STYLES = {

@@ -3,7 +3,11 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
+<<<<<<< HEAD
 config();
+=======
+config({ path: ".dev.vars" });
+>>>>>>> main
 
 const databaseUrl = drizzle(postgres(`${process.env.DATABASE_URL}`, { ssl: "require", max: 1 }));
 

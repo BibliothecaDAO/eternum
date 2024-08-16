@@ -1,15 +1,16 @@
-import { useState, useMemo, useCallback } from "react";
+import TextInput from "@/ui/elements/TextInput";
+import { copyPlayerAddressToClipboard, displayAddress, sortItems } from "@/ui/utils/utils";
+import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import Button from "../../../elements/Button";
-import TextInput from "@/ui/elements/TextInput";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-import { displayAddress, sortItems, copyPlayerAddressToClipboard } from "@/ui/utils/utils";
 
-import { useGuilds, GuildWhitelistAndName } from "../../../../hooks/helpers/useGuilds";
+import { GuildWhitelistAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
+import { ID } from "@bibliothecadao/eternum";
 
 interface WhitelistProps {
-  guildEntityId: bigint | undefined;
+  guildEntityId: ID | undefined;
   isOwner: boolean;
 }
 
@@ -111,11 +112,13 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
         <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
           {sortItems(whitelist, activeSort)?.map((guildWhitelist: GuildWhitelistAndName) => {
             return (
-              <div key={guildWhitelist.address} className="grid grid-cols-3 gap-4 text-xs">
+              <div key={guildWhitelist.guildWhitelist.address} className="grid grid-cols-3 gap-4 text-xs">
                 <p className="col-span-1 hover:text-white truncate">{guildWhitelist.name}</p>
                 <p
                   className="col-span-1 hover:text-white"
-                  onClick={() => copyPlayerAddressToClipboard(BigInt(guildWhitelist.address), guildWhitelist.name)}
+                  onClick={() =>
+                    copyPlayerAddressToClipboard(guildWhitelist.guildWhitelist.address, guildWhitelist.name)
+                  }
                 >
                   {displayAddress(guildWhitelist.playerAddress)}
                 </p>

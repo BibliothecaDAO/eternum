@@ -1,34 +1,35 @@
+use eternum::alias::ID;
 use starknet::ContractAddress;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Guild {
+pub struct Guild {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     is_public: bool,
     member_count: u16
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct GuildMember {
+pub struct GuildMember {
     #[key]
     address: ContractAddress,
-    guild_entity_id: u128
+    guild_entity_id: ID
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct GuildWhitelist {
+pub struct GuildWhitelist {
     #[key]
     address: ContractAddress,
     #[key]
-    guild_entity_id: u128,
+    guild_entity_id: ID,
     is_whitelisted: bool
 }
 
 #[generate_trait]
-impl GuildMemberImpl of GuildMemberTrait {
+impl GuildMemberCustomImpl of GuildMemberCustomTrait {
     fn assert_has_guild(self: GuildMember) {
         assert(self.guild_entity_id != 0, 'Not member of a guild');
     }
@@ -39,7 +40,7 @@ impl GuildMemberImpl of GuildMemberTrait {
 }
 
 #[generate_trait]
-impl GuildWhitelistImpl of GuildWhitelistTrait {
+impl GuildWhitelistCustomImpl of GuildWhitelistCustomTrait {
     fn assert_is_whitelisted(self: GuildWhitelist) {
         assert(self.is_whitelisted == true, 'Player is not whitelisted');
     }

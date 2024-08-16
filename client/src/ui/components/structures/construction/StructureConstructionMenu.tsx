@@ -1,27 +1,19 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import {
-  BUILDING_CAPACITY,
-  BUILDING_POPULATION,
-  BuildingType,
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  RESOURCE_INFORMATION,
-  RESOURCE_INPUTS_SCALED,
+  ID,
   STRUCTURE_COSTS_SCALED,
   StructureType,
-  findResourceById,
 } from "@bibliothecadao/eternum";
-
-import useRealmStore from "@/hooks/store/useRealmStore";
-import React from "react";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
-import { StructureCard } from "./StructureCard";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 import clsx from "clsx";
+import React from "react";
+import { StructureCard } from "./StructureCard";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
@@ -35,12 +27,11 @@ export const STRUCTURE_IMAGE_PATHS = {
 export const StructureConstructionMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const clearSelection = useUIStore((state) => state.clearSelection);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   const buildingTypes = Object.keys(StructureType)
     .filter((key) => isNaN(Number(key)))
@@ -66,7 +57,7 @@ export const StructureConstructionMenu = () => {
 
         return (
           <StructureCard
-            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.name === QuestName.Hyperstructure })}
+            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.id === QuestId.Hyperstructure })}
             key={index}
             structureId={building}
             onClick={() => {
@@ -77,7 +68,6 @@ export const StructureConstructionMenu = () => {
                 setPreviewBuilding(null);
               } else {
                 setPreviewBuilding({ type: building });
-                clearSelection();
               }
             }}
             active={previewBuilding !== null && previewBuilding.type === building}
@@ -91,84 +81,20 @@ export const StructureConstructionMenu = () => {
   );
 };
 
-export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; entityId: bigint | undefined }) => {
-  const cost = RESOURCE_INPUTS_SCALED[resourceId];
-
-  const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
-
-  const population = BUILDING_POPULATION[BuildingType.Resource];
-
-  const capacity = BUILDING_CAPACITY[BuildingType.Resource];
-
-  const information = RESOURCE_INFORMATION[resourceId];
-
-  const { getBalance } = useResourceBalance();
-
-  return (
-    <div className="flex flex-col text-gold text-sm p-1 space-y-1">
-      <Headline className="py-3"> Building </Headline>
-
-      {population !== 0 && <div className="font-bold">Increases Population: +{population}</div>}
-
-      {capacity !== 0 && <div className=" pt-3 font-bold">Increases Capacity: +{capacity}</div>}
-
-      {findResourceById(resourceId)?.trait && (
-        <div className=" flex pt-3 font-bold">
-          <div>Produces: +10</div>
-          <ResourceIcon className="self-center ml-1" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-          {findResourceById(resourceId)?.trait || ""} every cycle
-        </div>
-      )}
-
-      <div className="pt-3 font-bold">consumed per/s</div>
-      <div className="grid grid-cols-2 gap-2">
-        {Object.keys(cost).map((resourceId) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
-
-          return (
-            <ResourceCost
-              key={resourceId}
-              resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount}
-              balance={balance.balance}
-            />
-          );
-        })}
-      </div>
-
-      <div className="pt-3 font-bold">One Time Cost</div>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        {Object.keys(buildingCost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, buildingCost[Number(resourceId)].resource);
-          return (
-            <ResourceCost
-              key={index}
-              resourceId={buildingCost[Number(resourceId)].resource}
-              amount={buildingCost[Number(resourceId)].amount}
-              balance={balance.balance}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-export const StructureInfo = ({
+const StructureInfo = ({
   structureId,
   entityId,
   extraButtons = [],
 }: {
   structureId: number;
-  entityId: bigint | undefined;
+  entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
   const cost = STRUCTURE_COSTS_SCALED[structureId];
 
   const perTick = structureId == StructureType.Hyperstructure ? `+${HYPERSTRUCTURE_POINTS_PER_CYCLE} points` : "";
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">
@@ -184,7 +110,7 @@ export const StructureInfo = ({
       <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
       <div className="grid grid-cols-1 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
           return (
             <ResourceCost
               key={index}

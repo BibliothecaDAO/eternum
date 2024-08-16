@@ -1,33 +1,18 @@
-import { create } from "zustand";
-
-interface Realm {
-  realmId: bigint | undefined;
-  setRealmId: (realmId: bigint) => void;
-  realmEntityId: bigint;
-  setRealmEntityId: (realmEntityId: bigint) => void;
-  realmEntityIds: { realmEntityId: bigint; realmId: bigint }[];
-  setRealmEntityIds: (realmEntityIds: { realmEntityId: bigint; realmId: bigint }[]) => void;
+import { ID } from "@bibliothecadao/eternum";
+export interface RealmStore {
+  realmId: ID | undefined;
+  setRealmId: (realmId: ID) => void;
+  realmEntityId: ID;
+  setRealmEntityId: (realmEntityId: ID) => void;
+  realmEntityIds: { realmEntityId: ID; realmId: ID }[];
+  setRealmEntityIds: (realmEntityIds: { realmEntityId: ID; realmId: ID }[]) => void;
 }
 
-export const STARTING_ENTITY_ID = 9999n;
-
-const useRealmStore = create<Realm>((set) => {
-  const realmEntityIds: { realmEntityId: bigint; realmId: bigint }[] = [];
-
-  // TODO: put this as undefined first
-  const realmEntityId = STARTING_ENTITY_ID;
-  const realmId = undefined;
-
-  return {
-    realmEntityId,
-    setRealmEntityId: (realmEntityId: bigint) => set({ realmEntityId }),
-    realmEntityIds,
-    setRealmEntityIds: (realmEntityIds: { realmEntityId: bigint; realmId: bigint }[]) => {
-      set({ realmEntityIds });
-    },
-    realmId,
-    setRealmId: (realmId: bigint) => set({ realmId }),
-  };
+export const createRealmStoreSlice = (set: any) => ({
+  realmId: undefined,
+  setRealmId: (realmId: ID) => set({ realmId }),
+  realmEntityId: 0,
+  setRealmEntityId: (realmEntityId: ID) => set({ realmEntityId }),
+  realmEntityIds: [],
+  setRealmEntityIds: (realmEntityIds: { realmEntityId: ID; realmId: ID }[]) => set({ realmEntityIds }),
 });
-
-export default useRealmStore;

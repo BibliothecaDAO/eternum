@@ -7,9 +7,10 @@ import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Headline } from "@/ui/elements/Headline";
 import { SelectLocationPanel } from "./SelectLocationPanel";
+import { ID } from "@bibliothecadao/eternum";
 
 type TravelEntityPopupProps = {
-  entityId: bigint;
+  entityId: ID;
   onClose: () => void;
 };
 
@@ -23,7 +24,7 @@ export const TravelEntityPopup = ({ entityId, onClose }: TravelEntityPopupProps)
   } = useDojo();
 
   const [selectedTab, setSelectedTab] = useState(0);
-  const [selectedEntityId, setSelectedEntityId] = useState<bigint | undefined>();
+  const [selectedEntityId, setSelectedEntityId] = useState<ID | undefined>();
   const [loading, setLoading] = useState(false);
 
   const destinationPosition = selectedEntityId

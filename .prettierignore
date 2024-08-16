@@ -8,4 +8,4 @@
 **/node_modules
 
 # ignore manifests
-*manifest.json
+**/*/manifests

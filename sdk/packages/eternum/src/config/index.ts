@@ -7,6 +7,7 @@ import {
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
+  HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   ResourcesIds,
   TROOPS_STAMINAS,
   WEIGHTS,
@@ -150,6 +151,8 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
     pillageHealthDivisor: pillage_health_divisor,
+    baseArmyNumberForStructure: army_free_per_structure,
+    armyExtraPerMilitaryBuilding: army_extra_per_military_building,
   } = EternumGlobalConfig.troop;
 
   const tx = await provider.set_troop_config({
@@ -162,6 +165,8 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     advantage_percent,
     disadvantage_percent,
     pillage_health_divisor: pillage_health_divisor,
+    army_free_per_structure: army_free_per_structure,
+    army_extra_per_military_building: army_extra_per_military_building,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);
@@ -172,7 +177,8 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
   const txBank = await provider.set_bank_config({
     signer: account,
     lords_cost: EternumGlobalConfig.banks.lordsCost * EternumGlobalConfig.resources.resourcePrecision,
-    lp_fee_scaled: EternumGlobalConfig.banks.lpFees,
+    lp_fee_num: EternumGlobalConfig.banks.lpFeesNumerator,
+    lp_fee_denom: EternumGlobalConfig.banks.lpFeesDenominator,
   });
 
   console.log(`Configuring bank config ${txBank.statusReceipt}...`);
@@ -192,7 +198,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   console.log(`Configuring tick config ${txArmiesTick.statusReceipt}...`);
 
-  const txExplore = await provider.set_explore_config({
+  const txExplore = await provider.set_exploration_config({
     signer: account,
     wheat_burn_amount: EternumGlobalConfig.exploration.wheatBurn * EternumGlobalConfig.resources.resourcePrecision,
     fish_burn_amount: EternumGlobalConfig.exploration.fishBurn * EternumGlobalConfig.resources.resourcePrecision,
@@ -215,7 +221,8 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txArmy = await provider.set_capacity_config({
     signer: account,
     entity_type: ARMY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacity.army * EternumGlobalConfig.resources.resourcePrecision,
+    // No precision mod used because weight check in contract uses army qty x precision
+    weight_gram: EternumGlobalConfig.carryCapacity.army,
   });
 
   console.log(`Configuring capacity Army config ${txArmy.statusReceipt}...`);
@@ -242,6 +249,7 @@ export const setSpeedConfig = async (account: Account, provider: EternumProvider
 export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {
   const tx = await provider.set_hyperstructure_config({
     signer: account,
+    time_between_shares_change: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
     resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map((resource) => ({
       ...resource,
       amount: resource.amount * EternumGlobalConfig.resources.resourcePrecision,
@@ -259,4 +267,29 @@ export const setStaminaConfig = async (account: Account, provider: EternumProvid
     });
     console.log(`Configuring staminas ${unit_type} ${tx.statusReceipt}...`);
   }
+};
+
+export const setMercenariesConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_mercenaries_config({
+    signer: account,
+    troops: {
+      knight_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.knight_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+      paladin_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.paladin_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+      crossbowman_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.crossbowman_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+    },
+    rewards: EternumGlobalConfig.mercenaries.rewards.map((reward) => ({
+      resource: reward.resource,
+      amount:
+        reward.amount *
+        EternumGlobalConfig.resources.resourcePrecision *
+        EternumGlobalConfig.resources.resourceMultiplier,
+    })),
+  });
+  console.log(`Configuring mercenaries ${tx.statusReceipt}...`);
 };

@@ -1,9 +1,15 @@
+import {
+  BASE_POPULATION_CAPACITY,
+  BUILDING_POPULATION,
+  findResourceIdByTrait,
+  ID,
+  orders,
+  RealmInterface,
+} from "@bibliothecadao/eternum";
+import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import realmsJson from "../../data/geodata/realms.json";
 import realmsOrdersJson from "../../data/geodata/realms_raw.json";
-import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
-import { BASE_POPULATION_CAPACITY, BUILDING_POPULATION, findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "./packedData";
-import { RealmInterface } from "@bibliothecadao/eternum";
 import { getPosition } from "./utils";
 
 interface Attribute {
@@ -15,36 +21,20 @@ let realms: {
   [key: string]: any;
 } = {};
 
-export const loadRealms = async () => {
+const loadRealms = async () => {
   const response = await fetch("/jsons/realms.json");
   realms = await response.json();
 };
 
 loadRealms();
 
-export const getRealmIdByPosition = (position: { x: number; y: number }): bigint | undefined => {
-  const realmPositions = realmsHexPositions as Record<number, { col: number; row: number }[]>;
-
-  const realmId = Object.entries(realmPositions).find(
-    ([_, positions]) => positions[0].col === position.x && positions[0].row === position.y,
-  )?.[0];
-
-  return realmId ? BigInt(realmId) : undefined;
-};
-
-export const getRealmNameById = (realmId: bigint): string => {
-  const features = realmsJson["features"][Number(realmId) - 1];
+export const getRealmNameById = (realmId: ID): string => {
+  const features = realmsJson["features"][realmId - 1];
   if (!features) return "";
   return features["name"];
 };
 
-export const getRealmOrderNameById = (realmId: bigint): string => {
-  const orderName = realmsOrdersJson[Number(realmId) - 1];
-  if (!orderName) return "";
-  return orderName.order.toLowerCase().replace("the ", "");
-};
-
-export function getRealm(realmId: bigint): RealmInterface | undefined {
+export function getRealm(realmId: ID): RealmInterface | undefined {
   const realmsData = realms;
   const realm = realmsData[realmId.toString()];
   if (!realm) return;

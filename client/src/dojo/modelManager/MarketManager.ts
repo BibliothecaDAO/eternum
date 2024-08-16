@@ -1,20 +1,29 @@
-import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { LiquidityType, MarketType } from "./types";
+import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
+import { ClientComponents } from "../createClientComponents";
 
 export class MarketManager {
-  marketModel: Component<MarketType> | OverridableComponent<MarketType>;
-  liquidityModel: Component<LiquidityType> | OverridableComponent<LiquidityType>;
-  bankEntityId: bigint;
-  player: bigint;
-  resourceId: bigint;
+  marketModel:
+    | Component<ClientComponents["Market"]["schema"]>
+    | OverridableComponent<ClientComponents["Market"]["schema"]>;
+  liquidityModel:
+    | Component<ClientComponents["Liquidity"]["schema"]>
+    | OverridableComponent<ClientComponents["Liquidity"]["schema"]>;
+  bankEntityId: ID;
+  player: ContractAddress;
+  resourceId: ResourcesIds;
 
   constructor(
-    marketModel: Component<MarketType> | OverridableComponent<MarketType>,
-    liquidityModel: Component<LiquidityType> | OverridableComponent<LiquidityType>,
-    bankEntityId: bigint,
-    player: bigint,
-    resourceId: bigint,
+    marketModel:
+      | Component<ClientComponents["Market"]["schema"]>
+      | OverridableComponent<ClientComponents["Market"]["schema"]>,
+    liquidityModel:
+      | Component<ClientComponents["Liquidity"]["schema"]>
+      | OverridableComponent<ClientComponents["Liquidity"]["schema"]>,
+    bankEntityId: ID,
+    player: ContractAddress,
+    resourceId: ResourcesIds,
   ) {
     this.marketModel = marketModel;
     this.liquidityModel = liquidityModel;
@@ -31,12 +40,15 @@ export class MarketManager {
   public getLiquidity() {
     return getComponentValue(
       this.liquidityModel,
-      getEntityIdFromKeys([this.bankEntityId, this.player, this.resourceId]),
+      getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
     );
   }
 
   public getMarket() {
-    return getComponentValue(this.marketModel, getEntityIdFromKeys([this.bankEntityId, this.resourceId]));
+    return getComponentValue(
+      this.marketModel,
+      getEntityIdFromKeys([BigInt(this.bankEntityId), BigInt(this.resourceId)]),
+    );
   }
 
   public getSharesScaled = () => {
@@ -69,7 +81,7 @@ export class MarketManager {
 
     let resourceOptimal = (reserveResourceAmount * lordsAmount) / reserveLordsAmount;
 
-    return Math.floor(resourceOptimal);
+    return resourceOptimal;
   };
 
   public quoteLords = (resourceAmount: number) => {
@@ -77,46 +89,86 @@ export class MarketManager {
 
     let lordsOptimal = (reserveLordsAmount * resourceAmount) / reserveResourceAmount;
 
-    return Math.floor(lordsOptimal);
+    return lordsOptimal;
   };
 
-  public buyResource = (lordsAmount: number) => {
+  public getOutputAmount(inputAmount: number, inputReserve: bigint, outputReserve: bigint, feeRateNum: number) {
+    // Ensure reserves are not zero and input amount is valid
+    if (inputReserve < 0n || outputReserve < 0n) {
+      throw new Error("Reserves must be >= zero");
+    }
+    if (inputAmount < 0) {
+      throw new Error("Input amount must be >= zero");
+    }
+
+    // Calculate the input amount after fee
+    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
+
+    // Calculate output amount based on the constant product formula with fee
+    // (x + Δx) * (y - Δy) = k, where k = x * y
+    // Solving for Δy and including the fee:
+    // Δy = y - (x * y) / (x + Δx * (1 - fee))
+
+    const numerator = BigInt(inputAmountWithFee) * BigInt(outputReserve);
+    const denominator = BigInt(inputReserve) * BigInt(feeRateDenom) + inputAmountWithFee;
+
+    // Subtract 1 to round down the result, ensuring the exchange rate is maintained
+    return numerator / denominator;
+  }
+
+  public getInputPrice(inputAmount: number, inputReserve: bigint, outputReserve: bigint, feeRateNum: number) {
+    // Ensure reserves are not zero and input amount is valid
+    if (inputReserve < 0 || outputReserve < 0) {
+      throw new Error("Reserves must be >= zero");
+    }
+    if (inputAmount < 0) {
+      throw new Error("Input amount must be >= zero");
+    }
+
+    // Calculate the input amount after fee
+    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
+
+    // Calculate output amount based on the constant product formula with fee
+    // (x + Δx) * (y - Δy) = k, where k = x * y
+    // Solving for Δy:
+    // Δy = (y * Δx) / (x + Δx)
+    const numerator = BigInt(outputReserve) * inputAmountWithFee;
+    const denominator = BigInt(inputReserve) * BigInt(feeRateDenom) + inputAmountWithFee;
+
+    // Round down the result
+    return numerator / denominator;
+  }
+  public buyResource = (lordsAmount: number, feeRateNum: number) => {
     const market = this.getMarket();
     if (!market) return 0;
-    const cashInput = lordsAmount;
-    const available = Number(market.resource_amount);
-    const cash = Number(market.lords_amount);
 
-    let k = cash * available;
-    let newCash = cash + cashInput;
-    let newResource = k / newCash;
-    let resourcePayout = available - newResource;
-
-    return Math.floor(resourcePayout);
+    let outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount, feeRateNum);
+    return Number(outputAmount);
   };
 
-  public sellResource = (resourceAmount: number) => {
+  public sellResource = (resourceAmount: number, feeRateNum: number) => {
     const market = this.getMarket();
     if (!market) return 0;
-    const quantity = resourceAmount;
-    const available = Number(market.resource_amount);
-    const cash = Number(market.lords_amount);
-    let k = cash * available;
-    let payout = cash - k / (available + quantity);
-    return Math.floor(payout);
+
+    let inputPrice = this.getInputPrice(resourceAmount, market.resource_amount, market.lords_amount, feeRateNum);
+    return Number(inputPrice);
   };
 
   // price difference between swapping 1 resource and swapping N resources
-  public slippage = (inputAmount: number, outputAmount: number, isSellingResource: boolean) => {
+  public slippage = (inputAmount: number, isSellingResource: boolean) => {
     const marketPrice = this.getMarketPrice();
     let executionPrice, slippagePercentage;
+
+    const outputAmount = isSellingResource ? this.sellResource(inputAmount, 0) : this.buyResource(inputAmount, 0);
 
     if (isSellingResource) {
       executionPrice = outputAmount / inputAmount;
       slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
     } else {
       executionPrice = inputAmount / outputAmount;
-      slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
+      slippagePercentage = -((executionPrice - marketPrice) / marketPrice) * 100;
     }
 
     return slippagePercentage;
@@ -124,15 +176,10 @@ export class MarketManager {
 
   public getMyLP() {
     const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
-    const perc = this.getMyLpPercentage();
-
-    let lords_amount = 0;
-    let resource_amount = 0;
-
-    if (perc > 0) {
-      lords_amount = perc * reserveLordsAmount;
-      resource_amount = perc * reserveResourceAmount;
-    }
+    const my_shares = this.getSharesUnscaled();
+    const total_shares = this.getTotalSharesUnScaled();
+    let lords_amount = Number((my_shares * BigInt(reserveLordsAmount)) / BigInt(total_shares));
+    let resource_amount = Number((my_shares * BigInt(reserveResourceAmount)) / BigInt(total_shares));
 
     return [lords_amount, resource_amount];
   }
@@ -150,6 +197,12 @@ export class MarketManager {
   public getTotalLiquidityUnscaled() {
     const liquidity = this.getTotalLiquidity();
     return BigInt(liquidity * 2 ** 64);
+  }
+
+  public getTotalSharesUnScaled() {
+    const market = this.getMarket();
+    if (!market) return 0;
+    return market.total_shares.mag;
   }
 
   public getTotalSharesScaled() {

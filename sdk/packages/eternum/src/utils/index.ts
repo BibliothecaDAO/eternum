@@ -66,7 +66,6 @@ export const getQuestResources = (resourcesOnRealm: number[]): ResourceInputs =>
     QUEST_RESOURCES,
     EternumGlobalConfig.resources.resourceMultiplier,
   );
-  console.log({ QUEST_RESOURCES_SCALED });
   return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm);
 };
 
@@ -99,30 +98,37 @@ export const RESOURCE_OUTPUTS_SCALED: ResourceOutputs = scaleResourceOutputs(
   RESOURCE_OUTPUTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
 export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
   BUILDING_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
 export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(
   RESOURCE_INPUTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
 export const EXPLORATION_COSTS_SCALED: Resource[] = scaleResources(
   EXPLORATION_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
 export const STRUCTURE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
   STRUCTURE_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
 export const HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
 export const HYPERSTRUCTURE_CREATION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
   HYPERSTRUCTURE_CREATION_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
+
 export const HYPERSTRUCTURE_TOTAL_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
   HYPERSTRUCTURE_TOTAL_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,

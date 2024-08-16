@@ -9,11 +9,11 @@ use eternum::models::resources::ResourceCost;
 use eternum::systems::config::contracts::config_systems;
 
 use eternum::systems::config::contracts::{
-    IHyperstructureConfigDispatcher, IHyperstructureConfigDispatcherTrait,
-    ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
+    IHyperstructureConfigDispatcher, IHyperstructureConfigDispatcherTrait, ILevelingConfigDispatcher,
+    ILevelingConfigDispatcherTrait,
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
 use starknet::contract_address::contract_address_const;
 
@@ -23,9 +23,7 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-    let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher {
-        contract_address: config_systems_address
-    };
+    let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
 
     (world, hyperstructure_config_dispatcher)
 }

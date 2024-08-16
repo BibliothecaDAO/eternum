@@ -1,61 +1,74 @@
+import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
+import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
+import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
+
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
+import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
 
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
+import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
 
 type ArmyManagementCardProps = {
-  owner_entity: bigint;
-  entity: ArmyInfo;
+  owner_entity: ID;
+  army: ArmyInfo | undefined;
+  setSelectedEntity?: (entity: ArmyInfo | null) => void;
 };
 
 // TODO Unify this. Push all useComponentValues up to the top level
-export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardProps) => {
+export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: ArmyManagementCardProps) => {
   const {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { army_buy_troops },
+      systemCalls: { army_buy_troops, delete_army },
       components: { Position },
     },
   } = useDojo();
 
-  const { getBalance } = useResourceBalance();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { getBalance } = getResourceBalance();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
 
   // TODO: Clean this up
-  const position = { x: entity.x, y: entity.y };
+  const armyPosition = { x: Number(army?.position.x || 0), y: Number(army?.position.y || 0) };
 
   const isPassiveTravel = useMemo(
-    () => (entity.arrives_at && nextBlockTimestamp ? entity.arrives_at > nextBlockTimestamp : false),
+    () =>
+      army?.arrivalTime && army?.arrivalTime.arrives_at && nextBlockTimestamp
+        ? army?.arrivalTime.arrives_at > nextBlockTimestamp
+        : false,
     [nextBlockTimestamp],
   );
 
-  const entityOwnerPosition = useComponentValue(
+  const rawEntityOwnerPosition = useComponentValue(
     Position,
-    getEntityIdFromKeys([BigInt(entity.entity_owner_id || 0)]),
-  ) || { x: 0, y: 0 };
+    getEntityIdFromKeys([BigInt(army?.entityOwner.entity_owner_id || 0)]),
+  ) || {
+    x: 0n,
+    y: 0n,
+  };
+  const entityOwnerPosition = { x: Number(rawEntityOwnerPosition.x), y: Number(rawEntityOwnerPosition.y) };
 
   const checkSamePosition = useMemo(() => {
-    return position.x === entityOwnerPosition.x && position.y === entityOwnerPosition.y;
-  }, [entityOwnerPosition, position]);
+    return armyPosition.x === entityOwnerPosition.x && armyPosition.y === entityOwnerPosition.y;
+  }, [entityOwnerPosition, armyPosition]);
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -70,11 +83,25 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
     setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
   };
 
+  const handleDeleteArmy = async () => {
+    setIsLoading(true);
+    try {
+      await delete_army({
+        signer: account,
+        army_id: army?.entity_id || 0n,
+      });
+      setSelectedEntity && setSelectedEntity(null);
+    } catch (e) {
+      console.error(e);
+    }
+    setIsLoading(false);
+  };
+
   const handleBuyArmy = async () => {
     setIsLoading(true);
     army_buy_troops({
       signer: account,
-      army_id: entity.entity_id,
+      army_id: army?.entity_id || 0n,
       payer_id: owner_entity,
       troops: {
         knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
@@ -123,7 +150,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       defense: 10,
       strong: "Paladin",
       weak: "Crossbowman",
-      current: currencyFormat(entity.troops.knight_count, 0),
+      current: currencyFormat(army?.troops.knight_count || 0, 0),
     },
     {
       name: ResourcesIds.Crossbowman,
@@ -132,7 +159,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       defense: 10,
       strong: "Knight",
       weak: "Paladin",
-      current: currencyFormat(entity.troops.crossbowman_count, 0),
+      current: currencyFormat(army?.troops.crossbowman_count || 0, 0),
     },
     {
       name: ResourcesIds.Paladin,
@@ -141,138 +168,187 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       defense: 10,
       strong: "Crossbowman",
       weak: "Knight",
-      current: currencyFormat(entity.troops.paladin_count, 0),
+      current: currencyFormat(army?.troops.paladin_count || 0, 0),
     },
   ];
 
   return (
-    <>
-      <div className="flex justify-between   p-2 text-xs">
-        {/* <Button size="xs" variant="default" onClick={() => setSetTravelWindow(true)}>
-          travel
-        </Button> */}
-        <div className="self-center mr-auto px-3">
-          {checkSamePosition ? "At Base " : position ? `On Map` : "Unknown"}
+    army && (
+      <>
+        <div className="flex justify-between   p-2 text-xs">
+          <div className="self-center mr-auto px-3">
+            {checkSamePosition ? "At Base " : armyPosition ? `On Map` : "Unknown"}
+          </div>
+          <div className="flex ml-auto italic self-center  px-3">
+            {isPassiveTravel && nextBlockTimestamp ? (
+              <>
+                Traveling for{" "}
+                {isPassiveTravel
+                  ? formatSecondsInHoursMinutes(Number(army?.arrivalTime!.arrives_at || 0) - nextBlockTimestamp)
+                  : "Arrives Next Tick"}
+              </>
+            ) : (
+              "Idle"
+            )}
+          </div>
+          <ViewOnMapButton position={armyPosition} />
         </div>
-        <div className="flex ml-auto italic self-center  px-3">
-          {isPassiveTravel && nextBlockTimestamp ? (
+        <div className="flex flex-col relative  p-2">
+          {travelWindow && (
             <>
-              Traveling for{" "}
-              {isPassiveTravel
-                ? formatSecondsInHoursMinutes(entity.arrives_at - nextBlockTimestamp)
-                : "Arrives Next Tick"}
-            </>
-          ) : (
-            "Idle"
-          )}
-        </div>
-        <ViewOnMapButton position={position} />
-      </div>
-      <div className="flex flex-col relative  p-2">
-        {travelWindow && (
-          <>
-            <TravelToLocation
-              isTraveling={isPassiveTravel}
-              checkSamePosition={checkSamePosition}
-              entityOwnerPosition={entityOwnerPosition}
-              entity={entity}
-              position={position}
-              onClose={() => setSetTravelWindow(false)}
-            />
-          </>
-        )}
-
-        <div className="flex justify-between   p-2">
-          {editName ? (
-            <div className="flex space-x-2">
-              <TextInput
-                placeholder="Type Name"
-                className="h-full"
-                value={naming}
-                onChange={(name) => setNaming(name)}
+              <TravelToLocation
+                isTraveling={isPassiveTravel}
+                checkSamePosition={checkSamePosition}
+                entityOwnerPosition={{ x: entityOwnerPosition.x, y: entityOwnerPosition.y }}
+                army={army}
+                position={armyPosition}
+                onClose={() => setSetTravelWindow(false)}
               />
-              <Button
-                variant="default"
-                isLoading={isLoading}
-                onClick={async () => {
-                  setIsLoading(true);
-
-                  try {
-                    await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
-                  } catch (e) {
-                    console.error(e);
-                  }
-
-                  setIsLoading(false);
-                  setEditName(false);
-                }}
-              >
-                Change Name
-              </Button>
-            </div>
-          ) : (
-            <h3>{entity.name}</h3>
+            </>
           )}
-          <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
-            edit
+
+          <div className="flex justify-between p-2">
+            {editName ? (
+              <div className="flex space-x-2">
+                <TextInput
+                  placeholder="Type Name"
+                  className="h-full"
+                  value={naming}
+                  onChange={(name) => setNaming(name)}
+                />
+                <Button
+                  variant="default"
+                  isLoading={isLoading}
+                  onClick={async () => {
+                    setIsLoading(true);
+
+                    try {
+                      await provider.set_entity_name({ signer: account, entity_id: army.entity_id, name: naming });
+                    } catch (e) {
+                      console.error(e);
+                    }
+
+                    setIsLoading(false);
+                    setEditName(false);
+                  }}
+                >
+                  Change Name
+                </Button>
+                <Pen
+                  className="ml-2 self-center m-auto w-12 h-12 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all"
+                  onClick={() => setEditName(!editName)}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-row">
+                <h3 className="mr-auto">{army.name}</h3>
+                <Pen
+                  className="ml-2 self-center m-auto w-6 h-6 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all"
+                  onClick={() => setEditName(!editName)}
+                />
+              </div>
+            )}
+            {army.health.current === 0n && !army.protectee && (
+              <div className="flex items-center">
+                {confirmDelete ? (
+                  <Button
+                    variant="danger"
+                    onClick={() => {
+                      handleDeleteArmy();
+                      setConfirmDelete(false);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                ) : (
+                  <Trash
+                    className="ml-2 self-center m-auto w-6 h-6 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
+                    onClick={() => setConfirmDelete(true)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 my-4">
+            {troops.map((troop) => {
+              const balance = getBalance(owner_entity, troop.name).balance;
+
+              const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+
+              return (
+                <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
+                  <div className="font-bold mb-4">
+                    <div className="flex justify-between">
+                      <div className="text-md">{ResourcesIds[troop.name]}</div>
+                    </div>
+                    <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
+                      <ResourceIcon withTooltip={false} resource={ResourcesIds[troop.name]} size="lg" />
+                      <div className="text-green self-center">x {troop.current}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center mt-auto flex-col">
+                    <div className="px-2 text-xs  font-bold mb-3">
+                      Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+                    </div>
+                    <NumberInput
+                      max={
+                        balance ? Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision) : 0
+                      }
+                      min={0}
+                      step={100}
+                      value={troopCounts[troop.name]}
+                      onChange={(amount) => handleTroopCountChange(troop.name, amount)}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <Button
+            className="w-full "
+            disabled={!canCreate}
+            variant="primary"
+            isLoading={isLoading}
+            onClick={handleBuyArmy}
+          >
+            {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
           </Button>
         </div>
+      </>
+    )
+  );
+};
 
-        <div className="grid grid-cols-3 gap-3 my-4">
-          {troops.map((troop) => {
-            const balance = getBalance(owner_entity, troop.name).balance;
+export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
+  const [location, setLocation] = useLocation();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
-            const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+  const url = new PositionInterface(position).toMapLocationUrl();
 
-            return (
-              <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
-                <div className="font-bold mb-4">
-                  <div className="flex justify-between">
-                    <div className="text-md">{ResourcesIds[troop.name]}</div>
-                  </div>
-                  <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
-                    <ResourceIcon withTooltip={false} resource={ResourcesIds[troop.name]} size="lg" />
-                    <div className="text-green self-center">x {troop.current}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center mt-auto flex-col">
-                  <div className="px-2 text-xs  font-bold mb-3">
-                    Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
-                  </div>
-                  <NumberInput
-                    max={
-                      balance ? Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision) : 0
-                    }
-                    min={0}
-                    step={100}
-                    value={troopCounts[troop.name]}
-                    onChange={(amount) => handleTroopCountChange(troop.name, amount)}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <Button
-          className="w-full "
-          disabled={!canCreate}
-          variant="primary"
-          isLoading={isLoading}
-          onClick={handleBuyArmy}
-        >
-          {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
-        </Button>
-      </div>
-    </>
+  return (
+    <Map
+      className={className}
+      onClick={() => {
+        setLocation(url);
+        if (location === "/map") {
+          window.dispatchEvent(new Event("urlChanged"));
+        } else {
+          setIsLoadingScreenEnabled(true);
+          window.dispatchEvent(new Event("urlChanged"));
+        }
+      }}
+    />
   );
 };
 
 export const ViewOnMapButton = ({ position, className }: { position: Position; className?: string }) => {
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+
+  const url = new PositionInterface(position).toMapLocationUrl();
 
   return (
     <Button
@@ -280,26 +356,11 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
       variant="primary"
       size="xs"
       onClick={() => {
-        if (location !== "/map") {
-          setIsLoadingScreenEnabled(true);
-          setTimeout(() => {
-            setLocation("/map");
-            if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-              moveCameraToColRow(position.x, position.y, 0.01, true);
-              setTimeout(() => {
-                moveCameraToColRow(position.x, position.y, 1.5);
-              }, 10);
-            }
-          }, 100);
-        } else {
-          if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-            moveCameraToColRow(position.x, position.y);
-          }
-        }
-        moveCameraToColRow(position.x, position.y, 1.5);
+        setLocation(url);
+        window.dispatchEvent(new Event("urlChanged"));
       }}
     >
-      <span> map</span>
+      <span>map</span>
     </Button>
   );
 };
@@ -308,16 +369,16 @@ interface TravelToLocationProps {
   isTraveling: boolean;
   checkSamePosition: boolean;
   entityOwnerPosition: Position;
-  entity: ArmyInfo;
+  army: ArmyInfo;
   position: Position;
   onClose: () => void;
 }
 
-export const TravelToLocation = ({
+const TravelToLocation = ({
   isTraveling,
   checkSamePosition,
   entityOwnerPosition,
-  entity,
+  army,
   position,
   onClose,
 }: TravelToLocationProps) => {
@@ -348,7 +409,10 @@ export const TravelToLocation = ({
           <div className="flex ml-2 italic self-center">
             {isTraveling ? (
               <>
-                Traveling for {entity.arrives_at ? formatSecondsInHoursMinutes(entity.arrives_at) : "Arrives Next Tick"}
+                Traveling for{" "}
+                {army.arrivalTime!.arrives_at
+                  ? formatSecondsInHoursMinutes(Number(army.arrivalTime!.arrives_at))
+                  : "Arrives Next Tick"}
               </>
             ) : (
               "Idle"
@@ -365,7 +429,7 @@ export const TravelToLocation = ({
                       onClick={() => {
                         travel({
                           signer: account,
-                          travelling_entity_id: entity.entity_id,
+                          travelling_entity_id: army.entity_id,
                           destination_coord_x: entityOwnerPosition.x,
                           destination_coord_y: entityOwnerPosition.y,
                         });
@@ -397,7 +461,7 @@ export const TravelToLocation = ({
         </div>
       </div>
       <div className="border p-2 ">
-        {!entity.protectee_id && entity.lifetime > 0 && (
+        {!army.protectee && army.health.lifetime > 0 && (
           <div>
             <div className="flex justify-between">
               {!isTraveling && (
@@ -422,7 +486,7 @@ export const TravelToLocation = ({
                             onClick={() => {
                               travel({
                                 signer: account,
-                                travelling_entity_id: entity.entity_id,
+                                travelling_entity_id: army.entity_id,
                                 destination_coord_x: handleSetTravelLocation(realm?.entity_id.toString() || "").x,
                                 destination_coord_y: handleSetTravelLocation(realm?.entity_id.toString() || "").y,
                               });

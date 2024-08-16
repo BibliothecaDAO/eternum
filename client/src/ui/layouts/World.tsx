@@ -1,35 +1,35 @@
-import { Background as BackgroundContainer } from "../containers/Background";
-import { MainScene } from "../modules/scenes/MainScene";
-import useUIStore from "../../hooks/store/useUIStore";
 import { Leva } from "leva";
-import { BottomRightContainer } from "../containers/BottomRightContainer";
-import BottomMiddleContainer from "../containers/BottomMiddleContainer";
-import TopMiddleContainer from "../containers/TopMiddleContainer";
-import LeftMiddleContainer from "../containers/LeftMiddleContainer";
-import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
-import { BottomNavigation } from "../modules/navigation/BottomNavigation";
-import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { useEffect } from "react";
+import useUIStore from "../../hooks/store/useUIStore";
 
-import { Tooltip } from "../elements/Tooltip";
-import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
-import { Onboarding } from "./Onboarding";
-import { HooksComponent } from "../components/HooksComponent";
-import { Transactions } from "../modules/transactions/Transactions";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import RightMiddleContainer from "../containers/RightMiddleContainer";
-import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
-import { BattleContainer } from "../containers/BattleContainer";
-import { LoadingContainer } from "../containers/LoadingContainer";
 import { Redirect } from "wouter";
-import { BattleView } from "../modules/military/battle-view/BattleView";
+import { HooksComponent } from "../components/HooksComponent";
+import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
+import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
+import { BattleContainer } from "../containers/BattleContainer";
+import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
+import BottomMiddleContainer from "../containers/BottomMiddleContainer";
+import { BottomRightContainer } from "../containers/BottomRightContainer";
+import LeftMiddleContainer from "../containers/LeftMiddleContainer";
+import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
+import TopMiddleContainer from "../containers/TopMiddleContainer";
+import { Tooltip } from "../elements/Tooltip";
+import { BattleView } from "../modules/military/battle-view/BattleView";
+import { BottomNavigation } from "../modules/navigation/BottomNavigation";
+import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
+import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
+import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
+import { Transactions } from "../modules/transactions/Transactions";
+import { Onboarding } from "./Onboarding";
+import clsx from "clsx";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+  const realmEntityIds = useUIStore((state) => state.realmEntityIds);
 
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
@@ -45,38 +45,48 @@ export const World = () => {
   }, [realmEntityIds]);
 
   return (
-    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ">
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+      }}
+      onMouseMove={(e) => {
+        e.stopPropagation();
+      }}
+      id="world"
+      className="fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
+    >
+      <div
+        className={clsx(
+          "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-black duration-300 transition-opacity",
+          isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
+        )}
+      >
+        <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
+      </div>
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
       <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
       </BlankOverlayContainer>
       <HooksComponent />
-
-      <BackgroundContainer className=" clip-angled relative  ">
-        <div className="h-full w-full main-scene z-100 ornate-borders">
-          <MainScene />
-        </div>
-      </BackgroundContainer>
-
-      <LoadingContainer />
-
+      <ActionInfo />
+      <ArmyInfoLabel />
       {battleView ? (
         <BattleContainer>
           <BattleView />
         </BattleContainer>
       ) : (
         <>
-          {/* TOP */}
           <TopMiddleContainer>
             <TopMiddleNavigation />
           </TopMiddleContainer>
 
-          {/* LEFT */}
           <LeftMiddleContainer>
             <LeftNavigationModule />
           </LeftMiddleContainer>
 
-          {/* BOTTOM */}
           <BottomMiddleContainer>
             <BottomNavigation />
           </BottomMiddleContainer>
@@ -85,7 +95,6 @@ export const World = () => {
             <Transactions />
           </BottomRightContainer>
 
-          {/* RIGHT */}
           <RightMiddleContainer>
             <RightNavigationModule />
           </RightMiddleContainer>

@@ -1,10 +1,9 @@
-import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 type LiquidityTableProps = {
-  bank_entity_id: bigint | undefined;
-  entity_id: bigint;
+  bank_entity_id: ID | undefined;
+  entity_id: ID;
 };
 
 export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProps) => {
@@ -13,24 +12,21 @@ export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProp
   }
 
   return (
-    <div className="p-4 bg-gold/10 ">
-      <table className="min-w-full ">
-        <thead>
-          <tr className="uppercase">
-            <th className="text-left">Pair</th>
-            {/* <th>Total TVL</th> */}
-            <th className="text-left flex gap-1">
-              <ResourceIcon resource={"Lords"} size="md" />
-            </th>
-            <th className="text-left">Total Resource</th>
-            <th className="text-left">My Lords</th>
-            <th className="text-left">My Resource</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="p-4 h-full bg-gold/10 overflow-x-auto relative">
+      <div className="grid grid-cols-7 gap-4 mb-4 px-2">
+        <div className="uppercase font-bold">Pair</div>
+        <div className="uppercase font-bold ">
+          <p>Price</p>
+        </div>
+
+        <div className="uppercase font-bold col-span-2">Total Liquidity</div>
+
+        <div className="uppercase font-bold col-span-2">My Liquidity</div>
+      </div>
+      <div className="overflow-y-auto">
+        <div className="grid gap-2 relative">
           {Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
-            if (tier === "lords") return;
+            if (tier === "lords") return null;
             return resourceIds.map((resourceId) => (
               <LiquidityResourceRow
                 key={resourceId}
@@ -40,8 +36,8 @@ export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProp
               />
             ));
           })}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
   );
 };

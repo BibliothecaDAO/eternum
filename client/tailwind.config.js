@@ -45,6 +45,7 @@ export default {
       }),
       backgroundImage: {
         map: "url(/map.svg)",
+        "hex-bg": "url(/hex-bg.png)",
         "battle-one": "url(/test-bg.png)",
         "old-map": "url(/textures/paper/worldmap-bg.png)",
       },
@@ -234,14 +235,26 @@ export default {
           clipPath:
             "polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)",
         },
-        ".clip-angled-sm": {
-          clipPath:
-            "polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px)",
-        },
+        // ".clip-angled-sm": {
+        //   clipPath:
+        //     "polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px)",
+        // },
         ".outline-gradient": {
           outline: "2px solid transparent",
           outlineOffset: "2px",
           borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
+        },
+        ".no-scrollbar": {
+          /* IE and Edge */
+          "-ms-overflow-style": "none",
+
+          /* Firefox */
+          "scrollbar-width": "none",
+
+          /* Safari and Chrome */
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
         },
       };
       addUtilities(newUtilities, ["responsive", "hover"]);

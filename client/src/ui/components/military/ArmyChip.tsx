@@ -1,55 +1,102 @@
+import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
+import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
-import { ArmyManagementCard, ViewOnMapButton } from "./ArmyManagementCard";
+import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
-export const ArmyChip = ({ army, extraButton }: { army: ArmyInfo; extraButton?: JSX.Element }) => {
+export const ArmyChip = ({
+  army,
+  className,
+  showButtons,
+}: {
+  army: ArmyInfo;
+  className?: string;
+  showButtons?: boolean;
+}) => {
+  const dojo = useDojo();
+
+  const [showInventory, setShowInventory] = useState(false);
+
+  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+
   const [editMode, setEditMode] = useState(false);
 
+  const battleManager = useMemo(() => new BattleManager(army.battle_id, dojo), [army.battle_id]);
+
+  const updatedArmy = useMemo(() => {
+    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
+    return updatedArmy;
+  }, [currentTimestamp]);
+
   return (
-    <div className=" items-center text-xs px-2 hover:bg-blueish/20 clip-angled bg-blueish/20 rounded-md border-gold/20  ">
+    <div
+      className={`items-center text-xs px-2 hover:bg-blueish/20 clip-angled bg-blueish/20 rounded-md border-gold/20 ${className}`}
+    >
       {editMode ? (
         <>
-          <Button className="mb-2" size="xs" onClick={() => setEditMode(!editMode)}>
+          <Button className="my-2" size="xs" onClick={() => setEditMode(!editMode)}>
             Close Manager
           </Button>
-          <ArmyManagementCard entity={army} owner_entity={BigInt(army.entity_owner_id)} />
+          <ArmyManagementCard army={updatedArmy!} owner_entity={updatedArmy!.entityOwner.entity_owner_id} />
         </>
       ) : (
         <>
-          <div className=" text-xl w-full  justify-between">
-            <div className="flex justify-between my-4">
-              <div className="flex flex-col justify-between ">
-                <div className="h4 text-2xl mb-2">{army.name}</div>
-                <div className="font-bold text-xs">
-                  {army.current && (
-                    <div className="text-green">
-                      HP: {(BigInt(army.current.toString()) / BigInt(1000000n)).toLocaleString()} /{" "}
-                      {(BigInt(army.lifetime.toString()) / BigInt(1000000n)).toLocaleString()}
+          <div className="flex w-full h-full justify-between">
+            <div className="flex w-full justify-between py-2">
+              <div className="flex flex-col w-[45%]">
+                <div className="h4 text-xl mb-2 flex flex-row">
+                  <div className="mr-2">{updatedArmy!.name}</div>
+                  {showButtons && (
+                    <div className="flex flex-row gap-1 grid grid-cols-3">
+                      {updatedArmy?.isMine && (
+                        <React.Fragment>
+                          <Pen
+                            className={
+                              "my-auto w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                            }
+                            onClick={() => setEditMode(!editMode)}
+                          />
+                          <ViewOnMapIcon
+                            className={
+                              "my-auto w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                            }
+                            position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
+                          />
+                        </React.Fragment>
+                      )}
+                      <Inventory
+                        className="my-auto w-4 ml-1 mx-auto hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                        onClick={() => setShowInventory(!showInventory)}
+                      />
                     </div>
                   )}
-                  <StaminaResource entityId={BigInt(army.entity_id)} />
+                </div>
+                <div className="font-bold text-xs">
+                  <StaminaResource entityId={updatedArmy!.entity_id} />
+                  <ArmyCapacity army={updatedArmy} />
                 </div>
               </div>
-              <div className="flex flex-col   gap-1">
-                <ViewOnMapButton position={{ x: army.x, y: army.y }} />
-                <Button size="xs" onClick={() => setEditMode(!editMode)}>
-                  Manage
-                </Button>
+              <div className="flex flex-col content-center w-[55%]">
+                <TroopMenuRow troops={updatedArmy!.troops} />
+                {showInventory && (
+                  <InventoryResources
+                    entityIds={[updatedArmy!.entity_id]}
+                    className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
+                    resourcesIconSize="xs"
+                  />
+                )}
               </div>
             </div>
           </div>
-          <div className="my-3 flex gap-3">
-            <TroopMenuRow army={army} />
-            <div className="flex flex-col  items-center justify-between">
-              <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex gap-1" />
-            </div>
-          </div>
-
-          {extraButton || ""}
         </>
       )}
     </div>
