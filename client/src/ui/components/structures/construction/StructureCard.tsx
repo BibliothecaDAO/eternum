@@ -41,11 +41,11 @@ export const StructureCard = ({
       )}
     >
       {!canBuild && (
-        <div className="absolute w-full h-full bg-black/75 text-white/60 p-4 text-xs  flex justify-center ">
+        <div className="absolute w-full h-full bg-black/90 text-white/60 p-4 text-xs  flex justify-center ">
           <div className="self-center">insufficient funds</div>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/75 ">
+      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/90 ">
         <div className="truncate">{name}</div>
       </div>
       <div className="flex relative flex-col items-start text-xs font-bold p-2">
