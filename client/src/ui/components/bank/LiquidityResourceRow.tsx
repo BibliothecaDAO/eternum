@@ -113,7 +113,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
               </div>
             ))}
           </div>
-          <div className="bg-gold/10 p-2 m-2 clip-angled-sm h-auto">
+          <div className="bg-gold/10 p-2 m-2  h-auto">
             <div className="flex flex-col p-2 items-center">
               <TravelInfo
                 entityId={entityId}

@@ -100,7 +100,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
 
   return (
     <>
-      <div className="bg-gold/10 p-1 clip-angled-sm">
+      <div className="bg-gold/10 p-1 ">
         <div className="p-2 relative space-y-1">
           <ResourceBar
             entityId={entityId}

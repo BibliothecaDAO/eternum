@@ -101,7 +101,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
       <React.Fragment>
         <div className="flex flex-row justify-between mt-2">
           <div
-            className={`flex flex-col w-[27rem] h-full justify-between clip-angled bg-red/20 ${
+            className={`flex flex-col w-[27rem] h-full justify-between  bg-red/20 ${
               userArmyInBattle ? "animate-pulse" : ""
             } rounded-md border-gold/20 p-2`}
           >

@@ -91,10 +91,10 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
           <h3>The Lordpedia</h3>
         </div>
 
-        <div className="col-span-3 border p-3 space-y-1 clip-angled border-gold/10">
+        <div className="col-span-3 border p-3 space-y-1  border-gold/10">
           {sections.map((section) => (
             <div
-              className={`p-2 px-4 hover:bg-gold/20 clip-angled-sm border border-gold/10 shadow-xl duration-300  ${
+              className={`p-2 px-4 hover:bg-gold/20  border border-gold/10 shadow-xl duration-300  ${
                 activeSection.name === section.name ? "bg-gold/20 n" : ""
               }`}
               key={section.name}
@@ -104,7 +104,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
             </div>
           ))}
         </div>
-        <div className="col-span-8 border clip-angled border-gold/10 p-4 prose prose-pink overflow-auto max-h-[calc(80vh)]">
+        <div className="col-span-8 border  border-gold/10 p-4 prose prose-pink overflow-auto max-h-[calc(80vh)]">
           {activeSection.content}
         </div>
       </div>

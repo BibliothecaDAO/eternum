@@ -321,7 +321,7 @@ const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        "hover:opacity-90 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
+        "hover:opacity-90 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20  ",
         {
           "!border-lightest": active,
         },
