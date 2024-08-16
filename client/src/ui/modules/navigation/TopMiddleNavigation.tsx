@@ -224,12 +224,9 @@ export const TopMiddleNavigation = () => {
           >
             {location === "/map" ? "Realm" : "World"}
           </Button>
-          {/* {location === "/map" && (
-            <ViewOnMapIcon
-              className="my-auto h-7 w-7"
-              position={{ x: hexPosition.col, y: hexPosition.row }}
-            />
-          )} */}
+          {location === "/map" && (
+            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: hexPosition.col, y: hexPosition.row }} />
+          )}
         </div>
       </motion.div>
     </div>
