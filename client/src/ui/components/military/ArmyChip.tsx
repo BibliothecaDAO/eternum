@@ -39,7 +39,7 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs px-2 hover:bg-blueish/20 clip-angled bg-blueish/20 rounded-md border-gold/20 ${className}`}
+      className={`items-center text-xs px-2 hover:bg-blueish/20  bg-blueish/20 rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (
         <>

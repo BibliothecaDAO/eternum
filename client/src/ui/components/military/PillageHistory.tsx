@@ -59,9 +59,8 @@ export const PillageHistory = ({
         </div>
         <div className="overflow-scroll-y max-h-[300px] grid grid-cols-1 gap-4">
           {pillageHistory.reverse().map((history, index) => {
-            console.log(history.destroyedBuildingType);
             return (
-              <div key={index} className="group hover:bg-gold/10  relative bg-gold/20 text-gold p-4 clip-angled">
+              <div key={index} className="group hover:bg-gold/10  relative bg-gold/20 text-gold p-4">
                 <div className="flex justify-center items-center p-3">
                   <div className="text-center">
                     <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>

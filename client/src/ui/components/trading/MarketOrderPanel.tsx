@@ -51,7 +51,7 @@ export const MarketResource = ({
   return (
     <div
       onClick={() => onClick(resource.id)}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:clip-angled-sm clip-angled-sm group ${
+      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
         active ? "bg-gold/10" : ""
       }`}
     >
@@ -121,7 +121,7 @@ const MarketOrders = ({
     <div className=" h-full flex flex-col gap-4">
       {/* Market Price */}
       <div
-        className={`text-xl flex clip-angled-sm font-bold  justify-between p-1 px-8 border-gold/10 border ${
+        className={`text-xl flex  font-bold  justify-between p-1 px-8 border-gold/10 border ${
           !isBuy ? "bg-green/20" : "bg-red/20"
         }`}
       >
@@ -134,7 +134,7 @@ const MarketOrders = ({
         </div>
       </div>
 
-      <div className="p-1 bg-white/5  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border overflow-y-scroll h-auto">
+      <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
         <OrderRowHeader resourceId={resourceId} />
 
         <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96">
@@ -285,7 +285,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   return (
     <div
       key={offer.tradeId}
-      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
+      className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
@@ -448,7 +448,7 @@ const OrderCreation = ({
   }, [donkeyBalance, donkeysNeeded, resourceId]);
 
   return (
-    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-gold/5 border-gold/10 border">
+    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border">
       <div className="flex w-full gap-8">
         <div className="w-1/3 gap-1 flex flex-col">
           <div className="uppercase text-sm flex gap-2 font-bold">
