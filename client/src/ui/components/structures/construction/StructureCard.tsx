@@ -33,7 +33,7 @@ export const StructureCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        " border-transparent hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm hover:border-gradient hover:border-2",
+        " border-transparent hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20  hover:border-gradient hover:border-2",
         {
           "!border-lightest border-gradient border-2": active,
         },
