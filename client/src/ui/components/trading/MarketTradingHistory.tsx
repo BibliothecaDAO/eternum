@@ -1,7 +1,8 @@
 import { client } from "@/dojo/events/graphqlClient";
-import { ACCEPT_ORDER_EVENT, CANCEL_ORDER_EVENT, CREATE_ORDER_EVENT, ID } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "./TradeHistoryEvent";
+import { ID } from "@bibliothecadao/eternum";
+import { ACCEPT_ORDER_SELECTOR, CANCEL_ORDER_SELECTOR, CREATE_ORDER_SELECTOR } from "@/constants/events";
 
 const TAKER_INDEX = 1;
 const MAKER_INDEX = 2;
@@ -26,7 +27,7 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
   const queryTrades = async () => {
     const trades: any = await client.request(`
     query {
-      createdOrders: events(keys: ["${CREATE_ORDER_EVENT}", "*"]) {
+      createdOrders: events(keys: ["${CREATE_ORDER_SELECTOR}", "*"]) {
         edges {
           node {
             id
@@ -35,7 +36,7 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
           }
         }
       }
-      acceptOrders: events(keys: ["${ACCEPT_ORDER_EVENT}", "*"]) {
+      acceptOrders: events(keys: ["${ACCEPT_ORDER_SELECTOR}", "*"]) {
         edges {
           node {
             id
@@ -44,7 +45,7 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
           }
         }
       }
-      cancelOrders: events(keys: ["${CANCEL_ORDER_EVENT}", "*"]) {
+      cancelOrders: events(keys: ["${CANCEL_ORDER_SELECTOR}", "*"]) {
         edges {
           node {
             id
