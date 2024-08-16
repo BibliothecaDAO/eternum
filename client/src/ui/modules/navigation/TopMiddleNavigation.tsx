@@ -1,8 +1,14 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
+import { QuestStatus } from "@/hooks/helpers/useQuests";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import {
   BASE_POPULATION_CAPACITY,
@@ -12,21 +18,15 @@ import {
   STOREHOUSE_CAPACITY,
   StructureType,
 } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import clsx from "clsx";
+import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { QuestStatus } from "@/hooks/helpers/useQuests";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
-import { Position } from "@/types/Position";
-import { QuestId } from "@/ui/components/quest/questDetails";
-import { useComponentValue } from "@dojoengine/react";
-import clsx from "clsx";
-import { motion } from "framer-motion";
-import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -53,8 +53,6 @@ export const TopMiddleNavigation = () => {
   const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
-  const selectedHex = useUIStore((state) => state.selectedHex);
 
   // realms always first
   const structures = useMemo(() => {
