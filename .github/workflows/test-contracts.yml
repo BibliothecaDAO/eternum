@@ -2,18 +2,17 @@ name: test-contracts
 
 on:
   push:
+    paths:
+      - 'contracts/**'
     branches:
       - main
-    paths:
-      - "contracts/**"
 
   pull_request:
     paths:
-      - "contracts/**"
+      - 'contracts/**'
+    types:
+      - opened
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   setup-environment:
