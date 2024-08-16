@@ -6,6 +6,9 @@ export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
 export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 export const BUILDINGS_CENTER = [10, 10];
 
+export const PREVIEW_BUILD_COLOR_VALID = 0x00ff00;
+export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
+
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.Bank,
   [StructureType.Realm]: BuildingType.Castle,
@@ -54,16 +57,27 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
 };
 
-export const StructureModelPaths: Record<StructureType, string> = {
-  [StructureType.Realm]: "models/buildings/castle2.glb",
+export const PROGRESS_HALF_THRESHOLD = 0.5;
+export const PROGRESS_FINAL_THRESHOLD = 1;
+
+export enum StructureProgress {
+  STAGE_1 = 0,
+  STAGE_2 = 1,
+  STAGE_3 = 2,
+}
+
+export const StructureModelPaths: Record<StructureType, string[]> = {
+  [StructureType.Realm]: ["models/buildings/castle2.glb"],
+  // Order follows StructureProgress
+  [StructureType.Hyperstructure]: [
+    "models/buildings/hyperstructure_init.glb",
+    "models/buildings/hyperstructure_half.glb",
+    "models/buildings/hyperstructure_final.glb",
+  ],
+  [StructureType.Bank]: ["models/buildings/bank.glb"],
+  [StructureType.FragmentMine]: ["models/buildings/mine.glb"],
   // placeholder for now
-  [StructureType.Hyperstructure]: "models/buildings/farm.glb",
-  // [StructureType.Hyperstructure]: "models/buildings/hyperstructure-half-transformed.glb",
-  // [StructureType.Hyperstructure]: "models/buildings/hyperstructure.glb",
-  [StructureType.Bank]: "models/buildings/bank.glb",
-  [StructureType.FragmentMine]: "models/buildings/mine.glb",
-  // placeholder for now
-  [StructureType.Settlement]: "models/buildings/mine.glb",
+  [StructureType.Settlement]: ["models/buildings/mine.glb"],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
@@ -71,7 +85,7 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/shard_label.png",
   // placeholder for now
-  [StructureType.Bank]: "models/buildings/mine.glb",
+  [StructureType.Bank]: "textures/shard_label.png",
   // placeholder for now
-  [StructureType.Settlement]: "models/buildings/mine.glb",
+  [StructureType.Settlement]: "textures/shard_label.png",
 };

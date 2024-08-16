@@ -49,7 +49,7 @@ export const ResourceBar = ({
   const finalResourceBalance = hasLordsFees ? selectedResourceBalance - lordsFee : selectedResourceBalance;
 
   return (
-    <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap clip-angled-sm">
+    <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap ">
       <div className="self-center">
         <TextInput
           className="text-2xl border-transparent"

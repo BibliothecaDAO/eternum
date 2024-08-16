@@ -75,9 +75,7 @@ export const PlayersLeaderboard = () => {
           return (
             <div
               key={index}
-              className={`grid grid-cols-6 gap-4 clip-angled-sm p-1 ${
-                isOwner ? "bg-green/20" : ""
-              }  text-xxs text-gold`}
+              className={`grid grid-cols-6 gap-4  p-1 ${isOwner ? "bg-green/20" : ""}  text-xxs text-gold`}
             >
               <div className="col-span-1 ">{`#${index + 1}`}</div>
               <div className="col-span-1">{playerName}</div>

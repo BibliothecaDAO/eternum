@@ -196,7 +196,7 @@ export const LeftNavigationModule = () => {
     <>
       <div
         className={`max-h-full transition-all duration-200 space-x-1 gap-1 flex z-0 w-[600px] text-gold left-10 self-center pointer-events-none ${
-          isOffscreen(view) ? "-translate-x-[86%]" : ""
+          isOffscreen(view) ? "-translate-x-[88%]" : ""
         }`}
         onPointerEnter={() => {
           debouncedSetIsOffscreen.cancel();

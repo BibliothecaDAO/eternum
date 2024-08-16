@@ -1,13 +1,16 @@
 import { SetupResult } from "@/dojo/setup";
 import { Position } from "@/types/Position";
-import { EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
+  ComponentValue,
   defineComponentSystem,
   defineQuery,
   getComponentValue,
+  Has,
   HasValue,
   isComponentUpdate,
+  runQuery,
 } from "@dojoengine/recs";
 import {
   ArmySystemUpdate,
@@ -17,6 +20,10 @@ import {
   TileSystemUpdate,
 } from "./types";
 import { HexPosition } from "@/types";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
+import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
+import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { ClientComponents } from "@/dojo/createClientComponents";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -88,11 +95,14 @@ export class SystemManager {
 
           const categoryKey = structure.category as keyof typeof StructureType;
 
+          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+
           return {
             entityId: structure.entity_id,
             hexCoords: this.getHexCoords(update.value),
             structureType: StructureType[categoryKey],
             isMine,
+            stage,
           };
         });
       },
@@ -173,4 +183,57 @@ export class SystemManager {
   private getHexCoords(value: any): { col: number; row: number } {
     return { col: value[0]?.x || 0, row: value[0]?.y || 0 };
   }
+
+  private getStructureStage(structureType: StructureType, entityId: ID): number {
+    if (structureType === StructureType.Hyperstructure) {
+      const progressQueryResult = Array.from(
+        runQuery([
+          Has(this.dojo.components.Progress),
+          HasValue(this.dojo.components.Progress, { hyperstructure_entity_id: entityId }),
+        ]),
+      );
+
+      const progresses = progressQueryResult.map((progressEntityId) => {
+        return getComponentValue(this.dojo.components.Progress, progressEntityId);
+      });
+
+      const { percentage } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
+
+      if (percentage < PROGRESS_HALF_THRESHOLD) {
+        return StructureProgress.STAGE_1;
+      }
+      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage > PROGRESS_HALF_THRESHOLD) {
+        return StructureProgress.STAGE_2;
+      }
+      return StructureProgress.STAGE_3;
+    }
+
+    return StructureProgress.STAGE_1;
+  }
+
+  private getAllProgressesAndTotalPercentage = (
+    progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
+    hyperstructureEntityId: ID,
+  ) => {
+    let percentage = 0;
+    const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
+      let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+      let progress = {
+        hyperstructure_entity_id: hyperstructureEntityId,
+        resource_type: resource,
+        amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
+        percentage: !foundProgress
+          ? 0
+          : Math.floor(
+              (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
+            ),
+        costNeeded: resourceCost,
+      };
+      percentage +=
+        (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+        TOTAL_CONTRIBUTABLE_AMOUNT;
+      return progress;
+    });
+    return { allProgresses, percentage };
+  };
 }

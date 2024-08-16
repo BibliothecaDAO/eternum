@@ -138,7 +138,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
-          <div className="bg-gold/10 p-2 m-2 clip-angled-sm h-auto">
+          <div className="bg-gold/10 p-2 m-2  h-auto">
             <div className="flex flex-col p-2 items-center">
               <TravelInfo
                 entityId={entityId}
@@ -170,7 +170,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   return (
     <div>
-      <div className=" w-1/2 mx-auto bg-gold/10 px-3 py-1 clip-angled-sm">
+      <div className=" w-1/2 mx-auto bg-gold/10 px-3 py-1 ">
         <div className="relative my-2 space-y-1">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
           <div className="absolute  left-1/2 top-[94px]">

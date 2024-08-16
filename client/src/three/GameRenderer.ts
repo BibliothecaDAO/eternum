@@ -37,7 +37,7 @@ export default class GameRenderer {
     if (scene === this.sceneManager.getCurrentScene()) {
       this.sceneManager.moveCameraForScene();
     } else {
-      this.switchScene(scene as SceneName);
+      this.sceneManager.switchScene(scene as SceneName);
     }
   };
 
@@ -76,7 +76,7 @@ export default class GameRenderer {
       antialias: true,
     });
     this.renderer.setPixelRatio(1);
-    this.renderer.shadowMap.enabled = false;
+    this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -104,7 +104,7 @@ export default class GameRenderer {
     const changeSceneFolder = GUIManager.addFolder("Switch scene");
     const changeSceneParams = { scene: SceneName.WorldMap };
     changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
-    changeSceneFolder.add({ switchScene: () => this.switchScene(changeSceneParams.scene) }, "switchScene");
+    changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
     // Add new button for moving camera to specific col and row
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
@@ -159,6 +159,14 @@ export default class GameRenderer {
         }
       }, 30),
     );
+    this.controls.keys = {
+      LEFT: "KeyA",
+      UP: "KeyW",
+      RIGHT: "KeyD",
+      BOTTOM: "KeyS",
+    };
+    this.controls.keyPanSpeed = 75.0;
+    this.controls.listenToKeyEvents(document.body);
 
     this.renderModels();
 
@@ -194,17 +202,12 @@ export default class GameRenderer {
         break;
       case "Escape":
         if (this.sceneManager?.getCurrentScene() === SceneName.Hexception) {
-          this.switchScene(SceneName.WorldMap);
+          this.sceneManager.switchScene(SceneName.WorldMap);
         }
         break;
       default:
         break;
     }
-  }
-
-  switchScene(sceneName: SceneName) {
-    this.sceneManager.switchScene(sceneName);
-    this.sceneManager.moveCameraForScene();
   }
 
   onWindowResize() {

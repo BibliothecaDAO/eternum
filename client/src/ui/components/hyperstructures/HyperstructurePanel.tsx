@@ -101,7 +101,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   return (
     <div className="flex flex-col h-[45vh] justify-between">
-      <div className="flex flex-col mb-2 bg-blueish/10 p-3 clip-angled-sm">
+      <div className="flex flex-col mb-2 bg-blueish/10 p-3 ">
         <div className=" align-text-bottom uppercase text-xs">Owner: {`${displayAddress(entity.owner)}`}</div>
         <div className="flex flex-row justify-between items-baseline">
           {editName ? (
@@ -148,25 +148,25 @@ export const HyperstructurePanel = ({ entity }: any) => {
       </div>
 
       <div className="w-[100%] grid justify-between  m-auto mb-2  gap-2 grid-cols-4">
-        <div className="p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="flex flex-col justify-center items-center text-center h-full">
             <div className="uppercase text-xs">Initial points received</div>
             <div className="font-bold text-xl">{currencyIntlFormat(initialPoints)}</div>
           </div>
         </div>
-        <div className="p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="flex flex-col justify-center items-center text-center h-full">
             <div className="uppercase text-xs">Progress</div>
             <div className="font-bold text-xl">{currencyIntlFormat(progresses.percentage)}%</div>
           </div>
         </div>
-        <div className="p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="flex flex-col justify-center items-center text-center h-full">
             <div className="uppercase text-xs">Shares</div>
             <div className="font-bold text-xl">{currencyIntlFormat((shares || 0) * 100)}%</div>
           </div>
         </div>
-        <div className="p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="flex flex-col justify-center items-center text-center h-full">
             <div className="uppercase text-xs">Points/cycle</div>
             <div className="font-bold text-xl ">
@@ -175,7 +175,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           </div>
         </div>
       </div>
-      <div className="overflow-y-scroll no-scrollbar h-[40vh] bg-gold/10 clip-angled-sm p-2">
+      <div className="overflow-y-scroll no-scrollbar h-[40vh] bg-gold/10  p-2">
         {progresses.percentage === 100 ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (

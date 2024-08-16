@@ -1,5 +1,5 @@
-import devManifest from "../../contracts/manifests/dev/manifest.json";
-import productionManifest from "../../contracts/manifests/prod/manifest.json";
+import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
+import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
 import { EternumGlobalConfig, EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";

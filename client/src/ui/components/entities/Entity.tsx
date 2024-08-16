@@ -104,13 +104,13 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     );
   };
 
-  const name = entity.entityType === EntityType.TROOP ? army.name : entityName[entity.entityType];
+  const name = entity.entityType === EntityType.TROOP ? army?.name : entityName[entity.entityType];
 
   const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10 animate-pulse";
 
   return (
     <div
-      className={clsx("flex flex-col p-2 clip-angled-sm  text-gold border border-gold/10", props.className, bgColour)}
+      className={clsx("flex flex-col p-2   text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}
@@ -130,7 +130,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         <DepositResources
           entityId={entityId}
           battleInProgress={battleInProgress}
-          armyInBattle={Boolean(army.battle_id)}
+          armyInBattle={Boolean(army?.battle_id)}
         />
       )}
     </div>

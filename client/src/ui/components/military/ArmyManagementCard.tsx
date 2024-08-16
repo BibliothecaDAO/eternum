@@ -277,12 +277,12 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
               const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
 
               return (
-                <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
+                <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>
                   <div className="font-bold mb-4">
                     <div className="flex justify-between">
                       <div className="text-md">{ResourcesIds[troop.name]}</div>
                     </div>
-                    <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
+                    <div className="px-2 py-1 bg-white/10  flex justify-between">
                       <ResourceIcon withTooltip={false} resource={ResourcesIds[troop.name]} size="lg" />
                       <div className="text-green self-center">x {troop.current}</div>
                     </div>
@@ -357,12 +357,7 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
       size="xs"
       onClick={() => {
         setLocation(url);
-        if (location === "/map") {
-          window.dispatchEvent(new Event("urlChanged"));
-        } else {
-          setIsLoadingScreenEnabled(true);
-          window.dispatchEvent(new Event("urlChanged"));
-        }
+        window.dispatchEvent(new Event("urlChanged"));
       }}
     >
       <span>map</span>
