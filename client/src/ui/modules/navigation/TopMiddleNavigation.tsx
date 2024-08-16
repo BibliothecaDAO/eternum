@@ -54,7 +54,6 @@ export const TopMiddleNavigation = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  console.log("realmEntityId", realmEntityId);
   // realms always first
   const structures = useMemo(() => {
     return playerStructures().sort((a, b) => {

@@ -1,5 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { getArmyTotalCapacity } from "@/dojo/modelManager/ArmyMovementManager";
+import { getArmyTotalCapacity } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
@@ -59,7 +59,6 @@ const formatArmies = (
     .map((armyEntityId) => {
       const army = getComponentValue(Army, armyEntityId);
       if (!army) return undefined;
-      let health = structuredClone(getComponentValue(Health, armyEntityId));
 
       const position = getComponentValue(Position, armyEntityId);
       if (!position) return undefined;
@@ -73,6 +72,7 @@ const formatArmies = (
       }
       if (!owner) return undefined;
 
+      let health = structuredClone(getComponentValue(Health, armyEntityId));
       if (health) {
         health.current =
           health.current /
@@ -101,10 +101,10 @@ const formatArmies = (
 
       const movable = getComponentValue(Movable, armyEntityId);
 
-      const capacity = structuredClone(getComponentValue(Capacity, armyEntityId));
+      const capacity = getComponentValue(Capacity, armyEntityId);
       const totalCapacity = capacity ? getArmyTotalCapacity(army, capacity) : 0n;
 
-      const weightComponentValue = structuredClone(getComponentValue(Weight, armyEntityId));
+      const weightComponentValue = getComponentValue(Weight, armyEntityId);
       const weight = weightComponentValue
         ? weightComponentValue.value / BigInt(EternumGlobalConfig.resources.resourcePrecision)
         : 0n;

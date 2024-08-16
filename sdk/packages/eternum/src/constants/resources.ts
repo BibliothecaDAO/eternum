@@ -1,6 +1,6 @@
 import { Resource, Resources } from "../types";
-import { BuildingType, StructureType } from "./structures";
 import { EternumGlobalConfig } from "./global";
+import { BuildingType, StructureType } from "./structures";
 
 export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
@@ -339,80 +339,13 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
-export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
-
-export const resourcesByGuild = {
-  [Guilds[0]]: [
-    ResourcesIds.Wood,
-    ResourcesIds.Stone,
-    ResourcesIds.Coal,
-    ResourcesIds.Ironwood,
-    ResourcesIds.Hartwood,
-    ResourcesIds.TrueIce,
-  ],
-  [Guilds[1]]: [
-    ResourcesIds.Copper,
-    ResourcesIds.Silver,
-    ResourcesIds.Gold,
-    ResourcesIds.ColdIron,
-    ResourcesIds.AlchemicalSilver,
-    ResourcesIds.Adamantine,
-  ],
-  [Guilds[2]]: [
-    ResourcesIds.Diamonds,
-    ResourcesIds.Sapphire,
-    ResourcesIds.Ruby,
-    ResourcesIds.DeepCrystal,
-    ResourcesIds.TwilightQuartz,
-  ],
-  [Guilds[3]]: [
-    ResourcesIds.Obsidian,
-    ResourcesIds.Ignium,
-    ResourcesIds.EtherealSilica,
-    ResourcesIds.Mithral,
-    ResourcesIds.Dragonhide,
-  ],
-};
-
 // if it's labor, then remove 28 to get the icon resource id
 export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;
 };
 
-const LEVELING_COST_MULTIPLIER = 1.25;
-
-export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
-  const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);
-
-  const rem = newLevel % 4;
-
-  const baseAmounts =
-    rem === 0
-      ? // level 4 (resource tier 3)
-        [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
-      : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
-
-  const costResources = [];
-  for (let i = 0; i < baseAmounts.length; i = i + 2) {
-    costResources.push({
-      resourceId: baseAmounts[i],
-      amount: Math.floor(baseAmounts[i + 1] * costMultiplier),
-    });
-  }
-  return costResources;
-};
-
 // weight in kg
-export const WEIGHTS: {
+export const WEIGHTS_GRAM: {
   [key: number]: number;
 } = {
   [ResourcesIds.Wood]: 1000,

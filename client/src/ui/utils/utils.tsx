@@ -1,13 +1,20 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
-import { ContractAddress, ID, Position, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  EternumGlobalConfig,
+  ID,
+  Position,
+  Resource,
+  ResourcesIds,
+  WEIGHTS_GRAM,
+} from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
-import {
-  default as realmHexPositions,
-  default as realmsHexPositions,
-} from "../../data/geodata/hex/realmHexPositions.json";
-import { FELT_CENTER } from "../config";
+import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
+import { GRAMS_PER_KG } from "../constants";
 import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
@@ -226,7 +233,7 @@ export const isRealmSelected = (realmEntityId: ID, structures: any) => {
 
 export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
   return resources.reduce(
-    (total, resource) => total + (resource ? resource.amount * WEIGHTS[resource.resourceId] || 0 : 0),
+    (total, resource) => total + (resource ? resource.amount * WEIGHTS_GRAM[resource.resourceId] || 0 : 0),
     0,
   );
 };
@@ -245,4 +252,31 @@ export const formatSecondsLeftInDaysHours = (seconds: number) => {
   const minutes = Math.floor((secondsLeft % 3600) / 60);
 
   return `${days} days ${hours}h ${minutes}m`;
+};
+
+export const getRemainingCapacity = (
+  army: ComponentValue<ClientComponents["Army"]["schema"]>,
+  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>,
+  armyWeight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined,
+) => {
+  return getArmyTotalCapacity(army, capacity) - getArmyWeight(armyWeight);
+};
+
+export const getArmyTotalCapacity = (
+  army: ComponentValue<ClientComponents["Army"]["schema"]>,
+  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>,
+) => {
+  return (capacity.weight_gram / BigInt(GRAMS_PER_KG)) * getArmyNumberOfTroops(army);
+};
+
+const getArmyWeight = (weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined) => {
+  if (!weight) return 0n;
+  return weight.value / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+};
+
+const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
+  const knights = army.troops.knight_count || 0n;
+  const crossbowmen = army.troops.crossbowman_count || 0n;
+  const paladins = army.troops.paladin_count || 0n;
+  return (knights + crossbowmen + paladins) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
 };

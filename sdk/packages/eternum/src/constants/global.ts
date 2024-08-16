@@ -27,11 +27,6 @@ export const EternumGlobalConfig = {
     ownerFeesNumerator: 15,
     ownerFeesDenominator: 100, // %
   },
-  weights: {
-    resource: 1000,
-    currency: 1,
-    food: 100,
-  },
   populationCapacity: {
     workerHuts: 5,
   },
@@ -43,9 +38,9 @@ export const EternumGlobalConfig = {
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 30, // 2hrs
+    armiesTickIntervalInSeconds: 7200, // 2hrs
   },
-  carryCapacity: {
+  carryCapacityGram: {
     donkey: 100_000,
     army: 10_000,
   },
