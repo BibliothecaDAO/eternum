@@ -30,6 +30,7 @@ export class SceneManager {
         this.transitionManager.fadeIn();
       });
     }
+	this.moveCameraForScene();
   }
 
   moveCameraForScene() {

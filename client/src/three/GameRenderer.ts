@@ -170,14 +170,9 @@ export default class GameRenderer {
     if (scene === this.sceneManager.getCurrentScene() && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
       this.sceneManager.moveCameraForScene();
     } else {
-      this.switchScene(scene as SceneName);
+      this.sceneManager.switchScene(scene as SceneName);
     }
   };
-
-  switchScene(sceneName: SceneName) {
-    this.sceneManager.switchScene(sceneName);
-    this.sceneManager.moveCameraForScene();
-  }
 
   renderModels() {
     this.transitionManager = new TransitionManager(this.renderer);
