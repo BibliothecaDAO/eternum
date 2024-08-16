@@ -231,14 +231,6 @@ export default {
         ".clip-squared-top": {
           clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%, 10% 10%)",
         },
-        ".clip-angled": {
-          clipPath:
-            "polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)",
-        },
-        // ".clip-angled-sm": {
-        //   clipPath:
-        //     "polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px)",
-        // },
         ".outline-gradient": {
           outline: "2px solid transparent",
           outlineOffset: "2px",

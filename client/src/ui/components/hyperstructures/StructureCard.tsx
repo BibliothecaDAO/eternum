@@ -64,7 +64,7 @@ export const MergeTroopsPanel = ({
   takerArmy,
 }: MergeTroopsPanelProps) => {
   return (
-    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 max-h-[42vh] overflow-y-auto">
+    <div className="flex flex-col  bg-gold/20 p-3 max-h-[42vh] overflow-y-auto">
       <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>
         &lt; Back
       </Button>
@@ -163,7 +163,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
           {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
-                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
+                className="flex flex-row bg-gold/20  hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
                 key={resourceId}
               >
                 <div className=" flex gap-3">
@@ -212,7 +212,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
             Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
-                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
+                  className="flex flex-row bg-gold/20  hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
                   key={resourceId}
                 >
                   <div className=" flex gap-3">
@@ -295,7 +295,7 @@ const Troop = ({ troopId }: { troopId: number }) => {
       }}
       className="flex flex-col font-bold"
     >
-      <div className="bg-white/10 clip-angled-sm flex justify-between p-1">
+      <div className="bg-white/10  flex justify-between p-1">
         <ResourceIcon withTooltip={false} resource={ResourcesIds[troopId]} size="lg" />
       </div>
     </div>
