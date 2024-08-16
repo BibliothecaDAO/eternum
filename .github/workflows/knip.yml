@@ -1,18 +1,9 @@
 name: knip
 
 on:
-  push:
-    paths:
-      - "client/**"
-      - "sdk/**"
-    branches:
-      - main
   pull_request:
-    paths:
-      - "client/**"
-      - "sdk/**"
-    types:
-      - opened
+    paths-ignore:
+      - 'contracts/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

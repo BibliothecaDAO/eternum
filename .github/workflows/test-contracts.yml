@@ -1,17 +1,10 @@
 name: test-contracts
 
 on:
-  push:
-    paths:
-      - 'contracts/**'
-    branches:
-      - main
-
   pull_request:
-    paths:
-      - 'contracts/**'
-    types:
-      - opened
+    paths-ignore:
+      - 'client/**'
+      - 'sdk/**'
 
 
 jobs:
