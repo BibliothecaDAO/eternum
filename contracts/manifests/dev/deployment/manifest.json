@@ -1231,7 +1231,7 @@
     ],
     "address": "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",
     "transaction_hash": "0x6e2a9171abf51df314cd089ba4a6c4d16178d58f92106ddb3d0e28e1a51822",
-    "block_number": 54,
+    "block_number": 56,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -1542,8 +1542,8 @@
     {
       "kind": "DojoContract",
       "address": "0x5d554f77805c2ecb25913ab3f54f55a295cd20ac63ff3be4a75c3ac43fd8ad5",
-      "class_hash": "0x6abc45ab93b4cb47506114c9a0a669eed44542e3dced196590961b2939bca2a",
-      "original_class_hash": "0x6abc45ab93b4cb47506114c9a0a669eed44542e3dced196590961b2939bca2a",
+      "class_hash": "0x9e0c15a2b3b0b41d016e64627434571786d0baf8a346a55b9497492cdeae54",
+      "original_class_hash": "0x9e0c15a2b3b0b41d016e64627434571786d0baf8a346a55b9497492cdeae54",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -1679,16 +1679,42 @@
           "interface_name": "eternum::systems::buildings::contracts::IBuildingContract"
         },
         {
-          "type": "struct",
-          "name": "eternum::models::position::Coord",
-          "members": [
+          "type": "enum",
+          "name": "eternum::models::position::Direction",
+          "variants": [
             {
-              "name": "x",
-              "type": "core::integer::u32"
+              "name": "East",
+              "type": "()"
             },
             {
-              "name": "y",
-              "type": "core::integer::u32"
+              "name": "NorthEast",
+              "type": "()"
+            },
+            {
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<eternum::models::position::Direction>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<eternum::models::position::Direction>"
             }
           ]
         },
@@ -1769,6 +1795,20 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "eternum::models::position::Coord",
+          "members": [
+            {
+              "name": "x",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "eternum::systems::buildings::contracts::IBuildingContract",
           "items": [
@@ -1781,8 +1821,8 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "building_coord",
-                  "type": "eternum::models::position::Coord"
+                  "name": "directions",
+                  "type": "core::array::Span::<eternum::models::position::Direction>"
                 },
                 {
                   "name": "building_category",
