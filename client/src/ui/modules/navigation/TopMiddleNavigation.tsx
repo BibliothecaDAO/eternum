@@ -108,10 +108,18 @@ export const TopMiddleNavigation = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
+
+  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
+  }, [nextBlockTimestamp]);
+
   return (
     <div className="pointer-events-auto mt-1 ">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div className=" bg-black/75 rounded-l-xl my-1 border-white/5 border flex gap-1">
+        <div className=" bg-black/90 rounded-l-xl my-1 border-white/5 border flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -161,7 +169,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className="flex min-w-72 gap-1 text-gold bg-map   justify-center border text-center rounded bg-black/90 border-gold/10">
+        <div className="flex min-w-72 gap-1 text-gold bg-map justify-center border text-center rounded bg-black/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             <Select
               value={realmEntityId.toString()}
@@ -188,8 +196,12 @@ export const TopMiddleNavigation = () => {
               </SelectContent>
             </Select>
           </div>
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
-        <div className=" bg-black/75 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
+        <div className=" bg-black/90 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
           <TickProgress />
           <Button
             variant="outline"
@@ -210,12 +222,12 @@ export const TopMiddleNavigation = () => {
           >
             {location === "/map" ? "Realm" : "World"}
           </Button>
-          {location === "/map" && (
+          {/* {location === "/map" && (
             <ViewOnMapIcon
               className="my-auto w-7 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all"
               position={{ x: hexPosition.col, y: hexPosition.row }}
             />
-          )}
+          )} */}
         </div>
       </motion.div>
     </div>
