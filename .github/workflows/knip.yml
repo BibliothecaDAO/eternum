@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - "client/**"
+      - "sdk/**"
     branches:
       - main
   pull_request:
     paths:
       - "client/**"
+      - "sdk/**"
     types:
       - opened
 
