@@ -226,7 +226,7 @@ export const TopMiddleNavigation = () => {
           </Button>
           {/* {location === "/map" && (
             <ViewOnMapIcon
-              className="my-auto w-7 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all"
+              className="my-auto h-7 w-7"
               position={{ x: hexPosition.col, y: hexPosition.row }}
             />
           )} */}

@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { EntityList } from "@/ui/components/list/EntityList";
-import { ViewOnMapButton } from "@/ui/components/military/ArmyManagementCard";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
@@ -133,12 +133,7 @@ const HyperStructureExtraContent = ({
 
   return (
     <div className="flex space-x-5 items-center text-xs">
-      <ViewOnMapButton
-        position={{
-          x: x,
-          y: y,
-        }}
-      />
+      <ViewOnMapIcon className={"my-auto hover:scale-125 hover:grow"} position={{ x, y }} />
       <div>
         Progress: {`${progress.percentage}%`}
         <br />
@@ -157,12 +152,7 @@ const HyperStructureExtraContent = ({
 const ShardMineExtraContent = ({ x, y, balance }: { x: number; y: number; balance: bigint }) => {
   return (
     <div className="flex space-x-5 items-center text-xs">
-      <ViewOnMapButton
-        position={{
-          x: x,
-          y: y,
-        }}
-      />
+      <ViewOnMapIcon className={"my-auto  hover:scale-125 hover:grow"} position={{ x, y }} />
       <div>Balance: {Number(balance)}</div>
     </div>
   );
