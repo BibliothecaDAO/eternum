@@ -1,5 +1,4 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { getArmyTotalCapacity } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
@@ -17,6 +16,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import { getArmyTotalCapacity } from "@/dojo/modelManager/utils/ArmyMovementUtils";
 
 export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;

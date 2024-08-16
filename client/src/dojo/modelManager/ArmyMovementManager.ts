@@ -1,7 +1,7 @@
 import { getCurrentArmiesTick, getCurrentTick } from "@/three/helpers/ticks";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import { getEntityIdFromKeys, getRemainingCapacity } from "@/ui/utils/utils";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ContractAddress,
   EternumGlobalConfig,
@@ -17,6 +17,7 @@ import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
+import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
