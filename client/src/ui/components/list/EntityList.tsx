@@ -54,7 +54,7 @@ export const EntityList = ({
             {list.map((entity, index) => (
               <li
                 className={clsx(
-                  "py-2 px-2 bg-gold/20 clip-angled-sm flex justify-between hover:bg-crimson/40 my-1 rounded border border-gold/10",
+                  "py-2 px-2 bg-gold/20  flex justify-between hover:bg-crimson/40 my-1 rounded border border-gold/10",
                   {
                     "animate-pulse": questing,
                   },

@@ -74,9 +74,7 @@ export const GuildsLeaderboard = () => {
             return (
               <div
                 key={index}
-                className={`grid grid-cols-4 gap-4 clip-angled-sm p-1 ${
-                  guild.isOwner ? "bg-green/20" : ""
-                }  text-xxs text-gold`}
+                className={`grid grid-cols-4 gap-4  p-1 ${guild.isOwner ? "bg-green/20" : ""}  text-xxs text-gold`}
               >
                 <div className="col-span-1">{`#${index + 1}`}</div>
                 <div className="col-span-2">{guild.name}</div>

@@ -113,7 +113,7 @@ export const Guilds = () => {
               return (
                 <div
                   key={guild.guild.entity_id}
-                  className={`grid grid-cols-4 gap-4 text-md clip-angled-sm p-1 ${
+                  className={`grid grid-cols-4 gap-4 text-md  p-1 ${
                     guild.guild.entity_id === guildDisplayed?.guildEntityId ? "bg-green/20" : ""
                   } `}
                 >
