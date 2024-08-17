@@ -152,6 +152,28 @@ export default class GameRenderer {
     this.controls.keyPanSpeed = 75.0;
     this.controls.listenToKeyEvents(document.body);
 
+    document.addEventListener(
+      "focus",
+      (event) => {
+        // check if the focused element is input
+        if (event.target instanceof HTMLInputElement) {
+          this.controls.stopListenToKeyEvents();
+        }
+      },
+      true,
+    );
+
+    document.addEventListener(
+      "blur",
+      (event) => {
+        // check if the focused element is input
+        if (event.target instanceof HTMLInputElement) {
+          this.controls.listenToKeyEvents(document.body);
+        }
+      },
+      true,
+    );
+
     this.renderModels();
 
     // Init animation
