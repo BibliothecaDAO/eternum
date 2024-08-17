@@ -1424,9 +1424,13 @@ mod combat_systems {
                 battle.attack_army_health = battle_army_health;
             }
 
-            battle.reset_delta(troop_config);
-
-            set!(world, (battle));
+            if (battle.attack_army_lifetime.troops.count().is_zero()
+                && battle.defence_army_lifetime.troops.count().is_zero()) {
+                delete!(world, (battle));
+            } else {
+                battle.reset_delta(troop_config);
+                set!(world, (battle));
+            }
         }
     }
 }
