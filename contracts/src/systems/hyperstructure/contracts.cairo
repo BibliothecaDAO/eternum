@@ -165,7 +165,7 @@ mod hyperstructure_systems {
             let mut total: u16 = 0;
             let mut i = 0;
             while (i < co_owners.len()) {
-                let (address, percentage) = *co_owners.at(i);
+                let (_address, percentage) = *co_owners.at(i);
                 total += percentage;
                 i += 1;
             };

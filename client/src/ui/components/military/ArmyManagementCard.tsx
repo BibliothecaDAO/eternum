@@ -21,6 +21,7 @@ import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
+import clsx from "clsx";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -191,7 +192,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
               "Idle"
             )}
           </div>
-          <ViewOnMapButton position={armyPosition} />
+          <ViewOnMapIcon position={armyPosition} />
         </div>
         <div className="flex flex-col relative  p-2">
           {travelWindow && (
@@ -330,7 +331,10 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
 
   return (
     <Map
-      className={className}
+      className={clsx(
+        "h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all",
+        className,
+      )}
       onClick={() => {
         setLocation(url);
         if (location === "/map") {
@@ -341,27 +345,6 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
         }
       }}
     />
-  );
-};
-
-export const ViewOnMapButton = ({ position, className }: { position: Position; className?: string }) => {
-  const [location, setLocation] = useLocation();
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-
-  const url = new PositionInterface(position).toMapLocationUrl();
-
-  return (
-    <Button
-      className={className}
-      variant="primary"
-      size="xs"
-      onClick={() => {
-        setLocation(url);
-        window.dispatchEvent(new Event("urlChanged"));
-      }}
-    >
-      <span>map</span>
-    </Button>
   );
 };
 
