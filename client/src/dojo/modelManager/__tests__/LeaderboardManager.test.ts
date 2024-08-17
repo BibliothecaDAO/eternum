@@ -1,4 +1,8 @@
-import { HYPERSTRUCTURE_POINTS_ON_COMPLETION, HYPERSTRUCTURE_POINTS_PER_CYCLE } from "@bibliothecadao/eternum";
+import {
+  HYPERSTRUCTURE_POINTS_ON_COMPLETION,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HyperstructureResourceMultipliers,
+} from "@bibliothecadao/eternum";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LeaderboardManager } from "../LeaderboardManager";
 import {
@@ -34,14 +38,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
       { resource: 1, amount: 1 },
       { resource: 2, amount: 1 },
     ],
-  };
-});
-
-vi.mock("../utils/constants", async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as any),
-    ResourceMultipliers: {
+    HyperstructureResourceMultipliers: {
       ["1"]: 1.0,
       ["2"]: 1.0,
     },
