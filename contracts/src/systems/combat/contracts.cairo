@@ -399,7 +399,7 @@ mod combat_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
     use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
-    use eternum::models::stamina::Stamina;
+    use eternum::models::stamina::{Stamina, StaminaCustomTrait};
     use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::models::weight::Weight;
     use eternum::models::{
@@ -937,17 +937,28 @@ mod combat_systems {
 
                                     let resource_amount_stolen: u128 = min(max_carriable, resource_amount_stolen);
 
-                                    pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
+                                    // express resource amount stolen to be a percentage of stamina left
+                                    let mut army_stamina: Stamina = get!(world, army_id, Stamina);
+                                    let resource_amount_stolen: u128 = (resource_amount_stolen
+                                        * army_stamina.amount.into())
+                                        / army_stamina.max(world).into();
 
-                                    InternalResourceSystemsImpl::transfer(
-                                        world,
-                                        structure_id,
-                                        army_id,
-                                        array![(*chosen_resource_type, resource_amount_stolen)].span(),
-                                        army_id,
-                                        true,
-                                        true
-                                    );
+                                    // drain stamina
+                                    army_stamina.amount = 0;
+                                    set!(world, (army_stamina));
+
+                                    if resource_amount_stolen.is_non_zero() {
+                                        pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
+                                        InternalResourceSystemsImpl::transfer(
+                                            world,
+                                            structure_id,
+                                            army_id,
+                                            array![(*chosen_resource_type, resource_amount_stolen)].span(),
+                                            army_id,
+                                            true,
+                                            true
+                                        );
+                                    }
 
                                     break;
                                 }
