@@ -23,7 +23,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
+import { Crown, Landmark, Pickaxe, Sparkles, ShieldQuestion } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
@@ -35,7 +35,7 @@ const slideDown = {
 
 // use a different icon for each structure depending on their category
 const structureIcons: Record<string, JSX.Element> = {
-  None: <div />,
+  None: <ShieldQuestion />,
   Realm: <Crown />,
   Bank: <Landmark />,
   Hyperstructure: <Sparkles />,
@@ -205,8 +205,11 @@ export const TopMiddleNavigation = () => {
                 </SelectContent>
               </Select>
             ) : (
-              <div className="self-center text-lg font-semibold m-auto focus:text-accent-foreground placeholder:text-muted-foreground">
-                {realmEntityId !== 0 ? `Ennemy Realm: ${realm.name}` : "Unsettled"}
+              <div>
+                <h5 className="self-center flex gap-4">
+                  {structureIcons["None"]}
+                  {"Unsettled"}
+                </h5>
               </div>
             )}
           </div>
