@@ -552,7 +552,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             // update army's subtracted weight
                             subtracted_resources_weight +=
                                 WeightConfigCustomImpl::get_weight(world, resource_type, to_army_resource.balance);
-                            
+
                             // army forfeits resources
                             to_army_resource.burn((to_army_resource.balance));
                             to_army_resource.save(world);
