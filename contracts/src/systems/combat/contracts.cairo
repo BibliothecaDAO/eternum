@@ -966,8 +966,7 @@ mod combat_systems {
             }
 
             // drain stamina
-            army_stamina.amount = 0;
-            set!(world, (army_stamina));
+            army_stamina.drain(world);
 
             // destroy a building
             let mut destroyed_building_category = BuildingCategory::None;

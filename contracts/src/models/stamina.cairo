@@ -32,6 +32,11 @@ impl StaminaCustomImpl of StaminaCustomTrait {
         }
     }
 
+    fn drain(ref self: Stamina, world: IWorldDispatcher) {
+        self.refill_if_next_tick(world);
+        self.substract_costs(self.amount, world);
+    }
+
     fn substract_costs(ref self: Stamina, costs: u16, world: IWorldDispatcher) {
         self.amount -= costs;
         self.sset(world);
