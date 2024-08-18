@@ -7,7 +7,7 @@ use eternum::models::config::{
     TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigCustomImpl,
     BuildingCategoryPopConfigCustomTrait, PopulationConfig
 };
-use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner};
+use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
 use eternum::models::population::{Population, PopulationCustomTrait};
 use eternum::models::position::{Coord, Position, Direction, PositionCustomTrait, CoordTrait};
 use eternum::models::production::{
@@ -481,7 +481,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
 
 
     fn destroy(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
-        get!(world, outer_entity_id, Owner).assert_caller_owner();
+        get!(world, outer_entity_id, EntityOwner).assert_caller_owner(world);
 
         // check that the outer entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);

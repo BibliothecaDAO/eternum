@@ -1,3 +1,7 @@
+import { getCurrentArmiesTick, getCurrentTick } from "@/three/helpers/ticks";
+import { HexPosition } from "@/types";
+import { FELT_CENTER } from "@/ui/config";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ContractAddress,
   EternumGlobalConfig,
@@ -8,15 +12,12 @@ import {
   neighborOffsetsEven,
   neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
-import { FELT_CENTER } from "@/ui/config";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { Component, Entity, OverridableComponent, getComponentValue } from "@dojoengine/recs";
+import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
-import { HexPosition } from "@/types";
-import { uuid } from "@latticexyz/utils";
-import { getCurrentArmiesTick, getCurrentTick } from "@/three/helpers/ticks";
 import { ProductionManager } from "./ProductionManager";
+import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -411,14 +412,8 @@ export class ArmyMovementManager {
     const armyWeight = getComponentValue(this.weightModel, this.entity);
     const armyEntity = getComponentValue(this.armyModel, this.entity);
 
-    const knights = armyEntity?.troops.knight_count || 0n;
-    const crossbowmen = armyEntity?.troops.crossbowman_count || 0n;
-    const paladins = armyEntity?.troops.paladin_count || 0n;
-    const troopQty = (knights + crossbowmen + paladins) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+    if (!armyEntity || !armyCapacity) return 0n;
 
-    const capacity = armyCapacity?.weight_gram || 0n;
-    const weight = (armyWeight?.value || 0n) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
-
-    return capacity * troopQty - weight;
+    return getRemainingCapacity(armyEntity, armyCapacity, armyWeight!);
   };
 }

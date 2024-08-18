@@ -83,7 +83,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         headerPanel={
           <>
             {" "}
-            <div className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
+            <div className="px-3 py-2 bg-blueish/20  font-bold">
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </div>
             <div className="flex justify-between">
