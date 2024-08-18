@@ -4,7 +4,6 @@ import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { PlayerStructure } from "@/hooks/helpers/useEntities";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
@@ -14,6 +13,7 @@ import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 
@@ -24,7 +24,9 @@ enum Loading {
 }
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
-  const existingBuildings = useUIStore((state) => state.existingBuildings);
+  const dojo = useDojo();
+  const tileManager = new TileManager(dojo.setup, { col: structure.position.x, row: structure.position.y });
+  const existingBuildings = tileManager.existingBuildings();
 
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
     entity_owner_entity_id: structure?.entity_id || 0,
@@ -46,9 +48,9 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       EternumGlobalConfig.troop.baseArmyNumberForStructure +
       existingBuildings.filter(
         (building) =>
-          building.type === BuildingType.ArcheryRange ||
-          building.type === BuildingType.Barracks ||
-          building.type === BuildingType.Stable,
+          building.category === BuildingType[BuildingType.ArcheryRange] ||
+          building.category === BuildingType[BuildingType.Barracks] ||
+          building.category === BuildingType[BuildingType.Stable],
       ).length *
         EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
     );
