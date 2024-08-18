@@ -60,7 +60,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     return battleManager.isBattleOngoing(currentTimestamp!);
   }, [entity?.position?.x, entity?.position?.y]);
 
-  const army = useMemo(() => getArmy(entityId), [entityId]);
+  const army = useMemo(() => getArmy(entityId), [entityId, entity.resources]);
 
   if (entityState === EntityState.NotApplicable) return null;
 
@@ -110,7 +110,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2 clip-angled-sm  text-gold border border-gold/10", props.className, bgColour)}
+      className={clsx("flex flex-col p-2   text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}

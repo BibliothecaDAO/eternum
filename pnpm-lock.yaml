@@ -18,7 +18,7 @@ importers:
         version: 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/state':
         specifier: ^1.0.0-alpha.4
-        version: 1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+        version: 1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/torii-client':
         specifier: ^1.0.0-alpha.4
         version: 1.0.0-alpha.4
@@ -69,7 +69,7 @@ importers:
         version: 4.5.3
       langchain:
         specifier: '^0.2.7 '
-        version: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0)
+        version: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0)
       node-cron:
         specifier: ^3.0.3
         version: 3.0.3
@@ -90,7 +90,7 @@ importers:
         version: 5.4.4
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)
+        version: 1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -132,29 +132,26 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@dojoengine/core':
-        specifier: ^v1.0.0-alpha.3
-        version: 1.0.0-alpha.4(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.5
+        version: 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@dojoengine/create-burner':
-        specifier: ^v1.0.0-alpha.3
-        version: 1.0.0-alpha.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.5
+        version: 1.0.0-alpha.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@dojoengine/react':
-        specifier: ^v1.0.0-alpha.3
-        version: 1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.5
+        version: 1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)
       '@dojoengine/recs':
         specifier: ^2.0.13
         version: 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/state':
-        specifier: ^v1.0.0-alpha.3
-        version: 1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.5
+        version: 1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@dojoengine/torii-client':
-        specifier: ^v1.0.0-alpha.3
-        version: 1.0.0-alpha.4
-      '@dojoengine/torii-wasm':
-        specifier: ^v1.0.0-alpha.3
-        version: 1.0.0-alpha.4
+        specifier: 1.0.0-alpha.5
+        version: 1.0.0-alpha.5
       '@dojoengine/utils':
-        specifier: ^v1.0.0-alpha.3
-        version: 1.0.0-alpha.4(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.5
+        version: 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@headlessui/react':
         specifier: ^1.7.18
         version: 1.7.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -247,7 +244,7 @@ importers:
         version: 4.0.3(react@18.3.1)
       vitest-canvas-mock:
         specifier: ^0.3.3
-        version: 0.3.3(vitest@2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0))
+        version: 0.3.3(vitest@2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0))
       wouter:
         specifier: ^2.12.1
         version: 2.12.1(react@18.3.1)
@@ -284,10 +281,10 @@ importers:
         version: 4.3.1(vite@5.3.5(@types/node@20.14.13))
       '@vitest/coverage-v8':
         specifier: ^2.0.5
-        version: 2.0.5(vitest@2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0))
+        version: 2.0.5(vitest@2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0))
       '@vitest/ui':
         specifier: ^2.0.1
-        version: 2.0.2(vitest@2.0.2)
+        version: 2.0.2(vitest@2.0.5)
       autoprefixer:
         specifier: ^10.4.18
         version: 10.4.19(postcss@8.4.40)
@@ -340,8 +337,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0(vite@5.3.5(@types/node@20.14.13))
       vitest:
-        specifier: ^2.0.1
-        version: 2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
+        specifier: ^2.0.5
+        version: 2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
 
   config:
     dependencies:
@@ -374,8 +371,8 @@ importers:
   sdk/packages/eternum:
     dependencies:
       '@dojoengine/core':
-        specifier: ^v1.0.0-alpha.0
-        version: 1.0.0-alpha.0(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.5
+        version: 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.1
@@ -1137,15 +1134,21 @@ packages:
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/create-burner@1.0.0-alpha.4':
-    resolution: {integrity: sha512-oeqw5hWW73TBeob7kOa3VqZastiqev4bh6q9lXg7DPmXexuhkXAbpyxK3FiE5XLqdg5jnXwCjCYyVSQciLgmJQ==}
+  '@dojoengine/core@1.0.0-alpha.5':
+    resolution: {integrity: sha512-X+MDXFYoV3rDVFCZlOc5RXQUviuWnsaMvAqjhNNI683w6qWNYqt2e2FUauHgJI67Vi1/9/WuIetkM5hxU9QHFQ==}
+    hasBin: true
+    peerDependencies:
+      starknet: 6.11.0
+
+  '@dojoengine/create-burner@1.0.0-alpha.5':
+    resolution: {integrity: sha512-HcfwPGGzWrqgS0+xJIC/kAFc7aFwLIlT7bjnCCFUrwhvypg2qbb9csHekRWVsP98d2syTzNTMOYnGSJUocR62g==}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
       starknet: 6.11.0
 
-  '@dojoengine/react@1.0.0-alpha.4':
-    resolution: {integrity: sha512-HwC8ADEucO4GZkQfYebKqxcSb4iE24bKeKKCQTZTdPPhHdibYucKkma81UMcygfwWyccL4AoeAyc3XH/pMg9Zw==}
+  '@dojoengine/react@1.0.0-alpha.5':
+    resolution: {integrity: sha512-urM9fAurroGerpRvBqefa1JzP6p8AqTedrpiQWP+ORoHa2jHpy4BqrOluzB6kNA0cINYHnD11gVkcesl28EwFw==}
     peerDependencies:
       react: ^18.2.0
       starknet: 6.11.0
@@ -1159,14 +1162,30 @@ packages:
     peerDependencies:
       starknet: 6.11.0
 
+  '@dojoengine/state@1.0.0-alpha.5':
+    resolution: {integrity: sha512-a5RG9OWJuCSjoQMqL4Uyysai1d5AVZbRfxfdPdNT2Ykwvw/KAVOhDWItpA36PpBmnnokJWglNXMKeDWDEtL9sQ==}
+    peerDependencies:
+      starknet: 6.11.0
+
   '@dojoengine/torii-client@1.0.0-alpha.4':
     resolution: {integrity: sha512-N0+2xpcnn6PCkHopJxURDaqraNcGPwp7SgDbAO1yFaRpfSwL0twqamHCKVobMj5zeMVGtXS2ITZ9Gmm905VqBw==}
+
+  '@dojoengine/torii-client@1.0.0-alpha.5':
+    resolution: {integrity: sha512-H+6bwEOaUA1UXq9PniM3D6dJVV2g514RaTkuW6/4TV+SPs7GHa123W2kpifg4AdXwauS42Ej/h2+xRhg1W1G3g==}
 
   '@dojoengine/torii-wasm@1.0.0-alpha.4':
     resolution: {integrity: sha512-FCgBrNE2AYGL7S3D4fKUEIpOoPmxD7S+7jLldD3VG9VUu7mNwVp5AWKkBLNk67Qk3ou5/sh2sN43x9pzrqXSXg==}
 
+  '@dojoengine/torii-wasm@1.0.0-alpha.5':
+    resolution: {integrity: sha512-5SlvWimnrhEnRJIMDy8Lew8jBv6FAVk2tBwHhgOEQNs2p3/zqROc1ejn0SaETzSyiq3E9RMprIo04yxVAtr14A==}
+
   '@dojoengine/utils@1.0.0-alpha.4':
     resolution: {integrity: sha512-Ch8YyUKRq1hg+gSNUs8Z4ddS4dj9IZIDQQgsytSHJ0xbgGf6w0KwnN2vXHGU4SwCbuFduFed+Hvt50RLcpBa4Q==}
+    peerDependencies:
+      starknet: 6.11.0
+
+  '@dojoengine/utils@1.0.0-alpha.5':
+    resolution: {integrity: sha512-39Z0XNIvEBc+YDuderPiJ+T1DXtAo8DEUGoxna1B5O2pBCi0jXlze5Puke4D98ZX6GfMD+XbflW0H5ccmguwVw==}
     peerDependencies:
       starknet: 6.11.0
 
@@ -3333,29 +3352,32 @@ packages:
   '@vitest/expect@1.6.0':
     resolution: {integrity: sha512-ixEvFVQjycy/oNgHjqsL6AZCDduC+tflRluaHIzKIsdbzkLn2U/iBnVeJwB6HsIjQBdfMR8Z0tRxKUsvFJEeWQ==}
 
-  '@vitest/expect@2.0.2':
-    resolution: {integrity: sha512-nKAvxBYqcDugYZ4nJvnm5OR8eDJdgWjk4XM9owQKUjzW70q0icGV2HVnQOyYsp906xJaBDUXw0+9EHw2T8e0mQ==}
+  '@vitest/expect@2.0.5':
+    resolution: {integrity: sha512-yHZtwuP7JZivj65Gxoi8upUN2OzHTi3zVfjwdpu2WrvCZPLwsJ2Ey5ILIPccoW23dd/zQBlJ4/dhi7DWNyXCpA==}
 
   '@vitest/pretty-format@2.0.2':
     resolution: {integrity: sha512-SBCyOXfGVvddRd9r2PwoVR0fonQjh9BMIcBMlSzbcNwFfGr6ZhOhvBzurjvi2F4ryut2HcqiFhNeDVGwru8tLg==}
 
+  '@vitest/pretty-format@2.0.5':
+    resolution: {integrity: sha512-h8k+1oWHfwTkyTkb9egzwNMfJAEx4veaPSnMeKbVSjp4euqGSbQlm5+6VHwTr7u4FJslVVsUG5nopCaAYdOmSQ==}
+
   '@vitest/runner@1.6.0':
     resolution: {integrity: sha512-P4xgwPjwesuBiHisAVz/LSSZtDjOTPYZVmNAnpHHSR6ONrf8eCJOFRvUwdHn30F5M1fxhqtl7QZQUk2dprIXAg==}
 
-  '@vitest/runner@2.0.2':
-    resolution: {integrity: sha512-OCh437Vi8Wdbif1e0OvQcbfM3sW4s2lpmOjAE7qfLrpzJX2M7J1IQlNvEcb/fu6kaIB9n9n35wS0G2Q3en5kHg==}
+  '@vitest/runner@2.0.5':
+    resolution: {integrity: sha512-TfRfZa6Bkk9ky4tW0z20WKXFEwwvWhRY+84CnSEtq4+3ZvDlJyY32oNTJtM7AW9ihW90tX/1Q78cb6FjoAs+ig==}
 
   '@vitest/snapshot@1.6.0':
     resolution: {integrity: sha512-+Hx43f8Chus+DCmygqqfetcAZrDJwvTj0ymqjQq4CvmpKFSTVteEOBzCusu1x2tt4OJcvBflyHUE0DZSLgEMtQ==}
 
-  '@vitest/snapshot@2.0.2':
-    resolution: {integrity: sha512-Yc2ewhhZhx+0f9cSUdfzPRcsM6PhIb+S43wxE7OG0kTxqgqzo8tHkXFuFlndXeDMp09G3sY/X5OAo/RfYydf1g==}
+  '@vitest/snapshot@2.0.5':
+    resolution: {integrity: sha512-SgCPUeDFLaM0mIUHfaArq8fD2WbaXG/zVXjRupthYfYGzc8ztbFbu6dUNOblBG7XLMR1kEhS/DNnfCZ2IhdDew==}
 
   '@vitest/spy@1.6.0':
     resolution: {integrity: sha512-leUTap6B/cqi/bQkXUu6bQV5TZPx7pmMBKBQiI0rJA8c3pB56ZsaTbREnF7CJfmvAS4V2cXIBAh/3rVwrrCYgw==}
 
-  '@vitest/spy@2.0.2':
-    resolution: {integrity: sha512-MgwJ4AZtCgqyp2d7WcQVE8aNG5vQ9zu9qMPYQHjsld/QVsrvg78beNrXdO4HYkP0lDahCO3P4F27aagIag+SGQ==}
+  '@vitest/spy@2.0.5':
+    resolution: {integrity: sha512-c/jdthAhvJdpfVuaexSrnawxZz6pywlTPe84LUB2m/4t3rl2fTo9NFGBG4oWgaD+FTgDDV8hJ/nibT7IfH3JfA==}
 
   '@vitest/ui@2.0.2':
     resolution: {integrity: sha512-VwxFTOC2GcNPexQlR9PFb8drWCLA+nLWTWlAS4oba1xbTJYJ8H5vY8OUFOTMb7YQXF0Vsc5IfmLpYkb2dcVgOA==}
@@ -3367,6 +3389,9 @@ packages:
 
   '@vitest/utils@2.0.2':
     resolution: {integrity: sha512-pxCY1v7kmOCWYWjzc0zfjGTA3Wmn8PKnlPvSrsA643P1NHl1fOyXj2Q9SaNlrlFE+ivCsxM80Ov3AR82RmHCWQ==}
+
+  '@vitest/utils@2.0.5':
+    resolution: {integrity: sha512-d8HKbqIcya+GR67mkZbrzhS5kKhtp8dQLcmRZLGTscGVg7yImT82cIrhtn2L8+VujWcy6KZweApgNmPsTAO/UQ==}
 
   '@vladfrangu/async_event_emitter@2.4.1':
     resolution: {integrity: sha512-cedU1DrzO4oliUigSAOqSgts6wEfGGSbpO1hYxvKbz8sr7a0meyP3GxnL6hIUtBK0nMG6zHfIYWcqOIb+MRI7w==}
@@ -7470,6 +7495,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@5.5.4:
+    resolution: {integrity: sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   ua-parser-js@1.0.38:
     resolution: {integrity: sha512-Aq5ppTOfvrCMgAPneW1HfWj66Xi7XL+/mIy996R1/CLS/rcyJQm6QZdsKrUeivDFQ+Oc9Wyuwor8Ze8peEoUoQ==}
 
@@ -7673,8 +7703,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite-node@2.0.2:
-    resolution: {integrity: sha512-w4vkSz1Wo+NIQg8pjlEn0jQbcM/0D+xVaYjhw3cvarTanLLBh54oNiRbsT8PNK5GfuST0IlVXjsNRoNlqvY/fw==}
+  vite-node@2.0.5:
+    resolution: {integrity: sha512-LdsW4pxj0Ot69FAoXZ1yTnA9bjGohr2yNBU7QKRxpz8ITSkhuDl6h3zS/tvgz4qrNjeRnvrWeXQ8ZF7Um4W00Q==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
@@ -7751,15 +7781,15 @@ packages:
       jsdom:
         optional: true
 
-  vitest@2.0.2:
-    resolution: {integrity: sha512-WlpZ9neRIjNBIOQwBYfBSr0+of5ZCbxT2TVGKW4Lv0c8+srCFIiRdsP7U009t8mMn821HQ4XKgkx5dVWpyoyLw==}
+  vitest@2.0.5:
+    resolution: {integrity: sha512-8GUxONfauuIdeSl5f9GTgVEpg5BTOlplET4WEDaeY2QBiN8wSm68vxN/tb5z405OwppfoCavnwXafiaYBC/xOA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
     peerDependencies:
       '@edge-runtime/vm': '*'
       '@types/node': ^18.0.0 || >=20.0.0
-      '@vitest/browser': 2.0.2
-      '@vitest/ui': 2.0.2
+      '@vitest/browser': 2.0.5
+      '@vitest/ui': 2.0.5
       happy-dom: '*'
       jsdom: '*'
     peerDependenciesMeta:
@@ -9010,9 +9040,19 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/create-burner@1.0.0-alpha.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
+  '@dojoengine/core@1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
     dependencies:
-      '@dojoengine/core': 1.0.0-alpha.4(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+      '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
+      starknet: 6.7.0(encoding@0.1.13)
+      zod: 3.23.8
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
+
+  '@dojoengine/create-burner@1.0.0-alpha.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
+    dependencies:
+      '@dojoengine/core': 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@scure/bip32': 1.4.0
       '@starknet-react/core': 2.3.0(get-starknet-core@3.3.2(starknet@6.7.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))
       encoding: 0.1.13
@@ -9026,12 +9066,12 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/react@1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/react@1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/state': 1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/torii-client': 1.0.0-alpha.4
-      '@dojoengine/utils': 1.0.0-alpha.4(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/state': 1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+      '@dojoengine/torii-client': 1.0.0-alpha.5
+      '@dojoengine/utils': 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@latticexyz/utils': 2.0.12
       encoding: 0.1.13
       fast-deep-equal: 3.1.3
@@ -9075,13 +9115,43 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/state@1.0.0-alpha.4(@types/node@20.14.13)(@types/react@18.2.74)(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/torii-client': 1.0.0-alpha.4
       '@latticexyz/utils': 2.0.12
       starknet: 6.7.0(encoding@0.1.13)
-      vitest: 1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0)
+      vitest: 1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)
+      zustand: 4.5.4(@types/react@18.2.74)(react@18.3.1)
+    transitivePeerDependencies:
+      - '@edge-runtime/vm'
+      - '@types/node'
+      - '@types/react'
+      - '@vitest/browser'
+      - '@vitest/ui'
+      - bufferutil
+      - happy-dom
+      - immer
+      - jsdom
+      - less
+      - lightningcss
+      - react
+      - sass
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@dojoengine/state@1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
+    dependencies:
+      '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/torii-client': 1.0.0-alpha.5
+      '@latticexyz/utils': 2.0.12
+      starknet: 6.7.0(encoding@0.1.13)
+      vitest: 1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)
       zustand: 4.5.4(@types/react@18.2.74)(react@18.3.1)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
@@ -9110,9 +9180,29 @@ snapshots:
       '@dojoengine/torii-wasm': 1.0.0-alpha.4
       typescript: 5.4.4
 
+  '@dojoengine/torii-client@1.0.0-alpha.5':
+    dependencies:
+      '@dojoengine/torii-wasm': 1.0.0-alpha.5
+      typescript: 5.5.4
+
   '@dojoengine/torii-wasm@1.0.0-alpha.4': {}
 
+  '@dojoengine/torii-wasm@1.0.0-alpha.5': {}
+
   '@dojoengine/utils@1.0.0-alpha.4(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
+    dependencies:
+      '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
+      '@latticexyz/utils': 2.0.12
+      mathjs: 12.4.3
+      micro-starknet: 0.2.3
+      starknet: 6.7.0(encoding@0.1.13)
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@dojoengine/utils@1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@latticexyz/utils': 2.0.12
@@ -10027,13 +10117,13 @@ snapshots:
 
   '@kamilkisiela/fast-url-parser@1.1.4': {}
 
-  '@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))':
+  '@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))':
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.12
-      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       ml-distance: 4.0.1
       mustache: 4.2.0
       p-queue: 6.6.2
@@ -10045,9 +10135,9 @@ snapshots:
       - langchain
       - openai
 
-  '@langchain/openai@0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))':
+  '@langchain/openai@0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))':
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       js-tiktoken: 1.0.12
       openai: 4.53.2(encoding@0.1.13)
       zod: 3.23.8
@@ -10056,9 +10146,9 @@ snapshots:
       - encoding
       - langchain
 
-  '@langchain/textsplitters@0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))':
+  '@langchain/textsplitters@0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))':
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       js-tiktoken: 1.0.12
     transitivePeerDependencies:
       - langchain
@@ -11460,7 +11550,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@2.0.5(vitest@2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0))':
+  '@vitest/coverage-v8@2.0.5(vitest@2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -11474,7 +11564,7 @@ snapshots:
       std-env: 3.7.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
+      vitest: 2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -11484,14 +11574,18 @@ snapshots:
       '@vitest/utils': 1.6.0
       chai: 4.5.0
 
-  '@vitest/expect@2.0.2':
+  '@vitest/expect@2.0.5':
     dependencies:
-      '@vitest/spy': 2.0.2
-      '@vitest/utils': 2.0.2
+      '@vitest/spy': 2.0.5
+      '@vitest/utils': 2.0.5
       chai: 5.1.1
       tinyrainbow: 1.2.0
 
   '@vitest/pretty-format@2.0.2':
+    dependencies:
+      tinyrainbow: 1.2.0
+
+  '@vitest/pretty-format@2.0.5':
     dependencies:
       tinyrainbow: 1.2.0
 
@@ -11501,9 +11595,9 @@ snapshots:
       p-limit: 5.0.0
       pathe: 1.1.2
 
-  '@vitest/runner@2.0.2':
+  '@vitest/runner@2.0.5':
     dependencies:
-      '@vitest/utils': 2.0.2
+      '@vitest/utils': 2.0.5
       pathe: 1.1.2
 
   '@vitest/snapshot@1.6.0':
@@ -11512,9 +11606,9 @@ snapshots:
       pathe: 1.1.2
       pretty-format: 29.7.0
 
-  '@vitest/snapshot@2.0.2':
+  '@vitest/snapshot@2.0.5':
     dependencies:
-      '@vitest/pretty-format': 2.0.2
+      '@vitest/pretty-format': 2.0.5
       magic-string: 0.30.11
       pathe: 1.1.2
 
@@ -11522,11 +11616,11 @@ snapshots:
     dependencies:
       tinyspy: 2.2.1
 
-  '@vitest/spy@2.0.2':
+  '@vitest/spy@2.0.5':
     dependencies:
       tinyspy: 3.0.0
 
-  '@vitest/ui@2.0.2(vitest@2.0.2)':
+  '@vitest/ui@2.0.2(vitest@2.0.5)':
     dependencies:
       '@vitest/utils': 2.0.2
       fast-glob: 3.3.2
@@ -11535,7 +11629,7 @@ snapshots:
       pathe: 1.1.2
       sirv: 2.0.4
       tinyrainbow: 1.2.0
-      vitest: 2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
+      vitest: 2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
 
   '@vitest/utils@1.6.0':
     dependencies:
@@ -11547,6 +11641,13 @@ snapshots:
   '@vitest/utils@2.0.2':
     dependencies:
       '@vitest/pretty-format': 2.0.2
+      estree-walker: 3.0.3
+      loupe: 3.1.1
+      tinyrainbow: 1.2.0
+
+  '@vitest/utils@2.0.5':
+    dependencies:
+      '@vitest/pretty-format': 2.0.5
       estree-walker: 3.0.3
       loupe: 3.1.1
       tinyrainbow: 1.2.0
@@ -13964,17 +14065,17 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0):
+  langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0):
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
-      '@langchain/openai': 0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))
-      '@langchain/textsplitters': 0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
+      '@langchain/openai': 0.2.1(encoding@0.1.13)(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))
+      '@langchain/textsplitters': 0.0.3(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       binary-extensions: 2.3.0
       js-tiktoken: 1.0.12
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
       langchainhub: 0.0.11
-      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
+      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
       ml-distance: 4.0.1
       openapi-types: 12.1.3
       p-retry: 4.6.2
@@ -13988,14 +14089,14 @@ snapshots:
       fast-xml-parser: 4.4.1
       ignore: 5.3.1
       jsdom: 24.1.0
-      ws: 8.18.0
+      ws: 8.13.0
     transitivePeerDependencies:
       - encoding
       - openai
 
   langchainhub@0.0.11: {}
 
-  langsmith@0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13)):
+  langsmith@0.1.36(@langchain/core@0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)))(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13)):
     dependencies:
       '@types/uuid': 9.0.8
       commander: 10.0.1
@@ -14003,8 +14104,8 @@ snapshots:
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0))(openai@4.53.2(encoding@0.1.13))
-      langchain: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.18.0)
+      '@langchain/core': 0.2.14(langchain@0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0))(openai@4.53.2(encoding@0.1.13))
+      langchain: 0.2.8(@pinecone-database/pinecone@1.1.3)(axios@1.7.2)(encoding@0.1.13)(fast-xml-parser@4.4.1)(ignore@5.3.1)(jsdom@24.1.0)(openai@4.53.2(encoding@0.1.13))(ws@8.13.0)
       openai: 4.53.2(encoding@0.1.13)
 
   leva@0.9.35(@types/react-dom@18.3.0)(@types/react@18.2.74)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
@@ -16286,6 +16387,8 @@ snapshots:
 
   typescript@5.4.4: {}
 
+  typescript@5.5.4: {}
+
   ua-parser-js@1.0.38: {}
 
   ufo@1.5.4: {}
@@ -16512,7 +16615,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite-node@2.0.2(@types/node@20.14.13):
+  vite-node@2.0.5(@types/node@20.14.13):
     dependencies:
       cac: 6.7.14
       debug: 4.3.6
@@ -16563,12 +16666,12 @@ snapshots:
       '@types/node': 20.14.13
       fsevents: 2.3.3
 
-  vitest-canvas-mock@0.3.3(vitest@2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)):
+  vitest-canvas-mock@0.3.3(vitest@2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)):
     dependencies:
       jest-canvas-mock: 2.5.2
-      vitest: 2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
+      vitest: 2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0)
 
-  vitest@1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.2))(jsdom@24.1.0):
+  vitest@1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0):
     dependencies:
       '@vitest/expect': 1.6.0
       '@vitest/runner': 1.6.0
@@ -16592,7 +16695,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.14.13
-      '@vitest/ui': 2.0.2(vitest@2.0.2)
+      '@vitest/ui': 2.0.2(vitest@2.0.5)
       jsdom: 24.1.0
     transitivePeerDependencies:
       - less
@@ -16603,15 +16706,15 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.0.2(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0):
+  vitest@2.0.5(@types/node@20.14.13)(@vitest/ui@2.0.2)(jsdom@24.1.0):
     dependencies:
       '@ampproject/remapping': 2.3.0
-      '@vitest/expect': 2.0.2
-      '@vitest/pretty-format': 2.0.2
-      '@vitest/runner': 2.0.2
-      '@vitest/snapshot': 2.0.2
-      '@vitest/spy': 2.0.2
-      '@vitest/utils': 2.0.2
+      '@vitest/expect': 2.0.5
+      '@vitest/pretty-format': 2.0.5
+      '@vitest/runner': 2.0.5
+      '@vitest/snapshot': 2.0.5
+      '@vitest/spy': 2.0.5
+      '@vitest/utils': 2.0.5
       chai: 5.1.1
       debug: 4.3.6
       execa: 8.0.1
@@ -16622,11 +16725,11 @@ snapshots:
       tinypool: 1.0.0
       tinyrainbow: 1.2.0
       vite: 5.3.5(@types/node@20.14.13)
-      vite-node: 2.0.2(@types/node@20.14.13)
+      vite-node: 2.0.5(@types/node@20.14.13)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.14.13
-      '@vitest/ui': 2.0.2(vitest@2.0.2)
+      '@vitest/ui': 2.0.2(vitest@2.0.5)
       jsdom: 24.1.0
     transitivePeerDependencies:
       - less

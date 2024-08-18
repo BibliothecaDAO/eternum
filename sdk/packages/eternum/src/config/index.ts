@@ -10,7 +10,7 @@ import {
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   ResourcesIds,
   TROOPS_STAMINAS,
-  WEIGHTS,
+  WEIGHTS_GRAM,
 } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
@@ -129,9 +129,9 @@ export const setResourceBuildingConfig = async (account: Account, provider: Eter
 };
 
 export const setWeightConfig = async (account: Account, provider: EternumProvider) => {
-  const calldataArray = Object.entries(WEIGHTS).map(([resourceId, weight]) => ({
+  const calldataArray = Object.entries(WEIGHTS_GRAM).map(([resourceId, weight]) => ({
     entity_type: resourceId,
-    weight_gram: weight * EternumGlobalConfig.resources.resourceMultiplier,
+    weight_gram: weight,
   }));
 
   const tx = await provider.set_weight_config({
@@ -213,7 +213,7 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txDonkey = await provider.set_capacity_config({
     signer: account,
     entity_type: DONKEY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacity.donkey * EternumGlobalConfig.resources.resourcePrecision,
+    weight_gram: EternumGlobalConfig.carryCapacityGram.donkey,
   });
 
   console.log(`Configuring capacity Donkey config ${txDonkey.statusReceipt}...`);
@@ -221,8 +221,7 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txArmy = await provider.set_capacity_config({
     signer: account,
     entity_type: ARMY_ENTITY_TYPE,
-    // No precision mod used because weight check in contract uses army qty x precision
-    weight_gram: EternumGlobalConfig.carryCapacity.army,
+    weight_gram: EternumGlobalConfig.carryCapacityGram.army,
   });
 
   console.log(`Configuring capacity Army config ${txArmy.statusReceipt}...`);

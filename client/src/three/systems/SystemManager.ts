@@ -12,6 +12,7 @@ import {
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
@@ -21,7 +22,7 @@ import {
 } from "./types";
 import { HexPosition } from "@/types";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
-import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
+import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { ClientComponents } from "@/dojo/createClientComponents";
 
@@ -66,7 +67,13 @@ export class SystemManager {
           const healthMultiplier =
             EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
-          const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+          const entityOwner = getComponentValue(this.dojo.components.EntityOwner, update.entity);
+          if (!entityOwner) return;
+
+          const owner = getComponentValue(
+            this.dojo.components.Owner,
+            getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+          );
           const isMine = this.isOwner(owner);
 
           //   console.log(`[MyApp] got update for ${army.entity_id}`);
@@ -230,7 +237,10 @@ export class SystemManager {
         costNeeded: resourceCost,
       };
       percentage +=
-        (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+        (progress.amount *
+          HyperstructureResourceMultipliers[
+            progress.resource_type as keyof typeof HyperstructureResourceMultipliers
+          ]!) /
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;
     });

@@ -39,7 +39,7 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs px-2 hover:bg-blueish/20 clip-angled bg-blueish/20 rounded-md border-gold/20 ${className}`}
+      className={`items-center text-xs px-2 hover:bg-blueish/20  bg-blueish/20 rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (
         <>
@@ -66,9 +66,7 @@ export const ArmyChip = ({
                             onClick={() => setEditMode(!editMode)}
                           />
                           <ViewOnMapIcon
-                            className={
-                              "my-auto w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-                            }
+                            className={"my-auto hover:scale-125  hover:grow"}
                             position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
                           />
                         </React.Fragment>

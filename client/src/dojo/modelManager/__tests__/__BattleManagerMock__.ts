@@ -92,7 +92,6 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleEn
     owner: { entity_id: ARMY_ENTITY_ID, address: 0n },
     entityOwner: { entity_id: ARMY_ENTITY_ID, entity_owner_id: 0 },
     protectee: { army_id: ARMY_ENTITY_ID, protectee_id: 0 },
-    quantity: { entity_id: ARMY_ENTITY_ID, value: 10n },
     movable: {
       entity_id: ARMY_ENTITY_ID,
       blocked: false,
@@ -103,8 +102,8 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleEn
       intermediate_coord_x: 0,
       intermediate_coord_y: 0,
     },
-    capacity: { entity_id: ARMY_ENTITY_ID, weight_gram: 10n },
-    weight: { entity_id: ARMY_ENTITY_ID, value: 0n },
+    totalCapacity: 10n,
+    weight: 0n,
     arrivalTime: { entity_id: ARMY_ENTITY_ID, arrives_at: 0n },
     stamina: { entity_id: ARMY_ENTITY_ID, amount: 1, last_refill_tick: 0n },
     realm: {

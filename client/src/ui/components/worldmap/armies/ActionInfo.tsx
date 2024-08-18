@@ -50,19 +50,10 @@ export const ActionInfo = () => {
             travelLength={travelPath!.path.length - 1}
           />
           {!isExplored && (
-            <div className="flex flex-row text-xs">
-              <div
-                style={{
-                  backgroundImage: `url(${BuildingThumbs.resources})`,
-                  backgroundSize: "calc(100% - 10px)",
-                  backgroundPosition: "center",
-                }}
-                className="w-8 h-8 bg-no-repeat"
-              ></div>
-
+            <div className="flex flex-row text-xs ml-1">
+              <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
               <div className="flex flex-col p-1 text-xs">
-                <div>+{EternumGlobalConfig.exploration.reward}</div>
-                <div>Reward</div>
+                <div>+{EternumGlobalConfig.exploration.reward} Random resource</div>
               </div>
             </div>
           )}
