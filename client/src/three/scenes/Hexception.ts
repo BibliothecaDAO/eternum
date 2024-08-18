@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";

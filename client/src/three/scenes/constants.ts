@@ -6,7 +6,7 @@ export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
 export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 export const BUILDINGS_CENTER = [10, 10];
 
-export const PREVIEW_BUILD_COLOR_VALID = 0x00ff00;
+export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {

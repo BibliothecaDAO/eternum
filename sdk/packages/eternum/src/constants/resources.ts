@@ -339,6 +339,68 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
+// weight that determines the amount of resources need to finish the hyperstructure
+export const HyperstructureResourceMultipliers: { [key in ResourcesIds]?: number } = {
+  [ResourcesIds.Wood]: 1.0,
+  [ResourcesIds.Stone]: 1.27,
+  [ResourcesIds.Coal]: 1.31,
+  [ResourcesIds.Copper]: 1.9,
+  [ResourcesIds.Obsidian]: 2.26,
+  [ResourcesIds.Silver]: 2.88,
+  [ResourcesIds.Ironwood]: 4.25,
+  [ResourcesIds.ColdIron]: 5.24,
+  [ResourcesIds.Gold]: 5.49,
+  [ResourcesIds.Hartwood]: 8.44,
+  [ResourcesIds.Diamonds]: 16.72,
+  [ResourcesIds.Sapphire]: 20.3,
+  [ResourcesIds.Ruby]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.Ignium]: 29.15,
+  [ResourcesIds.EtherealSilica]: 30.95,
+  [ResourcesIds.TrueIce]: 36.06,
+  [ResourcesIds.TwilightQuartz]: 45.18,
+  [ResourcesIds.AlchemicalSilver]: 53.92,
+  [ResourcesIds.Adamantine]: 91.2,
+  [ResourcesIds.Mithral]: 135.53,
+  [ResourcesIds.Dragonhide]: 217.92,
+  [ResourcesIds.Earthenshard]: 20.98,
+};
+
+export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
+
+export const resourcesByGuild = {
+  [Guilds[0]]: [
+    ResourcesIds.Wood,
+    ResourcesIds.Stone,
+    ResourcesIds.Coal,
+    ResourcesIds.Ironwood,
+    ResourcesIds.Hartwood,
+    ResourcesIds.TrueIce,
+  ],
+  [Guilds[1]]: [
+    ResourcesIds.Copper,
+    ResourcesIds.Silver,
+    ResourcesIds.Gold,
+    ResourcesIds.ColdIron,
+    ResourcesIds.AlchemicalSilver,
+    ResourcesIds.Adamantine,
+  ],
+  [Guilds[2]]: [
+    ResourcesIds.Diamonds,
+    ResourcesIds.Sapphire,
+    ResourcesIds.Ruby,
+    ResourcesIds.DeepCrystal,
+    ResourcesIds.TwilightQuartz,
+  ],
+  [Guilds[3]]: [
+    ResourcesIds.Obsidian,
+    ResourcesIds.Ignium,
+    ResourcesIds.EtherealSilica,
+    ResourcesIds.Mithral,
+    ResourcesIds.Dragonhide,
+  ],
+};
+
 // if it's labor, then remove 28 to get the icon resource id
 export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;

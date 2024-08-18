@@ -66,9 +66,7 @@ export const ArmyChip = ({
                             onClick={() => setEditMode(!editMode)}
                           />
                           <ViewOnMapIcon
-                            className={
-                              "my-auto w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-                            }
+                            className={"my-auto hover:scale-125  hover:grow"}
                             position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
                           />
                         </React.Fragment>
