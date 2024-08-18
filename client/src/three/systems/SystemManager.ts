@@ -144,7 +144,7 @@ export class SystemManager {
           const { col, row } = prevState || newState;
           return {
             hexCoords: { col, row },
-            removeExplored: !!newState,
+            removeExplored: !newState,
           };
         });
       },
