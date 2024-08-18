@@ -2,7 +2,7 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
-import { BattleSide, EternumGlobalConfig, ID, StructureType } from "@bibliothecadao/eternum";
+import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
@@ -10,7 +10,6 @@ import { ClientComponents } from "../createClientComponents";
 export enum BattleType {
   Hex,
   Structure,
-  Realm,
 }
 
 export class BattleManager {
@@ -172,6 +171,7 @@ export class BattleManager {
       this.battleIsClaimable = false;
       return false;
     }
+
     if (this.getBattleType(structure) !== BattleType.Structure) {
       this.battleIsClaimable = false;
       return false;
@@ -283,9 +283,7 @@ export class BattleManager {
       return this.battleType;
     }
 
-    this.battleType =
-      structure.category === StructureType[StructureType.Realm] ? BattleType.Realm : BattleType.Structure;
-
+    this.battleType = BattleType.Structure;
     return this.battleType;
   }
 

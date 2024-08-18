@@ -1,4 +1,7 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { SetupResult } from "@/dojo/setup";
+import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
 import {
@@ -12,6 +15,8 @@ import {
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
@@ -66,7 +71,13 @@ export class SystemManager {
           const healthMultiplier =
             EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
-          const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+          const entityOwner = getComponentValue(this.dojo.components.EntityOwner, update.entity);
+          if (!entityOwner) return;
+
+          const owner = getComponentValue(
+            this.dojo.components.Owner,
+            getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+          );
           const isMine = this.isOwner(owner);
 
           //   console.log(`[MyApp] got update for ${army.entity_id}`);
