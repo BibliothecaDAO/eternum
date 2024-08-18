@@ -1,32 +1,23 @@
-import {
-  COMBAT_EVENT,
-  CREATE_ORDER_EVENT,
-  HYPERSTRUCTURE_CO_OWNER_CHANGE,
-  HYPERSTRUCTURE_FINISHED_EVENT,
-  ID,
-  MAP_EXPLORED_EVENT,
-  PILLAGE_EVENT,
-  TRAVEL_EVENT,
-} from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/eternum";
 import { numberToHex } from "../ui/utils/utils";
 import { createEventSubscription } from "./events/createEventSubscription";
+import {
+  HYPERSTRUCTURE_CO_OWNER_CHANGE_SELECTOR,
+  HYPERSTRUCTURE_FINISHED_SELECTOR,
+  PILLAGE_SELECTOR,
+} from "@/constants/events";
 
 export const createUpdates = async () => {
   const eventUpdates = {
-    createHyperstructureFinishedEvents: async () => createEventSubscription([HYPERSTRUCTURE_FINISHED_EVENT]),
-    createHyperstructureCoOwnerChangeEvents: async () => createEventSubscription([HYPERSTRUCTURE_CO_OWNER_CHANGE]),
-    createCombatEvents: async (entityId: ID) =>
-      createEventSubscription([COMBAT_EVENT, "*", numberToHex(Number(entityId)), "*"]),
-    createTravelEvents: async (x: number, y: number) =>
-      createEventSubscription([TRAVEL_EVENT, numberToHex(x), numberToHex(y)]),
-    createDirectOffersEvents: async (entityId: ID) =>
-      createEventSubscription([CREATE_ORDER_EVENT, numberToHex(Number(entityId)), "*"]),
-    createExploreMapEvents: async () => createEventSubscription([MAP_EXPLORED_EVENT], true, 1000),
-    createExploreEntityMapEvents: async (entityId: ID) =>
-      createEventSubscription([MAP_EXPLORED_EVENT, numberToHex(Number(entityId))]),
-    createTravelHexEvents: async () => createEventSubscription([TRAVEL_EVENT]),
+    createHyperstructureFinishedEvents: async () => createEventSubscription([HYPERSTRUCTURE_FINISHED_SELECTOR]),
+    createHyperstructureCoOwnerChangeEvents: async () =>
+      createEventSubscription([HYPERSTRUCTURE_CO_OWNER_CHANGE_SELECTOR]),
     createPillageHistoryEvents: async (structureId: ID, attackerRealmEntityId: ID) =>
-      createEventSubscription([PILLAGE_EVENT, numberToHex(structureId), numberToHex(attackerRealmEntityId)], true, 20),
+      createEventSubscription(
+        [PILLAGE_SELECTOR, numberToHex(structureId), numberToHex(attackerRealmEntityId)],
+        true,
+        20,
+      ),
   };
 
   return {
