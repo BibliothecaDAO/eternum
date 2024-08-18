@@ -1,5 +1,4 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { SetupResult } from "@/dojo/setup";
 import { HexPosition } from "@/types";

@@ -3,8 +3,8 @@ name: test-contracts
 on:
   pull_request:
     paths-ignore:
-      - 'client/**'
-      - 'sdk/**'
+      - "client/**"
+      - "sdk/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
