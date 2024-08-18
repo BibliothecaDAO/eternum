@@ -5,6 +5,7 @@ import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -221,12 +222,9 @@ export const TopMiddleNavigation = () => {
           >
             {location === "/map" ? "Realm" : "World"}
           </Button>
-          {/* {location === "/map" && (
-            <ViewOnMapIcon
-              className="my-auto w-7 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all"
-              position={{ x: hexPosition.col, y: hexPosition.row }}
-            />
-          )} */}
+          {location === "/map" && (
+            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: hexPosition.col, y: hexPosition.row }} />
+          )}
         </div>
       </motion.div>
     </div>

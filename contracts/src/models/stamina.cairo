@@ -32,6 +32,11 @@ impl StaminaCustomImpl of StaminaCustomTrait {
         }
     }
 
+    fn drain(ref self: Stamina, world: IWorldDispatcher) {
+        self.refill_if_next_tick(world);
+        self.substract_costs(self.amount, world);
+    }
+
     fn substract_costs(ref self: Stamina, costs: u16, world: IWorldDispatcher) {
         self.amount -= costs;
         self.sset(world);
@@ -41,11 +46,10 @@ impl StaminaCustomImpl of StaminaCustomTrait {
         set!(world, (self));
     }
 
-    fn refill(ref self: Stamina, world: IWorldDispatcher) {
+    fn max(ref self: Stamina, world: IWorldDispatcher) -> u16 {
         let army = get!(world, (self.entity_id,), Army);
         let troops = army.troops;
         let mut maxes = array![];
-        let armies_tick_config = TickImpl::get_armies_tick_config(world);
 
         if (troops.knight_count > 0) {
             let knight_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), StaminaConfig);
@@ -62,9 +66,15 @@ impl StaminaCustomImpl of StaminaCustomTrait {
 
         assert(maxes.len() > 0, 'No troops in army');
 
-        self.amount = maxes.min().unwrap();
-        self.last_refill_tick = armies_tick_config.current();
+        maxes.min().unwrap()
+    }
+
+    fn refill(ref self: Stamina, world: IWorldDispatcher) {
+        self.amount = self.max(world);
         self.sset(world);
+
+        let armies_tick_config = TickImpl::get_armies_tick_config(world);
+        self.last_refill_tick = armies_tick_config.current();
     }
 
 

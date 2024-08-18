@@ -77,6 +77,22 @@ export const useEntities = () => {
   };
 };
 
+export const getPlayerStructures = () => {
+  const {
+    setup: {
+      components: { Structure, Owner, Realm, Position },
+    },
+  } = useDojo();
+  const { getEntityName } = getEntitiesUtils();
+
+  const getStructures = (playerAddress: ContractAddress) => {
+    const playerStructures = runQuery([Has(Structure), HasValue(Owner, { address: playerAddress })]);
+    return formatStructures(Array.from(playerStructures), Structure, Realm, Position, getEntityName);
+  };
+
+  return getStructures;
+};
+
 export const getEntitiesUtils = () => {
   const {
     account: { account },
@@ -188,4 +204,32 @@ export const getAddressNameFromEntityIds = (
       (owner): owner is ComponentValue<ClientComponents["Owner"]["schema"]> & { addressName: string | undefined } =>
         owner !== undefined,
     );
+};
+
+const formatStructures = (
+  structures: Entity[],
+  Structure: Component<ClientComponents["Structure"]["schema"]>,
+  Realm: Component<ClientComponents["Realm"]["schema"]>,
+  Position: Component<ClientComponents["Position"]["schema"]>,
+  getEntityName: (entityId: ID) => string | undefined,
+) => {
+  return structures
+    .map((id) => {
+      const structure = getComponentValue(Structure, id);
+      if (!structure) return;
+
+      const realm = getComponentValue(Realm, id);
+      const position = getComponentValue(Position, id);
+
+      const structureName = getEntityName(structure!.entity_id);
+
+      const name = realm
+        ? getRealmNameById(realm.realm_id)
+        : structureName
+          ? `${structure?.category} ${structureName}`
+          : structure.category || "";
+      return { ...structure, position: position!, name };
+    })
+    .filter((structure): structure is PlayerStructure => structure !== undefined)
+    .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
 };

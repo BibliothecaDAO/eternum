@@ -46,7 +46,7 @@ export enum View {
 }
 
 export const LeftNavigationModule = () => {
-  const [lastView, setLastView] = useState<View>(View.None);
+  const [lastView, setLastView] = useState<View>(View.EntityView);
 
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
@@ -81,7 +81,6 @@ export const LeftNavigationModule = () => {
         name: "entityDetails",
         button: (
           <CircleButton
-            className={clsx({ hidden: !questClaimStatus[QuestId.CreateArmy] })}
             image={BuildingThumbs.hex}
             tooltipLocation="top"
             label={"Details"}

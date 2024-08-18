@@ -76,13 +76,14 @@ export const useArrivalsWithResources = () => {
   const {
     account: { account },
     setup: {
-      components: { Position, Owner, EntityOwner, ArrivalTime, OwnedResourcesTracker },
+      components: { Position, Owner, EntityOwner, ArrivalTime, OwnedResourcesTracker, Weight },
     },
   } = useDojo();
 
   const atPositionWithInventory = useEntityQuery([
     Has(EntityOwner),
     NotValue(OwnedResourcesTracker, { resource_types: 0n }),
+    Has(Weight),
     Has(ArrivalTime),
   ]);
 

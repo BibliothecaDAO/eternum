@@ -1,11 +1,13 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
   ID,
@@ -16,9 +18,6 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { getTotalResourceWeight } from "@/ui/utils/utils";
-import { useProductionManager } from "@/hooks/helpers/useResources";
-import { useRealm } from "@/hooks/helpers/useRealm";
 
 export const MarketResource = ({
   entityId,
@@ -257,7 +256,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -404,7 +403,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
