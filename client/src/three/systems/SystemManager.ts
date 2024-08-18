@@ -12,6 +12,7 @@ import {
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
@@ -66,7 +67,13 @@ export class SystemManager {
           const healthMultiplier =
             EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
-          const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+          const entityOwner = getComponentValue(this.dojo.components.EntityOwner, update.entity);
+          if (!entityOwner) return;
+
+          const owner = getComponentValue(
+            this.dojo.components.Owner,
+            getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+          );
           const isMine = this.isOwner(owner);
 
           //   console.log(`[MyApp] got update for ${army.entity_id}`);

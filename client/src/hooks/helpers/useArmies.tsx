@@ -1,4 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { getArmyTotalCapacity } from "@/dojo/modelManager/utils/ArmyMovementUtils";
 import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
@@ -16,7 +17,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { getArmyTotalCapacity } from "@/dojo/modelManager/utils/ArmyMovementUtils";
+import { PlayerStructure } from "./useEntities";
 
 export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;
@@ -66,7 +67,7 @@ const formatArmies = (
       const entityOwner = getComponentValue(EntityOwner, armyEntityId);
       if (!entityOwner) return undefined;
 
-      let owner = getComponentValue(Owner, armyEntityId);
+      let owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
       if (!owner && entityOwner?.entity_owner_id) {
         owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
       }
@@ -338,7 +339,15 @@ export const getUserArmyInBattle = (battle_id: ID) => {
   return armies;
 };
 
-export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Position; inBattle: boolean }) => {
+export const useOwnArmiesByPosition = ({
+  position,
+  inBattle,
+  playerStructures,
+}: {
+  position: Position;
+  inBattle: boolean;
+  playerStructures: PlayerStructure[];
+}) => {
   {
     const {
       account: { account },
@@ -366,7 +375,6 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
       Has(Army),
       HasValue(Position, { x: position.x, y: position.y }),
       Not(Protectee),
-      HasValue(Owner, { address: ContractAddress(account.address) }),
       inBattle ? NotValue(Army, { battle_id: 0 }) : HasValue(Army, { battle_id: 0 }),
     ]);
 
@@ -388,6 +396,8 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
         Owner,
         Realm,
         Stamina,
+      ).filter((army) =>
+        playerStructures.some((structure) => structure.entity_id === army.entityOwner.entity_owner_id),
       );
     }, [ownArmiesAtPosition]);
 
@@ -395,7 +405,13 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
   }
 };
 
-export const useEnemyArmiesByPosition = ({ position }: { position: Position }) => {
+export const useEnemyArmiesByPosition = ({
+  position,
+  playerStructures,
+}: {
+  position: Position;
+  playerStructures: PlayerStructure[];
+}) => {
   {
     const {
       account: { account },
@@ -423,7 +439,6 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
       Has(Army),
       HasValue(Position, { x: position.x, y: position.y }),
       Not(Protectee),
-      NotValue(Owner, { address: ContractAddress(account.address) }),
     ]);
 
     const enemyArmies = useMemo(() => {
@@ -444,6 +459,8 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
         Owner,
         Realm,
         Stamina,
+      ).filter((army) =>
+        playerStructures.every((structure) => structure.entity_id !== army.entityOwner.entity_owner_id),
       );
     }, [enemyArmiesAtPosition]);
 
