@@ -549,13 +549,13 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             world, (to_army_protectee_id, resource_type)
                         );
                         if to_army_lost_or_battle_not_ended {
-                            // army forfeits resources
-                            to_army_resource.burn((to_army_resource.balance));
-                            to_army_resource.save(world);
-
                             // update army's subtracted weight
                             subtracted_resources_weight +=
                                 WeightConfigCustomImpl::get_weight(world, resource_type, to_army_resource.balance);
+
+                            // army forfeits resources
+                            to_army_resource.burn((to_army_resource.balance));
+                            to_army_resource.save(world);
                         } else {
                             // army won or drew so it can leave with its resources
                             //
