@@ -1,7 +1,4 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { SetupResult } from "@/dojo/setup";
-import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
 import {
@@ -16,7 +13,6 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
