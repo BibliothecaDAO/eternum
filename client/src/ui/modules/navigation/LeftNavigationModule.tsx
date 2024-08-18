@@ -190,55 +190,53 @@ export const LeftNavigationModule = () => {
   };
 
   return (
-    realmEntityId && (
-      <>
-        <div
-          className={`max-h-full transition-all duration-200 space-x-1 gap-1 flex z-0 w-[600px] text-gold left-10 self-center pointer-events-none ${
-            isOffscreen(view) ? "-translate-x-[88%]" : ""
-          }`}
-          onPointerEnter={() => {
-            debouncedSetIsOffscreen.cancel();
-            if (view === View.None && lastView === View.None && previewBuilding != null) {
-              const newView = View.ConstructionView;
-              setView(newView);
-              setLastView(newView);
-            } else if (view === View.None && previewBuilding != null) {
-              setView(lastView);
-            }
-          }}
-          onPointerLeave={debouncedSetIsOffscreen}
+    <>
+      <div
+        className={`max-h-full transition-all duration-200 space-x-1 gap-1 flex z-0 w-[600px] text-gold left-10 self-center pointer-events-none ${
+          isOffscreen(view) ? "-translate-x-[88%]" : ""
+        }`}
+        onPointerEnter={() => {
+          debouncedSetIsOffscreen.cancel();
+          if (view === View.None && lastView === View.None && previewBuilding != null) {
+            const newView = View.ConstructionView;
+            setView(newView);
+            setLastView(newView);
+          } else if (view === View.None && previewBuilding != null) {
+            setView(lastView);
+          }
+        }}
+        onPointerLeave={debouncedSetIsOffscreen}
+      >
+        <BaseContainer
+          className={`w-full pointer-events-auto overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}
         >
-          <BaseContainer
-            className={`w-full pointer-events-auto overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}
-          >
-            {view === View.EntityView && <EntityDetails />}
-            {view === View.MilitaryView && <Military entityId={realmEntityId} />}
-            {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
-            {isWorldView && view === View.ConstructionView && <StructureConstructionMenu />}
-            {view === View.WorldStructuresView && <WorldStructuresMenu />}
-          </BaseContainer>
-          <motion.div
-            variants={slideLeft}
-            initial="hidden"
-            animate="visible"
-            className="gap-2 flex flex-col justify-center self-center pointer-events-auto"
-          >
-            <div>
-              <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
-                <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen(view) ? "" : "rotate-180"}`} />
-              </Button>
+          {view === View.EntityView && <EntityDetails />}
+          {view === View.MilitaryView && <Military entityId={realmEntityId} />}
+          {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
+          {isWorldView && view === View.ConstructionView && <StructureConstructionMenu />}
+          {view === View.WorldStructuresView && <WorldStructuresMenu />}
+        </BaseContainer>
+        <motion.div
+          variants={slideLeft}
+          initial="hidden"
+          animate="visible"
+          className="gap-2 flex flex-col justify-center self-center pointer-events-auto"
+        >
+          <div>
+            <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
+              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen(view) ? "" : "rotate-180"}`} />
+            </Button>
+          </div>
+          <div className="flex flex-col gap-2 mb-auto">
+            <div className="flex flex-col space-y-2 py-2">
+              {navigation.map((a, index) => (
+                <div key={index}>{a.button}</div>
+              ))}
             </div>
-            <div className="flex flex-col gap-2 mb-auto">
-              <div className="flex flex-col space-y-2 py-2">
-                {navigation.map((a, index) => (
-                  <div key={index}>{a.button}</div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </>
-    )
+          </div>
+        </motion.div>
+      </div>
+    </>
   );
 };
 

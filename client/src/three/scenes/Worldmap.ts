@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
@@ -10,6 +11,7 @@ import { FELT_CENTER } from "@/ui/config";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Has, HasValue, runQuery } from "@dojoengine/recs";
 import { throttle } from "lodash";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
@@ -17,11 +19,10 @@ import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
+import { StructurePreview } from "../components/StructurePreview";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
-import { StructurePreview } from "../components/StructurePreview";
-import { TileManager } from "@/dojo/modelManager/TileManager";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -171,6 +172,15 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
+    const clickedHexStructureEntityId = runQuery([
+      Has(this.dojo.components.Structure),
+      HasValue(this.dojo.components.Position, { x: hexCoords.col, y: hexCoords.row }),
+    ]);
+
+    if (Array.from(clickedHexStructureEntityId)[0] === undefined) {
+      this.state.setRealmEntityId(0);
+    }
+
     const url = new Position({ x: hexCoords.col, y: hexCoords.row }).toHexLocationUrl();
     window.history.replaceState({}, "", url);
     window.dispatchEvent(new Event("urlChanged"));

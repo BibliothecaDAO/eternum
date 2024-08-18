@@ -56,8 +56,10 @@ export const TopMiddleNavigation = () => {
 
   const { getEntityInfo } = getEntitiesUtils();
 
-  const realm = useMemo(() => {
-    return getEntityInfo(realmEntityId);
+  const realm = getEntityInfo(realmEntityId);
+
+  const realmPosition = useMemo(() => {
+    return new Position(realm?.position || { x: 0, y: 0 }).getNormalized();
   }, [realmEntityId]);
 
   // realms always first
@@ -203,7 +205,9 @@ export const TopMiddleNavigation = () => {
                 </SelectContent>
               </Select>
             ) : (
-              <div className="self-center font-bold m-auto">Ennemy Realm: {realm.name}</div>
+              <div className="self-center text-lg font-semibold m-auto focus:text-accent-foreground placeholder:text-muted-foreground">
+                {realmEntityId !== 0 ? `Ennemy Realm: ${realm.name}` : "Unsettled"}
+              </div>
             )}
           </div>
           <div
@@ -224,7 +228,10 @@ export const TopMiddleNavigation = () => {
             })}
             onClick={() => {
               if (location !== "/map") {
-                goToMapView(structures[0].entity_id);
+                goToMapView();
+                if (!realm.isMine) {
+                  setRealmEntityId(structures[0].entity_id);
+                }
               } else {
                 goToHexView(realmEntityId);
               }
@@ -233,7 +240,7 @@ export const TopMiddleNavigation = () => {
             {location === "/map" ? "Realm" : "World"}
           </Button>
           {location === "/map" && (
-            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: hexPosition.col, y: hexPosition.row }} />
+            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: realmPosition.x, y: realmPosition.y }} />
           )}
         </div>
       </motion.div>
