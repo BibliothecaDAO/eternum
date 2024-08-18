@@ -67,8 +67,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-              ? `${structure?.category} ${structureName}`
-              : structure.category || "";
+            ? `${structure?.category} ${structureName}`
+            : structure.category || "";
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -97,7 +97,18 @@ export const getEntitiesUtils = () => {
   const {
     account: { account },
     setup: {
-      components: { EntityName, ArrivalTime, EntityOwner, Movable, Capacity, Position, Army, AddressName, Owner },
+      components: {
+        EntityName,
+        ArrivalTime,
+        EntityOwner,
+        Movable,
+        Capacity,
+        Position,
+        Army,
+        AddressName,
+        Owner,
+        Realm,
+      },
     },
   } = useDojo();
 
@@ -148,7 +159,12 @@ export const getEntitiesUtils = () => {
 
   const getEntityName = (entityId: ID) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(entityId)]));
-    return entityName ? shortString.decodeShortString(entityName.name.toString()) : entityId.toString();
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
+    return entityName
+      ? shortString.decodeShortString(entityName.name.toString())
+      : realm
+      ? getRealmNameById(realm.realm_id)
+      : entityId.toString();
   };
 
   const getAddressNameFromEntity = (entityId: ID) => {
@@ -226,8 +242,8 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+        ? `${structure?.category} ${structureName}`
+        : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)

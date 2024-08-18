@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
@@ -53,6 +53,12 @@ export const TopMiddleNavigation = () => {
   const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
+
+  const { getEntityInfo } = getEntitiesUtils();
+
+  const realm = useMemo(() => {
+    return getEntityInfo(realmEntityId);
+  }, [realmEntityId]);
 
   // realms always first
   const structures = useMemo(() => {
@@ -171,30 +177,34 @@ export const TopMiddleNavigation = () => {
 
         <div className="flex min-w-72 gap-1 text-gold bg-map justify-center border text-center rounded bg-black/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
-            <Select
-              value={realmEntityId.toString()}
-              onValueChange={(a: string) => {
-                !isHexView ? goToMapView(ID(a)) : goToHexView(ID(a));
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Realm" />
-              </SelectTrigger>
-              <SelectContent className="bg-black/90">
-                {structures.map((structure, index) => (
-                  <SelectItem
-                    className="flex justify-between"
-                    key={index}
-                    value={structure.entity_id?.toString() || ""}
-                  >
-                    <h5 className="self-center flex gap-4">
-                      {structureIcons[structure!.category!]}
-                      {structure.name}
-                    </h5>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {realm.isMine ? (
+              <Select
+                value={realmEntityId.toString()}
+                onValueChange={(a: string) => {
+                  !isHexView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Realm" />
+                </SelectTrigger>
+                <SelectContent className="bg-black/90">
+                  {structures.map((structure, index) => (
+                    <SelectItem
+                      className="flex justify-between"
+                      key={index}
+                      value={structure.entity_id?.toString() || ""}
+                    >
+                      <h5 className="self-center flex gap-4">
+                        {structureIcons[structure!.category!]}
+                        {structure.name}
+                      </h5>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="self-center font-bold m-auto">Ennemy Realm: {realm.name}</div>
+            )}
           </div>
           <div
             className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
@@ -214,7 +224,7 @@ export const TopMiddleNavigation = () => {
             })}
             onClick={() => {
               if (location !== "/map") {
-                goToMapView();
+                goToMapView(structures[0].entity_id);
               } else {
                 goToHexView(realmEntityId);
               }

@@ -72,6 +72,7 @@ export const BattleSideView = ({
               onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
               isLoading={loading}
               className="size-xs h-10 w-20 self-center"
+              variant="primary"
             >
               Join
             </Button>
