@@ -84,7 +84,10 @@ export class ArmyMovementManager {
   private fishManager: ProductionManager;
   private wheatManager: ProductionManager;
 
-  constructor(private dojo: SetupResult, entityId: ID) {
+  constructor(
+    private dojo: SetupResult,
+    entityId: ID,
+  ) {
     const {
       Tile,
       Stamina,
