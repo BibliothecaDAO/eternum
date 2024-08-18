@@ -399,7 +399,7 @@ mod combat_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
     use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
-    use eternum::models::stamina::Stamina;
+    use eternum::models::stamina::{Stamina, StaminaCustomTrait};
     use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::models::weight::Weight;
     use eternum::models::{
@@ -882,6 +882,7 @@ mod combat_systems {
                 true
             )[0];
 
+            let mut army_stamina: Stamina = get!(world, army_id, Stamina);
             let mut pillaged_resources: Array<(u8, u128)> = array![];
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
@@ -924,17 +925,23 @@ mod combat_systems {
 
                                     let resource_amount_stolen: u128 = min(max_carriable, resource_amount_stolen);
 
-                                    pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
+                                    // express resource amount stolen to be a percentage of stamina left
+                                    let resource_amount_stolen: u128 = (resource_amount_stolen
+                                        * army_stamina.amount.into())
+                                        / army_stamina.max(world).into();
 
-                                    InternalResourceSystemsImpl::transfer(
-                                        world,
-                                        structure_id,
-                                        army_id,
-                                        array![(*chosen_resource_type, resource_amount_stolen)].span(),
-                                        army_id,
-                                        true,
-                                        true
-                                    );
+                                    if resource_amount_stolen.is_non_zero() {
+                                        pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
+                                        InternalResourceSystemsImpl::transfer(
+                                            world,
+                                            structure_id,
+                                            army_id,
+                                            array![(*chosen_resource_type, resource_amount_stolen)].span(),
+                                            army_id,
+                                            true,
+                                            true
+                                        );
+                                    }
 
                                     break;
                                 }
@@ -945,8 +952,11 @@ mod combat_systems {
                 };
             }
 
-            let mut destroyed_building_category = BuildingCategory::None;
+            // drain stamina
+            army_stamina.drain(world);
 
+            // destroy a building
+            let mut destroyed_building_category = BuildingCategory::None;
             if structure.category == StructureCategory::Realm {
                 // all buildings are at most 4 directions from the center
                 // so first we pick a random between within 1 and 4
