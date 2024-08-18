@@ -21,7 +21,7 @@ export type StructureSystemUpdate = {
 
 export type TileSystemUpdate = {
   hexCoords: HexPosition;
-  explored: boolean;
+  removeExplored: boolean;
 };
 
 export type BattleSystemUpdate = {
