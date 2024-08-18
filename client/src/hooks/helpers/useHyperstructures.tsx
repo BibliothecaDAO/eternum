@@ -103,17 +103,8 @@ const getContributions = (hyperstructureEntityId: ID, Contribution: Component) =
 };
 
 const getAllProgressesAndTotalPercentage = (
-<<<<<<< HEAD
-  progresses: (
-    | ComponentValue<{ hyperstructure_entity_id: Type.BigInt; resource_type: Type.Number; amount: Type.Number }>
-    | undefined
-  )[],
-
-  hyperstructureEntityId: bigint,
-=======
   progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
   hyperstructureEntityId: ID,
->>>>>>> main
 ) => {
   let percentage = 0;
   const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
