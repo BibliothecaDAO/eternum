@@ -227,8 +227,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
-    const col = update.hexCoords.col - FELT_CENTER;
-    const row = update.hexCoords.row - FELT_CENTER;
+    const { hexCoords, removeExplored } = update;
+
+    if (removeExplored) {
+      return;
+    }
+
+    const col = hexCoords.col - FELT_CENTER;
+    const row = hexCoords.row - FELT_CENTER;
     if (!this.exploredTiles.has(col)) {
       this.exploredTiles.set(col, new Set());
     }
