@@ -1,6 +1,6 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { BuildingType, EternumGlobalConfig, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import { Headline } from "@/ui/elements/Headline";
+import { BuildingType, EternumGlobalConfig, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Transfers = () => {
@@ -19,12 +19,12 @@ export const Transfers = () => {
             possess a finite carrying capacity, with each resource type assigned a specific weight.
           </p>
           <p>
-            Donkey carry capacity: <strong>{EternumGlobalConfig.carryCapacity.donkey}kg</strong>
+            Donkey carry capacity: <strong>{EternumGlobalConfig.carryCapacityGram.donkey}kg</strong>
           </p>
           <div className="flex mt-4 justify-center w-full gap-8 font-bold border p-2">
-            <div className="ml-2">Lords: {`${WEIGHTS[ResourcesIds.Lords]} kg/unit`}</div>
-            <div>Food: {`${WEIGHTS[ResourcesIds.Wheat]} kg/unit`}</div>
-            <div className="ml-2">Resource: {`${WEIGHTS[ResourcesIds.Wood]} kg/unit`}</div>
+            <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords]} kg/unit`}</div>
+            <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat]} kg/unit`}</div>
+            <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood]} kg/unit`}</div>
           </div>
         </>
       ),

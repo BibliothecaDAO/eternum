@@ -21,7 +21,7 @@ import {
 } from "./types";
 import { HexPosition } from "@/types";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
-import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
+import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { ClientComponents } from "@/dojo/createClientComponents";
 
@@ -235,7 +235,10 @@ export class SystemManager {
         costNeeded: resourceCost,
       };
       percentage +=
-        (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+        (progress.amount *
+          HyperstructureResourceMultipliers[
+            progress.resource_type as keyof typeof HyperstructureResourceMultipliers
+          ]!) /
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;
     });

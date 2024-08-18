@@ -1,8 +1,7 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+import { divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
-import { getTotalResourceWeight } from "@/ui/utils/utils";
 
 export const TravelInfo = ({
   entityId,
@@ -19,7 +18,7 @@ export const TravelInfo = ({
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacity.donkey);
+  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
 
   const { getBalance } = getResourceBalance();
 
@@ -70,9 +69,9 @@ export const TravelInfo = ({
         </tbody>
       </table>
       <div className="flex text-xs mt-4 justify-center w-full gap-4 font-bold ">
-        <div className="ml-2">Lords: {`${WEIGHTS[ResourcesIds.Lords]} kg/unit`}</div>
-        <div>Food: {`${WEIGHTS[ResourcesIds.Wheat]} kg/unit`}</div>
-        <div className="ml-2">Resource: {`${WEIGHTS[ResourcesIds.Wood]} kg/unit`}</div>
+        <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords]} kg/unit`}</div>
+        <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat]} kg/unit`}</div>
+        <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood]} kg/unit`}</div>
       </div>
     </>
   );

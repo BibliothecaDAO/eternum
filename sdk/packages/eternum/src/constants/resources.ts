@@ -1,6 +1,6 @@
 import { Resource, Resources } from "../types";
-import { BuildingType, StructureType } from "./structures";
 import { EternumGlobalConfig } from "./global";
+import { BuildingType, StructureType } from "./structures";
 
 export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
@@ -339,6 +339,33 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
+// weight that determines the amount of resources need to finish the hyperstructure
+export const HyperstructureResourceMultipliers: { [key in ResourcesIds]?: number } = {
+  [ResourcesIds.Wood]: 1.0,
+  [ResourcesIds.Stone]: 1.27,
+  [ResourcesIds.Coal]: 1.31,
+  [ResourcesIds.Copper]: 1.9,
+  [ResourcesIds.Obsidian]: 2.26,
+  [ResourcesIds.Silver]: 2.88,
+  [ResourcesIds.Ironwood]: 4.25,
+  [ResourcesIds.ColdIron]: 5.24,
+  [ResourcesIds.Gold]: 5.49,
+  [ResourcesIds.Hartwood]: 8.44,
+  [ResourcesIds.Diamonds]: 16.72,
+  [ResourcesIds.Sapphire]: 20.3,
+  [ResourcesIds.Ruby]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.Ignium]: 29.15,
+  [ResourcesIds.EtherealSilica]: 30.95,
+  [ResourcesIds.TrueIce]: 36.06,
+  [ResourcesIds.TwilightQuartz]: 45.18,
+  [ResourcesIds.AlchemicalSilver]: 53.92,
+  [ResourcesIds.Adamantine]: 91.2,
+  [ResourcesIds.Mithral]: 135.53,
+  [ResourcesIds.Dragonhide]: 217.92,
+  [ResourcesIds.Earthenshard]: 20.98,
+};
+
 export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
 
 export const resourcesByGuild = {
@@ -379,72 +406,40 @@ export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;
 };
 
-const LEVELING_COST_MULTIPLIER = 1.25;
-
-export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
-  const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);
-
-  const rem = newLevel % 4;
-
-  const baseAmounts =
-    rem === 0
-      ? // level 4 (resource tier 3)
-        [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
-      : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
-
-  const costResources = [];
-  for (let i = 0; i < baseAmounts.length; i = i + 2) {
-    costResources.push({
-      resourceId: baseAmounts[i],
-      amount: Math.floor(baseAmounts[i + 1] * costMultiplier),
-    });
-  }
-  return costResources;
-};
-
 // weight in kg
-export const WEIGHTS: {
+export const WEIGHTS_GRAM: {
   [key: number]: number;
 } = {
-  [ResourcesIds.Wood]: 1,
-  [ResourcesIds.Stone]: 1,
-  [ResourcesIds.Coal]: 1,
-  [ResourcesIds.Copper]: 1,
-  [ResourcesIds.Obsidian]: 1,
-  [ResourcesIds.Silver]: 1,
-  [ResourcesIds.Ironwood]: 1,
-  [ResourcesIds.ColdIron]: 1,
-  [ResourcesIds.Gold]: 1,
-  [ResourcesIds.Hartwood]: 1,
-  [ResourcesIds.Diamonds]: 1,
-  [ResourcesIds.Sapphire]: 1,
-  [ResourcesIds.Ruby]: 1,
-  [ResourcesIds.DeepCrystal]: 1,
-  [ResourcesIds.Ignium]: 1,
-  [ResourcesIds.EtherealSilica]: 1,
-  [ResourcesIds.TrueIce]: 1,
-  [ResourcesIds.TwilightQuartz]: 1,
-  [ResourcesIds.AlchemicalSilver]: 1,
-  [ResourcesIds.Adamantine]: 1,
-  [ResourcesIds.Mithral]: 1,
-  [ResourcesIds.Dragonhide]: 1,
-  [ResourcesIds.Earthenshard]: 1,
+  [ResourcesIds.Wood]: 1000,
+  [ResourcesIds.Stone]: 1000,
+  [ResourcesIds.Coal]: 1000,
+  [ResourcesIds.Copper]: 1000,
+  [ResourcesIds.Obsidian]: 1000,
+  [ResourcesIds.Silver]: 1000,
+  [ResourcesIds.Ironwood]: 1000,
+  [ResourcesIds.ColdIron]: 1000,
+  [ResourcesIds.Gold]: 1000,
+  [ResourcesIds.Hartwood]: 1000,
+  [ResourcesIds.Diamonds]: 1000,
+  [ResourcesIds.Sapphire]: 1000,
+  [ResourcesIds.Ruby]: 1000,
+  [ResourcesIds.DeepCrystal]: 1000,
+  [ResourcesIds.Ignium]: 1000,
+  [ResourcesIds.EtherealSilica]: 1000,
+  [ResourcesIds.TrueIce]: 1000,
+  [ResourcesIds.TwilightQuartz]: 1000,
+  [ResourcesIds.AlchemicalSilver]: 1000,
+  [ResourcesIds.Adamantine]: 1000,
+  [ResourcesIds.Mithral]: 1000,
+  [ResourcesIds.Dragonhide]: 1000,
+  [ResourcesIds.Earthenshard]: 1000,
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 0,
   [ResourcesIds.Crossbowman]: 0,
   [ResourcesIds.Paladin]: 0,
-  [ResourcesIds.Lords]: 0.001,
-  [ResourcesIds.Wheat]: 0.1,
-  [ResourcesIds.Fish]: 0.1,
+  [ResourcesIds.Lords]: 1,
+  [ResourcesIds.Wheat]: 100,
+  [ResourcesIds.Fish]: 100,
 };
 
 export const RESOURCE_TIERS = {

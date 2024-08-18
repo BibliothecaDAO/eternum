@@ -27,11 +27,6 @@ export const EternumGlobalConfig = {
     ownerFeesNumerator: 15,
     ownerFeesDenominator: 100, // %
   },
-  weights: {
-    resource: 1000,
-    currency: 1,
-    food: 100,
-  },
   populationCapacity: {
     workerHuts: 5,
   },
@@ -45,9 +40,9 @@ export const EternumGlobalConfig = {
     defaultTickIntervalInSeconds: 1,
     armiesTickIntervalInSeconds: 7200, // 2hrs
   },
-  carryCapacity: {
-    donkey: 100,
-    army: 10,
+  carryCapacityGram: {
+    donkey: 100_000,
+    army: 10_000,
   },
   speed: {
     donkey: 60,
@@ -78,9 +73,9 @@ export const EternumGlobalConfig = {
   },
   mercenaries: {
     troops: {
-      knight_count: 4000,
-      paladin_count: 4000,
-      crossbowman_count: 4000,
+      knight_count: 1000,
+      paladin_count: 1000,
+      crossbowman_count: 1000,
     },
     rewards: [
       { resource: ResourcesIds.Wheat, amount: 10 },

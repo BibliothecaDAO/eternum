@@ -16,6 +16,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import { getArmyTotalCapacity } from "@/dojo/modelManager/utils/ArmyMovementUtils";
 
 export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;
@@ -27,10 +28,9 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
-  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
   movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
-  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>;
-  weight: ComponentValue<ClientComponents["Weight"]["schema"]>;
+  totalCapacity: bigint;
+  weight: bigint;
   arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
   stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
@@ -59,7 +59,6 @@ const formatArmies = (
     .map((armyEntityId) => {
       const army = getComponentValue(Army, armyEntityId);
       if (!army) return undefined;
-      const health = getComponentValue(Health, armyEntityId);
 
       const position = getComponentValue(Position, armyEntityId);
       if (!position) return undefined;
@@ -73,16 +72,16 @@ const formatArmies = (
       }
       if (!owner) return undefined;
 
-      let healthClone = structuredClone(health);
-      if (healthClone) {
-        healthClone.current =
-          healthClone.current /
+      let health = structuredClone(getComponentValue(Health, armyEntityId));
+      if (health) {
+        health.current =
+          health.current /
           (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
-        healthClone.lifetime =
-          healthClone.lifetime /
+        health.lifetime =
+          health.lifetime /
           (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
       } else {
-        healthClone = {
+        health = {
           entity_id: army.entity_id,
           current: 0n,
           lifetime: 0n,
@@ -90,12 +89,11 @@ const formatArmies = (
       }
       const protectee = getComponentValue(Protectee, armyEntityId);
 
-      const quantity = getComponentValue(Quantity, armyEntityId);
-      let quantityClone = structuredClone(quantity);
-      if (quantityClone) {
-        quantityClone.value = BigInt(quantityClone.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+      let quantity = structuredClone(getComponentValue(Quantity, armyEntityId));
+      if (quantity) {
+        quantity.value = BigInt(quantity.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
       } else {
-        quantityClone = {
+        quantity = {
           entity_id: army.entity_id,
           value: 0n,
         };
@@ -104,26 +102,12 @@ const formatArmies = (
       const movable = getComponentValue(Movable, armyEntityId);
 
       const capacity = getComponentValue(Capacity, armyEntityId);
-      let capacityClone = structuredClone(capacity);
-      if (capacityClone) {
-        capacityClone.weight_gram = capacityClone.weight_gram * quantityClone.value;
-      } else {
-        capacityClone = {
-          entity_id: army.entity_id,
-          weight_gram: BigInt(EternumGlobalConfig.carryCapacity.army) * quantityClone.value,
-        };
-      }
+      const totalCapacity = capacity ? getArmyTotalCapacity(army, capacity) : 0n;
 
-      const weight = getComponentValue(Weight, armyEntityId);
-      let weightClone = structuredClone(weight);
-      if (weightClone) {
-        weightClone.value = weightClone.value / BigInt(EternumGlobalConfig.resources.resourcePrecision);
-      } else {
-        weightClone = {
-          entity_id: army.entity_id,
-          value: 0n,
-        };
-      }
+      const weightComponentValue = getComponentValue(Weight, armyEntityId);
+      const weight = weightComponentValue
+        ? weightComponentValue.value / BigInt(EternumGlobalConfig.resources.resourcePrecision)
+        : 0n;
 
       const arrivalTime = getComponentValue(ArrivalTime, armyEntityId);
       const stamina = getComponentValue(Stamina, armyEntityId);
@@ -137,11 +121,10 @@ const formatArmies = (
       return {
         ...army,
         protectee,
-        health: healthClone,
-        quantity,
+        health,
         movable,
-        capacity: capacityClone,
-        weight: weightClone,
+        totalCapacity,
+        weight,
         arrivalTime,
         position,
         entityOwner,
