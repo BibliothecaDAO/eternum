@@ -390,6 +390,7 @@ mod combat_systems {
         BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use eternum::models::event::{EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData};
 
     use eternum::models::movable::{Movable, MovableCustomTrait};
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
@@ -686,6 +687,27 @@ mod combat_systems {
 
             set!(world, (battle));
 
+            let id = world.uuid();
+
+            let attacker = starknet::get_caller_address();
+            let defender = get!(world, defending_army_id, Owner).address;
+            emit!(
+                world,
+                EternumEvent {
+                    id,
+                    event_id: EventType::BattleStart,
+                    timestamp: starknet::get_block_timestamp(),
+                    data: EventData::BattleStart(
+                        BattleStartData {
+                            attacker,
+                            defender,
+                            attacker_army_entity_id: attacking_army_id,
+                            defender_army_entity_id: defending_army_id,
+                            duration_left: 100,
+                        }
+                    ),
+                }
+            );
             battle_id
         }
 
@@ -767,6 +789,25 @@ mod combat_systems {
 
             battle.reset_delta(troop_config);
             set!(world, (battle));
+
+            let id = world.uuid();
+            let joiner = starknet::get_caller_address();
+            emit!(
+                world,
+                EternumEvent {
+                    id,
+                    event_id: EventType::BattleJoin,
+                    timestamp: starknet::get_block_timestamp(),
+                    data: EventData::BattleJoin(
+                        BattleJoinData {
+                            joiner,
+                            joiner_army_entity_id: army_id,
+                            joiner_side: battle_side,
+                            duration_left: battle.duration_left,
+                        }
+                    ),
+                }
+            );
         }
 
 
@@ -782,6 +823,23 @@ mod combat_systems {
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
+
+            emit!(
+                world,
+                EternumEvent {
+                    id: world.uuid(),
+                    event_id: EventType::BattleLeave,
+                    timestamp: starknet::get_block_timestamp(),
+                    data: EventData::BattleLeave(
+                        BattleLeaveData {
+                            leaver: starknet::get_caller_address(),
+                            leaver_army_entity_id: army_id,
+                            leaver_side: caller_army.battle_side,
+                            duration_left: battle.duration_left,
+                        }
+                    )
+                }
+            );
         }
 
 
@@ -925,7 +983,8 @@ mod combat_systems {
 
                                     let resource_amount_stolen: u128 = min(max_carriable, resource_amount_stolen);
 
-                                    // express resource amount stolen to be a percentage of stamina left
+                                    // express resource amount stolen to be a percentage of stamina
+                                    // left
                                     let resource_amount_stolen: u128 = (resource_amount_stolen
                                         * army_stamina.amount.into())
                                         / army_stamina.max(world).into();

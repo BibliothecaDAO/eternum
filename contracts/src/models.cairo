@@ -2,6 +2,7 @@ mod buildings;
 mod capacity;
 mod combat;
 mod config;
+mod event;
 mod guild;
 mod hyperstructure;
 mod level;
