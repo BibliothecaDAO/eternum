@@ -1250,57 +1250,27 @@ mod combat_systems {
             owner_armies_quantity.count -= 1;
             set!(world, (owner_armies_quantity));
 
-            // delete army
-            army.entity_id = 0;
-            set!(world, (army));
-
-            entity_owner.entity_owner_id = 0;
-            set!(world, (entity_owner));
-
-            let mut position: Position = get!(world, army.entity_id, Position);
-            position.x = 0;
-            position.y = 0;
-            set!(world, (position));
-            // reset components connected to army
-        // let (
-        //     owner,
-        //     position,
-        //     quantity,
-        //     health,
-        //     stamina,
-        //     resource_transfer_lock,
-        //     movable,
-        //     capacity
-        // ) =
-        //     get!(
-        //     world,
-        //     army_id,
-        //     (
-        //         Owner,
-        //         Position,
-        //         Quantity,
-        //         Health,
-        //         Stamina,
-        //         ResourceTransferLock,
-        //         Movable,
-        //         Capacity
-        //     )
-        // );
-        // delete!(
-        //     world,
-        //     (
-        //         army,
-        //         entity_owner,
-        //         owner,
-        //         position,
-        //         quantity,
-        //         health,
-        //         stamina,
-        //         resource_transfer_lock,
-        //         movable,
-        //         capacity
-        //     )
-        // );
+            // delete army by resetting components connected to army
+            let (owner, position, quantity, health, stamina, resource_transfer_lock, movable, capacity) = get!(
+                world,
+                army.entity_id,
+                (Owner, Position, Quantity, Health, Stamina, ResourceTransferLock, Movable, Capacity)
+            );
+            delete!(
+                world,
+                (
+                    army,
+                    entity_owner,
+                    owner,
+                    position,
+                    quantity,
+                    health,
+                    stamina,
+                    resource_transfer_lock,
+                    movable,
+                    capacity
+                )
+            );
         }
 
         /// Updates battle and removes army if battle has ended
@@ -1450,9 +1420,13 @@ mod combat_systems {
                 battle.attack_army_health = battle_army_health;
             }
 
-            battle.reset_delta(troop_config);
-
-            set!(world, (battle));
+            if (battle.attack_army_lifetime.troops.count().is_zero()
+                && battle.defence_army_lifetime.troops.count().is_zero()) {
+                delete!(world, (battle));
+            } else {
+                battle.reset_delta(troop_config);
+                set!(world, (battle));
+            }
         }
     }
 }
