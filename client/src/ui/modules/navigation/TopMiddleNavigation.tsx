@@ -49,18 +49,18 @@ export const TopMiddleNavigation = () => {
   const { playerStructures } = useEntities();
   const { hexPosition } = useQuery();
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
-  const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
+  const structureEntityId = useUIStore((state) => state.realmEntityId);
+  const setStructureEntityId = useUIStore((state) => state.setRealmEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getEntityInfo } = getEntitiesUtils();
 
-  const realm = getEntityInfo(realmEntityId);
+  const structure = getEntityInfo(structureEntityId);
 
-  const realmPosition = useMemo(() => {
-    return new Position(realm?.position || { x: 0, y: 0 }).getNormalized();
-  }, [realmEntityId]);
+  const structurePosition = useMemo(() => {
+    return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
+  }, [structureEntityId]);
 
   // realms always first
   const structures = useMemo(() => {
@@ -69,7 +69,7 @@ export const TopMiddleNavigation = () => {
       if (b.category === StructureType[StructureType.Realm]) return 1;
       return a.category!.localeCompare(b.category!);
     });
-  }, [playerStructures().length, realmEntityId]);
+  }, [playerStructures().length, structureEntityId]);
 
   const isHexView = useMemo(() => {
     return location.includes(`/hex`);
@@ -82,7 +82,7 @@ export const TopMiddleNavigation = () => {
 
     setLocation(url);
     window.dispatchEvent(new Event("urlChanged"));
-    setRealmEntityId(entityId);
+    setStructureEntityId(entityId);
   };
 
   const goToMapView = (entityId?: ID) => {
@@ -96,7 +96,7 @@ export const TopMiddleNavigation = () => {
 
     setPreviewBuilding(null);
     if (entityId) {
-      setRealmEntityId(entityId);
+      setStructureEntityId(entityId);
     }
 
     setLocation(url);
@@ -104,13 +104,16 @@ export const TopMiddleNavigation = () => {
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const population = useComponentValue(setup.components.Population, getEntityIdFromKeys([BigInt(realmEntityId || 0)]));
+  const population = useComponentValue(
+    setup.components.Population,
+    getEntityIdFromKeys([BigInt(structureEntityId || 0)]),
+  );
 
   const storehouses = useMemo(() => {
     const quantity =
       getComponentValue(
         setup.components.BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(BuildingType.Storehouse)]),
+        getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
@@ -179,15 +182,15 @@ export const TopMiddleNavigation = () => {
 
         <div className="flex min-w-72 gap-1 text-gold bg-map justify-center border text-center rounded bg-black/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
-            {realm.isMine ? (
+            {structure.isMine ? (
               <Select
-                value={realmEntityId.toString()}
+                value={structureEntityId.toString()}
                 onValueChange={(a: string) => {
                   !isHexView ? goToMapView(ID(a)) : goToHexView(ID(a));
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Realm" />
+                  <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent className="bg-black/90">
                   {structures.map((structure, index) => (
@@ -232,18 +235,18 @@ export const TopMiddleNavigation = () => {
             onClick={() => {
               if (location !== "/map") {
                 goToMapView();
-                if (!realm.isMine) {
-                  setRealmEntityId(structures[0].entity_id);
+                if (!structure.isMine) {
+                  setStructureEntityId(structures[0].entity_id);
                 }
               } else {
-                goToHexView(realmEntityId);
+                goToHexView(structureEntityId);
               }
             }}
           >
             {location === "/map" ? "Realm" : "World"}
           </Button>
           {location === "/map" && (
-            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: realmPosition.x, y: realmPosition.y }} />
+            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
           )}
         </div>
       </motion.div>
