@@ -75,6 +75,25 @@ export const BuildingEntityDetails = () => {
     </Button>
   );
 
+  const pauseProductionButton = selectedBuildingHex && (
+    <Button
+      key="stop-production-button"
+      onClick={() => {
+        const tileManager = new TileManager(dojo.setup, {
+          col: selectedBuildingHex.outerCol,
+          row: selectedBuildingHex.outerRow,
+        });
+        tileManager.pauseProduction(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow);
+        setLeftNavigationView(View.None);
+      }}
+      variant="danger"
+      className="mt-3"
+      withoutSound
+    >
+      Stop Production
+    </Button>
+  );
+
   return (
     <div>
       <div className="flex flex-col p-1 space-y-1 text-sm">

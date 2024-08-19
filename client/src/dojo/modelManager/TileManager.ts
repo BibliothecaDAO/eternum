@@ -32,10 +32,7 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(
-    private dojo: SetupResult,
-    hexCoords: HexPosition,
-  ) {
+  constructor(private dojo: SetupResult, hexCoords: HexPosition) {
     const { Tile, Building, Stamina, Position, Army, Owner, EntityOwner, StaminaConfig, Structure } = dojo.components;
     this.models = {
       tile: Tile,
@@ -217,6 +214,34 @@ export class TileManager {
           this.models.building.removeOverride(overrideId);
         }, 2000);
       });
+  };
+
+  pauseProduction = async (col: number, row: number) => {
+    const entityId = this._getOwnerEntityId();
+    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+
+    await this.dojo.systemCalls.pause_production({
+      signer: this.dojo.network.burnerManager.account!,
+      entity_id: entityId,
+      building_coord: {
+        x: col,
+        y: row,
+      },
+    });
+  };
+
+  resumeProduction = async (col: number, row: number) => {
+    const entityId = this._getOwnerEntityId();
+    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+
+    await this.dojo.systemCalls.resume_production({
+      signer: this.dojo.network.burnerManager.account!,
+      entity_id: entityId,
+      building_coord: {
+        x: col,
+        y: row,
+      },
+    });
   };
 
   placeStructure = async (entityId: ID, structureType: StructureType, hexCoords: HexPosition) => {
