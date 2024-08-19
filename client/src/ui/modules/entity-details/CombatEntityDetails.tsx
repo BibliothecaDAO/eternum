@@ -2,13 +2,14 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { getPlayerStructures } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
-import { ContractAddress, ID, Position } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { useEffect, useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
 
@@ -16,12 +17,14 @@ export const CombatEntityDetails = () => {
   const dojo = useDojo();
 
   const selectedHex = useUIStore((state) => state.selectedHex);
+
   const [selectedTab, setSelectedTab] = useState(0);
+  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>();
 
   const getStructures = getPlayerStructures();
 
   const hexPosition = useMemo(() => {
-    return { x: selectedHex.col, y: selectedHex.row };
+    return new Position({ x: selectedHex.col, y: selectedHex.row });
   }, [selectedHex]);
 
   const ownArmiesAtPosition = useOwnArmiesByPosition({
@@ -35,13 +38,15 @@ export const CombatEntityDetails = () => {
     [ownArmiesAtPosition],
   );
 
-  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>({
-    id: userArmies?.[0]?.entity_id || 0,
-    position: {
-      x: selectedHex.col,
-      y: selectedHex.row,
-    },
-  });
+  useEffect(() => {
+    if (ownArmySelected) return;
+    const firstArmyId = userArmies[0]?.entity_id;
+    if (!firstArmyId) return;
+    setOwnArmySelected({
+      id: firstArmyId,
+      position: hexPosition,
+    });
+  }, [userArmies, selectedHex]);
 
   const ownArmy = useMemo(() => {
     if (!ownArmySelected) {
@@ -77,29 +82,32 @@ export const CombatEntityDetails = () => {
   return (
     hexPosition && (
       <div className="px-2 h-full">
-        <CoordinatesAndBiome position={hexPosition} />
-        {userArmies.length > 0 && (
-          <SelectActiveArmy
-            selectedEntity={ownArmySelected}
-            setOwnArmySelected={setOwnArmySelected}
-            userAttackingArmies={userArmies}
-          />
-        )}
+        <HintModalButton className="absolute top-1 right-1" section={HintSection.Combat} />
 
-        <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
-          <Tabs.List>
-            {tabs.map((tab, index) => (
-              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-            ))}
-          </Tabs.List>
-          <Tabs.Panels className="">
-            {tabs.map((tab, index) => (
-              <Tabs.Panel key={index} className="h-full">
-                {tab.component}
-              </Tabs.Panel>
-            ))}
-          </Tabs.Panels>
-        </Tabs>
+        <div>
+          <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
+            <Tabs.List>
+              {tabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
+            {userArmies.length > 0 && (
+              <SelectActiveArmy
+                selectedEntity={ownArmySelected}
+                setOwnArmySelected={setOwnArmySelected}
+                userAttackingArmies={userArmies}
+              />
+            )}
+
+            <Tabs.Panels className="">
+              {tabs.map((tab, index) => (
+                <Tabs.Panel key={index} className="h-full">
+                  {tab.component}
+                </Tabs.Panel>
+              ))}
+            </Tabs.Panels>
+          </Tabs>
+        </div>
       </div>
     )
   );
@@ -124,7 +132,7 @@ const SelectActiveArmy = ({
       <Select
         value={selectedEntity?.id.toString() || ""}
         onValueChange={(a: string) => {
-          setOwnArmySelected({ id: ID(a), position: selectedEntity?.position || { x: 0, y: 0 } });
+          setOwnArmySelected({ id: ID(a), position: selectedEntity?.position || new Position({ x: 0, y: 0 }) });
         }}
       >
         <SelectTrigger className="w-[31rem] px-2">
@@ -144,18 +152,6 @@ const SelectActiveArmy = ({
           })}
         </SelectContent>
       </Select>
-    </div>
-  );
-};
-
-const CoordinatesAndBiome = ({ position }: { position: Position }) => {
-  return (
-    <div className="p-2 flex justify-between text-xs">
-      <div className="font-bold flex space-x-2 justify-between self-center ">
-        <div>{`x: ${position.x?.toLocaleString()}`}</div>
-        <div>{`y: ${position.y?.toLocaleString()}`}</div>
-      </div>
-      <HintModalButton className="top-1 right-1" section={HintSection.Combat} />
     </div>
   );
 };

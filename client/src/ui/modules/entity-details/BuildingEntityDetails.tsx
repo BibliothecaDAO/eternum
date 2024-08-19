@@ -82,7 +82,7 @@ export const BuildingEntityDetails = () => {
           <ResourceInfo resourceId={resource} entityId={ownerEntityId} extraButtons={[destroyButton]} />
         )}
         {buildingType !== undefined && buildingType !== BuildingType.Resource && (
-          <BuildingInfo buildingId={buildingType} entityId={ownerEntityId} extraButtons={[destroyButton]} />
+          <BuildingInfo buildingId={buildingType} entityId={ownerEntityId} extraButtons={[destroyButton]} hintModal />
         )}
       </div>
     </div>

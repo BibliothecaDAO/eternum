@@ -67,11 +67,7 @@ const formatArmies = (
       const entityOwner = getComponentValue(EntityOwner, armyEntityId);
       if (!entityOwner) return undefined;
 
-      let owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
-      if (!owner && entityOwner?.entity_owner_id) {
-        owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
-      }
-      if (!owner) return undefined;
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
 
       let health = structuredClone(getComponentValue(Health, armyEntityId));
       if (health) {
@@ -493,7 +489,6 @@ export const getArmyByEntityId = () => {
 
   const getAliveArmy = (entity_id: ID): ArmyInfo | undefined => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
-
     return formatArmies(
       Array.from(armiesEntityIds),
       account.address,

@@ -45,7 +45,7 @@ export const BattleView = () => {
   }, [battleManager]);
 
   const ownArmySide = battleManager.isBattle()
-    ? armies.userArmiesInBattle?.[0]?.battle_side || ""
+    ? armies.userArmiesInBattle?.[0]?.battle_side || BattleSide[BattleSide.None]
     : BattleSide[BattleSide.Attack];
 
   const ownArmyBattleStarter = useMemo(

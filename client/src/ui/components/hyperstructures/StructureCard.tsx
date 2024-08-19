@@ -6,12 +6,13 @@ import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
+import { Position } from "@/types/Position";
 
 export const StructureCard = ({
   position,
@@ -21,7 +22,7 @@ export const StructureCard = ({
   ownArmySelected: ArmyInfo | undefined;
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
-  const structure = getStructureAtPosition({ x: position.x, y: position.y });
+  const structure = getStructureAtPosition(position.getContract());
 
   return (
     Boolean(structure) && (

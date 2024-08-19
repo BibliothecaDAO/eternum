@@ -434,11 +434,13 @@ export const BuildingInfo = ({
   entityId,
   extraButtons = [],
   name = BuildingEnumToString[buildingId],
+  hintModal = false,
 }: {
   buildingId: number;
   entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
   name?: string;
+  hintModal?: boolean;
 }) => {
   const cost = BUILDING_COSTS_SCALED[buildingId] || [];
 
@@ -453,7 +455,12 @@ export const BuildingInfo = ({
 
   return (
     <div className="p-2 text-sm text-gold">
-      <Headline className="pb-3"> {name} </Headline>
+      <Headline className="pb-3">
+        <div className="flex gap-2">
+          <div className="self-center">{name} </div>
+          {hintModal && <HintModalButton section={HintSection.Buildings} />}
+        </div>
+      </Headline>
 
       {resourceProduced !== 0 && (
         <div className=" flex flex-wrap">

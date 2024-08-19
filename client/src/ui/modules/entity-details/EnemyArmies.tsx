@@ -5,8 +5,8 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
-import { Position } from "@bibliothecadao/eternum";
 import React, { useCallback, useMemo } from "react";
 
 export const EnemyArmies = ({
@@ -24,7 +24,7 @@ export const EnemyArmies = ({
 
   const setBattleView = useUIStore((state) => state.setBattleView);
 
-  const structureAtPosition = getStructureAtPosition({ x: position.x, y: position.y });
+  const structureAtPosition = getStructureAtPosition(position.getContract());
 
   const getArmyChip = useCallback(
     (army: ArmyInfo, index: number) => {

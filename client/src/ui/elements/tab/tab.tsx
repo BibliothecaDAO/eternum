@@ -18,6 +18,7 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
           VARIANTS[variant].tab.base,
           selected ? VARIANTS[variant].tab.active : VARIANTS[variant].tab.inactive,
           className,
+          "mx-0.5",
         )
       }
       {...props}

@@ -1,7 +1,8 @@
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { BattleManager, BattleStatus } from "@/dojo/modelManager/BattleManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { Health } from "@/types";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -24,6 +25,12 @@ export const BattleProgressBar = ({
   structure: Structure | undefined;
 }) => {
   const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  const playUnitSelectedOne = useUiSounds(soundSelector.unitSelected1).play;
+  const playUnitSelectedTwo = useUiSounds(soundSelector.unitSelected2).play;
+  const playUnitSelectedThree = useUiSounds(soundSelector.unitSelected3).play;
+  const playBattleVictory = useUiSounds(soundSelector.battleVictory).play;
+  const playBattleDefeat = useUiSounds(soundSelector.battleDefeat).play;
 
   const durationLeft = useMemo(() => {
     if (!battleManager) return undefined;
@@ -81,9 +88,34 @@ export const BattleProgressBar = ({
   }, [attackingHealthPercentage, defendingHealthPercentage]);
 
   const battleStatus = useMemo(() => {
-    if (time) return;
-    if (ownArmySide === "") return "Battle ended";
-  }, [time]);
+    if (battleManager) return battleManager.getWinner(currentTimestamp!, ownArmySide);
+  }, [time, battleManager, currentTimestamp, ownArmySide]);
+
+  useEffect(() => {
+    if (battleStatus === BattleStatus.StartBattle) {
+      const random = Math.random();
+      if (random > 0.66) {
+        playUnitSelectedOne();
+      } else if (random > 0.33) {
+        playUnitSelectedTwo();
+      } else {
+        playUnitSelectedThree();
+      }
+    }
+    if (battleStatus === BattleStatus.UserLost) {
+      playBattleDefeat();
+    }
+    if (battleStatus === BattleStatus.UserWon) {
+      playBattleVictory();
+    }
+  }, [
+    battleStatus,
+    playUnitSelectedOne,
+    playUnitSelectedTwo,
+    playUnitSelectedThree,
+    playBattleVictory,
+    playBattleDefeat,
+  ]);
 
   return (
     <motion.div

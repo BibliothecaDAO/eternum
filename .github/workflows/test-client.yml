@@ -39,4 +39,4 @@ jobs:
       - name: Build packages
         run: pnpm run build-packages
       - name: Execute Unit tests
-        run: cd client && pnpm run test
+        run: pnpm run test-client
