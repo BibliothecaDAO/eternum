@@ -47,5 +47,5 @@ export const useStructureEntityId = () => {
         setStructureEntityId(0);
       }
     }
-  }, [defaultPlayerStructure, isMapView]);
+  }, [defaultPlayerStructure, isMapView, hexPosition]);
 };
