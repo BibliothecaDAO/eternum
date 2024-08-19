@@ -34,6 +34,7 @@ export abstract class HexagonScene {
   protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
   protected modelLoadPromises: Promise<void>[] = [];
   protected state: AppStore;
+  private hexagonEdges: THREE.Group;
 
   constructor(
     protected sceneName: SceneName,
@@ -124,6 +125,8 @@ export abstract class HexagonScene {
     });
 
     this.state = useUIStore.getState();
+    this.hexagonEdges = new THREE.Group();
+    this.scene.add(this.hexagonEdges);
   }
 
   protected abstract onHexagonMouseMove({
@@ -136,6 +139,20 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
   protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
+
+  protected addHexagonEdge(edge: THREE.LineSegments) {
+    this.hexagonEdges.add(edge);
+  }
+
+  protected setHexagonEdges(edges: THREE.Group) {
+    this.scene.remove(this.hexagonEdges);
+    this.hexagonEdges = edges;
+    this.scene.add(this.hexagonEdges);
+  }
+
+  protected getHexagonEdges() {
+    return this.hexagonEdges;
+  }
 
   public abstract setup(): void;
 
