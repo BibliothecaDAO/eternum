@@ -11,7 +11,6 @@ import { FELT_CENTER } from "@/ui/config";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { Has, HasValue, runQuery } from "@dojoengine/recs";
 import { throttle } from "lodash";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
@@ -23,6 +22,7 @@ import { StructurePreview } from "../components/StructurePreview";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
+import { LocationManager } from "../helpers/LocationManager";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -173,8 +173,7 @@ export default class WorldmapScene extends HexagonScene {
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
     const url = new Position({ x: hexCoords.col, y: hexCoords.row }).toHexLocationUrl();
-    window.history.replaceState({}, "", url);
-    window.dispatchEvent(new Event("urlChanged"));
+    LocationManager.updateUrl(url);
   }
 
   protected onHexagonClick(hexCoords: HexPosition) {

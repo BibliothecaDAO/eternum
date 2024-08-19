@@ -35,10 +35,13 @@ export const useStructureEntityId = () => {
     const structures = runQuery([Has(Structure), HasValue(Position, { x, y })]);
     const structureOwner = structures.size > 0 ? getComponentValue(Owner, structures.values().next().value) : null;
 
+    const isOwner = structureOwner?.address === BigInt(address);
+
     if (isMapView) {
-      if (structureOwner?.address !== BigInt(address)) {
+      if (!isOwner) {
         setStructureEntityId(defaultPlayerStructure.entity_id);
-        return;
+      } else {
+        setStructureEntityId(structureOwner.entity_id);
       }
     } else {
       if (structureOwner) {
