@@ -172,15 +172,6 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    const clickedHexStructureEntityId = runQuery([
-      Has(this.dojo.components.Structure),
-      HasValue(this.dojo.components.Position, { x: hexCoords.col, y: hexCoords.row }),
-    ]);
-
-    if (Array.from(clickedHexStructureEntityId)[0] === undefined) {
-      this.state.setRealmEntityId(0);
-    }
-
     const url = new Position({ x: hexCoords.col, y: hexCoords.row }).toHexLocationUrl();
     window.history.replaceState({}, "", url);
     window.dispatchEvent(new Event("urlChanged"));
