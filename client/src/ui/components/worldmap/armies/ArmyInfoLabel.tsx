@@ -14,8 +14,10 @@ import { getRealmNameById } from "../../../utils/realms";
 import { InventoryResources } from "../../resources/InventoryResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 export const ArmyInfoLabel = () => {
+  const { isMapView } = useQuery();
   const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
   const { getArmy } = getArmyByEntityId();
 
@@ -26,7 +28,7 @@ export const ArmyInfoLabel = () => {
 
   return (
     <>
-      {army && (
+      {army && isMapView && (
         <BaseThreeTooltip position={Position.CLEAN} className={`bg-transparent pointer-events-none w-[250px]`}>
           <RaiderInfo key={army.entity_id} army={army} />
         </BaseThreeTooltip>
