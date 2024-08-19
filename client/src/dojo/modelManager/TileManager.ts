@@ -137,6 +137,7 @@ export class TileManager {
         bonus_percent: 0,
         entity_id: entityId,
         outer_entity_id: entityId,
+        paused: false,
       },
     });
     return overrideId;
