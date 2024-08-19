@@ -1,7 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
-import { ContractAddress, EntityType, ID } from "@bibliothecadao/eternum";
+import { ContractAddress, EntityType, ID, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
   Component,
@@ -72,7 +72,11 @@ export const useEntities = () => {
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
-        .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
+        .sort((a, b) => {
+          if (a.category === StructureType[StructureType.Realm]) return -1;
+          if (b.category === StructureType[StructureType.Realm]) return 1;
+          return a.category!.localeCompare(b.category!);
+        });
     },
   };
 };
@@ -108,6 +112,7 @@ export const getEntitiesUtils = () => {
         AddressName,
         Owner,
         Realm,
+        Structure,
       },
     },
   } = useDojo();
@@ -124,6 +129,8 @@ export const getEntitiesUtils = () => {
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
 
     const name = getEntityName(entityId);
+
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([entityIdBigInt]));
 
     const resources = getResourcesFromBalance(entityId);
     const army = getComponentValue(Army, getEntityIdFromKeys([entityIdBigInt]));
@@ -153,6 +160,7 @@ export const getEntitiesUtils = () => {
       isRoundTrip: movable?.round_trip || false,
       resources,
       entityType: army ? EntityType.TROOP : EntityType.DONKEY,
+      structureCategory: structure?.category,
       name,
     };
   };
