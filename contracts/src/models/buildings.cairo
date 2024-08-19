@@ -410,6 +410,8 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         Coord { x: 10, y: 10 }
     }
 
+    /// Create a new building on a structure
+    ///
     fn create(
         world: IWorldDispatcher,
         outer_entity_id: ID,
@@ -479,15 +481,59 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         building
     }
 
-
-    fn destroy(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
+    /// Pause building production without removing the building
+    ///
+    /// When you pause production, the building stops producing resources,
+    /// stops consuming resources, stops giving bonuses to adjacent buildings,
+    /// and stops receiving bonuses from adjacent buildings.
+    ///
+    fn pause_production(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) {
         get!(world, outer_entity_id, EntityOwner).assert_caller_owner(world);
 
         // check that the outer entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);
         outer_entity_position.assert_not_zero();
 
-        // todo@credence: ensure that the bounds are within the inner realm bounds
+        // ensure that inner coordinate is occupied
+        let mut building: Building = get!(
+            world, (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building
+        );
+        assert!(building.entity_id != 0, "building does not exist");
+
+        // stop production related to building
+        building.stop_production(world);
+    }
+
+    /// Restart building production without removing the building
+    ///
+    /// When you restart production, the building resumes producing resources,
+    /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
+    ///
+    fn resume_production(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) {
+        get!(world, outer_entity_id, EntityOwner).assert_caller_owner(world);
+
+        // check that the outer entity has a position
+        let outer_entity_position = get!(world, outer_entity_id, Position);
+        outer_entity_position.assert_not_zero();
+
+        // ensure that inner coordinate is occupied
+        let mut building: Building = get!(
+            world, (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building
+        );
+        assert!(building.entity_id != 0, "building does not exist");
+
+        // stop production related to building
+        building.start_production(world);
+    }
+
+    /// Destroy building and remove it from the structure
+    ///
+    fn destroy(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
+        get!(world, outer_entity_id, EntityOwner).assert_caller_owner(world);
+
+        // check that the outer entity has a position
+        let outer_entity_position = get!(world, outer_entity_id, Position);
+        outer_entity_position.assert_not_zero();
 
         // ensure that inner coordinate is occupied
         let mut building: Building = get!(
