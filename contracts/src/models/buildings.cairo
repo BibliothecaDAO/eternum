@@ -360,8 +360,15 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
 
 
     fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, world: IWorldDispatcher) -> u32 {
-        get!(world, (self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y), Building)
-            .boost_adjacent_building_production_by()
+        // only get bonuses from buildings that are active (not paused)
+        let bonus_giver_building: Building = get!(
+            world, (self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y), Building
+        );
+        if bonus_giver_building.paused {
+            return 0;
+        } else {
+            return bonus_giver_building.boost_adjacent_building_production_by();
+        }
     }
 
 
@@ -370,7 +377,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
             world, (self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y), Building
         );
         if bonus_receiver_building.exists()
-            && !bonus_receiver_building.paused
+            && !bonus_receiver_building.paused // only give bonus to active buildings
             && bonus_receiver_building.is_resource_producer() {
             let bonus_receiver_produced_resource_type = bonus_receiver_building.produced_resource();
             let mut bonus_receiver_produced_resource = get!(
