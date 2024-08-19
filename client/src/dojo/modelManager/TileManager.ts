@@ -140,6 +140,7 @@ export class TileManager {
         bonus_percent: 0,
         entity_id: entityId,
         outer_entity_id: entityId,
+        paused: false,
       },
     });
     return overrideId;
@@ -217,6 +218,34 @@ export class TileManager {
           this.models.building.removeOverride(overrideId);
         }, 2000);
       });
+  };
+
+  pauseProduction = async (col: number, row: number) => {
+    const entityId = this._getOwnerEntityId();
+    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+
+    await this.dojo.systemCalls.pause_production({
+      signer: this.dojo.network.burnerManager.account!,
+      entity_id: entityId,
+      building_coord: {
+        x: col,
+        y: row,
+      },
+    });
+  };
+
+  resumeProduction = async (col: number, row: number) => {
+    const entityId = this._getOwnerEntityId();
+    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+
+    await this.dojo.systemCalls.resume_production({
+      signer: this.dojo.network.burnerManager.account!,
+      entity_id: entityId,
+      building_coord: {
+        x: col,
+        y: row,
+      },
+    });
   };
 
   placeStructure = async (entityId: ID, structureType: StructureType, hexCoords: HexPosition) => {
