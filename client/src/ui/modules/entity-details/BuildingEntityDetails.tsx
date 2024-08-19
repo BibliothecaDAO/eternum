@@ -24,7 +24,7 @@ export const BuildingEntityDetails = () => {
     resource: undefined,
     ownerEntityId: undefined,
   });
-  const [canBePaused, setCanBePaused] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -43,7 +43,7 @@ export const BuildingEntityDetails = () => {
         resource: building.produced_resource_type as ResourcesIds,
         ownerEntityId: building.outer_entity_id,
       });
-      setCanBePaused(!building.paused);
+      setIsPaused(building.paused);
     } else {
       setBuildingState({
         buildingType: undefined,
@@ -59,12 +59,11 @@ export const BuildingEntityDetails = () => {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
     });
-    const action = canBePaused ? tileManager.pauseProduction : tileManager.resumeProduction;
-    action(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).finally(() => {
-      setCanBePaused(!canBePaused);
+    const action = !isPaused ? tileManager.pauseProduction : tileManager.resumeProduction;
+    action(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).then(() => {
       setIsLoading(false);
     });
-  }, [selectedBuildingHex, canBePaused]);
+  }, [selectedBuildingHex, isPaused]);
 
   const handleDestoryBuilding = useCallback(() => {
     const tileManager = new TileManager(dojo.setup, {
@@ -88,10 +87,18 @@ export const BuildingEntityDetails = () => {
     <div>
       <div className="flex flex-col p-1 w-full space-y-1 text-sm">
         {buildingState.buildingType === BuildingType.Resource && buildingState.resource !== undefined && (
-          <ResourceInfo resourceId={buildingState.resource} entityId={buildingState.ownerEntityId} />
+          <ResourceInfo
+            isPaused={isPaused}
+            resourceId={buildingState.resource}
+            entityId={buildingState.ownerEntityId}
+          />
         )}
         {buildingState.buildingType !== undefined && buildingState.buildingType !== BuildingType.Resource && (
-          <BuildingInfo buildingId={buildingState.buildingType} entityId={buildingState.ownerEntityId} />
+          <BuildingInfo
+            isPaused={isPaused}
+            buildingId={buildingState.buildingType}
+            entityId={buildingState.ownerEntityId}
+          />
         )}
         {selectedBuildingHex && (
           <div className="flex justify-center space-x-3">
@@ -102,7 +109,7 @@ export const BuildingEntityDetails = () => {
               className="mt-3"
               withoutSound
             >
-              {canBePaused ? "Pause" : "Resume"}
+              {isPaused ? "Resume" : "Pause"}
             </Button>
             <Button onClick={handleDestoryBuilding} variant="danger" className="mt-3" withoutSound>
               Destroy
