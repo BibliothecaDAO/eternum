@@ -34,6 +34,7 @@ pub struct Building {
     bonus_percent: u32,
     entity_id: ID,
     outer_entity_id: ID,
+    paused: bool,
 }
 
 #[derive(PartialEq, Copy, Drop, Serde)]
@@ -284,7 +285,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
     }
 
     fn production_amount(self: @Building, world: IWorldDispatcher) -> u128 {
-        if (*self).is_active() == false {
+        if (*self).exists() == false {
             return 0;
         }
 
@@ -368,7 +369,9 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
         let mut bonus_receiver_building: Building = get!(
             world, (self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y), Building
         );
-        if bonus_receiver_building.is_active() && bonus_receiver_building.is_resource_producer() {
+        if bonus_receiver_building.exists()
+            && !bonus_receiver_building.paused
+            && bonus_receiver_building.is_resource_producer() {
             let bonus_receiver_produced_resource_type = bonus_receiver_building.produced_resource();
             let mut bonus_receiver_produced_resource = get!(
                 world, (self.outer_entity_id, bonus_receiver_produced_resource_type), Resource
@@ -430,7 +433,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
             world, (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building
         );
 
-        assert!(!building.is_active(), "space is occupied");
+        assert!(!building.exists(), "space is occupied");
 
         // set building
         building.entity_id = world.uuid();
@@ -499,9 +502,12 @@ impl BuildingCustomImpl of BuildingCustomTrait {
             world, (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building
         );
         assert!(building.entity_id != 0, "building does not exist");
+        assert!(building.paused == false, "building production is already paused");
 
-        // stop production related to building
+        // stop building production
         building.stop_production(world);
+        building.paused = true;
+        set!(world, (building));
     }
 
     /// Restart building production without removing the building
@@ -522,8 +528,13 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         );
         assert!(building.entity_id != 0, "building does not exist");
 
-        // restart production related to building
+        assert!(building.exists(), "building is not active");
+        assert!(building.paused, "building production is not paused");
+
+        // restart building production
         building.start_production(world);
+        building.paused = false;
+        set!(world, (building));
     }
 
     /// Destroy building and remove it from the structure
@@ -599,7 +610,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         };
     }
 
-    fn is_active(self: Building) -> bool {
-        self.entity_id != 0
+    fn exists(self: Building) -> bool {
+        self.entity_id.is_non_zero()
     }
 }
