@@ -38,17 +38,9 @@ export const useStructureEntityId = () => {
     const isOwner = structureOwner?.address === BigInt(address);
 
     if (isMapView) {
-      if (!isOwner) {
-        setStructureEntityId(defaultPlayerStructure.entity_id);
-      } else {
-        setStructureEntityId(structureOwner.entity_id);
-      }
+      setStructureEntityId(isOwner ? structureOwner.entity_id : defaultPlayerStructure.entity_id);
     } else {
-      if (structureOwner) {
-        setStructureEntityId(structureOwner.entity_id);
-      } else {
-        setStructureEntityId(0);
-      }
+      setStructureEntityId(structureOwner ? structureOwner.entity_id : 0);
     }
-  }, [defaultPlayerStructure, isMapView, hexPosition]);
+  }, [defaultPlayerStructure, isMapView, hexPosition, address]);
 };
