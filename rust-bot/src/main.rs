@@ -5,7 +5,8 @@ use sqlx::SqlitePool;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
-
+use serenity::builder::{CreateAttachment, CreateEmbed, CreateEmbedFooter, CreateMessage};
+use serenity::model::Timestamp;
 use starknet_crypto::Felt;
 use torii_client::client::Client;
 use torii_grpc::{
@@ -33,10 +34,10 @@ async fn setup_torii_client(token: String, database: &SqlitePool) {
             .unwrap();
 
         let mut rcv = client
-            .on_entity_updated(vec![EntityKeysClause::Keys(KeysClause {
+            .on_event_message_updated(vec![EntityKeysClause::Keys(KeysClause {
                 keys: vec![],
                 pattern_matching: torii_grpc::types::PatternMatching::VariableLen,
-                models: vec![],
+                models: vec!["eternum-EternumEvent".to_string()],
             })])
             .await
             .unwrap();
@@ -49,6 +50,35 @@ async fn setup_torii_client(token: String, database: &SqlitePool) {
                 let dm_channel = user.create_dm_channel(&http).await;
                 if let Ok(channel) = dm_channel {
                     let _ = channel.say(&http, "Received Dojo entity").await;
+
+                    let footer = CreateEmbedFooter::new("This is a footer");
+                    let embed = CreateEmbed::new()
+                        .title("This is a title")
+                        .description("This is a description")
+                        .image("attachment://ferris_eyes.png")
+                        .fields(vec![
+                            ("This is the first field", "This is a field body", true),
+                            ("This is the second field", "Both fields are inline", true),
+                        ])
+                        .field(
+                            "This is the third field",
+                            "This is not an inline field",
+                            false,
+                        )
+                        .footer(footer)
+                        // Add a timestamp for the current time
+                        // This also accepts a rfc3339 Timestamp
+                        .timestamp(Timestamp::now());
+                    let builder = CreateMessage::new()
+                        .content("Hello, World!")
+                        .embed(embed)
+                        .add_file(CreateAttachment::path("./ferris_eyes.png").await.unwrap());
+
+                    let msg = channel.send_message(&http, builder).await;
+
+                    if let Err(why) = msg {
+                        println!("Error sending message: {why:?}");
+                    }
                 }
             }
         }

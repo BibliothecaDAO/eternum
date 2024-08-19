@@ -22,6 +22,7 @@ use eternum::models::resources::{
 use eternum::models::structure::{Structure, StructureCustomImpl};
 use eternum::models::weight::Weight;
 use eternum::models::weight::WeightCustomTrait;
+use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max};
 use eternum::utils::number::NumberTrait;
 
@@ -539,7 +540,6 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
         let mut all_resources = all_resource_ids();
         let mut subtracted_resources_weight = 0;
-        let mut added_resources_weight = 0;
 
         loop {
             match all_resources.pop_front() {
@@ -549,13 +549,13 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             world, (to_army_protectee_id, resource_type)
                         );
                         if to_army_lost_or_battle_not_ended {
-                            // army forfeits resources
-                            to_army_resource.burn((to_army_resource.balance));
-                            to_army_resource.save(world);
-
                             // update army's subtracted weight
                             subtracted_resources_weight +=
                                 WeightConfigCustomImpl::get_weight(world, resource_type, to_army_resource.balance);
+
+                            // army forfeits resources
+                            to_army_resource.burn((to_army_resource.balance));
+                            to_army_resource.save(world);
                         } else {
                             // army won or drew so it can leave with its resources
                             //
@@ -589,16 +589,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             other_side_escrow_resource.burn(share_amount);
                             other_side_escrow_resource.save(world);
 
-                            // give loot share to winner
-                            let mut to_army_resource = ResourceCustomImpl::get(
-                                world, (to_army_protectee_id, resource_type)
+                            // send loot to winner
+                            InternalResourceSystemsImpl::mint_if_adequate_capacity(
+                                world, to_army_protectee_id, (resource_type, share_amount), false
                             );
-                            to_army_resource.add(share_amount);
-                            to_army_resource.save(world);
-
-                            // update army's added weight
-                            added_resources_weight +=
-                                WeightConfigCustomImpl::get_weight(world, resource_type, share_amount);
                         }
                     }
                 },
@@ -609,17 +603,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // update weight after balance update
         let mut to_army_protectee_weight: Weight = get!(world, to_army_protectee_id, Weight);
         let to_army_protectee_capacity: Capacity = get!(world, to_army_protectee_id, Capacity);
-        let to_army_protectee_quantity: Quantity = get!(world, to_army_protectee_id, Quantity);
         // decrease protectee weight if necessary
         if subtracted_resources_weight.is_non_zero() {
             to_army_protectee_weight.deduct(to_army_protectee_capacity, subtracted_resources_weight);
         }
-        // increase protectee weight if necessary
-        if added_resources_weight.is_non_zero() {
-            to_army_protectee_weight
-                .add(to_army_protectee_capacity, to_army_protectee_quantity, added_resources_weight);
-        }
-        set!(world, (to_army_protectee_weight));
 
         // release lock on resource
         let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
