@@ -136,6 +136,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.destroy_building(props);
   };
 
+  const pause_production = async (props: SystemProps.PauseProductionProps) => {
+    await provider.pause_production(props);
+  };
+
+  const resume_production = async (props: SystemProps.ResumeProductionProps) => {
+    await provider.resume_production(props);
+  };
+
   const create_bank = async (props: SystemProps.CreateBankProps) => {
     await provider.create_bank(props);
   };
@@ -294,6 +302,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     travel,
     travel_hex: withQueueing(withErrorHandling(travel_hex)),
     destroy_building,
+    pause_production,
+    resume_production,
     create_building,
     create_army,
     delete_army,

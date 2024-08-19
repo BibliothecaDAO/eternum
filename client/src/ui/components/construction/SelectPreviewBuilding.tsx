@@ -361,11 +361,11 @@ const BuildingCard = ({
 export const ResourceInfo = ({
   resourceId,
   entityId,
-  extraButtons = [],
+  isPaused,
 }: {
   resourceId: number;
   entityId: ID | undefined;
-  extraButtons?: React.ReactNode[];
+  isPaused?: boolean;
 }) => {
   const cost = RESOURCE_INPUTS[resourceId];
 
@@ -380,6 +380,8 @@ export const ResourceInfo = ({
   return (
     <div className="flex flex-col text-gold text-sm p-1 space-y-1">
       <Headline className="py-3">Resource Building </Headline>
+
+      {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
       {population !== 0 && <div className="font-bold">Increases Population: +{population}</div>}
 
@@ -424,7 +426,6 @@ export const ResourceInfo = ({
           );
         })}
       </div>
-      {extraButtons}
     </div>
   );
 };
@@ -432,13 +433,13 @@ export const ResourceInfo = ({
 export const BuildingInfo = ({
   buildingId,
   entityId,
-  extraButtons = [],
   name = BuildingEnumToString[buildingId],
+  isPaused,
 }: {
   buildingId: number;
   entityId: ID | undefined;
-  extraButtons?: React.ReactNode[];
   name?: string;
+  isPaused?: boolean;
 }) => {
   const cost = BUILDING_COSTS_SCALED[buildingId] || [];
 
@@ -454,6 +455,8 @@ export const BuildingInfo = ({
   return (
     <div className="p-2 text-sm text-gold">
       <Headline className="pb-3"> {name} </Headline>
+
+      {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
       {resourceProduced !== 0 && (
         <div className=" flex flex-wrap">
@@ -531,7 +534,6 @@ export const BuildingInfo = ({
           </div>
         </>
       )}
-      <div className="w-full flex flex-col">{extraButtons}</div>
     </div>
   );
 };
