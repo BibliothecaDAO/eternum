@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
-import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
@@ -18,11 +17,13 @@ import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
-import { StructurePreview } from "../components/StructurePreview";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
 import { LocationManager } from "../helpers/LocationManager";
+import { StructurePreview } from "../components/StructurePreview";
+import { TileManager } from "@/dojo/modelManager/TileManager";
+import { hexagonEdgeMesh } from "../geometry/HexagonGeometry";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -49,6 +50,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
+  private cachedHexagonEdges: Map<string, THREE.Group> = new Map();
 
   constructor(
     dojoContext: SetupResult,
@@ -227,8 +229,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
-    const col = update.hexCoords.col - FELT_CENTER;
-    const row = update.hexCoords.row - FELT_CENTER;
+    const { hexCoords, removeExplored } = update;
+
+    if (removeExplored) {
+      return;
+    }
+
+    const col = hexCoords.col - FELT_CENTER;
+    const row = hexCoords.row - FELT_CENTER;
     if (!this.exploredTiles.has(col)) {
       this.exploredTiles.set(col, new Set());
     }
@@ -317,6 +325,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    this.setHexagonEdges(new THREE.Group());
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],
@@ -353,6 +362,10 @@ export default class WorldmapScene extends HexagonScene {
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
+        const hexEdge = hexagonEdgeMesh.clone();
+        hexEdge.position.copy(pos);
+        hexEdge.position.y += 0.1;
+        this.addHexagonEdge(hexEdge);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
@@ -418,6 +431,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const geometry = new THREE.PlaneGeometry(2668, 1390.35);
     const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
+      texture.colorSpace = THREE.SRGBColorSpace;
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(scale, scale / 2.5);
@@ -449,6 +463,8 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.cachedMatrices.get(chunkKey)!.set(biome, { matrices: matrices as any, count });
     }
+    const hexEdges = this.getHexagonEdges();
+    this.cachedHexagonEdges.set(chunkKey, hexEdges);
   }
 
   removeCachedMatricesForChunk(startRow: number, startCol: number) {
@@ -459,10 +475,14 @@ export default class WorldmapScene extends HexagonScene {
   private applyCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
+    const cachedHexEdges = this.cachedHexagonEdges.get(chunkKey);
     if (cachedMatrices) {
       for (const [biome, { matrices, count }] of cachedMatrices) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         hexMesh.setMatricesAndCount(matrices, count);
+      }
+      if (cachedHexEdges) {
+        this.setHexagonEdges(cachedHexEdges);
       }
       return true;
     }

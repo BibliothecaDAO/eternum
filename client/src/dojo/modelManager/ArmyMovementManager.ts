@@ -355,6 +355,7 @@ export class ArmyMovementManager {
       .catch((e) => {
         this.positionModel.removeOverride(overrideId);
         this.staminaModel.removeOverride(overrideId);
+        this.tileModel.removeOverride(overrideId);
       });
   };
 
