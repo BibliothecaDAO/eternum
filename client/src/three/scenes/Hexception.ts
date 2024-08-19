@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
@@ -28,6 +28,7 @@ import InstancedModel from "../components/InstancedModel";
 
 const loader = new GLTFLoader();
 export default class HexceptionScene extends HexagonScene {
+  private hexceptionRadius = 4;
   private buildingModels: Map<BuildingType, InstancedModel> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
@@ -142,11 +143,11 @@ export default class HexceptionScene extends HexagonScene {
         if (buildingType === BuildingType[BuildingType.None] && innerCol && innerRow) {
           this.removeBuilding(innerCol, innerRow);
         }
-        this.updateHexceptionGrid(4);
+        this.updateHexceptionGrid(this.hexceptionRadius);
       },
     );
 
-    this.updateHexceptionGrid(4);
+    this.updateHexceptionGrid(this.hexceptionRadius);
     this.moveCameraToURLLocation();
   }
 
@@ -158,7 +159,7 @@ export default class HexceptionScene extends HexagonScene {
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.tileManager.placeBuilding(buildingType.type, normalizedCoords, buildingType.resource);
         this.clearBuildingMode();
-        this.updateHexceptionGrid(4);
+        this.updateHexceptionGrid(this.hexceptionRadius);
       }
     } else {
       // if not building mode
@@ -174,8 +175,20 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
   }
-  protected onHexagonMouseMove({ position }: { position: THREE.Vector3 }): void {
+  protected onHexagonMouseMove({ position, hexCoords }: { position: THREE.Vector3; hexCoords: HexPosition }): void {
+    const normalizedCoords = { col: BUILDINGS_CENTER[0] - hexCoords.col, row: BUILDINGS_CENTER[1] - hexCoords.row };
+    //check if it on main hex
+
     this.buildingPreview?.setBuildingPosition(position);
+
+    if (
+      this.tileManager.isHexOccupied(normalizedCoords) ||
+      (normalizedCoords.col === BUILDINGS_CENTER[0] && normalizedCoords.row === BUILDINGS_CENTER[1])
+    ) {
+      this.buildingPreview?.setBuildingColor(new THREE.Color(0xff0000));
+    } else {
+      this.buildingPreview?.resetBuildingColor();
+    }
   }
   protected onHexagonRightClick(): void {}
   protected onHexagonDoubleClick(): void {}
@@ -301,8 +314,9 @@ export default class HexceptionScene extends HexagonScene {
         const normalizedCoords = { col: BUILDINGS_CENTER[0] - col, row: BUILDINGS_CENTER[1] - row };
 
         let withBuilding = false;
-        this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
-
+        if (isMainHex) {
+          this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
+        }
         const building = existingBuildings.find(
           (value) => value.col === normalizedCoords.col && value.row === normalizedCoords.row,
         );
@@ -317,7 +331,7 @@ export default class HexceptionScene extends HexagonScene {
           }
           buildingObj.updateMatrix();
           this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
-        } else {
+        } else if (isMainHex) {
           this.highlights.push(getHexForWorldPosition(dummy.position));
         }
 
