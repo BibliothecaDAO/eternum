@@ -522,7 +522,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         );
         assert!(building.entity_id != 0, "building does not exist");
 
-        // stop production related to building
+        // restart production related to building
         building.start_production(world);
     }
 
