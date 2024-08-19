@@ -17,7 +17,7 @@ import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
 import { StructureManager } from "../components/StructureManager";
-import { TileSystemUpdate } from "../systems/types";
+import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
 import { StructurePreview } from "../components/StructurePreview";
@@ -43,6 +43,8 @@ export default class WorldmapScene extends HexagonScene {
   private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
+
+  private armySubscription: any;
 
   private realmEntityId: ID = 0;
 
@@ -93,7 +95,11 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager = new StructureManager(this.scene);
     this.battleManager = new BattleManager(this.scene);
 
-    this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
+    this.armySubscription?.unsubscribe();
+    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) =>
+      this.armyManager.onUpdate(update),
+    );
+
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Structure.onUpdate((value) => {

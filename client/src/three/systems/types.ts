@@ -8,6 +8,7 @@ export type ArmySystemUpdate = {
   hexCoords: HexPosition;
   isMine: boolean;
   battleId: ID;
+  defender: boolean;
   currentHealth: bigint;
 };
 
