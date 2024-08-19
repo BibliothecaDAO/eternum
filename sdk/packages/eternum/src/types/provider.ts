@@ -198,6 +198,22 @@ export interface DestroyBuildingProps extends SystemSigner {
   };
 }
 
+export interface PauseProductionProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}
+
+export interface ResumeProductionProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}
+
 export interface CreateBankProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
   coord: {
