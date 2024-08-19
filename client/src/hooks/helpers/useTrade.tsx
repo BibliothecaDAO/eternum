@@ -141,7 +141,7 @@ export function useGetMyOffers(): MarketInterface[] {
 
   const { computeTrades } = useTrade();
 
-  const { realmEntityId } = useUIStore();
+  const realmEntityId = useUIStore((state) => state.realmEntityId);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
