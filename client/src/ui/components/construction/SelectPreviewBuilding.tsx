@@ -43,10 +43,10 @@ import { HintSection } from "../hints/HintModal";
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realm } = useGetRealm(realmEntityId);
+  const { realm } = useGetRealm(structureEntityId);
 
   const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
@@ -78,7 +78,7 @@ export const SelectPreviewBuildingMenu = () => {
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(realmEntityId, resourceCost.resource);
+      const balance = getBalance(structureEntityId, resourceCost.resource);
       return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
@@ -134,7 +134,7 @@ export const SelectPreviewBuildingMenu = () => {
                   }}
                   active={previewBuilding?.resource === resourceId}
                   name={resource?.trait}
-                  toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
+                  toolTip={<ResourceInfo resourceId={resourceId} entityId={structureEntityId} />}
                   hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
                 />
@@ -198,7 +198,7 @@ export const SelectPreviewBuildingMenu = () => {
                     }}
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
-                    toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
+                    toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
                   />
@@ -247,7 +247,7 @@ export const SelectPreviewBuildingMenu = () => {
                     }}
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
-                    toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
+                    toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
                   />
@@ -257,7 +257,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
     ],
-    [realm, realmEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, structureEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (

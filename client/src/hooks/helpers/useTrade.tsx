@@ -141,12 +141,12 @@ export function useGetMyOffers(): MarketInterface[] {
 
   const { computeTrades } = useTrade();
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
 
-  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: realmEntityId })]);
+  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: structureEntityId })]);
 
   useMemo((): any => {
     if (!nextBlockTimestamp) return;

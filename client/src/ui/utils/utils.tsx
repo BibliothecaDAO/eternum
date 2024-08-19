@@ -226,8 +226,8 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     });
 };
 
-export const isRealmSelected = (realmEntityId: ID, structures: any) => {
-  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
+export const isRealmSelected = (structureEntityId: ID, structures: any) => {
+  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
   return selectedStructure?.category === "Realm";
 };
 

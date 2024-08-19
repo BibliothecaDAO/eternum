@@ -12,7 +12,7 @@ import { useMemo } from "react";
 export const ActionInfo = () => {
   const { hoveredHex, selectedEntityId, travelPaths } = useUIStore((state) => state.armyActions);
   const { getBalance } = getResourceBalance();
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const travelPath = useMemo(() => {
     if (hoveredHex) return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
@@ -35,12 +35,12 @@ export const ActionInfo = () => {
               <ResourceCost
                 amount={-EternumGlobalConfig.exploration.wheatBurn}
                 resourceId={ResourcesIds.Wheat}
-                balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
+                balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
                 amount={-EternumGlobalConfig.exploration.fishBurn}
                 resourceId={ResourcesIds.Fish}
-                balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
+                balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
             </div>
           )}

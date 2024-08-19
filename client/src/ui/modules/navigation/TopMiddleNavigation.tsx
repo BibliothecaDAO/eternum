@@ -47,7 +47,7 @@ export const TopMiddleNavigation = () => {
   const { playerStructures } = useEntities();
   const { hexPosition } = useQuery();
 
-  const structureEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
