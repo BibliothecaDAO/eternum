@@ -182,6 +182,7 @@ export default class GameRenderer {
 
   private setupListeners() {
     window.addEventListener("urlChanged", this.handleURLChange);
+    window.addEventListener("popstate", this.handleURLChange);
     window.addEventListener("resize", this.onWindowResize.bind(this));
   }
 

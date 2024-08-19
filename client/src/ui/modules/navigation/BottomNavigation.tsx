@@ -9,13 +9,13 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
-import { useLocation } from "wouter";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { Assistant } from "../assistant/Assistant";
 import { Guilds } from "../guilds/Guilds";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 export enum MenuEnum {
   military = "military",
@@ -25,7 +25,7 @@ export enum MenuEnum {
 }
 
 export const BottomNavigation = () => {
-  const [location, _] = useLocation();
+  const { isMapView } = useQuery();
 
   const realmEntityId = useUIStore((state) => state.realmEntityId);
   const { quests } = useQuests();
@@ -35,8 +35,6 @@ export const BottomNavigation = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
-  const isWorldView = useMemo(() => location === "/map", [location]);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
@@ -60,7 +58,7 @@ export const BottomNavigation = () => {
               disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
-            {questToClaim && !isWorldView && (
+            {questToClaim && !isMapView && (
               <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
                 <div className="text-xs">Claim your reward</div>
