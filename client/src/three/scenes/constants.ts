@@ -20,7 +20,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
 export const buildingModelPaths: Record<BuildingType, string> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
-  [BuildingType.Bank]: "/models/buildings/bank.glb",
+  [BuildingType.Bank]: "/models/buildings/market.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
   [BuildingType.Castle]: "/models/buildings/castle2.glb",
@@ -74,7 +74,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     "models/buildings/hyperstructure_half.glb",
     "models/buildings/hyperstructure_final.glb",
   ],
-  [StructureType.Bank]: ["models/buildings/bank.glb"],
+  [StructureType.Bank]: ["/models/buildings/market.glb"],
   [StructureType.FragmentMine]: ["models/buildings/mine.glb"],
   // placeholder for now
   [StructureType.Settlement]: ["models/buildings/mine.glb"],
@@ -85,7 +85,7 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/shard_label.png",
   // placeholder for now
-  [StructureType.Bank]: "textures/shard_label.png",
+  [StructureType.Bank]: "",
   // placeholder for now
   [StructureType.Settlement]: "textures/shard_label.png",
 };

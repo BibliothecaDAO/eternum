@@ -130,6 +130,7 @@ export default class GameRenderer {
     this.controls.enablePan = true;
     this.controls.panSpeed = 1;
     this.controls.zoomToCursor = true;
+    this.controls.minDistance = 5;
     this.controls.maxDistance = 20;
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.1;
@@ -151,6 +152,28 @@ export default class GameRenderer {
     this.controls.keyPanSpeed = 75.0;
     this.controls.listenToKeyEvents(document.body);
 
+    document.addEventListener(
+      "focus",
+      (event) => {
+        // check if the focused element is input
+        if (event.target instanceof HTMLInputElement) {
+          this.controls.stopListenToKeyEvents();
+        }
+      },
+      true,
+    );
+
+    document.addEventListener(
+      "blur",
+      (event) => {
+        // check if the focused element is input
+        if (event.target instanceof HTMLInputElement) {
+          this.controls.listenToKeyEvents(document.body);
+        }
+      },
+      true,
+    );
+
     this.renderModels();
 
     // Init animation
@@ -159,6 +182,7 @@ export default class GameRenderer {
 
   private setupListeners() {
     window.addEventListener("urlChanged", this.handleURLChange);
+    window.addEventListener("popstate", this.handleURLChange);
     window.addEventListener("resize", this.onWindowResize.bind(this));
   }
 
