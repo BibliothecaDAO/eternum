@@ -1,11 +1,10 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
-import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { Position as PositionInterface } from "@/types/Position";
-import { useLocation } from "wouter";
 import { useEntities } from "./useEntities";
+import { useQuery } from "./useQuery";
 
 export const useStructureEntityId = () => {
   const {
@@ -17,8 +16,7 @@ export const useStructureEntityId = () => {
     },
   } = useDojo();
 
-  const searchString = useSearch();
-  const [location, _] = useLocation();
+  const { hexPosition, isMapView } = useQuery();
   const setStructureEntityId = useUIStore((state) => state.setRealmEntityId);
   const structureEntityId = useUIStore((state) => state.realmEntityId);
 
@@ -29,17 +27,15 @@ export const useStructureEntityId = () => {
   }, [structureEntityId]);
 
   useEffect(() => {
-    const params = new URLSearchParams(searchString);
     const { x, y } = new PositionInterface({
-      x: Number(params.get("col")),
-      y: Number(params.get("row")),
+      x: hexPosition.col,
+      y: hexPosition.row,
     }).getContract();
 
     const structures = runQuery([Has(Structure), HasValue(Position, { x, y })]);
     const structureOwner = structures.size > 0 ? getComponentValue(Owner, structures.values().next().value) : null;
 
-    const isWorldView = location.includes(`/map`);
-    if (isWorldView) {
+    if (isMapView) {
       if (structureOwner?.address !== BigInt(address)) {
         setStructureEntityId(defaultPlayerStructure.entity_id);
         return;
@@ -51,5 +47,5 @@ export const useStructureEntityId = () => {
         setStructureEntityId(0);
       }
     }
-  }, [defaultPlayerStructure, searchString, location]);
+  }, [defaultPlayerStructure, isMapView]);
 };

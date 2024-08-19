@@ -24,7 +24,6 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, Sparkles, ShieldQuestion } from "lucide-react";
 import { useMemo } from "react";
-import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 const slideDown = {
@@ -42,7 +41,7 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const [location, setLocation] = useLocation();
+  const { isMapView, setLocationAndEmitEvent } = useQuery();
 
   const { setup } = useDojo();
   const { playerStructures } = useEntities();
@@ -65,17 +64,12 @@ export const TopMiddleNavigation = () => {
     return playerStructures();
   }, [structureEntityId]);
 
-  const isHexView = useMemo(() => {
-    return location.includes(`/hex`);
-  }, [location]);
-
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
 
     const url = new Position(structure!.position).toHexLocationUrl();
 
-    setLocation(url);
-    window.dispatchEvent(new Event("urlChanged"));
+    setLocationAndEmitEvent(url);
   };
 
   const goToMapView = (entityId?: ID) => {
@@ -89,8 +83,7 @@ export const TopMiddleNavigation = () => {
 
     setPreviewBuilding(null);
 
-    setLocation(url);
-    window.dispatchEvent(new Event("urlChanged"));
+    setLocationAndEmitEvent(url);
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -176,7 +169,7 @@ export const TopMiddleNavigation = () => {
               <Select
                 value={structureEntityId.toString()}
                 onValueChange={(a: string) => {
-                  !isHexView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
                 }}
               >
                 <SelectTrigger>
@@ -220,19 +213,19 @@ export const TopMiddleNavigation = () => {
               "animate-pulse":
                 (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
                 selectedQuest.status !== QuestStatus.Completed &&
-                isHexView,
+                !isMapView,
             })}
             onClick={() => {
-              if (location !== "/map") {
+              if (!isMapView) {
                 goToMapView();
               } else {
                 goToHexView(structureEntityId);
               }
             }}
           >
-            {location === "/map" ? "Realm" : "World"}
+            {isMapView ? "Realm" : "World"}
           </Button>
-          {location === "/map" && (
+          {isMapView && (
             <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
           )}
         </div>

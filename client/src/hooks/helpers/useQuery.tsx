@@ -4,10 +4,14 @@ import { useSearch } from "wouter/use-location";
 
 export const useQuery = () => {
   const searchString = useSearch();
-  const [location, _] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  const setLocationAndEmitEvent = (url: string) => {
+    setLocation(url);
+    window.dispatchEvent(new Event("urlChanged"));
+  };
 
   const isMapView = location.includes(`/map`);
-  const isHexView = !isMapView;
 
   const hexPosition = useMemo(() => {
     const params = new URLSearchParams(searchString);
@@ -21,9 +25,9 @@ export const useQuery = () => {
   };
 
   return {
-    hexPosition,
     isLocation,
-    isHexView,
+    setLocationAndEmitEvent,
+    hexPosition,
     isMapView,
   };
 };

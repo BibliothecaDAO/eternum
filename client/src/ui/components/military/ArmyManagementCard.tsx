@@ -13,7 +13,6 @@ import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from
 import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
 
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
@@ -22,6 +21,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
 import clsx from "clsx";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -324,7 +324,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 };
 
 export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
-  const [location, setLocation] = useLocation();
+  const { setLocationAndEmitEvent, isMapView } = useQuery();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const url = new PositionInterface(position).toMapLocationUrl();
@@ -336,12 +336,10 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
         className,
       )}
       onClick={() => {
-        setLocation(url);
-        if (location === "/map") {
-          window.dispatchEvent(new Event("urlChanged"));
+        setLocationAndEmitEvent(url);
+        if (isMapView) {
         } else {
           setIsLoadingScreenEnabled(true);
-          window.dispatchEvent(new Event("urlChanged"));
         }
       }}
     />
