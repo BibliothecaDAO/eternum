@@ -1,5 +1,4 @@
 mod commands;
-
 use ::serenity::futures::StreamExt;
 use poise::serenity_prelude as serenity;
 use sqlx::SqlitePool;
@@ -18,20 +17,21 @@ struct Data {
     database: SqlitePool,
 }
 
-fn setup_torii_client() {
+async fn setup_torii_client(token: String, database: &SqlitePool) {
     let torii_url = "http://0.0.0.0:8080".to_string();
     let rpc_url = "http://0.0.0.0:5050".to_string();
     let relay_url = "/ip4/127.0.0.1/tcp/9090".to_string();
     let world = Felt::from_hex_unchecked(
         "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",
     );
-    // let (tx, rx) = unbounded();
 
     tokio::spawn(async move {
+        let http = serenity::Http::new(&token.clone());
         println!("Setting up Torii client");
         let client = Client::new(torii_url, rpc_url, relay_url, world)
             .await
             .unwrap();
+
         let mut rcv = client
             .on_entity_updated(vec![EntityKeysClause::Keys(KeysClause {
                 keys: vec![],
@@ -44,7 +44,13 @@ fn setup_torii_client() {
         println!("Torii client setup");
         while let Some(Ok((_, entity))) = rcv.next().await {
             println!("Received Dojo entity: {:?}", entity);
-            // tx.send(entity).await.unwrap();
+
+            if let Some(user) = http.get_user(340080285993664512.into()).await.ok() {
+                let dm_channel = user.create_dm_channel(&http).await;
+                if let Ok(channel) = dm_channel {
+                    let _ = channel.say(&http, "Received Dojo entity").await;
+                }
+            }
         }
     });
 
@@ -54,6 +60,7 @@ fn setup_torii_client() {
 #[tokio::main]
 async fn main() {
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
+    let token_clone = token.clone();
     let database_url = std::env::var("DATABASE_URL").expect("missing DATABASE_URL");
     let intents = serenity::GatewayIntents::non_privileged();
 
@@ -73,12 +80,11 @@ async fn main() {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                setup_torii_client(token_clone, &database).await;
                 Ok(Data { database })
             })
         })
         .build();
-
-    setup_torii_client();
 
     let client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
