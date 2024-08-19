@@ -418,6 +418,9 @@ mod combat_systems {
     use eternum::models::stamina::{Stamina, StaminaCustomTrait};
     use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::models::weight::Weight;
+
+    use eternum::models::name::{AddressName, EntityName};
+
     use eternum::models::{
         combat::{
             Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl,
@@ -743,7 +746,9 @@ mod combat_systems {
                     event_id: EventType::BattleStart,
                     battle_entity_id: battle_id,
                     attacker,
+                    attacker_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     attacker_army_entity_id: attacking_army_id,
+                    defender_name: get!(world, defender, AddressName).name,
                     defender,
                     defender_army_entity_id: defending_army_id,
                     duration_left: battle.duration_left,
@@ -846,6 +851,7 @@ mod combat_systems {
                     event_id: EventType::BattleJoin,
                     battle_entity_id: battle_id,
                     joiner,
+                    joiner_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     joiner_army_entity_id: army_id,
                     joiner_side: battle_side,
                     duration_left: battle.duration_left,
@@ -878,6 +884,7 @@ mod combat_systems {
                     event_id: EventType::BattleLeave,
                     battle_entity_id: battle_id,
                     leaver: starknet::get_caller_address(),
+                    leaver_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     leaver_army_entity_id: army_id,
                     leaver_side: caller_army.battle_side,
                     duration_left: battle.duration_left,
@@ -938,6 +945,7 @@ mod combat_systems {
                     event_id: EventType::BattleClaim,
                     structure_entity_id: structure_id,
                     claimer: starknet::get_caller_address(),
+                    claimer_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     claimer_army_entity_id: army_id,
                     previous_owner,
                     x: structure_position.x,
@@ -1273,6 +1281,7 @@ mod combat_systems {
                     id: world.uuid(),
                     event_id: EventType::BattlePillage,
                     pillager: starknet::get_caller_address(),
+                    pillager_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     pillager_army_entity_id: army_id,
                     pillaged_structure_owner: structure_owner,
                     pillaged_structure_entity_id: structure_id,

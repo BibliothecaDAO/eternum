@@ -1,10 +1,12 @@
 mod commands;
-use std::convert::TryInto;
-
+mod types;
 use poise::serenity_prelude as serenity;
 use serenity::futures::StreamExt;
 use serenity::model::id::{ChannelId, GuildId, UserId};
 use sqlx::SqlitePool;
+use std::convert::TryInto;
+use std::sync::Arc;
+use tokio::sync::mpsc;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -19,6 +21,8 @@ use torii_grpc::{
 };
 
 use dojo_types::primitive::Primitive::ContractAddress;
+
+use crate::types::{process_event, EventHandler, MessageDispatcher};
 
 struct Data {
     database: SqlitePool,
@@ -57,68 +61,34 @@ async fn setup_torii_client(token: String, database: SqlitePool) {
             .await
             .unwrap();
 
-        println!("Torii client setup");
-        while let Some(Ok((_, entity))) = rcv.next().await {
-            if let Some(defender_address) = extract_defender_address(&entity) {
-                println!("Defender address: {}", defender_address);
-                match check_user_in_database(&database, &defender_address).await {
-                    Ok(Some(Some(discord))) => {
-                        println!("Defender found in the database: {}", defender_address);
-                        if let Ok(discord_id) = discord.parse::<u64>() {
-                            if let Some(user) = http.get_user(UserId::new(discord_id)).await.ok() {
-                                println!("Retrieved user: {}", user.name);
-                                match user.create_dm_channel(&http).await {
-                                    Ok(channel) => {
-                                        println!("DM channel created successfully");
-                                        match channel.say(&http, "You have been attacked").await {
-                                            Ok(_) => println!("Message sent successfully"),
-                                            Err(e) => println!("Failed to send message: {:?}", e),
-                                        }
-                                    }
-                                    Err(e) => println!("Failed to create DM channel: {:?}", e),
-                                }
-                            } else {
-                                println!("Failed to retrieve user with ID: {}", discord);
-                            }
-                        } else {
-                            println!("Failed to parse discord ID: {}", discord);
-                        }
-                    }
-                    Ok(Some(None)) | Ok(None) => {
-                        println!("Defender not found in the database: {}", defender_address);
-                    }
-                    Err(e) => println!("Error checking database: {:?}", e),
-                }
-            } else {
-                println!("Failed to extract defender address from entity");
+        let (event_sender, mut event_receiver) = mpsc::channel(100);
+        let (message_sender, message_receiver) = mpsc::channel(100);
+
+        let event_handler = EventHandler {
+            event_sender,
+            database: database.clone(),
+        };
+        let mut message_dispatcher = MessageDispatcher {
+            http: Arc::new(serenity::Http::new(&token)),
+            message_receiver,
+        };
+
+        tokio::spawn(async move {
+            while let Some(event) = event_receiver.recv().await {
+                process_event(event, &database, &message_sender).await;
             }
+        });
+
+        tokio::spawn(async move {
+            message_dispatcher.run().await;
+        });
+
+        while let Some(Ok((_, entity))) = rcv.next().await {
+            event_handler.handle_event(entity).await;
         }
     });
 
     println!("Torii client setup task spawned");
-}
-
-fn extract_defender_address(entity: &Entity) -> Option<String> {
-    // println!("Entity: {:?}", entity);
-    entity.models.iter().find_map(|model| {
-        if model.name == "eternum-BattleStartData" {
-            model.children.iter().find_map(|member| {
-                if member.name == "defender" {
-                    if let dojo_types::schema::Ty::Primitive(ContractAddress(Some(address))) =
-                        &member.ty
-                    {
-                        Some(format!("0x{:x}", address))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-        } else {
-            None
-        }
-    })
 }
 
 #[tokio::main]
