@@ -65,7 +65,7 @@ export const BuildingEntityDetails = () => {
     });
   }, [selectedBuildingHex, isPaused]);
 
-  const handleDestoryBuilding = useCallback(() => {
+  const handleDestroyBuilding = useCallback(() => {
     const tileManager = new TileManager(dojo.setup, {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
@@ -111,7 +111,7 @@ export const BuildingEntityDetails = () => {
             >
               {isPaused ? "Resume" : "Pause"}
             </Button>
-            <Button onClick={handleDestoryBuilding} variant="danger" className="mt-3" withoutSound>
+            <Button onClick={handleDestroyBuilding} variant="danger" className="mt-3" withoutSound>
               Destroy
             </Button>
           </div>
