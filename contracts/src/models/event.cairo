@@ -10,7 +10,7 @@ pub struct EternumEvent {
     #[key]
     event_id: EventType,
     timestamp: u64,
-    data: EventData,
+    // data: EventData,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -32,7 +32,13 @@ pub enum EventData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
 pub struct BattleStartData {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
     battle_entity_id: ID,
     attacker: ContractAddress,
     attacker_army_entity_id: ID,
@@ -45,7 +51,13 @@ pub struct BattleStartData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
 pub struct BattleJoinData {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
     battle_entity_id: ID,
     joiner: ContractAddress,
     joiner_army_entity_id: ID,
@@ -56,7 +68,13 @@ pub struct BattleJoinData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
 pub struct BattleLeaveData {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
     battle_entity_id: ID,
     leaver: ContractAddress,
     leaver_army_entity_id: ID,
@@ -67,7 +85,13 @@ pub struct BattleLeaveData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
 pub struct BattleClaimData {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
     structure_entity_id: ID,
     claimer: ContractAddress,
     claimer_army_entity_id: ID,
@@ -78,7 +102,13 @@ pub struct BattleClaimData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
 pub struct BattlePillageData {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
     pillager: ContractAddress,
     pillager_army_entity_id: ID,
     pillaged_structure_owner: ContractAddress,
