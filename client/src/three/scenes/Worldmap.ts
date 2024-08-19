@@ -20,6 +20,7 @@ import { StructureManager } from "../components/StructureManager";
 import { TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
+import { LocationManager } from "../helpers/LocationManager";
 import { StructurePreview } from "../components/StructurePreview";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { hexagonEdgeMesh } from "../geometry/HexagonGeometry";
@@ -174,8 +175,7 @@ export default class WorldmapScene extends HexagonScene {
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
     const url = new Position({ x: hexCoords.col, y: hexCoords.row }).toHexLocationUrl();
-    window.history.replaceState({}, "", url);
-    window.dispatchEvent(new Event("urlChanged"));
+    LocationManager.updateUrl(url);
   }
 
   protected onHexagonClick(hexCoords: HexPosition) {

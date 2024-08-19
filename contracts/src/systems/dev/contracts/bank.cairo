@@ -16,6 +16,7 @@ mod dev_bank_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl};
+    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
@@ -39,6 +40,8 @@ mod dev_bank_systems {
             set!(
                 world,
                 (
+                    Structure { entity_id: ADMIN_BANK_ENTITY_ID, category: StructureCategory::Bank },
+                    StructureCount { coord, count: 1 },
                     Bank { entity_id: ADMIN_BANK_ENTITY_ID, owner_fee_num, owner_fee_denom, exists: true },
                     Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },
                     Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin }

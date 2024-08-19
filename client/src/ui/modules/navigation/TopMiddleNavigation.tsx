@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
@@ -16,16 +16,14 @@ import {
   EternumGlobalConfig,
   ID,
   STOREHOUSE_CAPACITY,
-  StructureType,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
+import { Crown, Landmark, Pickaxe, Sparkles, ShieldQuestion } from "lucide-react";
 import { useMemo } from "react";
-import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 const slideDown = {
@@ -35,7 +33,7 @@ const slideDown = {
 
 // use a different icon for each structure depending on their category
 const structureIcons: Record<string, JSX.Element> = {
-  None: <div />,
+  None: <ShieldQuestion />,
   Realm: <Crown />,
   Bank: <Landmark />,
   Hyperstructure: <Sparkles />,
@@ -43,38 +41,35 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const [location, setLocation] = useLocation();
+  const { isMapView, handleUrlChange } = useQuery();
 
   const { setup } = useDojo();
   const { playerStructures } = useEntities();
   const { hexPosition } = useQuery();
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
-  const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
+  const structureEntityId = useUIStore((state) => state.realmEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
+  const { getEntityInfo } = getEntitiesUtils();
+
+  const structure = getEntityInfo(structureEntityId);
+
+  const structurePosition = useMemo(() => {
+    return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
+  }, [structureEntityId]);
+
   // realms always first
   const structures = useMemo(() => {
-    return playerStructures().sort((a, b) => {
-      if (a.category === StructureType[StructureType.Realm]) return -1;
-      if (b.category === StructureType[StructureType.Realm]) return 1;
-      return a.category!.localeCompare(b.category!);
-    });
-  }, [playerStructures().length, realmEntityId]);
-
-  const isHexView = useMemo(() => {
-    return location.includes(`/hex`);
-  }, [location]);
+    return playerStructures();
+  }, [structureEntityId]);
 
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
 
     const url = new Position(structure!.position).toHexLocationUrl();
 
-    setLocation(url);
-    window.dispatchEvent(new Event("urlChanged"));
-    setRealmEntityId(entityId);
+    handleUrlChange(url);
   };
 
   const goToMapView = (entityId?: ID) => {
@@ -87,22 +82,21 @@ export const TopMiddleNavigation = () => {
     const url = new Position({ x: newPosition.x, y: newPosition.y }).toMapLocationUrl();
 
     setPreviewBuilding(null);
-    if (entityId) {
-      setRealmEntityId(entityId);
-    }
 
-    setLocation(url);
-    window.dispatchEvent(new Event("urlChanged"));
+    handleUrlChange(url);
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const population = useComponentValue(setup.components.Population, getEntityIdFromKeys([BigInt(realmEntityId || 0)]));
+  const population = useComponentValue(
+    setup.components.Population,
+    getEntityIdFromKeys([BigInt(structureEntityId || 0)]),
+  );
 
   const storehouses = useMemo(() => {
     const quantity =
       getComponentValue(
         setup.components.BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(BuildingType.Storehouse)]),
+        getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
@@ -171,30 +165,39 @@ export const TopMiddleNavigation = () => {
 
         <div className="flex min-w-72 gap-1 text-gold bg-map justify-center border text-center rounded bg-black/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
-            <Select
-              value={realmEntityId.toString()}
-              onValueChange={(a: string) => {
-                !isHexView ? goToMapView(ID(a)) : goToHexView(ID(a));
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Realm" />
-              </SelectTrigger>
-              <SelectContent className="bg-black/90">
-                {structures.map((structure, index) => (
-                  <SelectItem
-                    className="flex justify-between"
-                    key={index}
-                    value={structure.entity_id?.toString() || ""}
-                  >
-                    <h5 className="self-center flex gap-4">
-                      {structureIcons[structure!.category!]}
-                      {structure.name}
-                    </h5>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {structure.isMine ? (
+              <Select
+                value={structureEntityId.toString()}
+                onValueChange={(a: string) => {
+                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Structure" />
+                </SelectTrigger>
+                <SelectContent className="bg-black/90">
+                  {structures.map((structure, index) => (
+                    <SelectItem
+                      className="flex justify-between"
+                      key={index}
+                      value={structure.entity_id?.toString() || ""}
+                    >
+                      <h5 className="self-center flex gap-4">
+                        {structureIcons[structure!.category!]}
+                        {structure.name}
+                      </h5>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div>
+                <div className="self-center flex gap-4">
+                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons["None"]}
+                  {structure.structureCategory ? structure.name : "Unsettled"}
+                </div>
+              </div>
+            )}
           </div>
           <div
             className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
@@ -210,20 +213,20 @@ export const TopMiddleNavigation = () => {
               "animate-pulse":
                 (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
                 selectedQuest.status !== QuestStatus.Completed &&
-                isHexView,
+                !isMapView,
             })}
             onClick={() => {
-              if (location !== "/map") {
+              if (!isMapView) {
                 goToMapView();
               } else {
-                goToHexView(realmEntityId);
+                goToHexView(structureEntityId);
               }
             }}
           >
-            {location === "/map" ? "Realm" : "World"}
+            {isMapView ? "Realm" : "World"}
           </Button>
-          {location === "/map" && (
-            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: hexPosition.col, y: hexPosition.row }} />
+          {isMapView && (
+            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
           )}
         </div>
       </motion.div>
