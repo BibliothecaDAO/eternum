@@ -147,6 +147,7 @@ export default class GameRenderer {
     this.controls.enablePan = true;
     this.controls.panSpeed = 1;
     this.controls.zoomToCursor = true;
+    this.controls.minDistance = 5;
     this.controls.maxDistance = 20;
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.1;
