@@ -560,7 +560,9 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         assert!(building.entity_id != 0, "building does not exist");
 
         // stop production related to building
-        building.stop_production(world);
+        if !building.paused {
+            building.stop_production(world);
+        }
 
         // decrease building type count for realm
         let mut building_quantity: BuildingQuantityv2 = get!(
@@ -588,15 +590,10 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         // set population
         set!(world, (population));
 
-        // remove building
         let destroyed_building_category = building.category;
-        building.entity_id = 0;
-        building.category = BuildingCategory::None;
-        building.outer_entity_id = 0;
-        building.produced_resource_type = 0;
-        building.bonus_percent = 0;
 
-        set!(world, (building));
+        // remove building
+        delete!(world, (building));
 
         destroyed_building_category
     }
