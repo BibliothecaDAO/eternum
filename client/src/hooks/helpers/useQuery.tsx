@@ -6,7 +6,7 @@ export const useQuery = () => {
   const searchString = useSearch();
   const [location, setLocation] = useLocation();
 
-  const setLocationAndEmitEvent = (url: string) => {
+  const handleUrlChange = (url: string) => {
     setLocation(url);
     window.dispatchEvent(new Event("urlChanged"));
   };
@@ -26,7 +26,7 @@ export const useQuery = () => {
 
   return {
     isLocation,
-    setLocationAndEmitEvent,
+    handleUrlChange,
     hexPosition,
     isMapView,
   };

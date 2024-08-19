@@ -384,7 +384,7 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
 const NavigateToRealm = ({ text }: { text: string }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const { setLocationAndEmitEvent } = useQuery();
+  const { handleUrlChange } = useQuery();
   const { playerRealms } = useEntities();
 
   const url = new Position(playerRealms()[0]?.position).toHexLocationUrl();
@@ -397,7 +397,7 @@ const NavigateToRealm = ({ text }: { text: string }) => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
-          setLocationAndEmitEvent(url);
+          handleUrlChange(url);
           window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
         }, 250);
       }}

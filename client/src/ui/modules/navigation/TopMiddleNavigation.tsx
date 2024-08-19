@@ -41,7 +41,7 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const { isMapView, setLocationAndEmitEvent } = useQuery();
+  const { isMapView, handleUrlChange } = useQuery();
 
   const { setup } = useDojo();
   const { playerStructures } = useEntities();
@@ -69,7 +69,7 @@ export const TopMiddleNavigation = () => {
 
     const url = new Position(structure!.position).toHexLocationUrl();
 
-    setLocationAndEmitEvent(url);
+    handleUrlChange(url);
   };
 
   const goToMapView = (entityId?: ID) => {
@@ -83,7 +83,7 @@ export const TopMiddleNavigation = () => {
 
     setPreviewBuilding(null);
 
-    setLocationAndEmitEvent(url);
+    handleUrlChange(url);
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);

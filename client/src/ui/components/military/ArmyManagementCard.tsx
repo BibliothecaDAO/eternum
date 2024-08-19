@@ -324,7 +324,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 };
 
 export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
-  const { setLocationAndEmitEvent, isMapView } = useQuery();
+  const { handleUrlChange, isMapView } = useQuery();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const url = new PositionInterface(position).toMapLocationUrl();
@@ -336,9 +336,8 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
         className,
       )}
       onClick={() => {
-        setLocationAndEmitEvent(url);
-        if (isMapView) {
-        } else {
+        handleUrlChange(url);
+        if (!isMapView) {
           setIsLoadingScreenEnabled(true);
         }
       }}
