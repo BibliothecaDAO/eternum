@@ -225,6 +225,9 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   setup() {
+    this.controls.maxDistance = 20;
+    this.controls.enablePan = true;
+    this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
   }
 
