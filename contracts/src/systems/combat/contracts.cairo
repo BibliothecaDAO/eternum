@@ -390,7 +390,10 @@ mod combat_systems {
         BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-    use eternum::models::event::{EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData};
+    use eternum::models::event::{
+        EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
+        BattlePillageData
+    };
 
     use eternum::models::movable::{Movable, MovableCustomTrait};
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
@@ -690,7 +693,11 @@ mod combat_systems {
             let id = world.uuid();
 
             let attacker = starknet::get_caller_address();
-            let defender = get!(world, defending_army_id, Owner).address;
+            let defender_entity_owner = get!(world, defending_army_id, EntityOwner).entity_owner_id;
+            let defender = get!(world, defender_entity_owner, Owner).address;
+
+            let protectee = get!(world, defending_army_id, Protectee).protectee_id;
+            let defender_structure = get!(world, protectee, Structure);
             emit!(
                 world,
                 EternumEvent {
@@ -699,11 +706,15 @@ mod combat_systems {
                     timestamp: starknet::get_block_timestamp(),
                     data: EventData::BattleStart(
                         BattleStartData {
+                            battle_entity_id: battle_id,
                             attacker,
-                            defender,
                             attacker_army_entity_id: attacking_army_id,
+                            defender,
                             defender_army_entity_id: defending_army_id,
-                            duration_left: 100,
+                            duration_left: battle.duration_left,
+                            x: battle_position.x,
+                            y: battle_position.y,
+                            structure_type: defender_structure.category,
                         }
                     ),
                 }
@@ -792,6 +803,7 @@ mod combat_systems {
 
             let id = world.uuid();
             let joiner = starknet::get_caller_address();
+
             emit!(
                 world,
                 EternumEvent {
@@ -800,10 +812,13 @@ mod combat_systems {
                     timestamp: starknet::get_block_timestamp(),
                     data: EventData::BattleJoin(
                         BattleJoinData {
+                            battle_entity_id: battle_id,
                             joiner,
                             joiner_army_entity_id: army_id,
                             joiner_side: battle_side,
                             duration_left: battle.duration_left,
+                            x: battle_position.x,
+                            y: battle_position.y,
                         }
                     ),
                 }
@@ -824,6 +839,8 @@ mod combat_systems {
             let mut battle: Battle = get!(world, battle_id, Battle);
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
 
+            let battle_position = get!(world, battle_id, Position);
+
             emit!(
                 world,
                 EternumEvent {
@@ -832,10 +849,13 @@ mod combat_systems {
                     timestamp: starknet::get_block_timestamp(),
                     data: EventData::BattleLeave(
                         BattleLeaveData {
+                            battle_entity_id: battle_id,
                             leaver: starknet::get_caller_address(),
                             leaver_army_entity_id: army_id,
                             leaver_side: caller_army.battle_side,
                             duration_left: battle.duration_left,
+                            x: battle_position.x,
+                            y: battle_position.y,
                         }
                     )
                 }
@@ -874,9 +894,33 @@ mod combat_systems {
                 assert!(!structure_army_health.is_alive(), "can only claim when structure army is dead");
             }
 
+            let previous_owner = get!(world, structure_id, Owner).address;
+
             let mut structure_owner: Owner = get!(world, structure_id, Owner);
             structure_owner.address = starknet::get_caller_address();
             set!(world, (structure_owner));
+
+            let structure_position = get!(world, structure_id, Position);
+
+            emit!(
+                world,
+                EternumEvent {
+                    id: world.uuid(),
+                    event_id: EventType::BattleClaim,
+                    timestamp: starknet::get_block_timestamp(),
+                    data: EventData::BattleClaim(
+                        BattleClaimData {
+                            structure_entity_id: structure_id,
+                            claimer: starknet::get_caller_address(),
+                            claimer_army_entity_id: army_id,
+                            previous_owner,
+                            x: structure_position.x,
+                            y: structure_position.y,
+                            structure_type: structure.category,
+                        }
+                    ),
+                }
+            );
         }
 
 
@@ -1169,6 +1213,33 @@ mod combat_systems {
                     pillaged_resources: pillaged_resources.span(),
                     destroyed_building_category
                 }),
+            );
+
+            let structure_owner = get!(world, structure_id, Owner).address;
+            emit!(
+                world,
+                EternumEvent {
+                    id: world.uuid(),
+                    event_id: EventType::BattlePillage,
+                    timestamp: starknet::get_block_timestamp(),
+                    data: EventData::BattlePillage(
+                        BattlePillageData {
+                            pillager: starknet::get_caller_address(),
+                            pillager_army_entity_id: army_id,
+                            pillaged_structure_owner: structure_owner,
+                            pillaged_structure_entity_id: structure_id,
+                            winner: if *attack_successful {
+                                BattleSide::Attack
+                            } else {
+                                BattleSide::Defence
+                            },
+                            x: structure_position.x,
+                            y: structure_position.y,
+                            structure_type: structure.category,
+                            pillaged_resources: pillaged_resources.span(),
+                        }
+                    ),
+                }
             );
         }
     }
