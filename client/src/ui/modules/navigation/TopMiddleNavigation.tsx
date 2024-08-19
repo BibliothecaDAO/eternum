@@ -16,7 +16,6 @@ import {
   EternumGlobalConfig,
   ID,
   STOREHOUSE_CAPACITY,
-  StructureType,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -50,7 +49,6 @@ export const TopMiddleNavigation = () => {
   const { hexPosition } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.realmEntityId);
-  const setStructureEntityId = useUIStore((state) => state.setRealmEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
@@ -64,12 +62,8 @@ export const TopMiddleNavigation = () => {
 
   // realms always first
   const structures = useMemo(() => {
-    return playerStructures().sort((a, b) => {
-      if (a.category === StructureType[StructureType.Realm]) return -1;
-      if (b.category === StructureType[StructureType.Realm]) return 1;
-      return a.category!.localeCompare(b.category!);
-    });
-  }, [playerStructures().length, structureEntityId]);
+    return playerStructures();
+  }, [structureEntityId]);
 
   const isHexView = useMemo(() => {
     return location.includes(`/hex`);
@@ -82,7 +76,6 @@ export const TopMiddleNavigation = () => {
 
     setLocation(url);
     window.dispatchEvent(new Event("urlChanged"));
-    setStructureEntityId(entityId);
   };
 
   const goToMapView = (entityId?: ID) => {
@@ -95,9 +88,6 @@ export const TopMiddleNavigation = () => {
     const url = new Position({ x: newPosition.x, y: newPosition.y }).toMapLocationUrl();
 
     setPreviewBuilding(null);
-    if (entityId) {
-      setStructureEntityId(entityId);
-    }
 
     setLocation(url);
     window.dispatchEvent(new Event("urlChanged"));
@@ -209,10 +199,10 @@ export const TopMiddleNavigation = () => {
               </Select>
             ) : (
               <div>
-                <h5 className="self-center flex gap-4">
-                  {structureIcons["None"]}
-                  {"Unsettled"}
-                </h5>
+                <div className="self-center flex gap-4">
+                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons["None"]}
+                  {structure.structureCategory ? structure.name : "Unsettled"}
+                </div>
               </div>
             )}
           </div>
@@ -235,9 +225,6 @@ export const TopMiddleNavigation = () => {
             onClick={() => {
               if (location !== "/map") {
                 goToMapView();
-                if (!structure.isMine) {
-                  setStructureEntityId(structures[0].entity_id);
-                }
               } else {
                 goToHexView(structureEntityId);
               }
