@@ -11,12 +11,16 @@ export class InteractiveHexManager {
   private hexes: Set<string> = new Set();
   private instanceMesh: THREE.InstancedMesh | null = null;
   private auraMesh: THREE.Mesh | null = null;
+  private particles: Particles;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createAuraMesh();
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onDoubleClick = this.onDoubleClick.bind(this);
+    this.particles = new Particles(scene);
+    this.particles.setParticleSize(0.2); // Set particle size to 2
+    this.particles.setLightIntensity(5); // Se
   }
 
   private createAuraMesh() {
@@ -78,7 +82,9 @@ export class InteractiveHexManager {
       if (intersectedObject instanceof THREE.InstancedMesh) {
         const instanceId = intersect.instanceId;
         if (instanceId !== undefined) {
-          return getHexagonCoordinates(intersectedObject, instanceId);
+          const clickedHex = getHexagonCoordinates(intersectedObject, instanceId);
+          this.particles.setPosition(clickedHex.position.x, 0.1, clickedHex.position.z);
+          return clickedHex;
         }
       }
     }
@@ -128,5 +134,71 @@ export class InteractiveHexManager {
 
   update() {
     this.rotateAura();
+    this.particles.update(0.01);
+  }
+}
+
+const PARTICLES_COUNT = 30;
+const PARTICLE_SPEED = 15;
+const PARTICLE_RESET_Y = 5;
+const PARTICLE_START_Y = -5;
+const LIGHT_COLOR = new THREE.Color(2, 2, 1);
+const PARICLE_COLOR = new THREE.Color(15, 12, 2);
+
+// Add these constants for particle position ranges
+const PARTICLE_X_RANGE = 2;
+const PARTICLE_Y_RANGE = 5;
+const PARTICLE_Z_RANGE = 2;
+
+export class Particles {
+  private pointsPositions: Float32Array;
+  private points: THREE.Points;
+  private light: THREE.PointLight;
+
+  constructor(scene: THREE.Scene) {
+    this.pointsPositions = new Float32Array(PARTICLES_COUNT * 3);
+    for (let i = 0; i < PARTICLES_COUNT; i++) {
+      this.pointsPositions[i * 3] = Math.random() * PARTICLE_X_RANGE - PARTICLE_X_RANGE / 2; // x
+      this.pointsPositions[i * 3 + 1] = Math.random() * PARTICLE_Y_RANGE - PARTICLE_Y_RANGE / 2; // y
+      this.pointsPositions[i * 3 + 2] = Math.random() * PARTICLE_Z_RANGE - PARTICLE_Z_RANGE / 2; // z
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(this.pointsPositions, 3));
+
+    const material = new THREE.PointsMaterial({ color: PARICLE_COLOR, size: 1 });
+
+    this.points = new THREE.Points(geometry, material);
+    scene.add(this.points);
+
+    this.light = new THREE.PointLight(LIGHT_COLOR, 50);
+    this.light.position.set(0, 1.5, 0);
+    scene.add(this.light);
+  }
+
+  setPosition(x: number, y: number, z: number) {
+    this.points.position.set(x, y, z);
+    this.light.position.set(x, y + 1.5, z);
+  }
+
+  setParticleSize(size: number) {
+    const material = this.points.material as THREE.PointsMaterial;
+    material.size = size;
+    material.needsUpdate = true;
+  }
+
+  setLightIntensity(intensity: number) {
+    this.light.intensity = intensity;
+  }
+
+  update(delta: number) {
+    for (let i = 0; i < PARTICLES_COUNT; i++) {
+      this.pointsPositions[i * 3 + 1] += PARTICLE_SPEED * delta;
+      if (this.pointsPositions[i * 3 + 1] > PARTICLE_RESET_Y) {
+        this.pointsPositions[i * 3 + 1] = PARTICLE_START_Y;
+      }
+    }
+
+    this.points.geometry.setAttribute("position", new THREE.Float32BufferAttribute(this.pointsPositions, 3));
   }
 }
