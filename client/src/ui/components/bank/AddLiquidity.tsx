@@ -117,7 +117,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
               variant="primary"
               isLoading={false}
               disabled={!canAdd}
-              className="text-brown bg-brown"
+              className="text-brown bg-black/90"
               onClick={() => setOpenConfirmation(true)}
             >
               Add Liquidity

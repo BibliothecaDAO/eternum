@@ -379,24 +379,37 @@ export const ResourceInfo = ({
   const { getBalance } = getResourceBalance();
 
   return (
-    <div className="flex flex-col text-gold text-sm p-1 space-y-1">
+    <div className="flex flex-col text-gold text-sm p-2 space-y-1">
       <Headline className="py-3">Resource Building </Headline>
 
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
-      {population !== 0 && <div className="font-bold">Increases Population: +{population}</div>}
-
-      {capacity !== 0 && <div className=" pt-3 font-bold">Increases Capacity: +{capacity}</div>}
-
-      {findResourceById(resourceId)?.trait && (
-        <div className=" flex pt-3 font-bold">
-          <div>Produces: +10</div>
-          <ResourceIcon className="self-center ml-1" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-          {findResourceById(resourceId)?.trait || ""} every cycle
+      {population !== 0 && (
+        <div className="font-bold uppercase">
+          <span className="font-bold">Population </span> <br />+{population}{" "}
         </div>
       )}
 
-      <div className="pt-3 font-bold">consumed per/s</div>
+      {capacity !== 0 && (
+        <div className=" pt-3  uppercase">
+          <span className="font-bold">Capacity </span>
+          <br /> +{capacity}
+        </div>
+      )}
+
+      {findResourceById(resourceId)?.trait && (
+        <div className=" pt-3 uppercase">
+          <div className="w-full font-bold ">Produces</div>
+
+          <div className="flex gap-2">
+            + {EternumGlobalConfig.resources.resourceAmountPerTick}
+            <ResourceIcon className="self-center" resource={findResourceById(resourceId)?.trait || ""} size="md" />
+            {findResourceById(resourceId)?.trait || ""} every cycle
+          </div>
+        </div>
+      )}
+
+      <div className="pt-3 font-bold uppercase">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
           const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
@@ -412,7 +425,7 @@ export const ResourceInfo = ({
         })}
       </div>
 
-      <div className="pt-3 font-bold">One Time Cost</div>
+      <div className="pt-3 font-bold uppercase">One Time Cost</div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
@@ -467,8 +480,8 @@ export const BuildingInfo = ({
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
       {resourceProduced !== 0 && (
-        <div className=" flex flex-wrap">
-          <div className="font-bold uppercase w-full text-xs">Produces </div>
+        <div className=" flex flex-wrap mt-2">
+          <div className="font-bold uppercase w-full">Produces </div>
           <div className="flex justify-between">
             +{perTick}
             <ResourceIcon
@@ -483,7 +496,7 @@ export const BuildingInfo = ({
 
       {population !== 0 ? (
         <div className="font-bold pt-3 ">
-          <span className="uppercase text-xs">Population</span>
+          <span className="uppercase">Population</span>
           <br /> +{population}
         </div>
       ) : (
@@ -492,7 +505,7 @@ export const BuildingInfo = ({
 
       {capacity !== 0 ? (
         <div className="font-bold pt-3 ">
-          <span className="uppercase text-xs">Capacity</span>
+          <span className="uppercase">Capacity</span>
           <br /> +{capacity}
         </div>
       ) : (
@@ -525,7 +538,7 @@ export const BuildingInfo = ({
 
       {cost.length != 0 && (
         <>
-          <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
+          <div className="pt-3 font-bold uppercase mb-1"> One time cost</div>
           <div className="grid grid-cols-1 gap-2 text-sm">
             {Object.keys(cost).map((resourceId, index) => {
               const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);

@@ -86,8 +86,12 @@ export const LeftNavigationModule = () => {
             active={view === View.EntityView}
             size="xl"
             onClick={() => {
-              setLastView(View.EntityView);
-              setView(View.EntityView);
+              if (view === View.EntityView) {
+                setView(View.None);
+              } else {
+                setLastView(View.EntityView);
+                setView(View.EntityView);
+              }
             }}
           />
         ),
@@ -108,8 +112,12 @@ export const LeftNavigationModule = () => {
             active={view === View.MilitaryView}
             size="xl"
             onClick={() => {
-              setLastView(View.MilitaryView);
-              setView(View.MilitaryView);
+              if (view === View.MilitaryView) {
+                setView(View.None);
+              } else {
+                setLastView(View.MilitaryView);
+                setView(View.MilitaryView);
+              }
             }}
           />
         ),
@@ -129,8 +137,12 @@ export const LeftNavigationModule = () => {
             active={view === View.ConstructionView}
             size="xl"
             onClick={() => {
-              setLastView(View.ConstructionView);
-              setView(View.ConstructionView);
+              if (view === View.ConstructionView) {
+                setView(View.None);
+              } else {
+                setLastView(View.ConstructionView);
+                setView(View.ConstructionView);
+              }
             }}
           />
         ),
@@ -151,8 +163,12 @@ export const LeftNavigationModule = () => {
             active={view === View.WorldStructuresView}
             size="xl"
             onClick={() => {
-              setLastView(View.WorldStructuresView);
-              setView(View.WorldStructuresView);
+              if (view === View.WorldStructuresView) {
+                setView(View.None);
+              } else {
+                setLastView(View.WorldStructuresView);
+                setView(View.WorldStructuresView);
+              }
             }}
           />
         ),
@@ -221,11 +237,6 @@ export const LeftNavigationModule = () => {
           animate="visible"
           className="gap-2 flex flex-col justify-center self-center pointer-events-auto"
         >
-          <div>
-            <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
-              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen(view) ? "" : "rotate-180"}`} />
-            </Button>
-          </div>
           <div className="flex flex-col gap-2 mb-auto">
             <div className="flex flex-col space-y-2 py-2">
               {navigation.map((a, index) => (

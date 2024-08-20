@@ -22,7 +22,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { Crown, Landmark, Pickaxe, Sparkles, ShieldQuestion } from "lucide-react";
+import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
@@ -48,6 +48,7 @@ export const TopMiddleNavigation = () => {
   const { hexPosition } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
