@@ -216,11 +216,12 @@ export function defineContractComponents(world: World) {
           bonus_percent: RecsType.Number,
           entity_id: RecsType.Number,
           outer_entity_id: RecsType.Number,
+          paused: RecsType.Boolean,
         },
         {
           metadata: {
             name: "eternum-Building",
-            types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32"],
+            types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32", "bool"],
             customTypes: ["BuildingCategory"],
           },
         },
