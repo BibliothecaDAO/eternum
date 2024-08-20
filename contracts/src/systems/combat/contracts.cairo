@@ -931,6 +931,7 @@ mod combat_systems {
 
             // ensure army has stamina
             let mut army_stamina: Stamina = get!(world, army_id, Stamina);
+            army.refill_if_next_tick(world);
             assert!(army_stamina.amount.is_non_zero(), "army needs stamina to pillage");
 
             let troop_config = TroopConfigCustomImpl::get(world);
