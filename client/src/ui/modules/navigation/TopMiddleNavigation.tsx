@@ -41,24 +41,23 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const { isMapView, handleUrlChange } = useQuery();
-
   const { setup } = useDojo();
+  const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
-  const { hexPosition } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getEntityInfo } = getEntitiesUtils();
 
-  const structure = getEntityInfo(structureEntityId);
+  const structure = useMemo(() => {
+    return getEntityInfo(structureEntityId);
+  }, [structureEntityId]);
 
   const structurePosition = useMemo(() => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
-  }, [structureEntityId]);
+  }, [structure]);
 
   // realms always first
   const structures = useMemo(() => {
@@ -67,9 +66,7 @@ export const TopMiddleNavigation = () => {
 
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
-
     const url = new Position(structure!.position).toHexLocationUrl();
-
     handleUrlChange(url);
   };
 
@@ -195,7 +192,7 @@ export const TopMiddleNavigation = () => {
               <div>
                 <div className="self-center flex gap-4">
                   {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons["None"]}
-                  {structure.structureCategory ? structure.name : "Unsettled"}
+                  {structure.owner ? structure.name : "Unsettled"}
                 </div>
               </div>
             )}
