@@ -98,6 +98,7 @@ export const BuildingEntityDetails = () => {
             isPaused={isPaused}
             buildingId={buildingState.buildingType}
             entityId={buildingState.ownerEntityId}
+            hintModal
           />
         )}
         {selectedBuildingHex && (

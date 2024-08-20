@@ -434,11 +434,13 @@ export const BuildingInfo = ({
   buildingId,
   entityId,
   name = BuildingEnumToString[buildingId],
+  hintModal = false,
   isPaused,
 }: {
   buildingId: number;
   entityId: ID | undefined;
   name?: string;
+  hintModal?: boolean;
   isPaused?: boolean;
 }) => {
   const cost = BUILDING_COSTS_SCALED[buildingId] || [];
@@ -454,7 +456,12 @@ export const BuildingInfo = ({
 
   return (
     <div className="p-2 text-sm text-gold">
-      <Headline className="pb-3"> {name} </Headline>
+      <Headline className="pb-3">
+        <div className="flex gap-2">
+          <div className="self-center">{name} </div>
+          {hintModal && <HintModalButton section={HintSection.Buildings} />}
+        </div>
+      </Headline>
 
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 

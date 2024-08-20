@@ -1,10 +1,12 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { PlayerStructure } from "@/hooks/helpers/useEntities";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
@@ -12,8 +14,6 @@ import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
-import { TileManager } from "@/dojo/modelManager/TileManager";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 

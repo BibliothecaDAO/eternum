@@ -14,17 +14,15 @@ export const Military = ({ entityId }: { entityId: ID | undefined }) => {
 
   return (
     <div className="relative">
-      <div className="flex justify-end">
-        <HintModalButton className="relative top-1 right-1" section={HintSection.Combat} />
-      </div>
       {isMapView ? (
         <EntitiesArmyTable />
       ) : (
         <EntityList
           current={entityId}
           list={playerStructures()}
-          title="armies"
+          title="structures"
           panel={({ entity }) => <ArmyPanel structure={entity} />}
+          extraBackButtonContent={<HintModalButton className="absolute top-1 right-1" section={HintSection.Combat} />}
         />
       )}
     </div>

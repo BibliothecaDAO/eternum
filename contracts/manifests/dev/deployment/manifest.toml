@@ -37,8 +37,8 @@ manifest_name = "eternum-bank_systems-85030190"
 [[contracts]]
 kind = "DojoContract"
 address = "0x5d554f77805c2ecb25913ab3f54f55a295cd20ac63ff3be4a75c3ac43fd8ad5"
-class_hash = "0x7b88df0d95c3076c3a30d6d7dfaae967bf3b8bf8b3243a0dcadffc87a23dca2"
-original_class_hash = "0x7b88df0d95c3076c3a30d6d7dfaae967bf3b8bf8b3243a0dcadffc87a23dca2"
+class_hash = "0x51b74bb101cbeeea9b68b7a36b56aea8536b3dd58cea8f18f38e0e2728ac563"
+original_class_hash = "0x51b74bb101cbeeea9b68b7a36b56aea8536b3dd58cea8f18f38e0e2728ac563"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-building_systems-4b0f3026.json"
 reads = []
@@ -50,8 +50,8 @@ manifest_name = "eternum-building_systems-4b0f3026"
 [[contracts]]
 kind = "DojoContract"
 address = "0x1c3310b831c666aeeefbe9ec95fe3140cb32ecb1a279b7898782b0e450c79a8"
-class_hash = "0x1ae788a8c3f6474abc12854a02fbf6049baca3bff863b67c69d06e193cfc8b3"
-original_class_hash = "0x1ae788a8c3f6474abc12854a02fbf6049baca3bff863b67c69d06e193cfc8b3"
+class_hash = "0xd6e45f18ca4525b7602d2aee0cc91bd76dc862a54d6b350ea590a1c5ddf5a0"
+original_class_hash = "0xd6e45f18ca4525b7602d2aee0cc91bd76dc862a54d6b350ea590a1c5ddf5a0"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-combat_systems-27f37676.json"
 reads = []
@@ -76,8 +76,8 @@ manifest_name = "eternum-config_systems-5f8c7cdc"
 [[contracts]]
 kind = "DojoContract"
 address = "0x7a8476cf9932cd203e8bf8954ca37de477e817c768994fb654b77f7cdafc9a2"
-class_hash = "0x6f4fe3c33074d3f9be6aa6db326f082062b28c9c3be1ba81790eaae412649c3"
-original_class_hash = "0x6f4fe3c33074d3f9be6aa6db326f082062b28c9c3be1ba81790eaae412649c3"
+class_hash = "0x15a47e2a8fefbcba5724b5e364e46761b1d41e61a5bdc208cad9980ffdc7174"
+original_class_hash = "0x15a47e2a8fefbcba5724b5e364e46761b1d41e61a5bdc208cad9980ffdc7174"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-dev_bank_systems-7a630ec9.json"
 reads = []
@@ -167,8 +167,8 @@ manifest_name = "eternum-liquidity_systems-337d668f"
 [[contracts]]
 kind = "DojoContract"
 address = "0x28d57567b8e2844cf0192d5f516b8612d08e4e83fe2a7025e9052e2116078d5"
-class_hash = "0x72cf10de428e6b713f1e3983d8b7340f6fb8ff754d248cbff9be5af5dd6f54"
-original_class_hash = "0x72cf10de428e6b713f1e3983d8b7340f6fb8ff754d248cbff9be5af5dd6f54"
+class_hash = "0x33e6867b0c39d4631fa484afd1345160e4f1d67f9d6e3b2646159511bc11042"
+original_class_hash = "0x33e6867b0c39d4631fa484afd1345160e4f1d67f9d6e3b2646159511bc11042"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-map_systems-5431b122.json"
 reads = []
@@ -509,8 +509,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0xfe1ec87949bee23db91c54e25435166374df081d10dc3b833fc735a514a40a"
-original_class_hash = "0xfe1ec87949bee23db91c54e25435166374df081d10dc3b833fc735a514a40a"
+class_hash = "0x35fd2cbbfd1b4c3ded37f596833d394e910236f163686d7b5bd7de1e5a6236a"
+original_class_hash = "0x35fd2cbbfd1b4c3ded37f596833d394e910236f163686d7b5bd7de1e5a6236a"
 abi = "manifests/dev/deployment/abis/models/eternum-Building-a3631d0a.json"
 tag = "eternum-Building"
 manifest_name = "eternum-Building-a3631d0a"
@@ -558,6 +558,11 @@ key = false
 [[models.members]]
 name = "outer_entity_id"
 type = "ID"
+key = false
+
+[[models.members]]
+name = "paused"
+type = "bool"
 key = false
 
 [[models]]
@@ -854,6 +859,34 @@ key = true
 [[models.members]]
 name = "entity_owner_id"
 type = "ID"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x5d554f070395ccfda6bf7bb9e170bc93465c5cd276fe15365c716d53c7c4242"
+original_class_hash = "0x5d554f070395ccfda6bf7bb9e170bc93465c5cd276fe15365c716d53c7c4242"
+abi = "manifests/dev/deployment/abis/models/eternum-EternumEvent-109355df.json"
+tag = "eternum-EternumEvent"
+manifest_name = "eternum-EternumEvent-109355df"
+
+[[models.members]]
+name = "id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "event_id"
+type = "EventType"
+key = true
+
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "data"
+type = "EventData"
 key = false
 
 [[models]]
