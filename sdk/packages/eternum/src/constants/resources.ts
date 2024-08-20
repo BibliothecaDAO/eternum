@@ -616,7 +616,8 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 1 },
     { resource: ResourcesIds.Fish, amount: 2 },
-    { resource: ResourcesIds.Gold, amount: 1 },
+    // { resource: ResourcesIds.Gold, amount: 1 },
+    { resource: ResourcesIds.Diamonds, amount: 1 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 2.5 },
@@ -625,12 +626,14 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.Crossbowman]: [
     { resource: ResourcesIds.Wheat, amount: 2.5 },
-    { resource: ResourcesIds.Silver, amount: 1.0 },
+    // { resource: ResourcesIds.Silver, amount: 1.0 },
+    { resource: ResourcesIds.Obsidian, amount: 1.0 },
     { resource: ResourcesIds.ColdIron, amount: 2.5 },
   ],
   [ResourcesIds.Paladin]: [
     { resource: ResourcesIds.Wheat, amount: 2.5 },
-    { resource: ResourcesIds.Silver, amount: 1.0 },
+    // { resource: ResourcesIds.Silver, amount: 1.0 },
+    { resource: ResourcesIds.Copper, amount: 1.0 },
     { resource: ResourcesIds.Gold, amount: 2.5 },
   ],
   [ResourcesIds.Wheat]: [],
