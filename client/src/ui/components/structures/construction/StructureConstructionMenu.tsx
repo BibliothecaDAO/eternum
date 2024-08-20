@@ -47,7 +47,7 @@ export const StructureConstructionMenu = () => {
     });
 
   return (
-    <div className="grid grid-cols-4 gap-2 p-2">
+    <div className="grid grid-cols-2 gap-2 p-2">
       {buildingTypes.map((structureType, index) => {
         const building = StructureType[structureType as keyof typeof StructureType];
         const cost = STRUCTURE_COSTS_SCALED[building];
