@@ -11,11 +11,13 @@ export class InteractiveHexManager {
   private hexes: Set<string> = new Set();
   private instanceMesh: THREE.InstancedMesh | null = null;
   private auraMesh: THREE.Mesh | null = null;
+  private clickAuraMesh: THREE.Mesh | null = null;
   private particles: Particles;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.createAuraMesh();
+    this.auraMesh = this.createAuraMesh();
+    this.clickAuraMesh = this.createAuraMesh();
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onDoubleClick = this.onDoubleClick.bind(this);
     this.particles = new Particles(scene);
@@ -23,7 +25,7 @@ export class InteractiveHexManager {
     this.particles.setLightIntensity(5); // Se
   }
 
-  private createAuraMesh() {
+  private createAuraMesh(): THREE.Mesh {
     const textureLoader = new THREE.TextureLoader();
     const auraTexture = textureLoader.load("/textures/aura.png");
     const auraMaterial = new THREE.MeshBasicMaterial({
@@ -32,15 +34,17 @@ export class InteractiveHexManager {
       opacity: 0.8,
     });
     const auraGeometry = new THREE.PlaneGeometry(1.8, 1.8);
-    this.auraMesh = new THREE.Mesh(auraGeometry, auraMaterial);
-    this.auraMesh.rotation.x = -Math.PI / 2;
-    this.auraMesh.renderOrder = 1;
+    const auraMesh = new THREE.Mesh(auraGeometry, auraMaterial);
+    auraMesh.rotation.x = -Math.PI / 2;
+    auraMesh.renderOrder = 1;
 
     // Add these lines to remove pointer events
-    this.auraMesh.receiveShadow = false;
-    this.auraMesh.castShadow = false;
+    auraMesh.receiveShadow = false;
+    auraMesh.castShadow = false;
 
-    this.auraMesh.raycast = () => {};
+    auraMesh.raycast = () => {};
+
+    return auraMesh;
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -84,6 +88,12 @@ export class InteractiveHexManager {
         if (instanceId !== undefined) {
           const clickedHex = getHexagonCoordinates(intersectedObject, instanceId);
           this.particles.setPosition(clickedHex.position.x, 0.1, clickedHex.position.z);
+          if (this.clickAuraMesh) {
+            this.clickAuraMesh.position.set(clickedHex.position.x, 0.19, clickedHex.position.z);
+            if (!this.scene.children.includes(this.clickAuraMesh)) {
+              this.scene.add(this.clickAuraMesh);
+            }
+          }
           return clickedHex;
         }
       }
@@ -93,6 +103,9 @@ export class InteractiveHexManager {
   private rotateAura() {
     if (this.auraMesh) {
       this.auraMesh.rotation.z += 0.01;
+    }
+    if (this.clickAuraMesh) {
+      this.clickAuraMesh.rotation.z += 0.01;
     }
   }
 
@@ -146,14 +159,17 @@ const LIGHT_COLOR = new THREE.Color(2, 2, 1);
 const PARICLE_COLOR = new THREE.Color(15, 12, 2);
 
 // Add these constants for particle position ranges
-const PARTICLE_X_RANGE = 2;
+const PARTICLE_X_RANGE = 1;
 const PARTICLE_Y_RANGE = 5;
-const PARTICLE_Z_RANGE = 2;
+const PARTICLE_Z_RANGE = 1;
+
+const LIGHT_INTENSITY = 10;
 
 export class Particles {
   private pointsPositions: Float32Array;
   private points: THREE.Points;
   private light: THREE.PointLight;
+  private scene: THREE.Scene;
 
   constructor(scene: THREE.Scene) {
     this.pointsPositions = new Float32Array(PARTICLES_COUNT * 3);
@@ -169,16 +185,23 @@ export class Particles {
     const material = new THREE.PointsMaterial({ color: PARICLE_COLOR, size: 1 });
 
     this.points = new THREE.Points(geometry, material);
-    scene.add(this.points);
 
-    this.light = new THREE.PointLight(LIGHT_COLOR, 50);
-    this.light.position.set(0, 1.5, 0);
-    scene.add(this.light);
+    this.light = new THREE.PointLight(LIGHT_COLOR, LIGHT_INTENSITY);
+
+    this.scene = scene;
   }
 
   setPosition(x: number, y: number, z: number) {
     this.points.position.set(x, y, z);
     this.light.position.set(x, y + 1.5, z);
+
+    // Add the points and light to the scene only when the position is set
+    if (!this.scene.children.includes(this.points)) {
+      this.scene.add(this.points);
+    }
+    if (!this.scene.children.includes(this.light)) {
+      this.scene.add(this.light);
+    }
   }
 
   setParticleSize(size: number) {
