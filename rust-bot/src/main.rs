@@ -38,8 +38,8 @@ async fn check_user_in_database(
 }
 
 async fn setup_torii_client(token: String, database: SqlitePool) {
-    let torii_url = "http://0.0.0.0:8080".to_string();
-    let rpc_url = "http://0.0.0.0:5050".to_string();
+    let torii_url = "https://api.cartridge.gg/x/eternum-33/torii".to_string();
+    let rpc_url = "https://api.cartridge.gg/x/eternum-33/katana".to_string();
     let relay_url = "/ip4/127.0.0.1/tcp/9090".to_string();
     let world = Felt::from_hex_unchecked(
         "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",
