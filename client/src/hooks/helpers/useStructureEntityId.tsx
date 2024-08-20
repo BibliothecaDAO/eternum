@@ -1,11 +1,11 @@
 import { Position as PositionInterface } from "@/types/Position";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { useEntities } from "./useEntities";
 import { useQuery } from "./useQuery";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 
 export const useStructureEntityId = () => {
   const {
@@ -23,9 +23,11 @@ export const useStructureEntityId = () => {
 
   const { playerStructures } = useEntities();
 
+  const structures = useMemo(() => playerStructures(), [playerStructures]);
+
   const defaultPlayerStructure = useMemo(() => {
-    return playerStructures()[0];
-  }, [structureEntityId]);
+    return structures[0];
+  }, [structureEntityId, structures]);
 
   useEffect(() => {
     const { x, y } = new PositionInterface({
@@ -39,9 +41,11 @@ export const useStructureEntityId = () => {
     const isOwner = structureOwner?.address === BigInt(address);
 
     if (isMapView) {
-      setStructureEntityId(isOwner ? structureOwner.entity_id : defaultPlayerStructure?.entity_id || 0);
+      setStructureEntityId(
+        isOwner ? structureOwner.entity_id : defaultPlayerStructure?.entity_id || UNDEFINED_STRUCTURE_ENTITY_ID,
+      );
     } else {
       setStructureEntityId(structureOwner ? structureOwner.entity_id : UNDEFINED_STRUCTURE_ENTITY_ID);
     }
-  }, [defaultPlayerStructure, isMapView, hexPosition, address]);
+  }, [defaultPlayerStructure, isMapView, hexPosition, address, structures]);
 };
