@@ -1,8 +1,8 @@
+import { Position as PositionInterface } from "@/types/Position";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
-import { Position as PositionInterface } from "@/types/Position";
 import { useEntities } from "./useEntities";
 import { useQuery } from "./useQuery";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
@@ -39,7 +39,7 @@ export const useStructureEntityId = () => {
     const isOwner = structureOwner?.address === BigInt(address);
 
     if (isMapView) {
-      setStructureEntityId(isOwner ? structureOwner.entity_id : defaultPlayerStructure.entity_id);
+      setStructureEntityId(isOwner ? structureOwner.entity_id : defaultPlayerStructure?.entity_id || 0);
     } else {
       setStructureEntityId(structureOwner ? structureOwner.entity_id : UNDEFINED_STRUCTURE_ENTITY_ID);
     }

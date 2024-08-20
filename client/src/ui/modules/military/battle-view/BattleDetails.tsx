@@ -22,7 +22,7 @@ export const BattleDetails = ({ armies }: { armies: (ArmyInfo | undefined)[] | u
                     {army?.name}
                   </div>
                   <div key={`${index}_player_address`} className="tile h-[2vh] text-left mb-2">
-                    {army?.entityOwner ? getAddressName(army.owner.address) : "Bandits"}
+                    {army?.owner ? getAddressName(army.owner.address) : "Bandits"}
                   </div>
                 </React.Fragment>
               ),

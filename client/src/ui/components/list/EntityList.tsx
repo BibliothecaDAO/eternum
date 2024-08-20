@@ -18,6 +18,7 @@ interface EntityListProps {
   entityContent?: (props: { id: any }) => React.ReactElement | null;
   questing?: boolean;
   className?: string;
+  extraBackButtonContent?: React.ReactElement;
 }
 
 export const EntityList = ({
@@ -29,6 +30,7 @@ export const EntityList = ({
   entityContent,
   questing,
   className,
+  extraBackButtonContent,
 }: EntityListProps) => {
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
 
@@ -38,15 +40,17 @@ export const EntityList = ({
   }, [current]);
 
   return (
-    <div className="">
+    <div>
       {selectedEntity ? (
-        <div className="p-2">
-          <Button className="mb-3" variant="default" size="xs" onClick={() => setSelectedEntity(null)}>
-            &lt; Back to {title}
-          </Button>
-
-          {panel({ entity: list.find((entity) => entity.entity_id === selectedEntity.entity_id), setSelectedEntity })}
-        </div>
+        <>
+          {extraBackButtonContent}
+          <div className="p-2">
+            <Button className="mb-3" variant="default" size="xs" onClick={() => setSelectedEntity(null)}>
+              {"<"} Back to {title}
+            </Button>
+            {panel({ entity: list.find((entity) => entity.entity_id === selectedEntity.entity_id), setSelectedEntity })}
+          </div>
+        </>
       ) : (
         <div className={clsx("p-2", className)}>
           {headerPanel}

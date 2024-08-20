@@ -48,43 +48,54 @@ export class SystemManager {
   public get Army() {
     return {
       onUpdate: (callback: (value: ArmySystemUpdate) => void) => {
-        this.setupSystem(this.dojo.components.Position, callback, (update: any) => {
-          const army = getComponentValue(this.dojo.components.Army, update.entity);
-          if (!army) return;
+        const query = defineQuery(
+          [
+            Has(this.dojo.components.Army),
+            Has(this.dojo.components.Position),
+            Has(this.dojo.components.EntityOwner),
+            Has(this.dojo.components.Health),
+          ],
+          { runOnInit: true },
+        );
 
-          const health = getComponentValue(this.dojo.components.Health, update.entity);
-          if (!health) {
-            // console.log(`[MyApp] in here for entity id ${army.entity_id}`);
-            return;
+        return query.update$.subscribe((update) => {
+          if (
+            isComponentUpdate(update, this.dojo.components.Army) ||
+            isComponentUpdate(update, this.dojo.components.Position)
+          ) {
+            const army = getComponentValue(this.dojo.components.Army, update.entity);
+            if (!army) return;
+
+            const position = getComponentValue(this.dojo.components.Position, update.entity);
+            if (!position) return;
+
+            const health = getComponentValue(this.dojo.components.Health, update.entity);
+            if (!health) return;
+
+            const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
+            if (protectee) return;
+
+            const healthMultiplier =
+              EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+
+            const entityOwner = getComponentValue(this.dojo.components.EntityOwner, update.entity);
+            if (!entityOwner) return;
+
+            const owner = getComponentValue(
+              this.dojo.components.Owner,
+              getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+            );
+            const isMine = this.isOwner(owner);
+
+            callback({
+              entityId: army.entity_id,
+              hexCoords: { col: position.x, row: position.y },
+              isMine,
+              battleId: army.battle_id,
+              defender: Boolean(protectee),
+              currentHealth: health.current / healthMultiplier,
+            });
           }
-
-          const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
-          if (protectee) {
-            //   console.log(`[MyApp] army is defender ${entityId}`);
-            return;
-          }
-
-          const healthMultiplier =
-            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
-
-          const entityOwner = getComponentValue(this.dojo.components.EntityOwner, update.entity);
-          if (!entityOwner) return;
-
-          const owner = getComponentValue(
-            this.dojo.components.Owner,
-            getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
-          );
-          const isMine = this.isOwner(owner);
-
-          //   console.log(`[MyApp] got update for ${army.entity_id}`);
-          return {
-            entityId: army.entity_id,
-            hexCoords: this.getHexCoords(update.value),
-            isMine,
-            battleId: army.battle_id,
-            defender: Boolean(protectee),
-            currentHealth: health.current / healthMultiplier,
-          };
         });
       },
     };

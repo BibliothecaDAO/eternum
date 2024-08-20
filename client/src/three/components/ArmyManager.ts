@@ -128,14 +128,6 @@ export class ArmyManager {
 
   async onUpdate(update: ArmySystemUpdate) {
     await this.loadPromise;
-
-    // console.log(
-    //   `[MyApp] onUpdate ${JSON.stringify(
-    //     update,
-    //     (key, value) => (typeof value === "bigint" ? value.toString() : value),
-    //     2,
-    //   )}`,
-    // );
     const { entityId, hexCoords, isMine, battleId, currentHealth } = update;
 
     if (currentHealth <= 0) {
@@ -149,13 +141,9 @@ export class ArmyManager {
 
     if (battleId !== 0) {
       if (this.armies.has(entityId)) {
-        // console.log(`[MyApp] removing army ${entityId}`);
         this.removeArmy(entityId);
         return;
-      } else {
-        // console.log(`[MyApp] skipping for army ${entityId}`);
-        return;
-      }
+      } else return;
     }
 
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
@@ -163,7 +151,6 @@ export class ArmyManager {
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, position);
     } else {
-      //   console.log(`[MyApp] adding army ${entityId}`);
       this.addArmy(entityId, position, isMine);
     }
   }
@@ -197,16 +184,11 @@ export class ArmyManager {
 
   moveArmy(entityId: ID, hexCoords: Position) {
     const armyData = this.armies.get(entityId);
-    if (!armyData) {
-      //   console.error(`[MyApp] No army found with entityId: ${entityId}`);
-      return;
-    }
+    if (!armyData) return;
 
     const { x, y } = hexCoords.getNormalized();
     const { x: armyDataX, y: armyDataY } = armyData.hexCoords.getNormalized();
-    if (armyDataX === x && armyDataY === y) {
-      return;
-    }
+    if (armyDataX === x && armyDataY === y) return;
 
     const { matrixIndex, isMine } = armyData;
     this.armies.set(entityId, { matrixIndex, hexCoords, isMine });
@@ -278,10 +260,7 @@ export class ArmyManager {
 
   removeArmy(entityId: ID) {
     const armyData = this.armies.get(entityId);
-    if (!armyData) {
-      //   console.log(`[MyApp] army ${entityId} not found`);
-      return;
-    }
+    if (!armyData) return;
 
     const matrixIndex = armyData.matrixIndex;
 

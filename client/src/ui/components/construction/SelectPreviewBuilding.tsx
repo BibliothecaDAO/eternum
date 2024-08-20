@@ -10,6 +10,7 @@ import {
   BuildingType,
   EternumGlobalConfig,
   ID,
+  RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
@@ -104,7 +105,7 @@ export const SelectPreviewBuildingMenu = () => {
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const cost = [...BUILDING_COSTS_SCALED[BuildingType.Resource], ...RESOURCE_INPUTS_SCALED[resourceId]];
+              const cost = [...RESOURCE_BUILDING_COSTS_SCALED[resourceId], ...RESOURCE_INPUTS_SCALED[resourceId]];
               const hasBalance = checkBalance(cost);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
@@ -369,7 +370,7 @@ export const ResourceInfo = ({
 }) => {
   const cost = RESOURCE_INPUTS[resourceId];
 
-  const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
+  const buildingCost = RESOURCE_BUILDING_COSTS_SCALED[resourceId];
 
   const population = BUILDING_POPULATION[BuildingType.Resource];
 
@@ -434,11 +435,13 @@ export const BuildingInfo = ({
   buildingId,
   entityId,
   name = BuildingEnumToString[buildingId],
+  hintModal = false,
   isPaused,
 }: {
   buildingId: number;
   entityId: ID | undefined;
   name?: string;
+  hintModal?: boolean;
   isPaused?: boolean;
 }) => {
   const cost = BUILDING_COSTS_SCALED[buildingId] || [];
@@ -454,7 +457,12 @@ export const BuildingInfo = ({
 
   return (
     <div className="p-2 text-sm text-gold">
-      <Headline className="pb-3"> {name} </Headline>
+      <Headline className="pb-3">
+        <div className="flex gap-2">
+          <div className="self-center">{name} </div>
+          {hintModal && <HintModalButton section={HintSection.Buildings} />}
+        </div>
+      </Headline>
 
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
