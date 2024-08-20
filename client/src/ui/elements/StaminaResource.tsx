@@ -14,7 +14,7 @@ export const StaminaResource = ({ entityId, className }: { entityId: ID | undefi
 
   return (
     <div className={`flex flex-col text-xs font-bold uppercase self-center ${className}`}>
-      <div className="bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 border w-16">
+      <div className="bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 border border-y w-16">
         <div className={`${staminaColor} h-1 rounded-full  bg-yellow`} style={{ width: `${staminaPercentage}%` }}></div>
       </div>
     </div>
