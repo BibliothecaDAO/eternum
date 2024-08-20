@@ -45,8 +45,8 @@ export const EternumGlobalConfig = {
     army: 10_000,
   },
   speed: {
-    donkey: 600,
-    army: 10,
+    donkey: 6,
+    army: 1,
   },
   troop: {
     // The 7,200 health value makes battles last up to 20hours at a maximum.
