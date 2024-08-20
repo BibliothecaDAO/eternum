@@ -6,7 +6,7 @@ import { ID } from "@bibliothecadao/eternum";
 
 export const AllResourceArrivals = ({ entityIds }: { entityIds: ID[] }) => {
   return (
-    <div className="px-2 flex flex-col space-y-1 overflow-y-auto">
+    <div className="p-2 flex flex-col space-y-1 overflow-y-auto">
       <Headline>
         {" "}
         <div className="flex gap-2">
