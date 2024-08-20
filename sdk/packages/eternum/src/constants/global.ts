@@ -33,7 +33,7 @@ export const EternumGlobalConfig = {
   exploration: {
     wheatBurn: 100,
     fishBurn: 100,
-    reward: 7500,
+    reward: 750,
     shardsMinesFailProbability: 99000,
   },
   tick: {
