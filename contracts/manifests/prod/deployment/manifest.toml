@@ -4,14 +4,14 @@ class_hash = "0x76ced5a15cb43c7be7176cff4779cd57c56638a46ddf2c9da709d22298c5e5a"
 original_class_hash = "0x76ced5a15cb43c7be7176cff4779cd57c56638a46ddf2c9da709d22298c5e5a"
 abi = "manifests/prod/deployment/abis/dojo-world.json"
 address = "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac"
-transaction_hash = "0x4f0ef2474ef6397924d9a871b763ab123b981ac9c17902cbd0f8fc53b649c17"
-block_number = 84
+transaction_hash = "0x7259bb60f7e9602ea7d97b2e1abb4bc2f0c2f55434eaa6171f356fba43f5aa5"
+block_number = 80
 seed = "eternum"
 manifest_name = "dojo-world"
 
 [world.metadata]
 profile_name = "prod"
-rpc_url = "https://api.cartridge.gg/x/eternum-33/katana/"
+rpc_url = "https://api.cartridge.gg/x/eternum-34/katana/"
 
 [base]
 kind = "Class"
