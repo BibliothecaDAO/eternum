@@ -63,8 +63,8 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   return (
     <div
       className={clsx(
-        "w-auto flex flex-col p-2 mb-1  text-xs text-gold shadow-2xl border-2 border-gradient",
-        army.isMine ? "bg-crimson" : "bg-black/90",
+        "w-auto flex flex-col p-2 text-xs text-gold shadow-2xl border-2 border-gold/30 ",
+        army.isMine ? "bg-black/90" : "bg-black/90",
       )}
     >
       <div className="flex items-center w-full mt-1 justify-between text-xs">
@@ -72,12 +72,8 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
           <div className="flex items-center text-gold gap-2">
             {/* <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="md" /> */}
 
-            <Headline className="text-center">
-              <div>
-                <span className="text-lg">{attackerAddressName}</span> ({originRealmName})
-              </div>
-
-              <div className="text-lg">{army.name}</div>
+            <Headline className="text-center text-lg">
+              <div>{army.name}</div>
             </Headline>
           </div>
 
@@ -95,7 +91,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
           </div>
         </div>
       </div>
-      <div className="w-full flex flex-col mt-2 space-y-2 font-bold">
+      <div className="w-full flex flex-col mt-2 space-y-2">
         <div className="grid grid-cols-3 gap-2 relative justify-between w-full text-gold">
           <div className="px-2 py-1 bg-white/10  flex flex-col justify-between gap-2">
             <ResourceIcon withTooltip={false} resource={"Crossbowman"} size="lg" />
@@ -114,6 +110,10 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
         <div className="flex flex-row justify-between">
           <InventoryResources max={2} entityIds={[entity_id]} />
         </div>
+      </div>
+
+      <div className="text-xs text-center py-1">
+        <span>{attackerAddressName}</span> ({originRealmName})
       </div>
     </div>
   );

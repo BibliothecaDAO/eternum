@@ -185,6 +185,7 @@ pub async fn process_event(
                         .description(format!("Battle will end in {} seconds", duration_left))
                         .image("attachment://ferris_eyes.png")
                         .footer(footer)
+                        .color(poise::serenity_prelude::Color::RED)
                         .timestamp(Timestamp::now());
 
                     let content = CreateMessage::new()
@@ -277,6 +278,7 @@ pub async fn process_event(
                             pillaged_resources, structure_type
                         ))
                         .footer(footer)
+                        .color(poise::serenity_prelude::Color::RED)
                         .timestamp(Timestamp::now());
 
                     let content = CreateMessage::new()
