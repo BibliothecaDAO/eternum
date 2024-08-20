@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use dojo_types::primitive::Primitive::{ContractAddress, Felt252, I32, I64};
-use serenity::{all::UserId, model::id::ChannelId};
+use serenity::{
+    all::{CreateEmbed, CreateEmbedFooter, CreateMessage, MessageBuilder, Timestamp, UserId},
+    model::id::ChannelId,
+};
 use sqlx::SqlitePool;
 use starknet_crypto::Felt;
 use tokio::sync::mpsc;
@@ -90,11 +93,11 @@ pub enum GameEvent {
 pub enum DiscordMessage {
     DirectMessage {
         user_id: u64,
-        content: String,
+        content: CreateMessage,
     },
     ChannelMessage {
         channel_id: ChannelId,
-        content: String,
+        content: CreateMessage,
     },
 }
 
@@ -124,7 +127,12 @@ impl MessageDispatcher {
                 match user.create_dm_channel(&self.http).await {
                     Ok(channel) => {
                         println!("DM channel created for user {}", user_id);
-                        channel.say(&self.http, content).await?;
+
+                        if let Err(e) = channel.send_message(&self.http, content).await {
+                            println!("Failed to send DM: {:?}", e);
+                        }
+
+                        // channel.say(&self.http, content).await?;
                         println!("DM sent to user {}", user_id);
                     }
                     Err(e) => {
@@ -137,7 +145,7 @@ impl MessageDispatcher {
                 channel_id,
                 content,
             } => {
-                channel_id.say(&self.http, content).await?;
+                channel_id.send_message(&self.http, content).await?;
                 println!("Message sent to channel {}", channel_id);
             }
         }
@@ -168,11 +176,31 @@ pub async fn process_event(
         } => {
             if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &defender).await {
                 if let Ok(user_id) = discord_id.parse::<u64>() {
-                    let message = DiscordMessage::DirectMessage {
-                        user_id,
-                        content: format!("You have been attacked by {}", attacker_name),
+                    let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
+                    let embed = CreateEmbed::new()
+                        .title(format!(
+                            "{} has attacked {} at ({}, {})",
+                            attacker_name, defender_name, x, y
+                        ))
+                        .description(format!("Battle will end in {} seconds", duration_left))
+                        .image("attachment://ferris_eyes.png")
+                        .footer(footer)
+                        .timestamp(Timestamp::now());
+
+                    let content = CreateMessage::new()
+                        .content(format!("<@{}> BATTLE STARTED!", user_id))
+                        .embed(embed.clone());
+
+                    let message = DiscordMessage::DirectMessage { user_id, content };
+
+                    let channel_message = DiscordMessage::ChannelMessage {
+                        channel_id: ChannelId::from(1275439254444441703),
+                        content: CreateMessage::new().content("BATTLE STARTED!").embed(embed),
                     };
+
                     message_sender.send(message).await.unwrap();
+
+                    message_sender.send(channel_message).await.unwrap();
                 }
             }
         }
@@ -192,11 +220,30 @@ pub async fn process_event(
             if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &leaver).await {
                 println!("User found in the database: {}", discord_id);
                 if let Ok(user_id) = discord_id.parse::<u64>() {
-                    let message = DiscordMessage::DirectMessage {
-                        user_id,
-                        content: format!("{} has just cowardly run from the battle", leaver_name),
+                    let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
+                    let embed = CreateEmbed::new()
+                        .title(format!(
+                            "{} has left the battle at ({}, {})",
+                            leaver_name, x, y
+                        ))
+                        .description(format!("Battle will end in {} seconds", duration_left))
+                        .footer(footer)
+                        .timestamp(Timestamp::now());
+
+                    let content = CreateMessage::new()
+                        .content("BATTLE LEFT!")
+                        .embed(embed.clone());
+
+                    let message = DiscordMessage::DirectMessage { user_id, content };
+
+                    let channel_message = DiscordMessage::ChannelMessage {
+                        channel_id: ChannelId::from(1275439254444441703),
+                        content: CreateMessage::new().content("BATTLE LEFT!").embed(embed),
                     };
+
                     message_sender.send(message).await.unwrap();
+
+                    message_sender.send(channel_message).await.unwrap();
                 }
             }
         }
@@ -218,11 +265,35 @@ pub async fn process_event(
                 check_user_in_database(database, &pillaged_structure_owner).await
             {
                 if let Ok(user_id) = discord_id.parse::<u64>() {
-                    let message = DiscordMessage::DirectMessage {
-                        user_id,
-                        content: format!("You have been pillaged by {}", pillager),
+                    let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
+                    let embed = CreateEmbed::new()
+                        .title(format!(
+                            "{} has pillaged a structure at ({}, {})",
+                            pillager_name, x, y
+                        ))
+                        .description(format!(
+                            "Pillaged resources: {:?}\nStructure type: {}",
+                            pillaged_resources, structure_type
+                        ))
+                        .footer(footer)
+                        .timestamp(Timestamp::now());
+
+                    let content = CreateMessage::new()
+                        .content("STRUCTURE PILLAGED!")
+                        .embed(embed.clone());
+
+                    let message = DiscordMessage::DirectMessage { user_id, content };
+
+                    let channel_message = DiscordMessage::ChannelMessage {
+                        channel_id: ChannelId::from(1275439254444441703),
+                        content: CreateMessage::new()
+                            .content("STRUCTURE PILLAGED!")
+                            .embed(embed),
                     };
+
                     message_sender.send(message).await.unwrap();
+
+                    message_sender.send(channel_message).await.unwrap();
                 }
             }
         }
