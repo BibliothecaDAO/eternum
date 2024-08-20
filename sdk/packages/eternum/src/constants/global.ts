@@ -8,12 +8,12 @@ export const EternumGlobalConfig = {
   resources: {
     resourcePrecision: 1000,
     resourceMultiplier: 1000,
-    resourceAmountPerTick: 10,
-    foodPerTick: 30,
-    donkeysPerTick: 3,
-    knightsPerTick: 2,
-    crossbowmanPerTick: 2,
-    paladinPerTick: 2,
+    resourceAmountPerTick: 100,
+    foodPerTick: 300,
+    donkeysPerTick: 30,
+    knightsPerTick: 20,
+    crossbowmanPerTick: 20,
+    paladinPerTick: 20,
     startingResourcesInputProductionFactor: 4,
     startingResources: [
       { resourceId: ResourcesIds.Wheat, amount: 1500 },
@@ -38,15 +38,15 @@ export const EternumGlobalConfig = {
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 7200, // 2hrs
+    armiesTickIntervalInSeconds: 1800, // 30mins
   },
   carryCapacityGram: {
     donkey: 100_000,
     army: 10_000,
   },
   speed: {
-    donkey: 60,
-    army: 1,
+    donkey: 600,
+    army: 10,
   },
   troop: {
     // The 7,200 health value makes battles last up to 20hours at a maximum.
