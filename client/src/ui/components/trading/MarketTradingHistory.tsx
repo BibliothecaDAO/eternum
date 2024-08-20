@@ -8,7 +8,7 @@ const TAKER_INDEX = 1;
 const MAKER_INDEX = 2;
 
 interface MarketTradingHistoryProps {
-  realmEntityId: ID;
+  structureEntityId: ID;
 }
 
 export type TradeEvent = {
@@ -21,7 +21,7 @@ export type TradeEvent = {
   };
 };
 
-export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProps) => {
+export const MarketTradingHistory = ({ structureEntityId }: MarketTradingHistoryProps) => {
   const [tradeEvents, setTradeEvents] = useState<TradeEvent[]>([]);
 
   const queryTrades = async () => {
@@ -58,25 +58,25 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
   `);
     const createdOrders = filterAndReturnTradeEvents(
       trades.createdOrders.edges,
-      realmEntityId,
+      structureEntityId,
       EventType.ORDER_CREATED,
       MAKER_INDEX,
     );
     const myAcceptedOrders = filterAndReturnTradeEvents(
       trades.acceptOrders.edges,
-      realmEntityId,
+      structureEntityId,
       EventType.ORDER_ACCEPTED,
       MAKER_INDEX,
     );
     const ordersIAccepted = filterAndReturnTradeEvents(
       trades.acceptOrders.edges,
-      realmEntityId,
+      structureEntityId,
       EventType.BOUGHT,
       TAKER_INDEX,
     );
     const canceledOrders = filterAndReturnTradeEvents(
       trades.cancelOrders.edges,
-      realmEntityId,
+      structureEntityId,
       EventType.ORDER_CANCELLED,
       MAKER_INDEX,
     );

@@ -56,7 +56,7 @@ export const LeftNavigationModule = () => {
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const { questClaimStatus } = useQuestClaimStatus();
 
@@ -72,7 +72,7 @@ export const LeftNavigationModule = () => {
     );
   }, [selectedQuest, isMapView]);
   const { getEntityInfo } = getEntitiesUtils();
-  const realmIsMine = getEntityInfo(realmEntityId).isMine;
+  const structureIsMine = getEntityInfo(structureEntityId).isMine;
 
   const navigation = useMemo(() => {
     const navigation = [
@@ -96,7 +96,7 @@ export const LeftNavigationModule = () => {
         name: "military",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({
               "animate-pulse":
                 view != View.ConstructionView && selectedQuest?.id === QuestId.CreateArmy && isPopupOpen(questsPopup),
@@ -118,7 +118,7 @@ export const LeftNavigationModule = () => {
         name: "construction",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({
               "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.Settle],
@@ -139,7 +139,7 @@ export const LeftNavigationModule = () => {
         name: "worldStructures",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({
               hidden: !questClaimStatus[QuestId.CreateArmy],
               "animate-pulse":
@@ -174,7 +174,7 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, openedPopups, selectedQuest, questClaimStatus, realmEntityId]);
+  }, [location, view, openedPopups, selectedQuest, questClaimStatus, structureEntityId]);
 
   // Open & close panel automatically when building
   const debouncedSetIsOffscreen = debounce(() => {
@@ -210,7 +210,7 @@ export const LeftNavigationModule = () => {
           className={`w-full pointer-events-auto overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}
         >
           {view === View.EntityView && <EntityDetails />}
-          {view === View.MilitaryView && <Military entityId={realmEntityId} />}
+          {view === View.MilitaryView && <Military entityId={structureEntityId} />}
           {!isMapView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
           {isMapView && view === View.ConstructionView && <StructureConstructionMenu />}
           {view === View.WorldStructuresView && <WorldStructuresMenu />}

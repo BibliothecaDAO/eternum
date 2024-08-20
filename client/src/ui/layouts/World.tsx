@@ -1,5 +1,4 @@
 import { Leva } from "leva";
-import { useEffect } from "react";
 import useUIStore from "../../hooks/store/useUIStore";
 
 import { Redirect } from "wouter";
@@ -27,22 +26,12 @@ import clsx from "clsx";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const realmEntityIds = useUIStore((state) => state.realmEntityIds);
 
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
 
   const battleView = useUIStore((state) => state.battleView);
-
-  useEffect(() => {
-    if (realmEntityIds.length >= 1) {
-      setBlankOverlay(false);
-    } else {
-      setBlankOverlay(true);
-    }
-  }, [realmEntityIds]);
 
   return (
     <div

@@ -27,7 +27,7 @@ export enum MenuEnum {
 export const BottomNavigation = () => {
   const { isMapView } = useQuery();
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { quests } = useQuests();
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { questClaimStatus } = useQuestClaimStatus();
@@ -53,9 +53,9 @@ export const BottomNavigation = () => {
               active={isPopupOpen(questsWindow)}
               size="lg"
               onClick={() => togglePopup(questsWindow)}
-              notification={isRealmSelected(realmEntityId, structures) ? unclaimedQuestsCount : undefined}
+              notification={isRealmSelected(structureEntityId, structures) ? unclaimedQuestsCount : undefined}
               notificationLocation={"topleft"}
-              disabled={!isRealmSelected(realmEntityId, structures)}
+              disabled={!isRealmSelected(structureEntityId, structures)}
             />
 
             {questToClaim && !isMapView && (
@@ -96,7 +96,7 @@ export const BottomNavigation = () => {
         ),
       },
     ];
-  }, [unclaimedQuestsCount, selectedQuest, quests, realmEntityId]);
+  }, [unclaimedQuestsCount, selectedQuest, quests, structureEntityId]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },
@@ -106,7 +106,7 @@ export const BottomNavigation = () => {
   return (
     <>
       <div className="pointer-events-auto">
-        <Questing entityId={realmEntityId} />
+        <Questing entityId={structureEntityId} />
         <Assistant />
         <Leaderboard />
         <Guilds />

@@ -24,6 +24,7 @@ import { LocationManager } from "../helpers/LocationManager";
 import { StructurePreview } from "../components/StructurePreview";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { hexagonEdgeMesh } from "../geometry/HexagonGeometry";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -45,10 +46,8 @@ export default class WorldmapScene extends HexagonScene {
   private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
-
+  private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
   private armySubscription: any;
-
-  private realmEntityId: ID = 0;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -88,9 +87,9 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     useUIStore.subscribe(
-      (state) => state.realmEntityId,
-      (realmEntityId) => {
-        this.realmEntityId = realmEntityId;
+      (state) => state.structureEntityId,
+      (structureEntityId) => {
+        this.structureEntityId = structureEntityId;
       },
     );
 
@@ -191,7 +190,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
       const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
-      this.tileManager.placeStructure(this.realmEntityId, buildingType.type, normalizedHexCoords);
+      this.tileManager.placeStructure(this.structureEntityId, buildingType.type, normalizedHexCoords);
       this.clearEntitySelection();
     } else if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));

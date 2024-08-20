@@ -40,11 +40,11 @@ export const RightNavigationModule = () => {
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { questClaimStatus } = useQuestClaimStatus();
 
   const { getEntityInfo } = getEntitiesUtils();
-  const realmIsMine = getEntityInfo(realmEntityId).isMine;
+  const structureIsMine = getEntityInfo(structureEntityId).isMine;
 
   const { getAllArrivalsWithResources } = useArrivalsWithResources();
 
@@ -72,7 +72,7 @@ export const RightNavigationModule = () => {
         name: "resourceArrivals",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
@@ -93,7 +93,7 @@ export const RightNavigationModule = () => {
         name: "trade",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({
               "animate-pulse":
                 selectedQuest?.id === QuestId.CreateTrade &&
@@ -113,7 +113,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ];
-  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources, realmEntityId]);
+  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources, structureEntityId]);
 
   const slideRight = {
     hidden: { x: "100%" },
@@ -157,7 +157,7 @@ export const RightNavigationModule = () => {
                 </div>
               </Headline>
 
-              <EntityResourceTable entityId={realmEntityId} />
+              <EntityResourceTable entityId={structureEntityId} />
             </div>
           ) : (
             <AllResourceArrivals entityIds={getAllArrivalsWithResources} />

@@ -30,8 +30,8 @@ export const MarketModal = () => {
   const { bidOffers, askOffers } = useSetMarket();
 
   //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
-  const setRealmEntityId = useUIStore((state) => state.setRealmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
 
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
@@ -48,7 +48,7 @@ export const MarketModal = () => {
         component: (
           <MarketOrderPanel
             resourceId={selectedResource}
-            entityId={realmEntityId}
+            entityId={structureEntityId}
             resourceAskOffers={askOffers}
             resourceBidOffers={bidOffers}
           />
@@ -70,7 +70,7 @@ export const MarketModal = () => {
             <div>History</div>
           </div>
         ),
-        component: <MarketTradingHistory realmEntityId={realmEntityId} />,
+        component: <MarketTradingHistory structureEntityId={structureEntityId} />,
       },
       {
         key: "all",
@@ -82,7 +82,7 @@ export const MarketModal = () => {
         component: <TransferView />,
       },
     ],
-    [selectedResource, realmEntityId, askOffers, bidOffers],
+    [selectedResource, structureEntityId, askOffers, bidOffers],
   );
 
   return (
@@ -90,7 +90,7 @@ export const MarketModal = () => {
       <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30  h-full row-span-12 ">
         <div className="col-span-12  p-2 flex justify-between row-span-2">
           <div className="self-center text-xl">
-            <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(ID(trait))}>
+            <Select value={structureEntityId.toString()} onValueChange={(trait) => setStructureEntityId(ID(trait))}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Realm" />
               </SelectTrigger>
@@ -120,7 +120,7 @@ export const MarketModal = () => {
 
         <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
           <MarketResourceSidebar
-            entityId={realmEntityId}
+            entityId={structureEntityId}
             search={""}
             onClick={(value) => setSelectedResource(value)}
             selectedResource={selectedResource}

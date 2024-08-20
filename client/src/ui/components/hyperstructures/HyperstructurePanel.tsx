@@ -38,7 +38,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const [naming, setNaming] = useState("");
   const [resetContributions, setResetContributions] = useState(false);
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { useProgress } = useHyperstructures();
   const { getContributionsByPlayerAddress } = useContributions();
 
@@ -61,7 +61,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       await contribute_to_construction({
         signer: account,
         contributions: formattedContributions,
-        contributor_entity_id: realmEntityId,
+        contributor_entity_id: structureEntityId,
         hyperstructure_entity_id: entity.entity_id,
       });
     } finally {
@@ -79,7 +79,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       );
       return (
         <HyperstructureResourceChip
-          realmEntityId={realmEntityId}
+          structureEntityId={structureEntityId}
           setContributions={setNewContributions}
           contributions={newContributions}
           progress={progress!}
