@@ -20,6 +20,7 @@ export class InteractiveHexManager {
     this.clickAuraMesh = this.createAuraMesh();
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onDoubleClick = this.onDoubleClick.bind(this);
+    this.onClick = this.onClick.bind(this);
     this.particles = new Particles(scene);
     this.particles.setParticleSize(0.2); // Set particle size to 2
     this.particles.setLightIntensity(5); // Se
@@ -78,6 +79,21 @@ export class InteractiveHexManager {
   }
 
   public onDoubleClick(raycaster: THREE.Raycaster) {
+    if (!this.instanceMesh) return;
+    const intersects = raycaster.intersectObjects([this.instanceMesh], true);
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      const intersectedObject = intersect.object;
+      if (intersectedObject instanceof THREE.InstancedMesh) {
+        const instanceId = intersect.instanceId;
+        if (instanceId !== undefined) {
+          return getHexagonCoordinates(intersectedObject, instanceId);
+        }
+      }
+    }
+  }
+
+  public onClick(raycaster: THREE.Raycaster) {
     if (!this.instanceMesh) return;
     const intersects = raycaster.intersectObjects([this.instanceMesh], true);
     if (intersects.length > 0) {
@@ -152,9 +168,9 @@ export class InteractiveHexManager {
 }
 
 const PARTICLES_COUNT = 30;
-const PARTICLE_SPEED = 15;
-const PARTICLE_RESET_Y = 5;
-const PARTICLE_START_Y = -5;
+const PARTICLE_SPEED = 10;
+const PARTICLE_RESET_Y = 2.5;
+const PARTICLE_START_Y = -2.5;
 const LIGHT_COLOR = new THREE.Color(2, 2, 1);
 const PARICLE_COLOR = new THREE.Color(15, 12, 2);
 

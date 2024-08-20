@@ -116,7 +116,7 @@ export abstract class HexagonScene {
       clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
     });
     this.inputManager.addListener("click", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      const clickedHex = this.interactiveHexManager.onClick(raycaster);
       clickedHex && this.onHexagonClick(clickedHex.hexCoords);
     });
     this.inputManager.addListener("contextmenu", (raycaster) => {
