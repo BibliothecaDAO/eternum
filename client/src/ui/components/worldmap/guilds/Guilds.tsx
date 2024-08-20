@@ -64,7 +64,7 @@ export const Guilds = () => {
 
   return (
     <div className="flex flex-col">
-      {guildDisplayed && selectedGuild.guildEntityId ? (
+      {selectedGuild.guildEntityId ? (
         <>
           <div className="relative flex my-1 justify-center">
             <div className="absolute left-0 px-2 flex h-full items-center">
@@ -86,7 +86,7 @@ export const Guilds = () => {
               )}
             </div>
 
-            <GuildMembers selectedGuild={selectedGuild} isOwner={guildDisplayed?.isOwner} />
+            <GuildMembers selectedGuild={selectedGuild} isOwner={guildDisplayed?.isOwner || false} />
           </div>
         </>
       ) : (

@@ -35,8 +35,12 @@ export const useStructureEntityId = () => {
       y: hexPosition.row,
     }).getContract();
 
-    const structures = runQuery([Has(Structure), HasValue(Position, { x, y })]);
-    const structureOwner = structures.size > 0 ? getComponentValue(Owner, structures.values().next().value) : null;
+    const structureEntity = runQuery([Has(Structure), HasValue(Position, { x, y })])
+      .values()
+      .next().value;
+
+    const structure = getComponentValue(Structure, structureEntity);
+    const structureOwner = getComponentValue(Owner, structureEntity);
 
     const isOwner = structureOwner?.address === BigInt(address);
 
@@ -45,7 +49,7 @@ export const useStructureEntityId = () => {
         isOwner ? structureOwner.entity_id : defaultPlayerStructure?.entity_id || UNDEFINED_STRUCTURE_ENTITY_ID,
       );
     } else {
-      setStructureEntityId(structureOwner ? structureOwner.entity_id : UNDEFINED_STRUCTURE_ENTITY_ID);
+      setStructureEntityId(structure?.entity_id || UNDEFINED_STRUCTURE_ENTITY_ID);
     }
-  }, [defaultPlayerStructure, isMapView, hexPosition, address, structures]);
+  }, [defaultPlayerStructure, isMapView, hexPosition, address]);
 };

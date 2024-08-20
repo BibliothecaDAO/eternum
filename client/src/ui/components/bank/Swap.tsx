@@ -170,7 +170,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   return (
     <div>
-      <div className=" w-1/2 mx-auto bg-gold/10 px-3 py-1 ">
+      <div className="mx-auto bg-gold/10 px-3 py-1">
         <div className="relative my-2 space-y-1">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
           <div className="absolute  left-1/2 top-[94px]">
