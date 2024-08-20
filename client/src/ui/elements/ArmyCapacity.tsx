@@ -4,16 +4,30 @@ import clsx from "clsx";
 import { useMemo } from "react";
 import { formatNumber } from "../utils/utils";
 
+enum CapacityColor {
+  LIGHT = "text-green",
+  MEDIUM = "text-orange",
+  HEAVY = "text-red",
+}
+
 export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; className?: string }) => {
   if (!army) return null;
 
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
 
+  const capacityColor = useMemo(() => {
+    if (army.weight >= army.totalCapacity) return CapacityColor.HEAVY;
+    if (remainingCapacity < BigInt(EternumGlobalConfig.exploration.reward)) return CapacityColor.MEDIUM;
+    return CapacityColor.LIGHT;
+  }, [remainingCapacity]);
+
+  const canExplore = remainingCapacity >= BigInt(EternumGlobalConfig.exploration.reward);
+
   return (
-    <div
-      className={clsx(remainingCapacity < BigInt(EternumGlobalConfig.exploration.reward) ? "text-red" : "", className)}
-    >
-      Capacity : {Number(army.weight)} / {formatNumber(Number(army.totalCapacity), 0)} kg
-    </div>
+    <>
+      <div className={clsx(capacityColor, className)}>
+        {!canExplore && "⚠️"} Capacity: {Number(army.weight)} / {formatNumber(Number(army.totalCapacity), 0)} kg
+      </div>
+    </>
   );
 };
