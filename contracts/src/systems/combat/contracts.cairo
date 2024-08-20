@@ -159,7 +159,7 @@ trait ICombatContract<TContractState> {
     ///
     ///       However, for a couple of reasons, we do not transfer resources owned by structures
     ///       into the escrow pool because if a structure is producing resources, it would be
-    ///       impossible to continously donate resources into the battle escrow. Even if it was
+    ///       impossible to continuously donate resources into the battle escrow. Even if it was
     ///       possible, it would take too much gas.
     ///
     ///       Instead, what we do is that we just lock up the structure's resources and if you win
@@ -323,7 +323,7 @@ trait ICombatContract<TContractState> {
     ///     - Emits a `PillageEvent` to signify the outcome of the pillage action.
     ///
     /// # Note:
-    ///     - Continous pillaging simply means you are allowed to pillage without being sent back
+    ///     - Continuous pillaging simply means you are allowed to pillage without being sent back
     ///       to base if the structure army is dead.
     ///
     /// # Returns:
