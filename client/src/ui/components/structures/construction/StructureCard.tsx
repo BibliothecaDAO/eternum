@@ -41,7 +41,7 @@ export const StructureCard = ({
       )}
     >
       {!canBuild && (
-        <div className="absolute w-full h-full bg-black/90 text-white/60 p-4 text-xs  flex justify-center ">
+        <div className="absolute w-full h-full bg-black/70 text-white/60 p-4 text-xs  flex justify-center ">
           <div className="self-center">insufficient funds</div>
         </div>
       )}

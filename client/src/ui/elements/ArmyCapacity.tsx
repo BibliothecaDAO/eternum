@@ -13,7 +13,7 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
     <div
       className={clsx(remainingCapacity < BigInt(EternumGlobalConfig.exploration.reward) ? "text-red" : "", className)}
     >
-      Capacity : {Number(army.weight)} / {formatNumber(Number(army.totalCapacity), 0)} kg
+      Capacity: {Number(army.weight)} / {formatNumber(Number(army.totalCapacity), 0)} kg
     </div>
   );
 };
