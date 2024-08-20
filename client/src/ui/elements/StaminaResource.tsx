@@ -1,16 +1,19 @@
 import { useStamina } from "@/hooks/helpers/useStamina";
 import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
-import clsx from "clsx";
+import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const { useStaminaByEntityId, getMaxStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0 });
   const maxStamina = getMaxStaminaByEntityId(entityId || 0);
 
-  const staminaAmount = Number(stamina?.amount || 0);
-  const staminaPercentage = (staminaAmount / maxStamina) * 100;
+  const staminaAmount = useMemo(() => Number(stamina?.amount || 0), [stamina]);
+  const staminaPercentage = useMemo(() => (staminaAmount / maxStamina) * 100, [staminaAmount, maxStamina]);
 
-  const staminaColor = staminaAmount < EternumGlobalConfig.stamina.travelCost ? "bg-red-500" : "bg-yellow-500";
+  const staminaColor = useMemo(
+    () => (staminaAmount < EternumGlobalConfig.stamina.travelCost ? "bg-red-500" : "bg-yellow-500"),
+    [staminaAmount],
+  );
 
   return (
     <div className={`flex flex-col text-xs font-bold uppercase self-center ${className}`}>
