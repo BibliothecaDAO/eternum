@@ -13,7 +13,7 @@ export enum BattleType {
 }
 
 export enum BattleStatus {
-  StartBattle = "Start battle",
+  BattleStart = "Start battle",
   BattleOngoing = "",
   UserWon = "Victory",
   UserLost = "Defeat",
@@ -297,7 +297,7 @@ export class BattleManager {
 
   public getWinner(currentTimestamp: number, ownArmySide: string): BattleStatus {
     const battle = this.getUpdatedBattle(currentTimestamp);
-    if (!battle) return BattleStatus.StartBattle;
+    if (!battle) return BattleStatus.BattleStart;
 
     if (battle.attack_army_health.current > 0 && battle.defence_army_health.current > 0)
       return BattleStatus.BattleOngoing;

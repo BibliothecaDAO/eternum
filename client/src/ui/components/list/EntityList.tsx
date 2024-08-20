@@ -40,13 +40,13 @@ export const EntityList = ({
   }, [current]);
 
   return (
-    <div className="">
+    <div>
       {selectedEntity ? (
         <>
           {extraBackButtonContent}
           <div className="p-2">
             <Button className="mb-3" variant="default" size="xs" onClick={() => setSelectedEntity(null)}>
-              &lt; Back to {title}
+              {"<"} Back to {title}
             </Button>
             {panel({ entity: list.find((entity) => entity.entity_id === selectedEntity.entity_id), setSelectedEntity })}
           </div>

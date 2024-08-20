@@ -92,7 +92,7 @@ export const BattleProgressBar = ({
   }, [time, battleManager, currentTimestamp, ownArmySide]);
 
   useEffect(() => {
-    if (battleStatus === BattleStatus.StartBattle) {
+    if (battleStatus === BattleStatus.BattleStart) {
       const random = Math.random();
       if (random > 0.66) {
         playUnitSelectedOne();
