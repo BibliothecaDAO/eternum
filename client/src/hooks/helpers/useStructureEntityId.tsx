@@ -5,6 +5,7 @@ import useUIStore from "../store/useUIStore";
 import { Position as PositionInterface } from "@/types/Position";
 import { useEntities } from "./useEntities";
 import { useQuery } from "./useQuery";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 
 export const useStructureEntityId = () => {
   const {
@@ -40,7 +41,7 @@ export const useStructureEntityId = () => {
     if (isMapView) {
       setStructureEntityId(isOwner ? structureOwner.entity_id : defaultPlayerStructure.entity_id);
     } else {
-      setStructureEntityId(structureOwner ? structureOwner.entity_id : 0);
+      setStructureEntityId(structureOwner ? structureOwner.entity_id : UNDEFINED_STRUCTURE_ENTITY_ID);
     }
   }, [defaultPlayerStructure, isMapView, hexPosition, address]);
 };

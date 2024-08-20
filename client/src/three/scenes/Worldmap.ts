@@ -24,7 +24,7 @@ import { LocationManager } from "../helpers/LocationManager";
 import { StructurePreview } from "../components/StructurePreview";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { hexagonEdgeMesh } from "../geometry/HexagonGeometry";
-import { UNDEFINED_STRUCTURE } from "@/ui/constants";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -47,7 +47,7 @@ export default class WorldmapScene extends HexagonScene {
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
 
-  private structureEntityId: ID = UNDEFINED_STRUCTURE;
+  private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();

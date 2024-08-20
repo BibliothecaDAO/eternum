@@ -1,4 +1,4 @@
-import { UNDEFINED_STRUCTURE } from "@/ui/constants";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { ID } from "@bibliothecadao/eternum";
 export interface RealmStore {
   structureEntityId: ID;
@@ -6,6 +6,6 @@ export interface RealmStore {
 }
 
 export const createRealmStoreSlice = (set: any) => ({
-  structureEntityId: UNDEFINED_STRUCTURE,
+  structureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   setStructureEntityId: (realmEntityId: ID) => set({ realmEntityId }),
 });
