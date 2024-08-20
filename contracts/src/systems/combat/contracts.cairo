@@ -929,6 +929,11 @@ mod combat_systems {
             let structure_position: Position = get!(world, structure_id, Position);
             army_position.assert_same_location(structure_position.into());
 
+            // ensure army has stamina
+            let mut army_stamina: Stamina = get!(world, army_id, Stamina);
+            army_stamina.refill_if_next_tick(world);
+            assert!(army_stamina.amount.is_non_zero(), "army needs stamina to pillage");
+
             let troop_config = TroopConfigCustomImpl::get(world);
 
             // get structure army and health
@@ -972,7 +977,6 @@ mod combat_systems {
                 true
             )[0];
 
-            let mut army_stamina: Stamina = get!(world, army_id, Stamina);
             let mut pillaged_resources: Array<(u8, u128)> = array![];
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
