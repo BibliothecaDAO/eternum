@@ -10,6 +10,7 @@ import {
   BuildingType,
   EternumGlobalConfig,
   ID,
+  RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
@@ -104,7 +105,7 @@ export const SelectPreviewBuildingMenu = () => {
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const cost = [...BUILDING_COSTS_SCALED[BuildingType.Resource], ...RESOURCE_INPUTS_SCALED[resourceId]];
+              const cost = [...RESOURCE_BUILDING_COSTS_SCALED[resourceId], ...RESOURCE_INPUTS_SCALED[resourceId]];
               const hasBalance = checkBalance(cost);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
@@ -369,7 +370,7 @@ export const ResourceInfo = ({
 }) => {
   const cost = RESOURCE_INPUTS[resourceId];
 
-  const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
+  const buildingCost = RESOURCE_BUILDING_COSTS_SCALED[resourceId];
 
   const population = BUILDING_POPULATION[BuildingType.Resource];
 
