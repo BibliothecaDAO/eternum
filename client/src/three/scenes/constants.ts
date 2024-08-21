@@ -30,7 +30,9 @@ export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Market]: "/models/buildings/market.glb",
   [BuildingType.Resource]: "/models/buildings/mine.glb",
   [BuildingType.Stable]: "/models/buildings/stable.glb",
-  [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
+  // PLACEHOLDER STOREHOUSE
+  [BuildingType.Storehouse]: "/models/buildings/farm.glb",
+  // [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
   [BuildingType.TradingPost]: "/models/buildings/market.glb",
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
