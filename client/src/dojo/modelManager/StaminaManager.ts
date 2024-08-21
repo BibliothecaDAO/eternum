@@ -1,14 +1,14 @@
-import { DojoResult } from "@/hooks/context/DojoContext";
 import { getCurrentArmiesTick } from "@/three/helpers/ticks";
 import { ID, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { SetupResult } from "../setup";
 
 export class StaminaManager {
   armyEntityId: ID;
-  dojo: DojoResult;
+  dojo: SetupResult;
 
-  constructor(armyEntityId: ID, dojo: DojoResult) {
+  constructor(armyEntityId: ID, dojo: SetupResult) {
     this.armyEntityId = armyEntityId;
     this.dojo = dojo;
   }
@@ -21,21 +21,21 @@ export class StaminaManager {
     let maxStaminas: number[] = [];
     if (troops.knight_count > 0) {
       const knightConfig = getComponentValue(
-        this.dojo.setup.components.StaminaConfig,
+        this.dojo.components.StaminaConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),
       );
       maxStaminas.push(knightConfig!.max_stamina);
     }
     if (troops.crossbowman_count > 0) {
       const crossbowmenConfig = getComponentValue(
-        this.dojo.setup.components.StaminaConfig,
+        this.dojo.components.StaminaConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
       );
       maxStaminas.push(crossbowmenConfig!.max_stamina);
     }
     if (troops.paladin_count > 0) {
       const paladinConfig = getComponentValue(
-        this.dojo.setup.components.StaminaConfig,
+        this.dojo.components.StaminaConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Paladin)]),
       );
       maxStaminas.push(paladinConfig!.max_stamina);
@@ -49,14 +49,14 @@ export class StaminaManager {
   };
 
   private _getStamina() {
-    const entity = runQuery([HasValue(this.dojo.setup.components.Stamina, { entity_id: this.armyEntityId })])
+    const entity = runQuery([HasValue(this.dojo.components.Stamina, { entity_id: this.armyEntityId })])
       .values()
       .next().value;
-    let staminaEntity = getComponentValue(this.dojo.setup.components.Stamina, entity);
+    let staminaEntity = getComponentValue(this.dojo.components.Stamina, entity);
     if (!staminaEntity) {
       throw Error("no stamina for entity");
     }
-    const armyEntity = getComponentValue(this.dojo.setup.components.Army, entity);
+    const armyEntity = getComponentValue(this.dojo.components.Army, entity);
 
     const currentArmiesTick = getCurrentArmiesTick();
 

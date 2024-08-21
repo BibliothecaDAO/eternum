@@ -21,12 +21,8 @@ export class TileManager {
     tile: OverridableComponent<ClientComponents["Tile"]["schema"]>;
     building: OverridableComponent<ClientComponents["Building"]["schema"]>;
     structure: Component<ClientComponents["Structure"]["schema"]>;
-    stamina: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
     position: OverridableComponent<ClientComponents["Position"]["schema"]>;
-    army: Component<ClientComponents["Army"]["schema"]>;
     owner: Component<ClientComponents["Owner"]["schema"]>;
-    entityOwner: Component<ClientComponents["EntityOwner"]["schema"]>;
-    staminaConfig: Component<ClientComponents["StaminaConfig"]["schema"]>;
   };
   private col: number;
   private row: number;
@@ -36,17 +32,13 @@ export class TileManager {
     private dojo: SetupResult,
     hexCoords: HexPosition,
   ) {
-    const { Tile, Building, Stamina, Position, Army, Owner, EntityOwner, StaminaConfig, Structure } = dojo.components;
+    const { Tile, Building, Position, Owner, Structure } = dojo.components;
     this.models = {
       tile: Tile,
       building: Building,
       structure: Structure,
-      stamina: Stamina,
       position: Position,
-      army: Army,
       owner: Owner,
-      entityOwner: EntityOwner,
-      staminaConfig: StaminaConfig,
     };
     this.col = hexCoords.col;
     this.row = hexCoords.row;

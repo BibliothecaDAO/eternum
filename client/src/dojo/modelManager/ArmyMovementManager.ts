@@ -18,6 +18,7 @@ import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
 import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
+import { StaminaManager } from "./StaminaManager";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -83,6 +84,7 @@ export class ArmyMovementManager {
   private address: ContractAddress;
   private fishManager: ProductionManager;
   private wheatManager: ProductionManager;
+  private staminaManager: StaminaManager;
 
   constructor(
     private dojo: SetupResult,
@@ -129,60 +131,11 @@ export class ArmyMovementManager {
       entityOwnerId!.entity_owner_id,
       ResourcesIds.Fish,
     );
-  }
-
-  private _maxStamina = (troops: any): number => {
-    let maxStaminas: number[] = [];
-    if (troops.knight_count > 0) {
-      const knightConfig = getComponentValue(
-        this.staminaConfigModel,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),
-      );
-      maxStaminas.push(knightConfig!.max_stamina);
-    }
-    if (troops.crossbowman_count > 0) {
-      const crossbowmenConfig = getComponentValue(
-        this.staminaConfigModel,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
-      );
-      maxStaminas.push(crossbowmenConfig!.max_stamina);
-    }
-    if (troops.paladin_count > 0) {
-      const paladinConfig = getComponentValue(
-        this.staminaConfigModel,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Paladin)]),
-      );
-      maxStaminas.push(paladinConfig!.max_stamina);
-    }
-
-    if (maxStaminas.length === 0) return 0;
-
-    const maxArmyStamina = Math.min(...maxStaminas);
-
-    return maxArmyStamina;
-  };
-
-  getStamina() {
-    let staminaEntity = getComponentValue(this.staminaModel, this.entity);
-    if (!staminaEntity) {
-      throw Error("no stamina for entity");
-    }
-    const armyEntity = getComponentValue(this.armyModel, this.entity);
-
-    const currentArmiesTick = getCurrentArmiesTick();
-
-    if (currentArmiesTick !== Number(staminaEntity?.last_refill_tick)) {
-      staminaEntity = {
-        ...staminaEntity!,
-        last_refill_tick: BigInt(currentArmiesTick),
-        amount: this._maxStamina(armyEntity!.troops),
-      };
-    }
-    return staminaEntity;
+    this.staminaManager = new StaminaManager(entityId, dojo);
   }
 
   private _canExplore(): boolean {
-    const stamina = this.getStamina().amount;
+    const stamina = this.staminaManager.getStamina().amount;
 
     if (stamina < EternumGlobalConfig.stamina.exploreCost) {
       return false;
@@ -204,7 +157,7 @@ export class ArmyMovementManager {
   }
 
   private _calculateMaxTravelPossible = () => {
-    const stamina = this.getStamina();
+    const stamina = this.staminaManager.getStamina();
     return Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
   };
 
@@ -277,7 +230,7 @@ export class ArmyMovementManager {
   };
 
   private _optimisticStaminaUpdate = (overrideId: string, cost: number) => {
-    const stamina = this.getStamina();
+    const stamina = this.staminaManager.getStamina();
 
     // substract the costs
     this.staminaModel.addOverride(overrideId, {
