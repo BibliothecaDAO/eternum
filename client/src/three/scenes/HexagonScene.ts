@@ -35,6 +35,7 @@ export abstract class HexagonScene {
   protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
   protected modelLoadPromises: Promise<void>[] = [];
   protected state: AppStore;
+  protected fog: THREE.Fog;
 
   constructor(
     protected sceneName: SceneName,
@@ -126,6 +127,9 @@ export abstract class HexagonScene {
 
     this.state = useUIStore.getState();
     this.createGroundMesh();
+
+    this.fog = new THREE.Fog(0xffffff, 21, 30);
+    this.scene.fog = this.fog;
   }
 
   protected abstract onHexagonMouseMove({
