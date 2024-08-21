@@ -1,7 +1,7 @@
 import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
+import { useDojo } from "../context/DojoContext";
 
 export const useShardMines = () => {
   const {
@@ -37,19 +37,11 @@ export const useShardMines = () => {
           .next().value,
       );
 
-      const resource = getComponentValue(
-        Resource,
-        runQuery([HasValue(Resource, { entity_id: shardMine!.entity_id })])
-          .values()
-          .next().value,
-      );
-
       return {
         ...shardMine,
         ...position,
         ...building,
         ...production,
-        ...resource,
         owner,
         name: entityName
           ? shortString.decodeShortString(entityName.name.toString())
