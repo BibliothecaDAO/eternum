@@ -112,7 +112,7 @@ export abstract class HexagonScene {
       }, 50),
     );
     this.inputManager.addListener("dblclick", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      const clickedHex = this.interactiveHexManager.onClick(raycaster);
       clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
     });
     this.inputManager.addListener("click", (raycaster) => {
@@ -120,7 +120,7 @@ export abstract class HexagonScene {
       clickedHex && this.onHexagonClick(clickedHex.hexCoords);
     });
     this.inputManager.addListener("contextmenu", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      const clickedHex = this.interactiveHexManager.onClick(raycaster);
       clickedHex && this.onHexagonRightClick(clickedHex.hexCoords);
     });
 
