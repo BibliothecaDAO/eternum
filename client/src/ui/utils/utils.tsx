@@ -1,20 +1,9 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/constants";
+import { HEX_SIZE } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
-import {
-  ContractAddress,
-  EternumGlobalConfig,
-  ID,
-  Position,
-  Resource,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-} from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { ContractAddress, ID, Position, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
-import { GRAMS_PER_KG } from "../constants";
 import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
@@ -104,24 +93,36 @@ export const getHexagonCoordinates = (
   return { hexCoords, position };
 };
 
-export const getWorldPositionForHex = (hexCoords: HexPosition) => {
-  const { row, col } = hexCoords;
-  // Calculate the x and z coordinates
-  const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
-  const z = -row * HEX_VERTICAL_SPACING;
+export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
+  const hexRadius = HEX_SIZE;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
 
-  // y coordinate is half of the hexagon height
-  const y = 0;
-
+  const col = hexCoords.col;
+  const row = hexCoords.row;
+  const x = col * horizDist - ((row % 2) * horizDist) / 2;
+  const z = row * vertDist;
+  const y = flat ? 0 : pseudoRandom(x, z) * 2;
   return new THREE.Vector3(x, y, z);
 };
 
 export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
-  const { x, y, z } = worldPosition;
-  const row = -Math.round(z / HEX_VERTICAL_SPACING);
-  const col = Math.round((x - ((row % 2) * HEX_HORIZONTAL_SPACING) / 2) / HEX_HORIZONTAL_SPACING);
+  const hexRadius = HEX_SIZE;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
 
-  return { row, col };
+  const row = Math.round(worldPosition.z / vertDist);
+  // hexception offsets hack
+  const col = Math.round((worldPosition.x + ((row % 2) * horizDist) / 2) / horizDist);
+
+  return {
+    col,
+    row,
+  };
 };
 
 export const calculateOffset = (index: number, total: number, radius: number) => {
