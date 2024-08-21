@@ -39,12 +39,12 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const ownerFee = lordsAmount * OWNER_FEE;
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * LP_FEE;
 
-  const market = useComponentValue(Market, getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]));
   const marketManager = useMemo(
     () => new MarketManager(Market, Liquidity, bankEntityId, ContractAddress(account.address), resourceId),
-    [Market, Liquidity, bankEntityId, resourceId, account.address, market],
+    [Market, Liquidity, bankEntityId, resourceId, account.address],
   );
 
+  const market = useComponentValue(Market, getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]));
   useEffect(() => {
     const amount = isBuyResource ? lordsAmount : resourceAmount;
     const setAmount = isBuyResource ? setResourceAmount : setLordsAmount;
@@ -54,7 +54,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       const cost = operation(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator);
       setAmount(divideByPrecision(cost));
     }
-  }, [lordsAmount, resourceAmount, isBuyResource, marketManager]);
+  }, [lordsAmount, resourceAmount, isBuyResource, marketManager, market]);
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
