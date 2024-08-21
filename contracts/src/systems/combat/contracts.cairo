@@ -833,10 +833,35 @@ mod combat_systems {
 
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
+            battle.update_state();
+            let battle_was_active = !battle.has_ended();
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
 
-            let battle_position = get!(world, battle_id, Position);
+            // slash army if battle was not concluded before they left
+            if battle_was_active {
+                let troop_config = TroopConfigCustomImpl::get(world);
+                let mut army = get!(world, army_id, Army);
+                army.troops.knight_count -= (army.troops.knight_count * troop_config.battle_leave_slash_num.into())
+                    / troop_config.battle_leave_slash_denom.into();
+                army.troops.paladin_count -= (army.troops.paladin_count * troop_config.battle_leave_slash_num.into())
+                    / troop_config.battle_leave_slash_denom.into();
+                army
+                    .troops
+                    .crossbowman_count -= (army.troops.crossbowman_count * troop_config.battle_leave_slash_num.into())
+                    / troop_config.battle_leave_slash_denom.into();
 
+                let army_health = Health {
+                    entity_id: army_id,
+                    current: army.troops.full_health(troop_config),
+                    lifetime: army.troops.full_health(troop_config)
+                };
+
+                let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+                set!(world, (army, army_health, army_quantity));
+            }
+
+            // emit battle leave event
+            let battle_position = get!(world, battle_id, Position);
             emit!(
                 world,
                 BattleLeaveData {
@@ -1505,6 +1530,7 @@ mod combat_systems {
                 lifetime: army.troops.full_health(troop_config)
             };
 
+            // note: army quantity would be used inside `withdraw_balance_and_reward`
             let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
             set!(world, (army_health, army_quantity));
 
