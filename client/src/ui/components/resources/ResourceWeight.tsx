@@ -1,4 +1,5 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { GRAMS_PER_KG } from "@/ui/constants";
 import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
@@ -70,9 +71,9 @@ export const TravelInfo = ({
         </tbody>
       </table>
       <div className="flex text-xs mt-4 justify-center w-full gap-4 font-bold ">
-        <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords]} g/unit`}</div>
-        <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat]} g/unit`}</div>
-        <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood]} g/unit`}</div>
+        <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords] / GRAMS_PER_KG} kg/unit`}</div>
+        <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat] / GRAMS_PER_KG} kg/unit`}</div>
+        <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood] / GRAMS_PER_KG} kg/unit`}</div>
       </div>
     </>
   );
