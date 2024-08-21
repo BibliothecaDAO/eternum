@@ -22,9 +22,9 @@ export const Transfers = () => {
             Donkey carry capacity: <strong>{EternumGlobalConfig.carryCapacityGram.donkey}kg</strong>
           </p>
           <div className="flex mt-4 justify-center w-full gap-8 font-bold border p-2">
-            <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords]} kg/unit`}</div>
-            <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat]} kg/unit`}</div>
-            <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood]} kg/unit`}</div>
+            <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords]} g/unit`}</div>
+            <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat]} g/unit`}</div>
+            <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood]} g/unit`}</div>
           </div>
         </>
       ),
