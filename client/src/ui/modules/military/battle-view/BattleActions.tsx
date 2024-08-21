@@ -157,7 +157,7 @@ export const BattleActions = ({
   );
 
   return (
-    <div className="col-span-2 flex justify-center flex-wrap -bottom-y p-2 bg-[#1b1a1a] bg-map">
+    <div className="col-span-2 flex justify-center flex-wrap -bottom-y p-2 bg-[#1b1a1a] bg-hex-bg">
       <div className="grid grid-cols-2 gap-1 w-full">
         <Button
           variant="outline"

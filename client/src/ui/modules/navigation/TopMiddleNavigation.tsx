@@ -161,7 +161,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className="flex min-w-72 gap-1 text-gold bg-map justify-center border text-center rounded bg-black/90 border-gold/10 relative">
+        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded bg-black/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
