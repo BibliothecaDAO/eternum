@@ -1,5 +1,5 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
@@ -52,8 +52,9 @@ export const TravelInfo = ({
 
           <tr>
             <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Total Transfer Weight</td>
-            <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${divideByPrecision(
-              resourceWeight,
+            <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${formatNumber(
+              divideByPrecision(resourceWeight) / 1000,
+              0,
             )} kg`}</td>
           </tr>
           <tr>
@@ -69,9 +70,9 @@ export const TravelInfo = ({
         </tbody>
       </table>
       <div className="flex text-xs mt-4 justify-center w-full gap-4 font-bold ">
-        <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords]} kg/unit`}</div>
-        <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat]} kg/unit`}</div>
-        <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood]} kg/unit`}</div>
+        <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords]} g/unit`}</div>
+        <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat]} g/unit`}</div>
+        <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood]} g/unit`}</div>
       </div>
     </>
   );
