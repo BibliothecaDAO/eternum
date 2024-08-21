@@ -29,7 +29,7 @@ import { CSS2DObject } from "three-stdlib";
 
 const loader = new GLTFLoader();
 
-export const generateHexPositions = (center: HexPosition, radius: number) => {
+const generateHexPositions = (center: HexPosition, radius: number) => {
   const color = new THREE.Color("gray");
   const positions: any[] = [];
   const positionSet = new Set(); // To track existing positions
