@@ -200,7 +200,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   protected onHexagonClick(hexCoords: HexPosition): void {
-    const normalizedCoords = { col: BUILDINGS_CENTER[0] - hexCoords.col, row: BUILDINGS_CENTER[1] - hexCoords.row };
+    const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
     if (buildingType) {
       // if building mode
@@ -224,7 +224,7 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
   protected onHexagonMouseMove({ position, hexCoords }: { position: THREE.Vector3; hexCoords: HexPosition }): void {
-    const normalizedCoords = { col: BUILDINGS_CENTER[0] - hexCoords.col, row: BUILDINGS_CENTER[1] - hexCoords.row };
+    const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
 
     this.buildingPreview?.setBuildingPosition(position);
