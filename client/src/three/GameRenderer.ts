@@ -80,7 +80,7 @@ export default class GameRenderer {
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-    this.camera.position.set(0, cameraHeight, -cameraDepth);
+    this.camera.position.set(0, cameraHeight, cameraDepth);
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
 

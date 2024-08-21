@@ -53,7 +53,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
-  private cachedHexagonEdges: Map<string, THREE.Group> = new Map();
 
   constructor(
     dojoContext: SetupResult,
@@ -341,9 +340,8 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    this.setHexagonEdges(new THREE.Group());
     const dummy = new THREE.Object3D();
-    const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
+    const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
       Ocean: [],
       DeepOcean: [],
       Beach: [],
@@ -360,6 +358,7 @@ export default class WorldmapScene extends HexagonScene {
       SubtropicalDesert: [],
       TropicalSeasonalForest: [],
       TropicalRainForest: [],
+      Outline: [],
     };
 
     const hexPositions: THREE.Vector3[] = [];
@@ -378,14 +377,11 @@ export default class WorldmapScene extends HexagonScene {
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
-        const hexEdge = hexagonEdgeMesh.clone();
-        hexEdge.position.copy(pos);
-        this.addHexagonEdge(hexEdge);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-        if (isStructure || !isExplored || isBattle) {
+        if (isStructure || isBattle) {
           dummy.scale.set(0, 0, 0);
         } else {
           dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
@@ -415,7 +411,11 @@ export default class WorldmapScene extends HexagonScene {
 
         dummy.updateMatrix();
 
-        biomeHexes[biome].push(dummy.matrix.clone());
+        if (isExplored) {
+          biomeHexes[biome].push(dummy.matrix.clone());
+        } else {
+          biomeHexes["Outline"].push(dummy.matrix.clone());
+        }
       }
 
       currentIndex = endIndex;
@@ -448,8 +448,6 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.cachedMatrices.get(chunkKey)!.set(biome, { matrices: matrices as any, count });
     }
-    const hexEdges = this.getHexagonEdges();
-    this.cachedHexagonEdges.set(chunkKey, hexEdges);
   }
 
   removeCachedMatricesForChunk(startRow: number, startCol: number) {
@@ -460,14 +458,10 @@ export default class WorldmapScene extends HexagonScene {
   private applyCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
-    const cachedHexEdges = this.cachedHexagonEdges.get(chunkKey);
     if (cachedMatrices) {
       for (const [biome, { matrices, count }] of cachedMatrices) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         hexMesh.setMatricesAndCount(matrices, count);
-      }
-      if (cachedHexEdges) {
-        this.setHexagonEdges(cachedHexEdges);
       }
       return true;
     }

@@ -35,7 +35,6 @@ export abstract class HexagonScene {
   protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
   protected modelLoadPromises: Promise<void>[] = [];
   protected state: AppStore;
-  private hexagonEdges: THREE.Group;
 
   constructor(
     protected sceneName: SceneName,
@@ -126,8 +125,6 @@ export abstract class HexagonScene {
     });
 
     this.state = useUIStore.getState();
-    this.hexagonEdges = new THREE.Group();
-    this.scene.add(this.hexagonEdges);
     this.createGroundMesh();
   }
 
@@ -141,20 +138,6 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
   protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
-
-  protected addHexagonEdge(edge: THREE.LineSegments) {
-    this.hexagonEdges.add(edge);
-  }
-
-  protected setHexagonEdges(edges: THREE.Group) {
-    this.scene.remove(this.hexagonEdges);
-    this.hexagonEdges = edges;
-    this.scene.add(this.hexagonEdges);
-  }
-
-  protected getHexagonEdges() {
-    return this.hexagonEdges;
-  }
 
   public abstract setup(): void;
 
@@ -294,14 +277,14 @@ export abstract class HexagonScene {
   private updateLights = _.throttle(() => {
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.position.set(
-        this.controls.target.x + 15,
+        this.controls.target.x - 15,
         this.controls.target.y + 13,
-        this.controls.target.z - 8,
+        this.controls.target.z + 8,
       );
       this.mainDirectionalLight.target.position.set(
         this.controls.target.x,
         this.controls.target.y,
-        this.controls.target.z + 5.2,
+        this.controls.target.z - 5.2,
       );
       this.mainDirectionalLight.target.updateMatrixWorld();
     }
@@ -320,7 +303,10 @@ export abstract class HexagonScene {
           path,
           (gltf) => {
             const model = gltf.scene as THREE.Group;
-
+            if (biome === "Outline") {
+              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).transparent = true;
+              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.1;
+            }
             const tmp = new InstancedModel(model, maxInstances);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
