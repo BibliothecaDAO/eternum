@@ -42,7 +42,7 @@ export const ResourceBar = ({
   };
 
   const handleAmountChange = (amount: string) => {
-    !disableInput && setAmount && setAmount(parseInt(amount));
+    !disableInput && setAmount && setAmount(parseInt(amount) || 0);
   };
 
   const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
@@ -53,7 +53,7 @@ export const ResourceBar = ({
       <div className="self-center">
         <TextInput
           className="text-2xl border-transparent"
-          value={amount.toLocaleString()}
+          value={isNaN(amount) ? "0" : amount.toLocaleString()}
           onChange={(amount) => handleAmountChange(amount)}
         />
 
@@ -62,10 +62,10 @@ export const ResourceBar = ({
             className="flex text-xs text-gold/70 mt-1 ml-2"
             onClick={() => handleAmountChange(finalResourceBalance.toString())}
           >
-            Max: {selectedResourceBalance.toLocaleString()}
+            Max: {isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}
             {hasLordsFees && (
               <div className="text-danger ml-2">
-                <div>{`[- ${lordsFee.toFixed(2)}]`}</div>
+                <div>{`[- ${isNaN(lordsFee) ? "0" : lordsFee.toFixed(2)}]`}</div>
               </div>
             )}
           </div>
