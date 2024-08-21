@@ -1,6 +1,14 @@
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
-import { ContractAddress, ID, Position, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  EternumGlobalConfig,
+  ID,
+  Position,
+  Resource,
+  ResourcesIds,
+  WEIGHTS_GRAM,
+} from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
@@ -32,14 +40,12 @@ export function displayAddress(string: string) {
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
 
-const PRECISION = 1000;
-
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * PRECISION);
+  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / PRECISION;
+  return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
 export function getPosition(realm_id: ID): { x: number; y: number } {

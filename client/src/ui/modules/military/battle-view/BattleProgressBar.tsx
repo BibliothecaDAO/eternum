@@ -39,7 +39,7 @@ export const BattleProgressBar = ({
 
   const [time, setTime] = useState<Date | undefined>(durationLeft);
 
-  const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "(⚔️)" : ""}`;
+  const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "" : ""}`;
   const defenderName = structure
     ? structure.isMercenary
       ? "Bandits"
@@ -82,7 +82,7 @@ export const BattleProgressBar = ({
   const gradient = useMemo(() => {
     const attackPercentage = parseFloat(attackingHealthPercentage);
     const defendPercentage = parseFloat(defendingHealthPercentage);
-    return `linear-gradient(to right, #582C4D ${attackPercentage}%, #582C4D ${attackPercentage}%, #6B7FD7 ${attackPercentage}%, #6B7FD7 ${
+    return `linear-gradient(to right, #2B2E3E ${attackPercentage}%, #2B2E3E ${attackPercentage}%, #46201D ${attackPercentage}%, #46201D ${
       attackPercentage + defendPercentage
     }%)`;
   }, [attackingHealthPercentage, defendingHealthPercentage]);
@@ -127,9 +127,27 @@ export const BattleProgressBar = ({
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
-      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold bg-[#1b1a1a] px-8 py-2  -top-y">
+      {!isNaN(Number(attackingHealthPercentage)) && !isNaN(Number(defendingHealthPercentage)) && (
+        <div className="relative h-6  mx-auto w-2/3 -y rounded-t-2xl bg-opacity-40" style={{ background: gradient }}>
+          <div className="flex px-4 justify-between">
+            {Number(attackingHealthPercentage) > 0 && (
+              <div className="text-left self-center">
+                <p>{attackingHealthPercentage}%</p>
+              </div>
+            )}
+            {Number(defendingHealthPercentage) > 0 && (
+              <div className="text-left self-center">
+                <p>{defendingHealthPercentage}%</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="mx-auto w-2/3 grid grid-cols-3  text-2xl text-gold bg-[#1b1a1a] bg-hex-bg px-4 py-2  -top-y">
         <div className="text-left">
-          <p>{attackerName}</p>
+          <p>
+            {attackerName} {}
+          </p>
         </div>
         <div className="font-bold text-center">
           {time ? `${time.toISOString().substring(11, 19)} left` : battleStatus}
@@ -138,9 +156,6 @@ export const BattleProgressBar = ({
           <p>{defenderName}</p>
         </div>
       </div>
-      {!isNaN(Number(attackingHealthPercentage)) && !isNaN(Number(defendingHealthPercentage)) && (
-        <div className="relative h-8  mx-auto w-2/3 -y animate-slowPulse" style={{ background: gradient }}></div>
-      )}
     </motion.div>
   );
 };

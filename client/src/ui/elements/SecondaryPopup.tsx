@@ -127,7 +127,7 @@ SecondaryPopup.Head = ({
       {hintSection && <HintModalButton className="mr-2" section={hintSection} />}
 
       {onClose && (
-        <Button variant="default" size="xs" onClick={onClose}>
+        <Button variant="default" onClick={onClose}>
           <X className="w-5 h-5" />
         </Button>
       )}
