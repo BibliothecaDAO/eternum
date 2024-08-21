@@ -92,5 +92,3 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   // placeholder for now
   [StructureType.Settlement]: "textures/shard_label.png",
 };
-
-export const Knight = "models/knight.glb";
