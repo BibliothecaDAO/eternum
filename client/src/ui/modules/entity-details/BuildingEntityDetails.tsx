@@ -101,7 +101,7 @@ export const BuildingEntityDetails = () => {
             hintModal
           />
         )}
-        {selectedBuildingHex && (
+        {buildingState.buildingType !== undefined && selectedBuildingHex && (
           <div className="flex justify-center space-x-3">
             <Button
               onClick={handlePauseResumeProduction}

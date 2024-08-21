@@ -25,7 +25,7 @@ export const ToggleComponent = ({ title, children, props }: ToggleComponentProps
 
   return (
     <div className="w-full" {...props}>
-      <Button onClick={toggleList} className="mt-2 w-full transition-all duration-200" variant="outline">
+      <Button onClick={toggleList} className="mt-2 w-full transition-all duration-200" variant="primary">
         {title}
       </Button>
       <div
