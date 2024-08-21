@@ -297,7 +297,7 @@ export default class WorldmapScene extends HexagonScene {
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
-      const neighborOffsets = row % 2 !== 0 ? neighborOffsetsOdd : neighborOffsetsEven;
+      const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
 
       neighborOffsets.forEach(({ i, j }) => {
         const neighborCol = col + i;
@@ -388,7 +388,7 @@ export default class WorldmapScene extends HexagonScene {
         }
 
         if (!isExplored) {
-          const neighborOffsets = globalRow % 2 !== 0 ? neighborOffsetsOdd : neighborOffsetsEven;
+          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
             const neighborRow = globalRow + j;
