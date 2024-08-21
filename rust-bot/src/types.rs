@@ -185,6 +185,7 @@ pub async fn process_event(
                         .description(format!("Battle will end in {} seconds", duration_left))
                         .image("attachment://ferris_eyes.png")
                         .footer(footer)
+                        .color(poise::serenity_prelude::Color::RED)
                         .timestamp(Timestamp::now());
 
                     let content = CreateMessage::new()
@@ -261,6 +262,7 @@ pub async fn process_event(
             structure_type,
             pillaged_resources,
         } => {
+            println!("BattlePillage event: {:?}", pillaged_structure_owner);
             if let Ok(Some(Some(discord_id))) =
                 check_user_in_database(database, &pillaged_structure_owner).await
             {
@@ -276,6 +278,7 @@ pub async fn process_event(
                             pillaged_resources, structure_type
                         ))
                         .footer(footer)
+                        .color(poise::serenity_prelude::Color::RED)
                         .timestamp(Timestamp::now());
 
                     let content = CreateMessage::new()
@@ -340,7 +343,6 @@ impl EventHandler {
     }
 
     pub fn parse_event(&self, entity: Entity) -> Option<GameEvent> {
-        println!("Entity: {:?}", entity);
         entity
             .models
             .iter()
@@ -350,7 +352,10 @@ impl EventHandler {
                 "eternum-BattleLeaveData" => self.parse_battle_leave(model),
                 "eternum-BattleClaimData" => self.parse_battle_claim(model),
                 "eternum-BattlePillageData" => self.parse_battle_pillage(model),
-                _ => None,
+                _ => {
+                    println!("Unknown model name: {}", model.name); // Add this line for debugging
+                    None
+                }
             })
     }
 
@@ -469,6 +474,7 @@ impl EventHandler {
     }
 
     fn parse_battle_pillage(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
+        println!("Model: {:?}", model);
         // ... Parse BattlePillage event
         let id = self.extract_u32(&model.children[0]);
         let event_id = self.extract_u32(&model.children[1]);

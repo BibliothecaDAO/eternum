@@ -2,25 +2,16 @@ mod commands;
 mod types;
 use poise::serenity_prelude as serenity;
 use serenity::futures::StreamExt;
-use serenity::model::id::{ChannelId, GuildId, UserId};
 use sqlx::SqlitePool;
-use std::convert::TryInto;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
-use serenity::builder::{CreateAttachment, CreateEmbed, CreateEmbedFooter, CreateMessage};
-use serenity::model::Timestamp;
+
 use starknet_crypto::Felt;
 use torii_client::client::Client;
-use torii_grpc::proto::types::Ty;
-use torii_grpc::{
-    client::EntityUpdateStreaming,
-    types::{schema::Entity, EntityKeysClause, KeysClause},
-};
 
-use dojo_types::primitive::Primitive::ContractAddress;
+use torii_grpc::types::{EntityKeysClause, KeysClause};
 
 use crate::types::{process_event, EventHandler, MessageDispatcher};
 
@@ -38,8 +29,8 @@ async fn check_user_in_database(
 }
 
 async fn setup_torii_client(token: String, database: SqlitePool) {
-    let torii_url = "http://0.0.0.0:8080".to_string();
-    let rpc_url = "http://0.0.0.0:5050".to_string();
+    let torii_url = "https://api.cartridge.gg/x/eternum-34/torii".to_string();
+    let rpc_url = "https://api.cartridge.gg/x/eternum-34/katana".to_string();
     let relay_url = "/ip4/127.0.0.1/tcp/9090".to_string();
     let world = Felt::from_hex_unchecked(
         "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",

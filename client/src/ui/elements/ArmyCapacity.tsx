@@ -32,7 +32,8 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
         )}
       >
         <div className={clsx(capacityColor, className)}>
-          {!canExplore && "⚠️"} Capacity: {Number(army.weight)} / {formatNumber(Number(army.totalCapacity), 0)} kg
+          {!canExplore && "⚠️"} Capacity: {formatNumber(Number(army.weight), 0)} /{" "}
+          {formatNumber(Number(army.totalCapacity), 0)} kg
         </div>
       </div>
     </div>
