@@ -54,7 +54,7 @@ export const TravelInfo = ({
           <tr>
             <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Total Transfer Weight</td>
             <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${formatNumber(
-              divideByPrecision(resourceWeight) / 1000,
+              divideByPrecision(resourceWeight) / GRAMS_PER_KG,
               0,
             )} kg`}</td>
           </tr>
