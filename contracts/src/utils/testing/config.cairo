@@ -57,6 +57,8 @@ fn set_combat_config(config_systems_address: ContractAddress) {
         pillage_health_divisor: 8,
         army_free_per_structure: 100,
         army_extra_per_building: 100,
+        battle_leave_slash_num: 25,
+        battle_leave_slash_denom: 100
     };
     ITroopConfigDispatcher { contract_address: config_systems_address }.set_troop_config(troop_config);
 }

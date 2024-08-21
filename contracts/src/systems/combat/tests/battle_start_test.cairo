@@ -85,6 +85,8 @@ fn set_configurations(world: IWorldDispatcher) {
                 pillage_health_divisor: 8,
                 army_free_per_structure: 3,
                 army_extra_per_building: 2,
+                battle_leave_slash_num: 25,
+                battle_leave_slash_denom: 100
             },
             TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
             CapacityConfig {
