@@ -25,6 +25,7 @@ import { StructurePreview } from "../components/StructurePreview";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { hexagonEdgeMesh } from "../geometry/HexagonGeometry";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { SelectedHexManager } from "../components/SelectedHexManager";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -48,6 +49,7 @@ export default class WorldmapScene extends HexagonScene {
   private structurePreview: StructurePreview | null = null;
   private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
   private armySubscription: any;
+  private selectedHexManager: SelectedHexManager;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -133,6 +135,9 @@ export default class WorldmapScene extends HexagonScene {
       const selectedEntityId = this.armyManager.onRightClick(raycaster);
       this.onArmyRightClick(selectedEntityId);
     });
+
+    // add particles
+    this.selectedHexManager = new SelectedHexManager(this.scene);
   }
 
   public moveCameraToURLLocation() {
@@ -204,6 +209,8 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
     } else {
+      const position = getWorldPositionForHex(hexCoords);
+      this.selectedHexManager.setPosition(position.x, position.z);
       this.state.setSelectedHex({ col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER });
       this.state.setLeftNavigationView(View.EntityView);
     }
@@ -525,5 +532,6 @@ export default class WorldmapScene extends HexagonScene {
   update(deltaTime: number) {
     super.update(deltaTime);
     this.armyManager.update(deltaTime);
+    this.selectedHexManager.update(deltaTime);
   }
 }
