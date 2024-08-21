@@ -1294,9 +1294,7 @@ mod combat_systems {
 
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
-            set!(
-                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
-            );
+            set!(world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() }));
 
             army_id
         }
