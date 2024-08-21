@@ -15,7 +15,12 @@ export class MarketManager {
   player: ContractAddress;
   resourceId: ResourcesIds;
 
-  constructor(private dojo: SetupResult, bankEntityId: ID, player: ContractAddress, resourceId: ResourcesIds) {
+  constructor(
+    private dojo: SetupResult,
+    bankEntityId: ID,
+    player: ContractAddress,
+    resourceId: ResourcesIds,
+  ) {
     const { Market, Liquidity } = dojo.components;
     this.marketModel = Market;
     this.liquidityModel = Liquidity;
