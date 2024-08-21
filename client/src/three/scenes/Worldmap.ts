@@ -261,6 +261,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const dummy = new THREE.Object3D();
     const pos = getWorldPositionForHex({ row, col });
+
     dummy.position.copy(pos);
 
     const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
@@ -379,7 +380,6 @@ export default class WorldmapScene extends HexagonScene {
         dummy.position.copy(pos);
         const hexEdge = hexagonEdgeMesh.clone();
         hexEdge.position.copy(pos);
-        hexEdge.position.y += 0.1;
         this.addHexagonEdge(hexEdge);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
@@ -439,36 +439,6 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
-  public createGroundMesh() {
-    const scale = 60;
-    const metalness = 0.5;
-    const roughness = 0.7;
-
-    const geometry = new THREE.PlaneGeometry(2668, 1390.35);
-    const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(scale, scale / 2.5);
-    });
-
-    const material = new THREE.MeshStandardMaterial({
-      map: texture,
-      metalness: metalness,
-      roughness: roughness,
-      side: THREE.DoubleSide,
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.rotation.set(Math.PI / 2, 0, 0);
-    mesh.position.set(1334.1, 0.05, -695.175);
-    mesh.receiveShadow = true;
-    // disable raycast
-    mesh.raycast = () => {};
-
-    this.scene.add(mesh);
-  }
-
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     for (const [biome, model] of this.biomeModels) {
@@ -506,7 +476,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
     const chunkX = Math.floor(x / (this.chunkSize * HEX_SIZE * Math.sqrt(3)));
-    const chunkZ = Math.floor(-z / (this.chunkSize * HEX_SIZE * 1.5));
+    const chunkZ = Math.floor(z / (this.chunkSize * HEX_SIZE * 1.5));
     return { chunkX, chunkZ };
   }
 
@@ -516,7 +486,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
-    const adjustedZ = cameraPosition.z - (this.chunkSize * HEX_SIZE * 1.5) / 3;
+    const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
     const startCol = chunkX * this.chunkSize;
