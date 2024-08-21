@@ -159,17 +159,11 @@ export class MarketManager {
   // price difference between swapping 1 resource and swapping N resources
   public slippage = (inputAmount: number, isSellingResource: boolean) => {
     const marketPrice = this.getMarketPrice();
-    let executionPrice, slippagePercentage;
 
     const outputAmount = isSellingResource ? this.sellResource(inputAmount, 0) : this.buyResource(inputAmount, 0);
 
-    if (isSellingResource) {
-      executionPrice = outputAmount / inputAmount;
-      slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
-    } else {
-      executionPrice = inputAmount / outputAmount;
-      slippagePercentage = -((executionPrice - marketPrice) / marketPrice) * 100;
-    }
+    const executionPrice = outputAmount / inputAmount;
+    const slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
 
     return slippagePercentage;
   };
