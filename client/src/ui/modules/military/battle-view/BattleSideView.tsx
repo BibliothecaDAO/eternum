@@ -37,7 +37,6 @@ export const BattleSideView = ({
 
     setup: {
       systemCalls: { battle_join },
-      components: { EntityOwner },
     },
   } = useDojo();
 
