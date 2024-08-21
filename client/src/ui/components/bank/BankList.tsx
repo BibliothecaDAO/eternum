@@ -46,7 +46,7 @@ export const BankPanel = ({ entityId }: BankListProps) => {
           </div>
         ),
         component: (
-          <div className="w-1/2 mx-auto">
+          <div>
             <AddLiquidity bank_entity_id={entityId} entityId={realmEntityId!} />
           </div>
         ),
@@ -57,7 +57,7 @@ export const BankPanel = ({ entityId }: BankListProps) => {
 
   const liquidityTable = useMemo(() => {
     return (
-      <div className="mt-4">
+      <div className="mt-4 text-xs">
         <LiquidityTable bank_entity_id={entityId} entity_id={realmEntityId} />
       </div>
     );

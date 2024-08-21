@@ -19,10 +19,7 @@ const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.b
 export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; entityId: ID }) => {
   const {
     account: { account },
-    setup: {
-      components: { Market, Liquidity },
-      systemCalls: { buy_resources, sell_resources },
-    },
+    setup,
   } = useDojo();
 
   const { getBalance } = getResourceBalance();
@@ -40,11 +37,14 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * LP_FEE;
 
   const marketManager = useMemo(
-    () => new MarketManager(Market, Liquidity, bankEntityId, ContractAddress(account.address), resourceId),
-    [Market, Liquidity, bankEntityId, resourceId, account.address],
+    () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
+    [setup, bankEntityId, resourceId, account.address],
   );
 
-  const market = useComponentValue(Market, getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]));
+  const market = useComponentValue(
+    setup.components.Market,
+    getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
+  );
   useEffect(() => {
     const amount = isBuyResource ? lordsAmount : resourceAmount;
     const setAmount = isBuyResource ? setResourceAmount : setLordsAmount;
@@ -71,7 +71,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   const onSwap = useCallback(() => {
     setIsLoading(true);
-    const operation = isBuyResource ? buy_resources : sell_resources;
+    const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
     operation({
       signer: account,
       bank_entity_id: bankEntityId,
@@ -82,7 +82,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, buy_resources, sell_resources, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
+  }, [isBuyResource, setup, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
@@ -183,18 +183,14 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
           </div>
           {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
         </div>
-        <div className="p-2">
-          <div className="mb-2 font-bold">
-            <table className="w-full text-right text-xs text-gold/60">
+        <div className="p-2 w-full mx-auto">
+          <div className="w-full flex flex-col justify-center ">
+            <table className="text-xs text-gold/60 mx-auto">
               <tbody>
-                <tr className="text-xl text-gold">
-                  <td>{marketManager.getMarketPrice().toFixed(2)}</td>
+                <tr className="text-gold">
+                  <td>Price</td>
                   <td className="text-left px-8 flex gap-4">
-                    <>
-                      {" "}
-                      <ResourceIcon size="sm" resource={"Lords"} /> {"/"}
-                      <ResourceIcon size="sm" resource={chosenResourceName || ""} />
-                    </>
+                    <>{`1 ${chosenResourceName} = ${marketManager.getMarketPrice().toFixed(2)} LORDS`}</>
                   </td>
                 </tr>
                 <>
