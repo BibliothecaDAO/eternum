@@ -170,7 +170,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     army_free_per_structure: army_free_per_structure,
     army_extra_per_military_building: army_extra_per_military_building,
     battle_leave_slash_num,
-    battle_leave_slash_denom
+    battle_leave_slash_denom,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);
