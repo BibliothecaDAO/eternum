@@ -348,7 +348,7 @@ export abstract class HexagonScene {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.rotation.set(Math.PI / 2, 0, 0);
+    mesh.rotation.set(Math.PI / 2, 0, Math.PI);
     const { x, z } = getWorldPositionForHex({ col: 185, row: 150 });
     mesh.position.set(x, -0.05, z);
     mesh.receiveShadow = true;
