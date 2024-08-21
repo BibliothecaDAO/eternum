@@ -29,25 +29,21 @@ import { CSS2DObject } from "three-stdlib";
 
 const loader = new GLTFLoader();
 
-export const generateHexPositions = () => {
+export const generateHexPositions = (center: HexPosition, radius: number) => {
   const color = new THREE.Color("gray");
-  const center = {
-    col: 10,
-    row: 10,
-  };
-  const RADIUS = 4;
   const positions: any[] = [];
   const positionSet = new Set(); // To track existing positions
 
   // Helper function to add position if not already added
-  const addPosition = (col: number, row: number) => {
+  const addPosition = (col: number, row: number, isBorder: boolean) => {
     const key = `${col},${row}`;
     if (!positionSet.has(key)) {
       const position = {
-        ...getWorldPositionForHex({ col, row }),
+        ...getWorldPositionForHex({ col, row }, false),
         color,
         col,
         row,
+        isBorder,
       };
       positions.push(position);
       positionSet.add(key);
@@ -55,16 +51,16 @@ export const generateHexPositions = () => {
   };
 
   // Add center position
-  addPosition(center.col, center.row);
+  addPosition(center.col, center.row, false);
 
   // Generate positions in expanding hexagonal layers
   let currentLayer = [center];
-  for (let i = 0; i < RADIUS; i++) {
+  for (let i = 0; i < radius; i++) {
     const nextLayer: any = [];
     currentLayer.forEach((pos) => {
       getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
         if (!positionSet.has(`${neighbor.col},${neighbor.row}`)) {
-          addPosition(neighbor.col, neighbor.row);
+          addPosition(neighbor.col, neighbor.row, i === radius - 1);
           nextLayer.push({ col: neighbor.col, row: neighbor.row });
         }
       });
@@ -87,6 +83,7 @@ export default class HexceptionScene extends HexagonScene {
   private tileManager: TileManager;
   private subscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
+  private displayCoordinates: boolean = false;
 
   constructor(
     controls: MapControls,
@@ -272,12 +269,12 @@ export default class HexceptionScene extends HexagonScene {
     Promise.all(this.modelLoadPromises).then(() => {
       let centers = [
         [0, 0], //0, 0 (Main hex)
-        [-6.5, 7.5], //-1, 1
-        [7, 6], //1, 0
-        [0.5, 13.5], //0, 1
-        [-7, -6], //-1, 0
-        [-0.5, -13.5], //0, -1
-        [6.5, -7.5], //1, -1
+        [-6, 5], //-1, 1
+        [7, 4], //1, 0
+        [1, 9], //0, 1
+        [-7, -4], //-1, 0
+        [0, -9], //0, -1
+        [7, -5], //1, -1
       ];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
       const label = new THREE.Group();
@@ -290,7 +287,7 @@ export default class HexceptionScene extends HexagonScene {
         if (isMainHex) {
           this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
         } else {
-          // this.computeNeighborHexMatrices(radius, dummy, centers[center], neighbors[Number(center) - 1], biomeHexes);
+          this.computeNeighborHexMatrices(radius, dummy, centers[center], neighbors[Number(center) - 1], biomeHexes);
         }
       }
 
@@ -351,7 +348,10 @@ export default class HexceptionScene extends HexagonScene {
       this.buildings = [];
     }
 
-    const positions = generateHexPositions();
+    const positions = generateHexPositions(
+      { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
+      radius,
+    );
     // interface Position = {
     //   col: number;
     //   row: number;
@@ -365,61 +365,45 @@ export default class HexceptionScene extends HexagonScene {
     positions.forEach((position) => {
       dummy.position.x = position.x;
       dummy.position.z = position.z;
-      dummy.position.y = 1;
+      dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
       dummy.updateMatrix();
-      biomeHexes[biome].push(dummy.matrix.clone());
-      const posDiv = document.createElement("div");
-      posDiv.className = "label";
-      posDiv.textContent = `${position.col}, ${position.row}`;
-      posDiv.style.backgroundColor = "transparent";
+      if (isMainHex) {
+        this.interactiveHexManager.addHex({ col: position.col, row: position.row });
+      }
+      let withBuilding = false;
+      const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+      if (building) {
+        withBuilding = true;
+        const buildingObj = dummy.clone();
+        const rotation = Math.PI / 3;
+        if (building.category === BuildingType[BuildingType.Castle]) {
+          buildingObj.rotation.y = rotation * 3;
+        } else {
+          buildingObj.rotation.y = rotation * 4;
+        }
+        buildingObj.updateMatrix();
+        this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
+      } else if (isMainHex) {
+        this.highlights.push(getHexForWorldPosition(dummy.position));
+      }
 
-      const posLabel = new CSS2DObject(posDiv);
-      posLabel.position.set(dummy.position.x, dummy.position.y, dummy.position.z);
-      posLabel.center.set(0, 1);
-      label.add(posLabel);
+      if (!withBuilding) {
+        biomeHexes[biome].push(dummy.matrix.clone());
+      }
+
+      if (this.displayCoordinates) {
+        const posDiv = document.createElement("div");
+        posDiv.className = "label";
+        posDiv.textContent = `${position.col}, ${position.row}`;
+        posDiv.style.backgroundColor = "transparent";
+
+        const posLabel = new CSS2DObject(posDiv);
+        posLabel.position.set(dummy.position.x, dummy.position.y, dummy.position.z);
+        posLabel.center.set(0, 1);
+        label.add(posLabel);
+      }
     });
-
-    // for (let q = -radius; q <= radius; q++) {
-    //   for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
-    //     const isBorderHex =
-    //       q === radius || q === -radius || r === Math.max(-radius, -q - radius) || r === Math.min(radius, -q + radius);
-    //     dummy.position.x = (q + r / 2) * HEX_HORIZONTAL_SPACING + center[0] * HEX_HORIZONTAL_SPACING;
-    //     dummy.position.z = r * HEX_VERTICAL_SPACING + center[1] * HEX_SIZE;
-    //     dummy.position.y = isBorderHex || isFlat ? 0 : pseudoRandom(q, r);
-    //     dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-    //     dummy.updateMatrix();
-
-    //     const { col, row } = getHexForWorldPosition(dummy.position);
-    //     const normalizedCoords = { col: BUILDINGS_CENTER[0] - col, row: BUILDINGS_CENTER[1] - row };
-
-    //     let withBuilding = false;
-    //     if (isMainHex) {
-    //       this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
-    //     }
-    //     const building = existingBuildings.find(
-    //       (value) => value.col === normalizedCoords.col && value.row === normalizedCoords.row,
-    //     );
-    //     if (building) {
-    //       withBuilding = true;
-    //       const buildingObj = dummy.clone();
-    //       const rotation = Math.PI / 3;
-    //       if (building.category === BuildingType[BuildingType.Castle]) {
-    //         buildingObj.rotation.y = rotation * 3;
-    //       } else {
-    //         buildingObj.rotation.y = rotation * 4;
-    //       }
-    //       buildingObj.updateMatrix();
-    //       this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
-    //     } else if (isMainHex) {
-    //       this.highlights.push(getHexForWorldPosition(dummy.position));
-    //     }
-
-    //     if (!withBuilding) {
-    //       biomeHexes[biome].push(dummy.matrix.clone());
-    //     }
-    //   }
-    // }
   };
 
   computeMainHexMatrices = (
