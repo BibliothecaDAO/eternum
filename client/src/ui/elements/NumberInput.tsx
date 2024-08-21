@@ -28,12 +28,19 @@ export const NumberInput = ({ value, onChange, className, step = 1, max = 0, min
       </div>
 
       <input
-        type="number"
         min={min}
-        className=" w-16  appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
+        className="w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={value}
         onChange={(e) => {
-          if (parseInt(e.target.value) <= max && parseInt(e.target.value) >= min) {
+          if (isNaN(parseInt(e.target.value))) {
+            onChange(min);
+            return;
+          }
+          if (parseInt(e.target.value) > max) {
+            onChange(max);
+          } else if (parseInt(e.target.value) < min) {
+            onChange(min);
+          } else {
             onChange(parseInt(e.target.value));
           }
         }}
