@@ -83,7 +83,6 @@ export default class HexceptionScene extends HexagonScene {
   private tileManager: TileManager;
   private subscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
-  private displayCoordinates: boolean = false;
 
   constructor(
     controls: MapControls,
@@ -194,7 +193,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = 18;
-    this.controls.enablePan = true;
+    this.controls.enablePan = false;
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
@@ -353,13 +352,7 @@ export default class HexceptionScene extends HexagonScene {
       { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
       radius,
     );
-    // interface Position = {
-    //   col: number;
-    //   row: number;
-    //   x: number;
-    //   y: number;
-    //   z: number;
-    // }
+
     const label = new THREE.Group();
     this.scene.add(label);
 
@@ -391,18 +384,6 @@ export default class HexceptionScene extends HexagonScene {
 
       if (!withBuilding) {
         biomeHexes[biome].push(dummy.matrix.clone());
-      }
-
-      if (this.displayCoordinates) {
-        const posDiv = document.createElement("div");
-        posDiv.className = "label";
-        posDiv.textContent = `${position.col}, ${position.row}`;
-        posDiv.style.backgroundColor = "transparent";
-
-        const posLabel = new CSS2DObject(posDiv);
-        posLabel.position.set(dummy.position.x, dummy.position.y, dummy.position.z);
-        posLabel.center.set(0, 1);
-        label.add(posLabel);
       }
     });
   };

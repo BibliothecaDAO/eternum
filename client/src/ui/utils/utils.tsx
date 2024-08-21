@@ -1,22 +1,10 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "@/three/scenes/constants";
+import { HEX_SIZE } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
-import {
-  ContractAddress,
-  EternumGlobalConfig,
-  ID,
-  Position,
-  Resource,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-} from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { ContractAddress, ID, Position, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
-import { GRAMS_PER_KG } from "../constants";
 import { SortInterface } from "../elements/SortButton";
-import { FELT_CENTER } from "../config";
 
 export { getEntityIdFromKeys };
 
