@@ -64,7 +64,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     <div
       className={clsx(
         "w-auto flex flex-col p-2 text-xs text-gold shadow-2xl border-2 border-gold/30 ",
-        army.isMine ? "bg-black/90" : "bg-black/90",
+        army.isMine ? "bg-ally" : "bg-enemy",
       )}
     >
       <div className="flex items-center w-full mt-1 justify-between text-xs">

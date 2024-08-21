@@ -30,7 +30,9 @@ export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Market]: "/models/buildings/market.glb",
   [BuildingType.Resource]: "/models/buildings/mine.glb",
   [BuildingType.Stable]: "/models/buildings/stable.glb",
-  [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
+  // PLACEHOLDER STOREHOUSE
+  [BuildingType.Storehouse]: "/models/buildings/farm.glb",
+  // [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
   [BuildingType.TradingPost]: "/models/buildings/market.glb",
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
@@ -38,7 +40,7 @@ export const buildingModelPaths: Record<BuildingType, string> = {
 };
 
 const BASE_PATH = "/models/bevel-biomes/";
-export const biomeModelPaths: Record<BiomeType, string> = {
+export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   DeepOcean: BASE_PATH + "deepocean.glb",
   Ocean: BASE_PATH + "ocean.glb",
   Beach: BASE_PATH + "beach.glb",
@@ -55,6 +57,7 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
   TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
+  Outline: BASE_PATH + "outline.glb",
 };
 
 export const PROGRESS_HALF_THRESHOLD = 0.5;

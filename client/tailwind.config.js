@@ -83,6 +83,8 @@ export default {
         "dark-green-accent": "#3A3D23",
         green: "#06D6A0",
         lightest: "#FFF5EA",
+        ally: "#2B2E3E",
+        enemy: "#46201D", // New color for enemies
         order: {
           power: "#F4B547",
           giants: "#EB544D",
@@ -217,6 +219,10 @@ export default {
     "text-biome-subtropical_desert",
     "text-biome-tropical_seasonal_forest",
     "text-biome-tropical_rain_forest",
+    "text-ally",
+    "text-enemy",
+    "bg-ally",
+    "bg-enemy",
   ],
   plugins: [
     require("@tailwindcss/typography"),

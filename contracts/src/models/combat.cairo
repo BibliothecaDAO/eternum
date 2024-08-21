@@ -67,7 +67,7 @@ impl HealthCustomImpl of HealthCustomTrait {
     }
 
     fn steps_to_die(self: @Health, mut deduction: u128) -> u128 {
-        if deduction == 0 {
+        if *self.current == 0 || deduction == 0 {
             return 0;
         };
 
