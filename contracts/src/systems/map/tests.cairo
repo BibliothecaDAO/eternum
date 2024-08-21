@@ -103,14 +103,14 @@ fn test_map_explore() {
 fn test_mercenaries_protector() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
 
-    let mut army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
+    let mut _army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
     let explore_tile_direction: Direction = Direction::West;
 
     map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
 
     let army_position = get!(world, realm_army_unit_id, Position).into();
 
-    let army_health = get!(world, realm_army_unit_id, Health);
+    let _army_health = get!(world, realm_army_unit_id, Health);
 
     let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(world, army_position);
     let mine_entity_owner = get!(world, mine_entity_id, EntityOwner);
@@ -121,8 +121,6 @@ fn test_mercenaries_protector() {
     );
 
     let battle_entity_id = combat_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
-
-    let battle = get!(world, battle_entity_id, Battle);
 
     starknet::testing::set_block_timestamp(99999);
 
