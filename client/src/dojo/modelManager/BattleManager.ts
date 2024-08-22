@@ -395,6 +395,7 @@ export class BattleManager {
   }
 
   private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint) {
+    if (lifetime_troops === 0n) return 0;
     return Number(current_troops) / Number(lifetime_troops);
   }
 }
