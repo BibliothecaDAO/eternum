@@ -1,6 +1,6 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::ops::index::IndexView;
-use eternum::constants::{ResourceTypes, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
+use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
 
 use eternum::models::{config::TroopConfig, combat::Troops};
 
@@ -45,9 +45,9 @@ fn set_exploration_config(config_systems_address: ContractAddress) {
         );
 }
 
-fn set_combat_config(config_systems_address: ContractAddress) {
-    let troop_config = TroopConfig {
-        config_id: 0,
+fn get_combat_config() -> TroopConfig {
+    return TroopConfig {
+        config_id: WORLD_CONFIG_ID,
         health: 7_200,
         knight_strength: 1,
         paladin_strength: 1,
@@ -60,6 +60,10 @@ fn set_combat_config(config_systems_address: ContractAddress) {
         battle_leave_slash_num: 25,
         battle_leave_slash_denom: 100
     };
+}
+
+fn set_combat_config(config_systems_address: ContractAddress) {
+    let troop_config = get_combat_config();
     ITroopConfigDispatcher { contract_address: config_systems_address }.set_troop_config(troop_config);
 }
 
