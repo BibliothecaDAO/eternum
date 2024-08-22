@@ -13,7 +13,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
-import { MAX_TROOPS_PER_ARMY } from "../military/ArmyManagementCard";
+
+const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
 export const StructureCard = ({
   position,

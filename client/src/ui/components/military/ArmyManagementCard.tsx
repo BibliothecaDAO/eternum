@@ -23,7 +23,7 @@ import { LucideArrowRight } from "lucide-react";
 import clsx from "clsx";
 import { useQuery } from "@/hooks/helpers/useQuery";
 
-export const MAX_TROOPS_PER_ARMY = 2000;
+const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
