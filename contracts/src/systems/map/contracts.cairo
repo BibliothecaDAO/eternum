@@ -2,7 +2,9 @@ use eternum::alias::ID;
 
 #[dojo::interface]
 trait IMapSystems {
-    fn explore(ref world: IWorldDispatcher, unit_id: ID, direction: eternum::models::position::Direction);
+    fn explore(
+        ref world: IWorldDispatcher, unit_id: ID, direction: eternum::models::position::Direction
+    );
 }
 
 #[dojo::contract]
@@ -11,11 +13,14 @@ mod map_systems {
     use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
-    use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
+    use eternum::constants::{
+        WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE
+    };
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
     use eternum::models::capacity::Capacity;
     use eternum::models::combat::{
-        Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
+        Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait,
+        Protector, Protectee
     };
     use eternum::models::config::{
         MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigCustomImpl, CapacityConfig,
@@ -23,7 +28,9 @@ mod map_systems {
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
-    use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
+    use eternum::models::movable::{
+        Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait
+    };
     use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use eternum::models::quantity::Quantity;
@@ -32,10 +39,14 @@ mod map_systems {
         Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock
     };
     use eternum::models::stamina::StaminaCustomImpl;
-    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use eternum::models::structure::{
+        Structure, StructureCategory, StructureCount, StructureCountCustomTrait
+    };
     use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl
+    };
     use eternum::utils::map::biomes::{Biome, get_biome};
     use eternum::utils::random;
 
@@ -54,7 +65,8 @@ mod map_systems {
         #[key]
         row: u32,
         biome: Biome,
-        reward: Span<(u8, u128)>
+        reward: Span<(u8, u128)>,
+        timestamp: u64,
     }
 
 
@@ -85,7 +97,9 @@ mod map_systems {
                 world, unit_entity_owner.entity_owner_id
             );
 
-            InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward, 0, false, false);
+            InternalResourceSystemsImpl::transfer(
+                world, 0, unit_id, exploration_reward, 0, false, false
+            );
 
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);
@@ -93,14 +107,18 @@ mod map_systems {
             InternalMapSystemsImpl::discover_shards_mine(world, next_coord);
 
             // travel to explored tile location
-            InternalTravelSystemsImpl::travel_hex(world, unit_id, current_coord, array![direction].span());
+            InternalTravelSystemsImpl::travel_hex(
+                world, unit_id, current_coord, array![direction].span()
+            );
         }
     }
 
 
     #[generate_trait]
     pub impl InternalMapSystemsImpl of InternalMapSystemsTrait {
-        fn explore(world: IWorldDispatcher, entity_id: ID, coord: Coord, reward: Span<(u8, u128)>) -> Tile {
+        fn explore(
+            world: IWorldDispatcher, entity_id: ID, coord: Coord, reward: Span<(u8, u128)>
+        ) -> Tile {
             let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
             assert(tile.explored_at == 0, 'already explored');
 
@@ -121,21 +139,26 @@ mod map_systems {
                     col: tile.col,
                     row: tile.row,
                     biome: tile.biome,
-                    reward
+                    reward,
+                    timestamp: starknet::get_block_timestamp()
                 })
             );
 
             tile
         }
 
-        fn pay_food_and_get_explore_reward(world: IWorldDispatcher, realm_entity_id: ID) -> Span<(u8, u128)> {
+        fn pay_food_and_get_explore_reward(
+            world: IWorldDispatcher, realm_entity_id: ID
+        ) -> Span<(u8, u128)> {
             let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
             let mut wheat_pay_amount = explore_config.wheat_burn_amount;
             let mut fish_pay_amount = explore_config.fish_burn_amount;
             ResourceFoodImpl::pay(world, realm_entity_id, wheat_pay_amount, fish_pay_amount);
 
             let (resource_types, resources_probs) = split_resources_and_probs();
-            let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true)
+            let reward_resource_id: u8 = *random::choices(
+                resource_types, resources_probs, array![].span(), 1, true
+            )
                 .at(0);
             let reward_resource_amount: u128 = explore_config.reward_resource_amount;
             array![(reward_resource_id, reward_resource_amount)].span()
@@ -183,7 +206,9 @@ mod map_systems {
             entity_id
         }
 
-        fn add_mercenaries_to_shard_mine(world: IWorldDispatcher, mine_entity_id: ID, mine_coords: Coord) -> ID {
+        fn add_mercenaries_to_shard_mine(
+            world: IWorldDispatcher, mine_entity_id: ID, mine_coords: Coord
+        ) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
             let troops = mercenaries_config.troops;
