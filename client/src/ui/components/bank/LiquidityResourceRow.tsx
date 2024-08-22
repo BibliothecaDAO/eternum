@@ -87,7 +87,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
         setIsLoading(false);
         setOpenConfirmation(false);
       });
-  }, [dojoContext, bankEntityId, resourceId, marketManager]);
+  }, [dojoContext, bankEntityId, entityId, resourceId, marketManager]);
 
   const renderConfirmationPopup = useMemo(() => {
     const travelResources = [

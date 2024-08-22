@@ -82,7 +82,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, setup, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, lordsAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 

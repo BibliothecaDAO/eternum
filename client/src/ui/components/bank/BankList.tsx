@@ -1,5 +1,4 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
 import { Tabs } from "@/ui/elements/tab";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -10,10 +9,11 @@ import { ResourceSwap } from "./Swap";
 import { ID } from "@bibliothecadao/eternum";
 
 type BankListProps = {
-  entityId: ID;
+  bankEntityId: ID;
+  structureEntityId: ID;
 };
 
-export const BankPanel = ({ entityId }: BankListProps) => {
+export const BankPanel = ({ bankEntityId, structureEntityId }: BankListProps) => {
   const {
     setup: {
       components: { Position },
@@ -22,10 +22,7 @@ export const BankPanel = ({ entityId }: BankListProps) => {
 
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const { playerRealms } = useEntities();
-
-  const realmEntityId = playerRealms()[0].entity_id!;
-  const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
+  const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(bankEntityId)]));
 
   const tabs = useMemo(
     () => [
@@ -36,7 +33,7 @@ export const BankPanel = ({ entityId }: BankListProps) => {
             <div>Swap</div>
           </div>
         ),
-        component: <ResourceSwap bankEntityId={entityId} entityId={realmEntityId} />,
+        component: <ResourceSwap bankEntityId={bankEntityId} entityId={structureEntityId} />,
       },
       {
         key: "all",
@@ -47,21 +44,21 @@ export const BankPanel = ({ entityId }: BankListProps) => {
         ),
         component: (
           <div>
-            <AddLiquidity bank_entity_id={entityId} entityId={realmEntityId!} />
+            <AddLiquidity bank_entity_id={bankEntityId} entityId={structureEntityId!} />
           </div>
         ),
       },
     ],
-    [realmEntityId, position],
+    [structureEntityId, position],
   );
 
   const liquidityTable = useMemo(() => {
     return (
       <div className="mt-4 text-xs">
-        <LiquidityTable bank_entity_id={entityId} entity_id={realmEntityId} />
+        <LiquidityTable bank_entity_id={bankEntityId} entity_id={structureEntityId} />
       </div>
     );
-  }, [entityId, realmEntityId]);
+  }, [bankEntityId, structureEntityId]);
 
   return (
     <div className="m-4">
