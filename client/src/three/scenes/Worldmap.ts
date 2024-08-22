@@ -183,7 +183,7 @@ export default class WorldmapScene extends HexagonScene {
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-    const isBattle = this.battleManager.battles.has(undefined, position);
+    const isBattle = this.battleManager.battles.hasByPosition(position);
     if (isBattle) return;
     const url = position.toHexLocationUrl();
     LocationManager.updateUrl(url);

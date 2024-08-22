@@ -88,7 +88,7 @@ export class BattleManager {
     const { entityId, hexCoords, isEmpty } = update;
 
     if (isEmpty) {
-      if (this.battles.has(entityId)) {
+      if (this.battles.hasByEntityId(entityId)) {
         this.removeBattle(entityId);
         return;
       } else {
@@ -156,15 +156,16 @@ class Battles {
     return this.battles.get(entityId)?.index;
   }
 
-  has(entityId?: ID, position?: Position) {
-    if (entityId) return this.battles.has(entityId);
-    if (position)
-      return Array.from(this.battles.values()).some((battle) => {
-        const battlePosition = battle.position.getContract();
-        const positionContract = position.getContract();
-        return battlePosition.x === positionContract.x && battlePosition.y === positionContract.y;
-      });
-    return false;
+  hasByPosition(position: Position) {
+    return Array.from(this.battles.values()).some((battle) => {
+      const battlePosition = battle.position.getContract();
+      const positionContract = position.getContract();
+      return battlePosition.x === positionContract.x && battlePosition.y === positionContract.y;
+    });
+  }
+
+  hasByEntityId(entityId: ID) {
+    return this.battles.has(entityId);
   }
 
   removeBattle(entityId: ID) {
