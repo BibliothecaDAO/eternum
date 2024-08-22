@@ -77,21 +77,6 @@ export const useBattleManager = (battleEntityId: ID) => {
   return battleManager;
 };
 
-export const useAllBattles = () => {
-  const {
-    setup: {
-      components: { Battle, Position, Structure },
-    },
-  } = useDojo();
-
-  const battlesEntityIds = useEntityQuery([Has(Battle)]);
-  const allBattles = useMemo(() => {
-    const extraBattleInfo = getExtraBattleInformation(battlesEntityIds, Battle, Position, Structure);
-    return extraBattleInfo;
-  }, [battlesEntityIds]);
-  return allBattles;
-};
-
 export const useBattlesByPosition = ({ x, y }: Position) => {
   const {
     setup: {

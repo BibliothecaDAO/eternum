@@ -40,6 +40,10 @@ trait ITickConfig {
 trait IStaminaConfig {
     fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16);
 }
+#[dojo::interface]
+trait IStaminaRefillConfig {
+    fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16);
+}
 
 #[dojo::interface]
 trait ITransportConfig {
@@ -49,7 +53,9 @@ trait ITransportConfig {
 
 #[dojo::interface]
 trait IHyperstructureConfig {
-    fn set_hyperstructure_config(ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>);
+    fn set_hyperstructure_config(
+        ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>, time_between_shares_change: u64
+    );
 }
 
 #[dojo::interface]
@@ -146,7 +152,8 @@ mod config_systems {
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig,
         MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig,
-        BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, StaminaConfig, MercenariesConfig, TravelStaminaCostConfig
+        BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig,
+        StaminaRefillConfig, MercenariesConfig, TravelStaminaCostConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -299,6 +306,15 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
+        fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16) {
+            assert_caller_is_admin(world);
+
+            set!(world, (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: amount }));
         }
     }
 
@@ -483,7 +499,9 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl HyperstructureConfigCustomImpl of super::IHyperstructureConfig<ContractState> {
-        fn set_hyperstructure_config(ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>) {
+        fn set_hyperstructure_config(
+            ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>, time_between_shares_change: u64
+        ) {
             assert_caller_is_admin(world);
             let mut i = 0;
             while (i < resources_for_completion.len()) {
@@ -499,6 +517,7 @@ mod config_systems {
                 );
                 i += 1;
             };
+            set!(world, (HyperstructureConfig { config_id: HYPERSTRUCTURE_CONFIG_ID, time_between_shares_change }));
         }
     }
 

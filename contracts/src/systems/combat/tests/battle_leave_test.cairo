@@ -110,6 +110,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     let player_1_realm_id = realm_system_dispatcher
         .create(
             1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: PLAYER_1_REALM_COORD_X, y: PLAYER_1_REALM_COORD_Y }
@@ -139,6 +140,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     let player_2_realm_id = realm_system_dispatcher
         .create(
             1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: PLAYER_2_REALM_COORD_X, y: PLAYER_2_REALM_COORD_Y }
@@ -168,6 +170,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     let player_3_realm_id = realm_system_dispatcher
         .create(
             1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: PLAYER_3_REALM_COORD_X, y: PLAYER_3_REALM_COORD_Y }
@@ -217,9 +220,9 @@ fn test_battle_leave_by_winner() {
     let (
         world,
         combat_system_dispatcher,
-        player_1_realm_id,
-        player_2_realm_id,
-        player_3_realm_id,
+        _player_1_realm_id,
+        _player_2_realm_id,
+        _player_3_realm_id,
         player_1_army_id,
         player_2_army_id,
         player_3_army_id
@@ -228,12 +231,14 @@ fn test_battle_leave_by_winner() {
 
     //////////// START BATTLE ////////////////////
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
 
     // player 1 starts battle against player 2
     let battle_id = combat_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
     // player 3 joins battle against player 1
     // so it's player 1 vs (player 2 & 3)
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     combat_system_dispatcher.battle_join(battle_id, BattleSide::Defence, player_3_army_id);
 
     let battle: Battle = get!(world, battle_id, Battle);
@@ -245,6 +250,7 @@ fn test_battle_leave_by_winner() {
     //////////// LEAVE BATTLE  ////////////////////
     /// player 1 leaves battle after it has ended and they won
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     combat_system_dispatcher.battle_leave(battle_id, player_1_army_id);
 
     // ensure the player_1 took all the reward from the contest pot
@@ -277,9 +283,9 @@ fn test_battle_leave_by_loser() {
     let (
         world,
         combat_system_dispatcher,
-        player_1_realm_id,
-        player_2_realm_id,
-        player_3_realm_id,
+        _player_1_realm_id,
+        _player_2_realm_id,
+        _player_3_realm_id,
         player_1_army_id,
         player_2_army_id,
         player_3_army_id
@@ -288,12 +294,14 @@ fn test_battle_leave_by_loser() {
 
     //////////// START BATTLE ////////////////////
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
 
     // player 1 starts battle against player 2
     let battle_id = combat_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
     // player 3 joins battle against player 1
     // so it's player 1 vs (player 2 & 3)
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     combat_system_dispatcher.battle_join(battle_id, BattleSide::Defence, player_3_army_id);
 
     let battle: Battle = get!(world, battle_id, Battle);
@@ -305,6 +313,7 @@ fn test_battle_leave_by_loser() {
     //////////// LEAVE BATTLE  ////////////////////
     /// player 2 leaves battle after it has ended and they lost
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     combat_system_dispatcher.battle_leave(battle_id, player_2_army_id);
 
     // ensure the player_2 took no reward and lost balance

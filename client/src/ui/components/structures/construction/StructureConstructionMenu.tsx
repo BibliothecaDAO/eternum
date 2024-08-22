@@ -1,13 +1,20 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { BuildingType, ConfigManager, StructureType, findResourceById , ID} from "@bibliothecadao/eternum";
+
+import { BuildingType, ConfigManager, findResourceById } from "@bibliothecadao/eternum";
+
+import {
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  ID,
+  STRUCTURE_COSTS_SCALED,
+  StructureType,
+} from "@bibliothecadao/eternum";
+
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React from "react";
 import { StructureCard } from "./StructureCard";
@@ -26,9 +33,8 @@ export const StructureConstructionMenu = () => {
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const clearSelection = useUIStore((state) => state.clearSelection);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getBalance } = getResourceBalance();
@@ -42,12 +48,13 @@ export const StructureConstructionMenu = () => {
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(realmEntityId, resourceCost.resource);
+
+      const balance = getBalance(structureEntityId, resourceCost.resource);
       return balance.balance >= resourceCost.amount * resourcePrecision;
     });
 
   return (
-    <div className="grid grid-cols-4 gap-2 p-2">
+    <div className="grid grid-cols-2 gap-2 p-2">
       {buildingTypes.map((structureType, index) => {
         const configManager = ConfigManager.instance();
         const structureCostsScaled = configManager.getStructureCostsScaled();
@@ -71,12 +78,11 @@ export const StructureConstructionMenu = () => {
                 setPreviewBuilding(null);
               } else {
                 setPreviewBuilding({ type: building });
-                clearSelection();
               }
             }}
             active={previewBuilding !== null && previewBuilding.type === building}
             name={StructureType[building]}
-            toolTip={<StructureInfo structureId={building} entityId={realmEntityId} />}
+            toolTip={<StructureInfo structureId={building} entityId={structureEntityId} />}
             canBuild={hasBalance}
           />
         );

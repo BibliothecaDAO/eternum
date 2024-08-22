@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import useLeaderBoardStore, { GuildPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { ContractAddress } from "@bibliothecadao/eternum";
+import { useMemo, useState } from "react";
+import { GuildPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
 import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
@@ -14,13 +19,17 @@ interface SortingParamGuildPointsLeaderboard {
 }
 
 export const GuildsLeaderboard = () => {
+  const {
+    account: { account },
+  } = useDojo();
+
+  const { getGuildFromPlayerAddress, getGuildFromEntityId } = useGuilds();
+
   const [loading, _] = useState(false);
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
   });
-
-  const guildPointsLeaderboard = useLeaderBoardStore((state) => state.guildPointsLeaderboard);
 
   const sortingParams: SortingParamGuildPointsLeaderboard[] = useMemo(() => {
     return [
@@ -30,7 +39,12 @@ export const GuildsLeaderboard = () => {
     ];
   }, []);
 
-  useEffect(() => {}, [loading]);
+  const guildLeaderboard = useMemo(() => {
+    return LeaderboardManager.instance().getGuildsByRank(
+      useBlockchainStore.getState().nextBlockTimestamp!,
+      getGuildFromPlayerAddress,
+    );
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -53,17 +67,18 @@ export const GuildsLeaderboard = () => {
       </SortPanel>
       {!loading && (
         <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
-          {sortItems(guildPointsLeaderboard, activeSort).map(({ name, totalPoints, isYours, rank }) => {
+          {sortItems(guildLeaderboard, activeSort).map(([guildEntityId, points], index) => {
+            const guild = getGuildFromEntityId(guildEntityId, ContractAddress(account.address));
+            if (!guild) return;
+
             return (
               <div
-                key={rank}
-                className={`grid grid-cols-4 gap-4 clip-angled-sm p-1 ${
-                  isYours ? "bg-green/20" : ""
-                }  text-xxs text-gold`}
+                key={index}
+                className={`grid grid-cols-4 gap-4  p-1 ${guild.isOwner ? "bg-green/20" : ""}  text-xxs text-gold`}
               >
-                <div className="col-span-1">{`#${rank}`}</div>
-                <div className="col-span-2">{name}</div>
-                <div className="col-span-1"> {currencyIntlFormat(totalPoints, 0)}</div>
+                <div className="col-span-1">{`#${index + 1}`}</div>
+                <div className="col-span-2">{guild.name}</div>
+                <div className="col-span-1"> {currencyIntlFormat(points, 0)}</div>
               </div>
             );
           })}

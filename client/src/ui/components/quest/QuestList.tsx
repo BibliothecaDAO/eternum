@@ -5,15 +5,16 @@ import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { Prize, Quest, QuestStatus, useQuests } from "@/hooks/helpers/useQuests";
+import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { ID } from "@bibliothecadao/eternum";
 
 export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID | undefined }) => {
-  const [showCompletedQuests, setShowCompletedQuests] = useState(false);
+  const [showCompletedQuests, setShowCompletedQuests] = useState(true);
   const [skipTutorial, setSkipTutorial] = useState(false);
   const [maxDepthToShow, setMaxDepthToShow] = useState(0);
 
   const groupedQuests = useMemo(() => groupQuestsByDepth(quests), [quests]);
+  const unclaimedQuests = quests?.filter((quest) => quest.status !== QuestStatus.Claimed);
 
   useEffect(() => {
     const newMaxDepth = Object.keys(groupedQuests)
@@ -30,21 +31,23 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
   return (
     <>
       <div className="flex justify-around m-2">
-        <Button
-          className={"w-1/4"}
-          size={"xs"}
-          variant={"outline"}
-          onClick={() => setShowCompletedQuests(!showCompletedQuests)}
-        >
+        <Button className={"w-1/4"} variant="outline" onClick={() => setShowCompletedQuests(!showCompletedQuests)}>
           {showCompletedQuests ? "Hide Completed" : "Show Completed"}
         </Button>
 
-        <Button className={"w-1/4"} size={"xs"} variant={"red"} onClick={() => setSkipTutorial(!skipTutorial)}>
+        <Button
+          disabled={!Boolean(unclaimedQuests?.length)}
+          className={"w-1/4"}
+          variant="red"
+          onClick={() => setSkipTutorial(!skipTutorial)}
+        >
           Skip Tutorial
         </Button>
       </div>
 
-      {skipTutorial && <SkipTutorial entityId={entityId!} />}
+      {skipTutorial && unclaimedQuests?.length && (
+        <SkipTutorial entityId={entityId!} setSkipTutorial={setSkipTutorial} unclaimedQuests={unclaimedQuests} />
+      )}
 
       <div className="flex flex-col gap-1 p-4">
         {Object.entries(groupedQuests)
@@ -74,16 +77,24 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
 
   return (
-    <div
-      className={`p-4 border hover:opacity-70 ${quest.status === QuestStatus.Claimed ? "text-green" : "text-gold"}`}
+    <Button
+      variant={quest.status === QuestStatus.Claimed ? "success" : "outline"}
       onClick={() => setSelectedQuest(quest)}
     >
-      <div className="text-xl">{quest.name}</div>
-    </div>
+      {quest.name}
+    </Button>
   );
 };
 
-const SkipTutorial = ({ entityId }: { entityId: ID }) => {
+const SkipTutorial = ({
+  entityId,
+  setSkipTutorial,
+  unclaimedQuests,
+}: {
+  entityId: ID;
+  setSkipTutorial: (skip: boolean) => void;
+  unclaimedQuests: Quest[];
+}) => {
   const {
     setup: {
       systemCalls: { mint_resources_and_claim_quest },
@@ -92,12 +103,9 @@ const SkipTutorial = ({ entityId }: { entityId: ID }) => {
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const { quests } = useQuests();
   const { getQuestResources } = useRealm();
 
   const questResources = getQuestResources();
-
-  const unclaimedQuests = quests?.filter((quest) => quest.status !== QuestStatus.Claimed);
 
   const resourcesToMint =
     unclaimedQuests?.flatMap((quest: Quest) =>
@@ -121,6 +129,7 @@ const SkipTutorial = ({ entityId }: { entityId: ID }) => {
         console.error(`Failed to claim resources for quests:`, error);
       } finally {
         setIsLoading(false);
+        setSkipTutorial(false);
       }
     }
   };
@@ -128,7 +137,7 @@ const SkipTutorial = ({ entityId }: { entityId: ID }) => {
   return (
     <div className="flex justify-center items-baseline">
       <p className="mr-2">Are you sure ?</p>
-      <Button variant={"primary"} size={"xs"} isLoading={isLoading} onClick={claimAllQuests}>
+      <Button variant={"primary"} isLoading={isLoading} onClick={claimAllQuests}>
         Confirm
       </Button>
     </div>

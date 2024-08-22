@@ -1,5 +1,5 @@
 use core::array::ArrayTrait;
-use core::integer::BoundedInt;
+use core::num::traits::Bounded;
 use core::option::OptionTrait;
 use core::poseidon::poseidon_hash_span;
 use core::traits::Into;
@@ -22,6 +22,7 @@ use eternum::models::resources::{
 use eternum::models::structure::{Structure, StructureCustomImpl};
 use eternum::models::weight::Weight;
 use eternum::models::weight::WeightCustomTrait;
+use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max};
 use eternum::utils::number::NumberTrait;
 
@@ -66,7 +67,7 @@ impl HealthCustomImpl of HealthCustomTrait {
     }
 
     fn steps_to_die(self: @Health, mut deduction: u128) -> u128 {
-        if deduction == 0 {
+        if *self.current == 0 || deduction == 0 {
             return 0;
         };
 
@@ -510,7 +511,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
             world, from_army_protectee_id, ResourceTransferLock
         );
         from_army_resource_lock.assert_not_locked();
-        from_army_resource_lock.release_at = BoundedInt::max();
+        from_army_resource_lock.release_at = Bounded::MAX;
         set!(world, (from_army_resource_lock));
     }
 
@@ -539,7 +540,6 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
         let mut all_resources = all_resource_ids();
         let mut subtracted_resources_weight = 0;
-        let mut added_resources_weight = 0;
 
         loop {
             match all_resources.pop_front() {
@@ -549,13 +549,13 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             world, (to_army_protectee_id, resource_type)
                         );
                         if to_army_lost_or_battle_not_ended {
-                            // army forfeits resources
-                            to_army_resource.burn((to_army_resource.balance));
-                            to_army_resource.save(world);
-
                             // update army's subtracted weight
                             subtracted_resources_weight +=
                                 WeightConfigCustomImpl::get_weight(world, resource_type, to_army_resource.balance);
+
+                            // army forfeits resources
+                            to_army_resource.burn((to_army_resource.balance));
+                            to_army_resource.save(world);
                         } else {
                             // army won or drew so it can leave with its resources
                             //
@@ -589,16 +589,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             other_side_escrow_resource.burn(share_amount);
                             other_side_escrow_resource.save(world);
 
-                            // give loot share to winner
-                            let mut to_army_resource = ResourceCustomImpl::get(
-                                world, (to_army_protectee_id, resource_type)
+                            // send loot to winner
+                            InternalResourceSystemsImpl::mint_if_adequate_capacity(
+                                world, to_army_protectee_id, (resource_type, share_amount), false
                             );
-                            to_army_resource.add(share_amount);
-                            to_army_resource.save(world);
-
-                            // update army's added weight
-                            added_resources_weight +=
-                                WeightConfigCustomImpl::get_weight(world, resource_type, share_amount);
                         }
                     }
                 },
@@ -609,17 +603,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // update weight after balance update
         let mut to_army_protectee_weight: Weight = get!(world, to_army_protectee_id, Weight);
         let to_army_protectee_capacity: Capacity = get!(world, to_army_protectee_id, Capacity);
-        let to_army_protectee_quantity: Quantity = get!(world, to_army_protectee_id, Quantity);
         // decrease protectee weight if necessary
         if subtracted_resources_weight.is_non_zero() {
             to_army_protectee_weight.deduct(to_army_protectee_capacity, subtracted_resources_weight);
         }
-        // increase protectee weight if necessary
-        if added_resources_weight.is_non_zero() {
-            to_army_protectee_weight
-                .add(to_army_protectee_capacity, to_army_protectee_quantity, added_resources_weight);
-        }
-        set!(world, (to_army_protectee_weight));
 
         // release lock on resource
         let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
@@ -1215,8 +1202,8 @@ mod tests {
 //     let attack_troop_each = 240_000;
 //     let defence_troop_each = 10_000;
 //     let mut battle = mock_battle(attack_troop_each, defence_troop_each);
-//         // starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-//         // battle.update_state();
+//         // starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts
+//         was 1 // battle.update_state();
 //     print!("\n\n Attack Troops each: {} \n\n", attack_troop_each);
 //     print!("\n\n Defence Troops each: {} \n\n", defence_troop_each);
 //     print!("\n\n Attack Army health: {} \n\n", battle.attack_army_health.current);
@@ -1243,8 +1230,10 @@ mod tests {
 //     let defence_ratio = (battle.defence_army_health.current - defence_h_left) * 100 /
 //     battle.defence_army_health.current;
 
-    //     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left, attacker_ratio);
-//     print!("\n\n Pillage Defender Loss: {}, Ratio is {}% \n\n", defence_h_left, defence_ratio);
+    //     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left,
+//     attacker_ratio);
+//     print!("\n\n Pillage Defender Loss: {}, Ratio is {}% \n\n", defence_h_left,
+//     defence_ratio);
 
     // }
 }

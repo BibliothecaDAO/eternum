@@ -14,12 +14,14 @@ use eternum::models::combat::protectee;
 use eternum::models::combat::protector;
 use eternum::models::config::{
     world_config, speed_config, capacity_config, weight_config, road_config, hyperstructure_resource_config,
-    stamina_config, tick_config, map_explore_config, realm_free_mint_config, mercenaries_config, leveling_config,
-    production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
-    population_config, has_claimed_starting_resources
+    stamina_config, stamina_refill_config, tick_config, map_explore_config, realm_free_mint_config, mercenaries_config,
+    leveling_config, production_config, bank_config, building_config, troop_config, battle_config,
+    building_category_pop_config, population_config, has_claimed_starting_resources, hyperstructure_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
-use eternum::models::hyperstructure::{Progress, progress, Contribution, contribution};
+use eternum::models::hyperstructure::{
+    Progress, progress, Contribution, contribution, HyperstructureUpdate, hyperstructure_update
+};
 use eternum::models::level::level;
 use eternum::models::map::tile;
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
@@ -48,6 +50,8 @@ use eternum::models::structure::structure_count;
 use eternum::models::trade::{status, Status, trade, Trade,};
 use eternum::models::weight::weight;
 
+use starknet::contract_address_const;
+
 // used to spawn a test world with all the models and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
     let mut models = array![
@@ -59,8 +63,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         protectee::TEST_CLASS_HASH,
         battle::TEST_CLASS_HASH,
         guild::TEST_CLASS_HASH,
-        guild_member::TEST_CLASS_HASH,
-        guild_whitelist::TEST_CLASS_HASH,
         building_quantityv_2::TEST_CLASS_HASH,
         level::TEST_CLASS_HASH,
         tile::TEST_CLASS_HASH,
@@ -80,7 +82,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         bank::TEST_CLASS_HASH,
         liquidity::TEST_CLASS_HASH,
         market::TEST_CLASS_HASH,
-        guild::TEST_CLASS_HASH,
         guild_member::TEST_CLASS_HASH,
         guild_whitelist::TEST_CLASS_HASH,
         map_explore_config::TEST_CLASS_HASH,
@@ -95,12 +96,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         building_category_pop_config::TEST_CLASS_HASH,
         population_config::TEST_CLASS_HASH,
         has_claimed_starting_resources::TEST_CLASS_HASH,
-        army::TEST_CLASS_HASH,
-        protector::TEST_CLASS_HASH,
-        protectee::TEST_CLASS_HASH,
-        battle::TEST_CLASS_HASH,
-        building_quantityv_2::TEST_CLASS_HASH,
-        building::TEST_CLASS_HASH,
         owner::TEST_CLASS_HASH,
         movable::TEST_CLASS_HASH,
         quantity::TEST_CLASS_HASH,
@@ -124,7 +119,9 @@ fn spawn_eternum() -> IWorldDispatcher {
         progress::TEST_CLASS_HASH,
         contribution::TEST_CLASS_HASH,
         hyperstructure_resource_config::TEST_CLASS_HASH,
+        hyperstructure_config::TEST_CLASS_HASH,
         stamina_config::TEST_CLASS_HASH,
+        stamina_refill_config::TEST_CLASS_HASH,
         tick_config::TEST_CLASS_HASH,
         address_name::TEST_CLASS_HASH,
         entity_name::TEST_CLASS_HASH,
@@ -134,5 +131,20 @@ fn spawn_eternum() -> IWorldDispatcher {
 
     world.uuid();
 
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player3'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_1_realm_owner'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_2_realm_owner'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_3_realm_owner'>());
+
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realms_owner'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realm_owner'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'caller'>());
+
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'maker'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'taker'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'0'>());
+    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'takers_other_realm'>());
     world
 }

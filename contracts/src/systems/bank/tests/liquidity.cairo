@@ -321,10 +321,6 @@ fn test_liquidity_sell() {
     // initial reserves + sold resouce amount
     assert_eq!(market.resource_amount, 1500);
 
-    // player resources
-    let wood = ResourceCustomImpl::get(world, (PLAYER_2_ID, ResourceTypes::WOOD));
-    let lords = ResourceCustomImpl::get(world, (PLAYER_2_ID, ResourceTypes::LORDS));
-
     // remove all liquidity
     let donkey_2_id = liquidity_systems_dispatcher
         .remove(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, liquidity.shares);
@@ -379,9 +375,6 @@ fn test_liquidity_no_drain() {
     ) =
         setup();
 
-    // bank owner
-    let player2 = starknet::get_caller_address();
-
     // original player adds liquidity
     liquidity_systems_dispatcher
         .add(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
@@ -391,6 +384,7 @@ fn test_liquidity_no_drain() {
 
     // another player adds liquidity
     starknet::testing::set_contract_address(contract_address_const::<'player3'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player3'>());
     let player3 = starknet::get_contract_address();
 
     // get current reserves

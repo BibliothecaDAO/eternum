@@ -1,5 +1,6 @@
 use eternum::alias::ID;
 use eternum::models::position::Coord;
+use starknet::ContractAddress;
 
 #[dojo::interface]
 trait IHyperstructureSystems {
@@ -10,29 +11,46 @@ trait IHyperstructureSystems {
         contributor_entity_id: ID,
         contributions: Span<(u8, u128)>
     );
+    fn set_co_owners(
+        ref world: IWorldDispatcher, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>
+    );
 }
 
 
 #[dojo::contract]
 mod hyperstructure_systems {
     use core::array::ArrayIndex;
-    use eternum::alias::ID;
-    use eternum::constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards};
-    use eternum::models::config::HyperstructureConfigCustomTrait;
-    use eternum::models::hyperstructure::{Progress, Contribution};
-    use eternum::models::order::{Orders};
-    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
-    use eternum::models::position::{Coord, Position, PositionIntoCoord};
-    use eternum::models::realm::{Realm};
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-    use eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
+    use eternum::{
+        alias::ID, constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards},
+        models::{
+            config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig},
+            hyperstructure::{Progress, Contribution, HyperstructureUpdate},
+            owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
+            position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
+            resources::{Resource, ResourceCustomImpl, ResourceCost},
+            structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}
+        },
+        systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
+    };
+    use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct HyperstructureFinished {
+        #[key]
         hyperstructure_entity_id: ID,
         timestamp: u64,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    #[dojo::model]
+    struct HyperstructureCoOwnersChange {
+        #[key]
+        hyperstructure_entity_id: ID,
+        timestamp: u64,
+        co_owners: Span<(ContractAddress, u16)>,
     }
 
 
@@ -47,7 +65,7 @@ mod hyperstructure_systems {
             let structure_count: StructureCount = get!(world, coord, StructureCount);
             structure_count.assert_none();
 
-            let hyperstructure_shards_config = HyperstructureConfigCustomTrait::get(
+            let hyperstructure_shards_config = HyperstructureResourceConfigCustomTrait::get(
                 world, ResourceTypes::EARTHEN_SHARD
             );
 
@@ -114,8 +132,47 @@ mod hyperstructure_systems {
                 emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp }),);
             }
         }
-    }
 
+        fn set_co_owners(
+            ref world: IWorldDispatcher, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>
+        ) {
+            let caller = starknet::get_caller_address();
+
+            let owner = get!(world, hyperstructure_entity_id, Owner);
+            owner.assert_caller_owner();
+
+            let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
+
+            let mut hyperstructure_update = get!(world, hyperstructure_entity_id, HyperstructureUpdate);
+
+            let timestamp = starknet::get_block_timestamp();
+
+            if (hyperstructure_update.last_updated_by == caller) {
+                assert!(
+                    timestamp
+                        - hyperstructure_update
+                            .last_updated_timestamp > hyperstructure_config
+                            .time_between_shares_change,
+                    "time between shares change not passed"
+                );
+            }
+
+            hyperstructure_update.last_updated_timestamp = timestamp;
+            hyperstructure_update.last_updated_by = caller;
+
+            set!(world, (hyperstructure_update,));
+
+            let mut total: u16 = 0;
+            let mut i = 0;
+            while (i < co_owners.len()) {
+                let (_, percentage) = *co_owners.at(i);
+                total += percentage;
+                i += 1;
+            };
+            assert!(total == 10000, "total percentage must be 10000");
+            emit!(world, (HyperstructureCoOwnersChange { hyperstructure_entity_id, timestamp, co_owners }));
+        }
+    }
 
     #[generate_trait]
     pub impl InternalHyperstructureSystemsImpl of InternalHyperstructureSystemsTrait {
@@ -153,7 +210,7 @@ mod hyperstructure_systems {
             world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128
         ) -> (u128, bool) {
             let resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
-            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(world, resource_type);
+            let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
             let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
 
             let amount_left_for_completion = resource_amount_for_completion - resource_progress.amount;
@@ -203,7 +260,7 @@ mod hyperstructure_systems {
         ) -> bool {
             let mut resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
 
-            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(world, resource_type);
+            let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
             let resource_amount_for_completion = hyperstructure_resource_config.amount_for_completion;
 
             resource_progress.amount == resource_amount_for_completion

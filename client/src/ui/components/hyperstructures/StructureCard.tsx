@@ -6,12 +6,13 @@ import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, Position, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
+import { Position } from "@/types/Position";
 
 export const StructureCard = ({
   position,
@@ -21,7 +22,7 @@ export const StructureCard = ({
   ownArmySelected: ArmyInfo | undefined;
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
-  const structure = getStructureAtPosition({ x: position.x, y: position.y });
+  const structure = getStructureAtPosition(position.getContract());
 
   return (
     Boolean(structure) && (
@@ -64,7 +65,7 @@ export const MergeTroopsPanel = ({
   takerArmy,
 }: MergeTroopsPanelProps) => {
   return (
-    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 max-h-[42vh] overflow-y-auto">
+    <div className="flex flex-col  bg-gold/20 p-3 max-h-[42vh] overflow-y-auto">
       <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>
         &lt; Back
       </Button>
@@ -163,7 +164,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
           {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
-                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
+                className="flex flex-row bg-gold/20  hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
                 key={resourceId}
               >
                 <div className=" flex gap-3">
@@ -212,7 +213,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
             Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
-                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
+                  className="flex flex-row bg-gold/20  hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
                   key={resourceId}
                 >
                   <div className=" flex gap-3">
@@ -295,7 +296,7 @@ const Troop = ({ troopId }: { troopId: number }) => {
       }}
       className="flex flex-col font-bold"
     >
-      <div className="bg-white/10 clip-angled-sm flex justify-between p-1">
+      <div className="bg-white/10  flex justify-between p-1">
         <ResourceIcon withTooltip={false} resource={ResourcesIds[troopId]} size="lg" />
       </div>
     </div>

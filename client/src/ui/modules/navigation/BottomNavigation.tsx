@@ -1,7 +1,6 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { QuestStatus, useQuestClaimStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import CircleButton from "@/ui/elements/CircleButton";
@@ -10,13 +9,13 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
-import { useLocation } from "wouter";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { Assistant } from "../assistant/Assistant";
 import { Guilds } from "../guilds/Guilds";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 export enum MenuEnum {
   military = "military",
@@ -26,9 +25,9 @@ export enum MenuEnum {
 }
 
 export const BottomNavigation = () => {
-  const [location, _] = useLocation();
+  const { isMapView } = useQuery();
 
-  const { realmEntityId } = useRealmStore();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { quests } = useQuests();
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
   const { questClaimStatus } = useQuestClaimStatus();
@@ -36,8 +35,6 @@ export const BottomNavigation = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
-  const isWorldView = useMemo(() => location === "/map", [location]);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
@@ -56,13 +53,13 @@ export const BottomNavigation = () => {
               active={isPopupOpen(questsWindow)}
               size="lg"
               onClick={() => togglePopup(questsWindow)}
-              notification={isRealmSelected(realmEntityId, structures) ? unclaimedQuestsCount : undefined}
+              notification={isRealmSelected(structureEntityId, structures) ? unclaimedQuestsCount : undefined}
               notificationLocation={"topleft"}
-              disabled={!isRealmSelected(realmEntityId, structures)}
+              disabled={!isRealmSelected(structureEntityId, structures)}
             />
 
-            {questToClaim && !isWorldView && (
-              <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
+            {questToClaim && !isMapView && (
+              <div className="absolute bg-black/90 text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
                 <div className="text-xs">Claim your reward</div>
               </div>
@@ -99,7 +96,7 @@ export const BottomNavigation = () => {
         ),
       },
     ];
-  }, [unclaimedQuestsCount, selectedQuest, quests, realmEntityId]);
+  }, [unclaimedQuestsCount, selectedQuest, quests, structureEntityId]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },
@@ -109,7 +106,7 @@ export const BottomNavigation = () => {
   return (
     <>
       <div className="pointer-events-auto">
-        <Questing entityId={realmEntityId} />
+        <Questing entityId={structureEntityId} />
         <Assistant />
         <Leaderboard />
         <Guilds />

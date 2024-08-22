@@ -7,14 +7,11 @@
     "eternum-docs/package.json",
     "eternum-docs/vocs.config.ts",
     "sdk/packages/eternum/global.d.ts",
-
+    "config/bank/index.ts",
     "**/**__test__**/**",
     "**/**__tests__**/**",
 
-    "client/src/dojo/events/bankEventQueries.ts",
-    "client/src/hooks/store/useBankStore.tsx",
-    "client/src/ui/components/bank/BankEntityList.tsx",
-    "client/src/ui/components/bank/BankStats.tsx",
-    "config/bank/index.ts"
+    "client/src/three/components/FogManager.ts",
+    "client/src/hooks/useUISound.tsx"
   ]
 }

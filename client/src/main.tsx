@@ -1,13 +1,15 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.css";
-import { setup } from "./dojo/setup";
-import { DojoProvider } from "./hooks/context/DojoContext";
-import { LoadingScreen } from "./ui/modules/LoadingScreen";
-import { dojoConfig } from "../dojoConfig";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { dojoConfig } from "../dojoConfig";
+import App from "./App";
+import { setup } from "./dojo/setup";
+import { DojoProvider } from "./hooks/context/DojoContext";
+import "./index.css";
+import GameRenderer from "./three/GameRenderer";
+import { LoadingScreen } from "./ui/modules/LoadingScreen";
+import { ACCOUNT_CHANGE_EVENT } from "./ui/modules/onboarding/Steps";
 
 declare global {
   interface Window {
@@ -25,6 +27,17 @@ async function init() {
   root.render(<LoadingScreen />);
 
   const setupResult = await setup(dojoConfig);
+
+  const graphic = new GameRenderer(setupResult);
+
+  graphic.initScene();
+  graphic.initStats();
+
+  // reinit scene game renderer when address changes
+  // const accountChange = () => {
+  //   graphic.renderModels();
+  // };
+  // window.addEventListener(ACCOUNT_CHANGE_EVENT, accountChange);
 
   inject();
   root.render(

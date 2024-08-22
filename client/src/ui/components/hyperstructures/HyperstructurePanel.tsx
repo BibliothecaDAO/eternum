@@ -1,20 +1,25 @@
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { calculateCompletionPoints } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
-import { ProgressWithPercentage, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import useLeaderBoardStore, {
-  calculateShares,
-  PlayerPointsLeaderboardInterface,
-} from "@/hooks/store/useLeaderBoardStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { ProgressWithPercentage, useHyperstructures, useUpdates } from "@/hooks/helpers/useHyperstructures";
 import Button from "@/ui/elements/Button";
-import { OrderIcon } from "@/ui/elements/OrderIcon";
-import { SortButton, SortInterface } from "@/ui/elements/SortButton";
-import { SortPanel } from "@/ui/elements/SortPanel";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
-import { ConfigManager, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+
+import {
+  ConfigManager,
+  ContractAddress,
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  MAX_NAME_LENGTH,
+} from "@bibliothecadao/eternum";
+
 import { useMemo, useState } from "react";
+import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
+import useUIStore from "@/hooks/store/useUIStore";
 
 enum Loading {
   None,
@@ -41,12 +46,14 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const [naming, setNaming] = useState("");
   const [resetContributions, setResetContributions] = useState(false);
 
-  const { realmEntityId } = useRealmStore();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { useProgress } = useHyperstructures();
   const { getContributionsByPlayerAddress } = useContributions();
 
   const progresses = useProgress(entity.entity_id);
   const contributions = getContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
+
+  const updates = useUpdates(entity.entity_id);
 
   const [newContributions, setNewContributions] = useState<Record<number, number>>({});
 
@@ -62,7 +69,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       await contribute_to_construction({
         signer: account,
         contributions: formattedContributions,
-        contributor_entity_id: realmEntityId,
+        contributor_entity_id: structureEntityId,
         hyperstructure_entity_id: entity.entity_id,
       });
     } finally {
@@ -80,7 +87,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       );
       return (
         <HyperstructureResourceChip
-          realmEntityId={realmEntityId}
+          structureEntityId={structureEntityId}
           setContributions={setNewContributions}
           contributions={newContributions}
           progress={progress!}
@@ -92,13 +99,17 @@ export const HyperstructurePanel = ({ entity }: any) => {
     });
   }, [progresses, contributions]);
 
+  const initialPoints = useMemo(() => {
+    return calculateCompletionPoints(contributions);
+  }, [contributions, updates]);
+
   const shares = useMemo(() => {
-    return calculateShares(contributions);
-  }, [contributions]);
+    return LeaderboardManager.instance().getShares(ContractAddress(account.address), entity.entity_id);
+  }, [contributions, updates]);
 
   return (
     <div className="flex flex-col h-[45vh] justify-between">
-      <div className="flex flex-col mb-2 bg-blueish/10 p-3 clip-angled-sm">
+      <div className="flex flex-col mb-2 bg-blueish/10 p-3 ">
         <div className=" align-text-bottom uppercase text-xs">Owner: {`${displayAddress(entity.owner)}`}</div>
         <div className="flex flex-row justify-between items-baseline">
           {editName ? (
@@ -144,87 +155,58 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
       </div>
 
-      <div className="w-[100%] grid justify-between  m-auto mb-2  gap-2 grid-cols-3">
-        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="uppercase text-xs">Progress</div>
-          <div className="font-bold text-xl">{currencyIntlFormat(progresses.percentage)}%</div>
+      <div className="w-[100%] grid justify-between  m-auto mb-2  gap-2 grid-cols-4">
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center h-full">
+            <div className="uppercase text-xs">Initial points received</div>
+            <div className="font-bold text-xl">{currencyIntlFormat(initialPoints)}</div>
+          </div>
         </div>
-        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="uppercase text-xs">Your shares</div>
-          <div className="font-bold text-xl">{currencyIntlFormat(shares * 100)}%</div>
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center h-full">
+            <div className="uppercase text-xs">Progress</div>
+            <div className="font-bold text-xl">{currencyIntlFormat(progresses.percentage)}%</div>
+          </div>
         </div>
-        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="uppercase text-xs">points/cycle</div>
-          <div className="font-bold text-xl ">{currencyIntlFormat(shares * hyperstructurePointsPerCycle)}</div>
+
+        {/* // <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
+        //   <div className="uppercase text-xs">points/cycle</div>
+        //   <div className="font-bold text-xl ">{currencyIntlFormat(shares * hyperstructurePointsPerCycle)}</div> */}
+
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center h-full">
+            <div className="uppercase text-xs">Shares</div>
+            <div className="font-bold text-xl">{currencyIntlFormat((shares || 0) * 100)}%</div>
+          </div>
         </div>
-      </div>
-      <div className="overflow-y-scroll h-[40vh] bg-gold/10 clip-angled-sm p-2">
-        {progresses.percentage === 100 ? <HyperstructureLeaderboard /> : <div className="">{resourceElements}</div>}
-      </div>
-      <Button
-        isLoading={isLoading === Loading.Contribute}
-        className="mt-4 bg-gold/20"
-        disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None}
-        onClick={contributeToConstruction}
-      >
-        Contribute
-      </Button>
-    </div>
-  );
-};
-
-const HyperstructureLeaderboard = () => {
-  const playerPointsLeaderboard = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
-
-  const sortingParams = useMemo(() => {
-    return [
-      { label: "Name", sortKey: "name", className: "" },
-      { label: "Order", sortKey: "order", className: "" },
-      { label: "Address", sortKey: "address", className: "" },
-      { label: "Points", sortKey: "points", className: "flex justify-end" },
-    ];
-  }, []);
-
-  const [activeSort, setActiveSort] = useState<SortInterface>({
-    sortKey: "number",
-    sort: "none",
-  });
-
-  return (
-    <>
-      <SortPanel className="px-3 py-2 grid grid-cols-4">
-        {sortingParams.map(({ label, sortKey, className }) => (
-          <SortButton
-            className={className}
-            key={sortKey}
-            label={label}
-            sortKey={sortKey}
-            activeSort={activeSort}
-            onChange={(_sortKey, _sort) => {
-              setActiveSort({
-                sortKey: _sortKey,
-                sort: _sort,
-              });
-            }}
-          />
-        ))}
-      </SortPanel>
-      {playerPointsLeaderboard
-        .sort((playerPointsA, playerPointsB) => playerPointsB.totalPoints - playerPointsA.totalPoints)
-        .map((playerPoints: PlayerPointsLeaderboardInterface) => {
-          return (
-            <div className="flex mt-1">
-              <div className={`flex relative group items-center text-xs px-2 p-1 w-full`}>
-                <div className="flex w-full grid grid-cols-4">
-                  <div className="text-sm font-bold">{playerPoints.addressName}</div>
-                  <OrderIcon containerClassName="" order={playerPoints.order} size="xs" />
-                  <div className=" text-sm font-bold">{displayAddress(playerPoints.address.toString(16))}</div>
-                  <div className="text-right">{playerPoints.totalPoints.toFixed(2)}</div>
-                </div>
-              </div>
+        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center h-full">
+            <div className="uppercase text-xs">Points/cycle</div>
+            <div className="font-bold text-xl ">
+              {currencyIntlFormat((shares || 0) * HYPERSTRUCTURE_POINTS_PER_CYCLE)}
             </div>
-          );
-        })}
-    </>
+          </div>
+        </div>
+      </div>
+      <div className="overflow-y-scroll no-scrollbar h-[40vh] bg-gold/10  p-2">
+        {progresses.percentage === 100 ? (
+          <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
+        ) : (
+          <div className="">
+            {resourceElements}
+            <div className="flex justify-end w-full">
+              <Button
+                isLoading={isLoading === Loading.Contribute}
+                className="mt-4 bg-gold/20"
+                disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None}
+                onClick={contributeToConstruction}
+              >
+                Contribute
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };

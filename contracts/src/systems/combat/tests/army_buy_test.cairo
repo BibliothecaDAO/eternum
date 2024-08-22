@@ -69,6 +69,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
     let realm_id = realm_system_dispatcher
         .create(1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y });
@@ -92,7 +93,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
 fn test_army_buy() {
     let (world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
-
+    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     let troops = Troops {
         knight_count: STARTING_KNIGHT_COUNT.try_into().unwrap(),
         paladin_count: STARTING_PALADIN_COUNT.try_into().unwrap(),
@@ -122,8 +123,9 @@ fn test_army_buy() {
     )
 )]
 fn test_army_buy__not_enough_resources() {
-    let (world, combat_systems_dispatcher, realm_id, army_id) = setup();
+    let (_world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
+    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
     let troops = Troops {
         knight_count: STARTING_KNIGHT_COUNT.try_into().unwrap(),

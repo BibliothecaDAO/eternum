@@ -22,7 +22,7 @@ export const ResourceChip = ({
 
   const production = useMemo(() => {
     return productionManager.getProduction();
-  }, []);
+  }, [productionManager]);
 
   const balance = useMemo(() => {
     return productionManager.balance(currentDefaultTick);
@@ -46,11 +46,26 @@ export const ResourceChip = ({
   const isConsumingInputsWithoutOutput = useMemo(() => {
     if (!production?.production_rate) return false;
     return productionManager.isConsumingInputsWithoutOutput(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick]);
+  }, [productionManager, production, currentDefaultTick, entityId]);
 
   const [displayBalance, setDisplayBalance] = useState(balance);
 
+  const icon = useMemo(
+    () => (
+      <ResourceIcon
+        isLabor={isLabor}
+        withTooltip={false}
+        resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
+        size="sm"
+        className="mr-3 self-center"
+      />
+    ),
+    [resourceId],
+  );
+
   useEffect(() => {
+    setDisplayBalance(balance);
+
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
         if (Math.abs(netRate) > 0) {
@@ -60,7 +75,7 @@ export const ResourceChip = ({
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [balance, netRate]);
+  }, [balance, netRate, entityId]);
 
   return (
     <div
@@ -77,14 +92,7 @@ export const ResourceChip = ({
         setTooltip(null);
       }}
     >
-      <ResourceIcon
-        isLabor={isLabor}
-        withTooltip={false}
-        resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
-        size="sm"
-        className="mr-3 self-center"
-      />
-
+      {icon}
       <div className="flex justify-between w-full">
         <div className=" self-center text-sm font-bold">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}

@@ -13,6 +13,7 @@ import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
 import { TravelEntityPopup } from "./TravelEntityPopup";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -59,7 +60,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     return battleManager.isBattleOngoing(currentTimestamp!);
   }, [entity?.position?.x, entity?.position?.y]);
 
-  const army = useMemo(() => getArmy(entityId), [entityId]);
+  const army = useMemo(() => getArmy(entityId), [entityId, entity.resources]);
 
   if (entityState === EntityState.NotApplicable) return null;
 
@@ -103,13 +104,13 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     );
   };
 
-  const name = entity.entityType === EntityType.TROOP ? army.name : entityName[entity.entityType];
+  const name = entity.entityType === EntityType.TROOP ? army?.name : entityName[entity.entityType];
 
-  const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10 animate-pulse";
+  const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10";
 
   return (
     <div
-      className={clsx("flex flex-col p-2 clip-angled-sm  text-gold border border-gold/10", props.className, bgColour)}
+      className={clsx("flex flex-col p-2   text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}
@@ -123,12 +124,13 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
         </div>
       </div>
+      {entity.entityType === EntityType.TROOP && <ArmyCapacity army={army} className="my-2 ml-5" />}
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
       {entityState !== EntityState.Traveling && (
         <DepositResources
           entityId={entityId}
           battleInProgress={battleInProgress}
-          armyInBattle={Boolean(army.battle_id)}
+          armyInBattle={Boolean(army?.battle_id)}
         />
       )}
     </div>

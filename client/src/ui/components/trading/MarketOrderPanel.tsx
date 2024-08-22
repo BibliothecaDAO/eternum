@@ -1,11 +1,13 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
   ID,
@@ -16,9 +18,6 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { getTotalResourceWeight } from "@/ui/utils/utils";
-import { useProductionManager } from "@/hooks/helpers/useResources";
-import { useRealm } from "@/hooks/helpers/useRealm";
 
 export const MarketResource = ({
   entityId,
@@ -51,7 +50,7 @@ export const MarketResource = ({
   return (
     <div
       onClick={() => onClick(resource.id)}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:clip-angled-sm clip-angled-sm group ${
+      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
         active ? "bg-gold/10" : ""
       }`}
     >
@@ -121,7 +120,7 @@ const MarketOrders = ({
     <div className=" h-full flex flex-col gap-4">
       {/* Market Price */}
       <div
-        className={`text-xl flex clip-angled-sm font-bold  justify-between p-1 px-8 border-gold/10 border ${
+        className={`text-xl flex  font-bold  justify-between p-1 px-8 border-gold/10 border ${
           !isBuy ? "bg-green/20" : "bg-red/20"
         }`}
       >
@@ -134,7 +133,7 @@ const MarketOrders = ({
         </div>
       </div>
 
-      <div className="p-1 bg-white/5  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border overflow-y-scroll h-auto">
+      <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
         <OrderRowHeader resourceId={resourceId} />
 
         <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96">
@@ -257,7 +256,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -285,7 +284,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   return (
     <div
       key={offer.tradeId}
-      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
+      className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
@@ -398,13 +397,13 @@ const OrderCreation = ({
 
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
-      { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: resource },
+      { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: isBuy ? resource : lords },
     ]);
     return multiplyByPrecision(totalWeight);
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
@@ -448,7 +447,7 @@ const OrderCreation = ({
   }, [donkeyBalance, donkeysNeeded, resourceId]);
 
   return (
-    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-gold/5 border-gold/10 border">
+    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border">
       <div className="flex w-full gap-8">
         <div className="w-1/3 gap-1 flex flex-col">
           <div className="uppercase text-sm flex gap-2 font-bold">
@@ -504,7 +503,7 @@ const OrderCreation = ({
         <Button
           disabled={!enoughDonkeys || !canBuy}
           isLoading={loading}
-          className="mt-4 h-8 w-60"
+          className="mt-4 h-8"
           onClick={createOrder}
           size="md"
           variant="primary"

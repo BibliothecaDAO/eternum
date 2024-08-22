@@ -136,6 +136,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.destroy_building(props);
   };
 
+  const pause_production = async (props: SystemProps.PauseProductionProps) => {
+    await provider.pause_production(props);
+  };
+
+  const resume_production = async (props: SystemProps.ResumeProductionProps) => {
+    await provider.resume_production(props);
+  };
+
   const create_bank = async (props: SystemProps.CreateBankProps) => {
     await provider.create_bank(props);
   };
@@ -198,6 +206,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const contribute_to_construction = async (props: SystemProps.ContributeToConstructionProps) => {
     await provider.contribute_to_construction(props);
+  };
+
+  const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
+    await provider.set_co_owners(props);
   };
 
   const create_guild = async (props: SystemProps.CreateGuildProps) => {
@@ -290,12 +302,15 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     travel,
     travel_hex: withQueueing(withErrorHandling(travel_hex)),
     destroy_building,
+    pause_production,
+    resume_production,
     create_building,
     create_army,
     delete_army,
     uuid,
     create_hyperstructure,
     contribute_to_construction,
+    set_co_owners,
 
     mint_resources,
     mint_starting_resources,

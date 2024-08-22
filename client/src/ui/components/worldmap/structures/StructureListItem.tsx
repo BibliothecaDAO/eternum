@@ -130,7 +130,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   return (
     <div className="flex justify-between flex-row mt-2 ">
       <div
-        className={`flex w-[27rem] h-full justify-between clip-angled ${
+        className={`flex w-[27rem] h-full justify-between  ${
           structure.isMine ? "bg-blueish/20" : "bg-red/20"
         } rounded-md border-gold/20 p-2`}
       >

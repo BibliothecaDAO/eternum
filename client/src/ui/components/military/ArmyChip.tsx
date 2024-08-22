@@ -10,6 +10,7 @@ import React, { useMemo, useState } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 export const ArmyChip = ({
   army,
@@ -38,7 +39,7 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs px-2 hover:bg-blueish/20 clip-angled bg-blueish/20 rounded-md border-gold/20 ${className}`}
+      className={`items-center text-xs px-2 hover:bg-blueish/20  bg-blueish/20 rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (
         <>
@@ -65,9 +66,7 @@ export const ArmyChip = ({
                             onClick={() => setEditMode(!editMode)}
                           />
                           <ViewOnMapIcon
-                            className={
-                              "my-auto w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-                            }
+                            className={"my-auto hover:scale-125  hover:grow"}
                             position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
                           />
                         </React.Fragment>
@@ -81,6 +80,7 @@ export const ArmyChip = ({
                 </div>
                 <div className="font-bold text-xs">
                   <StaminaResource entityId={updatedArmy!.entity_id} />
+                  <ArmyCapacity army={updatedArmy} />
                 </div>
               </div>
               <div className="flex flex-col content-center w-[55%]">

@@ -7,11 +7,10 @@ export const NAMESPACE = "eternum";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.tag === name);
-  if (contract) {
-    return contract.address;
-  } else {
-    return "";
+  if (!contract) {
+    throw new Error(`Contract ${name} not found in manifest`);
   }
+  return contract.address;
 };
 
 function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
@@ -370,6 +369,26 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "destroy",
+      calldata: [entity_id, building_coord.x, building_coord.y],
+    });
+  }
+
+  public async pause_production(props: SystemProps.PauseProductionProps) {
+    const { entity_id, building_coord, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
+      entrypoint: "pause_production",
+      calldata: [entity_id, building_coord.x, building_coord.y],
+    });
+  }
+
+  public async resume_production(props: SystemProps.ResumeProductionProps) {
+    const { entity_id, building_coord, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
+      entrypoint: "resume_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
   }
@@ -845,11 +864,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
-    const { resources_for_completion, signer } = props;
+    const { resources_for_completion, time_between_shares_change, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_hyperstructure_config",
-      calldata: [resources_for_completion],
+      calldata: [resources_for_completion, time_between_shares_change],
     });
   }
 
@@ -871,12 +890,30 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_co_owners(props: SystemProps.SetCoOwnersProps) {
+    const { hyperstructure_entity_id, co_owners, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "set_co_owners",
+      calldata: [hyperstructure_entity_id, co_owners],
+    });
+  }
+
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {
     const { unit_type, max_stamina, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_config",
       calldata: [unit_type, max_stamina],
+    });
+  }
+
+  public async set_stamina_refill_config(props: SystemProps.SetStaminaRefillConfigProps) {
+    const { amount_per_tick, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_stamina_refill_config",
+      calldata: [amount_per_tick],
     });
   }
 

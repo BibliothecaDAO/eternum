@@ -6,11 +6,11 @@ import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { GuildAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
 import { GuildMembers } from "./GuildMembers";
 import { hasGuild } from "./utils";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
 
 type GuildAndNameKeys = keyof (ComponentValue<ClientComponents["Guild"]["schema"]> & {
   name: string;
@@ -38,10 +38,10 @@ export const Guilds = () => {
   const [_, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0, name: "" });
 
-  const { getGuilds, getAddressGuild } = useGuilds();
+  const { useGuildQuery, getGuildFromPlayerAddress } = useGuilds();
 
-  const { guilds } = getGuilds();
-  const { userGuildEntityId, isOwner } = getAddressGuild(ContractAddress(account.address));
+  const { guilds } = useGuildQuery();
+  const guildDisplayed = getGuildFromPlayerAddress(ContractAddress(account.address));
 
   const sortingParams: SortingParamGuildAndName[] = useMemo(() => {
     return [
@@ -77,7 +77,7 @@ export const Guilds = () => {
 
           <div className="flex flex-col">
             <div className="flex flex-row justify-between">
-              {!hasGuild(userGuildEntityId) && (
+              {!hasGuild(guildDisplayed?.guildEntityId) && (
                 <div className="px-4 ml-auto">
                   <Button size="xs" onClick={() => joinGuild(selectedGuild.guildEntityId)}>
                     Join Guild
@@ -86,7 +86,7 @@ export const Guilds = () => {
               )}
             </div>
 
-            <GuildMembers selectedGuild={selectedGuild} isOwner={isOwner} />
+            <GuildMembers selectedGuild={selectedGuild} isOwner={guildDisplayed?.isOwner || false} />
           </div>
         </>
       ) : (
@@ -109,15 +109,15 @@ export const Guilds = () => {
             ))}
           </SortPanel>
           <div className="flex flex-col p-3 space-y-2 overflow-y-auto ">
-            {sortItems(guilds, activeSort)?.map((guild: GuildAndName) => {
+            {sortItems(guilds, activeSort)?.map((guild: GuildAndName, index) => {
               return (
                 <div
                   key={guild.guild.entity_id}
-                  className={`grid grid-cols-4 gap-4 text-md clip-angled-sm p-1 ${
-                    userGuildEntityId === guild.guild.entity_id ? "bg-green/20" : ""
+                  className={`grid grid-cols-4 gap-4 text-md  p-1 ${
+                    guild.guild.entity_id === guildDisplayed?.guildEntityId ? "bg-green/20" : ""
                   } `}
                 >
-                  <p className="col-span-1">{`#${guild.rank}`} </p>
+                  <p className="col-span-1">{`#${index + 1}`} </p>
                   <p
                     className="col-span-1 hover:text-white truncate"
                     onClick={() => setSelectedGuild({ guildEntityId: guild.guild.entity_id, name: guild.name })}

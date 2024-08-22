@@ -1,9 +1,18 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
-import { ContractAddress, EntityType, ID } from "@bibliothecadao/eternum";
+import { ContractAddress, EntityType, ID, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
+import {
+  Component,
+  ComponentValue,
+  Entity,
+  Has,
+  HasValue,
+  NotValue,
+  getComponentValue,
+  runQuery,
+} from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getResourcesUtils } from "./useResources";
@@ -63,16 +72,48 @@ export const useEntities = () => {
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
-        .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
+        .sort((a, b) => {
+          if (a.category === StructureType[StructureType.Realm]) return -1;
+          if (b.category === StructureType[StructureType.Realm]) return 1;
+          return a.category!.localeCompare(b.category!);
+        });
     },
   };
+};
+
+export const getPlayerStructures = () => {
+  const {
+    setup: {
+      components: { Structure, Owner, Realm, Position },
+    },
+  } = useDojo();
+  const { getEntityName } = getEntitiesUtils();
+
+  const getStructures = (playerAddress: ContractAddress) => {
+    const playerStructures = runQuery([Has(Structure), HasValue(Owner, { address: playerAddress })]);
+    return formatStructures(Array.from(playerStructures), Structure, Realm, Position, getEntityName);
+  };
+
+  return getStructures;
 };
 
 export const getEntitiesUtils = () => {
   const {
     account: { account },
     setup: {
-      components: { EntityName, ArrivalTime, EntityOwner, Movable, Capacity, Position, Army, AddressName, Owner },
+      components: {
+        EntityName,
+        ArrivalTime,
+        EntityOwner,
+        Movable,
+        Capacity,
+        Position,
+        Army,
+        AddressName,
+        Owner,
+        Realm,
+        Structure,
+      },
     },
   } = useDojo();
 
@@ -88,6 +129,8 @@ export const getEntitiesUtils = () => {
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
 
     const name = getEntityName(entityId);
+
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([entityIdBigInt]));
 
     const resources = getResourcesFromBalance(entityId);
     const army = getComponentValue(Army, getEntityIdFromKeys([entityIdBigInt]));
@@ -117,13 +160,19 @@ export const getEntitiesUtils = () => {
       isRoundTrip: movable?.round_trip || false,
       resources,
       entityType: army ? EntityType.TROOP : EntityType.DONKEY,
+      structureCategory: structure?.category,
       name,
     };
   };
 
   const getEntityName = (entityId: ID) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(entityId)]));
-    return entityName ? shortString.decodeShortString(entityName.name.toString()) : entityId.toString();
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
+    return entityName
+      ? shortString.decodeShortString(entityName.name.toString())
+      : realm
+        ? getRealmNameById(realm.realm_id)
+        : entityId.toString();
   };
 
   const getAddressNameFromEntity = (entityId: ID) => {
@@ -143,4 +192,68 @@ export const getEntitiesUtils = () => {
   };
 
   return { getEntityName, getEntityInfo, getAddressNameFromEntity, getPlayerAddressFromEntity };
+};
+
+export const useGetAllPlayers = () => {
+  const {
+    setup: {
+      components: { Owner, Realm },
+    },
+  } = useDojo();
+
+  const playersEntityIds = runQuery([Has(Owner), Has(Realm)]);
+  const { getAddressNameFromEntity } = getEntitiesUtils();
+
+  const getPlayers = () => {
+    return getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
+  };
+
+  return getPlayers;
+};
+
+export const getAddressNameFromEntityIds = (
+  entityId: Array<Entity>,
+  Owner: Component<ClientComponents["Owner"]["schema"]>,
+  getAddressNameFromEntity: (entityId: ID) => string | undefined,
+) => {
+  return Array.from(entityId)
+    .map((id) => {
+      const owner = getComponentValue(Owner, id);
+      if (!owner) return;
+
+      const addressName = getAddressNameFromEntity(owner?.entity_id);
+      return { ...owner, addressName };
+    })
+    .filter(
+      (owner): owner is ComponentValue<ClientComponents["Owner"]["schema"]> & { addressName: string | undefined } =>
+        owner !== undefined,
+    );
+};
+
+const formatStructures = (
+  structures: Entity[],
+  Structure: Component<ClientComponents["Structure"]["schema"]>,
+  Realm: Component<ClientComponents["Realm"]["schema"]>,
+  Position: Component<ClientComponents["Position"]["schema"]>,
+  getEntityName: (entityId: ID) => string | undefined,
+) => {
+  return structures
+    .map((id) => {
+      const structure = getComponentValue(Structure, id);
+      if (!structure) return;
+
+      const realm = getComponentValue(Realm, id);
+      const position = getComponentValue(Position, id);
+
+      const structureName = getEntityName(structure!.entity_id);
+
+      const name = realm
+        ? getRealmNameById(realm.realm_id)
+        : structureName
+          ? `${structure?.category} ${structureName}`
+          : structure.category || "";
+      return { ...structure, position: position!, name };
+    })
+    .filter((structure): structure is PlayerStructure => structure !== undefined)
+    .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
 };

@@ -1,20 +1,18 @@
+import { HEX_SIZE } from "@/three/scenes/constants";
+import { HexPosition, ResourceMiningTypes } from "@/types";
 import {
   ContractAddress,
+  EternumGlobalConfig,
   ID,
   Position,
+  Resource,
   ResourcesIds,
-  UIPosition,
-  neighborOffsetsEven,
-  neighborOffsetsOdd,
+  WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import {
-  default as realmHexPositions,
-  default as realmsHexPositions,
-} from "../../data/geodata/hex/realmHexPositions.json";
-import { FELT_CENTER } from "../config";
+import * as THREE from "three";
+import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
 import { SortInterface } from "../elements/SortButton";
-import { Resource, WEIGHTS } from "@bibliothecadao/eternum";
 
 export { getEntityIdFromKeys };
 
@@ -42,14 +40,12 @@ export function displayAddress(string: string) {
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
 
-const PRECISION = 1000;
-
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * PRECISION);
+  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / PRECISION;
+  return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
 export function getPosition(realm_id: ID): { x: number; y: number } {
@@ -89,42 +85,45 @@ export function calculateDistance(start: Position, destination: Position): numbe
   }
 }
 
-export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
-  const hexRadius = 3;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+export const getHexagonCoordinates = (
+  instancedMesh: THREE.InstancedMesh,
+  instanceId: number,
+): { hexCoords: HexPosition; position: THREE.Vector3 } => {
+  const matrix = new THREE.Matrix4();
+  instancedMesh.getMatrixAt(instanceId, matrix);
+  const position = new THREE.Vector3();
+  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
 
-  const colNorm = col - (!normalized ? FELT_CENTER : 0);
-  const rowNorm = row - (!normalized ? FELT_CENTER : 0);
-  const x = normalized
-    ? colNorm * horizDist - ((rowNorm % 2) * horizDist) / 2
-    : colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
-  const y = rowNorm * vertDist;
-  const z = pseudoRandom(x, y) * 2;
-  return {
-    x,
-    y,
-    z,
-  };
+  const hexCoords = getHexForWorldPosition(position);
+
+  return { hexCoords, position };
 };
 
-export const getColRowFromUIPosition = (x: number, y: number, normalized?: boolean): { col: number; row: number } => {
-  const hexRadius = 3;
+export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
+  const hexRadius = HEX_SIZE;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
   const vertDist = hexHeight * 0.75;
   const horizDist = hexWidth;
 
-  const rowNorm = Math.round(y / vertDist);
-  // hexception offsets hack
-  const colNorm = normalized
-    ? Math.round((x + ((rowNorm % 2) * horizDist) / 2) / horizDist)
-    : Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
+  const col = hexCoords.col;
+  const row = hexCoords.row;
+  const x = col * horizDist - ((row % 2) * horizDist) / 2;
+  const z = row * vertDist;
+  const y = flat ? 0 : pseudoRandom(x, z) * 2;
+  return new THREE.Vector3(x, y, z);
+};
 
-  const col = colNorm + (!normalized ? FELT_CENTER : 0);
-  const row = rowNorm + (!normalized ? FELT_CENTER : 0);
+export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
+  const hexRadius = HEX_SIZE;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
+
+  const row = Math.round(worldPosition.z / vertDist);
+  // hexception offsets hack
+  const col = Math.round((worldPosition.x + ((row % 2) * horizDist) / 2) / horizDist);
 
   return {
     col,
@@ -132,54 +131,29 @@ export const getColRowFromUIPosition = (x: number, y: number, normalized?: boole
   };
 };
 
-interface HexPositions {
-  [key: string]: { col: number; row: number }[];
-}
+export const calculateOffset = (index: number, total: number, radius: number) => {
+  if (total === 1) return { x: 0, y: 0 };
 
-export const getRealmUIPosition = (realm_id: ID): Position => {
-  const realmPositions = realmHexPositions as HexPositions;
-  const colrow = realmPositions[realm_id.toString()][0];
+  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
+  let angle = angleIncrement * (index % 6);
+  let offsetRadius = radius;
 
-  return getUIPositionFromColRow(colrow.col, colrow.row, false);
-};
-
-export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
-  // give the direction
-  const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-  for (let offset of neighborOffsets) {
-    if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
-      return offset.direction;
-    }
+  if (index >= 6) {
+    // Adjustments for more than 6 armies, placing them in another layer
+    offsetRadius += 0.5; // Increase radius for each new layer
+    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
   }
+
+  return {
+    x: offsetRadius * Math.cos(angle),
+    z: offsetRadius * Math.sin(angle),
+  };
 };
 
 export const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
-
-function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
-  if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];
-  const resourceIds: number[] = [];
-  const totalBits = 256; // Assuming u256, hence 256 bits
-  const packedNumberBigInt = BigInt(packedNumber);
-
-  for (let position = 0; position < totalBits; position++) {
-    // Shift 1 to the left by 'position' places and perform bitwise AND
-    if ((packedNumberBigInt & (1n << BigInt(position))) !== 0n) {
-      resourceIds.push(position + 1);
-    }
-  }
-
-  return resourceIds;
-}
-
-export enum ResourceMiningTypes {
-  Forge = "forge",
-  Mine = "mine",
-  LumberMill = "lumber_mill",
-  Dragonhide = "dragonhide",
-}
 
 export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {
   [ResourcesIds.Copper]: ResourceMiningTypes.Forge,
@@ -259,14 +233,14 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     });
 };
 
-export const isRealmSelected = (realmEntityId: ID, structures: any) => {
-  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
+export const isRealmSelected = (structureEntityId: ID, structures: any) => {
+  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
   return selectedStructure?.category === "Realm";
 };
 
 export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
   return resources.reduce(
-    (total, resource) => total + (resource ? resource.amount * WEIGHTS[resource.resourceId] || 0 : 0),
+    (total, resource) => total + (resource ? resource.amount * WEIGHTS_GRAM[resource.resourceId] || 0 : 0),
     0,
   );
 };

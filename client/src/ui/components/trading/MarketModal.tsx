@@ -2,8 +2,7 @@ import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
-import { useModal } from "@/hooks/store/useModal";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import CircleButton from "@/ui/elements/CircleButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
@@ -16,24 +15,28 @@ import { ModalContainer } from "../ModalContainer";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const MarketModal = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const { playerRealms } = useEntities();
+  const { playerStructures } = useEntities();
 
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   const banks = useGetBanks();
   const bank = banks.length === 1 ? banks[0] : null;
 
   const { bidOffers, askOffers } = useSetMarket();
 
-  //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
-  const { realmEntityId, setRealmEntityId } = useRealmStore();
+  // initial entity id
+  const selectedEntityId = useUIStore((state) => state.structureEntityId);
+  const [structureEntityId, setStructureEntityId] = useState<ID>(selectedEntityId);
 
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
+
+  const structures = useMemo(() => playerStructures(), [playerStructures]);
 
   const tabs = useMemo(
     () => [
@@ -47,7 +50,7 @@ export const MarketModal = () => {
         component: (
           <MarketOrderPanel
             resourceId={selectedResource}
-            entityId={realmEntityId}
+            entityId={structureEntityId}
             resourceAskOffers={askOffers}
             resourceBidOffers={bidOffers}
           />
@@ -60,7 +63,7 @@ export const MarketModal = () => {
             <div>AMM</div>
           </div>
         ),
-        component: bank && <BankPanel entity={{ id: bank.entityId }} />,
+        component: bank && <BankPanel bankEntityId={bank.entityId} structureEntityId={structureEntityId} />,
       },
       {
         key: "all",
@@ -69,7 +72,7 @@ export const MarketModal = () => {
             <div>History</div>
           </div>
         ),
-        component: <MarketTradingHistory realmEntityId={realmEntityId} />,
+        component: <MarketTradingHistory structureEntityId={structureEntityId} />,
       },
       {
         key: "all",
@@ -81,22 +84,27 @@ export const MarketModal = () => {
         component: <TransferView />,
       },
     ],
-    [selectedResource, realmEntityId, askOffers, bidOffers],
+    [selectedResource, structureEntityId, askOffers, bidOffers],
   );
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30 clip-angled h-full row-span-12 ">
+      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30  h-full row-span-12 ">
         <div className="col-span-12  p-2 flex justify-between row-span-2">
-          <div className="self-center text-xl">
-            <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(ID(trait))}>
+          <div className="self-center bg-black text-xl">
+            <Select
+              value={structureEntityId.toString()}
+              onValueChange={(trait) => {
+                setStructureEntityId(ID(trait));
+              }}
+            >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Realm" />
+                <SelectValue placeholder="Select Structure" />
               </SelectTrigger>
-              <SelectContent className="bg-black/90 bg-hex-bg">
-                {playerRealms().map((realm, index) => (
-                  <SelectItem key={index} value={realm.entity_id?.toString() || ""}>
-                    {realm.name}
+              <SelectContent className="bg-black bg-hex-bg">
+                {structures.map((structure, index) => (
+                  <SelectItem key={index} value={structure.entity_id.toString()}>
+                    {structure.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -119,7 +127,7 @@ export const MarketModal = () => {
 
         <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
           <MarketResourceSidebar
-            entityId={realmEntityId}
+            entityId={structureEntityId}
             search={""}
             onClick={(value) => setSelectedResource(value)}
             selectedResource={selectedResource}

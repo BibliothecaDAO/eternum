@@ -1,5 +1,4 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
 import { Tabs } from "@/ui/elements/tab";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -7,25 +6,23 @@ import { useMemo, useState } from "react";
 import AddLiquidity from "./AddLiquidity";
 import { LiquidityTable } from "./LiquidityTable";
 import { ResourceSwap } from "./Swap";
+import { ID } from "@bibliothecadao/eternum";
 
 type BankListProps = {
-  entity: any;
+  bankEntityId: ID;
+  structureEntityId: ID;
 };
 
-export const BankPanel = ({ entity }: BankListProps) => {
+export const BankPanel = ({ bankEntityId, structureEntityId }: BankListProps) => {
   const {
     setup: {
-      components: { Position, Owner },
+      components: { Position },
     },
   } = useDojo();
 
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const { playerRealms } = useEntities();
-
-  const realmEntityId = playerRealms()[0].entity_id!;
-  const owner = getComponentValue(Owner, getEntityIdFromKeys([entity.id]));
-  const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
+  const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(bankEntityId)]));
 
   const tabs = useMemo(
     () => [
@@ -36,7 +33,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Swap</div>
           </div>
         ),
-        component: <ResourceSwap bankEntityId={entity.id} entityId={realmEntityId} />,
+        component: <ResourceSwap bankEntityId={bankEntityId} entityId={structureEntityId} />,
       },
       {
         key: "all",
@@ -46,22 +43,22 @@ export const BankPanel = ({ entity }: BankListProps) => {
           </div>
         ),
         component: (
-          <div className="w-1/2 mx-auto">
-            <AddLiquidity bank_entity_id={entity.id} entityId={realmEntityId!} />
+          <div>
+            <AddLiquidity bank_entity_id={bankEntityId} entityId={structureEntityId!} />
           </div>
         ),
       },
     ],
-    [realmEntityId, position],
+    [structureEntityId, position],
   );
 
   const liquidityTable = useMemo(() => {
     return (
-      <div className="mt-4">
-        <LiquidityTable bank_entity_id={entity.id} entity_id={realmEntityId} />
+      <div className="mt-4 text-xs">
+        <LiquidityTable bank_entity_id={bankEntityId} entity_id={structureEntityId} />
       </div>
     );
-  }, [entity.id, realmEntityId]);
+  }, [bankEntityId, structureEntityId]);
 
   return (
     <div className="m-4">

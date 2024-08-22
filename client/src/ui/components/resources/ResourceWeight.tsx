@@ -1,8 +1,8 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+import { GRAMS_PER_KG } from "@/ui/constants";
+import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
-import { getTotalResourceWeight } from "@/ui/utils/utils";
 
 export const TravelInfo = ({
   entityId,
@@ -19,7 +19,7 @@ export const TravelInfo = ({
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacity.donkey);
+  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
 
   const { getBalance } = getResourceBalance();
 
@@ -53,8 +53,9 @@ export const TravelInfo = ({
 
           <tr>
             <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Total Transfer Weight</td>
-            <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${divideByPrecision(
-              resourceWeight,
+            <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${formatNumber(
+              divideByPrecision(resourceWeight) / GRAMS_PER_KG,
+              0,
             )} kg`}</td>
           </tr>
           <tr>
@@ -70,9 +71,9 @@ export const TravelInfo = ({
         </tbody>
       </table>
       <div className="flex text-xs mt-4 justify-center w-full gap-4 font-bold ">
-        <div className="ml-2">Lords: {`${WEIGHTS[ResourcesIds.Lords]} kg/unit`}</div>
-        <div>Food: {`${WEIGHTS[ResourcesIds.Wheat]} kg/unit`}</div>
-        <div className="ml-2">Resource: {`${WEIGHTS[ResourcesIds.Wood]} kg/unit`}</div>
+        <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords] / GRAMS_PER_KG} kg/unit`}</div>
+        <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat] / GRAMS_PER_KG} kg/unit`}</div>
+        <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood] / GRAMS_PER_KG} kg/unit`}</div>
       </div>
     </>
   );

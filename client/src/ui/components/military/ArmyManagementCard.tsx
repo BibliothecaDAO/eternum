@@ -13,13 +13,15 @@ import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from
 import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
 
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
+import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
+import clsx from "clsx";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -190,7 +192,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
               "Idle"
             )}
           </div>
-          <ViewOnMapButton position={armyPosition} />
+          <ViewOnMapIcon position={armyPosition} />
         </div>
         <div className="flex flex-col relative  p-2">
           {travelWindow && (
@@ -276,12 +278,12 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
               const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
 
               return (
-                <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
+                <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>
                   <div className="font-bold mb-4">
                     <div className="flex justify-between">
                       <div className="text-md">{ResourcesIds[troop.name]}</div>
                     </div>
-                    <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
+                    <div className="px-2 py-1 bg-white/10  flex justify-between">
                       <ResourceIcon withTooltip={false} resource={ResourcesIds[troop.name]} size="lg" />
                       <div className="text-green self-center">x {troop.current}</div>
                     </div>
@@ -322,67 +324,24 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 };
 
 export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
-  const [location, setLocation] = useLocation();
+  const { handleUrlChange, isMapView } = useQuery();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+
+  const url = new PositionInterface(position).toMapLocationUrl();
+
   return (
     <Map
-      className={className}
+      className={clsx(
+        "h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all",
+        className,
+      )}
       onClick={() => {
-        if (location !== "/map") {
+        handleUrlChange(url);
+        if (!isMapView) {
           setIsLoadingScreenEnabled(true);
-          setTimeout(() => {
-            setLocation("/map");
-            if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-              moveCameraToColRow(position.x, position.y, 0.01, true);
-              setTimeout(() => {
-                moveCameraToColRow(position.x, position.y, 1.5);
-              }, 10);
-            }
-          }, 100);
-        } else {
-          if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-            moveCameraToColRow(position.x, position.y);
-          }
         }
-        moveCameraToColRow(position.x, position.y, 1.5);
       }}
     />
-  );
-};
-
-export const ViewOnMapButton = ({ position, className }: { position: Position; className?: string }) => {
-  const [location, setLocation] = useLocation();
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
-
-  return (
-    <Button
-      className={className}
-      variant="primary"
-      size="xs"
-      onClick={() => {
-        if (location !== "/map") {
-          setIsLoadingScreenEnabled(true);
-          setTimeout(() => {
-            setLocation("/map");
-            if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-              moveCameraToColRow(position.x, position.y, 0.01, true);
-              setTimeout(() => {
-                moveCameraToColRow(position.x, position.y, 1.5);
-              }, 10);
-            }
-          }, 100);
-        } else {
-          if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-            moveCameraToColRow(position.x, position.y);
-          }
-        }
-        moveCameraToColRow(position.x, position.y, 1.5);
-      }}
-    >
-      <span> map</span>
-    </Button>
   );
 };
 
@@ -423,7 +382,7 @@ const TravelToLocation = ({
   };
 
   return (
-    <div className="absolute h-full w-full bg-brown top-0 z-10 ">
+    <div className="absolute h-full w-full bg-black/90 top-0 z-10 ">
       <div className="flex justify-between mb-3">
         <div className="flex">
           <div className="my-2 uppercase mb-1 font-bold">Status:</div>

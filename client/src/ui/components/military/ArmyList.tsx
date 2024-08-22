@@ -1,11 +1,12 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { PlayerStructure } from "@/hooks/helpers/useEntities";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
@@ -23,7 +24,9 @@ enum Loading {
 }
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
-  const existingBuildings = useUIStore((state) => state.existingBuildings);
+  const dojo = useDojo();
+  const tileManager = new TileManager(dojo.setup, { col: structure.position.x, row: structure.position.y });
+  const existingBuildings = tileManager.existingBuildings();
 
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
     entity_owner_entity_id: structure?.entity_id || 0,
@@ -45,9 +48,9 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       EternumGlobalConfig.troop.baseArmyNumberForStructure +
       existingBuildings.filter(
         (building) =>
-          building.type === BuildingType.ArcheryRange ||
-          building.type === BuildingType.Barracks ||
-          building.type === BuildingType.Stable,
+          building.category === BuildingType[BuildingType.ArcheryRange] ||
+          building.category === BuildingType[BuildingType.Barracks] ||
+          building.category === BuildingType[BuildingType.Stable],
       ).length *
         EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
     );
@@ -75,7 +78,6 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       is_defensive_army,
     }).finally(() => setLoading(Loading.None));
   };
-
   return (
     <>
       <EntityList
@@ -83,7 +85,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         headerPanel={
           <>
             {" "}
-            <div className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
+            <div className="px-3 py-2 bg-blueish/20  font-bold">
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </div>
             <div className="flex justify-between">
@@ -128,7 +130,10 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         }
         title="armies"
         panel={({ entity, setSelectedEntity }) => (
-          <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
+          <>
+            <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
+            <ArmyCapacity army={entity} className="my-2 ml-5" />
+          </>
         )}
         questing={selectedQuest?.id === QuestId.CreateArmy}
       />

@@ -3,6 +3,7 @@ import productionManifest from "../contracts/manifests/prod/deployment/manifest.
 
 import * as fs from "fs";
 import { EternumProvider, ConfigManager, type EternumConfig } from "@bibliothecadao/eternum";
+
 import { Account } from "starknet";
 
 if (

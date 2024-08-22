@@ -29,9 +29,9 @@ export const MyGuild = () => {
   const [isPublic, setIsPublic] = useState(true);
   const [newGuildName, setNewGuildName] = useState("");
 
-  const { getAddressGuild } = useGuilds();
+  const { getGuildFromPlayerAddress } = useGuilds();
 
-  const { userGuildEntityId, isOwner, guildName, memberCount } = getAddressGuild(ContractAddress(account.address));
+  const guild = getGuildFromPlayerAddress(ContractAddress(account.address));
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -45,8 +45,11 @@ export const MyGuild = () => {
             <div>Guild Members</div>
           </div>
         ),
-        component: (
-          <GuildMembers selectedGuild={{ guildEntityId: userGuildEntityId!, name: guildName! }} isOwner={isOwner} />
+        component: guild && (
+          <GuildMembers
+            selectedGuild={{ guildEntityId: guild!.guildEntityId!, name: guild!.guildName! }}
+            isOwner={guild!.isOwner}
+          />
         ),
       },
       {
@@ -56,7 +59,7 @@ export const MyGuild = () => {
             <div>Whitelist</div>
           </div>
         ),
-        component: <Whitelist guildEntityId={userGuildEntityId} isOwner={isOwner} />,
+        component: guild && <Whitelist guildEntityId={guild!.guildEntityId} isOwner={guild!.isOwner} />,
       },
     ],
     [selectedTab],
@@ -80,7 +83,7 @@ export const MyGuild = () => {
   const transferGuildOwnership = useCallback(() => {
     setIsLoading(true);
     transfer_guild_ownership({
-      guild_entity_id: userGuildEntityId!,
+      guild_entity_id: guild!.guildEntityId!,
       to_player_address: playerAddress,
       signer: account,
     }).finally(() => setIsLoading(false));
@@ -88,7 +91,7 @@ export const MyGuild = () => {
 
   return (
     <div className="flex flex-col">
-      {hasGuild(userGuildEntityId) ? (
+      {guild && hasGuild(guild.guildEntityId) ? (
         <>
           <div className="relative flex flex-row justify-center">
             {editName ? (
@@ -111,7 +114,7 @@ export const MyGuild = () => {
                     try {
                       await provider.set_entity_name({
                         signer: account,
-                        entity_id: userGuildEntityId!,
+                        entity_id: guild!.guildEntityId!,
                         name: naming,
                       });
                     } catch (e) {
@@ -126,10 +129,10 @@ export const MyGuild = () => {
                 </Button>
               </div>
             ) : (
-              <p className="py-2 text-xl">{guildName}</p>
+              <p className="py-2 text-xl">{guild.guildName}</p>
             )}
 
-            {isOwner && (
+            {guild.isOwner && (
               <div className="absolute right-0 pr-5 flex h-full items-center">
                 <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
                   edit name
@@ -158,7 +161,7 @@ export const MyGuild = () => {
 
           <div className="flex justify-end">
             <div className="px-4 my-3">
-              {isOwner ? (
+              {guild.isOwner ? (
                 <div className="flex justify-end px-3 items-baseline">
                   {isTransferingOwnership && (
                     <>
@@ -168,29 +171,35 @@ export const MyGuild = () => {
                         value={playerAddress}
                         onChange={(playerAddress) => setPlayerAddress(playerAddress)}
                       />
-                      <Button size="xs" onClick={transferGuildOwnership} disabled={playerAddress == ""}>
+                      <Button
+                        variant="primary"
+                        size="xs"
+                        onClick={transferGuildOwnership}
+                        disabled={playerAddress == ""}
+                      >
                         Confirm
                       </Button>
                     </>
                   )}
 
-                  {memberCount && memberCount > 1 ? (
+                  {guild.memberCount && guild.memberCount > 1 ? (
                     <Button
                       className="ml-5"
                       isLoading={isLoading}
                       onClick={() => setIsTransferingOwnership(!isTransferingOwnership)}
                       size="xs"
+                      variant="primary"
                     >
                       Assign new leader
                     </Button>
                   ) : (
-                    <Button isLoading={isLoading} onClick={leaveGuild} size="xs">
+                    <Button variant="primary" isLoading={isLoading} onClick={leaveGuild} size="xs">
                       Disband Guild
                     </Button>
                   )}
                 </div>
               ) : (
-                <Button isLoading={isLoading} onClick={leaveGuild} size="xs">
+                <Button variant="primary" isLoading={isLoading} onClick={leaveGuild} size="xs">
                   Leave Guild
                 </Button>
               )}
@@ -200,14 +209,14 @@ export const MyGuild = () => {
       ) : (
         <>
           <div className="flex my-2 p-4 justify-center">
-            <Button isLoading={isLoading} onClick={() => setIsCreatingGuild(!isCreatingGuild)}>
+            <Button variant="primary" isLoading={isLoading} onClick={() => setIsCreatingGuild(!isCreatingGuild)}>
               Create Guild
             </Button>
           </div>
 
           {isCreatingGuild && (
-            <div className="flex flex-wrap justify-between mx-3 mb-3 items-baseline gap-2">
-              <div className="w-full">Guild Name</div>
+            <div className="flex  justify-between items-baseline gap-4 p-4">
+              <div className="w-full text-xl">Guild Name</div>
 
               <TextInput
                 value={newGuildName}
@@ -215,12 +224,12 @@ export const MyGuild = () => {
                 maxLength={MAX_NAME_LENGTH}
               />
               <div className="flex justify-center gap-2">
-                <Button onClick={createGuild} disabled={newGuildName == ""}>
-                  Confirm
-                </Button>
                 <SelectBox selected={isPublic} onClick={() => setIsPublic(!isPublic)}>
                   Public
                 </SelectBox>
+                <Button variant="primary" onClick={createGuild} disabled={newGuildName == ""}>
+                  Confirm
+                </Button>
               </div>
             </div>
           )}

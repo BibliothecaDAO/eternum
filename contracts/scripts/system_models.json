@@ -1,5 +1,33 @@
 {
+  "CONFIG_SYSTEMS": [
+    "ProductionInput",
+    "CapacityConfig",
+    "RoadConfig",
+    "SpeedConfig",
+    "WeightConfig",
+    "WorldConfig",
+    "LevelingConfig",
+    "RealmFreeMintConfig",
+    "MapExploreConfig",
+    "TickConfig",
+    "ProductionConfig",
+    "BankConfig",
+    "TroopConfig",
+    "BuildingConfig",
+    "BuildingCategoryPopConfig",
+    "PopulationConfig",
+    "HyperstructureResourceConfig",
+    "HyperstructureConfig",
+    "StaminaConfig",
+    "StaminaRefillConfig",
+    "MercenariesConfig",
+    "Position",
+    "ProductionOutput",
+    "DetachedResource",
+    "ResourceCost"
+  ],
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
+  "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount"],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",
@@ -90,7 +118,8 @@
     "EntityOwner",
     "OwnedResourcesTracker",
     "Structure",
-    "StructureCount"
+    "StructureCount",
+    "Tile"
   ],
   "SWAP_SYSTEMS": [
     "Market",
@@ -151,7 +180,8 @@
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",
-    "Road"
+    "Road",
+    "HyperstructureUpdate"
   ],
   "BUILDINGS_SYSTEMS": [
     "Resource",

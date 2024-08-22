@@ -2,7 +2,7 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
-import { BattleSide, EternumGlobalConfig, ID, StructureType } from "@bibliothecadao/eternum";
+import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
@@ -10,7 +10,14 @@ import { ClientComponents } from "../createClientComponents";
 export enum BattleType {
   Hex,
   Structure,
-  Realm,
+}
+
+export enum BattleStatus {
+  BattleStart = "Start battle",
+  BattleOngoing = "",
+  UserWon = "Victory",
+  UserLost = "Defeat",
+  BattleEnded = "Battle has ended",
 }
 
 export class BattleManager {
@@ -172,6 +179,7 @@ export class BattleManager {
       this.battleIsClaimable = false;
       return false;
     }
+
     if (this.getBattleType(structure) !== BattleType.Structure) {
       this.battleIsClaimable = false;
       return false;
@@ -283,10 +291,27 @@ export class BattleManager {
       return this.battleType;
     }
 
-    this.battleType =
-      structure.category === StructureType[StructureType.Realm] ? BattleType.Realm : BattleType.Structure;
-
+    this.battleType = BattleType.Structure;
     return this.battleType;
+  }
+
+  public getWinner(currentTimestamp: number, ownArmySide: string): BattleStatus {
+    const battle = this.getUpdatedBattle(currentTimestamp);
+    if (!battle) return BattleStatus.BattleStart;
+
+    if (battle.attack_army_health.current > 0 && battle.defence_army_health.current > 0)
+      return BattleStatus.BattleOngoing;
+
+    if (ownArmySide === BattleSide[BattleSide.None]) {
+      return BattleStatus.BattleEnded;
+    }
+
+    const { ownArmyHealth, opponentArmyHealth } =
+      ownArmySide === BattleSide[BattleSide.Attack]
+        ? { ownArmyHealth: battle.attack_army_health.current, opponentArmyHealth: battle.defence_army_health.current }
+        : { ownArmyHealth: battle.defence_army_health.current, opponentArmyHealth: battle.attack_army_health.current };
+
+    return ownArmyHealth > opponentArmyHealth ? BattleStatus.UserWon : BattleStatus.UserLost;
   }
 
   private getTroopFullHealth(troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>): bigint {
@@ -370,6 +395,7 @@ export class BattleManager {
   }
 
   private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint) {
+    if (lifetime_troops === 0n) return 0;
     return Number(current_troops) / Number(lifetime_troops);
   }
 }

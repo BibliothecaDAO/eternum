@@ -4,9 +4,11 @@ import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
@@ -18,7 +20,8 @@ import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { shortString } from "starknet";
-import { useLocation } from "wouter";
+
+export const ACCOUNT_CHANGE_EVENT = "addressChanged";
 
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -29,7 +32,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-black/50 rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] backdrop-blur-2xl b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground bg-hex-bg ">
+      <div className="self-center bg-black/90 rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground bg-hex-bg bg-cover ">
         {children}
       </div>
     </motion.div>
@@ -188,10 +191,17 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
             <div className="flex space-x-2 py-2">
               <ListSelect
                 title="Active Account: "
-                options={list().map((account) => ({
-                  id: account.address,
-                  label: <div className="w-[225px]">{displayAddress(account.address)}</div>,
-                }))}
+                options={list().map((account) => {
+                  const addressName = getAddressName(ContractAddress(account.address));
+                  return {
+                    id: account.address,
+                    label: (
+                      <div className="w-[225px]">{`${addressName || "unknown"} (${displayAddress(
+                        account.address,
+                      )})`}</div>
+                    ),
+                  };
+                })}
                 value={account.address}
                 onChange={select}
               />
@@ -374,21 +384,22 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
 const NavigateToRealm = ({ text }: { text: string }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const [_location, setLocation] = useLocation();
+  const { handleUrlChange } = useQuery();
   const { playerRealms } = useEntities();
-  const [isLoading, setIsLoading] = useState(false);
+
+  const url = new Position(playerRealms()[0]?.position).toHexLocationUrl();
 
   return (
     <Button
       size="md"
       variant="primary"
-      isLoading={isLoading}
       onClick={async () => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
-          setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
-        }, 300);
+          handleUrlChange(url);
+          window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+        }, 250);
       }}
     >
       {text}

@@ -26,6 +26,7 @@ mod swap_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
+    #[dojo::model]
     struct SwapEvent {
         #[key]
         bank_entity_id: ID,

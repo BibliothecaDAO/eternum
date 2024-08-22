@@ -1,4 +1,9 @@
-import { ResourceInputs, ResourceOutputs, Resources } from "../types";
+
+// import { ResourceInputs, ResourceOutputs, Resources } from "../types";
+
+import { Resource, Resources } from "../types";
+import { EternumGlobalConfig } from "./global";
+
 import { BuildingType, StructureType } from "./structures";
 
 export const findResourceById = (value: number) => {
@@ -338,45 +343,109 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
+
+// weight that determines the amount of resources need to finish the hyperstructure
+export const HyperstructureResourceMultipliers: { [key in ResourcesIds]?: number } = {
+  [ResourcesIds.Wood]: 1.0,
+  [ResourcesIds.Stone]: 1.27,
+  [ResourcesIds.Coal]: 1.31,
+  [ResourcesIds.Copper]: 1.9,
+  [ResourcesIds.Obsidian]: 2.26,
+  [ResourcesIds.Silver]: 2.88,
+  [ResourcesIds.Ironwood]: 4.25,
+  [ResourcesIds.ColdIron]: 5.24,
+  [ResourcesIds.Gold]: 5.49,
+  [ResourcesIds.Hartwood]: 8.44,
+  [ResourcesIds.Diamonds]: 16.72,
+  [ResourcesIds.Sapphire]: 20.3,
+  [ResourcesIds.Ruby]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.Ignium]: 29.15,
+  [ResourcesIds.EtherealSilica]: 30.95,
+  [ResourcesIds.TrueIce]: 36.06,
+  [ResourcesIds.TwilightQuartz]: 45.18,
+  [ResourcesIds.AlchemicalSilver]: 53.92,
+  [ResourcesIds.Adamantine]: 91.2,
+  [ResourcesIds.Mithral]: 135.53,
+  [ResourcesIds.Dragonhide]: 217.92,
+  [ResourcesIds.Earthenshard]: 20.98,
+};
+
+export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
+
+export const resourcesByGuild = {
+  [Guilds[0]]: [
+    ResourcesIds.Wood,
+    ResourcesIds.Stone,
+    ResourcesIds.Coal,
+    ResourcesIds.Ironwood,
+    ResourcesIds.Hartwood,
+    ResourcesIds.TrueIce,
+  ],
+  [Guilds[1]]: [
+    ResourcesIds.Copper,
+    ResourcesIds.Silver,
+    ResourcesIds.Gold,
+    ResourcesIds.ColdIron,
+    ResourcesIds.AlchemicalSilver,
+    ResourcesIds.Adamantine,
+  ],
+  [Guilds[2]]: [
+    ResourcesIds.Diamonds,
+    ResourcesIds.Sapphire,
+    ResourcesIds.Ruby,
+    ResourcesIds.DeepCrystal,
+    ResourcesIds.TwilightQuartz,
+  ],
+  [Guilds[3]]: [
+    ResourcesIds.Obsidian,
+    ResourcesIds.Ignium,
+    ResourcesIds.EtherealSilica,
+    ResourcesIds.Mithral,
+    ResourcesIds.Dragonhide,
+  ],
+};
+
+
 // if it's labor, then remove 28 to get the icon resource id
 export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;
 };
 
 // weight in kg
-export const WEIGHTS: {
+export const WEIGHTS_GRAM: {
   [key: number]: number;
 } = {
-  [ResourcesIds.Wood]: 1,
-  [ResourcesIds.Stone]: 1,
-  [ResourcesIds.Coal]: 1,
-  [ResourcesIds.Copper]: 1,
-  [ResourcesIds.Obsidian]: 1,
-  [ResourcesIds.Silver]: 1,
-  [ResourcesIds.Ironwood]: 1,
-  [ResourcesIds.ColdIron]: 1,
-  [ResourcesIds.Gold]: 1,
-  [ResourcesIds.Hartwood]: 1,
-  [ResourcesIds.Diamonds]: 1,
-  [ResourcesIds.Sapphire]: 1,
-  [ResourcesIds.Ruby]: 1,
-  [ResourcesIds.DeepCrystal]: 1,
-  [ResourcesIds.Ignium]: 1,
-  [ResourcesIds.EtherealSilica]: 1,
-  [ResourcesIds.TrueIce]: 1,
-  [ResourcesIds.TwilightQuartz]: 1,
-  [ResourcesIds.AlchemicalSilver]: 1,
-  [ResourcesIds.Adamantine]: 1,
-  [ResourcesIds.Mithral]: 1,
-  [ResourcesIds.Dragonhide]: 1,
-  [ResourcesIds.Earthenshard]: 1,
+  [ResourcesIds.Wood]: 1000,
+  [ResourcesIds.Stone]: 1000,
+  [ResourcesIds.Coal]: 1000,
+  [ResourcesIds.Copper]: 1000,
+  [ResourcesIds.Obsidian]: 1000,
+  [ResourcesIds.Silver]: 1000,
+  [ResourcesIds.Ironwood]: 1000,
+  [ResourcesIds.ColdIron]: 1000,
+  [ResourcesIds.Gold]: 1000,
+  [ResourcesIds.Hartwood]: 1000,
+  [ResourcesIds.Diamonds]: 1000,
+  [ResourcesIds.Sapphire]: 1000,
+  [ResourcesIds.Ruby]: 1000,
+  [ResourcesIds.DeepCrystal]: 1000,
+  [ResourcesIds.Ignium]: 1000,
+  [ResourcesIds.EtherealSilica]: 1000,
+  [ResourcesIds.TrueIce]: 1000,
+  [ResourcesIds.TwilightQuartz]: 1000,
+  [ResourcesIds.AlchemicalSilver]: 1000,
+  [ResourcesIds.Adamantine]: 1000,
+  [ResourcesIds.Mithral]: 1000,
+  [ResourcesIds.Dragonhide]: 1000,
+  [ResourcesIds.Earthenshard]: 1000,
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 0,
   [ResourcesIds.Crossbowman]: 0,
   [ResourcesIds.Paladin]: 0,
-  [ResourcesIds.Lords]: 0.001,
-  [ResourcesIds.Wheat]: 0.1,
-  [ResourcesIds.Fish]: 0.1,
+  [ResourcesIds.Lords]: 1,
+  [ResourcesIds.Wheat]: 100,
+  [ResourcesIds.Fish]: 100,
 };
 
 export const RESOURCE_TIERS = {
@@ -399,36 +468,36 @@ export const RESOURCE_TIERS = {
 };
 
 export const RESOURCE_OUTPUTS: ResourceOutputs = {
-  [ResourcesIds.Wood]: 10,
-  [ResourcesIds.Stone]: 10,
-  [ResourcesIds.Coal]: 10,
-  [ResourcesIds.Copper]: 10,
-  [ResourcesIds.Obsidian]: 10,
-  [ResourcesIds.Silver]: 10,
-  [ResourcesIds.Ironwood]: 10,
-  [ResourcesIds.ColdIron]: 10,
-  [ResourcesIds.Gold]: 10,
-  [ResourcesIds.Hartwood]: 10,
-  [ResourcesIds.Diamonds]: 10,
-  [ResourcesIds.Sapphire]: 10,
-  [ResourcesIds.Ruby]: 10,
-  [ResourcesIds.DeepCrystal]: 10,
-  [ResourcesIds.Ignium]: 10,
-  [ResourcesIds.EtherealSilica]: 10,
-  [ResourcesIds.TrueIce]: 10,
-  [ResourcesIds.TwilightQuartz]: 10,
-  [ResourcesIds.AlchemicalSilver]: 10,
-  [ResourcesIds.Adamantine]: 10,
-  [ResourcesIds.Mithral]: 10,
-  [ResourcesIds.Dragonhide]: 10,
-  [ResourcesIds.Donkey]: 3,
-  [ResourcesIds.Knight]: 1,
-  [ResourcesIds.Crossbowman]: 1,
-  [ResourcesIds.Paladin]: 1,
-  [ResourcesIds.Lords]: 1,
-  [ResourcesIds.Wheat]: 30,
-  [ResourcesIds.Fish]: 30,
-  [ResourcesIds.Earthenshard]: 10,
+  [ResourcesIds.Wood]: 100,
+  [ResourcesIds.Stone]: 100,
+  [ResourcesIds.Coal]: 100,
+  [ResourcesIds.Copper]: 100,
+  [ResourcesIds.Obsidian]: 100,
+  [ResourcesIds.Silver]: 100,
+  [ResourcesIds.Ironwood]: 100,
+  [ResourcesIds.ColdIron]: 100,
+  [ResourcesIds.Gold]: 100,
+  [ResourcesIds.Hartwood]: 100,
+  [ResourcesIds.Diamonds]: 100,
+  [ResourcesIds.Sapphire]: 100,
+  [ResourcesIds.Ruby]: 100,
+  [ResourcesIds.DeepCrystal]: 100,
+  [ResourcesIds.Ignium]: 100,
+  [ResourcesIds.EtherealSilica]: 100,
+  [ResourcesIds.TrueIce]: 100,
+  [ResourcesIds.TwilightQuartz]: 100,
+  [ResourcesIds.AlchemicalSilver]: 100,
+  [ResourcesIds.Adamantine]: 100,
+  [ResourcesIds.Mithral]: 100,
+  [ResourcesIds.Dragonhide]: 100,
+  [ResourcesIds.Donkey]: 30,
+  [ResourcesIds.Knight]: 10,
+  [ResourcesIds.Crossbowman]: 10,
+  [ResourcesIds.Paladin]: 10,
+  [ResourcesIds.Lords]: 10,
+  [ResourcesIds.Wheat]: 300,
+  [ResourcesIds.Fish]: 300,
+  [ResourcesIds.Earthenshard]: 100,
 };
 
 export const RESOURCE_INPUTS: ResourceInputs = {
@@ -545,7 +614,8 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 1 },
     { resource: ResourcesIds.Fish, amount: 2 },
-    { resource: ResourcesIds.Gold, amount: 1 },
+    // { resource: ResourcesIds.Gold, amount: 1 },
+    { resource: ResourcesIds.Diamonds, amount: 1 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 2.5 },
@@ -554,12 +624,14 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.Crossbowman]: [
     { resource: ResourcesIds.Wheat, amount: 2.5 },
-    { resource: ResourcesIds.Silver, amount: 1.0 },
+    // { resource: ResourcesIds.Silver, amount: 1.0 },
+    { resource: ResourcesIds.Obsidian, amount: 1.0 },
     { resource: ResourcesIds.ColdIron, amount: 2.5 },
   ],
   [ResourcesIds.Paladin]: [
     { resource: ResourcesIds.Wheat, amount: 2.5 },
-    { resource: ResourcesIds.Silver, amount: 1.0 },
+    // { resource: ResourcesIds.Silver, amount: 1.0 },
+    { resource: ResourcesIds.Copper, amount: 1.0 },
     { resource: ResourcesIds.Gold, amount: 2.5 },
   ],
   [ResourcesIds.Wheat]: [],

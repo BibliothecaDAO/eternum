@@ -14,7 +14,7 @@ import {
   generateMockBatle,
   generateMockStructure,
   LAST_UPDATED,
-} from "./__mock__";
+} from "./__BattleManagerMock__";
 
 vi.mock("@dojoengine/recs", async () => {
   const actual = await vi.importActual("@dojoengine/recs");
@@ -474,7 +474,7 @@ describe("getBattleType", () => {
 
     const battleType = battleManager.getBattleType(structure);
 
-    expect(battleType).toBe(BattleType.Realm);
+    expect(battleType).toBe(BattleType.Structure);
   });
 
   it("should return structure battle type if structure is a hyperstructure", () => {
@@ -595,21 +595,6 @@ describe("isClaimable", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, undefined, undefined, undefined);
-
-    expect(isClaimable).toBe(false);
-  });
-
-  it("should return false if battle is not a structure battle", () => {
-    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
-
-    const structure = generateMockStructure(StructureType.Realm);
-    const army = generateMockArmyInfo(true);
-    const battle = generateMockBatle(false);
-    const defender = generateMockArmyInfo(true);
-
-    vi.mocked(getComponentValue).mockReturnValue(battle);
-
-    const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
     expect(isClaimable).toBe(false);
   });

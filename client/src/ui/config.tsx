@@ -1,20 +1,7 @@
+import { ResourceMiningTypes } from "@/types";
 import { BuildingType } from "@bibliothecadao/eternum";
 
-export const DEPTH = 10;
-export const HEX_RADIUS = 3;
-export const ROWS = 300;
-export const COLS = 500;
-export const FELT_CENTER = 2147483647;
-export const EXPLORE_COLOUR = 0x2563eb;
-export const TRAVEL_COLOUR = 0xffce31;
-export const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
-
-enum ResourceMiningTypes {
-  Forge = "forge",
-  Mine = "mine",
-  LumberMill = "lumber_mill",
-  Dragonhide = "dragonhide",
-}
+export const FELT_CENTER = 2147483646;
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {

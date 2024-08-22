@@ -1,4 +1,4 @@
-import { Account, AccountInterface, CairoOption, num } from "starknet";
+import { Account, AccountInterface, BigNumberish, CairoOption, num } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 
@@ -191,6 +191,22 @@ export interface CreateBuildingProps extends SystemSigner {
 }
 
 export interface DestroyBuildingProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}
+
+export interface PauseProductionProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}
+
+export interface ResumeProductionProps extends SystemSigner {
   entity_id: num.BigNumberish;
   building_coord: {
     x: num.BigNumberish;
@@ -443,6 +459,7 @@ export interface SetSpeedConfigProps extends SystemSigner {
 
 export interface SetHyperstructureConfig extends SystemSigner {
   resources_for_completion: { resource: number; amount: number }[];
+  time_between_shares_change: num.BigNumberish;
 }
 
 export interface CreateHyperstructureProps extends SystemSigner {
@@ -456,13 +473,21 @@ export interface ContributeToConstructionProps extends SystemSigner {
   contributions: { resource: number; amount: number }[];
 }
 
+export interface SetCoOwnersProps extends SystemSigner {
+  hyperstructure_entity_id: num.BigNumberish;
+  co_owners: Record<number, BigNumberish>[];
+}
+
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: num.BigNumberish;
   max_stamina: num.BigNumberish;
 }
 
+export interface SetStaminaRefillConfigProps extends SystemSigner {
+  amount_per_tick: num.BigNumberish;
+}
+
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
-//  & ArmyMergeTroopsProps;
 
 export interface SetMercenariesConfigProps extends SystemSigner {
   troops: Troops;

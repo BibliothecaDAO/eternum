@@ -9,5 +9,6 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
     Building: overridableComponent(contractComponents.Building),
     Position: overridableComponent(contractComponents.Position),
     Stamina: overridableComponent(contractComponents.Stamina),
+    Tile: overridableComponent(contractComponents.Tile),
   };
 }

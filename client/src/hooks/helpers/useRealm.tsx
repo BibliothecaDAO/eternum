@@ -2,8 +2,6 @@ import {
   ConfigManager,
   ContractAddress,
   ID,
-  RealmInterface,
-  ResourcesIds,
   getOrderName,
   getQuestResources as getStartingResources,
 } from "@bibliothecadao/eternum";
@@ -13,15 +11,10 @@ import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
-import { getRealm, getRealmNameById } from "../../ui/utils/realms";
+import { getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
-import useRealmStore from "../store/useRealmStore";
-
-type RealmExtended = RealmInterface & {
-  entity_id: ID;
-  resources: ResourcesIds[];
-};
+import useUIStore from "../store/useUIStore";
 
 export function useRealm() {
   const {
@@ -29,12 +22,12 @@ export function useRealm() {
       components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const configManager = ConfigManager.instance();
 
   const getQuestResources = () => {
-    const realmEntityId = useRealmStore.getState().realmEntityId;
-    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
     return configManager.getStartingResources(resourcesProduced);
   };
@@ -119,7 +112,7 @@ export function useRealm() {
     }
   };
 
-  const getAddressName = (address: ContractAddress) => {
+  const getAddressName = (address: ContractAddress): string | undefined => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([address]));
 
     return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
@@ -232,56 +225,4 @@ export function useGetRealm(realmEntityId: ID | undefined) {
   return {
     realm,
   };
-}
-
-export function useGetRealms(): RealmExtended[] {
-  const {
-    setup: {
-      components: { Realm, Owner },
-    },
-  } = useDojo();
-
-  const { getRealmAddressName } = useRealm();
-
-  // will force update the values when they change in the contract
-  const realmEntityIds = useEntityQuery([Has(Realm)]);
-
-  const realms: RealmExtended[] = useMemo(
-    () =>
-      realmEntityIds
-        .map((entityId) => {
-          const realm = getComponentValue(Realm, entityId);
-          if (realm) {
-            const realmData = getRealm(realm.realm_id);
-            if (!realmData) return undefined;
-            let name = realmData.name;
-            let owner = getComponentValue(Owner, entityId);
-            let resources = unpackResources(realm.resource_types_packed, realm.resource_types_count);
-
-            if (name) {
-              return {
-                realmId: realm.realm_id,
-                name,
-                cities: realm.cities,
-                rivers: realm.rivers,
-                wonder: realm.wonder,
-                harbors: realm.harbors,
-                regions: realm.regions,
-                resourceTypesCount: realm.resource_types_count,
-                resourceTypesPacked: realm.resource_types_packed,
-                order: realm.order,
-                position: realmData.position,
-                owner: owner?.address,
-                ownerName: getRealmAddressName(realm.entity_id),
-                entity_id: realm.entity_id,
-                resources,
-              };
-            }
-          }
-        })
-        .filter(Boolean) as RealmExtended[],
-    [realmEntityIds.length], // Only recompute if the size of realmEntityIds has changed
-  );
-
-  return realms;
 }

@@ -1,12 +1,7 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
-import {
-  getArmiesAtPosition,
-  getArmiesByBattleId,
-  getArmyByEntityId,
-  useArmyByArmyEntityId,
-} from "@/hooks/helpers/useArmies";
+import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { getStructureByEntityId, getStructureByPosition } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -23,9 +18,9 @@ export const BattleView = () => {
   const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const battleView = useUIStore((state) => state.battleView);
-  const clickedHex = useUIStore((state) => state.clickedHex);
+  const selectedHex = useUIStore((state) => state.selectedHex);
 
-  const battlePosition = { x: clickedHex?.contractPos.col || 0, y: clickedHex?.contractPos.row || 0 };
+  const battlePosition = { x: selectedHex.col, y: selectedHex.row };
 
   // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
   const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0);
@@ -50,7 +45,7 @@ export const BattleView = () => {
   }, [battleManager]);
 
   const ownArmySide = battleManager.isBattle()
-    ? armies.userArmiesInBattle?.[0]?.battle_side || ""
+    ? armies.userArmiesInBattle?.[0]?.battle_side || BattleSide[BattleSide.None]
     : BattleSide[BattleSide.Attack];
 
   const ownArmyBattleStarter = useMemo(

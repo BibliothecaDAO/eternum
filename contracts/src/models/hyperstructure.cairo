@@ -22,3 +22,12 @@ pub struct Contribution {
     resource_type: u8,
     amount: u128,
 }
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct HyperstructureUpdate {
+    #[key]
+    hyperstructure_entity_id: ID,
+    last_updated_timestamp: u64,
+    last_updated_by: ContractAddress,
+}

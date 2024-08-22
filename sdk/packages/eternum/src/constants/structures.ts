@@ -1,7 +1,8 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
-/** @knipignore */
+// Knip ignore tag
+/** @public */
 export enum StructureType {
   Realm = 1,
   Hyperstructure = 2,
@@ -11,6 +12,7 @@ export enum StructureType {
 }
 
 export enum BuildingType {
+  None = 0,
   Castle = 1,
   Resource = 2,
   Farm = 3,
@@ -99,6 +101,8 @@ export const BuildingStringToEnum = {
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
   switch (name) {
+    case BuildingType.None:
+      return new CairoCustomEnum({ None: {} });
     case BuildingType.Castle:
       return new CairoCustomEnum({ Castle: {} });
     case BuildingType.Resource:
@@ -134,6 +138,8 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
 
 export function getProducedResource(name: BuildingType): number {
   switch (name) {
+    case BuildingType.None:
+      return 0;
     case BuildingType.Castle:
       return 0;
     case BuildingType.Resource:

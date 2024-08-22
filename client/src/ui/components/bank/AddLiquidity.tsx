@@ -8,14 +8,13 @@ import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/et
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 import { ResourceBar } from "./ResourceBar";
+import { LiquidityResourceRow } from "./LiquidityResourceRow";
+import { LiquidityTableHeader } from "./LiquidityTable";
 
 const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entityId: ID }) => {
   const {
     account: { account },
-    setup: {
-      components,
-      systemCalls: { add_liquidity },
-    },
+    setup,
   } = useDojo();
 
   const { getBalance } = getResourceBalance();
@@ -27,15 +26,8 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
-    () =>
-      new MarketManager(
-        components.Market,
-        components.Liquidity,
-        bank_entity_id,
-        ContractAddress(account.address),
-        resourceId,
-      ),
-    [components.Market, components.Liquidity, bank_entity_id, resourceId, account.address],
+    () => new MarketManager(setup, bank_entity_id, ContractAddress(account.address), resourceId),
+    [setup, bank_entity_id, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -61,17 +53,19 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
 
   const onAddLiquidity = () => {
     setIsLoading(true);
-    add_liquidity({
-      bank_entity_id,
-      entity_id: entityId,
-      lords_amount: multiplyByPrecision(lordsAmount),
-      resource_type: resourceId,
-      resource_amount: multiplyByPrecision(resourceAmount),
-      signer: account,
-    }).finally(() => {
-      setIsLoading(false);
-      setOpenConfirmation(false);
-    });
+    setup.systemCalls
+      .add_liquidity({
+        bank_entity_id,
+        entity_id: entityId,
+        lords_amount: multiplyByPrecision(lordsAmount),
+        resource_type: resourceId,
+        resource_amount: multiplyByPrecision(resourceAmount),
+        signer: account,
+      })
+      .finally(() => {
+        setIsLoading(false);
+        setOpenConfirmation(false);
+      });
   };
 
   const renderConfirmationPopup = useMemo(() => {
@@ -100,8 +94,8 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
 
   return (
     <>
-      <div className="bg-gold/10 p-1 clip-angled-sm">
-        <div className="p-2 relative space-y-1">
+      <div className="bg-gold/10 p-1 ">
+        <div className="p-2 mb-2 relative space-y-1">
           <ResourceBar
             entityId={entityId}
             resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
@@ -111,18 +105,6 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
             resourceId={ResourcesIds.Lords}
             setResourceId={setResourceId}
           />
-
-          <div className="mt-2 absolute top-[97px] left-1/3">
-            <Button
-              variant="primary"
-              isLoading={false}
-              disabled={!canAdd}
-              className="text-brown bg-brown"
-              onClick={() => setOpenConfirmation(true)}
-            >
-              Add Liquidity
-            </Button>
-          </div>
 
           <ResourceBar
             entityId={entityId}
@@ -134,7 +116,26 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
             setResourceId={setResourceId}
           />
         </div>
-        {!canAdd && <div className="p-2 text-danger font-bold text-md">Not enough resources or amount is zero</div>}
+        <div className="p-2">
+          <LiquidityTableHeader />
+          <LiquidityResourceRow bankEntityId={bank_entity_id} entityId={entityId} resourceId={resourceId} />
+          <div className="w-full flex flex-col justify-center mt-4">
+            <Button
+              variant="primary"
+              isLoading={false}
+              disabled={!canAdd}
+              className="text-brown bg-black/90"
+              onClick={() => setOpenConfirmation(true)}
+            >
+              Add Liquidity
+            </Button>
+            {!canAdd && (
+              <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
+                Not enough resources or amount is zero
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       {openConfirmation && renderConfirmationPopup}
     </>

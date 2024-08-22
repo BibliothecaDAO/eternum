@@ -1,4 +1,4 @@
-import { useModal } from "@/hooks/store/useModal";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import CircleButton from "./CircleButton";
 import { HintModal } from "../components/hints/HintModal";
 import { BuildingThumbs } from "../modules/navigation/LeftNavigationModule";
@@ -9,13 +9,13 @@ type HintModalButtonProps = {
 };
 
 export const HintModalButton = ({ className, section }: HintModalButtonProps) => {
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   return (
     <CircleButton
       className={className}
       onClick={() => toggleModal(<HintModal initialActiveSection={section} />)}
-      size={"sm"}
+      size={"xs"}
       image={BuildingThumbs.question}
     />
   );
