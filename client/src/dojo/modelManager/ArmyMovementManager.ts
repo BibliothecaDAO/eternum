@@ -15,8 +15,8 @@ import { Entity, getComponentValue } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
-import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
 import { StaminaManager } from "./StaminaManager";
+import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -76,16 +76,16 @@ export class ArmyMovementManager {
   private staminaManager: StaminaManager;
 
   constructor(
-    private dojo: SetupResult,
+    private setup: SetupResult,
     entityId: ID,
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    this.address = ContractAddress(this.dojo.network.burnerManager.account?.address || 0n);
-    const entityOwnerId = getComponentValue(dojo.components.EntityOwner, this.entity);
-    this.wheatManager = new ProductionManager(this.dojo, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
-    this.fishManager = new ProductionManager(this.dojo, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
-    this.staminaManager = new StaminaManager(this.entity, dojo);
+    this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
+    const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
+    this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
+    this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
+    this.staminaManager = new StaminaManager(this.setup, this.entity);
   }
 
   private _canExplore(): boolean {
@@ -116,7 +116,7 @@ export class ArmyMovementManager {
   };
 
   private _getCurrentPosition = () => {
-    const position = getComponentValue(this.dojo.components.Position, this.entity);
+    const position = getComponentValue(this.setup.components.Position, this.entity);
     return { col: position!.x, row: position!.y };
   };
 
@@ -175,10 +175,13 @@ export class ArmyMovementManager {
   }
 
   public isMine = () => {
-    let entityOwner = getComponentValue(this.dojo.components.EntityOwner, this.entity);
-    let owner = getComponentValue(this.dojo.components.Owner, this.entity);
+    let entityOwner = getComponentValue(this.setup.components.EntityOwner, this.entity);
+    let owner = getComponentValue(this.setup.components.Owner, this.entity);
     if (!owner && entityOwner?.entity_owner_id) {
-      owner = getComponentValue(this.dojo.components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+      owner = getComponentValue(
+        this.setup.components.Owner,
+        getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+      );
     }
     return owner?.address === this.address;
   };
@@ -187,7 +190,7 @@ export class ArmyMovementManager {
     const stamina = this.staminaManager.getStamina();
 
     // substract the costs
-    this.dojo.components.Stamina.addOverride(overrideId, {
+    this.setup.components.Stamina.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: stamina.entity_id,
@@ -200,7 +203,7 @@ export class ArmyMovementManager {
   private _optimisticTileUpdate = (overrideId: string, col: number, row: number) => {
     const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
 
-    this.dojo.components.Tile.addOverride(overrideId, {
+    this.setup.components.Tile.addOverride(overrideId, {
       entity,
       value: {
         col: col,
@@ -213,7 +216,7 @@ export class ArmyMovementManager {
   };
 
   private _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
-    this.dojo.components.Position.addOverride(overrideId, {
+    this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
@@ -253,16 +256,16 @@ export class ArmyMovementManager {
 
     const overrideId = this._optimisticExplore(path[1].col, path[1].row);
 
-    this.dojo.systemCalls
+    this.setup.systemCalls
       .explore({
         unit_id: this.entityId,
         direction,
-        signer: this.dojo.network.burnerManager.account!,
+        signer: this.setup.network.burnerManager.account!,
       })
       .catch((e) => {
-        this.dojo.components.Position.removeOverride(overrideId);
-        this.dojo.components.Stamina.removeOverride(overrideId);
-        this.dojo.components.Tile.removeOverride(overrideId);
+        this.setup.components.Position.removeOverride(overrideId);
+        this.setup.components.Stamina.removeOverride(overrideId);
+        this.setup.components.Tile.removeOverride(overrideId);
       });
   };
 
@@ -271,7 +274,7 @@ export class ArmyMovementManager {
 
     this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength);
 
-    this.dojo.components.Position.addOverride(overrideId, {
+    this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
@@ -295,15 +298,15 @@ export class ArmyMovementManager {
       })
       .filter((d) => d !== undefined) as number[];
 
-    this.dojo.systemCalls
+    this.setup.systemCalls
       .travel_hex({
-        signer: this.dojo.network.burnerManager.account!,
+        signer: this.setup.network.burnerManager.account!,
         travelling_entity_id: this.entityId,
         directions,
       })
       .catch(() => {
-        this.dojo.components.Position.removeOverride(overrideId);
-        this.dojo.components.Stamina.removeOverride(overrideId);
+        this.setup.components.Position.removeOverride(overrideId);
+        this.setup.components.Stamina.removeOverride(overrideId);
       });
   };
 
@@ -316,9 +319,9 @@ export class ArmyMovementManager {
   };
 
   private _getArmyRemainingCapacity = () => {
-    const armyCapacity = getComponentValue(this.dojo.components.Capacity, this.entity);
-    const armyWeight = getComponentValue(this.dojo.components.Weight, this.entity);
-    const armyEntity = getComponentValue(this.dojo.components.Army, this.entity);
+    const armyCapacity = getComponentValue(this.setup.components.Capacity, this.entity);
+    const armyWeight = getComponentValue(this.setup.components.Weight, this.entity);
+    const armyEntity = getComponentValue(this.setup.components.Army, this.entity);
 
     if (!armyEntity || !armyCapacity) return 0n;
 

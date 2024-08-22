@@ -9,7 +9,7 @@ export class MarketManager {
   resourceId: ResourcesIds;
 
   constructor(
-    private dojo: SetupResult,
+    private setup: SetupResult,
     bankEntityId: ID,
     player: ContractAddress,
     resourceId: ResourcesIds,
@@ -26,14 +26,14 @@ export class MarketManager {
 
   public getLiquidity() {
     return getComponentValue(
-      this.dojo.components.Liquidity,
+      this.setup.components.Liquidity,
       getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
     );
   }
 
   public getMarket() {
     return getComponentValue(
-      this.dojo.components.Market,
+      this.setup.components.Market,
       getEntityIdFromKeys([BigInt(this.bankEntityId), BigInt(this.resourceId)]),
     );
   }

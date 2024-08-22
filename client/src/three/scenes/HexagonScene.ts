@@ -1,4 +1,3 @@
-import { SetupResult } from "@/dojo/setup";
 import gsap from "gsap";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -9,20 +8,20 @@ import { GUIManager } from "../helpers/GUIManager";
 import { LocationManager } from "../helpers/LocationManager";
 import { SceneManager } from "../SceneManager";
 
+import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
 import _, { throttle } from "lodash";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
-import { biomeModelPaths, HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "./constants";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { biomeModelPaths, HEX_SIZE } from "./constants";
 
 export abstract class HexagonScene {
   protected scene: THREE.Scene;
   protected camera: THREE.PerspectiveCamera;
-  protected dojo: SetupResult;
   protected inputManager: InputManager;
   protected interactiveHexManager: InteractiveHexManager;
   protected systemManager: SystemManager;
@@ -40,7 +39,7 @@ export abstract class HexagonScene {
   constructor(
     protected sceneName: SceneName,
     protected controls: MapControls,
-    private dojoContext: SetupResult,
+    protected dojo: SetupResult,
     private mouse: THREE.Vector2,
     private raycaster: THREE.Raycaster,
     protected sceneManager: SceneManager,
@@ -48,7 +47,7 @@ export abstract class HexagonScene {
     this.GUIFolder = GUIManager.addFolder(sceneName);
     this.scene = new THREE.Scene();
     this.camera = controls.object as THREE.PerspectiveCamera;
-    this.dojo = dojoContext;
+    this.dojo = dojo;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
