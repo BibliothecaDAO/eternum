@@ -17,6 +17,10 @@ pub struct Stamina {
 
 #[generate_trait]
 impl StaminaCustomImpl of StaminaCustomTrait {
+    fn max_tick_count(ref self: Stamina) -> u8 {
+        4
+    }
+
     fn handle_stamina_costs(army_entity_id: ID, travel: TravelTypes, world: IWorldDispatcher) {
         let mut stamina = get!(world, (army_entity_id), Stamina);
         stamina.refill_if_next_tick(world);
@@ -70,9 +74,12 @@ impl StaminaCustomImpl of StaminaCustomTrait {
     }
 
     fn refill(ref self: Stamina, world: IWorldDispatcher) {
-        self.amount = self.max(world);
+        self.amount += self.max(world);
+        let max_stamina = self.max(world) * self.max_tick_count().into();
+        if self.amount > max_stamina {
+            self.amount = max_stamina;
+        }
         self.sset(world);
-
         let armies_tick_config = TickImpl::get_armies_tick_config(world);
         self.last_refill_tick = armies_tick_config.current();
     }
