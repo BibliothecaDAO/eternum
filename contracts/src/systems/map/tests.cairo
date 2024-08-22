@@ -8,7 +8,7 @@ use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Battle};
 use eternum::models::combat::{Health, Troops};
-use eternum::models::config::{TickConfig, StaminaConfig};
+use eternum::models::config::{TickConfig, TickImpl, StaminaConfig};
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{EntityOwner, Owner};
@@ -59,7 +59,7 @@ const INITIAL_KNIGHT_BALANCE: u128 = 100_000_000;
 
 const TIMESTAMP: u64 = 10_000;
 
-const TICK_INTERVAL_IN_SECONDS: u64 = 3;
+const TICK_INTERVAL_IN_SECONDS: u64 = 7_200;
 
 #[test]
 fn test_map_explore() {
@@ -86,7 +86,7 @@ fn test_map_explore() {
     assert_eq!(explored_tile.col, explored_tile.col, "wrong col");
     assert_eq!(explored_tile.row, explored_tile.row, "wrong row");
     assert_eq!(explored_tile.explored_by_id, realm_army_unit_id, "wrong realm owner");
-    assert_eq!(explored_tile.explored_at, TIMESTAMP, "wrong exploration time");
+    assert_eq!(explored_tile.explored_at, TIMESTAMP + TICK_INTERVAL_IN_SECONDS, "wrong exploration time");
 
     // ensure that the right amount of food was burnt
     let expected_wheat_balance = INITIAL_WHEAT_BALANCE - MAP_EXPLORE_WHEAT_BURN_AMOUNT;
@@ -175,6 +175,15 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     let realm_army_unit_id: ID = create_army_with_troops(
         world, combat_systems_dispatcher, realm_entity_id, troops, false
     );
+
+    // ensure initial stamina is 0
+    let realm_army_unit_stamina: Stamina = get!(world, realm_army_unit_id, Stamina);
+    assert!(realm_army_unit_stamina.amount.is_zero(), "stamina should be zero");
+
+    // move to next tick
+    let armies_tick_config = TickImpl::get_armies_tick_config(world);
+    let current_ts = starknet::get_block_timestamp();
+    starknet::testing::set_block_timestamp(current_ts + armies_tick_config.tick_interval_in_seconds);
 
     (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher)
 }
