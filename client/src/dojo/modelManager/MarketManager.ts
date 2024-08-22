@@ -1,24 +1,14 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
-import { ClientComponents } from "../createClientComponents";
+import { getComponentValue } from "@dojoengine/recs";
 import { SetupResult } from "../setup";
 
 export class MarketManager {
-  marketModel:
-    | Component<ClientComponents["Market"]["schema"]>
-    | OverridableComponent<ClientComponents["Market"]["schema"]>;
-  liquidityModel:
-    | Component<ClientComponents["Liquidity"]["schema"]>
-    | OverridableComponent<ClientComponents["Liquidity"]["schema"]>;
   bankEntityId: ID;
   player: ContractAddress;
   resourceId: ResourcesIds;
 
-  constructor(dojo: SetupResult, bankEntityId: ID, player: ContractAddress, resourceId: ResourcesIds) {
-    const { Market, Liquidity } = dojo.components;
-    this.marketModel = Market;
-    this.liquidityModel = Liquidity;
+  constructor(private dojo: SetupResult, bankEntityId: ID, player: ContractAddress, resourceId: ResourcesIds) {
     this.bankEntityId = bankEntityId;
     this.resourceId = resourceId;
     this.player = player;
@@ -31,14 +21,14 @@ export class MarketManager {
 
   public getLiquidity() {
     return getComponentValue(
-      this.overridableLiquidityModel,
+      this.dojo.components.Liquidity,
       getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
     );
   }
 
   public getMarket() {
     return getComponentValue(
-      this.overridableMarketModel,
+      this.dojo.components.Market,
       getEntityIdFromKeys([BigInt(this.bankEntityId), BigInt(this.resourceId)]),
     );
   }

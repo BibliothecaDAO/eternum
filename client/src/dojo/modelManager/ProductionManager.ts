@@ -7,38 +7,14 @@ import {
   ResourcesIds,
   STOREHOUSE_CAPACITY,
 } from "@bibliothecadao/eternum";
-import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
-import { ClientComponents } from "../createClientComponents";
+import { getComponentValue } from "@dojoengine/recs";
+import { SetupResult } from "../setup";
 
 export class ProductionManager {
-  overridableProductionModel:
-    | Component<ClientComponents["Production"]["schema"]>
-    | OverridableComponent<ClientComponents["Production"]["schema"]>;
-  overridableResourceModel:
-    | Component<ClientComponents["Resource"]["schema"]>
-    | OverridableComponent<ClientComponents["Resource"]["schema"]>;
-  overridableBuildingQuantity:
-    | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
-    | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>;
   entityId: ID;
   resourceId: ResourcesIds;
 
-  constructor(
-    overridableProductionModel:
-      | Component<ClientComponents["Production"]["schema"]>
-      | OverridableComponent<ClientComponents["Production"]["schema"]>,
-    overridableResourceModel:
-      | Component<ClientComponents["Resource"]["schema"]>
-      | OverridableComponent<ClientComponents["Resource"]["schema"]>,
-    overridableBuildingQuantity:
-      | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
-      | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>,
-    entityId: ID,
-    resourceId: ResourcesIds,
-  ) {
-    this.overridableProductionModel = overridableProductionModel;
-    this.overridableResourceModel = overridableResourceModel;
-    this.overridableBuildingQuantity = overridableBuildingQuantity;
+  constructor(private dojo: SetupResult, entityId: ID, resourceId: ResourcesIds) {
     this.entityId = entityId;
     this.resourceId = resourceId;
   }
@@ -104,7 +80,7 @@ export class ProductionManager {
   public getStoreCapacity(): number {
     const quantity =
       getComponentValue(
-        this.overridableBuildingQuantity,
+        this.dojo.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
@@ -217,14 +193,14 @@ export class ProductionManager {
 
   private _getProduction(resourceId: ResourcesIds) {
     return getComponentValue(
-      this.overridableProductionModel,
+      this.dojo.components.Production,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
   }
 
   private _getResource(resourceId: ResourcesIds) {
     return getComponentValue(
-      this.overridableResourceModel,
+      this.dojo.components.Resource,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
   }
