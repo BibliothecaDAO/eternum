@@ -2,7 +2,7 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
-import { divideByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { HintSection } from "../hints/HintModal";
@@ -66,7 +66,7 @@ export const ResourceBar = ({
             Max: {isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}
             {hasLordsFees && (
               <div className="text-danger ml-2">
-                <div>{`[- ${isNaN(lordsFee) ? "0" : lordsFee.toFixed(2)}]`}</div>
+                <div>{`[+${isNaN(lordsFee) ? "0" : formatNumber(lordsFee, 2)}]`}</div>
               </div>
             )}
           </div>

@@ -92,7 +92,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       const selectableResources = isLords
         ? resources.filter((r) => r.id === ResourcesIds.Lords)
         : resources.filter((r) => r.id !== ResourcesIds.Lords);
-      console.log("create resource bar with lords : ", isLords, selectableResources);
 
       return (
         <ResourceBar
