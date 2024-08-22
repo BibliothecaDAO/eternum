@@ -40,6 +40,10 @@ trait ITickConfig {
 trait IStaminaConfig {
     fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16);
 }
+#[dojo::interface]
+trait IStaminaRefillConfig {
+    fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16);
+}
 
 #[dojo::interface]
 trait ITransportConfig {
@@ -145,7 +149,7 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig,
         MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig,
         BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig,
-        MercenariesConfig
+        StaminaRefillConfig, MercenariesConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -287,6 +291,15 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
+        fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16) {
+            assert_caller_is_admin(world);
+
+            set!(world, (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: amount }));
         }
     }
 

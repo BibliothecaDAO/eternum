@@ -9,6 +9,7 @@ import {
   EternumGlobalConfig,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   ResourcesIds,
+  STAMINA_REFILL_PER_TICK,
   TROOPS_STAMINAS,
   WEIGHTS_GRAM,
 } from "../constants";
@@ -266,6 +267,14 @@ export const setStaminaConfig = async (account: Account, provider: EternumProvid
     });
     console.log(`Configuring staminas ${unit_type} ${tx.statusReceipt}...`);
   }
+};
+
+export const setStaminaRefillConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_stamina_refill_config({
+    signer: account,
+    amount_per_tick: STAMINA_REFILL_PER_TICK,
+  });
+  console.log(`Configuring stamina refill per tick to ${STAMINA_REFILL_PER_TICK} ${tx.statusReceipt}...`);
 };
 
 export const setMercenariesConfig = async (account: Account, provider: EternumProvider) => {

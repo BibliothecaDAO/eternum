@@ -478,6 +478,10 @@ export interface SetStaminaConfigProps extends SystemSigner {
   max_stamina: num.BigNumberish;
 }
 
+export interface SetStaminaRefillConfigProps extends SystemSigner {
+  amount_per_tick: num.BigNumberish;
+}
+
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 
 export interface SetMercenariesConfigProps extends SystemSigner {
