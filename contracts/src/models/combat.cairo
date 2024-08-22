@@ -1202,7 +1202,7 @@ mod tests {
         let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
         assert_eq!(attack_army_stone.balance, defence_army_stone_resource.balance);
     }
-// #[test]
+    // #[test]
 // fn test_show_battle() {
 //     let attack_troop_each = 240_000;
 //     let defence_troop_each = 10_000;
@@ -1214,10 +1214,10 @@ mod tests {
 //     print!("\n\n Attack Army health: {} \n\n", battle.attack_army_health.current);
 //     print!("\n\n Defence delta: {} \n\n", battle.defence_delta);
 
-//     print!("\n\n Defence Army health: {} \n\n", battle.defence_army_health.current);
+    //     print!("\n\n Defence Army health: {} \n\n", battle.defence_army_health.current);
 //     print!("\n\n Attack delta: {} \n\n", battle.attack_delta);
 
-//     print!("\n\n Scale A: {} \n\n",battle.attack_army.troops.count() /
+    //     print!("\n\n Scale A: {} \n\n",battle.attack_army.troops.count() /
 //     battle.defence_army.troops.count());
 //     print!("\n\n Scale B: {} \n\n", battle.defence_army.troops.count()
 //     /battle.attack_army.troops.count());
@@ -1225,7 +1225,7 @@ mod tests {
 //     print!("\n\n Duration in Minutes: {} \n\n", battle.duration_left / 60);
 //     print!("\n\n Duration in Hours: {} \n\n", battle.duration_left / (60 * 60));
 
-//     let divisior = 8;
+    //     let divisior = 8;
 //     let attacker_h_left = battle.attack_army_health.current - (battle.defence_delta.into() *
 //     (battle.duration_left.into() / divisior ));
 //     let attacker_ratio = (battle.attack_army_health.current - attacker_h_left) * 100 /
@@ -1235,10 +1235,10 @@ mod tests {
 //     let defence_ratio = (battle.defence_army_health.current - defence_h_left) * 100 /
 //     battle.defence_army_health.current;
 
-//     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left,
+    //     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left,
 //     attacker_ratio);
 //     print!("\n\n Pillage Defender Loss: {}, Ratio is {}% \n\n", defence_h_left,
 //     defence_ratio);
 
-// }
+    // }
 }
