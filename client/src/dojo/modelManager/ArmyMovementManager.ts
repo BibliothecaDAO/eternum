@@ -79,7 +79,10 @@ export class ArmyMovementManager {
   private wheatManager: ProductionManager;
   private staminaManager: StaminaManager;
 
-  constructor(private dojo: SetupResult, entityId: ID) {
+  constructor(
+    private dojo: SetupResult,
+    entityId: ID,
+  ) {
     this.overridableTileModel = dojo.components.Tile;
     this.overridableStaminaModel = dojo.components.Stamina;
     this.overridablePositionModel = dojo.components.Position;
