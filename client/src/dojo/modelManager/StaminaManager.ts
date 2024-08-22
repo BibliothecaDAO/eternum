@@ -11,7 +11,10 @@ export class StaminaManager {
     paladinConfig: number;
   };
 
-  constructor(private entity: Entity, private dojo: SetupResult) {
+  constructor(
+    private entity: Entity,
+    private dojo: SetupResult,
+  ) {
     const knightConfig = getComponentValue(
       this.dojo.components.StaminaConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),

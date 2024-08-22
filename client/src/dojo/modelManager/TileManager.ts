@@ -12,7 +12,10 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(private dojo: SetupResult, hexCoords: HexPosition) {
+  constructor(
+    private dojo: SetupResult,
+    hexCoords: HexPosition,
+  ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);

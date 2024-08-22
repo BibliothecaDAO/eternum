@@ -75,7 +75,10 @@ export class ArmyMovementManager {
   private wheatManager: ProductionManager;
   private staminaManager: StaminaManager;
 
-  constructor(private dojo: SetupResult, entityId: ID) {
+  constructor(
+    private dojo: SetupResult,
+    entityId: ID,
+  ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.dojo.network.burnerManager.account?.address || 0n);
