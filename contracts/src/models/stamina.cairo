@@ -72,20 +72,12 @@ impl StaminaCustomImpl of StaminaCustomTrait {
     fn refill(ref self: Stamina, world: IWorldDispatcher) {
         let stamina_refill_config = get!(world, WORLD_CONFIG_ID, StaminaRefillConfig);
         let stamina_per_tick = stamina_refill_config.amount_per_tick;
-        let max_total_stamina = self.max(world);
-        let current_tick = TickImpl::get_armies_tick_config(world).current();
-        loop {
-            self.amount += stamina_per_tick;
-            if self.amount >= max_total_stamina {
-                self.amount = max_total_stamina;
-                break;
-            }
-            self.last_refill_tick += 1;
-            if self.last_refill_tick == current_tick {
-                break;
-            }
-        };
 
+        let current_tick = TickImpl::get_armies_tick_config(world).current();
+        let num_ticks_passed = current_tick - self.last_refill_tick;
+        let total_stamina_since_last_tick: u16 = (num_ticks_passed * stamina_per_tick.into()).try_into().unwrap();
+
+        self.amount = core::cmp::min(self.amount + total_stamina_since_last_tick, self.max(world));
         self.last_refill_tick = current_tick;
         self.sset(world);
     }
