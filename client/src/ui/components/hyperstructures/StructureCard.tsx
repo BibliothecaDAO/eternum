@@ -2,6 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -12,7 +13,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
-import { Position } from "@/types/Position";
 
 export const StructureCard = ({
   position,
@@ -159,37 +159,39 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
   return (
     <div className="flex flex-col">
       <div className="flex flex-row justify-around items-center">
-        <div className="w-[60%] mr-1">
+        <div className="w-[60%] mr-1 bg-gold/20">
           <p className="pt-2 pb-1 text-center">{giverArmy.name}</p>
           {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
-                className="flex flex-row bg-gold/20  hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
+                className="grid grid-cols-6 hover:bg-gold/30 justify-around items-center h-12 gap-2 px-1 mb-1"
                 key={resourceId}
               >
-                <div className=" flex gap-3">
-                  <div>
-                    <Troop troopId={Number(resourceId)} />
-                  </div>
+                <Troop className="col-span-1" troopId={Number(resourceId)} />
 
-                  <div className=" flex flex-col text-xs font-bold">
-                    <p>Avail.</p>
-                    <p>
-                      {transferDirection === "to"
-                        ? `[${currencyFormat(
-                            amount -
-                              troopsGiven[Number(resourceId)] *
-                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-                            0,
-                          )}]`
-                        : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
-                    </p>
-                  </div>
+                <div className="flex flex-col text-xs text-center self-center font-bold col-span-2">
+                  <p>Avail.</p>
+                  <p
+                    className={`${
+                      transferDirection === "to" &&
+                      troopsGiven[Number(resourceId)] * BigInt(EternumGlobalConfig.resources.resourceMultiplier) !== 0n
+                        ? "text-red"
+                        : ""
+                    }`}
+                  >
+                    {transferDirection === "to"
+                      ? `[${currencyFormat(
+                          amount -
+                            troopsGiven[Number(resourceId)] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                          0,
+                        )}]`
+                      : `[${currencyFormat(amount, 0)}]`}
+                  </p>
                 </div>
 
                 {transferDirection === "to" && (
                   <NumberInput
-                    className="w-1/2"
+                    className="col-span-3 rounded-lg"
                     max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
                     min={0}
                     step={100}
@@ -197,12 +199,19 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                     onChange={(amount) => handleTroopsGivenChange(resourceId, BigInt(amount))}
                   />
                 )}
+                {transferDirection === "from" && (
+                  <div
+                    className={`text-lg font-bold col-span-3 text-center ${
+                      troopsGiven[Number(resourceId)] !== 0n ? `text-green` : ""
+                    }`}
+                  >{`+${troopsGiven[Number(resourceId)]}`}</div>
+                )}
               </div>
             );
           })}
         </div>
 
-        <div className="w-[60%] ml-1">
+        <div className="w-[60%] ml-1 bg-gold/20">
           <p className="pt-2 pb-1 text-center">Transfer {transferDirection}</p>
           {!protector && !takerArmy ? (
             <Button variant={"primary"} onClick={createProtector}>
@@ -213,37 +222,48 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
             Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
-                  className="flex flex-row bg-gold/20  hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
+                  className="grid grid-cols-6 hover:bg-gold/30 justify-around items-center h-12 gap-2 px-1 mb-1"
                   key={resourceId}
                 >
-                  <div className=" flex gap-3">
-                    <div>
-                      <Troop troopId={Number(resourceId)} />
-                    </div>
+                  <Troop troopId={Number(resourceId)} />
 
-                    <div className="flex flex-col text-xs font-bold">
-                      <p>Avail.</p>
-                      <p>
-                        {transferDirection === "from"
-                          ? `[${currencyFormat(
-                              amount -
-                                troopsGiven[Number(resourceId)] *
-                                  BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-                              0,
-                            )}]`
-                          : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
-                      </p>
-                    </div>
+                  <div className="flex flex-col text-xs text-center self-center font-bold col-span-2">
+                    <p>Avail.</p>
+                    <p
+                      className={`${
+                        transferDirection === "from" &&
+                        troopsGiven[Number(resourceId)] * BigInt(EternumGlobalConfig.resources.resourceMultiplier) !==
+                          0n
+                          ? "text-red"
+                          : ""
+                      }`}
+                    >
+                      {transferDirection === "from"
+                        ? `[${currencyFormat(
+                            amount -
+                              troopsGiven[Number(resourceId)] *
+                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                            0,
+                          )}]`
+                        : `[${currencyFormat(amount, 0)}]`}
+                    </p>
                   </div>
                   {transferDirection === "from" && (
                     <NumberInput
-                      className="w-1/2"
+                      className="col-span-3 rounded-lg"
                       max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
                       min={0}
                       step={100}
                       value={Number(troopsGiven[Number(resourceId)])}
                       onChange={(amount) => handleTroopsGivenChange(resourceId, BigInt(amount))}
                     />
+                  )}
+                  {transferDirection === "to" && (
+                    <div
+                      className={`text-lg font-bold col-span-3 text-center ${
+                        troopsGiven[Number(resourceId)] !== 0n ? `text-green` : ""
+                      }`}
+                    >{`+${troopsGiven[Number(resourceId)]}`}</div>
                   )}
                 </div>
               );
@@ -280,7 +300,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
   );
 };
 
-const Troop = ({ troopId }: { troopId: number }) => {
+const Troop = ({ troopId, className }: { troopId: number; className?: string }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
@@ -294,11 +314,9 @@ const Troop = ({ troopId }: { troopId: number }) => {
       onMouseLeave={() => {
         setTooltip(null);
       }}
-      className="flex flex-col font-bold"
+      className={`flex flex-col font-bold ${className}`}
     >
-      <div className="bg-white/10  flex justify-between p-1">
-        <ResourceIcon withTooltip={false} resource={ResourcesIds[troopId]} size="lg" />
-      </div>
+      <ResourceIcon withTooltip={false} resource={ResourcesIds[troopId]} size="lg" />
     </div>
   );
 };
