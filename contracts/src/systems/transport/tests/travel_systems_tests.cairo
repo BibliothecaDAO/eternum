@@ -9,7 +9,7 @@ use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_
 
 use eternum::constants::{ResourceTypes, TickIds};
 use eternum::models::combat::{Army, BattleSide, Troops};
-use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, LevelingConfig, TickImpl};
+use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -412,6 +412,12 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
         config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
     };
     set!(world, (tick_config));
+    
+    set!(
+        world,
+        (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: MAX_STAMINA})
+    );
+
 
     set!(
         world,
