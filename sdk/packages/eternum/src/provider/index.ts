@@ -898,6 +898,15 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_stamina_refill_config(props: SystemProps.SetStaminaRefillConfigProps) {
+    const { amount_per_tick, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_stamina_refill_config",
+      calldata: [amount_per_tick],
+    });
+  }
+
   public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
     const { troops, rewards, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
