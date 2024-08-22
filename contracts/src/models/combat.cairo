@@ -380,6 +380,10 @@ impl ArmyCustomImpl of ArmyCustomTrait {
         assert!(self.battle_id.is_non_zero(), "army not in battle")
     }
 
+    fn assert_within_limit(self: Army, troop_config: TroopConfig) {
+        assert!(self.troops.count() <= troop_config.max_troop_count, "army count exceeds limit");
+    }
+
     fn assert_not_in_battle(self: Army) {
         assert!(self.battle_id.is_zero(), "army in battle")
     }
