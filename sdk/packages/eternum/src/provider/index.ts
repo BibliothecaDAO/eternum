@@ -785,6 +785,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       crossbowman_strength,
       advantage_percent,
       disadvantage_percent,
+      max_troop_count,
       pillage_health_divisor,
       army_free_per_structure,
       army_extra_per_military_building,
@@ -803,6 +804,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         crossbowman_strength,
         advantage_percent,
         disadvantage_percent,
+        max_troop_count,
         pillage_health_divisor,
         army_free_per_structure,
         army_extra_per_military_building,
@@ -899,6 +901,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_config",
       calldata: [unit_type, max_stamina],
+    });
+  }
+
+  public async set_stamina_refill_config(props: SystemProps.SetStaminaRefillConfigProps) {
+    const { amount_per_tick, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_stamina_refill_config",
+      calldata: [amount_per_tick],
     });
   }
 

@@ -113,7 +113,7 @@ fn test_army_buy() {
     )
 )]
 fn test_army_buy__not_enough_resources() {
-    let (world, combat_systems_dispatcher, realm_id, army_id) = setup();
+    let (_world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 

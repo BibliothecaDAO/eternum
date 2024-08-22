@@ -2,24 +2,17 @@ import * as THREE from "three";
 
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
-import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
+import { getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Biome, BiomeType } from "../components/Biome";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
-import {
-  buildingModelPaths,
-  BUILDINGS_CENTER,
-  HEX_HORIZONTAL_SPACING,
-  HEX_SIZE,
-  HEX_VERTICAL_SPACING,
-  structureTypeToBuildingType,
-} from "./constants";
+import { buildingModelPaths, BUILDINGS_CENTER, HEX_SIZE, structureTypeToBuildingType } from "./constants";
 import { HexagonScene } from "./HexagonScene";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { BuildingPreview } from "../components/BuildingPreview";
@@ -27,6 +20,49 @@ import { BuildingSystemUpdate } from "../systems/types";
 import InstancedModel from "../components/InstancedModel";
 
 const loader = new GLTFLoader();
+
+const generateHexPositions = (center: HexPosition, radius: number) => {
+  const color = new THREE.Color("gray");
+  const positions: any[] = [];
+  const positionSet = new Set(); // To track existing positions
+
+  // Helper function to add position if not already added
+  const addPosition = (col: number, row: number, isBorder: boolean) => {
+    const key = `${col},${row}`;
+    if (!positionSet.has(key)) {
+      const position = {
+        ...getWorldPositionForHex({ col, row }, false),
+        color,
+        col,
+        row,
+        isBorder,
+      };
+      positions.push(position);
+      positionSet.add(key);
+    }
+  };
+
+  // Add center position
+  addPosition(center.col, center.row, false);
+
+  // Generate positions in expanding hexagonal layers
+  let currentLayer = [center];
+  for (let i = 0; i < radius; i++) {
+    const nextLayer: any = [];
+    currentLayer.forEach((pos) => {
+      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
+        if (!positionSet.has(`${neighbor.col},${neighbor.row}`)) {
+          addPosition(neighbor.col, neighbor.row, i === radius - 1);
+          nextLayer.push({ col: neighbor.col, row: neighbor.row });
+        }
+      });
+    });
+    currentLayer = nextLayer; // Move to the next layer
+  }
+
+  return positions;
+};
+
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<BuildingType, InstancedModel> = new Map();
@@ -151,11 +187,12 @@ export default class HexceptionScene extends HexagonScene {
     this.controls.maxDistance = 18;
     this.controls.enablePan = false;
     this.controls.zoomToCursor = false;
+
     this.moveCameraToURLLocation();
   }
 
   protected onHexagonClick(hexCoords: HexPosition): void {
-    const normalizedCoords = { col: BUILDINGS_CENTER[0] - hexCoords.col, row: BUILDINGS_CENTER[1] - hexCoords.row };
+    const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
     if (buildingType) {
       // if building mode
@@ -179,7 +216,7 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
   protected onHexagonMouseMove({ position, hexCoords }: { position: THREE.Vector3; hexCoords: HexPosition }): void {
-    const normalizedCoords = { col: BUILDINGS_CENTER[0] - hexCoords.col, row: BUILDINGS_CENTER[1] - hexCoords.row };
+    const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
 
     this.buildingPreview?.setBuildingPosition(position);
@@ -197,7 +234,7 @@ export default class HexceptionScene extends HexagonScene {
   protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {
-    this.moveCameraToColRow(-0.5, 1, 0);
+    this.moveCameraToColRow(10, 10, 0);
   }
 
   updateHexceptionGrid(radius: number) {
@@ -224,12 +261,12 @@ export default class HexceptionScene extends HexagonScene {
     Promise.all(this.modelLoadPromises).then(() => {
       let centers = [
         [0, 0], //0, 0 (Main hex)
-        [-6.5, 7.5], //-1, 1
-        [7, 6], //1, 0
-        [0.5, 13.5], //0, 1
-        [-7, -6], //-1, 0
-        [-0.5, -13.5], //0, -1
-        [6.5, -7.5], //1, -1
+        [-6, 5], //-1, 1
+        [7, 4], //1, 0
+        [1, 9], //0, 1
+        [-7, -4], //-1, 0
+        [0, -9], //0, -1
+        [7, -5], //1, -1
       ];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
       const label = new THREE.Group();
@@ -303,46 +340,44 @@ export default class HexceptionScene extends HexagonScene {
       this.buildings = [];
     }
 
-    for (let q = -radius; q <= radius; q++) {
-      for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
-        const isBorderHex =
-          q === radius || q === -radius || r === Math.max(-radius, -q - radius) || r === Math.min(radius, -q + radius);
-        dummy.position.x = (q + r / 2) * HEX_HORIZONTAL_SPACING + center[0] * HEX_HORIZONTAL_SPACING;
-        dummy.position.z = r * HEX_VERTICAL_SPACING + center[1] * HEX_SIZE;
-        dummy.position.y = isBorderHex || isFlat ? 0 : pseudoRandom(q, r);
-        dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-        dummy.updateMatrix();
+    const positions = generateHexPositions(
+      { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
+      radius,
+    );
 
-        const { col, row } = getHexForWorldPosition(dummy.position);
-        const normalizedCoords = { col: BUILDINGS_CENTER[0] - col, row: BUILDINGS_CENTER[1] - row };
+    const label = new THREE.Group();
+    this.scene.add(label);
 
-        let withBuilding = false;
-        if (isMainHex) {
-          this.interactiveHexManager.addHex(getHexForWorldPosition(dummy.position));
-        }
-        const building = existingBuildings.find(
-          (value) => value.col === normalizedCoords.col && value.row === normalizedCoords.row,
-        );
-        if (building) {
-          withBuilding = true;
-          const buildingObj = dummy.clone();
-          const rotation = Math.PI / 3;
-          if (building.category === BuildingType[BuildingType.Castle]) {
-            buildingObj.rotation.y = rotation * 3;
-          } else {
-            buildingObj.rotation.y = rotation * 4;
-          }
-          buildingObj.updateMatrix();
-          this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
-        } else if (isMainHex) {
-          this.highlights.push(getHexForWorldPosition(dummy.position));
-        }
-
-        if (!withBuilding) {
-          biomeHexes[biome].push(dummy.matrix.clone());
-        }
+    positions.forEach((position) => {
+      dummy.position.x = position.x;
+      dummy.position.z = position.z;
+      dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
+      dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+      dummy.updateMatrix();
+      if (isMainHex) {
+        this.interactiveHexManager.addHex({ col: position.col, row: position.row });
       }
-    }
+      let withBuilding = false;
+      const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+      if (building) {
+        withBuilding = true;
+        const buildingObj = dummy.clone();
+        const rotation = Math.PI / 3;
+        if (building.category === BuildingType[BuildingType.Castle]) {
+          buildingObj.rotation.y = rotation * 3;
+        } else {
+          buildingObj.rotation.y = rotation * 4;
+        }
+        buildingObj.updateMatrix();
+        this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
+      } else if (isMainHex) {
+        this.highlights.push(getHexForWorldPosition(dummy.position));
+      }
+
+      if (!withBuilding) {
+        biomeHexes[biome].push(dummy.matrix.clone());
+      }
+    });
   };
 
   computeMainHexMatrices = (

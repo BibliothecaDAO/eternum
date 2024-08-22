@@ -212,12 +212,12 @@ fn test_battle_start() {
     let (
         world,
         combat_system_dispatcher,
-        player_1_realm_id,
-        player_2_realm_id,
-        player_3_realm_id,
+        _player_1_realm_id,
+        _player_2_realm_id,
+        _player_3_realm_id,
         player_1_army_id,
         player_2_army_id,
-        player_3_army_id
+        _player_3_army_id
     ) =
         setup();
 

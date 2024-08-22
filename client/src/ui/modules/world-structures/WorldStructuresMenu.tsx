@@ -12,11 +12,13 @@ import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useShardMines } from "@/hooks/helpers/useShardMines";
 
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
 
 export const WorldStructuresMenu = ({}: any) => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -42,7 +44,7 @@ export const WorldStructuresMenu = ({}: any) => {
 
     shardMine.production_rate;
 
-    return <ShardMineExtraContent x={Number(shardMine.x!)} y={Number(shardMine.y!)} balance={shardMine.balance!} />;
+    return <ShardMineExtraContent x={Number(shardMine.x!)} y={Number(shardMine.y!)} entityId={entityId!} />;
   };
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -149,11 +151,26 @@ const HyperStructureExtraContent = ({
   );
 };
 
-const ShardMineExtraContent = ({ x, y, balance }: { x: number; y: number; balance: bigint }) => {
+const ShardMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
+  const { getBalance } = getResourceBalance();
+  const dynamicResources = getBalance(entityId, ResourcesIds.Earthenshard);
+
+  const trait = useMemo(() => findResourceById(ResourcesIds.Earthenshard)?.trait, []);
+
   return (
     <div className="flex space-x-5 items-center text-xs">
       <ViewOnMapIcon className={"my-auto  hover:scale-125 hover:grow"} position={{ x, y }} />
-      <div>Balance: {Number(balance)}</div>
+      <ResourceIcon
+        className="self-center justify-center"
+        isLabor={false}
+        withTooltip={false}
+        resource={trait || ""}
+        size={"xs"}
+      />{" "}
+      {Intl.NumberFormat("en-US", {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(dynamicResources.balance || 0)}{" "}
     </div>
   );
 };

@@ -119,7 +119,7 @@ fn test_army_create_not_owner() {
 #[test]
 #[should_panic(expected: ("entity 900 is not a structure", 'ENTRYPOINT_FAILED'))]
 fn test_army_create__only_structure_can_create_army() {
-    let (_, combat_systems_dispatcher, realm_id,) = setup();
+    let (_, combat_systems_dispatcher, _realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<0>());
     starknet::testing::set_account_contract_address(contract_address_const::<0>());
     combat_systems_dispatcher.army_create(900, false);

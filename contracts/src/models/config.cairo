@@ -120,6 +120,14 @@ pub struct TickConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct StaminaRefillConfig {
+    #[key]
+    config_id: ID,
+    amount_per_tick: u16,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct StaminaConfig {
     #[key]
     config_id: ID,
@@ -283,6 +291,7 @@ pub struct TroopConfig {
     crossbowman_strength: u16,
     advantage_percent: u16,
     disadvantage_percent: u16,
+    max_troop_count: u64,
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
     //

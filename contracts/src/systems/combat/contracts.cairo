@@ -383,8 +383,7 @@ mod combat_systems {
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
     use eternum::models::capacity::Capacity;
-    use eternum::models::combat::BattleEscrowTrait;
-    use eternum::models::combat::ProtectorCustomTrait;
+    use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
         BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl
@@ -581,8 +580,9 @@ mod combat_systems {
             from_army_quantity.value -= troops.count().into();
             set!(world, (from_army_quantity));
 
-            // delete army if troop count is 0
-            if from_army.troops.count().is_zero() {
+            // delete army if troop count is 0 and if it's not a defensive army
+            let protectee = get!(world, from_army_id, Protectee);
+            if from_army.troops.count().is_zero() && protectee.is_none() {
                 InternalCombatImpl::delete_army(world, ref from_army_owner, ref from_army);
             }
 
@@ -1319,9 +1319,7 @@ mod combat_systems {
 
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
-            set!(
-                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
-            );
+            set!(world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() }));
 
             army_id
         }
@@ -1375,6 +1373,12 @@ mod combat_systems {
             army.troops.add(troops);
             set!(world, (army));
 
+            let army_not_defensive = get!(world, army_id, Protectee).is_none();
+            if army_not_defensive {
+                let troop_config = TroopConfigCustomImpl::get(world);
+                army.assert_within_limit(troop_config);
+            }
+
             // increase army health
             let mut army_health: Health = get!(world, army_id, Health);
             army_health.increase_by(troops.full_health(TroopConfigCustomImpl::get(world)));
@@ -1392,6 +1396,11 @@ mod combat_systems {
             let mut owner_armies_quantity: QuantityTracker = get!(world, owner_armies_key, QuantityTracker);
             owner_armies_quantity.count -= 1;
             set!(world, (owner_armies_quantity));
+
+            let protectee: Protectee = get!(world, army.entity_id, Protectee);
+            if (protectee.protectee_id != 0) {
+                delete!(world, (protectee));
+            }
 
             // delete army by resetting components connected to army
             let (owner, position, quantity, health, stamina, resource_transfer_lock, movable, capacity) = get!(

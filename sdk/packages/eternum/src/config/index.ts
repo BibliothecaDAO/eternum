@@ -9,6 +9,7 @@ import {
   EternumGlobalConfig,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   ResourcesIds,
+  STAMINA_REFILL_PER_TICK,
   TROOPS_STAMINAS,
   WEIGHTS_GRAM,
 } from "../constants";
@@ -150,6 +151,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowmanStrength: crossbowman_strength,
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
+    maxTroopCount: max_troop_count,
     pillageHealthDivisor: pillage_health_divisor,
     baseArmyNumberForStructure: army_free_per_structure,
     armyExtraPerMilitaryBuilding: army_extra_per_military_building,
@@ -166,6 +168,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
+    max_troop_count,
     pillage_health_divisor: pillage_health_divisor,
     army_free_per_structure: army_free_per_structure,
     army_extra_per_military_building: army_extra_per_military_building,
@@ -270,6 +273,14 @@ export const setStaminaConfig = async (account: Account, provider: EternumProvid
     });
     console.log(`Configuring staminas ${unit_type} ${tx.statusReceipt}...`);
   }
+};
+
+export const setStaminaRefillConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_stamina_refill_config({
+    signer: account,
+    amount_per_tick: STAMINA_REFILL_PER_TICK,
+  });
+  console.log(`Configuring stamina refill per tick to ${STAMINA_REFILL_PER_TICK} ${tx.statusReceipt}...`);
 };
 
 export const setMercenariesConfig = async (account: Account, provider: EternumProvider) => {

@@ -80,7 +80,7 @@ export default class GameRenderer {
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-    this.camera.position.set(0, cameraHeight, -cameraDepth);
+    this.camera.position.set(0, cameraHeight, cameraDepth);
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
 
@@ -91,9 +91,12 @@ export default class GameRenderer {
     changeSceneFolder.close();
     // Add new button for moving camera to specific col and row
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
-    const moveCameraParams = { col: 0, row: 0 };
+    const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
     moveCameraFolder.add(moveCameraParams, "row").name("Row");
+    moveCameraFolder.add(moveCameraParams, "x").name("X");
+    moveCameraFolder.add(moveCameraParams, "y").name("Y");
+    moveCameraFolder.add(moveCameraParams, "z").name("Z");
     moveCameraFolder
       .add(
         {
@@ -102,6 +105,12 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
+    moveCameraFolder.add(
+      {
+        move: () => this.worldmapScene.moveCameraToXYZ(moveCameraParams.x, moveCameraParams.y, moveCameraParams.z, 0),
+      },
+      "move",
+    );
     moveCameraFolder.close();
     // Create an instance of CSS2DRenderer
     this.labelRenderer = new CSS2DRenderer();
@@ -212,8 +221,6 @@ export default class GameRenderer {
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
-
-    this.worldmapScene.createGroundMesh();
 
     this.sceneManager.moveCameraForScene();
   }

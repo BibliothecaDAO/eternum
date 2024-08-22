@@ -27,5 +27,5 @@ const edgesMaterial = new THREE.LineBasicMaterial({
   opacity: 0.15,
 });
 
-export const hexagonEdgeMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+const hexagonEdgeMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
 hexagonEdgeMesh.rotateX(Math.PI / 2);

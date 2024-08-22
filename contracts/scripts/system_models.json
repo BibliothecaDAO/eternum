@@ -19,6 +19,7 @@
     "HyperstructureResourceConfig",
     "HyperstructureConfig",
     "StaminaConfig",
+    "StaminaRefillConfig",
     "MercenariesConfig",
     "Position",
     "ProductionOutput",

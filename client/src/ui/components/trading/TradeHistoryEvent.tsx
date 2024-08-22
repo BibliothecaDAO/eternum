@@ -13,24 +13,18 @@ import { TradeEvent } from "./MarketTradingHistory";
 export enum EventType {
   ORDER_CREATED = "Created order",
   ORDER_ACCEPTED = "Order accepted",
-  ORDER_CANCELLED = "Order cancel",
+  ORDER_CANCELLED = "Order cancelled",
   ORDER_EXPIRED = "Order expired",
   BOUGHT = "Took an order",
 }
 
 const colors = {
   [EventType.ORDER_CREATED]: "text-gold",
-  [EventType.ORDER_ACCEPTED]: "text-green",
+  [EventType.ORDER_ACCEPTED]: "text-orange",
   [EventType.ORDER_CANCELLED]: "text-danger",
   [EventType.ORDER_EXPIRED]: "text-danger",
   [EventType.BOUGHT]: "text-green",
 };
-
-enum TradeStatus {
-  OPEN = 0,
-  ACCEPTED = 1,
-  CANCELLED = 2,
-}
 
 export const TradeHistoryRowHeader = () => {
   return (
@@ -60,10 +54,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
       ? EventType.ORDER_EXPIRED
       : trade.type;
 
-  const taker =
-    eventType !== EventType.BOUGHT
-      ? getAddressNameFromEntity(trade.event.takerId) || ""
-      : `${getAddressNameFromEntity(trade.event.makerId)} (You)`;
+  const taker = eventType !== EventType.BOUGHT ? getAddressNameFromEntity(trade.event.takerId) || "" : `You`;
 
   const { getResourcesBalance } = getResourceBalance();
   const resourceGiven =
@@ -86,7 +77,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         className={`text-xs my-auto`}
       >{`${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`}</div>
       <div className={`text-sm my-auto ${colors[eventType]}`}>{eventType}</div>
-      <div className={`text-sm my-auto`}>{taker}</div>
+      <div className={`text-sm my-auto ${colors[eventType]}`}>{taker}</div>
       <div className="text-sm my-auto flex flex-row font-bold">
         {resourceGiven && <ResourceIcon resource={ResourcesIds[Number(resourceGiven[0]!.resource_type)]} size={"sm"} />}{" "}
         <div>{`${currencyIntlFormat(

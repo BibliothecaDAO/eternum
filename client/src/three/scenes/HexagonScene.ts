@@ -17,6 +17,7 @@ import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
 import { biomeModelPaths, HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "./constants";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
 
 export abstract class HexagonScene {
   protected scene: THREE.Scene;
@@ -34,7 +35,7 @@ export abstract class HexagonScene {
   protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
   protected modelLoadPromises: Promise<void>[] = [];
   protected state: AppStore;
-  private hexagonEdges: THREE.Group;
+  protected fog: THREE.Fog;
 
   constructor(
     protected sceneName: SceneName,
@@ -125,8 +126,10 @@ export abstract class HexagonScene {
     });
 
     this.state = useUIStore.getState();
-    this.hexagonEdges = new THREE.Group();
-    this.scene.add(this.hexagonEdges);
+    this.createGroundMesh();
+
+    this.fog = new THREE.Fog(0xffffff, 21, 30);
+    this.scene.fog = this.fog;
   }
 
   protected abstract onHexagonMouseMove({
@@ -139,20 +142,6 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
   protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
-
-  protected addHexagonEdge(edge: THREE.LineSegments) {
-    this.hexagonEdges.add(edge);
-  }
-
-  protected setHexagonEdges(edges: THREE.Group) {
-    this.scene.remove(this.hexagonEdges);
-    this.hexagonEdges = edges;
-    this.scene.add(this.hexagonEdges);
-  }
-
-  protected getHexagonEdges() {
-    return this.hexagonEdges;
-  }
 
   public abstract setup(): void;
 
@@ -208,8 +197,7 @@ export abstract class HexagonScene {
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
     const row = this.locationManager.getRow()!;
-    const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
-    const z = -row * HEX_VERTICAL_SPACING;
+    const { x, z } = getWorldPositionForHex({ col, row });
     return { col, row, x, z };
   }
 
@@ -252,14 +240,28 @@ export abstract class HexagonScene {
     );
   }
 
-  public moveCameraToColRow(col: number, row: number, duration: number = 2) {
-    const colOffset = col;
-    const rowOffset = row;
-    const newTargetX = colOffset * HEX_HORIZONTAL_SPACING + (rowOffset % 2) * (HEX_HORIZONTAL_SPACING / 2);
-    const newTargetZ = -rowOffset * HEX_VERTICAL_SPACING;
-    const newTargetY = 0;
+  public moveCameraToXYZ(x: number, y: number, z: number, duration: number = 2) {
+    const newTarget = new THREE.Vector3(x, y, z);
 
-    const newTarget = new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
+    const target = this.controls.target;
+    const pos = this.controls.object.position;
+
+    // go to new target but keep same view angle
+    const deltaX = newTarget.x - target.x;
+    const deltaZ = newTarget.z - target.z;
+    if (duration) {
+      this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, duration);
+    } else {
+      target.set(newTarget.x, newTarget.y, newTarget.z);
+      pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
+    }
+    this.controls.update();
+  }
+
+  public moveCameraToColRow(col: number, row: number, duration: number = 2) {
+    const { x, y, z } = getWorldPositionForHex({ col, row });
+
+    const newTarget = new THREE.Vector3(x, y, z);
 
     const target = this.controls.target;
     const pos = this.controls.object.position;
@@ -273,22 +275,20 @@ export abstract class HexagonScene {
       target.set(newTarget.x, newTarget.y, newTarget.z);
       pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
     }
-    // target.set(newTarget.x, newTarget.y, newTarget.z);
-    // pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
     this.controls.update();
   }
 
   private updateLights = _.throttle(() => {
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.position.set(
-        this.controls.target.x + 15,
+        this.controls.target.x - 15,
         this.controls.target.y + 13,
-        this.controls.target.z - 8,
+        this.controls.target.z + 8,
       );
       this.mainDirectionalLight.target.position.set(
         this.controls.target.x,
         this.controls.target.y,
-        this.controls.target.z + 5.2,
+        this.controls.target.z - 5.2,
       );
       this.mainDirectionalLight.target.updateMatrixWorld();
     }
@@ -307,7 +307,10 @@ export abstract class HexagonScene {
           path,
           (gltf) => {
             const model = gltf.scene as THREE.Group;
-
+            if (biome === "Outline") {
+              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).transparent = true;
+              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.1;
+            }
             const tmp = new InstancedModel(model, maxInstances);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
@@ -322,6 +325,37 @@ export abstract class HexagonScene {
       });
       this.modelLoadPromises.push(loadPromise);
     }
+  }
+
+  private createGroundMesh() {
+    const scale = 60;
+    const metalness = 0.5;
+    const roughness = 0.7;
+
+    const geometry = new THREE.PlaneGeometry(2668, 1390.35);
+    const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(scale, scale / 2.5);
+    });
+
+    const material = new THREE.MeshStandardMaterial({
+      map: texture,
+      metalness: metalness,
+      roughness: roughness,
+      side: THREE.DoubleSide,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.set(Math.PI / 2, 0, Math.PI);
+    const { x, z } = getWorldPositionForHex({ col: 185, row: 150 });
+    mesh.position.set(x, -0.05, z);
+    mesh.receiveShadow = true;
+    // disable raycast
+    mesh.raycast = () => {};
+
+    this.scene.add(mesh);
   }
 
   update(deltaTime: number) {

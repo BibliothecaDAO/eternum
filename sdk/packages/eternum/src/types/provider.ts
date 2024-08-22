@@ -421,6 +421,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   crossbowman_strength: num.BigNumberish;
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
+  max_troop_count: num.BigNumberish;
   pillage_health_divisor: num.BigNumberish;
   army_free_per_structure: num.BigNumberish;
   army_extra_per_military_building: num.BigNumberish;
@@ -478,6 +479,10 @@ export interface SetCoOwnersProps extends SystemSigner {
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: num.BigNumberish;
   max_stamina: num.BigNumberish;
+}
+
+export interface SetStaminaRefillConfigProps extends SystemSigner {
+  amount_per_tick: num.BigNumberish;
 }
 
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;

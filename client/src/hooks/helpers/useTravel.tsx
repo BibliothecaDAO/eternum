@@ -22,7 +22,7 @@ export function useTravel() {
   } = useDojo();
   const { optimisticStaminaUpdate } = useStamina();
 
-  const computeTravelTime = (fromId: ID, toId: ID, speed: number, pickup?: boolean) => {
+  const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
     const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(fromId)]));
     const toPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(toId)]));
     if (!fromPosition || !toPosition) return;
@@ -31,7 +31,8 @@ export function useTravel() {
         { x: Number(fromPosition.x), y: Number(fromPosition.y) },
         { x: Number(toPosition.x), y: Number(toPosition.y) },
       ) ?? 0;
-    const onewayTime = Math.floor(((distanceFromPosition / speed) * 3600) / 60);
+
+    const onewayTime = Math.floor((distanceFromPosition * secPerKm) / 60);
     return pickup ? onewayTime * 2 : onewayTime;
   };
 

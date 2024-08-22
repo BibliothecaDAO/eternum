@@ -6,10 +6,11 @@ use eternum::models::{config::TroopConfig, combat::Troops};
 
 use eternum::systems::config::contracts::{
     ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
-    ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait, ITransportConfigDispatcher,
-    ITransportConfigDispatcherTrait, IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
-    IBankConfigDispatcher, IBankConfigDispatcherTrait, ITickConfigDispatcher, ITickConfigDispatcherTrait,
-    IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait
+    IStaminaRefillConfigDispatcher, IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher,
+    ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
+    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
+    ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -54,6 +55,7 @@ fn get_combat_config() -> TroopConfig {
         crossbowman_strength: 1,
         advantage_percent: 1000,
         disadvantage_percent: 1000,
+        max_troop_count: 10_000_000_000_000 * 1000,
         pillage_health_divisor: 8,
         army_free_per_structure: 100,
         army_extra_per_building: 100,
@@ -68,6 +70,7 @@ fn set_combat_config(config_systems_address: ContractAddress) {
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {
+    IStaminaRefillConfigDispatcher { contract_address: config_systems_address }.set_stamina_refill_config(100);
     IStaminaConfigDispatcher { contract_address: config_systems_address }
         .set_stamina_config(ResourceTypes::PALADIN, 100);
     IStaminaConfigDispatcher { contract_address: config_systems_address }.set_stamina_config(ResourceTypes::KNIGHT, 80);
