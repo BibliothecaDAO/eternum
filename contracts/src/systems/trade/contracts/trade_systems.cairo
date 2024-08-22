@@ -18,6 +18,14 @@ trait ITradeSystems {
         maker_gives_resources: Span<(u8, u128)>,
         taker_gives_resources: Span<(u8, u128)>
     );
+    fn accept_partial_order(
+        ref world: IWorldDispatcher,
+        taker_id: ID,
+        trade_id: ID,
+        maker_gives_resources: Span<(u8, u128)>,
+        taker_gives_resources: Span<(u8, u128)>,
+        taker_gives_actual_amount: u128
+    );
     fn cancel_order(ref world: IWorldDispatcher, trade_id: ID, return_resources: Span<(u8, u128)>);
 }
 
@@ -62,6 +70,18 @@ mod trade_systems {
     #[dojo::event]
     #[dojo::model]
     struct AcceptOrder {
+        #[key]
+        taker_id: ID,
+        #[key]
+        maker_id: ID,
+        trade_id: ID,
+        timestamp: u64
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    #[dojo::model]
+    struct AcceptPartialOrder {
         #[key]
         taker_id: ID,
         #[key]
@@ -259,6 +279,122 @@ mod trade_systems {
             emit!(
                 world,
                 (AcceptOrder {
+                    taker_id, maker_id: trade.maker_id, trade_id, timestamp: starknet::get_block_timestamp()
+                })
+            );
+        }
+
+
+        fn accept_partial_order(
+            ref world: IWorldDispatcher,
+            taker_id: ID,
+            trade_id: ID,
+            mut maker_gives_resources: Span<(u8, u128)>,
+            mut taker_gives_resources: Span<(u8, u128)>,
+            mut taker_gives_actual_amount: u128
+        ) { // Ensure only one resource type is being traded and input lengths match
+            assert!(maker_gives_resources.len() == 1, "only one resource type is supported for partial orders");
+            assert!(maker_gives_resources.len() == taker_gives_resources.len(), "resources lengths must be equal");
+
+            // Verify caller is the taker
+            let caller = starknet::get_caller_address();
+            let taker_owner = get!(world, taker_id, Owner);
+            assert(taker_owner.address == caller, 'not owned by caller');
+            // Get trade details and status
+            let mut trade = get!(world, trade_id, Trade);
+            let trade_status = get!(world, trade_id, Status);
+
+            // Check trade expiration and taker validity
+            let ts = starknet::get_block_timestamp();
+            assert(trade.expires_at > ts, 'trade expired');
+            if trade.taker_id != 0 {
+                assert(trade.taker_id == taker_id, 'not the taker');
+            }
+
+            // Ensure trade is open and update status to accepted
+            assert(trade_status.value == TradeStatus::OPEN, 'trade is not open');
+
+            // Extract and verify maker's resource details
+            let (maker_gives_resource_type, maker_gives_resource_amount) = maker_gives_resources.pop_front().unwrap();
+            let maker_gives_resource_type = *maker_gives_resource_type;
+            let maker_gives_resource_amount = *maker_gives_resource_amount;
+            assert!(maker_gives_resource_amount > 0, "trade is closed (1)");
+            let maker_gives_resources_felt_arr: Array<felt252> = array![
+                maker_gives_resource_type.into(), maker_gives_resource_amount.into()
+            ];
+            let maker_gives_resources_hash = hash(maker_gives_resources_felt_arr.span());
+            assert!(
+                maker_gives_resources_hash == trade.maker_gives_resources_hash, "wrong maker_gives_resources provided"
+            );
+
+            // Extract and verify taker's resource details
+            let (taker_gives_resource_type, taker_gives_resource_amount) = taker_gives_resources.pop_front().unwrap();
+            let taker_gives_resource_type = *taker_gives_resource_type;
+            let taker_gives_resource_amount = *taker_gives_resource_amount;
+            assert!(taker_gives_resource_amount > 0, "trade is closed (2)");
+            let taker_gives_resources_felt_arr: Array<felt252> = array![
+                taker_gives_resource_type.into(), taker_gives_resource_amount.into()
+            ];
+            let taker_gives_resources_hash = hash(taker_gives_resources_felt_arr.span());
+            assert!(
+                taker_gives_resources_hash == trade.taker_gives_resources_hash, "wrong taker_gives_resources provided"
+            );
+            // Calculate and transfer maker's resources
+            let maker_gives_actual_amount = maker_gives_resource_amount
+                * taker_gives_actual_amount
+                / taker_gives_resource_amount;
+            let maker_gives_resources_actual = array![(maker_gives_resource_type, maker_gives_actual_amount)].span();
+            let (_, _, maker_gives_resources_actual_weight) = internal_resources::transfer(
+                world, trade.maker_id, trade.taker_id, maker_gives_resources_actual, trade.taker_id, true, false
+            );
+            trade.maker_gives_resources_weight -= maker_gives_resources_actual_weight;
+
+            // Transfer taker's resources
+            let taker_gives_resources_actual = array![(taker_gives_resource_type, taker_gives_actual_amount)].span();
+            let (_, _, taker_gives_resources_actual_weight) = internal_resources::transfer(
+                world, trade.taker_id, trade.maker_id, taker_gives_resources_actual, trade.maker_id, false, true
+            );
+            trade.taker_gives_resources_weight -= taker_gives_resources_actual_weight;
+
+            // Calculate remaining amounts and update trade details
+            let maker_amount_left = maker_gives_resource_amount - maker_gives_actual_amount;
+            let taker_amount_left = taker_gives_resource_amount - taker_gives_actual_amount;
+            let new_maker_gives_resources = array![maker_gives_resource_type.into(), maker_amount_left.into()];
+            let new_taker_gives_resources = array![taker_gives_resource_type.into(), taker_amount_left.into()];
+
+            trade.maker_gives_resources_hash = hash(new_maker_gives_resources.span());
+            trade.taker_gives_resources_hash = hash(new_taker_gives_resources.span());
+
+            // Update detached resources for maker and taker
+            set!(
+                world,
+                (DetachedResource {
+                    entity_id: trade.maker_gives_resources_id,
+                    index: 0,
+                    resource_type: maker_gives_resource_type,
+                    resource_amount: maker_amount_left
+                })
+            );
+            set!(
+                world,
+                (DetachedResource {
+                    entity_id: trade.taker_gives_resources_id,
+                    index: 0,
+                    resource_type: taker_gives_resource_type,
+                    resource_amount: taker_amount_left
+                })
+            );
+
+            // Save updated trade
+            set!(world, (trade));
+            if trade.maker_gives_resources_weight == 0 {
+                set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
+            }
+
+            // Emit event for partial order acceptance
+            emit!(
+                world,
+                (AcceptPartialOrder {
                     taker_id, maker_id: trade.maker_id, trade_id, timestamp: starknet::get_block_timestamp()
                 })
             );
