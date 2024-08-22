@@ -3,24 +3,9 @@ use eternum::alias::ID;
 
 #[dojo::interface]
 trait IResourceSystems {
-    fn approve(
-        ref world: IWorldDispatcher,
-        entity_id: ID,
-        recipient_entity_id: ID,
-        resources: Span<(u8, u128)>
-    );
-    fn send(
-        ref world: IWorldDispatcher,
-        sender_entity_id: ID,
-        recipient_entity_id: ID,
-        resources: Span<(u8, u128)>
-    );
-    fn pickup(
-        ref world: IWorldDispatcher,
-        recipient_entity_id: ID,
-        owner_entity_id: ID,
-        resources: Span<(u8, u128)>
-    );
+    fn approve(ref world: IWorldDispatcher, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
+    fn send(ref world: IWorldDispatcher, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
+    fn pickup(ref world: IWorldDispatcher, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -50,13 +35,9 @@ mod resource_systems {
     use eternum::models::road::RoadCustomImpl;
     use eternum::models::weight::Weight;
     use eternum::models::weight::WeightCustomTrait;
-    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
-        InternalDonkeySystemsImpl as donkey
-    };
+    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
 
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
-        InternalTravelSystemsImpl as travel
-    };
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl as travel};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
@@ -82,12 +63,7 @@ mod resource_systems {
         /// * `recipient_entity_id` - The id of the entity being approved.
         /// * `resources` - The resources to approve.
         ///
-        fn approve(
-            ref world: IWorldDispatcher,
-            entity_id: ID,
-            recipient_entity_id: ID,
-            resources: Span<(u8, u128)>
-        ) {
+        fn approve(ref world: IWorldDispatcher, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
             assert(entity_id != recipient_entity_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
@@ -130,10 +106,7 @@ mod resource_systems {
         ///     the resource chest id
         ///
         fn send(
-            ref world: IWorldDispatcher,
-            sender_entity_id: ID,
-            recipient_entity_id: ID,
-            resources: Span<(u8, u128)>
+            ref world: IWorldDispatcher, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>
         ) {
             assert(sender_entity_id != recipient_entity_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
@@ -141,13 +114,7 @@ mod resource_systems {
             get!(world, sender_entity_id, EntityOwner).assert_caller_owner(world);
 
             InternalResourceSystemsImpl::transfer(
-                world,
-                sender_entity_id,
-                recipient_entity_id,
-                resources,
-                sender_entity_id,
-                true,
-                true
+                world, sender_entity_id, recipient_entity_id, resources, sender_entity_id, true, true
             );
         }
 
@@ -165,10 +132,7 @@ mod resource_systems {
         ///    the resource chest id
         ///
         fn pickup(
-            ref world: IWorldDispatcher,
-            recipient_entity_id: ID,
-            owner_entity_id: ID,
-            resources: Span<(u8, u128)>
+            ref world: IWorldDispatcher, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>
         ) {
             assert(owner_entity_id != recipient_entity_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
@@ -185,14 +149,10 @@ mod resource_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                         let mut approved_allowance = get!(
-                            world,
-                            (owner_entity_id, recipient_entity_id, resource_type),
-                            ResourceAllowance
+                            world, (owner_entity_id, recipient_entity_id, resource_type), ResourceAllowance
                         );
 
-                        assert(
-                            approved_allowance.amount >= resource_amount, 'insufficient approval'
-                        );
+                        assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
                         if (approved_allowance.amount != Bounded::MAX) {
                             // spend allowance if they don't have infinite approval
@@ -205,13 +165,7 @@ mod resource_systems {
             };
 
             InternalResourceSystemsImpl::transfer(
-                world,
-                owner_entity_id,
-                recipient_entity_id,
-                resources,
-                recipient_entity_id,
-                true,
-                true
+                world, owner_entity_id, recipient_entity_id, resources, recipient_entity_id, true, true
             );
         }
     }
@@ -233,8 +187,7 @@ mod resource_systems {
             let owner_coord: Coord = get!(world, owner_id, Position).into();
             let recipient_coord: Coord = get!(world, recipient_id, Position).into();
             let mut actual_recipient_id: ID = recipient_id;
-            let transport_is_needed: bool = owner_coord.is_non_zero()
-                && owner_coord != recipient_coord;
+            let transport_is_needed: bool = owner_coord.is_non_zero() && owner_coord != recipient_coord;
             if transport_is_needed {
                 actual_recipient_id = world.uuid()
             };
@@ -245,15 +198,11 @@ mod resource_systems {
             let mut resources_clone = resources.clone();
 
             // ensure resource spending is not locked
-            let owner_resource_lock: ResourceTransferLock = get!(
-                world, owner_id, ResourceTransferLock
-            );
+            let owner_resource_lock: ResourceTransferLock = get!(world, owner_id, ResourceTransferLock);
             owner_resource_lock.assert_not_locked();
 
             // ensure resource receipt is not locked
-            let recipient_resource_lock: ResourceTransferLock = get!(
-                world, actual_recipient_id, ResourceTransferLock
-            );
+            let recipient_resource_lock: ResourceTransferLock = get!(world, actual_recipient_id, ResourceTransferLock);
             recipient_resource_lock.assert_not_locked();
             loop {
                 match resources_clone.pop_front() {
@@ -264,9 +213,7 @@ mod resource_systems {
 
                         if enforce_owner_payment {
                             // burn resources from sender's balance
-                            let mut owner_resource = ResourceCustomImpl::get(
-                                world, (owner_id, resource_type)
-                            );
+                            let mut owner_resource = ResourceCustomImpl::get(world, (owner_id, resource_type));
                             owner_resource.burn(resource_amount);
                             owner_resource.save(world);
                         }
@@ -280,9 +227,7 @@ mod resource_systems {
 
                         // update total weight
                         total_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(
-                                world, resource_type, resource_amount
-                            );
+                            WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());
@@ -311,12 +256,7 @@ mod resource_systems {
                 // create donkey that can carry weight
                 let is_round_trip = transport_provider_id == recipient_id;
                 donkey::create_donkey(
-                    world,
-                    is_round_trip,
-                    actual_recipient_id,
-                    recipient_id,
-                    owner_coord,
-                    recipient_coord
+                    world, is_round_trip, actual_recipient_id, recipient_id, owner_coord, recipient_coord
                 );
 
                 if transport_resource_burn {
@@ -341,32 +281,25 @@ mod resource_systems {
             // only add to balance if receiver can carry weight
             let (resource_type, resource_amount) = resource;
             let mut total_resources_weight = 0;
-            total_resources_weight +=
-                WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
+            total_resources_weight += WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
             let mut recipient_weight: Weight = get!(world, recipient_id, Weight);
             let recipient_capacity: Capacity = get!(world, recipient_id, Capacity);
             let recipient_quantity: Quantity = get!(world, recipient_id, Quantity);
 
             recipient_weight.value += total_resources_weight;
-            if !recipient_capacity.is_capped()
-                || recipient_capacity.can_carry(recipient_quantity, recipient_weight) {
+            if !recipient_capacity.is_capped() || recipient_capacity.can_carry(recipient_quantity, recipient_weight) {
                 recipient_weight.value -= total_resources_weight;
-                recipient_weight
-                    .add(recipient_capacity, recipient_quantity, total_resources_weight);
+                recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
                 set!(world, (recipient_weight));
 
                 // ensure resource recepient is not locked from receiving
                 if check_lock {
-                    let recipient_resource_lock: ResourceTransferLock = get!(
-                        world, recipient_id, ResourceTransferLock
-                    );
+                    let recipient_resource_lock: ResourceTransferLock = get!(world, recipient_id, ResourceTransferLock);
                     recipient_resource_lock.assert_not_locked();
                 }
 
                 // add resource to recipient's balance
-                let mut recipient_resource = ResourceCustomImpl::get(
-                    world, (recipient_id, resource_type)
-                );
+                let mut recipient_resource = ResourceCustomImpl::get(world, (recipient_id, resource_type));
                 recipient_resource.add(resource_amount);
                 recipient_resource.save(world);
 
@@ -380,10 +313,7 @@ mod resource_systems {
         }
 
         fn emit_transfer_event(
-            world: IWorldDispatcher,
-            sender_entity_id: ID,
-            recipient_entity_id: ID,
-            resources: Span<(u8, u128)>
+            world: IWorldDispatcher, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>
         ) {
             let mut sending_realm_id = 0;
 

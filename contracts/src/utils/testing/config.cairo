@@ -97,10 +97,11 @@ fn set_mercenaries_config(config_systems_address: ContractAddress) {
 fn set_weight_config(config_systems_address: ContractAddress) {
     let resource_weights = get_resource_weights();
     let mut i = 0;
-    while i < resource_weights.len() {
-        let (resource_id, weight) = *resource_weights.at(i);
-        IWeightConfigDispatcher { contract_address: config_systems_address }
-            .set_weight_config(resource_id.into(), weight);
-        i += 1;
-    }
+    while i < resource_weights
+        .len() {
+            let (resource_id, weight) = *resource_weights.at(i);
+            IWeightConfigDispatcher { contract_address: config_systems_address }
+                .set_weight_config(resource_id.into(), weight);
+            i += 1;
+        }
 }

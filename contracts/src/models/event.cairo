@@ -10,7 +10,7 @@ pub struct EternumEvent {
     #[key]
     event_id: EventType,
     timestamp: u64,
-    // data: EventData,
+// data: EventData,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
