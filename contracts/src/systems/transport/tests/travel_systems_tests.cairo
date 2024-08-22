@@ -412,12 +412,8 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
         config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
     };
     set!(world, (tick_config));
-    
-    set!(
-        world,
-        (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: MAX_STAMINA})
-    );
 
+    set!(world, (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: MAX_STAMINA }));
 
     set!(
         world,
