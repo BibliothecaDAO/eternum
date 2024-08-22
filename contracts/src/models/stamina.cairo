@@ -2,7 +2,7 @@ use alexandria_data_structures::array_ext::ArrayTraitExt;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{
-    models::{combat::Army, config::{StaminaConfig, TickConfig, TickImpl}},
+    models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
     constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
 };
 
@@ -17,10 +17,6 @@ pub struct Stamina {
 
 #[generate_trait]
 impl StaminaCustomImpl of StaminaCustomTrait {
-    fn max_tick_count(ref self: Stamina) -> u8 {
-        4
-    }
-
     fn handle_stamina_costs(army_entity_id: ID, travel: TravelTypes, world: IWorldDispatcher) {
         let mut stamina = get!(world, (army_entity_id), Stamina);
         stamina.refill_if_next_tick(world);
@@ -74,14 +70,24 @@ impl StaminaCustomImpl of StaminaCustomTrait {
     }
 
     fn refill(ref self: Stamina, world: IWorldDispatcher) {
-        self.amount += self.max(world);
-        let max_stamina = self.max(world) * self.max_tick_count().into();
-        if self.amount > max_stamina {
-            self.amount = max_stamina;
-        }
+        let stamina_refill_config = get!(world, WORLD_CONFIG_ID, StaminaRefillConfig);
+        let stamina_per_tick = stamina_refill_config.amount_per_tick;
+        let max_total_stamina = self.max(world);
+        let current_tick = TickImpl::get_armies_tick_config(world).current();
+        loop {
+            self.amount += stamina_per_tick;
+            if self.amount >= max_total_stamina {
+                self.amount = max_total_stamina;
+                break;
+            }
+            self.last_refill_tick += 1;
+            if self.last_refill_tick == current_tick {
+                break;
+            }
+        };
+
+        self.last_refill_tick = current_tick;
         self.sset(world);
-        let armies_tick_config = TickImpl::get_armies_tick_config(world);
-        self.last_refill_tick = armies_tick_config.current();
     }
 
 
