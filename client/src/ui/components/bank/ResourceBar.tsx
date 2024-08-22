@@ -28,6 +28,7 @@ export const ResourceBar = ({
   setAmount,
   disableInput = false,
 }: ResourceBarProps) => {
+  console.log({ resourceId });
   const { getBalance } = getResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);

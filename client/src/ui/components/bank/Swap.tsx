@@ -89,18 +89,19 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
       const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - ownerFee) : resourceAmount;
+      const selectableResources = isLords
+        ? resources.filter((r) => r.id === ResourcesIds.Lords)
+        : resources.filter((r) => r.id !== ResourcesIds.Lords);
+      console.log("create resource bar with lords : ", isLords, selectableResources);
+
       return (
         <ResourceBar
           entityId={entityId}
-          resources={
-            isLords
-              ? resources.filter((r) => r.id === ResourcesIds.Lords)
-              : resources.filter((r) => r.id !== ResourcesIds.Lords)
-          }
+          resources={selectableResources}
           lordsFee={ownerFee}
           amount={amount}
           setAmount={isLords ? setLordsAmount : setResourceAmount}
-          resourceId={resourceId}
+          resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
         />
