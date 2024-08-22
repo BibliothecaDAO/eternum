@@ -2,7 +2,7 @@ use alexandria_data_structures::array_ext::ArrayTraitExt;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{
-    models::{combat::Army, config::{StaminaConfig, TickConfig, TickImpl}},
+    models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
     constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
 };
 
@@ -70,11 +70,16 @@ impl StaminaCustomImpl of StaminaCustomTrait {
     }
 
     fn refill(ref self: Stamina, world: IWorldDispatcher) {
-        self.amount = self.max(world);
-        self.sset(world);
+        let stamina_refill_config = get!(world, WORLD_CONFIG_ID, StaminaRefillConfig);
+        let stamina_per_tick = stamina_refill_config.amount_per_tick;
 
-        let armies_tick_config = TickImpl::get_armies_tick_config(world);
-        self.last_refill_tick = armies_tick_config.current();
+        let current_tick = TickImpl::get_armies_tick_config(world).current();
+        let num_ticks_passed = current_tick - self.last_refill_tick;
+        let total_stamina_since_last_tick: u16 = (num_ticks_passed * stamina_per_tick.into()).try_into().unwrap();
+
+        self.amount = core::cmp::min(self.amount + total_stamina_since_last_tick, self.max(world));
+        self.last_refill_tick = current_tick;
+        self.sset(world);
     }
 
 

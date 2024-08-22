@@ -14,6 +14,7 @@ import {
   setResourceBuildingConfig,
   setSpeedConfig,
   setStaminaConfig,
+  setStaminaRefillConfig,
   setupGlobals,
   setWeightConfig,
 } from "@bibliothecadao/eternum";
@@ -49,4 +50,5 @@ await setSpeedConfig(account, provider);
 await setupGlobals(account, provider);
 await setHyperstructureConfig(account, provider);
 await setStaminaConfig(account, provider);
+await setStaminaRefillConfig(account, provider);
 await setMercenariesConfig(account, provider);

@@ -120,6 +120,14 @@ pub struct TickConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct StaminaRefillConfig {
+    #[key]
+    config_id: ID,
+    amount_per_tick: u16,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct StaminaConfig {
     #[key]
     config_id: ID,

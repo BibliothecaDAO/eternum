@@ -2,6 +2,7 @@ import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
+import { SetupResult } from "../setup";
 
 export class MarketManager {
   marketModel:
@@ -14,19 +15,10 @@ export class MarketManager {
   player: ContractAddress;
   resourceId: ResourcesIds;
 
-  constructor(
-    marketModel:
-      | Component<ClientComponents["Market"]["schema"]>
-      | OverridableComponent<ClientComponents["Market"]["schema"]>,
-    liquidityModel:
-      | Component<ClientComponents["Liquidity"]["schema"]>
-      | OverridableComponent<ClientComponents["Liquidity"]["schema"]>,
-    bankEntityId: ID,
-    player: ContractAddress,
-    resourceId: ResourcesIds,
-  ) {
-    this.marketModel = marketModel;
-    this.liquidityModel = liquidityModel;
+  constructor(dojo: SetupResult, bankEntityId: ID, player: ContractAddress, resourceId: ResourcesIds) {
+    const { Market, Liquidity } = dojo.components;
+    this.marketModel = Market;
+    this.liquidityModel = Liquidity;
     this.bankEntityId = bankEntityId;
     this.resourceId = resourceId;
     this.player = player;
@@ -159,17 +151,11 @@ export class MarketManager {
   // price difference between swapping 1 resource and swapping N resources
   public slippage = (inputAmount: number, isSellingResource: boolean) => {
     const marketPrice = this.getMarketPrice();
-    let executionPrice, slippagePercentage;
 
     const outputAmount = isSellingResource ? this.sellResource(inputAmount, 0) : this.buyResource(inputAmount, 0);
 
-    if (isSellingResource) {
-      executionPrice = outputAmount / inputAmount;
-      slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
-    } else {
-      executionPrice = inputAmount / outputAmount;
-      slippagePercentage = -((executionPrice - marketPrice) / marketPrice) * 100;
-    }
+    const executionPrice = outputAmount / inputAmount;
+    const slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
 
     return slippagePercentage;
   };
