@@ -1348,6 +1348,12 @@ mod combat_systems {
             army.troops.add(troops);
             set!(world, (army));
 
+            let army_not_defensive = get!(world, army_id, Protectee).is_none();
+            if army_not_defensive {
+                let troop_config = TroopConfigCustomImpl::get(world);
+                army.assert_within_limit(troop_config);
+            }
+
             // increase army health
             let mut army_health: Health = get!(world, army_id, Health);
             army_health.increase_by(troops.full_health(TroopConfigCustomImpl::get(world)));
