@@ -188,7 +188,7 @@ export const useProductionManager = (entityId: ID, resourceId: ResourcesIds) => 
 
   const productionManager = useMemo(() => {
     return new ProductionManager(dojo.setup, entityId, resourceId);
-  }, [dojo.setup.components.Production, dojo.setup.components.Resource, entityId, resourceId, production]);
+  }, [dojo.setup, entityId, resourceId, production]);
 
   return productionManager;
 };
