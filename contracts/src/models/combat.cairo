@@ -740,6 +740,7 @@ mod tests {
             crossbowman_strength: 1,
             advantage_percent: 1000,
             disadvantage_percent: 1000,
+            max_troop_count: 10_000 * 1000,
             pillage_health_divisor: 8,
             army_free_per_structure: 100,
             army_extra_per_building: 100,
