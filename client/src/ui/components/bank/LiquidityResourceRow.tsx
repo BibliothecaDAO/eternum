@@ -38,8 +38,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
   const marketManager = useMemo(
     () =>
       new MarketManager(
-        dojoContext.setup.components.Market,
-        dojoContext.setup.components.Liquidity,
+        dojoContext.setup,
         bankEntityId,
         ContractAddress(dojoContext.account.account.address),
         resourceId,
@@ -88,7 +87,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
         setIsLoading(false);
         setOpenConfirmation(false);
       });
-  }, [dojoContext, bankEntityId, resourceId, marketManager]);
+  }, [dojoContext, bankEntityId, entityId, resourceId, marketManager]);
 
   const renderConfirmationPopup = useMemo(() => {
     const travelResources = [
@@ -173,9 +172,16 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
         </div>
 
         <div>
-          <Button variant="outline" onClick={() => setOpenConfirmation(true)} isLoading={false} disabled={!canWithdraw}>
-            Withdraw
-          </Button>
+          <div className="flex items-center h-full">
+            <Button
+              variant="outline"
+              onClick={() => setOpenConfirmation(true)}
+              isLoading={false}
+              disabled={!canWithdraw}
+            >
+              Withdraw
+            </Button>
+          </div>
         </div>
       </div>
       {openConfirmation && renderConfirmationPopup}
