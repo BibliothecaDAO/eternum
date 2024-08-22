@@ -150,7 +150,7 @@ export const calculateOffset = (index: number, total: number, radius: number) =>
   };
 };
 
-export const pseudoRandom = (x: number, y: number) => {
+const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };

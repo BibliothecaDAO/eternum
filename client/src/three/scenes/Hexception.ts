@@ -2,30 +2,22 @@ import * as THREE from "three";
 
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
-import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
-import { getHexForWorldPosition, getWorldPositionForHex, pseudoRandom } from "@/ui/utils/utils";
+import { getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Biome, BiomeType } from "../components/Biome";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
-import {
-  buildingModelPaths,
-  BUILDINGS_CENTER,
-  HEX_HORIZONTAL_SPACING,
-  HEX_SIZE,
-  HEX_VERTICAL_SPACING,
-  structureTypeToBuildingType,
-} from "./constants";
+import { buildingModelPaths, BUILDINGS_CENTER, HEX_SIZE, structureTypeToBuildingType } from "./constants";
 import { HexagonScene } from "./HexagonScene";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { BuildingSystemUpdate } from "../systems/types";
 import InstancedModel from "../components/InstancedModel";
-import { CSS2DObject } from "three-stdlib";
 
 const loader = new GLTFLoader();
 
@@ -242,7 +234,7 @@ export default class HexceptionScene extends HexagonScene {
   protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {
-    this.moveCameraToColRow(11, 11, 0);
+    this.moveCameraToColRow(10, 10, 0);
   }
 
   updateHexceptionGrid(radius: number) {

@@ -6,6 +6,7 @@ import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
+import { StaminaManager } from "./StaminaManager";
 
 export enum BattleType {
   Hex,
@@ -20,12 +21,20 @@ export enum BattleStatus {
   BattleEnded = "Battle has ended",
 }
 
+export enum RaidStatus {
+  isRaidable = "Raid!",
+  NoStamina = "Not enough stamina",
+  NoStructure = "No structure to raid",
+  OwnStructure = "Can't raid your own structure",
+  NoArmy = "No army selected",
+  ArmyNotInBattle = "Selected army not in this battle",
+}
+
 export class BattleManager {
   battleEntityId: ID;
   dojo: DojoResult;
   battleType: BattleType | undefined;
   private battleIsClaimable: boolean | undefined;
-  private battleIsRaidable: boolean | undefined;
 
   constructor(battleEntityId: ID, dojo: DojoResult) {
     this.battleEntityId = battleEntityId;
@@ -217,26 +226,25 @@ export class BattleManager {
     currentTimestamp: number,
     selectedArmy: ArmyInfo | undefined,
     structure: Structure | undefined,
-  ): boolean {
-    if (!selectedArmy) return false;
+  ): RaidStatus {
+    if (!selectedArmy) return RaidStatus.NoArmy;
 
-    if (!structure) return false;
-
-    if (this.battleIsRaidable) return this.battleIsRaidable;
+    if (!structure) return RaidStatus.NoStructure;
 
     if (this.isBattleOngoing(currentTimestamp) && selectedArmy.battle_id !== this.battleEntityId) {
-      return false;
+      return RaidStatus.ArmyNotInBattle;
     }
 
     if (this.getBattleType(structure) === BattleType.Hex) {
-      this.battleIsRaidable = false;
-      return false;
+      return RaidStatus.NoStructure;
     }
 
-    if (structure.isMine) return false;
+    if (structure.isMine) return RaidStatus.OwnStructure;
 
-    this.battleIsRaidable = true;
-    return true;
+    const staminaManager = new StaminaManager(getEntityIdFromKeys([BigInt(selectedArmy.entity_id)]), this.dojo.setup);
+    if (staminaManager.getStamina().amount === 0) return RaidStatus.NoStamina;
+
+    return RaidStatus.isRaidable;
   }
 
   public isAttackable(defender: ArmyInfo | undefined): boolean {
