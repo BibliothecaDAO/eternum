@@ -6,11 +6,9 @@ import { SetupResult } from "../setup";
 
 export class StaminaManager {
   armyEntityId: ID;
-  dojo: SetupResult;
 
-  constructor(armyEntityId: ID, dojo: SetupResult) {
+  constructor(armyEntityId: ID, private dojo: SetupResult) {
     this.armyEntityId = armyEntityId;
-    this.dojo = dojo;
   }
 
   public getStamina() {

@@ -11,36 +11,36 @@ import { Component, OverridableComponent, getComponentValue } from "@dojoengine/
 import { ClientComponents } from "../createClientComponents";
 
 export class ProductionManager {
-  productionModel:
+  overridableProductionModel:
     | Component<ClientComponents["Production"]["schema"]>
     | OverridableComponent<ClientComponents["Production"]["schema"]>;
-  resourceModel:
+  overridableResourceModel:
     | Component<ClientComponents["Resource"]["schema"]>
     | OverridableComponent<ClientComponents["Resource"]["schema"]>;
-  buildingQuantity:
+  overridableBuildingQuantity:
     | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
     | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>;
   entityId: ID;
   resourceId: ResourcesIds;
 
   constructor(
-    productionModel:
+    overridableProductionModel:
       | Component<ClientComponents["Production"]["schema"]>
       | OverridableComponent<ClientComponents["Production"]["schema"]>,
-    resourceModel:
+    overridableResourceModel:
       | Component<ClientComponents["Resource"]["schema"]>
       | OverridableComponent<ClientComponents["Resource"]["schema"]>,
-    buildingQuantity:
+    overridableBuildingQuantity:
       | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
       | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>,
     entityId: ID,
     resourceId: ResourcesIds,
   ) {
-    this.productionModel = productionModel;
-    this.buildingQuantity = buildingQuantity;
+    this.overridableProductionModel = overridableProductionModel;
+    this.overridableResourceModel = overridableResourceModel;
+    this.overridableBuildingQuantity = overridableBuildingQuantity;
     this.entityId = entityId;
     this.resourceId = resourceId;
-    this.resourceModel = resourceModel;
   }
 
   public getProduction() {
@@ -104,7 +104,7 @@ export class ProductionManager {
   public getStoreCapacity(): number {
     const quantity =
       getComponentValue(
-        this.buildingQuantity,
+        this.overridableBuildingQuantity,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
@@ -216,10 +216,16 @@ export class ProductionManager {
   }
 
   private _getProduction(resourceId: ResourcesIds) {
-    return getComponentValue(this.productionModel, getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]));
+    return getComponentValue(
+      this.overridableProductionModel,
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+    );
   }
 
   private _getResource(resourceId: ResourcesIds) {
-    return getComponentValue(this.resourceModel, getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]));
+    return getComponentValue(
+      this.overridableResourceModel,
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+    );
   }
 }

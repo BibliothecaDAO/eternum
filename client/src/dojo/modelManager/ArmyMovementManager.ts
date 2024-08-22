@@ -1,4 +1,4 @@
-import { getCurrentArmiesTick, getCurrentTick } from "@/three/helpers/ticks";
+import { getCurrentTick } from "@/three/helpers/ticks";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -7,12 +7,11 @@ import {
   EternumGlobalConfig,
   ID,
   ResourcesIds,
-  WORLD_CONFIG_ID,
   getNeighborHexes,
   neighborOffsetsEven,
   neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
-import { Component, Entity, OverridableComponent, getComponentValue } from "@dojoengine/recs";
+import { Entity, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
@@ -70,15 +69,9 @@ export class TravelPaths {
 }
 
 export class ArmyMovementManager {
-  private tileModel: OverridableComponent<ClientComponents["Tile"]["schema"]>;
-  private staminaModel: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
-  private positionModel: OverridableComponent<ClientComponents["Position"]["schema"]>;
-  private armyModel: Component<ClientComponents["Army"]["schema"]>;
-  private ownerModel: Component<ClientComponents["Owner"]["schema"]>;
-  private capacityModel: Component<ClientComponents["Capacity"]["schema"]>;
-  private weightModel: Component<ClientComponents["Weight"]["schema"]>;
-  private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
-  private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
+  private overridableTileModel: OverridableComponent<ClientComponents["Tile"]["schema"]>;
+  private overridableStaminaModel: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
+  private overridablePositionModel: OverridableComponent<ClientComponents["Position"]["schema"]>;
   private entity: Entity;
   private entityId: ID;
   private address: ContractAddress;
@@ -86,48 +79,25 @@ export class ArmyMovementManager {
   private wheatManager: ProductionManager;
   private staminaManager: StaminaManager;
 
-  constructor(
-    private dojo: SetupResult,
-    entityId: ID,
-  ) {
-    const {
-      Tile,
-      Stamina,
-      Position,
-      Army,
-      Owner,
-      Capacity,
-      Weight,
-      EntityOwner,
-      StaminaConfig,
-      Production,
-      Resource,
-      BuildingQuantityv2,
-    } = dojo.components;
-    this.tileModel = Tile;
-    this.staminaModel = Stamina;
-    this.positionModel = Position;
-    this.armyModel = Army;
-    this.ownerModel = Owner;
-    this.capacityModel = Capacity;
-    this.weightModel = Weight;
-    this.entityOwnerModel = EntityOwner;
-    this.staminaConfigModel = StaminaConfig;
+  constructor(private dojo: SetupResult, entityId: ID) {
+    this.overridableTileModel = dojo.components.Tile;
+    this.overridableStaminaModel = dojo.components.Stamina;
+    this.overridablePositionModel = dojo.components.Position;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.dojo.network.burnerManager.account?.address || 0n);
-    const entityOwnerId = getComponentValue(EntityOwner, this.entity);
+    const entityOwnerId = getComponentValue(dojo.components.EntityOwner, this.entity);
     this.wheatManager = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
+      dojo.components.Production,
+      dojo.components.Resource,
+      dojo.components.BuildingQuantityv2,
       entityOwnerId!.entity_owner_id,
       ResourcesIds.Wheat,
     );
     this.fishManager = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
+      dojo.components.Production,
+      dojo.components.Resource,
+      dojo.components.BuildingQuantityv2,
       entityOwnerId!.entity_owner_id,
       ResourcesIds.Fish,
     );
@@ -162,7 +132,7 @@ export class ArmyMovementManager {
   };
 
   private _getCurrentPosition = () => {
-    const position = getComponentValue(this.positionModel, this.entity);
+    const position = getComponentValue(this.overridablePositionModel, this.entity);
     return { col: position!.x, row: position!.y };
   };
 
@@ -221,10 +191,10 @@ export class ArmyMovementManager {
   }
 
   public isMine = () => {
-    let entityOwner = getComponentValue(this.entityOwnerModel, this.entity);
-    let owner = getComponentValue(this.ownerModel, this.entity);
+    let entityOwner = getComponentValue(this.dojo.components.EntityOwner, this.entity);
+    let owner = getComponentValue(this.dojo.components.Owner, this.entity);
     if (!owner && entityOwner?.entity_owner_id) {
-      owner = getComponentValue(this.ownerModel, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+      owner = getComponentValue(this.dojo.components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
     }
     return owner?.address === this.address;
   };
@@ -233,7 +203,7 @@ export class ArmyMovementManager {
     const stamina = this.staminaManager.getStamina();
 
     // substract the costs
-    this.staminaModel.addOverride(overrideId, {
+    this.overridableStaminaModel.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: stamina.entity_id,
@@ -246,7 +216,7 @@ export class ArmyMovementManager {
   private _optimisticTileUpdate = (overrideId: string, col: number, row: number) => {
     const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
 
-    this.tileModel.addOverride(overrideId, {
+    this.overridableTileModel.addOverride(overrideId, {
       entity,
       value: {
         col: col,
@@ -259,7 +229,7 @@ export class ArmyMovementManager {
   };
 
   private _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
-    this.positionModel.addOverride(overrideId, {
+    this.overridablePositionModel.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
@@ -306,9 +276,9 @@ export class ArmyMovementManager {
         signer: this.dojo.network.burnerManager.account!,
       })
       .catch((e) => {
-        this.positionModel.removeOverride(overrideId);
-        this.staminaModel.removeOverride(overrideId);
-        this.tileModel.removeOverride(overrideId);
+        this.overridablePositionModel.removeOverride(overrideId);
+        this.overridableStaminaModel.removeOverride(overrideId);
+        this.overridableTileModel.removeOverride(overrideId);
       });
   };
 
@@ -317,7 +287,7 @@ export class ArmyMovementManager {
 
     this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength);
 
-    this.positionModel.addOverride(overrideId, {
+    this.overridablePositionModel.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
@@ -348,8 +318,8 @@ export class ArmyMovementManager {
         directions,
       })
       .catch(() => {
-        this.positionModel.removeOverride(overrideId);
-        this.staminaModel.removeOverride(overrideId);
+        this.overridablePositionModel.removeOverride(overrideId);
+        this.overridableStaminaModel.removeOverride(overrideId);
       });
   };
 
@@ -362,9 +332,9 @@ export class ArmyMovementManager {
   };
 
   private _getArmyRemainingCapacity = () => {
-    const armyCapacity = getComponentValue(this.capacityModel, this.entity);
-    const armyWeight = getComponentValue(this.weightModel, this.entity);
-    const armyEntity = getComponentValue(this.armyModel, this.entity);
+    const armyCapacity = getComponentValue(this.dojo.components.Capacity, this.entity);
+    const armyWeight = getComponentValue(this.dojo.components.Weight, this.entity);
+    const armyEntity = getComponentValue(this.dojo.components.Army, this.entity);
 
     if (!armyEntity || !armyCapacity) return 0n;
 

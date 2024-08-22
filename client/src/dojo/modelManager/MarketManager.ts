@@ -31,14 +31,14 @@ export class MarketManager {
 
   public getLiquidity() {
     return getComponentValue(
-      this.liquidityModel,
+      this.overridableLiquidityModel,
       getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
     );
   }
 
   public getMarket() {
     return getComponentValue(
-      this.marketModel,
+      this.overridableMarketModel,
       getEntityIdFromKeys([BigInt(this.bankEntityId), BigInt(this.resourceId)]),
     );
   }
