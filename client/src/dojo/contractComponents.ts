@@ -620,6 +620,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Message: (() => {
+      return defineComponent(
+        world,
+        {
+          identity: RecsType.BigInt,
+          channel: RecsType.BigInt,
+          content: RecsType.String,
+          salt: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "eternum-Message",
+            types: ["felt252", "felt252", "BytesArray", "felt252"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Movable: (() => {
       return defineComponent(
         world,
@@ -1120,10 +1138,12 @@ export function defineContractComponents(world: World) {
         {
           trade_id: RecsType.Number,
           maker_id: RecsType.Number,
+          maker_gives_resources_origin_id: RecsType.Number,
           maker_gives_resources_id: RecsType.Number,
           maker_gives_resources_hash: RecsType.BigInt,
           maker_gives_resources_weight: RecsType.BigInt,
           taker_id: RecsType.Number,
+          taker_gives_resources_origin_id: RecsType.Number,
           taker_gives_resources_id: RecsType.Number,
           taker_gives_resources_hash: RecsType.BigInt,
           taker_gives_resources_weight: RecsType.BigInt,
@@ -1132,7 +1152,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             name: "eternum-Trade",
-            types: ["u32", "u32", "u32", "felt252", "u128", "u32", "u32", "felt252", "u128", "u64"],
+            types: ["u32", "u32", "u32", "u32", "felt252", "u128", "u32", "u32", "u32", "felt252", "u128", "u64"],
             customTypes: [],
           },
         },

@@ -57,15 +57,23 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const taker = eventType !== EventType.BOUGHT ? getAddressNameFromEntity(trade.event.takerId) || "" : `You`;
 
   const { getResourcesBalance } = getResourceBalance();
-  const resourceGiven =
-    trade.type === EventType.BOUGHT
-      ? getResourcesBalance(tradeComponent!.taker_gives_resources_id)
-      : getResourcesBalance(tradeComponent!.maker_gives_resources_id);
-  const resourceTaken =
-    trade.type === EventType.BOUGHT
-      ? getResourcesBalance(tradeComponent!.maker_gives_resources_id)
-      : getResourcesBalance(tradeComponent!.taker_gives_resources_id);
+  let resourceGiven;
+  if (trade.type === EventType.BOUGHT) {
+    resourceGiven = getResourcesBalance(tradeComponent!.taker_gives_resources_id);
+  } else if (trade.type === EventType.ORDER_CREATED) {
+    resourceGiven = getResourcesBalance(tradeComponent!.maker_gives_resources_origin_id);
+  } else {
+    resourceGiven = getResourcesBalance(tradeComponent!.maker_gives_resources_id);
+  }
 
+  let resourceTaken;
+  if (trade.type === EventType.BOUGHT) {
+    resourceTaken = getResourcesBalance(tradeComponent!.maker_gives_resources_id);
+  } else if (trade.type === EventType.ORDER_CREATED) {
+    resourceTaken = getResourcesBalance(tradeComponent!.taker_gives_resources_origin_id);
+  } else {
+    resourceTaken = getResourcesBalance(tradeComponent!.taker_gives_resources_id);
+  }
   const expirationDate =
     trade.type === EventType.ORDER_CREATED ? new Date(Number(tradeComponent!.expires_at) * 1000) : undefined;
 
@@ -90,7 +98,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         {resourceTaken && <ResourceIcon resource={ResourcesIds[Number(resourceTaken[0]!.resource_type)]} size={"sm"} />}{" "}
       </div>
       <div className="text-sm my-auto flex flex-row font-bold">
-        {currencyIntlFormat(price, 2)}
+        {currencyIntlFormat(Number(price), 2)}
         <ResourceIcon resource={ResourcesIds[Number(resourceTaken[0]!.resource_type)]} size={"sm"} />
         per/
         <ResourceIcon resource={ResourcesIds[Number(resourceGiven[0]!.resource_type)]} size={"sm"} />

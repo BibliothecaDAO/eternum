@@ -6,13 +6,15 @@ import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { currencyFormat, formatNumber } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ID, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
+
+const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
 export const StructureCard = ({
   position,
@@ -113,6 +115,31 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
 
   const protector = useComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId || 0)]));
 
+  const protectorArmyTroops = useComponentValue(
+    Army,
+    getEntityIdFromKeys([BigInt(takerArmy?.entity_id || protector?.army_id || 0)]),
+  )?.troops;
+
+  const attackerArmyTroops = useComponentValue(Army, getEntityIdFromKeys([BigInt(giverArmyEntityId)]))!.troops;
+
+  const totalTroopsReceiver = useMemo(() => {
+    return (
+      BigInt(Object.values(attackerArmyTroops || {}).reduce((a, b) => Number(a) + Number(b), 0)) /
+      BigInt(EternumGlobalConfig.resources.resourcePrecision)
+    );
+  }, [attackerArmyTroops]);
+
+  // only use attackerArmyTroops because defending armies don't have troops limits
+  const remainingTroops = useMemo(() => {
+    const totalTroopsGiven = Object.values(troopsGiven).reduce((a, b) => a + b, 0n);
+    const totalTroops = totalTroopsGiven + totalTroopsReceiver;
+    return BigInt(MAX_TROOPS_PER_ARMY) > totalTroops ? BigInt(MAX_TROOPS_PER_ARMY) - totalTroops : 0n;
+  }, [troopsGiven, totalTroopsReceiver]);
+
+  const getMaxTroopCountForAttackingArmy = (amount: bigint, troopId: string) => {
+    return Math.min(Number(amount), Number(remainingTroops) + Number(troopsGiven[Number(troopId)]));
+  };
+
   const createProtector = async () => {
     setLoading(true);
     await create_army({
@@ -150,18 +177,20 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
     setTroopsGiven((prev) => ({ ...prev, [resourceId]: amount }));
   };
 
-  const giverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([BigInt(giverArmyEntityId)]))!.troops;
-  const receiverArmyTroops = useComponentValue(
-    Army,
-    getEntityIdFromKeys([BigInt(takerArmy?.entity_id || protector?.army_id || 0)]),
-  )?.troops;
-
   return (
     <div className="flex flex-col">
+      {transferDirection === "from" && (
+        <>
+          <div className="text-xs text-yellow-500 mb-2">
+            ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
+          </div>
+          <div className="text-xs mb-2">Total troops in attacking army: {Number(totalTroopsReceiver)}</div>
+        </>
+      )}
       <div className="flex flex-row justify-around items-center">
         <div className="w-[60%] mr-1 bg-gold/20">
           <p className="pt-2 pb-1 text-center">{giverArmy.name}</p>
-          {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
+          {Object.entries(troopsToFormat(attackerArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
                 className="grid grid-cols-6 hover:bg-gold/30 justify-around items-center h-12 gap-2 px-1 mb-1"
@@ -181,11 +210,14 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                   >
                     {transferDirection === "to"
                       ? `[${currencyFormat(
-                          amount -
-                            troopsGiven[Number(resourceId)] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                          Number(
+                            amount -
+                              troopsGiven[Number(resourceId)] *
+                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                          ),
                           0,
                         )}]`
-                      : `[${currencyFormat(amount, 0)}]`}
+                      : `[${currencyFormat(Number(amount), 0)}]`}
                   </p>
                 </div>
 
@@ -218,8 +250,8 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
               Create defending army
             </Button>
           ) : (
-            receiverArmyTroops &&
-            Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
+            protectorArmyTroops &&
+            Object.entries(troopsToFormat(protectorArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
                   className="grid grid-cols-6 hover:bg-gold/30 justify-around items-center h-12 gap-2 px-1 mb-1"
@@ -240,18 +272,20 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                     >
                       {transferDirection === "from"
                         ? `[${currencyFormat(
-                            amount -
-                              troopsGiven[Number(resourceId)] *
-                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                            Number(
+                              amount -
+                                troopsGiven[Number(resourceId)] *
+                                  BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                            ),
                             0,
                           )}]`
-                        : `[${currencyFormat(amount, 0)}]`}
+                        : `[${currencyFormat(Number(amount), 0)}]`}
                     </p>
                   </div>
                   {transferDirection === "from" && (
                     <NumberInput
                       className="col-span-3 rounded-lg"
-                      max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
+                      max={getMaxTroopCountForAttackingArmy(amount, resourceId)}
                       min={0}
                       step={100}
                       value={Number(troopsGiven[Number(resourceId)])}

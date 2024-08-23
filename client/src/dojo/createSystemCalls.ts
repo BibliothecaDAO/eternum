@@ -76,6 +76,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.accept_order(props);
   };
 
+  const accept_partial_order = async (props: SystemProps.AcceptPartialOrderProps) => {
+    await provider.accept_partial_order(props);
+  };
+
   const cancel_order = async (props: SystemProps.CancelOrderProps) => {
     await provider.cancel_order(props);
   };
@@ -295,6 +299,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_order: withQueueing(withErrorHandling(create_order)),
     accept_order: withQueueing(withErrorHandling(accept_order)),
     cancel_order: withQueueing(withErrorHandling(cancel_order)),
+    accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
     create_realm,
     create_multiple_realms,
     create_road,
