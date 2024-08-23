@@ -209,10 +209,12 @@ mod trade_systems {
                         trade_id,
                         maker_id,
                         maker_gives_resources_id,
+                        maker_gives_resources_origin_id: maker_gives_resources_id,
                         maker_gives_resources_hash: hash(maker_gives_resources_felt_arr.span()),
                         maker_gives_resources_weight,
                         taker_id,
                         taker_gives_resources_id,
+                        taker_gives_resources_origin_id: taker_gives_resources_id,
                         taker_gives_resources_hash: hash(taker_gives_resources_felt_arr.span()),
                         taker_gives_resources_weight,
                         expires_at,
@@ -360,10 +362,12 @@ mod trade_systems {
                         Trade {
                             trade_id: new_trade_id,
                             maker_id: trade.maker_id,
+                            maker_gives_resources_origin_id: trade.maker_gives_resources_origin_id,
                             maker_gives_resources_id: new_maker_gives_resources_felt_arr_id,
                             maker_gives_resources_hash: hash(new_maker_gives_resources_felt_arr.span()),
                             maker_gives_resources_weight: maker_gives_resources_actual_weight,
                             taker_id: trade.taker_id,
+                            taker_gives_resources_origin_id: trade.taker_gives_resources_origin_id,
                             taker_gives_resources_id: new_taker_gives_resources_felt_arr_id,
                             taker_gives_resources_hash: hash(new_taker_gives_resources_felt_arr.span()),
                             taker_gives_resources_weight: taker_gives_resources_actual_weight,
@@ -394,7 +398,8 @@ mod trade_systems {
                         hash(array![taker_gives_resource_type.into(), taker_amount_left.into()].span());
                 trade.maker_gives_resources_weight -= maker_gives_resources_actual_weight;
                 trade.taker_gives_resources_weight -= taker_gives_resources_actual_weight;
-
+                trade.maker_gives_resources_id = world.uuid();
+                trade.taker_gives_resources_id = world.uuid();
                 // Update detached resources for maker and taker
                 set!(
                     world,
