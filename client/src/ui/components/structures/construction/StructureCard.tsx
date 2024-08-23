@@ -28,12 +28,13 @@ export const StructureCard = ({
     <div
       style={{
         backgroundImage: `url(${STRUCTURE_IMAGE_PATHS[structureId]})`,
-        backgroundSize: "cover",
+        backgroundSize: "contain",
         backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
       onClick={onClick}
       className={clsx(
-        " border-transparent hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20  hover:border-gradient hover:border-2",
+        "border-transparent text-gold overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:border-gradient hover:border-2 hover:bg-gold/20",
         {
           "!border-lightest border-gradient border-2": active,
         },

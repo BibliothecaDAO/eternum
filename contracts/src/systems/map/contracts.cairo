@@ -54,7 +54,8 @@ mod map_systems {
         #[key]
         row: u32,
         biome: Biome,
-        reward: Span<(u8, u128)>
+        reward: Span<(u8, u128)>,
+        timestamp: u64,
     }
 
 
@@ -121,7 +122,8 @@ mod map_systems {
                     col: tile.col,
                     row: tile.row,
                     biome: tile.biome,
-                    reward
+                    reward,
+                    timestamp: starknet::get_block_timestamp()
                 })
             );
 
