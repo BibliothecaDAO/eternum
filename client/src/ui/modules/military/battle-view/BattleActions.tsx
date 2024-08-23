@@ -10,10 +10,10 @@ import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { ModalContainer } from "@/ui/components/ModalContainer";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
-import { ID } from "@bibliothecadao/eternum";
 
 enum Loading {
   None,
@@ -175,10 +175,9 @@ export const BattleActions = ({
         >
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           <div className={`text-wrap ${raidWarning ? "text-danger" : ""}`}>
-            {raidWarning ? "Leave battle & Raid ?" : raidStatus}
+            {raidWarning ? "Leave battle & Raid ?" : "Raid"}
           </div>
         </Button>
-
         <Button
           variant="outline"
           className="flex flex-col gap-2"
