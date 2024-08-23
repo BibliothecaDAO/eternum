@@ -17,7 +17,11 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { MarketModal } from "./MarketModal";
+import { ModalContainer } from "../ModalContainer";
+import { ConfirmationPopup } from "../bank/ConfirmationPopup";
+import { NumberInput } from "@/ui/elements/NumberInput";
 
 export const MarketResource = ({
   entityId,
@@ -174,11 +178,15 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   const {
     account: { account },
     setup: {
-      systemCalls: { cancel_order, accept_order },
+      systemCalls: { cancel_order, accept_partial_order },
     },
   } = useDojo();
 
   const { getRealmAddressName } = useRealm();
+
+  const [inputValue, setInputValue] = useState<number>(0);
+
+  const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
   // TODO: Do we need this?
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
@@ -199,12 +207,13 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
 
   const onAccept = async () => {
     setLoading(true);
-    await accept_order({
+    await accept_partial_order({
       signer: account,
       taker_id: entityId,
       trade_id: offer.tradeId,
       maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
       taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
+      taker_gives_actual_amount: offer.makerGets[0].amount,
     })
       .then(() => {
         deleteTrade(offer.tradeId);
@@ -224,6 +233,10 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
 
   const getsDisplay = useMemo(() => {
     return isBuy ? currencyFormat(offer.makerGets[0].amount, 0) : currencyFormat(offer.takerGets[0].amount, 0);
+  }, [entityId, offer.makerId, offer.tradeId]);
+
+  const getsDisplayNumber = useMemo(() => {
+    return isBuy ? offer.makerGets[0].amount : offer.takerGets[0].amount;
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getDisplayResource = useMemo(() => {
@@ -310,7 +323,12 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
         </div>
         {!isSelf ? (
           canAccept ? (
-            <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
+            <Button
+              isLoading={loading}
+              onClick={() => setConfirmOrderModal(true)}
+              size="xs"
+              className="self-center flex flex-grow"
+            >
               {!isBuy ? "Buy" : "Sell"}
             </Button>
           ) : (
@@ -341,6 +359,29 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
           {accountName} ({offer.originName})
         </div>
       </div>
+      {confirmOrderModal && (
+        <ConfirmationPopup title="Confirm" onConfirm={onAccept} onCancel={() => setConfirmOrderModal(false)}>
+          <div className="bg-black p-8 rounded">
+            <div className="text-center text-lg">
+              <NumberInput
+                value={
+                  inputValue === 0 ? getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision : inputValue
+                }
+                className="w-full col-span-3"
+                onChange={setInputValue}
+                max={getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision}
+              />
+              {isBuy ? "Buy" : "Sell"} {inputValue} {findResourceById(getDisplayResource)?.trait} for{" "}
+              {currencyFormat(
+                (inputValue / parseInt(getsDisplay)) *
+                  (getTotalLords / EternumGlobalConfig.resources.resourcePrecision),
+                2,
+              )}{" "}
+              Lords
+            </div>
+          </div>
+        </ConfirmationPopup>
+      )}
     </div>
   );
 };
