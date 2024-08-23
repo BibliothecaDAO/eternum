@@ -11,7 +11,9 @@ use eternum::models::capacity::{Capacity, CapacityCustomTrait};
 use eternum::models::config::{BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait};
 use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
 use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType, QuantityCustomTrait};
+use eternum::models::quantity::{
+    Quantity, QuantityTracker, QuantityTrackerType, QuantityCustomTrait
+};
 use eternum::models::resources::OwnedResourcesTrackerCustomTrait;
 use eternum::models::resources::ResourceCustomTrait;
 use eternum::models::resources::ResourceTransferLockCustomTrait;
@@ -125,11 +127,12 @@ impl TroopsImpl of TroopsTrait {
     }
 
     // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+    // so that troop units only exists as whole and not decimals
     fn normalize_counts(ref self: Troops) {
         let resource_precision_u64: u64 = RESOURCE_PRECISION.try_into().unwrap();
-        self.knight_count = self.knight_count % resource_precision_u64;
-        self.paladin_count = self.paladin_count % resource_precision_u64;
-        self.crossbowman_count = self.crossbowman_count % resource_precision_u64;
+        self.knight_count -= self.knight_count % resource_precision_u64;
+        self.paladin_count -= self.paladin_count % resource_precision_u64;
+        self.crossbowman_count -= self.crossbowman_count % resource_precision_u64;
     }
 
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
@@ -147,7 +150,8 @@ impl TroopsImpl of TroopsTrait {
         let crossbowman_count: u128 = self.crossbowman_count.into();
         let total_knight_strength: u128 = troop_config.knight_strength.into() * knight_count;
         let total_paladin_strength: u128 = troop_config.paladin_strength.into() * paladin_count;
-        let total_crossbowman_strength: u128 = troop_config.crossbowman_strength.into() * crossbowman_count;
+        let total_crossbowman_strength: u128 = troop_config.crossbowman_strength.into()
+            * crossbowman_count;
 
         total_knight_strength + total_paladin_strength + total_crossbowman_strength
     }
@@ -167,13 +171,21 @@ impl TroopsImpl of TroopsTrait {
 
 
     fn delta(
-        self: @Troops, self_health: @Health, enemy_troops: @Troops, enemy_health: @Health, troop_config: TroopConfig
+        self: @Troops,
+        self_health: @Health,
+        enemy_troops: @Troops,
+        enemy_health: @Health,
+        troop_config: TroopConfig
     ) -> (u64, u64) {
-        let self_delta: i128 = self.strength_against(self_health, enemy_troops, enemy_health, troop_config);
+        let self_delta: i128 = self
+            .strength_against(self_health, enemy_troops, enemy_health, troop_config);
         let self_delta_abs: u64 = Into::<i128, felt252>::into(self_delta.abs()).try_into().unwrap();
 
-        let enemy_delta: i128 = enemy_troops.strength_against(enemy_health, self, self_health, troop_config);
-        let enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs()).try_into().unwrap();
+        let enemy_delta: i128 = enemy_troops
+            .strength_against(enemy_health, self, self_health, troop_config);
+        let enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs())
+            .try_into()
+            .unwrap();
 
         return (enemy_delta_abs, self_delta_abs);
     }
@@ -189,7 +201,11 @@ impl TroopsImpl of TroopsTrait {
     /// @return The net combat strength as an integer, where a positive number indicates a strength
     /// advantage for the attacking troops.
     fn strength_against(
-        self: @Troops, self_health: @Health, enemy_troops: @Troops, enemy_health: @Health, troop_config: TroopConfig
+        self: @Troops,
+        self_health: @Health,
+        enemy_troops: @Troops,
+        enemy_health: @Health,
+        troop_config: TroopConfig
     ) -> i128 {
         let self = *self;
         let enemy_troops = *enemy_troops;
@@ -197,44 +213,66 @@ impl TroopsImpl of TroopsTrait {
         ///////////////         Calculate the strength of the Attacker      //////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut self_knight_strength: u64 = self.actual_type_count(TroopType::Knight, self_health).into()
+        let mut self_knight_strength: u64 = self
+            .actual_type_count(TroopType::Knight, self_health)
+            .into()
             * troop_config.knight_strength.into();
-        self_knight_strength += PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
+        self_knight_strength +=
+            PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
 
-        let mut self_paladin_strength: u64 = self.actual_type_count(TroopType::Paladin, self_health).into()
+        let mut self_paladin_strength: u64 = self
+            .actual_type_count(TroopType::Paladin, self_health)
+            .into()
             * troop_config.paladin_strength.into();
         self_paladin_strength +=
-            PercentageImpl::get(self_paladin_strength.into(), troop_config.advantage_percent.into());
+            PercentageImpl::get(
+                self_paladin_strength.into(), troop_config.advantage_percent.into()
+            );
 
-        let mut self_crossbowman_strength: u64 = self.actual_type_count(TroopType::Crossbowman, self_health).into()
+        let mut self_crossbowman_strength: u64 = self
+            .actual_type_count(TroopType::Crossbowman, self_health)
+            .into()
             * troop_config.crossbowman_strength.into();
         self_crossbowman_strength +=
-            PercentageImpl::get(self_crossbowman_strength.into(), troop_config.advantage_percent.into());
+            PercentageImpl::get(
+                self_crossbowman_strength.into(), troop_config.advantage_percent.into()
+            );
 
         ///////////////         Calculate the strength of the Defender      //////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut enemy_knight_strength: u64 = enemy_troops.actual_type_count(TroopType::Knight, enemy_health).into()
+        let mut enemy_knight_strength: u64 = enemy_troops
+            .actual_type_count(TroopType::Knight, enemy_health)
+            .into()
             * troop_config.knight_strength.into();
-        enemy_knight_strength -= PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
+        enemy_knight_strength -=
+            PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
 
-        let mut enemy_paladin_strength: u64 = enemy_troops.actual_type_count(TroopType::Paladin, enemy_health).into()
+        let mut enemy_paladin_strength: u64 = enemy_troops
+            .actual_type_count(TroopType::Paladin, enemy_health)
+            .into()
             * troop_config.paladin_strength.into();
-        enemy_paladin_strength -= PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
+        enemy_paladin_strength -=
+            PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
 
         let mut enemy_crossbowman_strength: u64 = enemy_troops
             .actual_type_count(TroopType::Crossbowman, enemy_health)
             .into()
             * troop_config.crossbowman_strength.into();
         enemy_crossbowman_strength -=
-            PercentageImpl::get(enemy_crossbowman_strength, troop_config.disadvantage_percent.into());
+            PercentageImpl::get(
+                enemy_crossbowman_strength, troop_config.disadvantage_percent.into()
+            );
 
         ///////////////          Calculate the strength difference          //////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let self_knight_strength: i128 = self_knight_strength.into() - enemy_paladin_strength.into();
-        let self_paladin_strength: i128 = self_paladin_strength.into() - enemy_crossbowman_strength.into();
-        let self_crossbowman_strength: i128 = self_crossbowman_strength.into() - enemy_knight_strength.into();
+        let self_knight_strength: i128 = self_knight_strength.into()
+            - enemy_paladin_strength.into();
+        let self_paladin_strength: i128 = self_paladin_strength.into()
+            - enemy_crossbowman_strength.into();
+        let self_crossbowman_strength: i128 = self_crossbowman_strength.into()
+            - enemy_knight_strength.into();
 
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
     }
@@ -320,7 +358,9 @@ struct BattleArmy {
 
 impl ArmyIntoBattlrArmyCustomImpl of Into<Army, BattleArmy> {
     fn into(self: Army) -> BattleArmy {
-        return BattleArmy { troops: self.troops, battle_id: self.battle_id, battle_side: self.battle_side };
+        return BattleArmy {
+            troops: self.troops, battle_id: self.battle_id, battle_side: self.battle_side
+        };
     }
 }
 
@@ -334,7 +374,8 @@ struct BattleHealth {
 impl HealthIntoBattleHealthCustomImpl of Into<Health, BattleHealth> {
     fn into(self: Health) -> BattleHealth {
         return BattleHealth { // entity_id: self.entity_id,
-         current: self.current, lifetime: self.lifetime };
+            current: self.current, lifetime: self.lifetime
+        };
     }
 }
 
@@ -411,7 +452,9 @@ pub struct Protector {
 #[generate_trait]
 impl ProtectorCustomImpl of ProtectorCustomTrait {
     fn assert_has_no_defensive_army(self: Protector) {
-        assert!(self.army_id.is_zero(), "Structure {} already has a defensive army", self.entity_id);
+        assert!(
+            self.army_id.is_zero(), "Structure {} already has a defensive army", self.entity_id
+        );
     }
 }
 
@@ -488,9 +531,12 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
 
 #[generate_trait]
 impl BattleEscrowImpl of BattleEscrowTrait {
-    fn deposit_balance(ref self: Battle, world: IWorldDispatcher, from_army: Army, from_army_protectee: Protectee) {
+    fn deposit_balance(
+        ref self: Battle, world: IWorldDispatcher, from_army: Army, from_army_protectee: Protectee
+    ) {
         let from_army_protectee_id = from_army_protectee.protected_resources_holder();
-        let from_army_protectee_is_self: bool = !get!(world, from_army_protectee_id, Structure).is_structure();
+        let from_army_protectee_is_self: bool = !get!(world, from_army_protectee_id, Structure)
+            .is_structure();
         if from_army_protectee_is_self {
             // detail items locked in box
             let escrow_id = match from_army.battle_side {
@@ -510,7 +556,9 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             let from_army_resource = ResourceCustomImpl::get(
                                 world, (from_army_protectee_id, resource_type)
                             );
-                            let mut escrow_resource = ResourceCustomImpl::get(world, (escrow_id, resource_type));
+                            let mut escrow_resource = ResourceCustomImpl::get(
+                                world, (escrow_id, resource_type)
+                            );
                             escrow_resource.add(from_army_resource.balance);
                             escrow_resource.save(world);
                         }
@@ -534,12 +582,17 @@ impl BattleEscrowImpl of BattleEscrowTrait {
     ) {
         let (escrow_id, other_side_escrow_id) = match to_army.battle_side {
             BattleSide::None => { panic!("wrong battle side") },
-            BattleSide::Attack => { (self.attackers_resources_escrow_id, self.defenders_resources_escrow_id) },
-            BattleSide::Defence => { (self.defenders_resources_escrow_id, self.attackers_resources_escrow_id) }
+            BattleSide::Attack => {
+                (self.attackers_resources_escrow_id, self.defenders_resources_escrow_id)
+            },
+            BattleSide::Defence => {
+                (self.defenders_resources_escrow_id, self.attackers_resources_escrow_id)
+            }
         };
 
         let to_army_protectee_id = to_army_protectee.protected_resources_holder();
-        let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure).is_structure();
+        let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure)
+            .is_structure();
 
         let winner_side: BattleSide = self.winner();
         let to_army_dead = to_army.troops.count().is_zero();
@@ -548,24 +601,31 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // it's possible for the battle be a draw and both sides die in the process.
         // if this edge case occurs, we assume they both lost for the purpose of this
         // function. They both forfeit their balances.
-        let to_army_lost = to_army_dead || (winner_side != to_army.battle_side && winner_side != BattleSide::None);
+        let to_army_lost = to_army_dead
+            || (winner_side != to_army.battle_side && winner_side != BattleSide::None);
         let to_army_won = (winner_side == to_army.battle_side && winner_side != BattleSide::None);
-        let to_army_lost_or_battle_not_ended = !self.has_ended() || (self.has_ended() && to_army_lost);
-        let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
+        let to_army_lost_or_battle_not_ended = !self.has_ended()
+            || (self.has_ended() && to_army_lost);
+        let to_army_owned_resources: OwnedResourcesTracker = get!(
+            world, to_army_protectee_id, OwnedResourcesTracker
+        );
         let mut all_resources = all_resource_ids();
         let mut subtracted_resources_weight = 0;
 
         loop {
             match all_resources.pop_front() {
                 Option::Some(resource_type) => {
-                    if to_army_protectee_is_self && to_army_owned_resources.owns_resource_type(resource_type) {
+                    if to_army_protectee_is_self
+                        && to_army_owned_resources.owns_resource_type(resource_type) {
                         let mut to_army_resource = ResourceCustomImpl::get(
                             world, (to_army_protectee_id, resource_type)
                         );
                         if to_army_lost_or_battle_not_ended {
                             // update army's subtracted weight
                             subtracted_resources_weight +=
-                                WeightConfigCustomImpl::get_weight(world, resource_type, to_army_resource.balance);
+                                WeightConfigCustomImpl::get_weight(
+                                    world, resource_type, to_army_resource.balance
+                                );
 
                             // army forfeits resources
                             to_army_resource.burn((to_army_resource.balance));
@@ -574,7 +634,9 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             // army won or drew so it can leave with its resources
                             //
                             // remove items from from battle escrow
-                            let mut escrow_resource = ResourceCustomImpl::get(world, (escrow_id, resource_type));
+                            let mut escrow_resource = ResourceCustomImpl::get(
+                                world, (escrow_id, resource_type)
+                            );
                             escrow_resource.burn(to_army_resource.balance);
                             escrow_resource.save(world);
                         }
@@ -596,7 +658,8 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                                 world, (other_side_escrow_id, resource_type)
                             );
 
-                            let share_amount = (other_side_escrow_resource.balance * to_army.troops.count().into())
+                            let share_amount = (other_side_escrow_resource.balance
+                                * to_army.troops.count().into())
                                 / to_army_side.troops.count().into();
 
                             // burn share from escrow balance
@@ -619,11 +682,14 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let to_army_protectee_capacity: Capacity = get!(world, to_army_protectee_id, Capacity);
         // decrease protectee weight if necessary
         if subtracted_resources_weight.is_non_zero() {
-            to_army_protectee_weight.deduct(to_army_protectee_capacity, subtracted_resources_weight);
+            to_army_protectee_weight
+                .deduct(to_army_protectee_capacity, subtracted_resources_weight);
         }
 
         // release lock on resource
-        let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
+        let mut to_army_resource_lock: ResourceTransferLock = get!(
+            world, to_army_protectee_id, ResourceTransferLock
+        );
         to_army_resource_lock.assert_locked();
         to_army_resource_lock.release_at = starknet::get_block_timestamp();
         set!(world, (to_army_resource_lock));
@@ -641,8 +707,12 @@ impl BattleCustomImpl of BattleCustomTrait {
     /// are gotten
     fn update_state(ref self: Battle) {
         let battle_duration_passed = self.duration_passed();
-        self.attack_army_health.decrease_current_by((self.defence_delta.into() * battle_duration_passed.into()));
-        self.defence_army_health.decrease_current_by((self.attack_delta.into() * battle_duration_passed.into()));
+        self
+            .attack_army_health
+            .decrease_current_by((self.defence_delta.into() * battle_duration_passed.into()));
+        self
+            .defence_army_health
+            .decrease_current_by((self.attack_delta.into() * battle_duration_passed.into()));
     }
     /// This function calculates the delta (rate at which health goes down per second)
     /// and therefore, the duration of tha battle.
@@ -674,9 +744,13 @@ impl BattleCustomImpl of BattleCustomTrait {
 
 
     fn duration(self: Battle) -> u64 {
-        let mut attack_num_seconds_to_death = self.attack_army_health.steps_to_die(self.defence_delta.into());
+        let mut attack_num_seconds_to_death = self
+            .attack_army_health
+            .steps_to_die(self.defence_delta.into());
 
-        let mut defence_num_seconds_to_death = self.defence_army_health.steps_to_die(self.attack_delta.into());
+        let mut defence_num_seconds_to_death = self
+            .defence_army_health
+            .steps_to_die(self.attack_delta.into());
 
         min(defence_num_seconds_to_death, attack_num_seconds_to_death).try_into().unwrap()
     }
@@ -739,7 +813,10 @@ mod tests {
     use eternum::models::resources::ResourceTransferLockCustomTrait;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::world::spawn_eternum;
-    use super::{Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyCustomImpl, Protectee};
+    use super::{
+        Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyCustomImpl,
+        Protectee
+    };
 
     fn mock_troop_config() -> TroopConfig {
         TroopConfig {
@@ -767,19 +844,27 @@ mod tests {
     fn mock_battle(attack_troops_each: u64, defence_troops_each: u64) -> Battle {
         let troop_config = mock_troop_config();
         let attack_troops = mock_troops(attack_troops_each, attack_troops_each, attack_troops_each);
-        let defence_troops = mock_troops(defence_troops_each, defence_troops_each, defence_troops_each);
+        let defence_troops = mock_troops(
+            defence_troops_each, defence_troops_each, defence_troops_each
+        );
 
         let mut battle: Battle = Battle {
             entity_id: 45,
-            attack_army: BattleArmy { troops: attack_troops, battle_id: 0, battle_side: BattleSide::Attack },
-            defence_army: BattleArmy { troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence },
+            attack_army: BattleArmy {
+                troops: attack_troops, battle_id: 0, battle_side: BattleSide::Attack
+            },
+            defence_army: BattleArmy {
+                troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence
+            },
             attackers_resources_escrow_id: 998,
             defenders_resources_escrow_id: 999,
             attack_army_health: BattleHealth {
-                current: attack_troops.full_health(troop_config), lifetime: attack_troops.full_health(troop_config)
+                current: attack_troops.full_health(troop_config),
+                lifetime: attack_troops.full_health(troop_config)
             },
             defence_army_health: BattleHealth {
-                current: defence_troops.full_health(troop_config), lifetime: defence_troops.full_health(troop_config)
+                current: defence_troops.full_health(troop_config),
+                lifetime: defence_troops.full_health(troop_config)
             },
             attack_delta: 0,
             defence_delta: 0,
@@ -788,7 +873,9 @@ mod tests {
             defence_army_lifetime: BattleArmy {
                 troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence
             },
-            attack_army_lifetime: BattleArmy { troops: attack_troops, battle_id: 0, battle_side: BattleSide::Attack },
+            attack_army_lifetime: BattleArmy {
+                troops: attack_troops, battle_id: 0, battle_side: BattleSide::Attack
+            },
         };
 
         battle.reset_delta(mock_troop_config());
@@ -808,7 +895,9 @@ mod tests {
 
         // give defence more strength and health
         battle.defence_army.troops.paladin_count += defence_troop_each;
-        battle.defence_army_health.increase_by(troop_config.health.into() * defence_troop_each.into());
+        battle
+            .defence_army_health
+            .increase_by(troop_config.health.into() * defence_troop_each.into());
         battle.reset_delta(troop_config);
 
         // ensure the defence is now stronger and battle time is shorter
@@ -818,8 +907,11 @@ mod tests {
 
         // take strength and health from defence
         battle.defence_army.troops.paladin_count -= defence_troop_each;
-        battle.defence_army_health.decrease_current_by(troop_config.health.into() * defence_troop_each.into());
-        battle.defence_army_health.lifetime -= troop_config.health.into() * defence_troop_each.into();
+        battle
+            .defence_army_health
+            .decrease_current_by(troop_config.health.into() * defence_troop_each.into());
+        battle.defence_army_health.lifetime -= troop_config.health.into()
+            * defence_troop_each.into();
         battle.reset_delta(troop_config);
 
         // ensure the defence is now stronger and battle time is longer
@@ -898,7 +990,9 @@ mod tests {
         assert_eq!(escrow_coal.balance, attack_army_coal_resource.balance);
 
         // ensure transfer lock was enabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = get!(
+            world, attack_army.entity_id, ResourceTransferLock
+        );
         army_transfer_lock.assert_locked();
     }
 
@@ -935,8 +1029,9 @@ mod tests {
         attack_army_coal_resource.save(world);
 
         // deposit everything the army owns
-        let attack_army_protectee = Protectee { army_id: attack_army.entity_id, protectee_id: 67890989 // non zero
-         };
+        let attack_army_protectee = Protectee {
+            army_id: attack_army.entity_id, protectee_id: 67890989 // non zero
+        };
         battle.deposit_balance(world, attack_army, attack_army_protectee);
 
         // ensure escrow does not receive the resources because
@@ -994,7 +1089,9 @@ mod tests {
         // recreate army for testing
         let attack_army = Army {
             entity_id: world.uuid(),
-            troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each), // has no effect on outcome
+            troops: mock_troops(
+                attack_troop_each, attack_troop_each, attack_troop_each
+            ), // has no effect on outcome
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
         };
@@ -1023,17 +1120,25 @@ mod tests {
         battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
 
         // ensure transfer lock was reenabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = get!(
+            world, attack_army.entity_id, ResourceTransferLock
+        );
         army_transfer_lock.assert_not_locked();
 
         // ensure the army didn't get balance back
-        let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
-        let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
+        let attack_army_wheat: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource
+        );
+        let attack_army_coal: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::COAL), Resource
+        );
         assert!(attack_army_wheat.balance == 0, "attacking army wheat balance should be 0");
         assert!(attack_army_coal.balance == 0, "attacking army coal balance should be 0");
 
         // ensure attacker got no reward
-        let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
+        let attack_army_stone: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::STONE), Resource
+        );
         assert_eq!(attack_army_stone.balance, 0);
     }
 
@@ -1105,23 +1210,32 @@ mod tests {
         battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
 
         // ensure transfer lock was reenabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = get!(
+            world, attack_army.entity_id, ResourceTransferLock
+        );
         army_transfer_lock.assert_not_locked();
 
         // ensure the army gets balance back
-        let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
-        let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
+        let attack_army_wheat: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource
+        );
+        let attack_army_coal: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::COAL), Resource
+        );
 
         assert!(
             attack_army_wheat.balance == attack_army_wheat_resource.balance,
             "attacking army wheat balance should be > 0"
         );
         assert!(
-            attack_army_coal.balance == attack_army_coal_resource.balance, "attacking army coal balance should be > 0"
+            attack_army_coal.balance == attack_army_coal_resource.balance,
+            "attacking army coal balance should be > 0"
         );
 
         // ensure attacker got no reward
-        let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
+        let attack_army_stone: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::STONE), Resource
+        );
         assert_eq!(attack_army_stone.balance, 0);
     }
 
@@ -1196,22 +1310,31 @@ mod tests {
         battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
 
         // ensure transfer lock was reenabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = get!(
+            world, attack_army.entity_id, ResourceTransferLock
+        );
         army_transfer_lock.assert_not_locked();
 
         // ensure the army gets balance back
-        let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
-        let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
+        let attack_army_wheat: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource
+        );
+        let attack_army_coal: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::COAL), Resource
+        );
         assert!(
             attack_army_wheat.balance == attack_army_wheat_resource.balance,
             "attacking army wheat balance should be > 0"
         );
         assert!(
-            attack_army_coal.balance == attack_army_coal_resource.balance, "attacking army coal balance should be > 0"
+            attack_army_coal.balance == attack_army_coal_resource.balance,
+            "attacking army coal balance should be > 0"
         );
 
         // ensure the attack army gets reward
-        let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
+        let attack_army_stone: Resource = get!(
+            world, (attack_army.entity_id, ResourceTypes::STONE), Resource
+        );
         assert_eq!(attack_army_stone.balance, defence_army_stone_resource.balance);
     }
     // #[test]
