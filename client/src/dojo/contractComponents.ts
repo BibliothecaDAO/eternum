@@ -10,7 +10,8 @@ export function defineContractComponents(world: World) {
         { address: RecsType.BigInt, name: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-AddressName",
+            namespace: "eternum",
+            name: "AddressName",
             types: ["felt252", "felt252"],
             customTypes: [],
           },
@@ -28,7 +29,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Army",
+            namespace: "eternum",
+            name: "Army",
             types: ["u32", "u64", "u64", "u64", "u32", "enum"],
             customTypes: ["Troops", "BattleSide"],
           },
@@ -41,7 +43,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, arrives_at: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-ArrivalTime",
+            namespace: "eternum",
+            name: "ArrivalTime",
             types: ["u32", "u64"],
             customTypes: [],
           },
@@ -59,7 +62,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Bank",
+            namespace: "eternum",
+            name: "Bank",
             types: ["u32", "u128", "u128", "bool"],
             customTypes: [],
           },
@@ -77,7 +81,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-BankConfig",
+            namespace: "eternum",
+            name: "BankConfig",
             types: ["u32", "u128", "u128", "u128"],
             customTypes: [],
           },
@@ -136,7 +141,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Battle",
+            namespace: "eternum",
+            name: "Battle",
             types: [
               "u32",
               "u64",
@@ -196,7 +202,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, max_tick_duration: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-BattleConfig",
+            namespace: "eternum",
+            name: "BattleConfig",
             types: ["u32", "u64"],
             customTypes: [],
           },
@@ -220,7 +227,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Building",
+            namespace: "eternum",
+            name: "Building",
             types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32", "bool"],
             customTypes: ["BuildingCategory"],
           },
@@ -238,7 +246,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-BuildingCategoryPopConfig",
+            namespace: "eternum",
+            name: "BuildingCategoryPopConfig",
             types: ["u32", "enum", "u32", "u32"],
             customTypes: ["BuildingCategory"],
           },
@@ -257,7 +266,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-BuildingConfig",
+            namespace: "eternum",
+            name: "BuildingConfig",
             types: ["u32", "enum", "u8", "u32", "u32"],
             customTypes: ["BuildingCategory"],
           },
@@ -270,7 +280,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, category: RecsType.String, value: RecsType.Number },
         {
           metadata: {
-            name: "eternum-BuildingQuantityv2",
+            namespace: "eternum",
+            name: "BuildingQuantityv2",
             types: ["u32", "enum", "u8"],
             customTypes: ["BuildingCategory"],
           },
@@ -283,7 +294,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, weight_gram: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Capacity",
+            namespace: "eternum",
+            name: "Capacity",
             types: ["u32", "u128"],
             customTypes: [],
           },
@@ -301,7 +313,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-CapacityConfig",
+            namespace: "eternum",
+            name: "CapacityConfig",
             types: ["u32", "u32", "u32", "u128"],
             customTypes: [],
           },
@@ -319,7 +332,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Contribution",
+            namespace: "eternum",
+            name: "Contribution",
             types: ["u32", "contractaddress", "u8", "u128"],
             customTypes: [],
           },
@@ -337,7 +351,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-DetachedResource",
+            namespace: "eternum",
+            name: "DetachedResource",
             types: ["u32", "u32", "u8", "u128"],
             customTypes: [],
           },
@@ -350,7 +365,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, entity_type: RecsType.Number },
         {
           metadata: {
-            name: "eternum-EntityMetadata",
+            namespace: "eternum",
+            name: "EntityMetadata",
             types: ["u32", "u32"],
             customTypes: [],
           },
@@ -363,7 +379,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, name: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-EntityName",
+            namespace: "eternum",
+            name: "EntityName",
             types: ["u32", "felt252"],
             customTypes: [],
           },
@@ -376,7 +393,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, entity_owner_id: RecsType.Number },
         {
           metadata: {
-            name: "eternum-EntityOwner",
+            namespace: "eternum",
+            name: "EntityOwner",
             types: ["u32", "u32"],
             customTypes: [],
           },
@@ -389,7 +407,8 @@ export function defineContractComponents(world: World) {
         { foreign_key: RecsType.BigInt, entity_id: RecsType.Number },
         {
           metadata: {
-            name: "eternum-ForeignKey",
+            namespace: "eternum",
+            name: "ForeignKey",
             types: ["felt252", "u32"],
             customTypes: [],
           },
@@ -402,7 +421,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, is_public: RecsType.Boolean, member_count: RecsType.Number },
         {
           metadata: {
-            name: "eternum-Guild",
+            namespace: "eternum",
+            name: "Guild",
             types: ["u32", "bool", "u16"],
             customTypes: [],
           },
@@ -415,7 +435,8 @@ export function defineContractComponents(world: World) {
         { address: RecsType.BigInt, guild_entity_id: RecsType.Number },
         {
           metadata: {
-            name: "eternum-GuildMember",
+            namespace: "eternum",
+            name: "GuildMember",
             types: ["contractaddress", "u32"],
             customTypes: [],
           },
@@ -428,7 +449,8 @@ export function defineContractComponents(world: World) {
         { address: RecsType.BigInt, guild_entity_id: RecsType.Number, is_whitelisted: RecsType.Boolean },
         {
           metadata: {
-            name: "eternum-GuildWhitelist",
+            namespace: "eternum",
+            name: "GuildWhitelist",
             types: ["contractaddress", "u32", "bool"],
             customTypes: [],
           },
@@ -441,7 +463,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, config_id: RecsType.Number, claimed: RecsType.Boolean },
         {
           metadata: {
-            name: "eternum-HasClaimedStartingResources",
+            namespace: "eternum",
+            name: "HasClaimedStartingResources",
             types: ["u32", "u32", "bool"],
             customTypes: [],
           },
@@ -454,7 +477,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, current: RecsType.BigInt, lifetime: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Health",
+            namespace: "eternum",
+            name: "Health",
             types: ["u32", "u128", "u128"],
             customTypes: [],
           },
@@ -467,7 +491,8 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, resource_type: RecsType.Number, amount_for_completion: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-HyperstructureResourceConfig",
+            namespace: "eternum",
+            name: "HyperstructureResourceConfig",
             types: ["u32", "u8", "u128"],
             customTypes: [],
           },
@@ -484,64 +509,9 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-HyperstructureUpdate",
+            namespace: "eternum",
+            name: "HyperstructureUpdate",
             types: ["u32", "u64", "contractaddress"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Level: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, level: RecsType.BigInt, valid_until: RecsType.BigInt },
-        {
-          metadata: {
-            name: "eternum-Level",
-            types: ["u32", "u64", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    LevelingConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          decay_interval: RecsType.BigInt,
-          max_level: RecsType.BigInt,
-          decay_scaled: RecsType.BigInt,
-          cost_percentage_scaled: RecsType.BigInt,
-          base_multiplier: RecsType.BigInt,
-          wheat_base_amount: RecsType.BigInt,
-          fish_base_amount: RecsType.BigInt,
-          resource_1_cost_id: RecsType.Number,
-          resource_1_cost_count: RecsType.Number,
-          resource_2_cost_id: RecsType.Number,
-          resource_2_cost_count: RecsType.Number,
-          resource_3_cost_id: RecsType.Number,
-          resource_3_cost_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: "eternum-LevelingConfig",
-            types: [
-              "u32",
-              "u64",
-              "u64",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u32",
-              "u32",
-              "u32",
-              "u32",
-              "u32",
-              "u32",
-            ],
             customTypes: [],
           },
         },
@@ -558,7 +528,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Liquidity",
+            namespace: "eternum",
+            name: "Liquidity",
             types: ["u32", "contractaddress", "u8", "u128", "bool"],
             customTypes: ["Fixed"],
           },
@@ -577,7 +548,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-MapExploreConfig",
+            namespace: "eternum",
+            name: "MapExploreConfig",
             types: ["u32", "u128", "u128", "u128", "u128"],
             customTypes: [],
           },
@@ -596,7 +568,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Market",
+            namespace: "eternum",
+            name: "Market",
             types: ["u32", "u8", "u128", "u128", "u128", "bool"],
             customTypes: ["Fixed"],
           },
@@ -613,7 +586,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-MercenariesConfig",
+            namespace: "eternum",
+            name: "MercenariesConfig",
             types: ["u32", "u64", "u64", "u64"],
             customTypes: ["Troops"],
           },
@@ -631,7 +605,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Message",
+            namespace: "eternum",
+            name: "Message",
             types: ["felt252", "felt252", "BytesArray", "felt252"],
             customTypes: [],
           },
@@ -653,7 +628,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Movable",
+            namespace: "eternum",
+            name: "Movable",
             types: ["u32", "u16", "bool", "bool", "u32", "u32", "u32", "u32"],
             customTypes: [],
           },
@@ -666,7 +642,8 @@ export function defineContractComponents(world: World) {
         { order_id: RecsType.Number, hyperstructure_count: RecsType.Number },
         {
           metadata: {
-            name: "eternum-Orders",
+            namespace: "eternum",
+            name: "Orders",
             types: ["u32", "u32"],
             customTypes: [],
           },
@@ -679,7 +656,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, resource_types: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-OwnedResourcesTracker",
+            namespace: "eternum",
+            name: "OwnedResourcesTracker",
             types: ["u32", "u256"],
             customTypes: [],
           },
@@ -692,7 +670,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, address: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Owner",
+            namespace: "eternum",
+            name: "Owner",
             types: ["u32", "contractaddress"],
             customTypes: [],
           },
@@ -705,7 +684,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, population: RecsType.Number, capacity: RecsType.Number },
         {
           metadata: {
-            name: "eternum-Population",
+            namespace: "eternum",
+            name: "Population",
             types: ["u32", "u32", "u32"],
             customTypes: [],
           },
@@ -718,7 +698,8 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, base_population: RecsType.Number },
         {
           metadata: {
-            name: "eternum-PopulationConfig",
+            namespace: "eternum",
+            name: "PopulationConfig",
             types: ["u32", "u32"],
             customTypes: [],
           },
@@ -731,7 +712,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, x: RecsType.Number, y: RecsType.Number },
         {
           metadata: {
-            name: "eternum-Position",
+            namespace: "eternum",
+            name: "Position",
             types: ["u32", "u32", "u32"],
             customTypes: [],
           },
@@ -752,7 +734,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Production",
+            namespace: "eternum",
+            name: "Production",
             types: ["u32", "u8", "u8", "u128", "u128", "u64", "u64"],
             customTypes: [],
           },
@@ -770,7 +753,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-ProductionConfig",
+            namespace: "eternum",
+            name: "ProductionConfig",
             types: ["u8", "u128", "u128", "u128"],
             customTypes: [],
           },
@@ -788,7 +772,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-ProductionInput",
+            namespace: "eternum",
+            name: "ProductionInput",
             types: ["u8", "u8", "u8", "u128"],
             customTypes: [],
           },
@@ -801,7 +786,8 @@ export function defineContractComponents(world: World) {
         { input_resource_type: RecsType.Number, index: RecsType.Number, output_resource_type: RecsType.Number },
         {
           metadata: {
-            name: "eternum-ProductionOutput",
+            namespace: "eternum",
+            name: "ProductionOutput",
             types: ["u8", "u8", "u8"],
             customTypes: [],
           },
@@ -814,7 +800,8 @@ export function defineContractComponents(world: World) {
         { hyperstructure_entity_id: RecsType.Number, resource_type: RecsType.Number, amount: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Progress",
+            namespace: "eternum",
+            name: "Progress",
             types: ["u32", "u8", "u128"],
             customTypes: [],
           },
@@ -827,7 +814,8 @@ export function defineContractComponents(world: World) {
         { army_id: RecsType.Number, protectee_id: RecsType.Number },
         {
           metadata: {
-            name: "eternum-Protectee",
+            namespace: "eternum",
+            name: "Protectee",
             types: ["u32", "u32"],
             customTypes: [],
           },
@@ -840,7 +828,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, army_id: RecsType.Number },
         {
           metadata: {
-            name: "eternum-Protector",
+            namespace: "eternum",
+            name: "Protector",
             types: ["u32", "u32"],
             customTypes: [],
           },
@@ -853,7 +842,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, value: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Quantity",
+            namespace: "eternum",
+            name: "Quantity",
             types: ["u32", "u128"],
             customTypes: [],
           },
@@ -866,7 +856,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.BigInt, count: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-QuantityTracker",
+            namespace: "eternum",
+            name: "QuantityTracker",
             types: ["felt252", "u128"],
             customTypes: [],
           },
@@ -890,7 +881,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Realm",
+            namespace: "eternum",
+            name: "Realm",
             types: ["u32", "u32", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
             customTypes: [],
           },
@@ -903,7 +895,8 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, detached_resource_id: RecsType.Number, detached_resource_count: RecsType.Number },
         {
           metadata: {
-            name: "eternum-RealmFreeMintConfig",
+            namespace: "eternum",
+            name: "RealmFreeMintConfig",
             types: ["u32", "u32", "u32"],
             customTypes: [],
           },
@@ -916,7 +909,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, resource_type: RecsType.Number, balance: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Resource",
+            namespace: "eternum",
+            name: "Resource",
             types: ["u32", "u8", "u128"],
             customTypes: [],
           },
@@ -934,7 +928,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-ResourceAllowance",
+            namespace: "eternum",
+            name: "ResourceAllowance",
             types: ["u32", "u32", "u8", "u128"],
             customTypes: [],
           },
@@ -947,7 +942,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, index: RecsType.Number, resource_type: RecsType.Number, amount: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-ResourceCost",
+            namespace: "eternum",
+            name: "ResourceCost",
             types: ["u32", "u32", "u8", "u128"],
             customTypes: [],
           },
@@ -960,7 +956,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, release_at: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-ResourceTransferLock",
+            namespace: "eternum",
+            name: "ResourceTransferLock",
             types: ["u32", "u64"],
             customTypes: [],
           },
@@ -979,7 +976,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Road",
+            namespace: "eternum",
+            name: "Road",
             types: ["u32", "u32", "u32", "u32", "u32"],
             customTypes: [],
           },
@@ -997,7 +995,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-RoadConfig",
+            namespace: "eternum",
+            name: "RoadConfig",
             types: ["u32", "u32", "u32", "u64"],
             customTypes: [],
           },
@@ -1015,7 +1014,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-SpeedConfig",
+            namespace: "eternum",
+            name: "SpeedConfig",
             types: ["u32", "u32", "u32", "u16"],
             customTypes: [],
           },
@@ -1028,7 +1028,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, amount: RecsType.Number, last_refill_tick: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Stamina",
+            namespace: "eternum",
+            name: "Stamina",
             types: ["u32", "u16", "u64"],
             customTypes: [],
           },
@@ -1041,7 +1042,8 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, unit_type: RecsType.Number, max_stamina: RecsType.Number },
         {
           metadata: {
-            name: "eternum-StaminaConfig",
+            namespace: "eternum",
+            name: "StaminaConfig",
             types: ["u32", "u8", "u16"],
             customTypes: [],
           },
@@ -1054,7 +1056,8 @@ export function defineContractComponents(world: World) {
         { trade_id: RecsType.Number, value: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Status",
+            namespace: "eternum",
+            name: "Status",
             types: ["u32", "u128"],
             customTypes: [],
           },
@@ -1067,7 +1070,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, category: RecsType.String },
         {
           metadata: {
-            name: "eternum-Structure",
+            namespace: "eternum",
+            name: "Structure",
             types: ["u32", "enum"],
             customTypes: ["StructureCategory"],
           },
@@ -1080,7 +1084,8 @@ export function defineContractComponents(world: World) {
         { coord: { x: RecsType.Number, y: RecsType.Number }, count: RecsType.Number },
         {
           metadata: {
-            name: "eternum-StructureCount",
+            namespace: "eternum",
+            name: "StructureCount",
             types: ["u32", "u32", "u8"],
             customTypes: ["Coord"],
           },
@@ -1093,7 +1098,8 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, tick_id: RecsType.Number, tick_interval_in_seconds: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-TickConfig",
+            namespace: "eternum",
+            name: "TickConfig",
             types: ["u32", "u8", "u64"],
             customTypes: [],
           },
@@ -1112,7 +1118,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Tile",
+            namespace: "eternum",
+            name: "Tile",
             types: ["u32", "u32", "u32", "u64", "enum"],
             customTypes: ["Biome"],
           },
@@ -1136,7 +1143,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-Trade",
+            namespace: "eternum",
+            name: "Trade",
             types: ["u32", "u32", "u32", "felt252", "u128", "u32", "u32", "felt252", "u128", "u64"],
             customTypes: [],
           },
@@ -1160,7 +1168,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-TroopConfig",
+            namespace: "eternum",
+            name: "TroopConfig",
             types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8"],
             customTypes: [],
           },
@@ -1173,7 +1182,8 @@ export function defineContractComponents(world: World) {
         { entity_id: RecsType.Number, value: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-Weight",
+            namespace: "eternum",
+            name: "Weight",
             types: ["u32", "u128"],
             customTypes: [],
           },
@@ -1191,7 +1201,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-WeightConfig",
+            namespace: "eternum",
+            name: "WeightConfig",
             types: ["u32", "u32", "u32", "u128"],
             customTypes: [],
           },
@@ -1204,7 +1215,8 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, admin_address: RecsType.BigInt, realm_l2_contract: RecsType.BigInt },
         {
           metadata: {
-            name: "eternum-WorldConfig",
+            namespace: "eternum",
+            name: "WorldConfig",
             types: ["u32", "contractaddress", "contractaddress"],
             customTypes: [],
           },
