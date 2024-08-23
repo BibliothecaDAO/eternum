@@ -6,7 +6,7 @@ import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ID, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -182,7 +182,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
       {transferDirection === "from" && (
         <>
           <div className="text-xs text-yellow-500 mb-2">
-            ⚠️ Maximum troops per attacking army is {MAX_TROOPS_PER_ARMY}
+            ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
           </div>
           <div className="text-xs mb-2">Total troops in attacking army: {Number(totalTroopsReceiver)}</div>
         </>
