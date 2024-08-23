@@ -1231,7 +1231,7 @@
     ],
     "address": "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",
     "transaction_hash": "0x6e2a9171abf51df314cd089ba4a6c4d16178d58f92106ddb3d0e28e1a51822",
-    "block_number": 47,
+    "block_number": 49,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -7016,8 +7016,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3816c9bfbbc3c9aaea4d34910a8d3592a714520b5c2c9b38bc167b9024b9724",
-      "class_hash": "0x30528534ba46a0b34eacc96538dc8361e5bf5e36055b6fb8d80afc03c51928b",
-      "original_class_hash": "0x30528534ba46a0b34eacc96538dc8361e5bf5e36055b6fb8d80afc03c51928b",
+      "class_hash": "0x5fded0d4a6500d1eb89eb93591b660150a572504171ffcf74a83aad4d777e9d",
+      "original_class_hash": "0x5fded0d4a6500d1eb89eb93591b660150a572504171ffcf74a83aad4d777e9d",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -45457,6 +45457,11 @@
           "key": false
         },
         {
+          "name": "maker_gives_resources_origin_id",
+          "type": "ID",
+          "key": false
+        },
+        {
           "name": "maker_gives_resources_id",
           "type": "ID",
           "key": false
@@ -45473,6 +45478,11 @@
         },
         {
           "name": "taker_id",
+          "type": "ID",
+          "key": false
+        },
+        {
+          "name": "taker_gives_resources_origin_id",
           "type": "ID",
           "key": false
         },
@@ -45497,8 +45507,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x24b1ea5ae327b561b3324e188b68075088fc5508d1be7af100635005807bb3d",
-      "original_class_hash": "0x24b1ea5ae327b561b3324e188b68075088fc5508d1be7af100635005807bb3d",
+      "class_hash": "0x2aa6982eab9c563fdf4138dd2ad3cb64420a2fb24fc7ce837704dd1dc04a986",
+      "original_class_hash": "0x2aa6982eab9c563fdf4138dd2ad3cb64420a2fb24fc7ce837704dd1dc04a986",
       "abi": [
         {
           "type": "impl",
@@ -45880,6 +45890,10 @@
               "type": "core::integer::u32"
             },
             {
+              "name": "maker_gives_resources_origin_id",
+              "type": "core::integer::u32"
+            },
+            {
               "name": "maker_gives_resources_id",
               "type": "core::integer::u32"
             },
@@ -45893,6 +45907,10 @@
             },
             {
               "name": "taker_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "taker_gives_resources_origin_id",
               "type": "core::integer::u32"
             },
             {

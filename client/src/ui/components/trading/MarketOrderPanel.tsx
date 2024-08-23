@@ -273,9 +273,13 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return getRealmAddressName(offer.makerId);
   }, [offer.originName]);
 
+  console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
+
   const calculatedLords = useMemo(() => {
     return (inputValue / parseInt(getsDisplay)) * (getTotalLords / EternumGlobalConfig.resources.resourcePrecision);
   }, [inputValue, getsDisplay, getTotalLords]);
+
+  console.log("calculatedLords", calculatedLords);
 
   const onAccept = async () => {
     try {
@@ -363,7 +367,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
       </div>
       {confirmOrderModal && (
         <ConfirmationPopup title="Confirm Trade" onConfirm={onAccept} onCancel={() => setConfirmOrderModal(false)}>
-          <div className="bg-black p-8 rounded">
+          <div className=" p-8 rounded">
             <div className="text-center text-lg">
               <div className="flex gap-3">
                 <NumberInput
