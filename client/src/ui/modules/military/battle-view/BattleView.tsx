@@ -3,7 +3,6 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
 import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { getStructureByEntityId, getStructureByPosition } from "@/hooks/helpers/useStructures";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -15,7 +14,7 @@ export const BattleView = () => {
   const armiesByBattleId = getArmiesByBattleId();
   const { getAliveArmy } = getArmyByEntityId();
 
-  const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const battleView = useUIStore((state) => state.battleView);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -83,11 +82,11 @@ export const BattleView = () => {
         lifetime: battleAdjusted!.defence_army_health.lifetime,
       }
     : targetArmy
-      ? {
-          current: targetArmy.health.current || 0n,
-          lifetime: targetArmy.health.lifetime || 0n,
-        }
-      : undefined;
+    ? {
+        current: targetArmy.health.current || 0n,
+        lifetime: targetArmy.health.lifetime || 0n,
+      }
+    : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;

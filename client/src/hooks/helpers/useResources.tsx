@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
-import useBlockchainStore from "../store/useBlockchainStore";
+import useUIStore from "../store/useUIStore";
 
 export function getResourcesUtils() {
   const {
@@ -127,7 +127,7 @@ export function getResourceBalance() {
   const dojo = useDojo();
 
   const getFoodResources = (entityId: ID): Resource[] => {
-    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
     const wheatBalance = new ProductionManager(dojo.setup, entityId, ResourcesIds.Wheat).balance(currentDefaultTick);
     const fishBalance = new ProductionManager(dojo.setup, entityId, ResourcesIds.Fish).balance(currentDefaultTick);
 
@@ -143,7 +143,7 @@ export function getResourceBalance() {
   };
 
   const getBalance = (entityId: ID, resourceId: ResourcesIds) => {
-    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
     const productionManager = new ProductionManager(dojo.setup, entityId, resourceId);
     return { balance: productionManager.balance(currentDefaultTick), resourceId };
   };
@@ -159,7 +159,7 @@ export function getResourceBalance() {
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: ID, resourceId: ResourcesIds) => {
-    const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
 
     useEffect(() => {

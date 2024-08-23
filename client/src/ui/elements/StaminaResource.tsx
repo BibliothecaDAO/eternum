@@ -1,11 +1,17 @@
-import { useStamina } from "@/hooks/helpers/useStamina";
+import { useStamina, useStaminaManager } from "@/hooks/helpers/useStamina";
+import useUIStore from "@/hooks/store/useUIStore";
 import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
   const { useStaminaByEntityId, getMaxStaminaByEntityId } = useStamina();
-  const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0 });
+
+  const staminaManager = useStaminaManager(entityId || 0);
+
   const maxStamina = getMaxStaminaByEntityId(entityId || 0);
+
+  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 
   const staminaAmount = useMemo(() => Number(stamina?.amount || 0), [stamina]);
   const staminaPercentage = useMemo(() => (staminaAmount / maxStamina) * 100, [staminaAmount, maxStamina]);

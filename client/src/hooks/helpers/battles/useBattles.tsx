@@ -20,12 +20,6 @@ import * as module from "./useBattles";
 type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
   ComponentValue<ClientComponents["Health"]["schema"]>;
 
-type ExtraBattleInfo = ComponentValue<ClientComponents["Position"]["schema"]> & {
-  opponentArmy: FullArmyType;
-  ownArmyEntityName: string;
-  opponentArmyEntityName: string;
-};
-
 export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
   isStructureBattle: boolean;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;

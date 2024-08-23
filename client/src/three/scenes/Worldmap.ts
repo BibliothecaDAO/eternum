@@ -205,7 +205,7 @@ export default class WorldmapScene extends HexagonScene {
         const isExplored = travelPath.isExplored ?? false;
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-          armyMovementManager.moveArmy(selectedPath, isExplored);
+          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
           this.clearEntitySelection();
         }
       }
@@ -225,7 +225,11 @@ export default class WorldmapScene extends HexagonScene {
     }
     this.state.updateSelectedEntityId(selectedEntityId);
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-    const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
+    const travelPaths = armyMovementManager.findPaths(
+      this.exploredTiles,
+      this.state.currentDefaultTick,
+      this.state.currentArmiesTick,
+    );
     this.state.updateTravelPaths(travelPaths.getPaths());
     this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
   }

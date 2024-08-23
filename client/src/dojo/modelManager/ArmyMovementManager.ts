@@ -1,4 +1,3 @@
-import { getCurrentTick } from "@/three/helpers/ticks";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -75,10 +74,7 @@ export class ArmyMovementManager {
   private wheatManager: ProductionManager;
   private staminaManager: StaminaManager;
 
-  constructor(
-    private setup: SetupResult,
-    entityId: ID,
-  ) {
+  constructor(private setup: SetupResult, entityId: ID) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
@@ -88,13 +84,13 @@ export class ArmyMovementManager {
     this.staminaManager = new StaminaManager(this.setup, this.entity);
   }
 
-  private _canExplore(): boolean {
-    const stamina = this.staminaManager.getStamina();
+  private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
+    const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
     if (stamina.amount < EternumGlobalConfig.stamina.exploreCost) {
       return false;
     }
-    const { wheat, fish } = this.getFood();
+    const { wheat, fish } = this.getFood(currentDefaultTick);
 
     if (fish < EternumGlobalConfig.exploration.fishBurn) {
       return false;
@@ -110,8 +106,8 @@ export class ArmyMovementManager {
     return true;
   }
 
-  private _calculateMaxTravelPossible = () => {
-    const stamina = this.staminaManager.getStamina();
+  private _calculateMaxTravelPossible = (currentArmiesTick: number) => {
+    const stamina = this.staminaManager.getStamina(currentArmiesTick);
     return Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
   };
 
@@ -120,10 +116,9 @@ export class ArmyMovementManager {
     return { col: position!.x, row: position!.y };
   };
 
-  public getFood() {
-    const currentTick = getCurrentTick();
-    const wheatBalance = this.wheatManager.balance(currentTick);
-    const fishBalance = this.fishManager.balance(currentTick);
+  public getFood(currentDefaultTick: number) {
+    const wheatBalance = this.wheatManager.balance(currentDefaultTick);
+    const fishBalance = this.fishManager.balance(currentDefaultTick);
 
     return {
       wheat: wheatBalance,
@@ -131,10 +126,14 @@ export class ArmyMovementManager {
     };
   }
 
-  public findPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {
+  public findPaths(
+    exploredHexes: Map<number, Set<number>>,
+    currentDefaultTick: number,
+    currentArmiesTick: number,
+  ): TravelPaths {
     const startPos = this._getCurrentPosition();
-    const maxHex = this._calculateMaxTravelPossible();
-    const canExplore = this._canExplore();
+    const maxHex = this._calculateMaxTravelPossible(currentArmiesTick);
+    const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
     const priorityQueue: { position: HexPosition; distance: number; path: HexPosition[] }[] = [
       { position: startPos, distance: 0, path: [startPos] },
@@ -186,8 +185,8 @@ export class ArmyMovementManager {
     return owner?.address === this.address;
   };
 
-  private _optimisticStaminaUpdate = (overrideId: string, cost: number) => {
-    const stamina = this.staminaManager.getStamina();
+  private _optimisticStaminaUpdate = (overrideId: string, cost: number, currentArmiesTick: number) => {
+    const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
     // substract the costs
     this.setup.components.Stamina.addOverride(overrideId, {
@@ -226,10 +225,10 @@ export class ArmyMovementManager {
     });
   };
 
-  private _optimisticExplore = (col: number, row: number) => {
+  private _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
     let overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost);
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost, currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
 
@@ -250,11 +249,11 @@ export class ArmyMovementManager {
     }
   };
 
-  private _exploreHex = async (path: HexPosition[]) => {
+  private _exploreHex = async (path: HexPosition[], currentArmiesTick: number) => {
     const direction = this._findDirection(path);
     if (direction === undefined) return;
 
-    const overrideId = this._optimisticExplore(path[1].col, path[1].row);
+    const overrideId = this._optimisticExplore(path[1].col, path[1].row, currentArmiesTick);
 
     this.setup.systemCalls
       .explore({
@@ -269,10 +268,10 @@ export class ArmyMovementManager {
       });
   };
 
-  private _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
+  private _optimisticTravelHex = (col: number, row: number, pathLength: number, currentArmiesTick: number) => {
     let overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength);
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength, currentArmiesTick);
 
     this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
@@ -285,8 +284,13 @@ export class ArmyMovementManager {
     return overrideId;
   };
 
-  private _travelToHex = async (path: HexPosition[]) => {
-    const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
+  private _travelToHex = async (path: HexPosition[], currentArmiesTick: number) => {
+    const overrideId = this._optimisticTravelHex(
+      path[path.length - 1].col,
+      path[path.length - 1].row,
+      path.length - 1,
+      currentArmiesTick,
+    );
 
     const directions = path
       .map((_, i) => {
@@ -310,11 +314,11 @@ export class ArmyMovementManager {
       });
   };
 
-  public moveArmy = (path: HexPosition[], isExplored: boolean) => {
+  public moveArmy = (path: HexPosition[], isExplored: boolean, currentArmiesTick: number) => {
     if (!isExplored) {
-      this._exploreHex(path);
+      this._exploreHex(path, currentArmiesTick);
     } else {
-      this._travelToHex(path);
+      this._travelToHex(path, currentArmiesTick);
     }
   };
 

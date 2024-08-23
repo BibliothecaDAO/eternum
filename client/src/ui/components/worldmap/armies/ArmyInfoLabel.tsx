@@ -1,7 +1,9 @@
-import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
+import useUIStore from "../../../../hooks/store/useUIStore";
 import { currencyFormat } from "../../../utils/utils";
 
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -12,9 +14,6 @@ import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
 import { InventoryResources } from "../../resources/InventoryResources";
-import useUIStore from "@/hooks/store/useUIStore";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
-import { useQuery } from "@/hooks/helpers/useQuery";
 
 export const ArmyInfoLabel = () => {
   const { isMapView } = useQuery();
@@ -43,7 +42,7 @@ interface ArmyInfoLabelProps {
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
   const { realm, entity_id, entityOwner, troops, arrivalTime } = army;
 
   const isPassiveTravel = useMemo(

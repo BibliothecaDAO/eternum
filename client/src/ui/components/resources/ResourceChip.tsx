@@ -1,7 +1,6 @@
 import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
@@ -16,7 +15,7 @@ export const ResourceChip = ({
   resourceId: ID;
   entityId: ID;
 }) => {
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 

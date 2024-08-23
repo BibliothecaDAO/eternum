@@ -3,14 +3,14 @@ import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
 import React, { useMemo, useState } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 export const ArmyChip = ({
   army,
@@ -25,17 +25,17 @@ export const ArmyChip = ({
 
   const [showInventory, setShowInventory] = useState(false);
 
-  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const [editMode, setEditMode] = useState(false);
 
   const battleManager = useMemo(() => new BattleManager(army.battle_id, dojo), [army.battle_id]);
 
   const updatedArmy = useMemo(() => {
-    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
     return updatedArmy;
-  }, [currentTimestamp]);
+  }, [nextBlockTimestamp]);
 
   return (
     <div

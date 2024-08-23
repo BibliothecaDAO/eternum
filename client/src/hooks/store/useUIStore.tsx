@@ -8,6 +8,7 @@ import { BattleViewInfo } from "./types";
 import { subscribeWithSelector } from "zustand/middleware";
 import { createThreeStoreSlice, ThreeStore } from "./_threeStore";
 import { createRealmStoreSlice, RealmStore } from "./useRealmStore";
+import { BlockchainStore, createBlockchainStore } from "./useBlockchainStore";
 
 interface UIStore {
   theme: string;
@@ -52,7 +53,7 @@ interface UIStore {
   setRightNavigationView: (view: RightView) => void;
 }
 
-export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore;
+export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore;
 
 const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
@@ -107,6 +108,7 @@ const useUIStore = create(
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),
+	...createBlockchainStore(set)
   })),
 );
 

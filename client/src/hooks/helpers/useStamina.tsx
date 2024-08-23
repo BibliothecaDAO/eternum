@@ -1,9 +1,23 @@
+import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
 import { EternumGlobalConfig, ID, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
-import useBlockchainStore from "../store/useBlockchainStore";
+import useUIStore from "../store/useUIStore";
+
+export const useStaminaManager = (entityId: ID) => {
+  const { setup } = useDojo();
+
+  const stamina = useComponentValue(setup.components.Stamina, getEntityIdFromKeys([BigInt(entityId)]));
+
+  const manager = useMemo(() => {
+    return new StaminaManager(setup, getEntityIdFromKeys([BigInt(entityId)]));
+  }, [stamina]);
+
+  return manager;
+};
 
 export const useStamina = () => {
   const {
@@ -12,7 +26,7 @@ export const useStamina = () => {
     },
   } = useDojo();
 
-  const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
 
   const useStaminaByEntityId = ({ travelingEntityId }: { travelingEntityId: ID }) => {
     const staminasEntityIds = useEntityQuery([HasValue(Stamina, { entity_id: travelingEntityId })]);
