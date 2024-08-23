@@ -1,7 +1,8 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
+import { getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 enum Actions {
@@ -47,26 +48,28 @@ export const EventStream = () => {
 
       const armyEntityId =
         // armies
-        componentValue?.joiner_army_entity_id ||
-        componentValue?.leaver_army_entity_id ||
-        componentValue?.claimer_army_entity_id ||
-        componentValue?.pillager_army_entity_id ||
-        0;
+        component === components.MapExplored
+          ? componentValue?.entity_id
+          : componentValue?.joiner_army_entity_id ||
+            componentValue?.leaver_army_entity_id ||
+            componentValue?.claimer_army_entity_id ||
+            componentValue?.pillager_army_entity_id ||
+            0;
 
-      const entityOwner = getComponentValue(components.EntityOwner, armyEntityId);
+      const entityOwner = getComponentValue(components.EntityOwner, getEntityIdFromKeys([BigInt(armyEntityId)]));
 
       const entityId =
         // structures
-        entityOwner?.entity_owner_id ||
-        componentValue?.entity_owner_id ||
-        componentValue?.entity_id ||
-        componentValue?.taker_id ||
-        0;
+        componentValue?.entity_owner_id || componentValue?.entity_id || componentValue?.taker_id || 0;
+
+      const name = entityOwner
+        ? getAddressNameFromEntity(entityOwner?.entity_owner_id)
+        : getAddressNameFromEntity(entityId);
 
       return {
-        name: entityId ? getAddressNameFromEntity(entityId) : getAddressNameFromEntity(armyEntityId),
-        action: action,
-        emoji: emoji,
+        name,
+        action,
+        emoji,
       };
     };
 

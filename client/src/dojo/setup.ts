@@ -4,6 +4,7 @@ import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { createUpdates } from "./createUpdates";
 import { setupNetwork } from "./setupNetwork";
+import { Clause } from "@dojoengine/torii-client";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -17,24 +18,24 @@ export async function setup({ ...config }: DojoConfig) {
   const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, [], 1000);
 
   // todo: filter later
-  // const timestamp = Math.round(Date.now() / 1000 - 3600); // Subtract 1 hour (3600 seconds)
-  // const query = {
-  //   Composite: {
-  //     operator: "And",
-  //     clauses: [
-  //       {
-  //         Member: {
-  //           model: "eternum-MapExplored",
-  //           member: "timestamp",
-  //           operator: "Gt",
-  //           value: { U64: timestamp },
-  //         },
-  //       },
-  //     ],
-  //   },
-  // };
+  const timestamp = Math.round(Date.now() / 1000 - 3600); // Subtract 1 hour (3600 seconds)
+  const query = {
+    Composite: {
+      operator: "And",
+      clauses: [
+        {
+          Member: {
+            model: "eternum-MapExplored",
+            member: "timestamp",
+            operator: "Gt",
+            value: { U64: timestamp },
+          },
+        },
+      ],
+    },
+  } as Clause;
 
-  const eventSync = getSyncEvents(network.toriiClient, network.contractComponents as any, undefined, []);
+  const eventSync = getSyncEvents(network.toriiClient, network.contractComponents as any, query, []);
 
   return {
     network,
