@@ -151,7 +151,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Paladin",
       weak: "Crossbowman",
-      current: currencyFormat(army?.troops.knight_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
     },
     {
       name: ResourcesIds.Crossbowman,
@@ -160,7 +160,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Knight",
       weak: "Paladin",
-      current: currencyFormat(army?.troops.crossbowman_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
     },
     {
       name: ResourcesIds.Paladin,
@@ -169,7 +169,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Crossbowman",
       weak: "Knight",
-      current: currencyFormat(army?.troops.paladin_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
     },
   ];
 

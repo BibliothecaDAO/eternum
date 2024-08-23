@@ -90,7 +90,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         {resourceTaken && <ResourceIcon resource={ResourcesIds[Number(resourceTaken[0]!.resource_type)]} size={"sm"} />}{" "}
       </div>
       <div className="text-sm my-auto flex flex-row font-bold">
-        {currencyIntlFormat(price, 2)}
+        {currencyIntlFormat(Number(price), 2)}
         <ResourceIcon resource={ResourcesIds[Number(resourceTaken[0]!.resource_type)]} size={"sm"} />
         per/
         <ResourceIcon resource={ResourcesIds[Number(resourceGiven[0]!.resource_type)]} size={"sm"} />

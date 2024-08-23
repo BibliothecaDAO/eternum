@@ -181,11 +181,14 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                   >
                     {transferDirection === "to"
                       ? `[${currencyFormat(
-                          amount -
-                            troopsGiven[Number(resourceId)] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                          Number(
+                            amount -
+                              troopsGiven[Number(resourceId)] *
+                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                          ),
                           0,
                         )}]`
-                      : `[${currencyFormat(amount, 0)}]`}
+                      : `[${currencyFormat(Number(amount), 0)}]`}
                   </p>
                 </div>
 
@@ -240,12 +243,14 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                     >
                       {transferDirection === "from"
                         ? `[${currencyFormat(
-                            amount -
-                              troopsGiven[Number(resourceId)] *
-                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                            Number(
+                              amount -
+                                troopsGiven[Number(resourceId)] *
+                                  BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                            ),
                             0,
                           )}]`
-                        : `[${currencyFormat(amount, 0)}]`}
+                        : `[${currencyFormat(Number(amount), 0)}]`}
                     </p>
                   </div>
                   {transferDirection === "from" && (
