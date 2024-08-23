@@ -28,12 +28,13 @@ export const StructureCard = ({
     <div
       style={{
         backgroundImage: `url(${STRUCTURE_IMAGE_PATHS[structureId]})`,
-        backgroundSize: "cover",
+        backgroundSize: "contain",
         backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
       onClick={onClick}
       className={clsx(
-        " border-transparent hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20  hover:border-gradient hover:border-2",
+        "border-transparent text-gold overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:border-gradient hover:border-2 hover:bg-gold/20",
         {
           "!border-lightest border-gradient border-2": active,
         },
@@ -42,7 +43,7 @@ export const StructureCard = ({
     >
       {!canBuild && (
         <div className="absolute w-full h-full bg-black/70 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient funds</div>
+          <div className="self-center text-danger text-sm">insufficient funds</div>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/90 ">

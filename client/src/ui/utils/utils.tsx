@@ -1,6 +1,7 @@
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
 import {
+  BuildingType,
   ContractAddress,
   EternumGlobalConfig,
   ID,
@@ -259,4 +260,15 @@ export const formatSecondsLeftInDaysHours = (seconds: number) => {
   const minutes = Math.floor((secondsLeft % 3600) / 60);
 
   return `${days} days ${hours}h ${minutes}m`;
+};
+
+export const isResourceProductionBuilding = (buildingId: BuildingType) => {
+  return (
+    buildingId === BuildingType.Resource ||
+    buildingId === BuildingType.Farm ||
+    buildingId === BuildingType.FishingVillage ||
+    buildingId === BuildingType.Barracks ||
+    buildingId === BuildingType.ArcheryRange ||
+    buildingId === BuildingType.Stable
+  );
 };
