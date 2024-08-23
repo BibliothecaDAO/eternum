@@ -42,13 +42,9 @@ mod trade_systems {
     use eternum::models::road::{Road, RoadCustomTrait, RoadCustomImpl};
     use eternum::models::trade::{Trade, Status, TradeStatus};
     use eternum::models::weight::{Weight, WeightCustomTrait};
-    use eternum::systems::resources::contracts::resource_systems::{
-        InternalResourceSystemsImpl as internal_resources,
-    };
+    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl as internal_resources,};
 
-    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
-        InternalDonkeySystemsImpl as donkey
-    };
+    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
@@ -115,9 +111,7 @@ mod trade_systems {
                     )) => {
                         assert(*resource_amount != 0, 'maker resource amount is 0');
                         // burn offered resource from maker balance
-                        let mut maker_resource: Resource = ResourceCustomImpl::get(
-                            world, (maker_id, *resource_type)
-                        );
+                        let mut maker_resource: Resource = ResourceCustomImpl::get(world, (maker_id, *resource_type));
                         maker_resource.burn(*resource_amount);
                         maker_resource.save(world);
 
@@ -136,9 +130,7 @@ mod trade_systems {
 
                         // update maker resources weight
                         maker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(
-                                world, *resource_type, *resource_amount
-                            );
+                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
 
                         maker_gives_resources_felt_arr.append((*resource_type).into());
                         maker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -178,9 +170,7 @@ mod trade_systems {
 
                         // update taker resources weight
                         taker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(
-                                world, *resource_type, *resource_amount
-                            );
+                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
 
                         taker_gives_resources_felt_arr.append((*resource_type).into());
                         taker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -213,12 +203,7 @@ mod trade_systems {
                 ),
             );
 
-            emit!(
-                world,
-                (CreateOrder {
-                    taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp()
-                })
-            );
+            emit!(world, (CreateOrder { taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() }));
 
             trade_id
         }
@@ -257,13 +242,7 @@ mod trade_systems {
             set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
 
             let (_, taker_receives_resources_hash, _) = internal_resources::transfer(
-                world,
-                trade.maker_id,
-                trade.taker_id,
-                maker_gives_resources,
-                trade.taker_id,
-                true,
-                false
+                world, trade.maker_id, trade.taker_id, maker_gives_resources, trade.taker_id, true, false
             );
             assert!(
                 taker_receives_resources_hash == trade.maker_gives_resources_hash,
@@ -271,13 +250,7 @@ mod trade_systems {
             );
 
             let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
-                world,
-                trade.taker_id,
-                trade.maker_id,
-                taker_gives_resources,
-                trade.maker_id,
-                false,
-                true
+                world, trade.taker_id, trade.maker_id, taker_gives_resources, trade.maker_id, false, true
             );
 
             assert!(
@@ -298,9 +271,7 @@ mod trade_systems {
         }
 
 
-        fn cancel_order(
-            ref world: IWorldDispatcher, trade_id: ID, mut return_resources: Span<(u8, u128)>,
-        ) {
+        fn cancel_order(ref world: IWorldDispatcher, trade_id: ID, mut return_resources: Span<(u8, u128)>,) {
             let (trade, trade_status) = get!(world, trade_id, (Trade, Status));
             let owner = get!(world, trade.maker_id, Owner);
 
@@ -312,8 +283,7 @@ mod trade_systems {
             );
 
             assert!(
-                maker_receives_resources_hash == trade.maker_gives_resources_hash,
-                "wrong return resources provided"
+                maker_receives_resources_hash == trade.maker_gives_resources_hash, "wrong return resources provided"
             );
 
             // return donkeys to maker
