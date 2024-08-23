@@ -9,6 +9,7 @@ import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
+import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
@@ -21,6 +22,7 @@ import { RightNavigationModule } from "../modules/navigation/RightNavigationModu
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { Transactions } from "../modules/transactions/Transactions";
+import { Chat } from "../modules/chat/Chat";
 import { Onboarding } from "./Onboarding";
 import clsx from "clsx";
 import { EventStream } from "../modules/stream/EventStream";
@@ -84,8 +86,12 @@ export const World = () => {
           </BottomMiddleContainer>
 
           <BottomRightContainer>
-            <Transactions />
+            <Chat />
           </BottomRightContainer>
+
+          <BottomLeftContainer>
+            <Transactions />
+          </BottomLeftContainer>
 
           <RightMiddleContainer>
             <RightNavigationModule />
