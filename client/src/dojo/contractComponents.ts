@@ -620,6 +620,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Message: (() => {
+      return defineComponent(
+        world,
+        {
+          identity: RecsType.BigInt,
+          channel: RecsType.BigInt,
+          content: RecsType.String,
+          salt: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "eternum-Message",
+            types: ["felt252", "felt252", "BytesArray", "felt252"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Movable: (() => {
       return defineComponent(
         world,
