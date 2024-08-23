@@ -108,7 +108,7 @@ const useUIStore = create(
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),
-	...createBlockchainStore(set)
+    ...createBlockchainStore(set),
   })),
 );
 

@@ -4,7 +4,10 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { SetupResult } from "../setup";
 
 export class StaminaManager {
-  constructor(private setup: SetupResult, private armyEntity: Entity) {}
+  constructor(
+    private setup: SetupResult,
+    private armyEntity: Entity,
+  ) {}
 
   public getStaminaConfig() {
     const knightConfig = getComponentValue(
