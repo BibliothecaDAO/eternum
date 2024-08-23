@@ -9,7 +9,6 @@ import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
-import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
@@ -90,16 +89,12 @@ export const World = () => {
           </BottomRightContainer>
 
           <BottomLeftContainer>
-            <Transactions />
+            <EventStream />
           </BottomLeftContainer>
 
           <RightMiddleContainer>
             <RightNavigationModule />
           </RightMiddleContainer>
-
-          <BottomLeftContainer>
-            <EventStream />
-          </BottomLeftContainer>
         </>
       )}
 
