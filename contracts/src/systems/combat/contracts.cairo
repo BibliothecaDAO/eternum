@@ -1581,7 +1581,6 @@ mod combat_systems {
             set!(world, (army_health, army_quantity));
             set!(world, (army));
 
-
             if (battle.attack_army_lifetime.troops.count().is_zero()
                 && battle.defence_army_lifetime.troops.count().is_zero()) {
                 delete!(world, (battle));
