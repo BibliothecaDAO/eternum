@@ -34,7 +34,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { ResourceIdToMiningType } from "@/ui/utils/utils";
+import { isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
@@ -134,7 +134,8 @@ export const SelectPreviewBuildingMenu = () => {
                     }
                   }}
                   active={previewBuilding?.resource === resourceId}
-                  name={resource?.trait}
+                  buildingName={resource?.trait}
+                  resourceName={resource?.trait}
                   toolTip={<ResourceInfo resourceId={resourceId} entityId={structureEntityId} />}
                   hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
@@ -167,6 +168,7 @@ export const SelectPreviewBuildingMenu = () => {
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
                 const isFarm = building === BuildingType["Farm"];
+                const isFishingVillage = building === BuildingType["FishingVillage"];
                 const isWorkersHut = building === BuildingType["WorkersHut"];
                 const isMarket = building === BuildingType["Market"];
 
@@ -198,7 +200,8 @@ export const SelectPreviewBuildingMenu = () => {
                       }
                     }}
                     active={previewBuilding?.type === building}
-                    name={BuildingEnumToString[building]}
+                    buildingName={BuildingEnumToString[building]}
+                    resourceName={isFishingVillage ? "Fish" : isFarm ? "Wheat" : undefined}
                     toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
@@ -229,6 +232,10 @@ export const SelectPreviewBuildingMenu = () => {
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
+                const isBarracks = building === BuildingType["Barracks"];
+                const isArcheryRange = building === BuildingType["ArcheryRange"];
+                const isStable = building === BuildingType["Stable"];
+
                 return (
                   <BuildingCard
                     className={clsx({
@@ -247,7 +254,10 @@ export const SelectPreviewBuildingMenu = () => {
                       }
                     }}
                     active={previewBuilding?.type === building}
-                    name={BuildingEnumToString[building]}
+                    buildingName={BuildingEnumToString[building]}
+                    resourceName={
+                      isBarracks ? "Knight" : isArcheryRange ? "Crossbowman" : isStable ? "Paladin" : undefined
+                    }
                     toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
@@ -291,7 +301,8 @@ const BuildingCard = ({
   buildingId,
   onClick,
   active,
-  name,
+  buildingName,
+  resourceName,
   toolTip,
   hasFunds,
   hasPopulation,
@@ -301,7 +312,8 @@ const BuildingCard = ({
   buildingId: BuildingType;
   onClick: () => void;
   active: boolean;
-  name: string;
+  buildingName: string;
+  resourceName?: string;
   toolTip: React.ReactElement;
   hasFunds?: boolean;
   hasPopulation?: boolean;
@@ -317,12 +329,13 @@ const BuildingCard = ({
             ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
             : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
         })`,
-        backgroundSize: "cover",
+        backgroundSize: "contain",
         backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
       onClick={onClick}
       className={clsx(
-        "hover:opacity-90 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20  ",
+        "text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-36 min-w-20  hover:border-gradient hover:border-2 hover:bg-gold/20",
         {
           "!border-lightest": active,
         },
@@ -337,10 +350,10 @@ const BuildingCard = ({
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/90 ">
-        <div className="truncate">{name}</div>
+        <div className="truncate">{buildingName}</div>
       </div>
       <div className="flex relative flex-col items-start text-xs font-bold p-2">
-        {buildingId === BuildingType.Resource && <ResourceIcon resource={name} size="lg" />}
+        {isResourceProductionBuilding(buildingId) && resourceName && <ResourceIcon resource={resourceName} size="lg" />}
 
         <InfoIcon
           onMouseEnter={() => {
