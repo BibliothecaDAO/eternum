@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { shortString, TypedData } from "starknet";
-import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
@@ -12,44 +11,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const GLOBAL_CHANNEL = shortString.encodeShortString("global");
 
-export function generateMessageTypedData(identity: string, channel: string, content: string, salt: string) {
-  return {
-    types: {
-      StarknetDomain: [
-        { name: "name", type: "shortstring" },
-        { name: "version", type: "shortstring" },
-        { name: "chainId", type: "shortstring" },
-        { name: "revision", type: "shortstring" },
-      ],
-      OffchainMessage: [
-        { name: "model", type: "shortstring" },
-        { name: "eternum-Message", type: "Model" },
-      ],
-      Model: [
-        { name: "identity", type: "ContractAddress" },
-        { name: "channel", type: "shortstring" },
-        { name: "content", type: "string" },
-        { name: "salt", type: "felt" },
-      ],
-    },
-    primaryType: "OffchainMessage",
-    domain: {
-      name: "Eternum",
-      version: "1",
-      chainId: "1",
-      revision: "1",
-    },
-    message: {
-      model: "eternum-Message",
-      "eternum-Message": {
-        identity,
-        channel,
-        content,
-        salt,
-      },
-    },
-  };
-}
+// export function generateMessageTypedData(identity: string, channel: string, content: string, salt: string) {
+//   return {
+//     types: {
+//       StarknetDomain: [
+//         { name: "name", type: "shortstring" },
+//         { name: "version", type: "shortstring" },
+//         { name: "chainId", type: "shortstring" },
+//         { name: "revision", type: "shortstring" },
+//       ],
+//       OffchainMessage: [
+//         { name: "model", type: "shortstring" },
+//         { name: "eternum-Message", type: "Model" },
+//       ],
+//       Model: [
+//         { name: "identity", type: "ContractAddress" },
+//         { name: "channel", type: "shortstring" },
+//         { name: "content", type: "string" },
+//         { name: "salt", type: "felt" },
+//       ],
+//     },
+//     primaryType: "OffchainMessage",
+//     domain: {
+//       name: "Eternum",
+//       version: "1",
+//       chainId: "1",
+//       revision: "1",
+//     },
+//     message: {
+//       model: "eternum-Message",
+//       "eternum-Message": {
+//         identity,
+//         channel,
+//         content,
+//         salt,
+//       },
+//     },
+//   };
+// }
 
 export const Chat = () => {
   const {
