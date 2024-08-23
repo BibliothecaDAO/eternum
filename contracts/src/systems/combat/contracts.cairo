@@ -1535,18 +1535,8 @@ mod combat_systems {
                             / battle_army_lifetime.troops.crossbowman_count
                     };
 
-            // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
-            army.troops.normalize_counts();
-
-            let army_health = Health {
-                entity_id: army_id,
-                current: army.troops.full_health(troop_config),
-                lifetime: army.troops.full_health(troop_config)
-            };
-
             // note: army quantity would be used inside `withdraw_balance_and_reward`
             let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-            set!(world, (army_health, army_quantity));
 
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);
@@ -1554,7 +1544,6 @@ mod combat_systems {
             // remove army from battle
             army.battle_id = 0;
             army.battle_side = BattleSide::None;
-            set!(world, (army));
 
             // update battle army count and health
             battle_army.troops.knight_count -= army.troops.knight_count;
@@ -1577,6 +1566,21 @@ mod combat_systems {
                 battle.attack_army_lifetime = battle_army_lifetime;
                 battle.attack_army_health = battle_army_health;
             }
+
+            // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+            army.troops.normalize_counts();
+
+            let army_health = Health {
+                entity_id: army_id,
+                current: army.troops.full_health(troop_config),
+                lifetime: army.troops.full_health(troop_config)
+            };
+
+            // note: army quantity would be used inside `withdraw_balance_and_reward`
+            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+            set!(world, (army_health, army_quantity));
+            set!(world, (army));
+
 
             if (battle.attack_army_lifetime.troops.count().is_zero()
                 && battle.defence_army_lifetime.troops.count().is_zero()) {
