@@ -1,15 +1,21 @@
-import { useStamina, useStaminaManager } from "@/hooks/helpers/useStamina";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useStaminaManager } from "@/hooks/helpers/useStamina";
 import useUIStore from "@/hooks/store/useUIStore";
 import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
+  const { setup } = useDojo();
+
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
-  const { getMaxStaminaByEntityId } = useStamina();
 
   const staminaManager = useStaminaManager(entityId || 0);
 
-  const maxStamina = getMaxStaminaByEntityId(entityId || 0);
+  const maxStamina = staminaManager.getMaxStamina(
+    getComponentValue(setup.components.Army, getEntityIdFromKeys([BigInt(entityId || 0)]))?.troops,
+  );
 
   const stamina = useMemo(
     () => staminaManager.getStamina(currentArmiesTick),

@@ -58,7 +58,7 @@ export class StaminaManager {
     return newStamina;
   }
 
-  public maxStamina = (troops: any): number => {
+  public getMaxStamina = (troops: any): number => {
     let maxStaminas: number[] = [];
     const staminaConfig = this.getStaminaConfig();
     if (troops.knight_count > 0) {
@@ -85,7 +85,7 @@ export class StaminaManager {
 
     const totalStaminaSinceLastTick = numTicksPassed * staminaPerTick;
 
-    const maxStamina = this.maxStamina(
+    const maxStamina = this.getMaxStamina(
       getComponentValue(this.setup.components.Army, getEntityIdFromKeys([BigInt(this.armyEntityId)]))?.troops,
     );
     const newAmount = Math.min(amount + totalStaminaSinceLastTick, maxStamina);
