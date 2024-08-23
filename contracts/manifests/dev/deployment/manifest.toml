@@ -5,7 +5,7 @@ original_class_hash = "0x76ced5a15cb43c7be7176cff4779cd57c56638a46ddf2c9da709d22
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac"
 transaction_hash = "0x6e2a9171abf51df314cd089ba4a6c4d16178d58f92106ddb3d0e28e1a51822"
-block_number = 47
+block_number = 87
 seed = "eternum"
 manifest_name = "dojo-world"
 
@@ -57,8 +57,8 @@ manifest_name = "eternum-building_systems-4b0f3026"
 [[contracts]]
 kind = "DojoContract"
 address = "0x1c3310b831c666aeeefbe9ec95fe3140cb32ecb1a279b7898782b0e450c79a8"
-class_hash = "0xe484fc2234cdee7f9f97e2c378f7312b4b918dbb30548faec3d6f51d686f5f"
-original_class_hash = "0xe484fc2234cdee7f9f97e2c378f7312b4b918dbb30548faec3d6f51d686f5f"
+class_hash = "0x58eb9e2f3a29e935db398602cf0e16a77b5455b0e6f72d4ee7a380b75cf241c"
+original_class_hash = "0x58eb9e2f3a29e935db398602cf0e16a77b5455b0e6f72d4ee7a380b75cf241c"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-combat_systems-27f37676.json"
 reads = []
@@ -113,8 +113,8 @@ manifest_name = "eternum-config_systems-5f8c7cdc"
 [[contracts]]
 kind = "DojoContract"
 address = "0x7a8476cf9932cd203e8bf8954ca37de477e817c768994fb654b77f7cdafc9a2"
-class_hash = "0x15a47e2a8fefbcba5724b5e364e46761b1d41e61a5bdc208cad9980ffdc7174"
-original_class_hash = "0x15a47e2a8fefbcba5724b5e364e46761b1d41e61a5bdc208cad9980ffdc7174"
+class_hash = "0x42ce2b3593555d5829b887d975da8a8138f270f899fb83ac208481081973b42"
+original_class_hash = "0x42ce2b3593555d5829b887d975da8a8138f270f899fb83ac208481081973b42"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-dev_bank_systems-7a630ec9.json"
 reads = []
@@ -207,8 +207,8 @@ manifest_name = "eternum-leveling_systems-5606a1c3"
 [[contracts]]
 kind = "DojoContract"
 address = "0x49de68dbd13b39d8ed4b3c718a41bc103270fed7e6cd482064fd379c3330f6e"
-class_hash = "0x2d9a90dfbf80676aefef4a0ab5e43c6befe42eb7b1d2086e4a0c34574ead64"
-original_class_hash = "0x2d9a90dfbf80676aefef4a0ab5e43c6befe42eb7b1d2086e4a0c34574ead64"
+class_hash = "0x5a29f52de410336c9a75157d50eca53c02d103112b8dc1a57ef34dc6cb90cd3"
+original_class_hash = "0x5a29f52de410336c9a75157d50eca53c02d103112b8dc1a57ef34dc6cb90cd3"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-liquidity_systems-337d668f.json"
 reads = []
@@ -221,8 +221,8 @@ manifest_name = "eternum-liquidity_systems-337d668f"
 [[contracts]]
 kind = "DojoContract"
 address = "0x28d57567b8e2844cf0192d5f516b8612d08e4e83fe2a7025e9052e2116078d5"
-class_hash = "0x289245f6e833ec2f4b1a7548c370fb13f8feac2f8329a580e1c96d9e4a0e393"
-original_class_hash = "0x289245f6e833ec2f4b1a7548c370fb13f8feac2f8329a580e1c96d9e4a0e393"
+class_hash = "0xdfc13ecdbc227b666ba1d8b65f49d5f53f5e64d31c984434d8bc80e3ecc3b7"
+original_class_hash = "0xdfc13ecdbc227b666ba1d8b65f49d5f53f5e64d31c984434d8bc80e3ecc3b7"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-map_systems-5431b122.json"
 reads = []
@@ -252,8 +252,8 @@ manifest_name = "eternum-name_systems-bbb2e543"
 [[contracts]]
 kind = "DojoContract"
 address = "0x37658fe61f9ed59631b8554ad6ed19beb97a3d1b94e870937bd6499412691ee"
-class_hash = "0x1afeaed27b848eca6515d959ef14b844be87b613fb8b2bd418ed5acd08b948b"
-original_class_hash = "0x1afeaed27b848eca6515d959ef14b844be87b613fb8b2bd418ed5acd08b948b"
+class_hash = "0x54bd3e34e1c4d3d61fa7d3419acef2c7301d7514e5ea865aa696045955816c3"
+original_class_hash = "0x54bd3e34e1c4d3d61fa7d3419acef2c7301d7514e5ea865aa696045955816c3"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-realm_systems-2b08f0da.json"
 reads = []
@@ -266,8 +266,8 @@ manifest_name = "eternum-realm_systems-2b08f0da"
 [[contracts]]
 kind = "DojoContract"
 address = "0x2a389a21cf4c1834db1b056f3436838ffdda81304f3641ff474e4e36920281"
-class_hash = "0x49a1ee8eacd9d035f64304d786808069e777873dc07b2498d30e3306694b18b"
-original_class_hash = "0x49a1ee8eacd9d035f64304d786808069e777873dc07b2498d30e3306694b18b"
+class_hash = "0x35e1067766a4e5a6882a74d0adc39a60ce0f4762419a7f12f5800b79e8857e3"
+original_class_hash = "0x35e1067766a4e5a6882a74d0adc39a60ce0f4762419a7f12f5800b79e8857e3"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-resource_systems-59b73d5a.json"
 reads = []
@@ -298,8 +298,8 @@ manifest_name = "eternum-road_systems-61d8f9c9"
 [[contracts]]
 kind = "DojoContract"
 address = "0x2196d6e981117004707d78f8f1f4a3d2e1fcab36954d0f0518a0f5aa03150be"
-class_hash = "0x108fa7af1199c9bb288e080ca71e95a1d9c3278545ff031702acba01d2ecaed"
-original_class_hash = "0x108fa7af1199c9bb288e080ca71e95a1d9c3278545ff031702acba01d2ecaed"
+class_hash = "0x46f0375502fe9fa32e11596b6ff7a1a3e9684fbea9ed6e8e674195048d1a19f"
+original_class_hash = "0x46f0375502fe9fa32e11596b6ff7a1a3e9684fbea9ed6e8e674195048d1a19f"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-swap_systems-216e8d44.json"
 reads = []
@@ -312,8 +312,8 @@ manifest_name = "eternum-swap_systems-216e8d44"
 [[contracts]]
 kind = "DojoContract"
 address = "0x3816c9bfbbc3c9aaea4d34910a8d3592a714520b5c2c9b38bc167b9024b9724"
-class_hash = "0x30528534ba46a0b34eacc96538dc8361e5bf5e36055b6fb8d80afc03c51928b"
-original_class_hash = "0x30528534ba46a0b34eacc96538dc8361e5bf5e36055b6fb8d80afc03c51928b"
+class_hash = "0x46290c02bb68f06ec98c7e345f88b4399ce68f1d1f2e27d5e81e10c99d167e1"
+original_class_hash = "0x46290c02bb68f06ec98c7e345f88b4399ce68f1d1f2e27d5e81e10c99d167e1"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-trade_systems-7f6765dd.json"
 reads = []
@@ -330,8 +330,8 @@ manifest_name = "eternum-trade_systems-7f6765dd"
 [[contracts]]
 kind = "DojoContract"
 address = "0x30668871069dc2caaf9209add720fd3b1a1b138090d5f18a8c31d6b6467d449"
-class_hash = "0x5b1578489be3b832ee396b1adf2c57d65125e3f29d7c025eaf9831fe30e39f"
-original_class_hash = "0x5b1578489be3b832ee396b1adf2c57d65125e3f29d7c025eaf9831fe30e39f"
+class_hash = "0x7bfa2b43c13387032b08787ed7d670efa3630f53a27a881b45b480ca26e9506"
+original_class_hash = "0x7bfa2b43c13387032b08787ed7d670efa3630f53a27a881b45b480ca26e9506"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-travel_systems-4ec72d4c.json"
 reads = []
@@ -595,8 +595,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0xd171639590f803436e0b493f7f06e3ca7778c2285f707534895eb0b5f74e00"
-original_class_hash = "0xd171639590f803436e0b493f7f06e3ca7778c2285f707534895eb0b5f74e00"
+class_hash = "0x974881932ecc34c6fa71effb0ffe247e706ffbc8e99f3c001a729a7291d6a2"
+original_class_hash = "0x974881932ecc34c6fa71effb0ffe247e706ffbc8e99f3c001a729a7291d6a2"
 abi = "manifests/dev/deployment/abis/models/eternum-BattleClaimData-51826fa8.json"
 tag = "eternum-BattleClaimData"
 manifest_name = "eternum-BattleClaimData-51826fa8"
@@ -651,6 +651,11 @@ name = "structure_type"
 type = "StructureCategory"
 key = false
 
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
 [[models]]
 kind = "DojoModel"
 class_hash = "0x137bd5cfcaba7ebea526297760124e58825bab56d85758bafe5c24d19d0463b"
@@ -671,8 +676,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x6259063e58305856e54b4194c2a7b5a7d8f3d83f26d2416eca9a75eaf7add3c"
-original_class_hash = "0x6259063e58305856e54b4194c2a7b5a7d8f3d83f26d2416eca9a75eaf7add3c"
+class_hash = "0x5e853e77dfa1fbaf84861d32913dd587693ced39913fcb14e91710e6b16db0e"
+original_class_hash = "0x5e853e77dfa1fbaf84861d32913dd587693ced39913fcb14e91710e6b16db0e"
 abi = "manifests/dev/deployment/abis/models/eternum-BattleJoinData-79ce3ea6.json"
 tag = "eternum-BattleJoinData"
 manifest_name = "eternum-BattleJoinData-79ce3ea6"
@@ -727,10 +732,15 @@ name = "y"
 type = "u32"
 key = false
 
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
 [[models]]
 kind = "DojoModel"
-class_hash = "0x1067324ef34368ead2bc6ef58a75006dc47d957e5246217321ef30f47285bae"
-original_class_hash = "0x1067324ef34368ead2bc6ef58a75006dc47d957e5246217321ef30f47285bae"
+class_hash = "0x38fcaeee2a9b89fe10bdbf777e07b0c048df1c095205d6731d7823732e02261"
+original_class_hash = "0x38fcaeee2a9b89fe10bdbf777e07b0c048df1c095205d6731d7823732e02261"
 abi = "manifests/dev/deployment/abis/models/eternum-BattleLeaveData-3082a68c.json"
 tag = "eternum-BattleLeaveData"
 manifest_name = "eternum-BattleLeaveData-3082a68c"
@@ -785,10 +795,15 @@ name = "y"
 type = "u32"
 key = false
 
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
 [[models]]
 kind = "DojoModel"
-class_hash = "0x1c1fe29503d40a86df1ec2a1cb9757bcd8bae7502e4e4220e5dab3ea583c7d6"
-original_class_hash = "0x1c1fe29503d40a86df1ec2a1cb9757bcd8bae7502e4e4220e5dab3ea583c7d6"
+class_hash = "0x73c5d8fd1367b9a14005ac172fd77e1a97e2b2e17bb726ed8cf7eea54d7a648"
+original_class_hash = "0x73c5d8fd1367b9a14005ac172fd77e1a97e2b2e17bb726ed8cf7eea54d7a648"
 abi = "manifests/dev/deployment/abis/models/eternum-BattlePillageData-16b806b3.json"
 tag = "eternum-BattlePillageData"
 manifest_name = "eternum-BattlePillageData-16b806b3"
@@ -853,10 +868,15 @@ name = "pillaged_resources"
 type = "Span<(u8, u128)>"
 key = false
 
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
 [[models]]
 kind = "DojoModel"
-class_hash = "0x7e86a948bb645eb74d312d4b20321fbfc88ce5c9be59e361bbb11e5987dc1cd"
-original_class_hash = "0x7e86a948bb645eb74d312d4b20321fbfc88ce5c9be59e361bbb11e5987dc1cd"
+class_hash = "0x26f2c50cc3aa71455cad17554495b13c8cc4132314ab79f82709c87db01b308"
+original_class_hash = "0x26f2c50cc3aa71455cad17554495b13c8cc4132314ab79f82709c87db01b308"
 abi = "manifests/dev/deployment/abis/models/eternum-BattleStartData-3477edb2.json"
 tag = "eternum-BattleStartData"
 manifest_name = "eternum-BattleStartData-3477edb2"
@@ -924,6 +944,11 @@ key = false
 [[models.members]]
 name = "structure_type"
 type = "StructureCategory"
+key = false
+
+[[models.members]]
+name = "timestamp"
+type = "u64"
 key = false
 
 [[models]]
@@ -1667,8 +1692,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x4d768634186ae19d267d5fdf6cc42707011691dcaf1991649b50ee4a2d4a51a"
-original_class_hash = "0x4d768634186ae19d267d5fdf6cc42707011691dcaf1991649b50ee4a2d4a51a"
+class_hash = "0x4a322fc18f23a9268ee144bae4ce43e40f68b7ddf306d092fc9ac3b215640b"
+original_class_hash = "0x4a322fc18f23a9268ee144bae4ce43e40f68b7ddf306d092fc9ac3b215640b"
 abi = "manifests/dev/deployment/abis/models/eternum-LiquidityEvent-2811e183.json"
 tag = "eternum-LiquidityEvent"
 manifest_name = "eternum-LiquidityEvent-2811e183"
@@ -1708,6 +1733,11 @@ name = "add"
 type = "bool"
 key = false
 
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
 [[models]]
 kind = "DojoModel"
 class_hash = "0x45509d54e6cd775df6403ebd516a03a3fe1a991ef142f4e1095d0189d8846df"
@@ -1743,8 +1773,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x55f57d132a7bd3e5fc475c25c4318a6cd4f66a3b1b1cf0f6d1cab5bff55590c"
-original_class_hash = "0x55f57d132a7bd3e5fc475c25c4318a6cd4f66a3b1b1cf0f6d1cab5bff55590c"
+class_hash = "0x60f930e9c3034b1bf309a1fb57281183b3bc8aab0ce0a51db5645b0863e0a1d"
+original_class_hash = "0x60f930e9c3034b1bf309a1fb57281183b3bc8aab0ce0a51db5645b0863e0a1d"
 abi = "manifests/dev/deployment/abis/models/eternum-MapExplored-53a86a9a.json"
 tag = "eternum-MapExplored"
 manifest_name = "eternum-MapExplored-53a86a9a"
@@ -1777,6 +1807,11 @@ key = false
 [[models.members]]
 name = "reward"
 type = "Span<(u8, u128)>"
+key = false
+
+[[models.members]]
+name = "timestamp"
+type = "u64"
 key = false
 
 [[models]]
@@ -1834,6 +1869,34 @@ key = false
 name = "rewards"
 type = "Span<(u8, u128)>"
 key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x64e28daa625d93984ba81abf967265463bc04730d79aade3c3c50cf9587bb44"
+original_class_hash = "0x64e28daa625d93984ba81abf967265463bc04730d79aade3c3c50cf9587bb44"
+abi = "manifests/dev/deployment/abis/models/eternum-Message-6697fdd5.json"
+tag = "eternum-Message"
+manifest_name = "eternum-Message-6697fdd5"
+
+[[models.members]]
+name = "identity"
+type = "ContractAddress"
+key = true
+
+[[models.members]]
+name = "channel"
+type = "felt252"
+key = true
+
+[[models.members]]
+name = "content"
+type = "ByteArray"
+key = false
+
+[[models.members]]
+name = "salt"
+type = "felt252"
+key = true
 
 [[models]]
 kind = "DojoModel"
@@ -1939,8 +2002,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x31b3183f0fa7a7b451cf265f1c4779c44ed23cdf07ddafb83643073be122947"
-original_class_hash = "0x31b3183f0fa7a7b451cf265f1c4779c44ed23cdf07ddafb83643073be122947"
+class_hash = "0x75ab3421ad6a5d8a357ee048b934f24e784f99f06ec7b7b5f55b1e08baa0c15"
+original_class_hash = "0x75ab3421ad6a5d8a357ee048b934f24e784f99f06ec7b7b5f55b1e08baa0c15"
 abi = "manifests/dev/deployment/abis/models/eternum-PillageEvent-2194a43d.json"
 tag = "eternum-PillageEvent"
 manifest_name = "eternum-PillageEvent-2194a43d"
@@ -1973,6 +2036,11 @@ key = false
 [[models.members]]
 name = "destroyed_building_category"
 type = "BuildingCategory"
+key = false
+
+[[models.members]]
+name = "timestamp"
+type = "u64"
 key = false
 
 [[models]]
@@ -2757,8 +2825,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x24b1ea5ae327b561b3324e188b68075088fc5508d1be7af100635005807bb3d"
-original_class_hash = "0x24b1ea5ae327b561b3324e188b68075088fc5508d1be7af100635005807bb3d"
+class_hash = "0x2aa6982eab9c563fdf4138dd2ad3cb64420a2fb24fc7ce837704dd1dc04a986"
+original_class_hash = "0x2aa6982eab9c563fdf4138dd2ad3cb64420a2fb24fc7ce837704dd1dc04a986"
 abi = "manifests/dev/deployment/abis/models/eternum-Trade-73cd5d50.json"
 tag = "eternum-Trade"
 manifest_name = "eternum-Trade-73cd5d50"
@@ -2770,6 +2838,11 @@ key = true
 
 [[models.members]]
 name = "maker_id"
+type = "ID"
+key = false
+
+[[models.members]]
+name = "maker_gives_resources_origin_id"
 type = "ID"
 key = false
 
@@ -2790,6 +2863,11 @@ key = false
 
 [[models.members]]
 name = "taker_id"
+type = "ID"
+key = false
+
+[[models.members]]
+name = "taker_gives_resources_origin_id"
 type = "ID"
 key = false
 
@@ -2815,8 +2893,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x750e2004a88c8fd47f3cca8f36026859363877a5f17129ec3379fe9773fb356"
-original_class_hash = "0x750e2004a88c8fd47f3cca8f36026859363877a5f17129ec3379fe9773fb356"
+class_hash = "0x33100cd8be0d9bd1c36418e8427f449f332fcd3682ea81241085b20b400c08e"
+original_class_hash = "0x33100cd8be0d9bd1c36418e8427f449f332fcd3682ea81241085b20b400c08e"
 abi = "manifests/dev/deployment/abis/models/eternum-Transfer-aad2d49c.json"
 tag = "eternum-Transfer"
 manifest_name = "eternum-Transfer-aad2d49c"
@@ -2841,10 +2919,15 @@ name = "resources"
 type = "Span<(u8, u128)>"
 key = false
 
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
 [[models]]
 kind = "DojoModel"
-class_hash = "0x534197756d40efb3d75cdc0c78dfb414bf68ff8d8a50c719cbb90af00c62a48"
-original_class_hash = "0x534197756d40efb3d75cdc0c78dfb414bf68ff8d8a50c719cbb90af00c62a48"
+class_hash = "0x40e6e34b11dad63d31afe0549887b9237054353db4118aaf8c65623235eeffb"
+original_class_hash = "0x40e6e34b11dad63d31afe0549887b9237054353db4118aaf8c65623235eeffb"
 abi = "manifests/dev/deployment/abis/models/eternum-Travel-7d174e27.json"
 tag = "eternum-Travel"
 manifest_name = "eternum-Travel-7d174e27"
@@ -2877,6 +2960,11 @@ key = false
 [[models.members]]
 name = "travel_path"
 type = "Span<Coord>"
+key = false
+
+[[models.members]]
+name = "timestamp"
+type = "u64"
 key = false
 
 [[models]]
