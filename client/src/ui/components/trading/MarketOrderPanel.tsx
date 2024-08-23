@@ -369,7 +369,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
         <ConfirmationPopup title="Confirm Trade" onConfirm={onAccept} onCancel={() => setConfirmOrderModal(false)}>
           <div className=" p-8 rounded">
             <div className="text-center text-lg">
-              <div className="flex gap-3">
+              {/* <div className="flex gap-3">
                 <NumberInput
                   value={inputValue}
                   className="w-full col-span-3"
@@ -381,7 +381,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
                 >
                   Max
                 </Button>
-              </div>
+              </div> */}
               <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
               <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
               <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
