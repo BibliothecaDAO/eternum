@@ -5,15 +5,19 @@ import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
-  const { useStaminaByEntityId, getMaxStaminaByEntityId } = useStamina();
+  const { getMaxStaminaByEntityId } = useStamina();
 
   const staminaManager = useStaminaManager(entityId || 0);
 
   const maxStamina = getMaxStaminaByEntityId(entityId || 0);
 
-  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
+  const stamina = useMemo(
+    () => staminaManager.getStamina(currentArmiesTick),
+    [entityId, currentArmiesTick, staminaManager],
+  );
 
-  const staminaAmount = useMemo(() => Number(stamina?.amount || 0), [stamina]);
+  const staminaAmount = useMemo(() => Number(stamina?.amount || 0), [entityId, stamina]);
+
   const staminaPercentage = useMemo(() => (staminaAmount / maxStamina) * 100, [staminaAmount, maxStamina]);
 
   const staminaColor = useMemo(

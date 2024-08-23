@@ -242,7 +242,7 @@ export class BattleManager {
 
     if (structure.isMine) return RaidStatus.OwnStructure;
 
-    const staminaManager = new StaminaManager(this.dojo.setup, getEntityIdFromKeys([BigInt(selectedArmy.entity_id)]));
+    const staminaManager = new StaminaManager(this.dojo.setup, selectedArmy.entity_id);
     if (staminaManager.getStamina(currentArmiesTick).amount === 0) return RaidStatus.NoStamina;
 
     return RaidStatus.isRaidable;

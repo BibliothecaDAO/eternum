@@ -17,9 +17,6 @@ import { useMemo } from "react";
 import { useDojo } from "../../context/DojoContext";
 import * as module from "./useBattles";
 
-type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
-  ComponentValue<ClientComponents["Health"]["schema"]>;
-
 export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
   isStructureBattle: boolean;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;

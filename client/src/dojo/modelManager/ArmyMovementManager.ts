@@ -84,7 +84,7 @@ export class ArmyMovementManager {
     const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
     this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
     this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
-    this.staminaManager = new StaminaManager(this.setup, this.entity);
+    this.staminaManager = new StaminaManager(this.setup, entityId);
   }
 
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
@@ -266,8 +266,10 @@ export class ArmyMovementManager {
       })
       .catch((e) => {
         this.setup.components.Position.removeOverride(overrideId);
-        this.setup.components.Stamina.removeOverride(overrideId);
         this.setup.components.Tile.removeOverride(overrideId);
+      })
+      .then(() => {
+        this.setup.components.Stamina.removeOverride(overrideId);
       });
   };
 
@@ -313,6 +315,8 @@ export class ArmyMovementManager {
       })
       .catch(() => {
         this.setup.components.Position.removeOverride(overrideId);
+      })
+      .then(() => {
         this.setup.components.Stamina.removeOverride(overrideId);
       });
   };

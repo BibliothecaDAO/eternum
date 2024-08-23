@@ -1,12 +1,12 @@
-import { ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
-import { Entity, getComponentValue } from "@dojoengine/recs";
+import { ID, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { SetupResult } from "../setup";
 
 export class StaminaManager {
   constructor(
     private setup: SetupResult,
-    private armyEntity: Entity,
+    private armyEntityId: ID,
   ) {}
 
   public getStaminaConfig() {
@@ -31,25 +31,31 @@ export class StaminaManager {
   }
 
   public getStamina(currentArmiesTick: number) {
-    let armyOnchainStamina = getComponentValue(this.setup.components.Stamina, this.armyEntity);
+    let armyOnchainStamina = getComponentValue(
+      this.setup.components.Stamina,
+      getEntityIdFromKeys([BigInt(this.armyEntityId)]),
+    );
     if (!armyOnchainStamina) {
-      throw Error("no onchain stamina found for army");
+      return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
     }
 
-    const armyEntity = getComponentValue(this.setup.components.Army, this.armyEntity);
-    if (!armyEntity) {
-      throw Error("no army for army");
+    const armyEntityId = getComponentValue(
+      this.setup.components.Army,
+      getEntityIdFromKeys([BigInt(this.armyEntityId)]),
+    );
+    if (!armyEntityId) {
+      return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
     }
 
     const last_refill_tick = armyOnchainStamina?.last_refill_tick;
 
-    if (last_refill_tick === BigInt(currentArmiesTick)) {
-      return armyOnchainStamina;
+    if (last_refill_tick >= BigInt(currentArmiesTick)) {
+      return structuredClone(armyOnchainStamina);
     }
 
     const newStamina = this.refill(currentArmiesTick, last_refill_tick, armyOnchainStamina.amount);
 
-    return { entity_id: armyEntity.entity_id, ...newStamina };
+    return newStamina;
   }
 
   public maxStamina = (troops: any): number => {
@@ -76,22 +82,31 @@ export class StaminaManager {
     const staminaPerTick = this.getRefillPerTick();
 
     const numTicksPassed = currentArmiesTick - Number(last_refill_tick);
+
     const totalStaminaSinceLastTick = numTicksPassed * staminaPerTick;
 
-    const maxStamina = this.maxStamina(getComponentValue(this.setup.components.Army, this.armyEntity)?.troops);
+    const maxStamina = this.maxStamina(
+      getComponentValue(this.setup.components.Army, getEntityIdFromKeys([BigInt(this.armyEntityId)]))?.troops,
+    );
     const newAmount = Math.min(amount + totalStaminaSinceLastTick, maxStamina);
 
     return {
+      entity_id: this.armyEntityId,
       amount: newAmount,
       last_refill_tick: BigInt(currentArmiesTick),
     };
   }
+
   private getRefillPerTick() {
     const staminaRefillConfig = getComponentValue(
       this.setup.components.StaminaRefillConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID]),
     );
-    if (!staminaRefillConfig) throw new Error("no stamina refill config");
-    return staminaRefillConfig.amount_per_tick;
+    return staminaRefillConfig?.amount_per_tick || 0;
   }
 }
+
+const DEFAULT_STAMINA = {
+  amount: 0,
+  last_refill_tick: 0n,
+};
