@@ -59,7 +59,7 @@ export const EternumGlobalConfig = {
     crossbowmanStrength: 1,
     advantagePercent: 1000,
     disadvantagePercent: 1000,
-    maxTroopCount: 10_000 * 1000, // 10,000 * 1000 precision
+    maxTroopCount: 10_000,
     baseArmyNumberForStructure: 3,
     armyExtraPerMilitaryBuilding: 2,
     // By setting the divisor to 8, the max health that can be taken from the weaker army
