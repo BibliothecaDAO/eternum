@@ -1506,10 +1506,10 @@ export const eventsComponents = (world: World) => {
         world,
         {
           entity_id: RecsType.Number,
-          entity_owner_id: RecsType.Number,
           col: RecsType.Number,
           row: RecsType.Number,
           id: RecsType.Number,
+          entity_owner_id: RecsType.Number,
           biome: RecsType.String,
           reward: RecsType.StringArray,
           timestamp: RecsType.Number,

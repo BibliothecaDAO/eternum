@@ -50,13 +50,11 @@ export const EventStream = () => {
 
       const armyEntityId =
         // armies
-        component === components.MapExplored
-          ? componentValue?.entity_id
-          : componentValue?.joiner_army_entity_id ||
-            componentValue?.leaver_army_entity_id ||
-            componentValue?.claimer_army_entity_id ||
-            componentValue?.pillager_army_entity_id ||
-            0;
+        componentValue?.joiner_army_entity_id ||
+        componentValue?.leaver_army_entity_id ||
+        componentValue?.claimer_army_entity_id ||
+        componentValue?.pillager_army_entity_id ||
+        0;
 
       const entityOwner = getComponentValue(components.EntityOwner, getEntityIdFromKeys([BigInt(armyEntityId)]));
 
