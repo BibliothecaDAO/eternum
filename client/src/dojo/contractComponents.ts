@@ -1193,5 +1193,279 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    ...eventsComponents(world),
   };
 }
+
+export const eventsComponents = (world: World) => {
+  return {
+    BattleStartData: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          event_id: RecsType.String,
+          battle_entity_id: RecsType.Number,
+          attacker: RecsType.BigInt,
+          attacker_name: RecsType.BigInt,
+          attacker_army_entity_id: RecsType.Number,
+          defender_name: RecsType.BigInt,
+          defender: RecsType.BigInt,
+          defender_army_entity_id: RecsType.Number,
+          duration_left: RecsType.Number,
+          x: RecsType.Number,
+          y: RecsType.Number,
+          structure_type: RecsType.String,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BattleStartData",
+            types: [
+              "u32",
+              "EventType",
+              "u32",
+              "ContractAddress",
+              "felt252",
+              "u32",
+              "felt252",
+              "ContractAddress",
+              "u32",
+              "u64",
+              "u32",
+              "u32",
+              "StructureCategory",
+              "u64",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    BattleJoinData: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          event_id: RecsType.String,
+          battle_entity_id: RecsType.Number,
+          joiner: RecsType.BigInt,
+          joiner_name: RecsType.BigInt,
+          joiner_army_entity_id: RecsType.Number,
+          joiner_side: RecsType.String,
+          duration_left: RecsType.Number,
+          x: RecsType.Number,
+          y: RecsType.Number,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BattleJoinData",
+            types: [
+              "u32",
+              "EventType",
+              "u32",
+              "ContractAddress",
+              "felt252",
+              "u32",
+              "BattleSide",
+              "u64",
+              "u32",
+              "u32",
+              "u64",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    BattleLeaveData: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          event_id: RecsType.String,
+          battle_entity_id: RecsType.Number,
+          leaver: RecsType.BigInt,
+          leaver_name: RecsType.BigInt,
+          leaver_army_entity_id: RecsType.Number,
+          leaver_side: RecsType.String,
+          duration_left: RecsType.Number,
+          x: RecsType.Number,
+          y: RecsType.Number,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BattleLeaveData",
+            types: [
+              "u32",
+              "EventType",
+              "u32",
+              "ContractAddress",
+              "felt252",
+              "u32",
+              "BattleSide",
+              "u64",
+              "u32",
+              "u32",
+              "u64",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    BattleClaimData: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          event_id: RecsType.String,
+          structure_entity_id: RecsType.Number,
+          claimer: RecsType.BigInt,
+          claimer_name: RecsType.BigInt,
+          claimer_army_entity_id: RecsType.Number,
+          previous_owner: RecsType.BigInt,
+          x: RecsType.Number,
+          y: RecsType.Number,
+          structure_type: RecsType.String,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BattleClaimData",
+            types: [
+              "u32",
+              "EventType",
+              "u32",
+              "ContractAddress",
+              "felt252",
+              "u32",
+              "ContractAddress",
+              "u32",
+              "u32",
+              "StructureCategory",
+              "u64",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    BattlePillageData: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          event_id: RecsType.String,
+          pillager: RecsType.BigInt,
+          pillager_name: RecsType.BigInt,
+          pillager_army_entity_id: RecsType.Number,
+          pillaged_structure_owner: RecsType.BigInt,
+          pillaged_structure_entity_id: RecsType.Number,
+          winner: RecsType.String,
+          x: RecsType.Number,
+          y: RecsType.Number,
+          structure_type: RecsType.String,
+          pillaged_resources: RecsType.StringArray,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BattlePillageData",
+            types: [
+              "u32",
+              "EventType",
+              "ContractAddress",
+              "felt252",
+              "u32",
+              "ContractAddress",
+              "u32",
+              "BattleSide",
+              "u32",
+              "u32",
+              "StructureCategory",
+              "array",
+              "u64",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    SwapEvent: (() => {
+      return defineComponent(
+        world,
+        {
+          bank_entity_id: RecsType.Number,
+          entity_id: RecsType.Number,
+          resource_type: RecsType.Number,
+          lords_amount: RecsType.BigInt,
+          resource_amount: RecsType.BigInt,
+          bank_owner_fees: RecsType.BigInt,
+          lp_fees: RecsType.BigInt,
+          resource_price: RecsType.BigInt,
+          buy: RecsType.Boolean,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "SwapEvent",
+            types: ["u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    HyperstructureFinished: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.Number,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "HyperstructureFinished",
+            types: ["u32", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    AcceptOrder: (() => {
+      return defineComponent(
+        world,
+        {
+          taker_id: RecsType.Number,
+          maker_id: RecsType.Number,
+          trade_id: RecsType.Number,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "AcceptOrder",
+            types: ["u32", "u32", "u32", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+  };
+};
