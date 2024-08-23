@@ -5,6 +5,8 @@ import { getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
+const EVENT_STREAM_SIZE = 8;
+
 enum Actions {
   MapExplored = "explored a tile",
   BattleJoin = "joined a battle",
@@ -70,10 +72,11 @@ export const EventStream = () => {
         name,
         action,
         emoji,
+        timestamp: componentValue?.timestamp,
       };
     };
 
-    return [
+    const events = [
       ...mapExploredEntities.map((entity) =>
         createEvent(entity, components.MapExplored, Actions.MapExplored, Emojis.MapExplored),
       ),
@@ -94,6 +97,9 @@ export const EventStream = () => {
         createEvent(entity, components.AcceptOrder, Actions.AcceptOrder, Emojis.AcceptOrder),
       ),
     ];
+
+    // Sort events by timestamp in descending order (most recent first)
+    return events.sort((a, b) => a.timestamp - b.timestamp);
   }, [
     mapExploredEntities,
     battleJoinEntities,
@@ -109,9 +115,9 @@ export const EventStream = () => {
   return (
     <div style={{ zIndex: 100 }}>
       <div>
-        {allEvents.slice(0, 8).map((event, index) => (
+        {allEvents.slice(-EVENT_STREAM_SIZE).map((event, index) => (
           <div key={index}>
-            {event.emoji} {event.name || "Unknown"} {event.action}
+            {event.emoji} {event.name || "Unknown"} {event.action} [{new Date(event.timestamp * 1000).toLocaleString()}]
           </div>
         ))}
       </div>

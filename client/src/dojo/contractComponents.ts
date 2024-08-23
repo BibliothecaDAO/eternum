@@ -1440,6 +1440,7 @@ export const eventsComponents = (world: World) => {
         {
           bank_entity_id: RecsType.Number,
           entity_id: RecsType.Number,
+          id: RecsType.Number,
           resource_type: RecsType.Number,
           lords_amount: RecsType.BigInt,
           resource_amount: RecsType.BigInt,
@@ -1453,7 +1454,7 @@ export const eventsComponents = (world: World) => {
           metadata: {
             namespace: "eternum",
             name: "SwapEvent",
-            types: ["u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
+            types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
             customTypes: [],
           },
         },
@@ -1465,13 +1466,14 @@ export const eventsComponents = (world: World) => {
         world,
         {
           hyperstructure_entity_id: RecsType.Number,
+          id: RecsType.Number,
           timestamp: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "HyperstructureFinished",
-            types: ["u32", "u64"],
+            types: ["u32", "u32", "u64"],
             customTypes: [],
           },
         },
@@ -1484,6 +1486,7 @@ export const eventsComponents = (world: World) => {
         {
           taker_id: RecsType.Number,
           maker_id: RecsType.Number,
+          id: RecsType.Number,
           trade_id: RecsType.Number,
           timestamp: RecsType.Number,
         },
@@ -1491,7 +1494,7 @@ export const eventsComponents = (world: World) => {
           metadata: {
             namespace: "eternum",
             name: "AcceptOrder",
-            types: ["u32", "u32", "u32", "u64"],
+            types: ["u32", "u32", "u32", "u32", "u64"],
             customTypes: [],
           },
         },
@@ -1506,6 +1509,7 @@ export const eventsComponents = (world: World) => {
           entity_owner_id: RecsType.Number,
           col: RecsType.Number,
           row: RecsType.Number,
+          id: RecsType.Number,
           biome: RecsType.String,
           reward: RecsType.StringArray,
           timestamp: RecsType.Number,
@@ -1514,7 +1518,7 @@ export const eventsComponents = (world: World) => {
           metadata: {
             namespace: "eternum",
             name: "MapExplored",
-            types: ["u32", "u32", "u32", "u32", "Biome", "array", "u64"],
+            types: ["u32", "u32", "u32", "u32", "u32", "Biome", "array", "u64"],
             customTypes: [],
           },
         },
