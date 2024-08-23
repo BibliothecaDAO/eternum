@@ -74,6 +74,8 @@ mod trade_systems {
         taker_id: ID,
         #[key]
         maker_id: ID,
+        #[key]
+        id: ID,
         trade_id: ID,
         timestamp: u64
     }
@@ -508,7 +510,11 @@ mod trade_systems {
             emit!(
                 world,
                 (AcceptOrder {
-                    taker_id, maker_id: trade.maker_id, trade_id, timestamp: starknet::get_block_timestamp()
+                    id: world.uuid(),
+                    taker_id,
+                    maker_id: trade.maker_id,
+                    trade_id,
+                    timestamp: starknet::get_block_timestamp()
                 })
             );
         }

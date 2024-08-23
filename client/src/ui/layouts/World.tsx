@@ -9,7 +9,6 @@ import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
-import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
@@ -25,6 +24,8 @@ import { Transactions } from "../modules/transactions/Transactions";
 import { Chat } from "../modules/chat/Chat";
 import { Onboarding } from "./Onboarding";
 import clsx from "clsx";
+import { EventStream } from "../modules/stream/EventStream";
+import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -88,7 +89,7 @@ export const World = () => {
           </BottomRightContainer>
 
           <BottomLeftContainer>
-            <Transactions />
+            <EventStream />
           </BottomLeftContainer>
 
           <RightMiddleContainer>

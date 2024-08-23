@@ -48,11 +48,13 @@ mod map_systems {
     struct MapExplored {
         #[key]
         entity_id: ID,
-        entity_owner_id: ID,
         #[key]
         col: u32,
         #[key]
         row: u32,
+        #[key]
+        id: ID,
+        entity_owner_id: ID,
         biome: Biome,
         reward: Span<(u8, u128)>,
         timestamp: u64,
@@ -117,6 +119,7 @@ mod map_systems {
             emit!(
                 world,
                 (MapExplored {
+                    id: world.uuid(),
                     entity_id: entity_id,
                     entity_owner_id: entity_owned_by.entity_owner_id,
                     col: tile.col,
