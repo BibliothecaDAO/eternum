@@ -50,6 +50,7 @@ pub struct BattleStartData {
     x: u32,
     y: u32,
     structure_type: StructureCategory,
+    timestamp: u64,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -68,6 +69,7 @@ pub struct BattleJoinData {
     duration_left: u64,
     x: u32,
     y: u32,
+    timestamp: u64,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -86,6 +88,7 @@ pub struct BattleLeaveData {
     duration_left: u64,
     x: u32,
     y: u32,
+    timestamp: u64,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -104,6 +107,7 @@ pub struct BattleClaimData {
     x: u32,
     y: u32,
     structure_type: StructureCategory,
+    timestamp: u64,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -124,4 +128,5 @@ pub struct BattlePillageData {
     y: u32,
     structure_type: StructureCategory,
     pillaged_resources: Span<(u8, u128)>,
+    timestamp: u64,
 }

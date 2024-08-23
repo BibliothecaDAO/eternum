@@ -436,7 +436,8 @@ mod combat_systems {
         army_id: ID,
         winner: BattleSide,
         pillaged_resources: Span<(u8, u128)>,
-        destroyed_building_category: BuildingCategory
+        destroyed_building_category: BuildingCategory,
+        timestamp: u64,
     }
 
 
@@ -717,6 +718,7 @@ mod combat_systems {
                     x: battle_position.x,
                     y: battle_position.y,
                     structure_type: defender_structure.category,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
             battle_id
@@ -817,6 +819,7 @@ mod combat_systems {
                     duration_left: battle.duration_left,
                     x: battle_position.x,
                     y: battle_position.y,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
@@ -850,6 +853,7 @@ mod combat_systems {
                     duration_left: battle.duration_left,
                     x: battle_position.x,
                     y: battle_position.y,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
@@ -907,6 +911,7 @@ mod combat_systems {
                     x: structure_position.x,
                     y: structure_position.y,
                     structure_type: structure.category,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
@@ -1203,7 +1208,8 @@ mod combat_systems {
                         BattleSide::Defence
                     },
                     pillaged_resources: pillaged_resources.span(),
-                    destroyed_building_category
+                    destroyed_building_category,
+                    timestamp: starknet::get_block_timestamp(),
                 }),
             );
 
@@ -1227,6 +1233,7 @@ mod combat_systems {
                     y: structure_position.y,
                     structure_type: structure.category,
                     pillaged_resources: pillaged_resources.span(),
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
