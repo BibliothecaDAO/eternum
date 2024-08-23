@@ -1467,5 +1467,28 @@ export const eventsComponents = (world: World) => {
         },
       );
     })(),
+
+    MapExplored: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.Number,
+          entity_owner_id: RecsType.Number,
+          col: RecsType.Number,
+          row: RecsType.Number,
+          biome: RecsType.String,
+          reward: RecsType.StringArray,
+          timestamp: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "MapExplored",
+            types: ["u32", "u32", "u32", "u32", "Biome", "array", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
   };
 };
