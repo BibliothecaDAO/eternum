@@ -6,7 +6,7 @@ use core::traits::Into;
 use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
-use eternum::constants::all_resource_ids;
+use eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
 use eternum::models::capacity::{Capacity, CapacityCustomTrait};
 use eternum::models::config::{BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait};
 use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
@@ -114,12 +114,22 @@ impl TroopsImpl of TroopsTrait {
         self.knight_count += other.knight_count;
         self.paladin_count += other.paladin_count;
         self.crossbowman_count += other.crossbowman_count;
+        self.normalize_counts();
     }
 
     fn deduct(ref self: Troops, other: Troops) {
         self.knight_count -= other.knight_count;
         self.paladin_count -= other.paladin_count;
         self.crossbowman_count -= other.crossbowman_count;
+        self.normalize_counts();
+    }
+
+    // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+    fn normalize_counts(ref self: Troops) {
+        let resource_precision_u64: u64 = RESOURCE_PRECISION.try_into().unwrap();
+        self.knight_count = self.knight_count % resource_precision_u64;
+        self.paladin_count = self.paladin_count % resource_precision_u64;
+        self.crossbowman_count = self.crossbowman_count % resource_precision_u64;
     }
 
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
