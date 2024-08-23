@@ -276,7 +276,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
 
   const calculatedLords = useMemo(() => {
-    return Math.ceil((inputValue / parseInt(getsDisplay.replace(/,/g, ""))) * getTotalLords);
+    return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
   }, [inputValue, getsDisplay, getTotalLords]);
 
   console.log("calculatedLords", calculatedLords);
