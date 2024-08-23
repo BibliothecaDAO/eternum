@@ -239,48 +239,8 @@ mod trade_systems {
             let taker_owner = get!(world, taker_id, Owner);
             assert(taker_owner.address == caller, 'not owned by caller');
 
-            let mut trade = get!(world, trade_id, Trade);
-            let trade_status = get!(world, trade_id, Status);
-
-            // check trade expiration
-            let ts = starknet::get_block_timestamp();
-            assert(trade.expires_at > ts, 'trade expired');
-
-            // verify taker if it's a direct offer
-            if trade.taker_id != 0 {
-                assert(trade.taker_id == taker_id, 'not the taker');
-            }
-
-            // update trade
-            trade.taker_id = taker_id;
-            set!(world, (trade));
-
-            // check and update trade status
-            assert(trade_status.value == TradeStatus::OPEN, 'trade is not open');
-            set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
-
-            let (_, taker_receives_resources_hash, _) = internal_resources::transfer(
-                world, trade.maker_id, trade.taker_id, maker_gives_resources, trade.taker_id, true, false
-            );
-            assert!(
-                taker_receives_resources_hash == trade.maker_gives_resources_hash,
-                "wrong maker_gives_resources provided"
-            );
-
-            let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
-                world, trade.taker_id, trade.maker_id, taker_gives_resources, trade.maker_id, false, true
-            );
-
-            assert!(
-                maker_receives_resources_hash == trade.taker_gives_resources_hash,
-                "wrong taker_gives_resources provided"
-            );
-
-            emit!(
-                world,
-                (AcceptOrder {
-                    taker_id, maker_id: trade.maker_id, trade_id, timestamp: starknet::get_block_timestamp()
-                })
+            InternalTradeSystemsImpl::accept_order(
+                world, taker_id, trade_id, maker_gives_resources, taker_gives_resources
             );
         }
 
@@ -293,6 +253,7 @@ mod trade_systems {
             mut taker_gives_resources: Span<(u8, u128)>,
             mut taker_gives_actual_amount: u128
         ) { // Ensure only one resource type is being traded and input lengths match
+            assert!(taker_gives_actual_amount.is_non_zero(), "amount taker gives must be greater than 0");
             assert!(maker_gives_resources.len() == 1, "only one resource type is supported for partial orders");
             assert!(maker_gives_resources.len() == taker_gives_resources.len(), "resources lengths must be equal");
 
@@ -339,65 +300,124 @@ mod trade_systems {
             assert!(
                 taker_gives_resources_hash == trade.taker_gives_resources_hash, "wrong taker_gives_resources provided"
             );
-            // Calculate and transfer maker's resources
+            // Calculate actual transfer amounts and weights
             let maker_gives_actual_amount = maker_gives_resource_amount
                 * taker_gives_actual_amount
                 / taker_gives_resource_amount;
             let maker_gives_resources_actual = array![(maker_gives_resource_type, maker_gives_actual_amount)].span();
-            let (_, _, maker_gives_resources_actual_weight) = internal_resources::transfer(
-                world, trade.maker_id, trade.taker_id, maker_gives_resources_actual, trade.taker_id, true, false
+            let maker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight(
+                world, maker_gives_resource_type, maker_gives_actual_amount
             );
-            trade.maker_gives_resources_weight -= maker_gives_resources_actual_weight;
-
-            // Transfer taker's resources
             let taker_gives_resources_actual = array![(taker_gives_resource_type, taker_gives_actual_amount)].span();
-            let (_, _, taker_gives_resources_actual_weight) = internal_resources::transfer(
-                world, trade.taker_id, trade.maker_id, taker_gives_resources_actual, trade.maker_id, false, true
-            );
-            trade.taker_gives_resources_weight -= taker_gives_resources_actual_weight;
-
-            // Calculate remaining amounts and update trade details
-            let maker_amount_left = maker_gives_resource_amount - maker_gives_actual_amount;
-            let taker_amount_left = taker_gives_resource_amount - taker_gives_actual_amount;
-            let new_maker_gives_resources = array![maker_gives_resource_type.into(), maker_amount_left.into()];
-            let new_taker_gives_resources = array![taker_gives_resource_type.into(), taker_amount_left.into()];
-
-            trade.maker_gives_resources_hash = hash(new_maker_gives_resources.span());
-            trade.taker_gives_resources_hash = hash(new_taker_gives_resources.span());
-
-            // Update detached resources for maker and taker
-            set!(
-                world,
-                (DetachedResource {
-                    entity_id: trade.maker_gives_resources_id,
-                    index: 0,
-                    resource_type: maker_gives_resource_type,
-                    resource_amount: maker_amount_left
-                })
-            );
-            set!(
-                world,
-                (DetachedResource {
-                    entity_id: trade.taker_gives_resources_id,
-                    index: 0,
-                    resource_type: taker_gives_resource_type,
-                    resource_amount: taker_amount_left
-                })
+            let taker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight(
+                world, taker_gives_resource_type, taker_gives_actual_amount
             );
 
-            // Save updated trade
-            set!(world, (trade));
-            if trade.maker_gives_resources_weight == 0 {
-                set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
+            if maker_gives_actual_amount == maker_gives_resource_amount {
+                InternalTradeSystemsImpl::accept_order(
+                    world, taker_id, trade_id, maker_gives_resources_actual, taker_gives_resources_actual
+                );
+            } else {
+                // create new order
+
+                ///////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////
+                ///
+                let new_maker_gives_resources = array![(maker_gives_resource_type, maker_gives_actual_amount)].span();
+                let new_maker_gives_resources_felt_arr = array![
+                    maker_gives_resource_type.into(), maker_gives_actual_amount.into()
+                ];
+                let new_taker_gives_resources = array![(taker_gives_resource_type, taker_gives_actual_amount)].span();
+                let new_taker_gives_resources_felt_arr = array![
+                    taker_gives_resource_type.into(), taker_gives_actual_amount.into()
+                ];
+                let new_maker_gives_resources_felt_arr_id: ID = world.uuid();
+                let new_taker_gives_resources_felt_arr_id: ID = world.uuid();
+                set!(
+                    world,
+                    (
+                        DetachedResource {
+                            entity_id: new_maker_gives_resources_felt_arr_id,
+                            index: 0,
+                            resource_type: maker_gives_resource_type,
+                            resource_amount: maker_gives_actual_amount
+                        },
+                        DetachedResource {
+                            entity_id: new_taker_gives_resources_felt_arr_id,
+                            index: 0,
+                            resource_type: taker_gives_resource_type,
+                            resource_amount: taker_gives_actual_amount
+                        }
+                    )
+                );
+
+                let new_trade_id = world.uuid();
+                set!(
+                    world,
+                    (
+                        Trade {
+                            trade_id: new_trade_id,
+                            maker_id: trade.maker_id,
+                            maker_gives_resources_id: new_maker_gives_resources_felt_arr_id,
+                            maker_gives_resources_hash: hash(new_maker_gives_resources_felt_arr.span()),
+                            maker_gives_resources_weight: maker_gives_resources_actual_weight,
+                            taker_id: trade.taker_id,
+                            taker_gives_resources_id: new_taker_gives_resources_felt_arr_id,
+                            taker_gives_resources_hash: hash(new_taker_gives_resources_felt_arr.span()),
+                            taker_gives_resources_weight: taker_gives_resources_actual_weight,
+                            expires_at: trade.expires_at,
+                        },
+                        Status { trade_id: new_trade_id, value: TradeStatus::OPEN }
+                    ),
+                );
+
+                // accept new order
+                InternalTradeSystemsImpl::accept_order(
+                    world, taker_id, new_trade_id, new_maker_gives_resources, new_taker_gives_resources
+                );
+
+                ///////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////
+
+                // Calculate remaining amounts and update trade details
+                let maker_amount_left = maker_gives_resource_amount - maker_gives_actual_amount;
+                let taker_amount_left = taker_gives_resource_amount - taker_gives_actual_amount;
+                trade
+                    .maker_gives_resources_hash =
+                        hash(array![maker_gives_resource_type.into(), maker_amount_left.into()].span());
+                trade
+                    .taker_gives_resources_hash =
+                        hash(array![taker_gives_resource_type.into(), taker_amount_left.into()].span());
+                trade.maker_gives_resources_weight -= maker_gives_resources_actual_weight;
+                trade.taker_gives_resources_weight -= taker_gives_resources_actual_weight;
+
+                // Update detached resources for maker and taker
+                set!(
+                    world,
+                    (DetachedResource {
+                        entity_id: trade.maker_gives_resources_id,
+                        index: 0,
+                        resource_type: maker_gives_resource_type,
+                        resource_amount: maker_amount_left
+                    })
+                );
+                set!(
+                    world,
+                    (DetachedResource {
+                        entity_id: trade.taker_gives_resources_id,
+                        index: 0,
+                        resource_type: taker_gives_resource_type,
+                        resource_amount: taker_amount_left
+                    })
+                );
+
+                // Save updated trade
+                set!(world, (trade));
             }
-
-            // Emit event for partial order acceptance
-            emit!(
-                world,
-                (AcceptPartialOrder {
-                    taker_id, maker_id: trade.maker_id, trade_id, timestamp: starknet::get_block_timestamp()
-                })
-            );
         }
 
 
@@ -428,6 +448,62 @@ mod trade_systems {
                     maker_id: trade.maker_id,
                     trade_id,
                     timestamp: starknet::get_block_timestamp()
+                })
+            );
+        }
+    }
+
+
+    #[generate_trait]
+    impl InternalTradeSystemsImpl of InternalTradeSystemsTrait {
+        fn accept_order(
+            world: IWorldDispatcher,
+            taker_id: ID,
+            trade_id: ID,
+            mut maker_gives_resources: Span<(u8, u128)>,
+            mut taker_gives_resources: Span<(u8, u128)>
+        ) {
+            let mut trade = get!(world, trade_id, Trade);
+            let trade_status = get!(world, trade_id, Status);
+
+            // check trade expiration
+            let ts = starknet::get_block_timestamp();
+            assert(trade.expires_at > ts, 'trade expired');
+
+            // verify taker if it's a direct offer
+            if trade.taker_id != 0 {
+                assert(trade.taker_id == taker_id, 'not the taker');
+            }
+
+            // update trade
+            trade.taker_id = taker_id;
+            set!(world, (trade));
+
+            // check and update trade status
+            assert(trade_status.value == TradeStatus::OPEN, 'trade is not open');
+            set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
+
+            let (_, taker_receives_resources_hash, _) = internal_resources::transfer(
+                world, trade.maker_id, trade.taker_id, maker_gives_resources, trade.taker_id, true, false
+            );
+            assert!(
+                taker_receives_resources_hash == trade.maker_gives_resources_hash,
+                "wrong maker_gives_resources provided"
+            );
+
+            let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
+                world, trade.taker_id, trade.maker_id, taker_gives_resources, trade.maker_id, false, true
+            );
+
+            assert!(
+                maker_receives_resources_hash == trade.taker_gives_resources_hash,
+                "wrong taker_gives_resources provided"
+            );
+
+            emit!(
+                world,
+                (AcceptOrder {
+                    taker_id, maker_id: trade.maker_id, trade_id, timestamp: starknet::get_block_timestamp()
                 })
             );
         }
