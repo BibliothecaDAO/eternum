@@ -9,7 +9,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -175,7 +175,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Paladin",
       weak: "Crossbowman",
-      current: currencyFormat(army?.troops.knight_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
     },
     {
       name: ResourcesIds.Crossbowman,
@@ -184,7 +184,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Knight",
       weak: "Paladin",
-      current: currencyFormat(army?.troops.crossbowman_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
     },
     {
       name: ResourcesIds.Paladin,
@@ -193,7 +193,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Crossbowman",
       weak: "Knight",
-      current: currencyFormat(army?.troops.paladin_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
     },
   ];
 
@@ -297,7 +297,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           {!isDefendingArmy && (
             <div className="text-xs text-yellow-500 mb-2">
-              ⚠️ Maximum troops per attacking army is {MAX_TROOPS_PER_ARMY}
+              ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
             </div>
           )}
 

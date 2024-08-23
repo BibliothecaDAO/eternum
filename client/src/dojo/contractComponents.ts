@@ -1132,10 +1132,12 @@ export function defineContractComponents(world: World) {
         {
           trade_id: RecsType.Number,
           maker_id: RecsType.Number,
+          maker_gives_resources_origin_id: RecsType.Number,
           maker_gives_resources_id: RecsType.Number,
           maker_gives_resources_hash: RecsType.BigInt,
           maker_gives_resources_weight: RecsType.BigInt,
           taker_id: RecsType.Number,
+          taker_gives_resources_origin_id: RecsType.Number,
           taker_gives_resources_id: RecsType.Number,
           taker_gives_resources_hash: RecsType.BigInt,
           taker_gives_resources_weight: RecsType.BigInt,
@@ -1145,7 +1147,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "Trade",
-            types: ["u32", "u32", "u32", "felt252", "u128", "u32", "u32", "felt252", "u128", "u64"],
+            types: ["u32", "u32", "u32", "u32", "felt252", "u128", "u32", "u32", "u32", "felt252", "u128", "u64"],
             customTypes: [],
           },
         },

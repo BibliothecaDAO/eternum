@@ -59,10 +59,7 @@ export const TopMiddleNavigation = () => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
   }, [structure]);
 
-  // realms always first
-  const structures = useMemo(() => {
-    return playerStructures();
-  }, [structureEntityId]);
+  const structures = playerStructures();
 
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);

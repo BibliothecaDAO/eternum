@@ -5,7 +5,7 @@ original_class_hash = "0x76ced5a15cb43c7be7176cff4779cd57c56638a46ddf2c9da709d22
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac"
 transaction_hash = "0x6e2a9171abf51df314cd089ba4a6c4d16178d58f92106ddb3d0e28e1a51822"
-block_number = 48
+block_number = 87
 seed = "eternum"
 manifest_name = "dojo-world"
 
@@ -312,8 +312,8 @@ manifest_name = "eternum-swap_systems-216e8d44"
 [[contracts]]
 kind = "DojoContract"
 address = "0x3816c9bfbbc3c9aaea4d34910a8d3592a714520b5c2c9b38bc167b9024b9724"
-class_hash = "0x3e3e6751c3300feefada7015c9294ae9a84e91d0f9cbb0b7a25f29c39027090"
-original_class_hash = "0x3e3e6751c3300feefada7015c9294ae9a84e91d0f9cbb0b7a25f29c39027090"
+class_hash = "0x46290c02bb68f06ec98c7e345f88b4399ce68f1d1f2e27d5e81e10c99d167e1"
+original_class_hash = "0x46290c02bb68f06ec98c7e345f88b4399ce68f1d1f2e27d5e81e10c99d167e1"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-trade_systems-7f6765dd.json"
 reads = []
@@ -322,6 +322,7 @@ init_calldata = []
 tag = "eternum-trade_systems"
 systems = [
     "accept_order",
+    "accept_partial_order",
     "cancel_order",
 ]
 manifest_name = "eternum-trade_systems-7f6765dd"
@@ -350,6 +351,34 @@ original_class_hash = "0x13372b03b5d4aa1ff93ef4b644f79fc84447b711cb857bde1ab4596
 abi = "manifests/dev/deployment/abis/models/eternum-AcceptOrder-e6bad9d6.json"
 tag = "eternum-AcceptOrder"
 manifest_name = "eternum-AcceptOrder-e6bad9d6"
+
+[[models.members]]
+name = "taker_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "maker_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "trade_id"
+type = "ID"
+key = false
+
+[[models.members]]
+name = "timestamp"
+type = "u64"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x72a69873bfc5576bc8e1e281c9738ea5d2fd6293fbd00728ff19561875ff6b"
+original_class_hash = "0x72a69873bfc5576bc8e1e281c9738ea5d2fd6293fbd00728ff19561875ff6b"
+abi = "manifests/dev/deployment/abis/models/eternum-AcceptPartialOrder-33e6b6b9.json"
+tag = "eternum-AcceptPartialOrder"
+manifest_name = "eternum-AcceptPartialOrder-33e6b6b9"
 
 [[models.members]]
 name = "taker_id"
@@ -2796,8 +2825,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x24b1ea5ae327b561b3324e188b68075088fc5508d1be7af100635005807bb3d"
-original_class_hash = "0x24b1ea5ae327b561b3324e188b68075088fc5508d1be7af100635005807bb3d"
+class_hash = "0x2aa6982eab9c563fdf4138dd2ad3cb64420a2fb24fc7ce837704dd1dc04a986"
+original_class_hash = "0x2aa6982eab9c563fdf4138dd2ad3cb64420a2fb24fc7ce837704dd1dc04a986"
 abi = "manifests/dev/deployment/abis/models/eternum-Trade-73cd5d50.json"
 tag = "eternum-Trade"
 manifest_name = "eternum-Trade-73cd5d50"
@@ -2809,6 +2838,11 @@ key = true
 
 [[models.members]]
 name = "maker_id"
+type = "ID"
+key = false
+
+[[models.members]]
+name = "maker_gives_resources_origin_id"
 type = "ID"
 key = false
 
@@ -2829,6 +2863,11 @@ key = false
 
 [[models.members]]
 name = "taker_id"
+type = "ID"
+key = false
+
+[[models.members]]
+name = "taker_gives_resources_origin_id"
 type = "ID"
 key = false
 

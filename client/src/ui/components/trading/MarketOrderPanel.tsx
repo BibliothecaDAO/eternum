@@ -17,7 +17,11 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { MarketModal } from "./MarketModal";
+import { ModalContainer } from "../ModalContainer";
+import { ConfirmationPopup } from "../bank/ConfirmationPopup";
+import { NumberInput } from "@/ui/elements/NumberInput";
 
 export const MarketResource = ({
   entityId,
@@ -174,14 +178,19 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   const {
     account: { account },
     setup: {
-      systemCalls: { cancel_order, accept_order },
+      systemCalls: { cancel_order, accept_partial_order, accept_order },
     },
   } = useDojo();
 
   const { getRealmAddressName } = useRealm();
 
-  // TODO: Do we need this?
-  const deleteTrade = useMarketStore((state) => state.deleteTrade);
+  const [inputValue, setInputValue] = useState<number>(() => {
+    return isBuy
+      ? offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision
+      : offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision;
+  });
+
+  const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
   // TODO Distance
   const travelTime = useMemo(
@@ -197,33 +206,16 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
 
   const [loading, setLoading] = useState(false);
 
-  const onAccept = async () => {
-    setLoading(true);
-    await accept_order({
-      signer: account,
-      taker_id: entityId,
-      trade_id: offer.tradeId,
-      maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
-      taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
-    })
-      .then(() => {
-        deleteTrade(offer.tradeId);
-      })
-      .catch((error) => {
-        // Add failure indicator in UI
-        console.error("Failed to accept order", error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
   const isSelf = useMemo(() => {
     return entityId === offer.makerId;
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getsDisplay = useMemo(() => {
-    return isBuy ? currencyFormat(offer.makerGets[0].amount, 0) : currencyFormat(offer.takerGets[0].amount, 0);
+    return isBuy ? currencyFormat(offer.makerGets[0].amount, 2) : currencyFormat(offer.takerGets[0].amount, 2);
+  }, [entityId, offer.makerId, offer.tradeId]);
+
+  const getsDisplayNumber = useMemo(() => {
+    return isBuy ? offer.makerGets[0].amount : offer.takerGets[0].amount;
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getDisplayResource = useMemo(() => {
@@ -281,6 +273,33 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return getRealmAddressName(offer.makerId);
   }, [offer.originName]);
 
+  console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
+
+  const calculatedLords = useMemo(() => {
+    return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
+  }, [inputValue, getsDisplay, getTotalLords]);
+
+  console.log("calculatedLords", calculatedLords);
+
+  const onAccept = async () => {
+    try {
+      setLoading(true);
+      setConfirmOrderModal(false);
+
+      await accept_partial_order({
+        signer: account,
+        taker_id: entityId,
+        trade_id: offer.tradeId,
+        maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
+        taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
+        taker_gives_actual_amount: calculatedLords,
+      });
+    } catch (error) {
+      console.error("Failed to accept order", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div
       key={offer.tradeId}
@@ -310,7 +329,12 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
         </div>
         {!isSelf ? (
           canAccept ? (
-            <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
+            <Button
+              isLoading={loading}
+              onClick={() => setConfirmOrderModal(true)}
+              size="xs"
+              className="self-center flex flex-grow"
+            >
               {!isBuy ? "Buy" : "Sell"}
             </Button>
           ) : (
@@ -341,6 +365,30 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
           {accountName} ({offer.originName})
         </div>
       </div>
+      {confirmOrderModal && (
+        <ConfirmationPopup title="Confirm Trade" onConfirm={onAccept} onCancel={() => setConfirmOrderModal(false)}>
+          <div className=" p-8 rounded">
+            <div className="text-center text-lg">
+              <div className="flex gap-3">
+                <NumberInput
+                  value={inputValue}
+                  className="w-full col-span-3"
+                  onChange={setInputValue}
+                  max={getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision}
+                />
+                <Button
+                  onClick={() => setInputValue(getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision)}
+                >
+                  Max
+                </Button>
+              </div>
+              <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
+              <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
+              <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
+            </div>
+          </div>
+        </ConfirmationPopup>
+      )}
     </div>
   );
 };
@@ -454,7 +502,12 @@ const OrderCreation = ({
             <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
             {isBuy ? "Buy" : "Sell"}
           </div>
-          <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          <NumberInput
+            value={resource}
+            className="w-full col-span-3"
+            onChange={(value) => setResource(Number(value))}
+            max={resourceBalance / EternumGlobalConfig.resources.resourcePrecision}
+          />
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
@@ -473,7 +526,12 @@ const OrderCreation = ({
           <div className="uppercase text-sm flex gap-2 font-bold">
             <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Cost
           </div>
-          <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          <NumberInput
+            value={lords}
+            className="w-full col-span-3"
+            onChange={(value) => setLords(Number(value))}
+            max={lordsBalance / EternumGlobalConfig.resources.resourcePrecision}
+          />
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.
