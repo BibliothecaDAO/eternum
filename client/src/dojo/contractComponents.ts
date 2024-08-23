@@ -1229,7 +1229,7 @@ export function defineContractComponents(world: World) {
   };
 }
 
-export const eventsComponents = (world: World) => {
+const eventsComponents = (world: World) => {
   return {
     BattleStartData: (() => {
       return defineComponent(
