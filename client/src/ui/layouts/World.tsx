@@ -23,6 +23,8 @@ import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { Transactions } from "../modules/transactions/Transactions";
 import { Onboarding } from "./Onboarding";
 import clsx from "clsx";
+import { EventStream } from "../modules/stream/EventStream";
+import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -88,6 +90,10 @@ export const World = () => {
           <RightMiddleContainer>
             <RightNavigationModule />
           </RightMiddleContainer>
+
+          <BottomLeftContainer>
+            <EventStream />
+          </BottomLeftContainer>
         </>
       )}
 

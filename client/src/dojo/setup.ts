@@ -16,7 +16,28 @@ export async function setup({ ...config }: DojoConfig) {
   // fetch all existing entities from torii
   const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, [], 1000);
 
-  const eventSync = getSyncEvents(network.toriiClient, network.contractComponents as any, undefined, []);
+  const timestamp = Math.round(Date.now() / 1000 - 120); // Subtract 2 minutes (120 seconds
+
+  const eventSync = getSyncEvents(
+    network.toriiClient,
+    network.contractComponents as any,
+    {
+      Composite: {
+        operator: "And",
+        clauses: [
+          {
+            Member: {
+              model: "MapExplored",
+              member: "timestamp",
+              operator: "Gt",
+              value: { U64: timestamp },
+            },
+          },
+        ],
+      },
+    },
+    [],
+  );
 
   return {
     network,
