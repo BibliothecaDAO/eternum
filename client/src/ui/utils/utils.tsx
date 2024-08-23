@@ -17,15 +17,15 @@ import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
-export const formatNumber = (num: any, decimals: number) => {
+export const formatNumber = (num: number, decimals: number): string => {
   return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
 
-export const currencyFormat = (num: any, decimals: number) => {
-  return formatNumber(divideByPrecision(Number(num)), decimals);
+export const currencyFormat = (num: number, decimals: number): string => {
+  return formatNumber(divideByPrecision(num), decimals);
 };
 
-export function currencyIntlFormat(num: any, decimals: number = 2) {
+export function currencyIntlFormat(num: number, decimals: number = 2): string {
   return Intl.NumberFormat("en-US", {
     notation: "compact",
     maximumFractionDigits: decimals,
