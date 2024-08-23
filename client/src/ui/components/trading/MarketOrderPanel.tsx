@@ -211,7 +211,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getsDisplay = useMemo(() => {
-    return isBuy ? currencyFormat(offer.makerGets[0].amount, 0) : currencyFormat(offer.takerGets[0].amount, 0);
+    return isBuy ? currencyFormat(offer.makerGets[0].amount, 2) : currencyFormat(offer.takerGets[0].amount, 2);
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getsDisplayNumber = useMemo(() => {
@@ -276,7 +276,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
 
   const calculatedLords = useMemo(() => {
-    return (inputValue / parseInt(getsDisplay)) * (getTotalLords / EternumGlobalConfig.resources.resourcePrecision);
+    return Math.ceil((inputValue / parseInt(getsDisplay.replace(/,/g, ""))) * getTotalLords);
   }, [inputValue, getsDisplay, getTotalLords]);
 
   console.log("calculatedLords", calculatedLords);
