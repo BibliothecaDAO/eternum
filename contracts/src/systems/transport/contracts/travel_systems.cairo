@@ -16,9 +16,7 @@ trait ITravelSystems {
 mod travel_systems {
     use eternum::alias::ID;
 
-    use eternum::constants::{
-        WORLD_CONFIG_ID, ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes
-    };
+    use eternum::constants::{WORLD_CONFIG_ID, ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
     use eternum::models::capacity::{Capacity, CapacityCustomTrait};
     use eternum::models::config::{RoadConfig, LevelingConfig, TravelStaminaCostConfig};
     use eternum::models::level::{Level, LevelCustomTrait};
@@ -104,10 +102,7 @@ mod travel_systems {
             let travelling_entity_coord: Coord = travelling_entity_position.into();
 
             let num_moves = directions.len().try_into().unwrap();
-            let mut stamina_cost = get!(
-                world, (WORLD_CONFIG_ID, TravelTypes::TRAVEL), TravelStaminaCostConfig
-            )
-                .cost;
+            let mut stamina_cost = get!(world, (WORLD_CONFIG_ID, TravelTypes::TRAVEL), TravelStaminaCostConfig).cost;
             stamina_cost = stamina_cost * num_moves;
             StaminaCustomImpl::handle_stamina_costs(travelling_entity_id, stamina_cost, world);
 

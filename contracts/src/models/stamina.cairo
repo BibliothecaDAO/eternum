@@ -2,10 +2,8 @@ use alexandria_data_structures::array_ext::ArrayTraitExt;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{
-
     models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
     constants::{ResourceTypes, TravelTypes, WORLD_CONFIG_ID}
-
 };
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

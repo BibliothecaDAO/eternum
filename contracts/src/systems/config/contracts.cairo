@@ -258,9 +258,7 @@ mod config_systems {
         fn set_travel_stamina_cost_config(ref world: IWorldDispatcher, travel_type: u8, cost: u16) {
             assert_caller_is_admin(world);
 
-            set!(
-                world, (TravelStaminaCostConfig { config_id: WORLD_CONFIG_ID, travel_type, cost })
-            );
+            set!(world, (TravelStaminaCostConfig { config_id: WORLD_CONFIG_ID, travel_type, cost }));
         }
     }
 

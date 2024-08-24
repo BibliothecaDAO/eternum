@@ -27,9 +27,7 @@ use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{
-    world::spawn_eternum, systems::deploy_system, config::set_travel_stamina_cost_config
-};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_travel_stamina_cost_config};
 use starknet::contract_address_const;
 
 fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
