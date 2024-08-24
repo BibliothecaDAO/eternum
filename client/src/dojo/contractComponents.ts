@@ -1050,6 +1050,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    StaminaRefillConfig: (() => {
+      return defineComponent(
+        world,
+        { config_id: RecsType.Number, amount_per_tick: RecsType.Number },
+        {
+          metadata: {
+            name: "eternum-StaminaRefillConfig",
+            types: ["u32", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Status: (() => {
       return defineComponent(
         world,

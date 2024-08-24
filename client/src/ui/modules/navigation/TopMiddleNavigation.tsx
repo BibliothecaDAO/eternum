@@ -24,7 +24,6 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useMemo } from "react";
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -97,7 +96,7 @@ export const TopMiddleNavigation = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
@@ -232,12 +231,11 @@ export const TopMiddleNavigation = () => {
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
 
-  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+  const progress = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
-    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
+    return (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
   }, [nextBlockTimestamp]);
 
   return (

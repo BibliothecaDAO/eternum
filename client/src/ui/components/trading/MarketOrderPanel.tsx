@@ -2,8 +2,8 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useMarketStore from "@/hooks/store/useMarketStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
@@ -40,7 +40,7 @@ export const MarketResource = ({
   bidPrice: string;
   depth: number;
 }) => {
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resource.id);
 
   const production = useMemo(() => {
@@ -226,7 +226,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
   }, [entityId, offer.makerId, offer.tradeId]);
 
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, offer.makerGets[0].resourceId);
 
   const production = useMemo(() => {
@@ -407,7 +407,7 @@ const OrderCreation = ({
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
     setup: {
@@ -454,7 +454,7 @@ const OrderCreation = ({
     return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
 
   const donkeyProduction = useMemo(() => {

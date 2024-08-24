@@ -15,7 +15,7 @@ export class ProductionManager {
   resourceId: ResourcesIds;
 
   constructor(
-    private dojo: SetupResult,
+    private setup: SetupResult,
     entityId: ID,
     resourceId: ResourcesIds,
   ) {
@@ -84,7 +84,7 @@ export class ProductionManager {
   public getStoreCapacity(): number {
     const quantity =
       getComponentValue(
-        this.dojo.components.BuildingQuantityv2,
+        this.setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
@@ -197,14 +197,14 @@ export class ProductionManager {
 
   private _getProduction(resourceId: ResourcesIds) {
     return getComponentValue(
-      this.dojo.components.Production,
+      this.setup.components.Production,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
   }
 
   private _getResource(resourceId: ResourcesIds) {
     return getComponentValue(
-      this.dojo.components.Resource,
+      this.setup.components.Resource,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
   }

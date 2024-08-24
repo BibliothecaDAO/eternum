@@ -2,7 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
@@ -45,7 +45,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
       components: { Trade },
     },
   } = useDojo();
-  const { nextBlockTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
   const tradeComponent = getComponentValue(Trade, getEntityIdFromKeys([BigInt(trade.event.tradeId)]));
