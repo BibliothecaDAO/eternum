@@ -262,7 +262,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [donkeyBalance, donkeysNeeded]);
 
   const canAccept = useMemo(() => {
-    return (isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance) && enoughDonkeys;
+    return enoughDonkeys;
   }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId, enoughDonkeys]);
 
   const accountName = useMemo(() => {
