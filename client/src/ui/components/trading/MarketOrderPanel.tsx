@@ -2,11 +2,10 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
-import useMarketStore from "@/hooks/store/useMarketStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
+import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import TextInput from "@/ui/elements/TextInput";
 import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
@@ -17,11 +16,8 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
-import { MarketModal } from "./MarketModal";
-import { ModalContainer } from "../ModalContainer";
+import { useMemo, useState } from "react";
 import { ConfirmationPopup } from "../bank/ConfirmationPopup";
-import { NumberInput } from "@/ui/elements/NumberInput";
 
 export const MarketResource = ({
   entityId,
@@ -506,7 +502,7 @@ const OrderCreation = ({
             value={resource}
             className="w-full col-span-3"
             onChange={(value) => setResource(Number(value))}
-            max={resourceBalance / EternumGlobalConfig.resources.resourcePrecision}
+            max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -530,7 +526,7 @@ const OrderCreation = ({
             value={lords}
             className="w-full col-span-3"
             onChange={(value) => setLords(Number(value))}
-            max={lordsBalance / EternumGlobalConfig.resources.resourcePrecision}
+            max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
