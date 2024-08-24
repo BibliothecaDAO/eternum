@@ -1,9 +1,10 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
-import { tableOfContents } from "./utils";
-import { StructureType, ResourcesIds, ConfigManager } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
+import { HYPERSTRUCTURE_POINTS_PER_CYCLE, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
+import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
+import { tableOfContents } from "./utils";
 
 export const WorldStructures = () => {
   const chapters = useMemo(
@@ -48,15 +49,9 @@ export const WorldStructures = () => {
 };
 
 const HyperstructureCreationTable = () => {
-  const configManager = ConfigManager.instance();
-  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
-  const structureCostsScaled = configManager.getStructureCostsScaled();
-
+  const config = ClientConfigManager.instance();
   const structureId = StructureType["Hyperstructure"];
-
-  const creationCost = structureCostsScaled[structureId].map((cost) => ({
-    ...cost,
-  }));
+  const creationCost = config.getStructureCosts(structureId);
 
   return (
     <>
@@ -73,7 +68,7 @@ const HyperstructureCreationTable = () => {
               <img className="w-24 h-24 " src={STRUCTURE_IMAGE_PATHS[structureId]} />
             </td>
             <td className="gap-1 flex flex-col p-2 items-center">
-              {creationCost.map((cost, index) => (
+              {creationCost?.map((cost, index) => (
                 <div key={index}>
                   <ResourceCost resourceId={cost.resource} amount={cost.amount} size="lg" />
                 </div>
@@ -85,8 +80,8 @@ const HyperstructureCreationTable = () => {
           <tr>
             <td colSpan={2} className="p-2">
               Hyperstructures are key to victory and can be constructed collaboratively. Once built, Hyperstructures
-              generate {hyperstructurePointsPerCycle} points per Eternum Day. Your share of these points is proportional
-              to your contribution to its construction
+              generate {HYPERSTRUCTURE_POINTS_PER_CYCLE} points per Eternum Day. Your share of these points is
+              proportional to your contribution to its construction
             </td>
           </tr>
         </tfoot>
@@ -96,10 +91,10 @@ const HyperstructureCreationTable = () => {
 };
 
 const HyperstructureConstructionTable = () => {
-  const configManager = ConfigManager.instance();
-  const hyperstructureTotalCostsScaled = configManager.getHyperstructureTotalCostsScaled();
+  const config = ClientConfigManager.instance();
 
-  const constructionCost = hyperstructureTotalCostsScaled
+  const constructionCost = config
+    .getHyperstructureTotalCosts()
     .filter((cost) => cost.resource !== ResourcesIds["Earthenshard"])
     .map((cost) => ({ ...cost }));
 

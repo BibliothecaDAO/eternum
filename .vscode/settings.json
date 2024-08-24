@@ -1,4 +1,8 @@
 {
   "cairo1.enableLanguageServer": true,
-  "cairo1.enableScarb": true
+  "cairo1.enableScarb": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  }
 }

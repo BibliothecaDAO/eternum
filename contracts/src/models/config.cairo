@@ -111,7 +111,7 @@ pub struct MapExploreConfig {
 #[dojo::model]
 struct TravelStaminaCostConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     travel_type: u8,
     cost: u16,

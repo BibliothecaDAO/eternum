@@ -1,10 +1,11 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
+import { TickIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
-import { ConfigManager } from "@bibliothecadao/eternum";
 
 export const GettingStarted = () => {
-  const configManager = ConfigManager.instance();
-  const armiesTickIntervalInSeconds = configManager.getConfig().tick.armiesTickIntervalInSeconds;
+  const config = ClientConfigManager.instance();
+  const armiesTickIntervalInSeconds = config.getTick(TickIds.Armies);
 
   const chapters = [
     {

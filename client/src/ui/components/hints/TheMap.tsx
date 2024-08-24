@@ -1,7 +1,8 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
-import { tableOfContents } from "./utils";
-import { ConfigManager } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { TravelTypes } from "@bibliothecadao/eternum";
+import { tableOfContents } from "./utils";
 
 export const TheMap = () => {
   const chapters = [
@@ -41,9 +42,8 @@ export const TheMap = () => {
 };
 
 const ExplorationTable = () => {
-  const configManager = ConfigManager.instance();
-  const explorationResourceCosts = configManager.getConfig().exploration.costs;
-  const staminaCost = configManager.getConfig().staminaCost;
+  const config = ClientConfigManager.instance();
+  const explorationResourceCosts = config.getExploreResourceCosts();
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">
@@ -57,7 +57,7 @@ const ExplorationTable = () => {
       <tbody>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Exploration</td>
-          <td className="border border-gold/10 p-2">{staminaCost.explore}</td>
+          <td className="border border-gold/10 p-2">{config.getTravelStaminaCost(TravelTypes.Explore)}</td>
           <td className="border border-gold/10 p-2 gap-1 flex flex-col">
             {Object.entries(explorationResourceCosts).map(([resourceId, amount]) => (
               <ResourceCost key={resourceId} resourceId={Number(resourceId)} amount={amount} size="lg" />
@@ -66,7 +66,7 @@ const ExplorationTable = () => {
         </tr>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Travel</td>
-          <td className="border border-gold/10 p-2">{staminaCost.travel}</td>
+          <td className="border border-gold/10 p-2">{config.getTravelStaminaCost(TravelTypes.Travel)}</td>
           <td className="border border-gold/10 p-2">None</td>
         </tr>
       </tbody>

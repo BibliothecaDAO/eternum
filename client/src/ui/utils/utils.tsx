@@ -1,14 +1,7 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
-import {
-  ContractAddress,
-  EternumGlobalConfig,
-  ID,
-  Position,
-  Resource,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, ID, Position, Resource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
@@ -41,11 +34,11 @@ export function displayAddress(string: string) {
 }
 
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
+  return Math.floor(value * RESOURCE_PRECISION);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / EternumGlobalConfig.resources.resourcePrecision;
+  return value / RESOURCE_PRECISION;
 }
 
 export function getPosition(realm_id: ID): { x: number; y: number } {
@@ -239,8 +232,10 @@ export const isRealmSelected = (structureEntityId: ID, structures: any) => {
 };
 
 export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
+  const config = ClientConfigManager.instance();
+
   return resources.reduce(
-    (total, resource) => total + (resource ? resource.amount * WEIGHTS_GRAM[resource.resourceId] || 0 : 0),
+    (total, resource) => total + (resource ? resource.amount * config.getResourceWeight(resource.resourceId) || 0 : 0),
     0,
   );
 };

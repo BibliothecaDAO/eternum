@@ -1,9 +1,14 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ConfigManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Combat = () => {
+  const config = ClientConfigManager.instance();
+  const baseArmyNumberForStructure = config.getTroopConfig().armyFreePerStructure;
+  const armyExtraPerMilitaryBuilding = config.getTroopConfig().armyExtraPerBuilding;
+
   const chapter = [
     {
       title: "Protecting your Structures",
@@ -12,7 +17,7 @@ export const Combat = () => {
     },
     {
       title: "Exploration",
-      content: `An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions. You can only have a certain number of attacking armies per Realm. You start at ${EternumGlobalConfig.troop.baseArmyNumberForStructure} and get ${EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding} per military building.`,
+      content: `An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions. You can only have a certain number of attacking armies per Realm. You start at ${baseArmyNumberForStructure} and get ${armyExtraPerMilitaryBuilding} per military building.`,
     },
     {
       title: "Battles",
@@ -88,8 +93,8 @@ const Battles = () => {
 };
 
 const Troops = () => {
-  const configManager = ConfigManager.instance();
-  const troopConfig = configManager.getConfig().troop;
+  const config = ClientConfigManager.instance();
+  const troopConfig = config.getTroopConfig();
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">
@@ -142,15 +147,15 @@ const TroopRow = ({
   strength: JSX.Element;
   health: number;
 }) => {
-  const configManager = ConfigManager.instance();
-  const troopsStaminas = configManager.getConfig().TROOPS_STAMINAS;
+  const config = ClientConfigManager.instance();
+  const stamina = config.getTroopTypeStamina(resourceId);
 
   return (
     <tr>
       <td className="border border-gold/10 p-2">
         <ResourceIcon resource={type} size="xxl" />
       </td>
-      <td className="border border-gold/10 p-2 text-center">{troopsStaminas[resourceId]}</td>
+      <td className="border border-gold/10 p-2 text-center">{stamina}</td>
       <td className="border border-gold/10 p-2 text-center">{strength}</td>
       <td className="border border-gold/10 p-2 text-center">{health}</td>
     </tr>
@@ -166,7 +171,7 @@ const Strength = ({
   strongAgainst: string;
   weakAgainst: string;
 }) => {
-  const troopConfig = ConfigManager.instance().getConfig().troop;
+  const troopConfig = ClientConfigManager.instance().getTroopConfig();
   const advantagePercent = (troopConfig.advantagePercent / 10000) * 100;
   const disadvantagePercent = (troopConfig.disadvantagePercent / 10000) * 100;
 

@@ -704,7 +704,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { travel_type, cost, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_travel_stamina_cost_config",
       calldata: [travel_type, cost],
     });

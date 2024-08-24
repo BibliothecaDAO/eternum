@@ -1,3 +1,4 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
@@ -9,7 +10,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
-  EternumGlobalConfig,
+  DONKEY_ENTITY_TYPE,
   ID,
   MarketInterface,
   ONE_MONTH,
@@ -178,16 +179,17 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     },
   } = useDojo();
 
+  const config = ClientConfigManager.instance();
+  const donkeySpeed = config.getSpeedConfig(DONKEY_ENTITY_TYPE);
+  const donkeyCarryCapacity = config.getCarryCapacity(DONKEY_ENTITY_TYPE);
+
   const { getRealmAddressName } = useRealm();
 
   // TODO: Do we need this?
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
 
   // TODO Distance
-  const travelTime = useMemo(
-    () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
-    [entityId, offer],
-  );
+  const travelTime = useMemo(() => computeTravelTime(entityId, offer.makerId, donkeySpeed, true), [entityId, offer]);
 
   const returnResources = useMemo(() => {
     return isBuy
@@ -256,7 +258,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / donkeyCarryCapacity);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -356,6 +358,9 @@ const OrderCreation = ({
   resourceId: ResourcesIds;
   isBuy?: boolean;
 }) => {
+  const config = ClientConfigManager.instance();
+  const donkeyCarryCapacity = config.getCarryCapacity(DONKEY_ENTITY_TYPE);
+
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
@@ -403,7 +408,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / donkeyCarryCapacity);
   }, [orderWeight]);
 
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);

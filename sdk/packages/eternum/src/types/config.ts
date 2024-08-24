@@ -2,16 +2,11 @@ import { ResourcesIds } from "../constants";
 import { Resource, ResourceInputs, ResourceOutputs } from "./common";
 
 export interface EternumConfig {
-  hyperstructurePointsPerCycle: number;
-  basePopulationCapacity: number;
   staminaCost: {
     travel: number;
     explore: number;
   };
   resources: {
-    resourcePrecision: number;
-    resourceMultiplier: number;
-    startingResourcesInputProductionFactor: number;
     startingResources: Resource[];
   };
   banks: {
@@ -21,13 +16,12 @@ export interface EternumConfig {
     ownerFeesNumerator: number;
     ownerFeesDenominator: number;
   };
-  weights: {
-    resource: number;
-    currency: number;
-    food: number;
+  populationCapacity: {
+    base: number;
+    workerHuts: number;
   };
   exploration: {
-    costs: { [key: number]: number };
+    burn: { [key: number]: number };
     reward: number;
     shardsMinesFailProbability: number;
   };
@@ -35,7 +29,7 @@ export interface EternumConfig {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number;
   };
-  carryCapacity: {
+  carryCapacityGram: {
     donkey: number;
     army: number;
   };
@@ -51,7 +45,8 @@ export interface EternumConfig {
     advantagePercent: number;
     disadvantagePercent: number;
     pillageHealthDivisor: number;
-    healthPrecision: bigint;
+    baseArmyNumberForStructure: number;
+    armyExtraPerMilitaryBuilding: number;
   };
   mercenaries: {
     troops: {
@@ -63,16 +58,15 @@ export interface EternumConfig {
   };
   BUILDING_CAPACITY: { [key: number]: number };
   BUILDING_POPULATION: { [key: number]: number };
-  BUILDING_RESOURCE_PRODUCED: { [key: number]: number };
-  WEIGHTS: { [key: number]: number };
+  WEIGHTS_GRAM: { [key: number]: number };
   RESOURCE_OUTPUTS: ResourceOutputs;
   RESOURCE_INPUTS: ResourceInputs;
   BUILDING_COSTS: ResourceInputs;
-  STRUCTURE_COSTS: ResourceInputs;
   RESOURCE_BUILDING_COSTS: ResourceInputs;
   HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[];
   HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[];
+  STRUCTURE_COSTS: ResourceInputs;
   QUEST_RESOURCES: { [key: number]: { resource: number; amount: number }[] };
   TROOPS_STAMINAS: { [key: number]: number };
-  ResourceMultipliers: ResourceOutputs;
+  STAMINA_REFILL_PER_TICK: number;
 }

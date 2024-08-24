@@ -1,8 +1,9 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
+import { ClientConfigManager } from "./ClientConfigManager";
 
 export class MarketManager {
   marketModel:
@@ -85,6 +86,9 @@ export class MarketManager {
   };
 
   public getOutputAmount(inputAmount: number, inputReserve: bigint, outputReserve: bigint, feeRateNum: number) {
+    const config = ClientConfigManager.instance();
+    const lpFeesDenominator = config.getBankConfig().lpFeesDenominator;
+
     // Ensure reserves are not zero and input amount is valid
     if (inputReserve < 0n || outputReserve < 0n) {
       throw new Error("Reserves must be >= zero");
@@ -94,7 +98,7 @@ export class MarketManager {
     }
 
     // Calculate the input amount after fee
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee
@@ -110,6 +114,9 @@ export class MarketManager {
   }
 
   public getInputPrice(inputAmount: number, inputReserve: bigint, outputReserve: bigint, feeRateNum: number) {
+    const config = ClientConfigManager.instance();
+    const lpFeesDenominator = config.getBankConfig().lpFeesDenominator;
+
     // Ensure reserves are not zero and input amount is valid
     if (inputReserve < 0 || outputReserve < 0) {
       throw new Error("Reserves must be >= zero");
@@ -119,7 +126,7 @@ export class MarketManager {
     }
 
     // Calculate the input amount after fee
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee

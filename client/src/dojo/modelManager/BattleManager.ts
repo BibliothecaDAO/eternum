@@ -2,10 +2,11 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
-import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { BattleSide, ID, RESOURCE_PRECISION, TROOP_HEALTH_PRECISION } from "@bibliothecadao/eternum";
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
+import { ClientConfigManager } from "./ClientConfigManager";
 
 export enum BattleType {
   Hex,
@@ -315,16 +316,17 @@ export class BattleManager {
   }
 
   private getTroopFullHealth(troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>): bigint {
-    const health = EternumGlobalConfig.troop.health;
+    const config = ClientConfigManager.instance();
+    const troopConfig = config.getTroopConfig();
 
-    let total_knight_health = health * Number(troops.knight_count);
-    let total_paladin_health = health * Number(troops.paladin_count);
-    let total_crossbowman_health = health * Number(troops.crossbowman_count);
+    let total_knight_health = troopConfig.health * Number(troops.knight_count);
+    let total_paladin_health = troopConfig.health * Number(troops.paladin_count);
+    let total_crossbowman_health = troopConfig.health * Number(troops.crossbowman_count);
 
     return BigInt(
       Math.floor(
         (total_knight_health + total_paladin_health + total_crossbowman_health) /
-          (EternumGlobalConfig.resources.resourceMultiplier * Number(EternumGlobalConfig.troop.healthPrecision)),
+          (RESOURCE_PRECISION * Number(TROOP_HEALTH_PRECISION)),
       ),
     );
   }

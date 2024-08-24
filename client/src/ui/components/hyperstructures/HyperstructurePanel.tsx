@@ -1,25 +1,22 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { calculateCompletionPoints } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { ProgressWithPercentage, useHyperstructures, useUpdates } from "@/hooks/helpers/useHyperstructures";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
-
 import {
-  ConfigManager,
   ContractAddress,
-  EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   MAX_NAME_LENGTH,
+  RESOURCE_PRECISION,
 } from "@bibliothecadao/eternum";
-
 import { useMemo, useState } from "react";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
-import useUIStore from "@/hooks/store/useUIStore";
 
 enum Loading {
   None,
@@ -35,11 +32,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       systemCalls: { contribute_to_construction },
     },
   } = useDojo();
-
-  const configManager = ConfigManager.instance();
-  const resourcePrecision = configManager.getResourcePrecision();
-  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
-  const hyperstructureTotalCostsScaled = configManager.getHyperstructureTotalCostsScaled();
+  const config = ClientConfigManager.instance();
 
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
@@ -60,7 +53,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
-      amount: amount * resourcePrecision,
+      amount: amount * RESOURCE_PRECISION,
     }));
 
     setIsLoading(Loading.Contribute);
@@ -81,7 +74,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
-    return hyperstructureTotalCostsScaled.map(({ resource }) => {
+    return config.getHyperstructureTotalCosts().map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
@@ -168,10 +161,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
             <div className="font-bold text-xl">{currencyIntlFormat(progresses.percentage)}%</div>
           </div>
         </div>
-
-        {/* // <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
-        //   <div className="uppercase text-xs">points/cycle</div>
-        //   <div className="font-bold text-xl ">{currencyIntlFormat(shares * hyperstructurePointsPerCycle)}</div> */}
 
         <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="flex flex-col justify-center items-center text-center h-full">

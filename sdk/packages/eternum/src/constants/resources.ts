@@ -1,8 +1,6 @@
-
 // import { ResourceInputs, ResourceOutputs, Resources } from "../types";
 
-import { Resource, Resources } from "../types";
-import { EternumGlobalConfig } from "./global";
+import { ResourceInputs, ResourceOutputs, Resources } from "../types";
 
 import { BuildingType, StructureType } from "./structures";
 
@@ -343,34 +341,6 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
-
-// weight that determines the amount of resources need to finish the hyperstructure
-export const HyperstructureResourceMultipliers: { [key in ResourcesIds]?: number } = {
-  [ResourcesIds.Wood]: 1.0,
-  [ResourcesIds.Stone]: 1.27,
-  [ResourcesIds.Coal]: 1.31,
-  [ResourcesIds.Copper]: 1.9,
-  [ResourcesIds.Obsidian]: 2.26,
-  [ResourcesIds.Silver]: 2.88,
-  [ResourcesIds.Ironwood]: 4.25,
-  [ResourcesIds.ColdIron]: 5.24,
-  [ResourcesIds.Gold]: 5.49,
-  [ResourcesIds.Hartwood]: 8.44,
-  [ResourcesIds.Diamonds]: 16.72,
-  [ResourcesIds.Sapphire]: 20.3,
-  [ResourcesIds.Ruby]: 20.98,
-  [ResourcesIds.DeepCrystal]: 20.98,
-  [ResourcesIds.Ignium]: 29.15,
-  [ResourcesIds.EtherealSilica]: 30.95,
-  [ResourcesIds.TrueIce]: 36.06,
-  [ResourcesIds.TwilightQuartz]: 45.18,
-  [ResourcesIds.AlchemicalSilver]: 53.92,
-  [ResourcesIds.Adamantine]: 91.2,
-  [ResourcesIds.Mithral]: 135.53,
-  [ResourcesIds.Dragonhide]: 217.92,
-  [ResourcesIds.Earthenshard]: 20.98,
-};
-
 export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
 
 export const resourcesByGuild = {
@@ -405,7 +375,6 @@ export const resourcesByGuild = {
     ResourcesIds.Dragonhide,
   ],
 };
-
 
 // if it's labor, then remove 28 to get the icon resource id
 export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
@@ -644,11 +613,9 @@ export const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Castle]: [],
   [BuildingType.Bank]: [],
   [BuildingType.FragmentMine]: [],
-  [BuildingType.Resource]: [
-    { resource: ResourcesIds.Wheat, amount: 500 },
-    { resource: ResourcesIds.Fish, amount: 500 },
-  ],
   [BuildingType.Farm]: [{ resource: ResourcesIds.Fish, amount: 900 }],
+  // Set in RESOURCE_BUILDING_COSTS by resource_type
+  [BuildingType.Resource]: [],
   [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 900 }],
   [BuildingType.Barracks]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
@@ -711,14 +678,14 @@ export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Adamantine]: [{ resource: ResourcesIds.Fish, amount: 500 }],
   [ResourcesIds.Mithral]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
   [ResourcesIds.Dragonhide]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Crossbowman]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Wheat]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Fish]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Lords]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Earthenshard]: [{ resource: ResourcesIds.Fish, amount: 500 }],
+  [ResourcesIds.Donkey]: [],
+  [ResourcesIds.Knight]: [],
+  [ResourcesIds.Crossbowman]: [],
+  [ResourcesIds.Paladin]: [],
+  [ResourcesIds.Wheat]: [],
+  [ResourcesIds.Fish]: [],
+  [ResourcesIds.Lords]: [],
+  [ResourcesIds.Earthenshard]: [],
 };
 
 export const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
@@ -889,8 +856,8 @@ export const QUEST_RESOURCES = {
   [QuestType.Contribution]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
 };
 
-// export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
-export const ResourceMultipliers: ResourceOutputs = {
+// weight that determines the amount of resources need to finish the hyperstructure
+export const HyperstructureResourceMultipliers: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Wood]: 1.0,
   [ResourcesIds.Stone]: 1.27,
   [ResourcesIds.Coal]: 1.31,
@@ -915,3 +882,6 @@ export const ResourceMultipliers: ResourceOutputs = {
   [ResourcesIds.Dragonhide]: 217.92,
   [ResourcesIds.Earthenshard]: 20.98,
 };
+
+export const RESOURCE_PRECISION = 1000;
+export const RESOURCE_MULTIPLIER = 1000;

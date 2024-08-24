@@ -1,31 +1,48 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { BuildingEnumToString, BuildingType, ConfigManager } from "@bibliothecadao/eternum";
+import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const Buildings = () => {
-  const configManager = ConfigManager.instance();
-  const buildingCostsScaled = configManager.getBuildingCostsScaled();
-  const buildingPopulation = configManager.getConfig().BUILDING_POPULATION;
-  const buildingCapacity = configManager.getConfig().BUILDING_CAPACITY;
-  const buildingResourceProduced = configManager.getConfig().BUILDING_RESOURCE_PRODUCED;
+  const config = ClientConfigManager.instance();
 
   const buildingTable = useMemo(() => {
     const buildings = [];
 
-    for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
-      if (buildingCostsScaled[buildingId].length !== 0) {
-        const population = buildingPopulation[buildingId];
+    // for (const buildingId of Object.keys(BUILDING_RESOURCE_PRODUCED) as unknown as BuildingType[]) {
+    //   if (BUILDING_COSTS_SCALED[buildingId].length !== 0) {
+    //     const population = BUILDING_POPULATION[buildingId];
 
-        const capacity = buildingCapacity[buildingId];
+    //     const capacity = BUILDING_CAPACITY[buildingId];
+
+    //     const calldata = {
+    //       building_category: buildingId,
+    //       building_capacity: capacity,
+    //       building_population: population,
+    //       building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
+    //       cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
+    //         return {
+    //           ...cost,
+    //           amount: cost.amount,
+    //         };
+    //       }),
+    //     };
+
+    for (const buildingId of Object.values(BuildingType).filter((type) => typeof type === "number")) {
+      const buildingCosts = config.getBuildingCost(buildingId as BuildingType);
+
+      if (buildingCosts.length !== 0) {
+        const { population, capacity } = config.getBuildingPopConfig(buildingId as BuildingType);
+        const buildingResourceType = config.getBuildingResourceProduced(buildingId as BuildingType);
 
         const calldata = {
-          building_category: buildingId,
+          building_category: buildingId as BuildingType,
           building_capacity: capacity,
           building_population: population,
-          building_resource_type: buildingResourceProduced[buildingId],
-          cost_of_building: buildingCostsScaled[buildingId].map((cost) => {
+          building_resource_type: buildingResourceType,
+          cost_of_building: buildingCosts.map((cost) => {
             return {
               ...cost,
               amount: cost.amount,

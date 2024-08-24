@@ -1,39 +1,10 @@
 import { HyperstructureFinishedEvent, LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
-import { ConfigManager, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { create } from "zustand";
 import { useDojo } from "../context/DojoContext";
 import { useContributions } from "../helpers/useContributions";
-
-function getResourceMultiplier(resourceType: ResourcesIds): number {
-  const configManager = ConfigManager.instance();
-
-  return configManager.getConfig().ResourceMultipliers[resourceType];
-}
-
-function computeContributionPoints(totalPoints: number, qty: number, resourceType: ResourcesIds): number {
-  const configManager = ConfigManager.instance();
-  const totalContributableAmount = configManager.getTotalContributableAmount();
-  const resourcePrecision = configManager.getResourcePrecision();
-
-  const effectiveContribution = (qty / resourcePrecision) * getResourceMultiplier(resourceType);
-  const points = (effectiveContribution / totalContributableAmount) * totalPoints;
-  return points;
-}
-
-export const calculateShares = (contributions: any[]) => {
-  let points = 0;
-  contributions.forEach((contribution) => {
-    points += computeContributionPoints(1, Number(contribution.amount), contribution.resource_type);
-  });
-  return points;
-};
-
-interface Rankable {
-  totalPoints: number;
-  rank: number;
-}
 
 export interface PlayerPointsLeaderboardInterface {
   address: ContractAddress;
@@ -66,6 +37,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set) => {
 
 export const useSubscriptionToHyperstructureEvents = () => {
   const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureFinishedEvent | null>(null);
+
   const {
     setup: {
       updates: {

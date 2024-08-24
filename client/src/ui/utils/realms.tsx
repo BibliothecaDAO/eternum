@@ -1,16 +1,6 @@
-import {
-  BASE_POPULATION_CAPACITY,
-  BUILDING_POPULATION,
-  findResourceIdByTrait,
-  ID,
-  orders,
-  RealmInterface,
-} from "@bibliothecadao/eternum";
-import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
+import { findResourceIdByTrait, ID, orders, RealmInterface } from "@bibliothecadao/eternum";
 import realmsJson from "../../data/geodata/realms.json";
-import realmsOrdersJson from "../../data/geodata/realms_raw.json";
-import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
-import { ConfigManager, findResourceIdByTrait, orders, RealmInterface } from "@bibliothecadao/eternum";
 import { packResources } from "./packedData";
 import { getPosition } from "./utils";
 
@@ -81,9 +71,9 @@ export function getRealm(realmId: ID): RealmInterface | undefined {
 }
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
-  const configManager = ConfigManager.instance();
-  const basePopulationCapacity = configManager.getConfig().basePopulationCapacity;
-  const buildingPopulation = configManager.getConfig().BUILDING_POPULATION;
+  const config = ClientConfigManager.instance();
+  const basePopulationCapacity = config.getBasePopulationCapacity();
+  const { population } = config.getBuildingPopConfig(building);
 
-  return (realm?.population || 0) + buildingPopulation[building] <= basePopulationCapacity + (realm?.capacity || 0);
+  return (realm?.population || 0) + population <= basePopulationCapacity + (realm?.capacity || 0);
 };

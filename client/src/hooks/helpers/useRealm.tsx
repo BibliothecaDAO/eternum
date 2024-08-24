@@ -1,10 +1,5 @@
-import {
-  ConfigManager,
-  ContractAddress,
-  ID,
-  getOrderName,
-  getQuestResources as getStartingResources,
-} from "@bibliothecadao/eternum";
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
+import { ContractAddress, ID, getOrderName } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -22,14 +17,14 @@ export function useRealm() {
       components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const config = ClientConfigManager.instance();
 
-  const configManager = ConfigManager.instance();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const getQuestResources = () => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
-    return configManager.getStartingResources(resourcesProduced);
+    return config.getStartingResources(resourcesProduced);
   };
 
   const getEntityOwner = (entityId: ID) => {
@@ -173,7 +168,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
     },
   } = useDojo();
 
-  const configManager = ConfigManager.instance();
+  const config = ClientConfigManager.instance();
   const query = useEntityQuery([HasValue(Realm, { entity_id: realmEntityId })]);
 
   const realm = useMemo((): any => {
@@ -200,7 +195,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
         const name = getRealmNameById(realm_id);
 
         const { address } = owner;
-        const basePopulationCapacity = configManager.getConfig().basePopulationCapacity;
+        const basePopulationCapacity = config.getBasePopulationCapacity();
 
         return {
           realmId: realm_id,

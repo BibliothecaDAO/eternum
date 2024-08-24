@@ -1,7 +1,8 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BuildingType, ConfigManager, EternumGlobalConfig, STOREHOUSE_CAPACITY, ResourcesIds, ID } from "@bibliothecadao/eternum";
+import { BuildingType, ID, RESOURCE_PRECISION, ResourcesIds, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
+import { ClientConfigManager } from "./ClientConfigManager";
 
 export class ProductionManager {
   productionModel:
@@ -100,9 +101,7 @@ export class ProductionManager {
         this.buildingQuantity,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
-    return (
-      (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * EternumGlobalConfig.resources.resourcePrecision
-    );
+    return (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * RESOURCE_PRECISION;
   }
 
   public isConsumingInputsWithoutOutput(currentTick: number): boolean {
@@ -192,8 +191,7 @@ export class ProductionManager {
   }
 
   private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
-    const resource_inputs_scaled = ConfigManager.instance().getResourceInputsScaled();
-    const inputs = resource_inputs_scaled[resourceId];
+    const inputs = ClientConfigManager.instance().getResourceInputs(resourceId);
 
     // Ensure inputs is an array before proceeding
     if (inputs.length == 0) {

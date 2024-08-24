@@ -1,4 +1,5 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
@@ -8,7 +9,7 @@ import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
-import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { BuildingType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
@@ -24,8 +25,16 @@ enum Loading {
 }
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
-  const dojo = useDojo();
-  const tileManager = new TileManager(dojo.setup, { col: structure.position.x, row: structure.position.y });
+  const {
+    account: { account },
+    setup,
+  } = useDojo();
+
+  const config = ClientConfigManager.instance();
+  const baseArmyNumberForStructure = config.getTroopConfig().armyFreePerStructure;
+  const armyExtraPerMilitaryBuilding = config.getTroopConfig().armyExtraPerBuilding;
+
+  const tileManager = new TileManager(setup, { col: structure.position.x, row: structure.position.y });
   const existingBuildings = tileManager.existingBuildings();
 
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
@@ -34,25 +43,18 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { create_army },
-    },
-  } = useDojo();
-
   const [loading, setLoading] = useState<Loading>(Loading.None);
 
   const maxAmountOfAttackingArmies = useMemo(() => {
     return (
-      EternumGlobalConfig.troop.baseArmyNumberForStructure +
+      baseArmyNumberForStructure +
       existingBuildings.filter(
         (building) =>
           building.category === BuildingType[BuildingType.ArcheryRange] ||
           building.category === BuildingType[BuildingType.Barracks] ||
           building.category === BuildingType[BuildingType.Stable],
       ).length *
-        EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
+        armyExtraPerMilitaryBuilding
     );
   }, [existingBuildings]);
 
@@ -72,11 +74,13 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const handleCreateArmy = (is_defensive_army: boolean) => {
     if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
     setLoading(is_defensive_army ? Loading.CreateDefensive : Loading.CreateAttacking);
-    create_army({
-      signer: account,
-      army_owner_id: structure.entity_id,
-      is_defensive_army,
-    }).finally(() => setLoading(Loading.None));
+    setup.systemCalls
+      .create_army({
+        signer: account,
+        army_owner_id: structure.entity_id,
+        is_defensive_army,
+      })
+      .finally(() => setLoading(Loading.None));
   };
   return (
     <>

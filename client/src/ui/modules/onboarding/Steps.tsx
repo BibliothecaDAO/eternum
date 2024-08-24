@@ -2,6 +2,7 @@ import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -15,7 +16,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -351,13 +352,15 @@ const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+  const config = ClientConfigManager.instance();
+  const armiesTickIntervalInSeconds = config.getTick(TickIds.Armies);
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Days are {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60 / 60}hrs long</h2>
+        <h2 className="mb-4">Days are {armiesTickIntervalInSeconds / 60 / 60}hrs long</h2>
         <p className="mb-4 text-xl">
-          Each {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60 / 60} hour period your Realms and Troops will
-          regain energy and be able to travel again. Don't get caught out in the open.
+          Each {armiesTickIntervalInSeconds / 60 / 60} hour period your Realms and Troops will regain energy and be able
+          to travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>

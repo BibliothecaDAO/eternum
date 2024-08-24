@@ -1,5 +1,6 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { calculateDistance } from "@/ui/utils/utils";
-import { ConfigManager, ID, Position } from "@bibliothecadao/eternum";
+import { ID, Position, TravelTypes } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
@@ -20,7 +21,9 @@ export function useTravel() {
       systemCalls: { travel_hex },
     },
   } = useDojo();
-  const staminaCost = ConfigManager.instance().getConfig().staminaCost;
+  const config = ClientConfigManager.instance();
+  const travelStaminaCost = config.getTravelStaminaCost(TravelTypes.Travel);
+
   const { optimisticStaminaUpdate } = useStamina();
 
   const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
@@ -48,7 +51,7 @@ export function useTravel() {
 
     const entity = getEntityIdFromKeys([BigInt(entityId)]);
 
-    optimisticStaminaUpdate(overrideId, entityId, staminaCost.travel * pathLength, currentArmiesTick);
+    optimisticStaminaUpdate(overrideId, entityId, travelStaminaCost * pathLength, currentArmiesTick);
 
     components.Position.addOverride(overrideId, {
       entity,

@@ -1,27 +1,24 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
-
 import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position as PositionInterface } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
+import { ID, Position, RESOURCE_PRECISION, resources, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useEffect, useMemo, useState } from "react";
-
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
-import { Position as PositionInterface } from "@/types/Position";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
-import { LucideArrowRight } from "lucide-react";
 import clsx from "clsx";
-import { useQuery } from "@/hooks/helpers/useQuery";
+import { LucideArrowRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -105,9 +102,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       army_id: army?.entity_id || 0n,
       payer_id: owner_entity,
       troops: {
-        knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        paladin_count: troopCounts[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        crossbowman_count: troopCounts[ResourcesIds.Crossbowman] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        knight_count: troopCounts[ResourcesIds.Knight] * RESOURCE_PRECISION || 0,
+        paladin_count: troopCounts[ResourcesIds.Paladin] * RESOURCE_PRECISION || 0,
+        crossbowman_count: troopCounts[ResourcesIds.Crossbowman] * RESOURCE_PRECISION || 0,
       },
     }).finally(() => setIsLoading(false));
 
@@ -275,7 +272,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             {troops.map((troop) => {
               const balance = getBalance(owner_entity, troop.name).balance;
 
-              const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+              const balanceFloor = Math.floor(balance / RESOURCE_PRECISION);
 
               return (
                 <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>
@@ -294,9 +291,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                       Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
                     </div>
                     <NumberInput
-                      max={
-                        balance ? Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision) : 0
-                      }
+                      max={balance ? Math.min(balanceFloor, U32_MAX / RESOURCE_PRECISION) : 0}
                       min={0}
                       step={100}
                       value={troopCounts[troop.name]}

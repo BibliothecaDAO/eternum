@@ -1,6 +1,16 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
+import { getTotalContributableAmount } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { SetupResult } from "@/dojo/setup";
+import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
-import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
+import {
+  HyperstructureResourceMultipliers,
+  ID,
+  RESOURCE_PRECISION,
+  StructureType,
+  TROOP_HEALTH_PRECISION,
+} from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
@@ -13,6 +23,7 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
@@ -20,11 +31,6 @@ import {
   StructureSystemUpdate,
   TileSystemUpdate,
 } from "./types";
-import { HexPosition } from "@/types";
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
-import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
-import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
-import { ClientComponents } from "@/dojo/createClientComponents";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -75,8 +81,7 @@ export class SystemManager {
             const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
             if (protectee) return;
 
-            const healthMultiplier =
-              EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+            const healthMultiplier = TROOP_HEALTH_PRECISION * BigInt(RESOURCE_PRECISION);
 
             const entityOwner = getComponentValue(this.dojo.components.EntityOwner, update.entity);
             if (!entityOwner) return;
@@ -137,8 +142,7 @@ export class SystemManager {
           const position = getComponentValue(this.dojo.components.Position, update.entity);
           if (!position) return;
 
-          const healthMultiplier =
-            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          const healthMultiplier = TROOP_HEALTH_PRECISION * BigInt(RESOURCE_PRECISION);
 
           return {
             entityId: battle.entity_id,
@@ -238,18 +242,19 @@ export class SystemManager {
     progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
     hyperstructureEntityId: ID,
   ) => {
+    const config = ClientConfigManager.instance();
+    const hyperstructureTotalCosts = config.getHyperstructureTotalCosts();
+
     let percentage = 0;
-    const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
+    const allProgresses = hyperstructureTotalCosts.map(({ resource, amount: resourceCost }) => {
       let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
       let progress = {
         hyperstructure_entity_id: hyperstructureEntityId,
         resource_type: resource,
-        amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
+        amount: !foundProgress ? 0 : Number(foundProgress.amount) / RESOURCE_PRECISION,
         percentage: !foundProgress
           ? 0
-          : Math.floor(
-              (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-            ),
+          : Math.floor((Number(foundProgress.amount) / RESOURCE_PRECISION / resourceCost!) * 100),
         costNeeded: resourceCost,
       };
       percentage +=
@@ -257,7 +262,7 @@ export class SystemManager {
           HyperstructureResourceMultipliers[
             progress.resource_type as keyof typeof HyperstructureResourceMultipliers
           ]!) /
-        TOTAL_CONTRIBUTABLE_AMOUNT;
+        getTotalContributableAmount();
       return progress;
     });
     return { allProgresses, percentage };

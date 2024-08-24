@@ -1,6 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { getArmyTotalCapacity } from "@/dojo/modelManager/utils/ArmyMovementUtils";
-import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, Position, RESOURCE_PRECISION, TROOP_HEALTH_PRECISION } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
   Component,
@@ -71,12 +71,8 @@ const formatArmies = (
 
       let health = structuredClone(getComponentValue(Health, armyEntityId));
       if (health) {
-        health.current =
-          health.current /
-          (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
-        health.lifetime =
-          health.lifetime /
-          (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
+        health.current = health.current / (BigInt(RESOURCE_PRECISION) * TROOP_HEALTH_PRECISION);
+        health.lifetime = health.lifetime / (BigInt(RESOURCE_PRECISION) * TROOP_HEALTH_PRECISION);
       } else {
         health = {
           entity_id: army.entity_id,
@@ -88,7 +84,7 @@ const formatArmies = (
 
       let quantity = structuredClone(getComponentValue(Quantity, armyEntityId));
       if (quantity) {
-        quantity.value = BigInt(quantity.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+        quantity.value = BigInt(quantity.value) / BigInt(RESOURCE_PRECISION);
       } else {
         quantity = {
           entity_id: army.entity_id,
@@ -102,9 +98,7 @@ const formatArmies = (
       const totalCapacity = capacity ? getArmyTotalCapacity(army, capacity) : 0n;
 
       const weightComponentValue = getComponentValue(Weight, armyEntityId);
-      const weight = weightComponentValue
-        ? weightComponentValue.value / BigInt(EternumGlobalConfig.resources.resourcePrecision)
-        : 0n;
+      const weight = weightComponentValue ? weightComponentValue.value / BigInt(RESOURCE_PRECISION) : 0n;
 
       const arrivalTime = getComponentValue(ArrivalTime, armyEntityId);
       const stamina = getComponentValue(Stamina, armyEntityId);

@@ -1,20 +1,11 @@
-import useUIStore from "@/hooks/store/useUIStore";
-
-import { BuildingType, ConfigManager, findResourceById } from "@bibliothecadao/eternum";
-
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  ID,
-  STRUCTURE_COSTS_SCALED,
-  StructureType,
-} from "@bibliothecadao/eternum";
-
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { HYPERSTRUCTURE_POINTS_PER_CYCLE, ID, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React from "react";
 import { StructureCard } from "./StructureCard";
@@ -29,7 +20,7 @@ export const STRUCTURE_IMAGE_PATHS = {
 };
 
 export const StructureConstructionMenu = () => {
-  const resourcePrecision = ConfigManager.instance().getResourcePrecision();
+  const config = ClientConfigManager.instance();
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
@@ -50,17 +41,15 @@ export const StructureConstructionMenu = () => {
       const resourceCost = cost[Number(resourceId)];
 
       const balance = getBalance(structureEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * resourcePrecision;
+      return balance.balance >= resourceCost.amount * RESOURCE_PRECISION;
     });
 
   return (
     <div className="grid grid-cols-2 gap-2 p-2">
       {buildingTypes.map((structureType, index) => {
-        const configManager = ConfigManager.instance();
-        const structureCostsScaled = configManager.getStructureCostsScaled();
+        const building: StructureType = StructureType[Number(structureType)] as unknown as StructureType;
+        const cost = config.getStructureCosts(building);
 
-        const building = StructureType[structureType as keyof typeof StructureType];
-        const cost = structureCostsScaled[building];
         const hasBalance = checkBalance(cost);
 
         const isHyperstructure = building === StructureType["Hyperstructure"];
@@ -100,13 +89,9 @@ const StructureInfo = ({
   entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
-  const configManager = ConfigManager.instance();
-  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
-  const structureCostsScaled = configManager.getStructureCostsScaled();
-
-  const cost = structureCostsScaled[structureId];
-
-  const perTick = structureId == StructureType.Hyperstructure ? `+${hyperstructurePointsPerCycle} points` : "";
+  const config = ClientConfigManager.instance();
+  const cost = config.getStructureCosts(structureId);
+  const perTick = structureId == StructureType.Hyperstructure ? `+${HYPERSTRUCTURE_POINTS_PER_CYCLE} points` : "";
 
   const { getBalance } = getResourceBalance();
 

@@ -21,7 +21,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     account: { account },
     setup,
   } = useDojo();
-
   const { getBalance } = getResourceBalance();
   const { computeTravelTime } = useTravel();
 

@@ -1,5 +1,6 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useStamina } from "@/hooks/helpers/useStamina";
-import { ConfigManager, ID } from "@bibliothecadao/eternum";
+import { ConfigManager, ID, TravelTypes } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -12,13 +13,16 @@ export const StaminaResourceCost = ({
   travelLength: number;
   isExplored: boolean;
 }) => {
-  const staminaCosts = ConfigManager.instance().getConfig().staminaCost;
+  const config = ClientConfigManager.instance();
+  const travelCost = config.getTravelStaminaCost(TravelTypes.Travel);
+  const exploreCost = config.getTravelStaminaCost(TravelTypes.Explore);
+
   const { useStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: travelingEntityId || 0 });
 
   const destinationHex = useMemo(() => {
     if (!stamina) return;
-    const costs = travelLength * (isExplored ? -staminaCosts.travel : -staminaCosts.explore);
+    const costs = travelLength * (isExplored ? -travelCost : -exploreCost);
     const balanceColor = stamina !== undefined && stamina.amount < costs ? "text-red/90" : "text-green/90";
     return { isExplored, costs, balanceColor, balance: stamina.amount };
   }, [stamina]);

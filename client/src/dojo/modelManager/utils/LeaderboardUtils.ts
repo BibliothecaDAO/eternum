@@ -1,22 +1,29 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import {
-  EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   HyperstructureResourceMultipliers,
+  RESOURCE_PRECISION,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
+import { ClientConfigManager } from "../ClientConfigManager";
+import { useMemo } from "react";
 
-export const TOTAL_CONTRIBUTABLE_AMOUNT: number = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.reduce(
-  (total, { resource, amount }) => {
-    return (
-      total +
-      (HyperstructureResourceMultipliers[resource as keyof typeof HyperstructureResourceMultipliers] ?? 0) * amount
-    );
-  },
-  0,
-);
+export function getTotalContributableAmount() {
+  const config = ClientConfigManager.instance();
+  const hyperstructureTotalCosts = config.getHyperstructureTotalCosts();
+
+  return useMemo(
+    () =>
+      hyperstructureTotalCosts.reduce((total, { resource, amount }) => {
+        return (
+          total +
+          (HyperstructureResourceMultipliers[resource as keyof typeof HyperstructureResourceMultipliers] ?? 0) * amount
+        );
+      }, 0),
+    [hyperstructureTotalCosts],
+  );
+}
 
 function getResourceMultiplier(resourceType: ResourcesIds): number {
   return HyperstructureResourceMultipliers[resourceType] ?? 0;
@@ -32,9 +39,8 @@ export function computeInitialContributionPoints(
 
 export function getTotalPointsPercentage(resourceType: ResourcesIds, resourceQuantity: bigint): number {
   const effectiveContribution =
-    Number(resourceQuantity / BigInt(EternumGlobalConfig.resources.resourcePrecision)) *
-    getResourceMultiplier(resourceType);
-  return effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT;
+    Number(resourceQuantity / BigInt(RESOURCE_PRECISION)) * getResourceMultiplier(resourceType);
+  return effectiveContribution / getTotalContributableAmount();
 }
 
 export const calculateCompletionPoints = (

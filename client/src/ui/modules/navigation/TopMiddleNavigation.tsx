@@ -1,3 +1,4 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -10,12 +11,8 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-
-import { BuildingType, ConfigManager, STOREHOUSE_CAPACITY, StructureType, ID } from "@bibliothecadao/eternum";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
-
+import { BuildingType, ID, STOREHOUSE_CAPACITY, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -39,10 +36,9 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const configManager = ConfigManager.instance();
-  const basePopulationCapacity = configManager.getConfig().basePopulationCapacity;
-
-  // const [location, setLocation] = useLocation();
+  const config = ClientConfigManager.instance();
+  const basePopulationCapacity = config.getBasePopulationCapacity();
+  const armiesTickIntervalInSeconds = config.getTick(TickIds.Armies);
 
   const { setup } = useDojo();
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
@@ -106,8 +102,8 @@ export const TopMiddleNavigation = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % armiesTickIntervalInSeconds;
+    const progressValue = (timeLeft / armiesTickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -236,7 +232,7 @@ export const TopMiddleNavigation = () => {
 };
 
 const TickProgress = () => {
-  const armiesTickIntervalInSeconds = ConfigManager.instance().getConfig().tick.armiesTickIntervalInSeconds;
+  const armiesTickIntervalInSeconds = ClientConfigManager.instance().getTick(TickIds.Armies);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;

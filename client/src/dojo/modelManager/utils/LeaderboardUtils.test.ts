@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   computeInitialContributionPoints,
+  getTotalContributableAmount,
   getTotalPointsPercentage,
-  TOTAL_CONTRIBUTABLE_AMOUNT,
 } from "./LeaderboardUtils";
-import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
 
 const EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT = 2;
 
@@ -29,9 +28,9 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   };
 });
 
-describe("TOTAL_CONTRIBUTABLE_AMOUNT", () => {
+describe("getTotalContributableAmount", () => {
   it("should return a valid amount", () => {
-    expect(TOTAL_CONTRIBUTABLE_AMOUNT).toBe(EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT);
+    expect(getTotalContributableAmount()).toBe(EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT);
   });
 });
 

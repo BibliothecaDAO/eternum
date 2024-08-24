@@ -6,7 +6,9 @@ import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
+
+import { ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
+
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
@@ -132,10 +134,9 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
       from_army_id: transferDirection === "to" ? giverArmyEntityId : takerArmy?.entity_id || protector!.army_id,
       to_army_id: transferDirection === "to" ? takerArmy?.entity_id || protector!.army_id : giverArmyEntityId,
       troops: {
-        knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-        paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-        crossbowman_count:
-          troopsGiven[ResourcesIds.Crossbowman] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+        knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(RESOURCE_PRECISION),
+        paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(RESOURCE_PRECISION),
+        crossbowman_count: troopsGiven[ResourcesIds.Crossbowman] * BigInt(RESOURCE_PRECISION),
       },
     });
     setLoading(false);
@@ -177,9 +178,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                     <p>
                       {transferDirection === "to"
                         ? `[${currencyFormat(
-                            amount -
-                              troopsGiven[Number(resourceId)] *
-                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                            amount - troopsGiven[Number(resourceId)] * BigInt(RESOURCE_PRECISION),
                             0,
                           )}]`
                         : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
@@ -190,7 +189,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                 {transferDirection === "to" && (
                   <NumberInput
                     className="w-1/2"
-                    max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
+                    max={Number(amount) / RESOURCE_PRECISION}
                     min={0}
                     step={100}
                     value={Number(troopsGiven[Number(resourceId)])}
@@ -226,9 +225,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                       <p>
                         {transferDirection === "from"
                           ? `[${currencyFormat(
-                              amount -
-                                troopsGiven[Number(resourceId)] *
-                                  BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                              amount - troopsGiven[Number(resourceId)] * BigInt(RESOURCE_PRECISION),
                               0,
                             )}]`
                           : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
@@ -238,7 +235,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
                   {transferDirection === "from" && (
                     <NumberInput
                       className="w-1/2"
-                      max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
+                      max={Number(amount) / RESOURCE_PRECISION}
                       min={0}
                       step={100}
                       value={Number(troopsGiven[Number(resourceId)])}

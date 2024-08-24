@@ -1,7 +1,8 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
+import { ID, Resource, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
 export const TravelInfo = ({
@@ -17,9 +18,12 @@ export const TravelInfo = ({
   setCanCarry?: (canContinue: boolean) => void;
   isAmm?: boolean;
 }) => {
+  const config = ClientConfigManager.instance();
+  const donkeyCarryCapacity = config.getCarryCapacity(ResourcesIds.Donkey);
+
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
+  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / donkeyCarryCapacity);
 
   const { getBalance } = getResourceBalance();
 
@@ -74,6 +78,10 @@ export const TravelInfo = ({
         <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords] / GRAMS_PER_KG} kg/unit`}</div>
         <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat] / GRAMS_PER_KG} kg/unit`}</div>
         <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood] / GRAMS_PER_KG} kg/unit`}</div>
+
+        {/* <div className="ml-2">Lords: {`${config.getResourceWeight(ResourcesIds.Lords)} kg/unit`}</div>
+        <div>Food: {`${config.getResourceWeight(ResourcesIds.Wheat)} kg/unit`}</div>
+        <div className="ml-2">Resource: {`${config.getResourceWeight(ResourcesIds.Wood)} kg/unit`}</div> */}
       </div>
     </>
   );

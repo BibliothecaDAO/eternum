@@ -1,4 +1,4 @@
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, RESOURCE_PRECISION, TROOP_HEALTH_PRECISION } from "@bibliothecadao/eternum";
 import { Component, Entity, getComponentValue } from "@dojoengine/recs";
 import { describe, expect, it, vi } from "vitest";
 import * as testedModule from "../useBattles";
@@ -28,8 +28,7 @@ describe("getBattle", () => {
     vi.mocked(getComponentValue).mockReturnValueOnce(mockBattle);
 
     const expectedBattle = structuredClone(mockBattle);
-    const precisionFactor =
-      BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision;
+    const precisionFactor = BigInt(RESOURCE_PRECISION) * TROOP_HEALTH_PRECISION;
 
     const adjustHealth = (health: { current: bigint; lifetime: bigint }) => {
       health.current = health.current / precisionFactor;

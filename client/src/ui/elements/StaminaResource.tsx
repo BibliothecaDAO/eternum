@@ -1,9 +1,10 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useStamina } from "@/hooks/helpers/useStamina";
-import { ConfigManager, ID } from "@bibliothecadao/eternum";
+import { ID, TravelTypes } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
-  const travelCost = ConfigManager.instance().getConfig().staminaCost.travel;
+  const travelCost = ClientConfigManager.instance().getTravelStaminaCost(TravelTypes.Travel);
 
   const { useStaminaByEntityId, getMaxStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0 });

@@ -5,7 +5,7 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { TradeEvent } from "./MarketTradingHistory";
@@ -81,12 +81,9 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
       <div className="text-sm my-auto flex flex-row font-bold">
         {resourceGiven && <ResourceIcon resource={ResourcesIds[Number(resourceGiven[0]!.resource_type)]} size={"sm"} />}{" "}
         <div>{`${currencyIntlFormat(
-          Number(resourceGiven[0]!.resource_amount) / EternumGlobalConfig.resources.resourcePrecision,
+          Number(resourceGiven[0]!.resource_amount) / RESOURCE_PRECISION,
           2,
-        )} for ${currencyIntlFormat(
-          Number(resourceTaken[0]!.resource_amount) / EternumGlobalConfig.resources.resourcePrecision,
-          2,
-        )}`}</div>
+        )} for ${currencyIntlFormat(Number(resourceTaken[0]!.resource_amount) / RESOURCE_PRECISION, 2)}`}</div>
         {resourceTaken && <ResourceIcon resource={ResourcesIds[Number(resourceTaken[0]!.resource_type)]} size={"sm"} />}{" "}
       </div>
       <div className="text-sm my-auto flex flex-row font-bold">

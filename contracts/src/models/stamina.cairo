@@ -4,7 +4,7 @@ use eternum::alias::ID;
 use eternum::{
 
     models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
-    constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
+    constants::{ResourceTypes, TravelTypes, WORLD_CONFIG_ID}
 
 };
 

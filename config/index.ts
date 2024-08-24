@@ -1,10 +1,10 @@
 import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
 
-import * as fs from "fs";
 import { EternumProvider, ConfigManager, type EternumConfig } from "@bibliothecadao/eternum";
 
 import { Account } from "starknet";
+import fs from "fs";
 
 if (
   !process.env.VITE_PUBLIC_MASTER_ADDRESS ||
@@ -25,15 +25,15 @@ const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
 const configPath = "../config/EternumConfig.json";
-let configData: Partial<EternumConfig> = {};
+let customConfig: Partial<EternumConfig> = {};
 try {
   const rawData = fs.readFileSync(configPath, "utf-8");
   if (rawData.trim()) {
-    configData = JSON.parse(rawData);
+    customConfig = JSON.parse(rawData);
   }
 } catch (error) {
   console.warn(`Failed to load config: ${error}`);
 }
 
-const configManager = ConfigManager.instance(configData);
+const configManager = new ConfigManager(customConfig);
 await configManager.setConfigs(account, provider);

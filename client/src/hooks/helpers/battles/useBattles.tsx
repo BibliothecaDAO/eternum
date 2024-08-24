@@ -1,6 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
+import { ID, Position, RESOURCE_PRECISION, TROOP_HEALTH_PRECISION } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import {
   Component,
@@ -17,15 +17,6 @@ import { useMemo } from "react";
 import { useDojo } from "../../context/DojoContext";
 import * as module from "./useBattles";
 
-type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
-  ComponentValue<ClientComponents["Health"]["schema"]>;
-
-type ExtraBattleInfo = ComponentValue<ClientComponents["Position"]["schema"]> & {
-  opponentArmy: FullArmyType;
-  ownArmyEntityName: string;
-  opponentArmyEntityName: string;
-};
-
 export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
   isStructureBattle: boolean;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -38,8 +29,7 @@ export const getBattle = (
   let battle = getComponentValue(Battle, battleEntityId);
   let battleClone = structuredClone(battle);
   if (!battleClone) return;
-  const multiplier =
-    BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision;
+  const multiplier = BigInt(RESOURCE_PRECISION) * TROOP_HEALTH_PRECISION;
   battleClone.attack_army_health.current = battleClone.attack_army_health.current / multiplier;
   battleClone.attack_army_health.lifetime = battleClone.attack_army_health.lifetime / multiplier;
   battleClone.defence_army_health.current = battleClone.defence_army_health.current / multiplier;

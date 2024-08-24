@@ -1,7 +1,7 @@
 import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
-import { EternumGlobalConfig, EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, EternumProvider, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -26,9 +26,6 @@ const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_
 const ADMIN_BANK_ENTITY_ID = 999999998n;
 const RESOURCE_LIQUIDITY = 250000;
 const LORDS_LIQUIDITY_PER_RESOURCE = 250000;
-
-// Precision
-const RESOURCE_PRECISION = 1000;
 
 // Banks
 const COORD_X = 2147483899;

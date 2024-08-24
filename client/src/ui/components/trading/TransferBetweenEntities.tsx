@@ -1,3 +1,4 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
@@ -10,7 +11,7 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, resources } from "@bibliothecadao/eternum";
+import { DONKEY_ENTITY_TYPE, ID, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -76,18 +77,15 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     },
   } = useDojo();
 
+  const config = ClientConfigManager.instance();
+  const donkeySpeed = config.getSpeedConfig(DONKEY_ENTITY_TYPE);
+
   const { computeTravelTime } = useTravel();
 
   useEffect(() => {
     selectedEntityIdFrom &&
       selectedEntityIdTo &&
-      setTravelTime(
-        computeTravelTime(
-          selectedEntityIdFrom?.entityId,
-          selectedEntityIdTo?.entityId,
-          EternumGlobalConfig.speed.donkey,
-        ),
-      );
+      setTravelTime(computeTravelTime(selectedEntityIdFrom?.entityId, selectedEntityIdTo?.entityId, donkeySpeed));
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
 
   const onSendResources = () => {

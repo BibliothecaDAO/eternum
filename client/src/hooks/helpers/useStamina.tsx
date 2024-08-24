@@ -1,4 +1,5 @@
-import { EternumGlobalConfig, ID, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
+import { ID, ResourcesIds, TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -79,6 +80,9 @@ export const useStamina = () => {
   };
 
   const useArmiesCanMoveCount = (entityArmies: any) => {
+    const config = ClientConfigManager.instance();
+    const travelCost = config.getTravelStaminaCost(TravelTypes.Travel);
+
     if (!entityArmies) return 0;
 
     return entityArmies.filter((entity: any) => {
@@ -86,7 +90,7 @@ export const useStamina = () => {
         travelingEntityId: entity.entity_id,
         currentArmiesTick,
       });
-      return (stamina?.amount || 0) >= EternumGlobalConfig.stamina.travelCost;
+      return (stamina?.amount || 0) >= travelCost;
     }).length;
   };
 

@@ -1,3 +1,4 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useTravel } from "@/hooks/helpers/useTravel";
@@ -5,7 +6,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, DONKEY_ENTITY_TYPE, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
@@ -19,6 +20,9 @@ type LiquidityResourceRowProps = {
 
 export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
+  const config = ClientConfigManager.instance();
+  const donkeySpeed = config.getSpeedConfig(DONKEY_ENTITY_TYPE);
+
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
@@ -117,7 +121,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
               <TravelInfo
                 entityId={entityId}
                 resources={travelResources}
-                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey, true)}
+                travelTime={computeTravelTime(bankEntityId, entityId, donkeySpeed, true)}
                 setCanCarry={setCanCarry}
               />
             </div>
