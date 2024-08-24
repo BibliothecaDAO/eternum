@@ -13,7 +13,7 @@ use torii_client::client::Client;
 
 use torii_grpc::types::{EntityKeysClause, KeysClause};
 
-use crate::types::{process_event, EventHandler, MessageDispatcher};
+use crate::types::{process_event, EventHandler, MessageDispatcher, ProgramConfig};
 
 struct Data {
     database: SqlitePool,
@@ -29,19 +29,19 @@ async fn check_user_in_database(
 }
 
 async fn setup_torii_client(token: String, database: SqlitePool) {
-    let torii_url = "https://api.cartridge.gg/x/eternum-34/torii".to_string();
-    let rpc_url = "https://api.cartridge.gg/x/eternum-34/katana".to_string();
-    let relay_url = "/ip4/127.0.0.1/tcp/9090".to_string();
-    let world = Felt::from_hex_unchecked(
-        "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",
-    );
+    let config = ProgramConfig::from_dotenv();
 
     tokio::spawn(async move {
         let http = serenity::Http::new(&token.clone());
         println!("Setting up Torii client");
-        let client = Client::new(torii_url, rpc_url, relay_url, world)
-            .await
-            .unwrap();
+        let client = Client::new(
+            config.vite_public_torii_url,
+            config.vite_public_rpc_url,
+            config.vite_public_relay_url,
+            Felt::from_hex_unchecked(&config.vite_public_world_address),
+        )
+        .await
+        .unwrap();
 
         let mut rcv = client
             .on_event_message_updated(vec![EntityKeysClause::Keys(KeysClause {

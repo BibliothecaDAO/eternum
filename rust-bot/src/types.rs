@@ -1,22 +1,17 @@
 use std::sync::Arc;
 
-use dojo_types::primitive::Primitive::{ContractAddress, Felt252, I32, I64};
+use dojo_types::primitive::Primitive::ContractAddress;
+use serde::Deserialize;
 use serenity::{
-    all::{CreateEmbed, CreateEmbedFooter, CreateMessage, MessageBuilder, Timestamp, UserId},
+    all::{CreateEmbed, CreateEmbedFooter, CreateMessage, Timestamp, UserId},
     model::id::ChannelId,
 };
 use sqlx::SqlitePool;
 use starknet_crypto::Felt;
 use tokio::sync::mpsc;
-use torii_grpc::{
-    client::EntityUpdateStreaming,
-    types::{schema::Entity, EntityKeysClause, KeysClause},
-};
+use torii_grpc::types::schema::Entity;
 
-use starknet::core::utils::{
-    cairo_short_string_to_felt, parse_cairo_short_string, CairoShortStringToFeltError,
-    ParseCairoShortStringError,
-};
+use starknet::core::utils::parse_cairo_short_string;
 
 use crate::check_user_in_database;
 
@@ -552,3 +547,27 @@ impl EventHandler {
             })
     }
 }
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ProgramConfig {
+    pub vite_public_torii_url: String,
+    pub vite_public_rpc_url: String,
+    pub vite_public_relay_url: String,
+    pub vite_public_world_address: String,
+}
+
+impl ProgramConfig {
+    pub fn from_dotenv() -> Self {
+        let cargo_manifest_dir =
+            std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+        let mut env_path = PathBuf::from(cargo_manifest_dir);
+        env_path.push("../client/.env.production");
+
+        dotenvy::from_filename(env_path).ok();
+        match envy::from_env::<ProgramConfig>() {
+            Ok(config) => config,
+            Err(error) => panic!("{:#?}", error),
+        }
+    }
+}
+use std::path::PathBuf;
