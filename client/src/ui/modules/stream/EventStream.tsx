@@ -29,6 +29,13 @@ enum Emojis {
   AcceptOrder = "✅",
 }
 
+interface EventData {
+  name: string | undefined;
+  action: Actions;
+  emoji: Emojis;
+  timestamp: number;
+}
+
 export const EventStream = () => {
   const {
     setup: { components },
@@ -36,16 +43,16 @@ export const EventStream = () => {
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
-  const mapExploredEntities = useEntityQuery([Has(components.MapExplored)]);
-  const battleJoinEntities = useEntityQuery([Has(components.BattleJoinData)]);
-  const battleLeaveEntities = useEntityQuery([Has(components.BattleLeaveData)]);
-  const battleClaimEntities = useEntityQuery([Has(components.BattleClaimData)]);
-  const battlePillageEntities = useEntityQuery([Has(components.BattlePillageData)]);
-  const swapEntities = useEntityQuery([Has(components.SwapEvent)]);
-  const acceptOrderEntities = useEntityQuery([Has(components.AcceptOrder)]);
+  const mapExploredEntities = useEntityQuery([Has(components.events.MapExplored)]);
+  const battleJoinEntities = useEntityQuery([Has(components.events.BattleJoinData)]);
+  const battleLeaveEntities = useEntityQuery([Has(components.events.BattleLeaveData)]);
+  const battleClaimEntities = useEntityQuery([Has(components.events.BattleClaimData)]);
+  const battlePillageEntities = useEntityQuery([Has(components.events.BattlePillageData)]);
+  const swapEntities = useEntityQuery([Has(components.events.SwapEvent)]);
+  const acceptOrderEntities = useEntityQuery([Has(components.events.AcceptOrder)]);
 
   const allEvents = useMemo(() => {
-    const createEvent = (entity: any, component: any, action: Actions, emoji: Emojis) => {
+    const createEvent = (entity: any, component: any, action: Actions, emoji: Emojis): EventData => {
       const componentValue = getComponentValue(component, entity);
 
       const armyEntityId =
@@ -70,34 +77,34 @@ export const EventStream = () => {
         name,
         action,
         emoji,
-        timestamp: componentValue?.timestamp,
+        timestamp: componentValue?.timestamp || 0,
       };
     };
 
-    const events = [
+    const eventsList: EventData[] = [
       ...mapExploredEntities.map((entity) =>
-        createEvent(entity, components.MapExplored, Actions.MapExplored, Emojis.MapExplored),
+        createEvent(entity, components.events.MapExplored, Actions.MapExplored, Emojis.MapExplored),
       ),
       ...battleJoinEntities.map((entity) =>
-        createEvent(entity, components.BattleJoinData, Actions.BattleJoin, Emojis.BattleJoin),
+        createEvent(entity, components.events.BattleJoinData, Actions.BattleJoin, Emojis.BattleJoin),
       ),
       ...battleLeaveEntities.map((entity) =>
-        createEvent(entity, components.BattleLeaveData, Actions.BattleLeave, Emojis.BattleLeave),
+        createEvent(entity, components.events.BattleLeaveData, Actions.BattleLeave, Emojis.BattleLeave),
       ),
       ...battleClaimEntities.map((entity) =>
-        createEvent(entity, components.BattleClaimData, Actions.BattleClaim, Emojis.BattleClaim),
+        createEvent(entity, components.events.BattleClaimData, Actions.BattleClaim, Emojis.BattleClaim),
       ),
       ...battlePillageEntities.map((entity) =>
-        createEvent(entity, components.BattlePillageData, Actions.BattlePillage, Emojis.BattlePillage),
+        createEvent(entity, components.events.BattlePillageData, Actions.BattlePillage, Emojis.BattlePillage),
       ),
-      ...swapEntities.map((entity) => createEvent(entity, components.SwapEvent, Actions.Swap, Emojis.Swap)),
+      ...swapEntities.map((entity) => createEvent(entity, components.events.SwapEvent, Actions.Swap, Emojis.Swap)),
       ...acceptOrderEntities.map((entity) =>
-        createEvent(entity, components.AcceptOrder, Actions.AcceptOrder, Emojis.AcceptOrder),
+        createEvent(entity, components.events.AcceptOrder, Actions.AcceptOrder, Emojis.AcceptOrder),
       ),
     ];
 
     // Sort events by timestamp in descending order (most recent first)
-    return events.sort((a, b) => a.timestamp - b.timestamp);
+    return eventsList.sort((a, b) => a.timestamp - b.timestamp);
   }, [
     mapExploredEntities,
     battleJoinEntities,
@@ -106,7 +113,7 @@ export const EventStream = () => {
     battlePillageEntities,
     swapEntities,
     acceptOrderEntities,
-    components,
+    components.events,
     getAddressNameFromEntity,
   ]);
 
