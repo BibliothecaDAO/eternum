@@ -66,6 +66,7 @@ export const EternumGlobalConfig = {
     crossbowmanStrength: 1,
     advantagePercent: 1000,
     disadvantagePercent: 1000,
+    maxTroopCount: 10_000,
     baseArmyNumberForStructure: 3,
     armyExtraPerMilitaryBuilding: 2,
     // By setting the divisor to 8, the max health that can be taken from the weaker army
@@ -76,6 +77,9 @@ export const EternumGlobalConfig = {
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
+    // 25%
+    battleLeaveSlashNum: 25,
+    battleLeaveSlashDenom: 100,
   },
   mercenaries: {
     troops: {

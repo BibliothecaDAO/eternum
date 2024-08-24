@@ -1,16 +1,31 @@
 import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
-import { useStamina } from "@/hooks/helpers/useStamina";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useStaminaManager } from "@/hooks/helpers/useStamina";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ID, TravelTypes } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
+  const { setup } = useDojo();
   const travelCost = ClientConfigManager.instance().getTravelStaminaCost(TravelTypes.Travel);
 
-  const { useStaminaByEntityId, getMaxStaminaByEntityId } = useStamina();
-  const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0 });
-  const maxStamina = getMaxStaminaByEntityId(entityId || 0);
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
 
-  const staminaAmount = useMemo(() => Number(stamina?.amount || 0), [stamina]);
+  const staminaManager = useStaminaManager(entityId || 0);
+
+  const maxStamina = staminaManager.getMaxStamina(
+    getComponentValue(setup.components.Army, getEntityIdFromKeys([BigInt(entityId || 0)]))?.troops,
+  );
+
+  const stamina = useMemo(
+    () => staminaManager.getStamina(currentArmiesTick),
+    [entityId, currentArmiesTick, staminaManager],
+  );
+
+  const staminaAmount = useMemo(() => Number(stamina?.amount || 0), [entityId, stamina]);
+
   const staminaPercentage = useMemo(() => (staminaAmount / maxStamina) * 100, [staminaAmount, maxStamina]);
 
   const staminaColor = useMemo(() => (staminaAmount < travelCost ? "bg-red-500" : "bg-yellow-500"), [staminaAmount]);

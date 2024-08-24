@@ -19,7 +19,6 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useMemo } from "react";
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -58,10 +57,7 @@ export const TopMiddleNavigation = () => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
   }, [structure]);
 
-  // realms always first
-  const structures = useMemo(() => {
-    return playerStructures();
-  }, [structureEntityId]);
+  const structures = playerStructures();
 
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
@@ -99,7 +95,7 @@ export const TopMiddleNavigation = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = nextBlockTimestamp % armiesTickIntervalInSeconds;
@@ -235,12 +231,11 @@ const TickProgress = () => {
   const armiesTickIntervalInSeconds = ClientConfigManager.instance().getTick(TickIds.Armies);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
 
-  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+  const progress = useMemo(() => {
     const timeLeft = nextBlockTimestamp % armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / armiesTickIntervalInSeconds) * 100;
-    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
+    return (timeLeft / armiesTickIntervalInSeconds) * 100;
   }, [nextBlockTimestamp]);
 
   return (

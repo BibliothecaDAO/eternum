@@ -44,9 +44,12 @@ export interface EternumConfig {
     crossbowmanStrength: number;
     advantagePercent: number;
     disadvantagePercent: number;
+    maxTroopCount: number;
     pillageHealthDivisor: number;
     baseArmyNumberForStructure: number;
     armyExtraPerMilitaryBuilding: number;
+    battleLeaveSlashNum: number;
+    battleLeaveSlashDenom: number;
   };
   mercenaries: {
     troops: {

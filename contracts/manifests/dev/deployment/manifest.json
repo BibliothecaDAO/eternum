@@ -1231,7 +1231,7 @@
     ],
     "address": "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",
     "transaction_hash": "0x6e2a9171abf51df314cd089ba4a6c4d16178d58f92106ddb3d0e28e1a51822",
-    "block_number": 105,
+    "block_number": 87,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -1942,8 +1942,8 @@
     {
       "kind": "DojoContract",
       "address": "0x1c3310b831c666aeeefbe9ec95fe3140cb32ecb1a279b7898782b0e450c79a8",
-      "class_hash": "0xcf023937597b40a1b5e4b63cbcabb7105aca0ed677cc4b648abd6829c7e180",
-      "original_class_hash": "0xcf023937597b40a1b5e4b63cbcabb7105aca0ed677cc4b648abd6829c7e180",
+      "class_hash": "0x7dbdebeba4b74815756b16a80848373b1121884db9888f72add1bf9275e4b52",
+      "original_class_hash": "0x7dbdebeba4b74815756b16a80848373b1121884db9888f72add1bf9275e4b52",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -2390,8 +2390,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3b1da586497e83fb3cec9f198be85d09cfddbb4265a35648d66658a013bd5ee",
-      "class_hash": "0x478aa795fcbafdafefe55af6c5b7656c81a0f1e0540775b1f536d97d5db8846",
-      "original_class_hash": "0x478aa795fcbafdafefe55af6c5b7656c81a0f1e0540775b1f536d97d5db8846",
+      "class_hash": "0x386b5832ce66a38fa1d2d096743fa19723b67c169037e6b4a8ef3dfd35f4fe6",
+      "original_class_hash": "0x386b5832ce66a38fa1d2d096743fa19723b67c169037e6b4a8ef3dfd35f4fe6",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -3011,6 +3011,10 @@
               "type": "core::integer::u16"
             },
             {
+              "name": "max_troop_count",
+              "type": "core::integer::u64"
+            },
+            {
               "name": "pillage_health_divisor",
               "type": "core::integer::u8"
             },
@@ -3020,6 +3024,14 @@
             },
             {
               "name": "army_extra_per_building",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "battle_leave_slash_num",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "battle_leave_slash_denom",
               "type": "core::integer::u8"
             }
           ]
@@ -5321,8 +5333,8 @@
     {
       "kind": "DojoContract",
       "address": "0x28d57567b8e2844cf0192d5f516b8612d08e4e83fe2a7025e9052e2116078d5",
-      "class_hash": "0x5e1510e87a086dbce13b982551c9375eb40ad6cc4f2f7612778c597118c7620",
-      "original_class_hash": "0x5e1510e87a086dbce13b982551c9375eb40ad6cc4f2f7612778c597118c7620",
+      "class_hash": "0x5329a5ed04ef5e413b73591d1e7a587eadfe28d419f2ca86f7cbc1351d2ed84",
+      "original_class_hash": "0x5329a5ed04ef5e413b73591d1e7a587eadfe28d419f2ca86f7cbc1351d2ed84",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -7355,8 +7367,8 @@
     {
       "kind": "DojoContract",
       "address": "0x30668871069dc2caaf9209add720fd3b1a1b138090d5f18a8c31d6b6467d449",
-      "class_hash": "0x1d0725f104668c7a0b7efd8976c29b0061ac3f19087fdb5ac0220e739a40c26",
-      "original_class_hash": "0x1d0725f104668c7a0b7efd8976c29b0061ac3f19087fdb5ac0220e739a40c26",
+      "class_hash": "0x5b1578489be3b832ee396b1adf2c57d65125e3f29d7c025eaf9831fe30e39f",
+      "original_class_hash": "0x5b1578489be3b832ee396b1adf2c57d65125e3f29d7c025eaf9831fe30e39f",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -46906,6 +46918,11 @@
           "key": false
         },
         {
+          "name": "max_troop_count",
+          "type": "u64",
+          "key": false
+        },
+        {
           "name": "pillage_health_divisor",
           "type": "u8",
           "key": false
@@ -46919,10 +46936,20 @@
           "name": "army_extra_per_building",
           "type": "u8",
           "key": false
+        },
+        {
+          "name": "battle_leave_slash_num",
+          "type": "u8",
+          "key": false
+        },
+        {
+          "name": "battle_leave_slash_denom",
+          "type": "u8",
+          "key": false
         }
       ],
-      "class_hash": "0x299047ae969215d84ebeb01f5f39fd2bdd5a6faf91ba0a157882ac49dd3704c",
-      "original_class_hash": "0x299047ae969215d84ebeb01f5f39fd2bdd5a6faf91ba0a157882ac49dd3704c",
+      "class_hash": "0xcd24bd98c0b64153d552dc98a42deb67c89f65205af42f52b2ae579a4203bb",
+      "original_class_hash": "0xcd24bd98c0b64153d552dc98a42deb67c89f65205af42f52b2ae579a4203bb",
       "abi": [
         {
           "type": "impl",
@@ -47324,6 +47351,10 @@
               "type": "core::integer::u16"
             },
             {
+              "name": "max_troop_count",
+              "type": "core::integer::u64"
+            },
+            {
               "name": "pillage_health_divisor",
               "type": "core::integer::u8"
             },
@@ -47333,6 +47364,14 @@
             },
             {
               "name": "army_extra_per_building",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "battle_leave_slash_num",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "battle_leave_slash_denom",
               "type": "core::integer::u8"
             }
           ]

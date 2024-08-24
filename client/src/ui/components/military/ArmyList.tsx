@@ -4,8 +4,8 @@ import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { PlayerStructure } from "@/hooks/helpers/useEntities";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
@@ -156,16 +156,16 @@ const ArmyItem = ({
 }) => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0, dojo), [entity?.battle_id, dojo]);
 
   const updatedArmy = useMemo(() => {
-    if (!currentTimestamp) throw new Error("Current timestamp is undefined");
-    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
+    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(entity, updatedBattle);
     return updatedArmy;
-  }, [currentTimestamp, entity]);
+  }, [nextBlockTimestamp, entity]);
 
   return (
     <React.Fragment key={entity?.entity_id || 0}>

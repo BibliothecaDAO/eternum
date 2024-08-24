@@ -181,6 +181,9 @@ export class ConfigManager {
       pillageHealthDivisor: pillage_health_divisor,
       baseArmyNumberForStructure: army_free_per_structure,
       armyExtraPerMilitaryBuilding: army_extra_per_military_building,
+      maxTroopCount: max_troop_count,
+      battleLeaveSlashNum: battle_leave_slash_num,
+      battleLeaveSlashDenom: battle_leave_slash_denom,
     } = this.config.troop;
 
     const tx = await provider.set_troop_config({
@@ -192,9 +195,12 @@ export class ConfigManager {
       crossbowman_strength,
       advantage_percent,
       disadvantage_percent,
-      pillage_health_divisor: pillage_health_divisor,
-      army_free_per_structure: army_free_per_structure,
-      army_extra_per_military_building: army_extra_per_military_building,
+      pillage_health_divisor,
+      army_free_per_structure,
+      army_extra_per_military_building,
+      max_troop_count: max_troop_count,
+      battle_leave_slash_denom,
+      battle_leave_slash_num,
     });
 
     console.log(`Configuring combat config ${tx.statusReceipt}...`);

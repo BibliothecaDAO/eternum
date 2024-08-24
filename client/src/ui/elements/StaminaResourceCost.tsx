@@ -1,6 +1,7 @@
 import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
-import { useStamina } from "@/hooks/helpers/useStamina";
-import { ConfigManager, ID, TravelTypes } from "@bibliothecadao/eternum";
+import { useStaminaManager } from "@/hooks/helpers/useStamina";
+import useUIStore from "@/hooks/store/useUIStore";
+import { ID, TravelTypes } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -17,15 +18,18 @@ export const StaminaResourceCost = ({
   const travelCost = config.getTravelStaminaCost(TravelTypes.Travel);
   const exploreCost = config.getTravelStaminaCost(TravelTypes.Explore);
 
-  const { useStaminaByEntityId } = useStamina();
-  const stamina = useStaminaByEntityId({ travelingEntityId: travelingEntityId || 0 });
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
+
+  const staminaManager = useStaminaManager(travelingEntityId || 0);
+
+  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 
   const destinationHex = useMemo(() => {
     if (!stamina) return;
     const costs = travelLength * (isExplored ? -travelCost : -exploreCost);
     const balanceColor = stamina !== undefined && stamina.amount < costs ? "text-red/90" : "text-green/90";
     return { isExplored, costs, balanceColor, balance: stamina.amount };
-  }, [stamina]);
+  }, [stamina, travelLength]);
 
   return (
     destinationHex && (

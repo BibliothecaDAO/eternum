@@ -1,19 +1,18 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { BattleManager, RaidStatus } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { ModalContainer } from "@/ui/components/ModalContainer";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
-import { ID } from "@bibliothecadao/eternum";
 
 enum Loading {
   None,
@@ -48,11 +47,13 @@ export const BattleActions = ({
     },
   } = dojo;
 
-  const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
   const [loading, setLoading] = useState<Loading>(Loading.None);
+  const [raidWarning, setRaidWarning] = useState(false);
 
   const { toggleModal } = useModalStore();
 
@@ -73,7 +74,13 @@ export const BattleActions = ({
   }, [defenderArmies]);
 
   const handleRaid = async () => {
+    if (selectedArmy?.battle_id !== 0 && !raidWarning) {
+      setRaidWarning(true);
+      return;
+    }
     setLoading(Loading.Raid);
+    setRaidWarning(false);
+
     await battleManager.pillageStructure(selectedArmy!, structure!.entity_id);
     setLoading(Loading.None);
     setBattleView(null);
@@ -144,8 +151,8 @@ export const BattleActions = ({
     [battleManager, currentTimestamp, selectedArmy],
   );
 
-  const isRaidable = useMemo(
-    () => battleManager.isRaidable(currentTimestamp!, selectedArmy, structure),
+  const raidStatus = useMemo(
+    () => battleManager.isRaidable(currentTimestamp!, currentArmiesTick, selectedArmy, structure),
     [battleManager, currentTimestamp, selectedArmy],
   );
 
@@ -164,12 +171,13 @@ export const BattleActions = ({
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Raid}
           onClick={handleRaid}
-          disabled={loading !== Loading.None || !isRaidable}
+          disabled={loading !== Loading.None || raidStatus !== RaidStatus.isRaidable}
         >
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
-          Raid!
+          <div className={`text-wrap ${raidWarning ? "text-danger" : ""}`}>
+            {raidWarning ? "Leave battle & Raid ?" : "Raid"}
+          </div>
         </Button>
-
         <Button
           variant="outline"
           className="flex flex-col gap-2"

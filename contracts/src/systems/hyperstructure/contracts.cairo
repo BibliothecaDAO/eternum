@@ -40,6 +40,8 @@ mod hyperstructure_systems {
     struct HyperstructureFinished {
         #[key]
         hyperstructure_entity_id: ID,
+        #[key]
+        id: ID,
         timestamp: u64,
     }
 
@@ -129,7 +131,7 @@ mod hyperstructure_systems {
             if (resource_was_completed
                 && InternalHyperstructureSystemsImpl::check_if_construction_done(world, hyperstructure_entity_id)) {
                 let timestamp = starknet::get_block_timestamp();
-                emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp }),);
+                emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp, id: world.uuid() }),);
             }
         }
 

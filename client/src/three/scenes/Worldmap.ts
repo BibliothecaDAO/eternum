@@ -2,11 +2,13 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
@@ -16,16 +18,13 @@ import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
+import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
+import { StructurePreview } from "../components/StructurePreview";
+import { LocationManager } from "../helpers/LocationManager";
 import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
-import { LocationManager } from "../helpers/LocationManager";
-import { StructurePreview } from "../components/StructurePreview";
-import { TileManager } from "@/dojo/modelManager/TileManager";
-import { hexagonEdgeMesh } from "../geometry/HexagonGeometry";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { SelectedHexManager } from "../components/SelectedHexManager";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -183,7 +182,10 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    const url = new Position({ x: hexCoords.col, y: hexCoords.row }).toHexLocationUrl();
+    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const isBattle = this.battleManager.battles.hasByPosition(position);
+    if (isBattle) return;
+    const url = position.toHexLocationUrl();
     LocationManager.updateUrl(url);
   }
 
@@ -203,7 +205,7 @@ export default class WorldmapScene extends HexagonScene {
         const isExplored = travelPath.isExplored ?? false;
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-          armyMovementManager.moveArmy(selectedPath, isExplored);
+          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
           this.clearEntitySelection();
         }
       }
@@ -223,7 +225,11 @@ export default class WorldmapScene extends HexagonScene {
     }
     this.state.updateSelectedEntityId(selectedEntityId);
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-    const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
+    const travelPaths = armyMovementManager.findPaths(
+      this.exploredTiles,
+      this.state.currentDefaultTick,
+      this.state.currentArmiesTick,
+    );
     this.state.updateTravelPaths(travelPaths.getPaths());
     this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
   }

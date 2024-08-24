@@ -5,6 +5,7 @@ import productionManifest from "../contracts/manifests/prod/deployment/manifest.
 const {
   VITE_PUBLIC_NODE_URL,
   VITE_PUBLIC_TORII,
+  VITE_PUBLIC_TORII_RELAY,
   VITE_PUBLIC_MASTER_ADDRESS,
   VITE_PUBLIC_MASTER_PRIVATE_KEY,
   VITE_PUBLIC_ACCOUNT_CLASS_HASH,
@@ -17,6 +18,7 @@ const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
   toriiUrl: VITE_PUBLIC_TORII,
+  relayUrl: VITE_PUBLIC_TORII_RELAY,
   masterAddress: VITE_PUBLIC_MASTER_ADDRESS,
   masterPrivateKey: VITE_PUBLIC_MASTER_PRIVATE_KEY,
   accountClassHash:

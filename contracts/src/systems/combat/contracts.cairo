@@ -436,7 +436,8 @@ mod combat_systems {
         army_id: ID,
         winner: BattleSide,
         pillaged_resources: Span<(u8, u128)>,
-        destroyed_building_category: BuildingCategory
+        destroyed_building_category: BuildingCategory,
+        timestamp: u64,
     }
 
 
@@ -717,6 +718,7 @@ mod combat_systems {
                     x: battle_position.x,
                     y: battle_position.y,
                     structure_type: defender_structure.category,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
             battle_id
@@ -817,6 +819,7 @@ mod combat_systems {
                     duration_left: battle.duration_left,
                     x: battle_position.x,
                     y: battle_position.y,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
@@ -833,10 +836,36 @@ mod combat_systems {
 
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
+            battle.update_state();
+            let battle_was_active = !battle.has_ended();
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
 
-            let battle_position = get!(world, battle_id, Position);
+            // slash army if battle was not concluded before they left
+            if battle_was_active {
+                let troop_config = TroopConfigCustomImpl::get(world);
+                let mut army = get!(world, army_id, Army);
+                let troops_deducted = Troops {
+                    knight_count: (army.troops.knight_count * troop_config.battle_leave_slash_num.into())
+                        / troop_config.battle_leave_slash_denom.into(),
+                    paladin_count: (army.troops.paladin_count * troop_config.battle_leave_slash_num.into())
+                        / troop_config.battle_leave_slash_denom.into(),
+                    crossbowman_count: (army.troops.crossbowman_count * troop_config.battle_leave_slash_num.into())
+                        / troop_config.battle_leave_slash_denom.into(),
+                };
+                army.troops.deduct(troops_deducted);
 
+                let army_health = Health {
+                    entity_id: army_id,
+                    current: army.troops.full_health(troop_config),
+                    lifetime: army.troops.full_health(troop_config)
+                };
+
+                let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+                set!(world, (army, army_health, army_quantity));
+            }
+
+            // emit battle leave event
+            let battle_position = get!(world, battle_id, Position);
             emit!(
                 world,
                 BattleLeaveData {
@@ -850,6 +879,7 @@ mod combat_systems {
                     duration_left: battle.duration_left,
                     x: battle_position.x,
                     y: battle_position.y,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
@@ -907,6 +937,7 @@ mod combat_systems {
                     x: structure_position.x,
                     y: structure_position.y,
                     structure_type: structure.category,
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
@@ -1203,7 +1234,8 @@ mod combat_systems {
                         BattleSide::Defence
                     },
                     pillaged_resources: pillaged_resources.span(),
-                    destroyed_building_category
+                    destroyed_building_category,
+                    timestamp: starknet::get_block_timestamp(),
                 }),
             );
 
@@ -1227,6 +1259,7 @@ mod combat_systems {
                     y: structure_position.y,
                     structure_type: structure.category,
                     pillaged_resources: pillaged_resources.span(),
+                    timestamp: starknet::get_block_timestamp(),
                 }
             );
         }
@@ -1347,6 +1380,12 @@ mod combat_systems {
             let mut army: Army = get!(world, army_id, Army);
             army.troops.add(troops);
             set!(world, (army));
+
+            let army_not_defensive = get!(world, army_id, Protectee).is_none();
+            if army_not_defensive {
+                let troop_config = TroopConfigCustomImpl::get(world);
+                army.assert_within_limit(troop_config);
+            }
 
             // increase army health
             let mut army_health: Health = get!(world, army_id, Health);
@@ -1502,14 +1541,6 @@ mod combat_systems {
                             * battle_army.troops.crossbowman_count
                             / battle_army_lifetime.troops.crossbowman_count
                     };
-            let army_health = Health {
-                entity_id: army_id,
-                current: army.troops.full_health(troop_config),
-                lifetime: army.troops.full_health(troop_config)
-            };
-
-            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-            set!(world, (army_health, army_quantity));
 
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);
@@ -1517,7 +1548,6 @@ mod combat_systems {
             // remove army from battle
             army.battle_id = 0;
             army.battle_side = BattleSide::None;
-            set!(world, (army));
 
             // update battle army count and health
             battle_army.troops.knight_count -= army.troops.knight_count;
@@ -1540,6 +1570,20 @@ mod combat_systems {
                 battle.attack_army_lifetime = battle_army_lifetime;
                 battle.attack_army_health = battle_army_health;
             }
+
+            // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+            army.troops.normalize_counts();
+
+            let army_health = Health {
+                entity_id: army_id,
+                current: army.troops.full_health(troop_config),
+                lifetime: army.troops.full_health(troop_config)
+            };
+
+            // note: army quantity would be used inside `withdraw_balance_and_reward`
+            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+            set!(world, (army_health, army_quantity));
+            set!(world, (army));
 
             if (battle.attack_army_lifetime.troops.count().is_zero()
                 && battle.defence_army_lifetime.troops.count().is_zero()) {

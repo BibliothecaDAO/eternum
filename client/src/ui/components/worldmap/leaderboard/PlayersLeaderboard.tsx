@@ -1,7 +1,7 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ContractAddress, getOrderName } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { PlayerPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
@@ -31,7 +31,7 @@ export const PlayersLeaderboard = () => {
   });
 
   const playerLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance().getPlayersByRank(useBlockchainStore.getState().nextBlockTimestamp!);
+    return LeaderboardManager.instance().getPlayersByRank(useUIStore.getState().nextBlockTimestamp!);
   }, []);
 
   const sortingParams: SortingParamPlayerPointsLeaderboard[] = useMemo(() => {

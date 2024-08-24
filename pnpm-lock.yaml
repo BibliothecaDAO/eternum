@@ -14,26 +14,26 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@dojoengine/core':
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.8
+        version: 1.0.0-alpha.8(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@dojoengine/create-burner':
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.8
+        version: 1.0.0-alpha.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@dojoengine/react':
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.8
+        version: 1.0.0-alpha.8(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/recs':
         specifier: ^2.0.13
         version: 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/state':
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.8
+        version: 1.0.0-alpha.8(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/torii-client':
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5
+        specifier: 1.0.0-alpha.8
+        version: 1.0.0-alpha.8
       '@dojoengine/utils':
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.8
+        version: 1.0.0-alpha.8(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@headlessui/react':
         specifier: ^1.7.18
         version: 1.7.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -253,8 +253,8 @@ importers:
   sdk/packages/eternum:
     dependencies:
       '@dojoengine/core':
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.8
+        version: 1.0.0-alpha.8(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.1
@@ -943,21 +943,21 @@ packages:
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/core@1.0.0-alpha.5':
-    resolution: {integrity: sha512-X+MDXFYoV3rDVFCZlOc5RXQUviuWnsaMvAqjhNNI683w6qWNYqt2e2FUauHgJI67Vi1/9/WuIetkM5hxU9QHFQ==}
+  '@dojoengine/core@1.0.0-alpha.8':
+    resolution: {integrity: sha512-xbHiHMTNExGkvLXewfhdwyDaiFbvefnEIjXb1LQoZRtIp102LKrOaoM9UENzldMPR/Qm9zBC44ouNEZUmGFtcA==}
     hasBin: true
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/create-burner@1.0.0-alpha.5':
-    resolution: {integrity: sha512-HcfwPGGzWrqgS0+xJIC/kAFc7aFwLIlT7bjnCCFUrwhvypg2qbb9csHekRWVsP98d2syTzNTMOYnGSJUocR62g==}
+  '@dojoengine/create-burner@1.0.0-alpha.8':
+    resolution: {integrity: sha512-8jutMRiIR7ODDdsQNW/11uxPNP4P+ov6rr1MmlXDdpglrATwudA2JCTN96tGj87JtZu/Z9KLLcgT5VRqFeHRNg==}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
       starknet: 6.11.0
 
-  '@dojoengine/react@1.0.0-alpha.5':
-    resolution: {integrity: sha512-urM9fAurroGerpRvBqefa1JzP6p8AqTedrpiQWP+ORoHa2jHpy4BqrOluzB6kNA0cINYHnD11gVkcesl28EwFw==}
+  '@dojoengine/react@1.0.0-alpha.8':
+    resolution: {integrity: sha512-S8yWXFTDkN9Mi8AZoD6IhZnL3YSbC3eDqVcn0AG5HXjQM40lyNw/i6ZdhVjGyNOMneDGRUh4o5ETkZUMCZ0oNg==}
     peerDependencies:
       react: ^18.2.0
       starknet: 6.11.0
@@ -966,19 +966,19 @@ packages:
   '@dojoengine/recs@2.0.13':
     resolution: {integrity: sha512-Cgz4Unlnk2FSDoFTYKrJexX/KiSYPMFMxftxQkC+9LUKS5yNGkgFQM7xu4/L1HvpDAenL7NjUmH6ynRAS7Iifw==}
 
-  '@dojoengine/state@1.0.0-alpha.5':
-    resolution: {integrity: sha512-a5RG9OWJuCSjoQMqL4Uyysai1d5AVZbRfxfdPdNT2Ykwvw/KAVOhDWItpA36PpBmnnokJWglNXMKeDWDEtL9sQ==}
+  '@dojoengine/state@1.0.0-alpha.8':
+    resolution: {integrity: sha512-22NDEGFI9MHLCN5fPbMvOWOEN6mAWqMc0p7snFHqrAzXUTuL7oilOotyOwqhpDIZZFdJ48RvCd7CVkOVbF1vuA==}
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/torii-client@1.0.0-alpha.5':
-    resolution: {integrity: sha512-H+6bwEOaUA1UXq9PniM3D6dJVV2g514RaTkuW6/4TV+SPs7GHa123W2kpifg4AdXwauS42Ej/h2+xRhg1W1G3g==}
+  '@dojoengine/torii-client@1.0.0-alpha.8':
+    resolution: {integrity: sha512-a08KDrrobQr055st9dTQWrKruIZzqenTXElTybK7/qi2brcGdFlutyTN+JuZZtATYAISzBlJWuoYFkC1vAZ7Zg==}
 
-  '@dojoengine/torii-wasm@1.0.0-alpha.5':
-    resolution: {integrity: sha512-5SlvWimnrhEnRJIMDy8Lew8jBv6FAVk2tBwHhgOEQNs2p3/zqROc1ejn0SaETzSyiq3E9RMprIo04yxVAtr14A==}
+  '@dojoengine/torii-wasm@1.0.0-alpha.8':
+    resolution: {integrity: sha512-xB5fKqJ9ss+DwPdm9f3fEDgrH2UHbt5SozuEDalCvE57BDsH1B+NdjkFVi7coKXadAqrVQ23thFzwG9nT5b2nQ==}
 
-  '@dojoengine/utils@1.0.0-alpha.5':
-    resolution: {integrity: sha512-39Z0XNIvEBc+YDuderPiJ+T1DXtAo8DEUGoxna1B5O2pBCi0jXlze5Puke4D98ZX6GfMD+XbflW0H5ccmguwVw==}
+  '@dojoengine/utils@1.0.0-alpha.8':
+    resolution: {integrity: sha512-7uMkZMS4wrflqCyPm0/u805n69QysN9u6TvsGl+6fumbUihhpfjJV/2+YJdM00RAlTQAy4sLrnjKH1t7WX0Udg==}
     peerDependencies:
       starknet: 6.11.0
 
@@ -7052,7 +7052,7 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/core@1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
+  '@dojoengine/core@1.0.0-alpha.8(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
       starknet: 6.7.0(encoding@0.1.13)
@@ -7062,9 +7062,9 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/create-burner@1.0.0-alpha.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
+  '@dojoengine/create-burner@1.0.0-alpha.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
     dependencies:
-      '@dojoengine/core': 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+      '@dojoengine/core': 1.0.0-alpha.8(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@scure/bip32': 1.4.0
       '@starknet-react/core': 2.3.0(get-starknet-core@3.3.2(starknet@6.7.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))
       encoding: 0.1.13
@@ -7078,12 +7078,12 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/react@1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/react@1.0.0-alpha.8(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/state': 1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/torii-client': 1.0.0-alpha.5
-      '@dojoengine/utils': 1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/state': 1.0.0-alpha.8(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/torii-client': 1.0.0-alpha.8
+      '@dojoengine/utils': 1.0.0-alpha.8(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@latticexyz/utils': 2.0.12
       encoding: 0.1.13
       fast-deep-equal: 3.1.3
@@ -7127,10 +7127,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.0.0-alpha.5(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/state@1.0.0-alpha.8(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/torii-client': 1.0.0-alpha.5
+      '@dojoengine/torii-client': 1.0.0-alpha.8
       '@latticexyz/utils': 2.0.12
       starknet: 6.7.0(encoding@0.1.13)
       vitest: 1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)
@@ -7157,14 +7157,14 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/torii-client@1.0.0-alpha.5':
+  '@dojoengine/torii-client@1.0.0-alpha.8':
     dependencies:
-      '@dojoengine/torii-wasm': 1.0.0-alpha.5
+      '@dojoengine/torii-wasm': 1.0.0-alpha.8
       typescript: 5.5.4
 
-  '@dojoengine/torii-wasm@1.0.0-alpha.5': {}
+  '@dojoengine/torii-wasm@1.0.0-alpha.8': {}
 
-  '@dojoengine/utils@1.0.0-alpha.5(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/utils@1.0.0-alpha.8(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@latticexyz/utils': 2.0.12
@@ -12003,7 +12003,7 @@ snapshots:
 
   rxjs@7.5.5:
     dependencies:
-      tslib: 2.4.1
+      tslib: 2.6.3
 
   rxjs@7.8.1:
     dependencies:

@@ -48,7 +48,8 @@ mod resource_systems {
         #[key]
         sending_realm_id: ID,
         sender_entity_id: ID,
-        resources: Span<(u8, u128)>
+        resources: Span<(u8, u128)>,
+        timestamp: u64,
     }
 
 
@@ -324,7 +325,16 @@ mod resource_systems {
                 sending_realm_id = sending_entity_owner.get_realm_id(world);
             }
 
-            emit!(world, (Transfer { recipient_entity_id, sending_realm_id, sender_entity_id, resources }));
+            emit!(
+                world,
+                (Transfer {
+                    recipient_entity_id,
+                    sending_realm_id,
+                    sender_entity_id,
+                    resources,
+                    timestamp: starknet::get_block_timestamp()
+                })
+            );
         }
     }
 }

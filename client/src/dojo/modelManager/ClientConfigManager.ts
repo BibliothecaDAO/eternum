@@ -235,7 +235,10 @@ export class ClientConfigManager {
       disadvantagePercent: troopConfig?.disadvantage_percent ?? 0,
       pillageHealthDivisor: troopConfig?.pillage_health_divisor ?? 0,
       armyFreePerStructure: troopConfig?.army_free_per_structure ?? 0,
+      maxTroopCount: troopConfig?.max_troop_count ?? 0,
       armyExtraPerBuilding: troopConfig?.army_extra_per_building ?? 0,
+      battleLeaveSlashNum: troopConfig?.battle_leave_slash_num ?? 0,
+      battleLeaveSlashDenom: troopConfig?.battle_leave_slash_denom ?? 0,
     };
   }
 

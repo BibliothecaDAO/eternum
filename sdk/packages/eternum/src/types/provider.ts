@@ -45,6 +45,14 @@ export interface AcceptOrderProps extends SystemSigner {
   taker_gives_resources: num.BigNumberish[];
 }
 
+export interface AcceptPartialOrderProps extends SystemSigner {
+  taker_id: num.BigNumberish;
+  trade_id: num.BigNumberish;
+  maker_gives_resources: num.BigNumberish[];
+  taker_gives_resources: num.BigNumberish[];
+  taker_gives_actual_amount: num.BigNumberish;
+}
+
 export interface CancelOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
   return_resources: num.BigNumberish[];
@@ -365,9 +373,12 @@ export interface SetTroopConfigProps extends SystemSigner {
   crossbowman_strength: num.BigNumberish;
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
+  max_troop_count: num.BigNumberish;
   pillage_health_divisor: num.BigNumberish;
   army_free_per_structure: num.BigNumberish;
   army_extra_per_military_building: num.BigNumberish;
+  battle_leave_slash_num: num.BigNumberish;
+  battle_leave_slash_denom: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
