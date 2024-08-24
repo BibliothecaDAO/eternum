@@ -1056,7 +1056,8 @@ export function defineContractComponents(world: World) {
         { config_id: RecsType.Number, amount_per_tick: RecsType.Number },
         {
           metadata: {
-            name: "eternum-StaminaRefillConfig",
+            namespace: "eternum",
+            name: "StaminaRefillConfig",
             types: ["u32", "u16"],
             customTypes: [],
           },
