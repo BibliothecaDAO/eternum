@@ -81,6 +81,14 @@ export interface AcceptOrderProps extends SystemSigner {
   taker_gives_resources: num.BigNumberish[];
 }
 
+export interface AcceptPartialOrderProps extends SystemSigner {
+  taker_id: num.BigNumberish;
+  trade_id: num.BigNumberish;
+  maker_gives_resources: num.BigNumberish[];
+  taker_gives_resources: num.BigNumberish[];
+  taker_gives_actual_amount: num.BigNumberish;
+}
+
 export interface CancelOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
   return_resources: num.BigNumberish[];

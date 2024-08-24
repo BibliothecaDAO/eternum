@@ -4,24 +4,25 @@ import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
-import { LucideArrowRight } from "lucide-react";
 import clsx from "clsx";
-import { useQuery } from "@/hooks/helpers/useQuery";
+import { LucideArrowRight } from "lucide-react";
+
+const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -40,9 +41,11 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     },
   } = useDojo();
 
+  const isDefendingArmy = Boolean(army?.protectee);
+
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { getBalance } = getResourceBalance();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -79,6 +82,26 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     [ResourcesIds.Crossbowman]: 1000,
     [ResourcesIds.Paladin]: 1000,
   });
+
+  const remainingTroops = useMemo(() => {
+    return Math.max(0, MAX_TROOPS_PER_ARMY - Object.values(troopCounts).reduce((a, b) => a + b, 0));
+  }, [troopCounts]);
+
+  const getMaxTroopCount = useCallback(
+    (balance: number, troopName: number) => {
+      const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+      if (!balance) return 0;
+
+      const maxFromBalance = Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision);
+
+      if (isDefendingArmy) {
+        return maxFromBalance;
+      } else {
+        return Math.min(maxFromBalance, remainingTroops + troopCounts[troopName]);
+      }
+    },
+    [isDefendingArmy, remainingTroops, troopCounts],
+  );
 
   const handleTroopCountChange = (troopName: number, count: number) => {
     setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
@@ -151,7 +174,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Paladin",
       weak: "Crossbowman",
-      current: currencyFormat(army?.troops.knight_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
     },
     {
       name: ResourcesIds.Crossbowman,
@@ -160,7 +183,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Knight",
       weak: "Paladin",
-      current: currencyFormat(army?.troops.crossbowman_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
     },
     {
       name: ResourcesIds.Paladin,
@@ -169,7 +192,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Crossbowman",
       weak: "Knight",
-      current: currencyFormat(army?.troops.paladin_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
     },
   ];
 
@@ -271,11 +294,15 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             )}
           </div>
 
+          {!isDefendingArmy && (
+            <div className="text-xs text-yellow-500 mb-2">
+              ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-3 my-4">
             {troops.map((troop) => {
               const balance = getBalance(owner_entity, troop.name).balance;
-
-              const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
 
               return (
                 <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>
@@ -294,9 +321,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                       Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
                     </div>
                     <NumberInput
-                      max={
-                        balance ? Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision) : 0
-                      }
+                      max={getMaxTroopCount(balance, troop.name)}
                       min={0}
                       step={100}
                       value={troopCounts[troop.name]}

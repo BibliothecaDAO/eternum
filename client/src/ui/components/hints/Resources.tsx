@@ -95,7 +95,11 @@ const ResourceTable = () => {
             <td className="gap-1 flex flex-col p-2">
               {resource.cost.map((cost: any, resource_type: any) => (
                 <div key={resource_type}>
-                  <ResourceCost resourceId={cost.resource} amount={currencyFormat(Number(cost.amount), 0)} size="lg" />
+                  <ResourceCost
+                    resourceId={cost.resource}
+                    amount={Number(currencyFormat(Number(cost.amount), 0))}
+                    size="lg"
+                  />
                 </div>
               ))}
             </td>

@@ -3,7 +3,6 @@ import { BattleManager, RaidStatus } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { PillageHistory } from "@/ui/components/military/PillageHistory";
@@ -48,7 +47,8 @@ export const BattleActions = ({
     },
   } = dojo;
 
-  const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -152,7 +152,7 @@ export const BattleActions = ({
   );
 
   const raidStatus = useMemo(
-    () => battleManager.isRaidable(currentTimestamp!, selectedArmy, structure),
+    () => battleManager.isRaidable(currentTimestamp!, currentArmiesTick, selectedArmy, structure),
     [battleManager, currentTimestamp, selectedArmy],
   );
 

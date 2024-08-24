@@ -168,7 +168,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
-    max_troop_count,
+    max_troop_count: max_troop_count * EternumGlobalConfig.resources.resourcePrecision,
     pillage_health_divisor: pillage_health_divisor,
     army_free_per_structure: army_free_per_structure,
     army_extra_per_military_building: army_extra_per_military_building,

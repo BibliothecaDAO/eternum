@@ -1,7 +1,9 @@
-import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
+import useUIStore from "../../../../hooks/store/useUIStore";
 import { currencyFormat } from "../../../utils/utils";
 
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -12,9 +14,6 @@ import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
 import { InventoryResources } from "../../resources/InventoryResources";
-import useUIStore from "@/hooks/store/useUIStore";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
-import { useQuery } from "@/hooks/helpers/useQuery";
 
 export const ArmyInfoLabel = () => {
   const { isMapView } = useQuery();
@@ -43,7 +42,7 @@ interface ArmyInfoLabelProps {
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
   const { realm, entity_id, entityOwner, troops, arrivalTime } = army;
 
   const isPassiveTravel = useMemo(
@@ -95,15 +94,15 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
         <div className="grid grid-cols-3 gap-2 relative justify-between w-full text-gold">
           <div className="px-2 py-1 bg-white/10  flex flex-col justify-between gap-2">
             <ResourceIcon withTooltip={false} resource={"Crossbowman"} size="lg" />
-            <div className="text-green text-xs self-center">{currencyFormat(troops.crossbowman_count, 0)}</div>
+            <div className="text-green text-xs self-center">{currencyFormat(Number(troops.crossbowman_count), 0)}</div>
           </div>
           <div className="px-2 py-1 bg-white/10  flex flex-col justify-between gap-2">
             <ResourceIcon withTooltip={false} resource={"Knight"} size="lg" />
-            <div className="text-green text-xs self-center">{currencyFormat(troops.knight_count, 0)}</div>
+            <div className="text-green text-xs self-center">{currencyFormat(Number(troops.knight_count), 0)}</div>
           </div>
           <div className="px-2 py-1 bg-white/10  flex flex-col justify-between gap-2">
             <ResourceIcon withTooltip={false} resource={"Paladin"} size="lg" />
-            <div className="text-green text-xs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
+            <div className="text-green text-xs self-center">{currencyFormat(Number(troops.paladin_count), 0)}</div>
           </div>
         </div>
         <ArmyCapacity army={army} />

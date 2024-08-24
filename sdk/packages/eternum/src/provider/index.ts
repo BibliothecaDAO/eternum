@@ -107,6 +107,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+  public async accept_partial_order(props: SystemProps.AcceptPartialOrderProps) {
+    const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, taker_gives_actual_amount, signer } =
+      props;
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+        entrypoint: "accept_partial_order",
+        calldata: [
+          taker_id,
+          trade_id,
+          maker_gives_resources.length / 2,
+          ...maker_gives_resources,
+          taker_gives_resources.length / 2,
+          ...taker_gives_resources,
+          taker_gives_actual_amount,
+        ],
+      },
+    ]);
+  }
+
   public async cancel_order(props: SystemProps.CancelOrderProps) {
     const { trade_id, return_resources, signer } = props;
 

@@ -78,12 +78,12 @@ export default class HexceptionScene extends HexagonScene {
 
   constructor(
     controls: MapControls,
-    dojoContext: SetupResult,
+    dojo: SetupResult,
     mouse: THREE.Vector2,
     raycaster: THREE.Raycaster,
     sceneManager: SceneManager,
   ) {
-    super(SceneName.Hexception, controls, dojoContext, mouse, raycaster, sceneManager);
+    super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
     this.biome = new Biome();
     this.buildingPreview = new BuildingPreview(this.scene);

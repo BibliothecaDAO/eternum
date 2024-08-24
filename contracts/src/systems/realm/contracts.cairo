@@ -141,7 +141,7 @@ mod realm_systems {
             let mut tile: Tile = get!(world, (position.x, position.y), Tile);
             if tile.explored_at == 0 {
                 // set realm's position tile to explored
-                InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![].span());
+                InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![(1, 0)].span());
             }
 
             entity_id.into()
