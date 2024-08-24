@@ -13,6 +13,7 @@ import {
   ID,
   MarketInterface,
   ONE_MONTH,
+  RESOURCE_PRECISION,
   Resources,
   ResourcesIds,
   findResourceById,
@@ -186,9 +187,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   const { getRealmAddressName } = useRealm();
 
   const [inputValue, setInputValue] = useState<number>(() => {
-    return isBuy
-      ? offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision
-      : offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision;
+    return isBuy ? offer.makerGets[0].amount / RESOURCE_PRECISION : offer.takerGets[0].amount / RESOURCE_PRECISION;
   });
 
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
@@ -271,7 +270,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return getRealmAddressName(offer.makerId);
   }, [offer.originName]);
 
-  console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
+  console.log(inputValue, getsDisplay, getTotalLords, RESOURCE_PRECISION);
 
   const calculatedLords = useMemo(() => {
     return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
@@ -372,13 +371,9 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
                   value={inputValue}
                   className="w-full col-span-3"
                   onChange={setInputValue}
-                  max={getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision}
+                  max={getsDisplayNumber / RESOURCE_PRECISION}
                 />
-                <Button
-                  onClick={() => setInputValue(getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision)}
-                >
-                  Max
-                </Button>
+                <Button onClick={() => setInputValue(getsDisplayNumber / RESOURCE_PRECISION)}>Max</Button>
               </div>
               <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
               <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
@@ -507,7 +502,7 @@ const OrderCreation = ({
             value={resource}
             className="w-full col-span-3"
             onChange={(value) => setResource(Number(value))}
-            max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={!isBuy ? resourceBalance / RESOURCE_PRECISION : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -531,7 +526,7 @@ const OrderCreation = ({
             value={lords}
             className="w-full col-span-3"
             onChange={(value) => setLords(Number(value))}
-            max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={isBuy ? lordsBalance / RESOURCE_PRECISION : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
