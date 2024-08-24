@@ -19,20 +19,32 @@ enum Actions {
 }
 
 enum Emojis {
-  MapExplored = "🗺️",
+  MapExplored = "🌎",
   BattleJoin = "⚔️",
   BattleLeave = "🏃",
   BattleClaim = "🏴",
   BattlePillage = "💰",
   Swap = "🔄",
-  HyperstructureFinished = "🏗️",
+  HyperstructureFinished = "⭐",
   AcceptOrder = "✅",
+}
+
+enum Colors {
+  MapExplored = "#4CAF50",
+  BattleJoin = "#F44336",
+  BattleLeave = "#2196F3",
+  BattleClaim = "#FF9800",
+  BattlePillage = "#9C27B0",
+  Swap = "#00BCD4",
+  HyperstructureFinished = "#FFEB3B",
+  AcceptOrder = "#8BC34A",
 }
 
 interface EventData {
   name: string | undefined;
   action: Actions;
   emoji: Emojis;
+  color: Colors;
   timestamp: number;
 }
 
@@ -52,7 +64,7 @@ export const EventStream = () => {
   const acceptOrderEntities = useEntityQuery([Has(components.events.AcceptOrder)]);
 
   const allEvents = useMemo(() => {
-    const createEvent = (entity: any, component: any, action: Actions, emoji: Emojis): EventData => {
+    const createEvent = (entity: any, component: any, action: Actions, emoji: Emojis, color: Colors): EventData => {
       const componentValue = getComponentValue(component, entity);
 
       const armyEntityId =
@@ -77,29 +89,50 @@ export const EventStream = () => {
         name,
         action,
         emoji,
+        color,
         timestamp: componentValue?.timestamp || 0,
       };
     };
 
     const eventsList: EventData[] = [
       ...mapExploredEntities.map((entity) =>
-        createEvent(entity, components.events.MapExplored, Actions.MapExplored, Emojis.MapExplored),
+        createEvent(entity, components.events.MapExplored, Actions.MapExplored, Emojis.MapExplored, Colors.MapExplored),
       ),
       ...battleJoinEntities.map((entity) =>
-        createEvent(entity, components.events.BattleJoinData, Actions.BattleJoin, Emojis.BattleJoin),
+        createEvent(entity, components.events.BattleJoinData, Actions.BattleJoin, Emojis.BattleJoin, Colors.BattleJoin),
       ),
       ...battleLeaveEntities.map((entity) =>
-        createEvent(entity, components.events.BattleLeaveData, Actions.BattleLeave, Emojis.BattleLeave),
+        createEvent(
+          entity,
+          components.events.BattleLeaveData,
+          Actions.BattleLeave,
+          Emojis.BattleLeave,
+          Colors.BattleLeave,
+        ),
       ),
       ...battleClaimEntities.map((entity) =>
-        createEvent(entity, components.events.BattleClaimData, Actions.BattleClaim, Emojis.BattleClaim),
+        createEvent(
+          entity,
+          components.events.BattleClaimData,
+          Actions.BattleClaim,
+          Emojis.BattleClaim,
+          Colors.BattleClaim,
+        ),
       ),
       ...battlePillageEntities.map((entity) =>
-        createEvent(entity, components.events.BattlePillageData, Actions.BattlePillage, Emojis.BattlePillage),
+        createEvent(
+          entity,
+          components.events.BattlePillageData,
+          Actions.BattlePillage,
+          Emojis.BattlePillage,
+          Colors.BattlePillage,
+        ),
       ),
-      ...swapEntities.map((entity) => createEvent(entity, components.events.SwapEvent, Actions.Swap, Emojis.Swap)),
+      ...swapEntities.map((entity) =>
+        createEvent(entity, components.events.SwapEvent, Actions.Swap, Emojis.Swap, Colors.Swap),
+      ),
       ...acceptOrderEntities.map((entity) =>
-        createEvent(entity, components.events.AcceptOrder, Actions.AcceptOrder, Emojis.AcceptOrder),
+        createEvent(entity, components.events.AcceptOrder, Actions.AcceptOrder, Emojis.AcceptOrder, Colors.AcceptOrder),
       ),
     ];
 
@@ -121,7 +154,7 @@ export const EventStream = () => {
     <div style={{ zIndex: 100 }}>
       <div>
         {allEvents.slice(-EVENT_STREAM_SIZE).map((event, index) => (
-          <div key={index}>
+          <div key={index} style={{ color: event.color }}>
             {event.emoji} {event.name || "Unknown"} {event.action} [{new Date(event.timestamp * 1000).toLocaleString()}]
           </div>
         ))}
