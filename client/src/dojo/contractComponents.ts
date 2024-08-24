@@ -1180,12 +1180,14 @@ export function defineContractComponents(world: World) {
           pillage_health_divisor: RecsType.Number,
           army_free_per_structure: RecsType.Number,
           army_extra_per_building: RecsType.Number,
+          battle_leave_slash_num: RecsType.Number,
+          battle_leave_slash_denom: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8"],
             customTypes: [],
           },
         },

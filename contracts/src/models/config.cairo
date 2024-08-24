@@ -306,6 +306,10 @@ pub struct TroopConfig {
     // the number of additional  armies that can be create with
     // each new military building
     army_extra_per_building: u8,
+    // percentage to slash army by if they leave early
+    // e.g num = 25, denom = 100 // represents 25%
+    battle_leave_slash_num: u8,
+    battle_leave_slash_denom: u8
 }
 
 

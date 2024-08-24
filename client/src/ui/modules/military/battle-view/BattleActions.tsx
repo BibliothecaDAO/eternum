@@ -175,10 +175,9 @@ export const BattleActions = ({
         >
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           <div className={`text-wrap ${raidWarning ? "text-danger" : ""}`}>
-            {raidWarning ? "Leave battle & Raid ?" : raidStatus}
+            {raidWarning ? "Leave battle & Raid ?" : "Raid"}
           </div>
         </Button>
-
         <Button
           variant="outline"
           className="flex flex-col gap-2"

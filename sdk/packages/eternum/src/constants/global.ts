@@ -71,6 +71,10 @@ export const EternumGlobalConfig = {
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
     healthPrecision: 1000n,
+
+    // 25%
+    battleLeaveSlashNum: 25,
+    battleLeaveSlashDenom: 100,
   },
   mercenaries: {
     troops: {

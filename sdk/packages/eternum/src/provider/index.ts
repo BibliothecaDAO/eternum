@@ -810,6 +810,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       pillage_health_divisor,
       army_free_per_structure,
       army_extra_per_military_building,
+      battle_leave_slash_num,
+      battle_leave_slash_denom,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -827,6 +829,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         pillage_health_divisor,
         army_free_per_structure,
         army_extra_per_military_building,
+        battle_leave_slash_num,
+        battle_leave_slash_denom,
       ],
     });
   }
