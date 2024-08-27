@@ -1,28 +1,24 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
-
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
-import Button from "@/ui/elements/Button";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, formatNumber, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
+import useUIStore from "@/hooks/store/useUIStore";
 import { Position as PositionInterface } from "@/types/Position";
+import Button from "@/ui/elements/Button";
+import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
+import TextInput from "@/ui/elements/TextInput";
+import { currencyFormat, formatNumber, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { ID, Position, RESOURCE_PRECISION, resources, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { LucideArrowRight } from "lucide-react";
-
-const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -40,6 +36,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       components: { Position },
     },
   } = useDojo();
+
+  const config = ClientConfigManager.instance();
+  const maxTroopsPerArmy = config.getTroopConfig().maxTroopCount;
 
   const isDefendingArmy = Boolean(army?.protectee);
 
@@ -84,15 +83,15 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   });
 
   const remainingTroops = useMemo(() => {
-    return Math.max(0, MAX_TROOPS_PER_ARMY - Object.values(troopCounts).reduce((a, b) => a + b, 0));
+    return Math.max(0, maxTroopsPerArmy - Object.values(troopCounts).reduce((a, b) => a + b, 0));
   }, [troopCounts]);
 
   const getMaxTroopCount = useCallback(
     (balance: number, troopName: number) => {
-      const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+      const balanceFloor = Math.floor(balance / RESOURCE_PRECISION);
       if (!balance) return 0;
 
-      const maxFromBalance = Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision);
+      const maxFromBalance = Math.min(balanceFloor, U32_MAX / RESOURCE_PRECISION);
 
       if (isDefendingArmy) {
         return maxFromBalance;
@@ -128,9 +127,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       army_id: army?.entity_id || 0n,
       payer_id: owner_entity,
       troops: {
-        knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        paladin_count: troopCounts[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        crossbowman_count: troopCounts[ResourcesIds.Crossbowman] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        knight_count: troopCounts[ResourcesIds.Knight] * RESOURCE_PRECISION || 0,
+        paladin_count: troopCounts[ResourcesIds.Paladin] * RESOURCE_PRECISION || 0,
+        crossbowman_count: troopCounts[ResourcesIds.Crossbowman] * RESOURCE_PRECISION || 0,
       },
     }).finally(() => setIsLoading(false));
 
@@ -296,7 +295,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           {!isDefendingArmy && (
             <div className="text-xs text-yellow-500 mb-2">
-              ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
+              ⚠️ Maximum troops per attacking army is {formatNumber(maxTroopsPerArmy, 0)}
             </div>
           )}
 

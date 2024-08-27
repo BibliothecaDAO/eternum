@@ -1,3 +1,4 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -10,13 +11,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  EternumGlobalConfig,
-  ID,
-  STOREHOUSE_CAPACITY,
-} from "@bibliothecadao/eternum";
+import { BuildingType, ID, STOREHOUSE_CAPACITY, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -40,6 +35,10 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
+  const config = ClientConfigManager.instance();
+  const basePopulationCapacity = config.getBasePopulationCapacity();
+  const armiesTickIntervalInSeconds = config.getTick(TickIds.Armies);
+
   const { setup } = useDojo();
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
@@ -99,8 +98,8 @@ export const TopMiddleNavigation = () => {
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % armiesTickIntervalInSeconds;
+    const progressValue = (timeLeft / armiesTickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -138,7 +137,7 @@ export const TopMiddleNavigation = () => {
                   content: (
                     <span className="whitespace-nowrap pointer-events-none text-sm capitalize">
                       <span>
-                        {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
+                        {population.population} population / {population.capacity + basePopulationCapacity} capacity
                       </span>
                       <br />
                       <span>Build Workers huts to expand population</span>
@@ -151,7 +150,7 @@ export const TopMiddleNavigation = () => {
             >
               <ResourceIcon withTooltip={false} resource="House" size="sm" />
               <div className="self-center">
-                {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+                {population.population} / {population.capacity + basePopulationCapacity}
               </div>
             </div>
           )}
@@ -229,13 +228,14 @@ export const TopMiddleNavigation = () => {
 };
 
 const TickProgress = () => {
+  const armiesTickIntervalInSeconds = ClientConfigManager.instance().getTick(TickIds.Armies);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
 
   const progress = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    return (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % armiesTickIntervalInSeconds;
+    return (timeLeft / armiesTickIntervalInSeconds) * 100;
   }, [nextBlockTimestamp]);
 
   return (
@@ -245,7 +245,7 @@ const TickProgress = () => {
           position: "bottom",
           content: (
             <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60}m</span>
+              <span>A day in Eternum is {armiesTickIntervalInSeconds / 60}m</span>
             </span>
           ),
         });

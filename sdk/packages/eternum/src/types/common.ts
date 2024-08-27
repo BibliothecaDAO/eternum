@@ -10,6 +10,11 @@ export enum TickIds {
   Armies,
 }
 
+export enum TravelTypes {
+  Explore,
+  Travel,
+}
+
 export enum DestinationType {
   Home,
   Hyperstructure,
@@ -29,18 +34,77 @@ export enum BattleSide {
   Defence,
 }
 
-export interface CombatResultInterface {
-  attackerRealmEntityId: ID;
-  targetRealmEntityId: ID;
-  attackingEntityIds: ID[];
-  winner: Winner;
-  stolenResources: Resource[];
-  damage: number;
-  attackTimestamp: number;
-  stolenChestsIds: ID[];
+/// TRADING
+export interface MarketInterface {
+  makerName: string;
+  originName: string;
+  tradeId: ID;
+  makerId: ID;
+  takerId: ID;
+  // brillance, reflection, ...
+  makerOrder: number;
+  expiresAt: number;
+  takerGets: Resource[];
+  makerGets: Resource[];
+  ratio: number;
+  perLords: number;
 }
 
-export interface CombatInfo {
+/// RESOURCES
+export interface Resources {
+  trait: string;
+  value: number;
+  colour: string;
+  id: number;
+  description: string;
+  img: string;
+  ticker: string;
+}
+
+export interface Resource {
+  resourceId: ResourcesIds;
+  amount: number;
+}
+
+/// TRAVEL
+
+// export interface RoadInterface {
+//   startRealmName: string;
+//   startRealmOrder: number | undefined;
+//   destinationEntityId: ID;
+//   destinationRealmName: string;
+//   destinationRealmOrder: number | undefined;
+//   usageLeft: number;
+// }
+
+// export interface EntityInterface {
+//   entityId: ID;
+//   blocked: boolean | undefined;
+//   arrivalTime: number | undefined;
+//   capacity: number | undefined;
+//   intermediateDestination: Position | undefined;
+//   owner: ID | undefined;
+//   isMine: boolean;
+//   isRoundTrip: boolean;
+//   position: Position | undefined;
+//   homePosition: Position | undefined;
+//   resources: Resource[];
+//   entityType: EntityType;
+// }
+
+/// REALMS
+// export interface SelectableRealmInterface {
+//   entityId: ID;
+//   realmId: ID;
+//   name: string;
+//   order: string;
+//   distance: number;
+//   defence?: CombatInfo;
+//   level?: number;
+//   addressName: string;
+// }
+
+interface CombatInfo {
   entityId: ID;
   health: number;
   quantity: number;
@@ -65,87 +129,6 @@ export interface CombatInfo {
   };
   battleEntityId: ID;
   battleSide: number;
-}
-
-/// TRADING
-export interface MarketInterface {
-  makerName: string;
-  originName: string;
-  tradeId: ID;
-  makerId: ID;
-  takerId: ID;
-  // brillance, reflection, ...
-  makerOrder: number;
-  expiresAt: number;
-  takerGets: Resource[];
-  makerGets: Resource[];
-  ratio: number;
-  perLords: number;
-}
-
-export interface Trade {
-  maker_id: ID;
-  taker_id: ID;
-  maker_order_id: ID;
-  taker_order_id: ID;
-  expires_at: number;
-  claimed_by_maker: boolean;
-  claimed_by_taker: boolean;
-  taker_needs_caravan: boolean;
-}
-
-/// RESOURCES
-export interface Resources {
-  trait: string;
-  value: number;
-  colour: string;
-  id: number;
-  description: string;
-  img: string;
-  ticker: string;
-}
-
-export interface Resource {
-  resourceId: ResourcesIds;
-  amount: number;
-}
-
-/// TRAVEL
-
-export interface RoadInterface {
-  startRealmName: string;
-  startRealmOrder: number | undefined;
-  destinationEntityId: ID;
-  destinationRealmName: string;
-  destinationRealmOrder: number | undefined;
-  usageLeft: number;
-}
-
-export interface EntityInterface {
-  entityId: ID;
-  blocked: boolean | undefined;
-  arrivalTime: number | undefined;
-  capacity: number | undefined;
-  intermediateDestination: Position | undefined;
-  owner: ID | undefined;
-  isMine: boolean;
-  isRoundTrip: boolean;
-  position: Position | undefined;
-  homePosition: Position | undefined;
-  resources: Resource[];
-  entityType: EntityType;
-}
-
-/// REALMS
-export interface SelectableRealmInterface {
-  entityId: ID;
-  realmId: ID;
-  name: string;
-  order: string;
-  distance: number;
-  defence?: CombatInfo;
-  level?: number;
-  addressName: string;
 }
 
 export interface SelectableLocationInterface {
@@ -173,8 +156,6 @@ export interface RealmInterface {
   position: Position;
   owner?: ContractAddress;
 }
-
-/// LABOR
 
 /// BANK
 export interface AuctionInterface {
@@ -222,4 +203,12 @@ export function ID(id: number | string): ID {
 
 export function ContractAddress(address: string | bigint): ContractAddress {
   return BigInt(address);
+}
+
+export interface ResourceInputs {
+  [key: number]: { resource: ResourcesIds; amount: number }[];
+}
+
+export interface ResourceOutputs {
+  [key: number]: number;
 }

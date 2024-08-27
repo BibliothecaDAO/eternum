@@ -1,13 +1,17 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { TickIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const GettingStarted = () => {
+  const config = ClientConfigManager.instance();
+  const armiesTickIntervalInSeconds = config.getTick(TickIds.Armies);
+
   const chapters = [
     {
       title: "The Time Cycle",
       content: `Everything in this world revolves around an Eternum Day. A day in Eternum is ${
-        EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60
+        armiesTickIntervalInSeconds / 60
       } minutes.`,
     },
     {

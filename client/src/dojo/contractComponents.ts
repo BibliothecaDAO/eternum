@@ -1167,6 +1167,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    TravelStaminaCostConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          travel_type: RecsType.Number,
+          cost: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "eternum-TravelStaminaCostConfig",
+            types: ["u32", "u8", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     TroopConfig: (() => {
       return defineComponent(
         world,
@@ -1183,12 +1200,13 @@ export function defineContractComponents(world: World) {
           army_extra_per_building: RecsType.Number,
           battle_leave_slash_num: RecsType.Number,
           battle_leave_slash_denom: RecsType.Number,
+          max_troop_count: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8", "u64"],
             customTypes: [],
           },
         },

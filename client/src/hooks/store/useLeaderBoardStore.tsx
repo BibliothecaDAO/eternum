@@ -37,6 +37,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set) => {
 
 export const useSubscriptionToHyperstructureEvents = () => {
   const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureFinishedEvent | null>(null);
+
   const {
     setup: {
       updates: {

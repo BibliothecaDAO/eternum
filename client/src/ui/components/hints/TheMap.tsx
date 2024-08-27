@@ -1,7 +1,8 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
-import { tableOfContents } from "./utils";
-import { EXPLORATION_COSTS, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { TravelTypes } from "@bibliothecadao/eternum";
+import { tableOfContents } from "./utils";
 
 export const TheMap = () => {
   const chapters = [
@@ -41,12 +42,8 @@ export const TheMap = () => {
 };
 
 const ExplorationTable = () => {
-  const explorationCosts = EXPLORATION_COSTS.map((cost) => ({
-    ...cost,
-  }));
-
-  const exploreCost = EternumGlobalConfig.stamina.exploreCost;
-  const travelCost = EternumGlobalConfig.stamina.travelCost;
+  const config = ClientConfigManager.instance();
+  const explorationResourceCosts = config.getExploreResourceCosts();
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">
@@ -60,16 +57,16 @@ const ExplorationTable = () => {
       <tbody>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Exploration</td>
-          <td className="border border-gold/10 p-2">{exploreCost}</td>
+          <td className="border border-gold/10 p-2">{config.getTravelStaminaCost(TravelTypes.Explore)}</td>
           <td className="border border-gold/10 p-2 gap-1 flex flex-col">
-            {explorationCosts.map((cost, index) => (
-              <ResourceCost key={index} resourceId={cost.resourceId} amount={cost.amount} size="lg" />
+            {Object.entries(explorationResourceCosts).map(([resourceId, amount]) => (
+              <ResourceCost key={resourceId} resourceId={Number(resourceId)} amount={amount} size="lg" />
             ))}
           </td>
         </tr>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Travel</td>
-          <td className="border border-gold/10 p-2">{travelCost}</td>
+          <td className="border border-gold/10 p-2">{config.getTravelStaminaCost(TravelTypes.Travel)}</td>
           <td className="border border-gold/10 p-2">None</td>
         </tr>
       </tbody>

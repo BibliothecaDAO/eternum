@@ -1,15 +1,10 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
-import { tableOfContents } from "./utils";
-import {
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  StructureType,
-  STRUCTURE_COSTS_SCALED,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  ResourcesIds,
-} from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
+import { HYPERSTRUCTURE_POINTS_PER_CYCLE, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
+import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
+import { tableOfContents } from "./utils";
 
 export const WorldStructures = () => {
   const chapters = useMemo(
@@ -54,11 +49,9 @@ export const WorldStructures = () => {
 };
 
 const HyperstructureCreationTable = () => {
+  const config = ClientConfigManager.instance();
   const structureId = StructureType["Hyperstructure"];
-
-  const creationCost = STRUCTURE_COSTS_SCALED[structureId].map((cost) => ({
-    ...cost,
-  }));
+  const creationCost = config.getStructureCosts(structureId);
 
   return (
     <>
@@ -75,7 +68,7 @@ const HyperstructureCreationTable = () => {
               <img className="w-24 h-24 " src={STRUCTURE_IMAGE_PATHS[structureId]} />
             </td>
             <td className="gap-1 flex flex-col p-2 items-center">
-              {creationCost.map((cost, index) => (
+              {creationCost?.map((cost, index) => (
                 <div key={index}>
                   <ResourceCost resourceId={cost.resource} amount={cost.amount} size="lg" />
                 </div>
@@ -98,9 +91,12 @@ const HyperstructureCreationTable = () => {
 };
 
 const HyperstructureConstructionTable = () => {
-  const constructionCost = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.filter(
-    (cost) => cost.resource !== ResourcesIds["Earthenshard"],
-  ).map((cost) => ({ ...cost }));
+  const config = ClientConfigManager.instance();
+
+  const constructionCost = config
+    .getHyperstructureTotalCosts()
+    .filter((cost) => cost.resource !== ResourcesIds["Earthenshard"])
+    .map((cost) => ({ ...cost }));
 
   return (
     <table className="not-prose w-full p-2 border-gold/10 mt-5">

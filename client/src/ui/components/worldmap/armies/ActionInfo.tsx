@@ -1,3 +1,4 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
@@ -6,13 +7,18 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
-import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const ActionInfo = () => {
   const { hoveredHex, selectedEntityId, travelPaths } = useUIStore((state) => state.armyActions);
   const { getBalance } = getResourceBalance();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const config = ClientConfigManager.instance();
+  const exploreWheatBurn = config.getExploreResourceCost(ResourcesIds.Wheat);
+  const exploreFishBurn = config.getExploreResourceCost(ResourcesIds.Fish);
+  const exploreReward = config.getExploreReward();
 
   const travelPath = useMemo(() => {
     if (hoveredHex) return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
@@ -33,12 +39,12 @@ export const ActionInfo = () => {
           {!isExplored && (
             <div>
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.wheatBurn}
+                amount={-exploreWheatBurn}
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.fishBurn}
+                amount={-exploreFishBurn}
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
@@ -53,7 +59,7 @@ export const ActionInfo = () => {
             <div className="flex flex-row text-xs ml-1">
               <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
               <div className="flex flex-col p-1 text-xs">
-                <div>+{EternumGlobalConfig.exploration.reward} Random resource</div>
+                <div>+{exploreReward} Random resource</div>
               </div>
             </div>
           )}

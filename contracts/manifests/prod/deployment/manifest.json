@@ -1230,8 +1230,8 @@
       }
     ],
     "address": "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac",
-    "transaction_hash": "0x4094b2280bef30bdf498bb1b780f7b52c73b8679749cd68e730bfb4efd221ba",
-    "block_number": 99,
+    "transaction_hash": null,
+    "block_number": null,
     "seed": "eternum",
     "metadata": {
       "profile_name": "prod",
@@ -1250,10 +1250,10 @@
   "contracts": [
     {
       "kind": "DojoContract",
-      "address": "0x401cdf9c7df59b700a304864ee3ad0dc01af1fc5428f7d35503eec9c5da1f72",
+      "address": null,
       "class_hash": "0x57b57b52d8f2f7f91d1ae864342b6bcba1954763a282dba99eba422410d65b9",
       "original_class_hash": "0x57b57b52d8f2f7f91d1ae864342b6bcba1954763a282dba99eba422410d65b9",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -1544,10 +1544,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x5d554f77805c2ecb25913ab3f54f55a295cd20ac63ff3be4a75c3ac43fd8ad5",
+      "address": null,
       "class_hash": "0x51b74bb101cbeeea9b68b7a36b56aea8536b3dd58cea8f18f38e0e2728ac563",
       "original_class_hash": "0x51b74bb101cbeeea9b68b7a36b56aea8536b3dd58cea8f18f38e0e2728ac563",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -1941,10 +1941,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x1c3310b831c666aeeefbe9ec95fe3140cb32ecb1a279b7898782b0e450c79a8",
-      "class_hash": "0x65a660f5dd866f9eb0f317bbc29f20e52eecec6dab7a9f4e5209c8c057d801f",
-      "original_class_hash": "0x65a660f5dd866f9eb0f317bbc29f20e52eecec6dab7a9f4e5209c8c057d801f",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "address": null,
+      "class_hash": "0x7e8bc5ec5932a8d23e704e8bee86c1cdc263c112a735c3806e1c44c74295d46",
+      "original_class_hash": "0x7e8bc5ec5932a8d23e704e8bee86c1cdc263c112a735c3806e1c44c74295d46",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -2389,10 +2389,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x3b1da586497e83fb3cec9f198be85d09cfddbb4265a35648d66658a013bd5ee",
-      "class_hash": "0x386b5832ce66a38fa1d2d096743fa19723b67c169037e6b4a8ef3dfd35f4fe6",
-      "original_class_hash": "0x386b5832ce66a38fa1d2d096743fa19723b67c169037e6b4a8ef3dfd35f4fe6",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "address": null,
+      "class_hash": "0x78c9fbbd70ff134d0b0f38569c4d1cfa55cc20c9717b0a6b7ca9614ae7e2d89",
+      "original_class_hash": "0x78c9fbbd70ff134d0b0f38569c4d1cfa55cc20c9717b0a6b7ca9614ae7e2d89",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -2613,6 +2613,33 @@
                 {
                   "name": "shards_mines_fail_probability",
                   "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "TravelStaminaCostConfigImpl",
+          "interface_name": "eternum::systems::config::contracts::ITravelStaminaCostConfig"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::contracts::ITravelStaminaCostConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_travel_stamina_cost_config",
+              "inputs": [
+                {
+                  "name": "travel_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "cost",
+                  "type": "core::integer::u16"
                 }
               ],
               "outputs": [],
@@ -3305,6 +3332,7 @@
         "set_world_config",
         "set_mint_config",
         "set_exploration_config",
+        "set_travel_stamina_cost_config",
         "set_capacity_config",
         "set_weight_config",
         "set_tick_config",
@@ -3326,10 +3354,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x7a8476cf9932cd203e8bf8954ca37de477e817c768994fb654b77f7cdafc9a2",
+      "address": null,
       "class_hash": "0x7bc9a71e836ebf3b4c52e04e64e7eb532c1d5757a869813b4b52c9e91230d3c",
       "original_class_hash": "0x7bc9a71e836ebf3b4c52e04e64e7eb532c1d5757a869813b4b52c9e91230d3c",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -3594,10 +3622,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x6a4c45b03b7c8921ce5dd8f62d8f4aa63858a2806713a5c14d61db63e0efc47",
+      "address": null,
       "class_hash": "0xe50a4ee01f0dddcc7c4964816e39db3442a2218dbde0ccddc602fbc7b84f27",
       "original_class_hash": "0xe50a4ee01f0dddcc7c4964816e39db3442a2218dbde0ccddc602fbc7b84f27",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -3852,10 +3880,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x19d17e369169e011b9be13c2c828fd0258d8dea1ce7c8730bce4acaa0312146",
+      "address": null,
       "class_hash": "0x435d70d403b37e9759906bb93048fa4bbebe64b732067385e1dd2d2e61b571a",
       "original_class_hash": "0x435d70d403b37e9759906bb93048fa4bbebe64b732067385e1dd2d2e61b571a",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -4071,10 +4099,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x7331d35e7da85d6272afab7b8378583d4a80fdd2dea6bd744f67c11c70204d4",
+      "address": null,
       "class_hash": "0x5b481494c752b7f0e58412730ea48eca13dd60ee62ebdcacac21a1f97fd68de",
       "original_class_hash": "0x5b481494c752b7f0e58412730ea48eca13dd60ee62ebdcacac21a1f97fd68de",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -4421,10 +4449,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x286937f24c74d9eb824fdcfb6ea70475e90f6f085ea76b3a4a25032f7f7a9a",
+      "address": null,
       "class_hash": "0x48008a434a1bbdf4aeecf072c948e1f56890385fee7c28f2dc81ec123c9fbf3",
       "original_class_hash": "0x48008a434a1bbdf4aeecf072c948e1f56890385fee7c28f2dc81ec123c9fbf3",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -4744,10 +4772,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x5a322bc828979e60c965a5d76d43b75673b5d4520d969da8e6bde5f21d64286",
+      "address": null,
       "class_hash": "0x242bc2bf4b0cdeec483143b4cda2bfd51223c7ab1b20f407f1f798a45a93e3b",
       "original_class_hash": "0x242bc2bf4b0cdeec483143b4cda2bfd51223c7ab1b20f407f1f798a45a93e3b",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -4988,10 +5016,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x49de68dbd13b39d8ed4b3c718a41bc103270fed7e6cd482064fd379c3330f6e",
+      "address": null,
       "class_hash": "0x5a29f52de410336c9a75157d50eca53c02d103112b8dc1a57ef34dc6cb90cd3",
       "original_class_hash": "0x5a29f52de410336c9a75157d50eca53c02d103112b8dc1a57ef34dc6cb90cd3",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -5304,10 +5332,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x28d57567b8e2844cf0192d5f516b8612d08e4e83fe2a7025e9052e2116078d5",
-      "class_hash": "0x7647b13a7690db67f357fa20ea1ede87d91d7354edfc6a66b6bc43065b6350c",
-      "original_class_hash": "0x7647b13a7690db67f357fa20ea1ede87d91d7354edfc6a66b6bc43065b6350c",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "address": null,
+      "class_hash": "0x39da6725d7494845488ba8e0d9f30a9e111bd5ea9dc140476ac7910082d40a",
+      "original_class_hash": "0x39da6725d7494845488ba8e0d9f30a9e111bd5ea9dc140476ac7910082d40a",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -5582,10 +5610,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x25720d18bb94c5561def235920f8afc65a1f7a812482aadc416471c6a51e882",
+      "address": null,
       "class_hash": "0x19f8712498d09ef9f05e8f038822f1366025b6fa30f32b5741c6f5c7dc5ba47",
       "original_class_hash": "0x19f8712498d09ef9f05e8f038822f1366025b6fa30f32b5741c6f5c7dc5ba47",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -5843,10 +5871,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x37658fe61f9ed59631b8554ad6ed19beb97a3d1b94e870937bd6499412691ee",
+      "address": null,
       "class_hash": "0x663e58400c172196e790982a0311e89c2b1b5a8810a45e6fcab510b926a7bb4",
       "original_class_hash": "0x663e58400c172196e790982a0311e89c2b1b5a8810a45e6fcab510b926a7bb4",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -6163,10 +6191,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x2a389a21cf4c1834db1b056f3436838ffdda81304f3641ff474e4e36920281",
+      "address": null,
       "class_hash": "0x35e1067766a4e5a6882a74d0adc39a60ce0f4762419a7f12f5800b79e8857e3",
       "original_class_hash": "0x35e1067766a4e5a6882a74d0adc39a60ce0f4762419a7f12f5800b79e8857e3",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -6467,10 +6495,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x9aa58ef3d5f44d474cf6b6d541e57b129c95b0e629445cf86f28d0eb70b1ba",
+      "address": null,
       "class_hash": "0x33a2a12c4978eb61199e8bc1215b36d47f0edaea61e33f441e1d7acd46d5db2",
       "original_class_hash": "0x33a2a12c4978eb61199e8bc1215b36d47f0edaea61e33f441e1d7acd46d5db2",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -6737,10 +6765,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x2196d6e981117004707d78f8f1f4a3d2e1fcab36954d0f0518a0f5aa03150be",
+      "address": null,
       "class_hash": "0x54c849ef9be8411e1b96be8f624ad68bfc0e80c6355e1fba9d1ebe96f22c35b",
       "original_class_hash": "0x54c849ef9be8411e1b96be8f624ad68bfc0e80c6355e1fba9d1ebe96f22c35b",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -7023,10 +7051,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x3816c9bfbbc3c9aaea4d34910a8d3592a714520b5c2c9b38bc167b9024b9724",
+      "address": null,
       "class_hash": "0x642a89aba5aedb8f23d650685c1fdbffd715a1f287107a0e23e7137b5f1d1d2",
       "original_class_hash": "0x642a89aba5aedb8f23d650685c1fdbffd715a1f287107a0e23e7137b5f1d1d2",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -7367,10 +7395,10 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x30668871069dc2caaf9209add720fd3b1a1b138090d5f18a8c31d6b6467d449",
-      "class_hash": "0x7bfa2b43c13387032b08787ed7d670efa3630f53a27a881b45b480ca26e9506",
-      "original_class_hash": "0x7bfa2b43c13387032b08787ed7d670efa3630f53a27a881b45b480ca26e9506",
-      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "address": null,
+      "class_hash": "0x553d34a21797e704ae1c3b89ce10a47f400c4f34d02699f38557d14ef75325a",
+      "original_class_hash": "0x553d34a21797e704ae1c3b89ce10a47f400c4f34d02699f38557d14ef75325a",
+      "base_class_hash": "0x0",
       "abi": [
         {
           "type": "impl",
@@ -47476,6 +47504,441 @@
       ],
       "tag": "eternum-Travel",
       "manifest_name": "eternum-Travel-7d174e27"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "config_id",
+          "type": "ID",
+          "key": true
+        },
+        {
+          "name": "travel_type",
+          "type": "u8",
+          "key": true
+        },
+        {
+          "name": "cost",
+          "type": "u16",
+          "key": false
+        }
+      ],
+      "class_hash": "0x93c66856798fa783bc2c67d5a05e8e15b62e60f49297bfbecccec1005a1712",
+      "original_class_hash": "0x93c66856798fa783bc2c67d5a05e8e15b62e60f49297bfbecccec1005a1712",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::model::IModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "core::option::Option::<core::integer::u32>",
+          "variants": [
+            {
+              "name": "Some",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "None",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::model::layout::FieldLayout",
+          "members": [
+            {
+              "name": "selector",
+              "type": "core::felt252"
+            },
+            {
+              "name": "layout",
+              "type": "dojo::model::layout::Layout"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::model::layout::FieldLayout>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::model::layout::FieldLayout>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::model::layout::Layout>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::model::layout::Layout>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::model::layout::Layout",
+          "variants": [
+            {
+              "name": "Fixed",
+              "type": "core::array::Span::<core::integer::u8>"
+            },
+            {
+              "name": "Struct",
+              "type": "core::array::Span::<dojo::model::layout::FieldLayout>"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<dojo::model::layout::Layout>"
+            },
+            {
+              "name": "Array",
+              "type": "core::array::Span::<dojo::model::layout::Layout>"
+            },
+            {
+              "name": "ByteArray",
+              "type": "()"
+            },
+            {
+              "name": "Enum",
+              "type": "core::array::Span::<dojo::model::layout::FieldLayout>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::model::introspect::Member",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "ty",
+              "type": "dojo::model::introspect::Ty"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::model::introspect::Member>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::model::introspect::Member>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::model::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<dojo::model::introspect::Member>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, dojo::model::introspect::Ty)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, dojo::model::introspect::Ty)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::model::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, dojo::model::introspect::Ty)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::model::introspect::Ty>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::model::introspect::Ty>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::model::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::model::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::model::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<dojo::model::introspect::Ty>"
+            },
+            {
+              "name": "Array",
+              "type": "core::array::Span::<dojo::model::introspect::Ty>"
+            },
+            {
+              "name": "ByteArray",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::model::IModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "namespace",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "tag",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "version",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u8"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "selector",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "name_hash",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "namespace_hash",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::option::Option::<core::integer::u32>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::option::Option::<core::integer::u32>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::model::layout::Layout"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::model::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "travel_stamina_cost_configImpl",
+          "interface_name": "eternum::models::config::Itravel_stamina_cost_config"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::config::TravelStaminaCostConfig",
+          "members": [
+            {
+              "name": "config_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "travel_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "cost",
+              "type": "core::integer::u16"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::config::Itravel_stamina_cost_config",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::config::TravelStaminaCostConfig"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::config::travel_stamina_cost_config::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "tag": "eternum-TravelStaminaCostConfig",
+      "manifest_name": "eternum-TravelStaminaCostConfig-3e06f929"
     },
     {
       "kind": "DojoModel",

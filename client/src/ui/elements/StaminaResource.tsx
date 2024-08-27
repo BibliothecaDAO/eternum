@@ -1,13 +1,15 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useStaminaManager } from "@/hooks/helpers/useStamina";
 import useUIStore from "@/hooks/store/useUIStore";
-import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { ID, TravelTypes } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const { setup } = useDojo();
+  const travelCost = ClientConfigManager.instance().getTravelStaminaCost(TravelTypes.Travel);
 
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
 
@@ -26,10 +28,7 @@ export const StaminaResource = ({ entityId, className }: { entityId: ID | undefi
 
   const staminaPercentage = useMemo(() => (staminaAmount / maxStamina) * 100, [staminaAmount, maxStamina]);
 
-  const staminaColor = useMemo(
-    () => (staminaAmount < EternumGlobalConfig.stamina.travelCost ? "bg-red-500" : "bg-yellow-500"),
-    [staminaAmount],
-  );
+  const staminaColor = useMemo(() => (staminaAmount < travelCost ? "bg-red-500" : "bg-yellow-500"), [staminaAmount]);
 
   return (
     <div className={`flex flex-col text-xs font-bold uppercase self-center ${className}`}>

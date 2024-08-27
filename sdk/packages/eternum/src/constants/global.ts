@@ -1,20 +1,24 @@
-import { ResourcesIds } from "./resources";
+import { BUILDING_CAPACITY, BUILDING_POPULATION } from "./buildings";
+import {
+  BUILDING_COSTS,
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  QUEST_RESOURCES,
+  RESOURCE_BUILDING_COSTS,
+  RESOURCE_INPUTS,
+  RESOURCE_OUTPUTS,
+  ResourcesIds,
+  STRUCTURE_COSTS,
+  WEIGHTS_GRAM,
+} from "./resources";
+import { STAMINA_REFILL_PER_TICK, TROOPS_STAMINAS } from "./troops";
 
 export const EternumGlobalConfig = {
-  stamina: {
-    travelCost: 5,
-    exploreCost: 15,
+  staminaCost: {
+    travel: 5,
+    explore: 15,
   },
   resources: {
-    resourcePrecision: 1000,
-    resourceMultiplier: 1000,
-    resourceAmountPerTick: 100,
-    foodPerTick: 300,
-    donkeysPerTick: 30,
-    knightsPerTick: 20,
-    crossbowmanPerTick: 20,
-    paladinPerTick: 20,
-    startingResourcesInputProductionFactor: 4,
     startingResources: [
       { resourceId: ResourcesIds.Wheat, amount: 1500 },
       { resourceId: ResourcesIds.Fish, amount: 1500 },
@@ -28,11 +32,14 @@ export const EternumGlobalConfig = {
     ownerFeesDenominator: 100, // %
   },
   populationCapacity: {
+    base: 5,
     workerHuts: 5,
   },
   exploration: {
-    wheatBurn: 100,
-    fishBurn: 100,
+    burn: {
+      [ResourcesIds.Wheat]: 100,
+      [ResourcesIds.Fish]: 100,
+    },
     reward: 750,
     shardsMinesFailProbability: 99000,
   },
@@ -70,8 +77,6 @@ export const EternumGlobalConfig = {
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
-    healthPrecision: 1000n,
-
     // 25%
     battleLeaveSlashNum: 25,
     battleLeaveSlashDenom: 100,
@@ -83,19 +88,35 @@ export const EternumGlobalConfig = {
       crossbowman_count: 1000,
     },
     rewards: [
-      { resource: ResourcesIds.Wheat, amount: 100 },
-      { resource: ResourcesIds.Fish, amount: 200 },
+      { resourceId: ResourcesIds.Wheat, amount: 100 },
+      { resourceId: ResourcesIds.Fish, amount: 200 },
     ],
   },
+  BUILDING_CAPACITY,
+  BUILDING_POPULATION,
+  WEIGHTS_GRAM,
+  RESOURCE_OUTPUTS,
+  RESOURCE_INPUTS,
+  BUILDING_COSTS,
+  RESOURCE_BUILDING_COSTS,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  STRUCTURE_COSTS,
+  QUEST_RESOURCES,
+  TROOPS_STAMINAS,
+  STAMINA_REFILL_PER_TICK,
 };
 
 export const WORLD_CONFIG_ID = 999999999n;
+export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
+export const BUILDING_CATEGORY_POPULATION_CONFIG_ID = 999999990n;
+export const POPULATION_CONFIG_ID = 999999989n;
+
 export const U32_MAX = 4294967295;
 export const MAX_NAME_LENGTH = 31;
 export const ONE_MONTH = 2628000;
 
 // Buildings
-export const BASE_POPULATION_CAPACITY = 5;
 export const STOREHOUSE_CAPACITY = 10000000;
 
 // Points
@@ -107,3 +128,6 @@ export const HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S = 17280; // 2 days
 export const DONKEY_ENTITY_TYPE = 256;
 export const REALM_ENTITY_TYPE = 257;
 export const ARMY_ENTITY_TYPE = 258;
+
+// Quest reward modifiers
+export const STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR = 4;

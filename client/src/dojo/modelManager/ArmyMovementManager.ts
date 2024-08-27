@@ -3,9 +3,9 @@ import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ContractAddress,
-  EternumGlobalConfig,
   ID,
   ResourcesIds,
+  TravelTypes,
   getNeighborHexes,
   neighborOffsetsEven,
   neighborOffsetsOdd,
@@ -13,6 +13,7 @@ import {
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { SetupResult } from "../setup";
+import { ClientConfigManager } from "./ClientConfigManager";
 import { ProductionManager } from "./ProductionManager";
 import { StaminaManager } from "./StaminaManager";
 import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
@@ -88,21 +89,27 @@ export class ArmyMovementManager {
   }
 
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
+    const config = ClientConfigManager.instance();
+    const exploreCost = config.getTravelStaminaCost(TravelTypes.Explore);
+    const exploreFishCost = config.getExploreResourceCost(ResourcesIds.Fish);
+    const exploreWheatCost = config.getExploreResourceCost(ResourcesIds.Wheat);
+    const exploreReward = config.getExploreReward();
+
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
-    if (stamina.amount < EternumGlobalConfig.stamina.exploreCost) {
+    if (stamina.amount < exploreCost) {
       return false;
     }
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < EternumGlobalConfig.exploration.fishBurn) {
+    if (fish < exploreFishCost) {
       return false;
     }
-    if (wheat < EternumGlobalConfig.exploration.wheatBurn) {
+    if (wheat < exploreWheatCost) {
       return false;
     }
 
-    if (this._getArmyRemainingCapacity() < EternumGlobalConfig.exploration.reward) {
+    if (this._getArmyRemainingCapacity() < exploreReward) {
       return false;
     }
 
@@ -110,8 +117,10 @@ export class ArmyMovementManager {
   }
 
   private _calculateMaxTravelPossible = (currentArmiesTick: number) => {
+    const config = ClientConfigManager.instance();
+    const travelCost = config.getTravelStaminaCost(TravelTypes.Travel);
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    return Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+    return Math.floor((stamina.amount || 0) / travelCost);
   };
 
   private _getCurrentPosition = () => {
@@ -229,9 +238,12 @@ export class ArmyMovementManager {
   };
 
   private _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
+    const config = ClientConfigManager.instance();
+    const exploreCost = config.getTravelStaminaCost(TravelTypes.Explore);
+
     let overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost, currentArmiesTick);
+    this._optimisticStaminaUpdate(overrideId, exploreCost, currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
 
@@ -274,9 +286,12 @@ export class ArmyMovementManager {
   };
 
   private _optimisticTravelHex = (col: number, row: number, pathLength: number, currentArmiesTick: number) => {
+    const config = ClientConfigManager.instance();
+    const travelCost = config.getTravelStaminaCost(TravelTypes.Travel);
+
     let overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength, currentArmiesTick);
+    this._optimisticStaminaUpdate(overrideId, travelCost * pathLength, currentArmiesTick);
 
     this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,

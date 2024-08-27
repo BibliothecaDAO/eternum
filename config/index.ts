@@ -1,24 +1,10 @@
 import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
 
-import {
-  EternumProvider,
-  setBuildingCategoryPopConfig,
-  setBuildingConfig,
-  setCapacityConfig,
-  setCombatConfig,
-  setHyperstructureConfig,
-  setMercenariesConfig,
-  setPopulationConfig,
-  setProductionConfig,
-  setResourceBuildingConfig,
-  setSpeedConfig,
-  setStaminaConfig,
-  setStaminaRefillConfig,
-  setupGlobals,
-  setWeightConfig,
-} from "@bibliothecadao/eternum";
+import { EternumProvider, ConfigManager, type EternumConfig } from "@bibliothecadao/eternum";
+
 import { Account } from "starknet";
+import fs from "fs";
 
 if (
   !process.env.VITE_PUBLIC_MASTER_ADDRESS ||
@@ -38,17 +24,16 @@ const nodeUrl = process.env.VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/
 const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
-await setProductionConfig(account, provider);
-await setBuildingCategoryPopConfig(account, provider);
-await setPopulationConfig(account, provider);
-await setBuildingConfig(account, provider);
-await setResourceBuildingConfig(account, provider);
-await setWeightConfig(account, provider);
-await setCombatConfig(account, provider);
-await setCapacityConfig(account, provider);
-await setSpeedConfig(account, provider);
-await setupGlobals(account, provider);
-await setHyperstructureConfig(account, provider);
-await setStaminaConfig(account, provider);
-await setStaminaRefillConfig(account, provider);
-await setMercenariesConfig(account, provider);
+const configPath = "../config/EternumConfig.json";
+let customConfig: Partial<EternumConfig> = {};
+try {
+  const rawData = fs.readFileSync(configPath, "utf-8");
+  if (rawData.trim()) {
+    customConfig = JSON.parse(rawData);
+  }
+} catch (error) {
+  console.warn(`Failed to load config: ${error}`);
+}
+
+const configManager = new ConfigManager(customConfig);
+await configManager.setConfigs(account, provider);

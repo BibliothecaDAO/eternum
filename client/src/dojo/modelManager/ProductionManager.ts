@@ -1,14 +1,8 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  BuildingType,
-  EternumGlobalConfig,
-  ID,
-  RESOURCE_INPUTS_SCALED,
-  ResourcesIds,
-  STOREHOUSE_CAPACITY,
-} from "@bibliothecadao/eternum";
+import { BuildingType, ID, RESOURCE_PRECISION, ResourcesIds, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { SetupResult } from "../setup";
+import { ClientConfigManager } from "./ClientConfigManager";
 
 export class ProductionManager {
   entityId: ID;
@@ -87,9 +81,7 @@ export class ProductionManager {
         this.setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
-    return (
-      (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * EternumGlobalConfig.resources.resourcePrecision
-    );
+    return (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * RESOURCE_PRECISION;
   }
 
   public isConsumingInputsWithoutOutput(currentTick: number): boolean {
@@ -179,7 +171,7 @@ export class ProductionManager {
   }
 
   private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
-    const inputs = RESOURCE_INPUTS_SCALED[resourceId];
+    const inputs = ClientConfigManager.instance().getResourceInputs(resourceId);
 
     // Ensure inputs is an array before proceeding
     if (inputs.length == 0) {

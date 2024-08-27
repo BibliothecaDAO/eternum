@@ -7,3 +7,5 @@ export const TROOPS_STAMINAS = {
 };
 
 export const STAMINA_REFILL_PER_TICK = 20;
+
+export const TROOP_HEALTH_PRECISION = 1000n;

@@ -1,3 +1,4 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
@@ -8,10 +9,11 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
-  EternumGlobalConfig,
+  DONKEY_ENTITY_TYPE,
   ID,
   MarketInterface,
   ONE_MONTH,
+  RESOURCE_PRECISION,
   Resources,
   ResourcesIds,
   findResourceById,
@@ -178,21 +180,20 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     },
   } = useDojo();
 
+  const config = ClientConfigManager.instance();
+  const donkeySpeed = config.getSpeedConfig(DONKEY_ENTITY_TYPE);
+  const donkeyCarryCapacity = config.getCarryCapacity(DONKEY_ENTITY_TYPE);
+
   const { getRealmAddressName } = useRealm();
 
   const [inputValue, setInputValue] = useState<number>(() => {
-    return isBuy
-      ? offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision
-      : offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision;
+    return isBuy ? offer.makerGets[0].amount / RESOURCE_PRECISION : offer.takerGets[0].amount / RESOURCE_PRECISION;
   });
 
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
   // TODO Distance
-  const travelTime = useMemo(
-    () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
-    [entityId, offer],
-  );
+  const travelTime = useMemo(() => computeTravelTime(entityId, offer.makerId, donkeySpeed, true), [entityId, offer]);
 
   const returnResources = useMemo(() => {
     return isBuy
@@ -244,7 +245,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / donkeyCarryCapacity);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -269,7 +270,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return getRealmAddressName(offer.makerId);
   }, [offer.originName]);
 
-  console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
+  console.log(inputValue, getsDisplay, getTotalLords, RESOURCE_PRECISION);
 
   const calculatedResourceAmount = useMemo(() => {
     return inputValue * EternumGlobalConfig.resources.resourcePrecision;
@@ -374,13 +375,9 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
                   value={inputValue}
                   className="w-full col-span-3"
                   onChange={setInputValue}
-                  max={getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision}
+                  max={getsDisplayNumber / RESOURCE_PRECISION}
                 />
-                <Button
-                  onClick={() => setInputValue(getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision)}
-                >
-                  Max
-                </Button>
+                <Button onClick={() => setInputValue(getsDisplayNumber / RESOURCE_PRECISION)}>Max</Button>
               </div>
               <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
               <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
@@ -404,6 +401,9 @@ const OrderCreation = ({
   resourceId: ResourcesIds;
   isBuy?: boolean;
 }) => {
+  const config = ClientConfigManager.instance();
+  const donkeyCarryCapacity = config.getCarryCapacity(DONKEY_ENTITY_TYPE);
+
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
@@ -451,7 +451,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / donkeyCarryCapacity);
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
@@ -506,7 +506,7 @@ const OrderCreation = ({
             value={resource}
             className="w-full col-span-3"
             onChange={(value) => setResource(Number(value))}
-            max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={!isBuy ? resourceBalance / RESOURCE_PRECISION : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -530,7 +530,7 @@ const OrderCreation = ({
             value={lords}
             className="w-full col-span-3"
             onChange={(value) => setLords(Number(value))}
-            max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={isBuy ? lordsBalance / RESOURCE_PRECISION : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">

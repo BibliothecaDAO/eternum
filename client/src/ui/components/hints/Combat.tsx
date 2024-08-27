@@ -1,9 +1,14 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { EternumGlobalConfig, ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Combat = () => {
+  const config = ClientConfigManager.instance();
+  const baseArmyNumberForStructure = config.getTroopConfig().armyFreePerStructure;
+  const armyExtraPerMilitaryBuilding = config.getTroopConfig().armyExtraPerBuilding;
+
   const chapter = [
     {
       title: "Protecting your Structures",
@@ -12,7 +17,7 @@ export const Combat = () => {
     },
     {
       title: "Exploration",
-      content: `An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions. You can only have a certain number of attacking armies per Realm. You start at ${EternumGlobalConfig.troop.baseArmyNumberForStructure} and get ${EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding} per military building.`,
+      content: `An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions. You can only have a certain number of attacking armies per Realm. You start at ${baseArmyNumberForStructure} and get ${armyExtraPerMilitaryBuilding} per military building.`,
     },
     {
       title: "Battles",
@@ -88,7 +93,8 @@ const Battles = () => {
 };
 
 const Troops = () => {
-  const troopHealth = EternumGlobalConfig.troop.health;
+  const config = ClientConfigManager.instance();
+  const troopConfig = config.getTroopConfig();
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">
@@ -105,37 +111,25 @@ const Troops = () => {
           type="Knight"
           resourceId={ResourcesIds.Knight}
           strength={
-            <Strength
-              strength={EternumGlobalConfig.troop.knightStrength}
-              strongAgainst="Paladin"
-              weakAgainst="Crossbowman"
-            />
+            <Strength strength={troopConfig.knightStrength} strongAgainst="Paladin" weakAgainst="Crossbowman" />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
         <TroopRow
           type="Crossbowman"
           resourceId={ResourcesIds.Crossbowman}
           strength={
-            <Strength
-              strength={EternumGlobalConfig.troop.crossbowmanStrength}
-              strongAgainst="Knight"
-              weakAgainst="Paladin"
-            />
+            <Strength strength={troopConfig.crossbowmanStrength} strongAgainst="Knight" weakAgainst="Paladin" />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
         <TroopRow
           type="Paladin"
           resourceId={ResourcesIds.Paladin}
           strength={
-            <Strength
-              strength={EternumGlobalConfig.troop.paladinStrength}
-              strongAgainst="Crossbowman"
-              weakAgainst="Knight"
-            />
+            <Strength strength={troopConfig.paladinStrength} strongAgainst="Crossbowman" weakAgainst="Knight" />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
       </tbody>
     </table>
@@ -153,14 +147,15 @@ const TroopRow = ({
   strength: JSX.Element;
   health: number;
 }) => {
+  const config = ClientConfigManager.instance();
+  const stamina = config.getTroopTypeStamina(resourceId);
+
   return (
     <tr>
       <td className="border border-gold/10 p-2">
         <ResourceIcon resource={type} size="xxl" />
       </td>
-      <td className="border border-gold/10 p-2 text-center">
-        {TROOPS_STAMINAS[resourceId as keyof typeof TROOPS_STAMINAS]}
-      </td>
+      <td className="border border-gold/10 p-2 text-center">{stamina}</td>
       <td className="border border-gold/10 p-2 text-center">{strength}</td>
       <td className="border border-gold/10 p-2 text-center">{health}</td>
     </tr>
@@ -176,8 +171,9 @@ const Strength = ({
   strongAgainst: string;
   weakAgainst: string;
 }) => {
-  const advantagePercent = (EternumGlobalConfig.troop.advantagePercent / 10000) * 100;
-  const disadvantagePercent = (EternumGlobalConfig.troop.disadvantagePercent / 10000) * 100;
+  const troopConfig = ClientConfigManager.instance().getTroopConfig();
+  const advantagePercent = (troopConfig.advantagePercent / 10000) * 100;
+  const disadvantagePercent = (troopConfig.disadvantagePercent / 10000) * 100;
 
   return (
     <div className="flex flex-col">

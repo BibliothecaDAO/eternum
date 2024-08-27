@@ -107,6 +107,15 @@ pub struct MapExploreConfig {
     shards_mines_fail_probability: u128,
 }
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+struct TravelStaminaCostConfig {
+    #[key]
+    config_id: ID,
+    #[key]
+    travel_type: u8,
+    cost: u16,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

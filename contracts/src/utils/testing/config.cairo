@@ -1,6 +1,6 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::ops::index::IndexView;
-use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
+use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds, TravelTypes};
 
 use eternum::models::{config::TroopConfig, combat::Troops};
 
@@ -10,7 +10,8 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, ITravelStaminaCostConfigDispatcher,
+    ITravelStaminaCostConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -76,6 +77,14 @@ fn set_stamina_config(config_systems_address: ContractAddress) {
     IStaminaConfigDispatcher { contract_address: config_systems_address }.set_stamina_config(ResourceTypes::KNIGHT, 80);
     IStaminaConfigDispatcher { contract_address: config_systems_address }
         .set_stamina_config(ResourceTypes::CROSSBOWMAN, 80);
+}
+
+fn set_travel_stamina_cost_config(config_systems_address: ContractAddress) {
+    let travel_stamina_cost_dispatcher = ITravelStaminaCostConfigDispatcher {
+        contract_address: config_systems_address
+    };
+    travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::TRAVEL, 5);
+    travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::EXPLORE, 15);
 }
 
 

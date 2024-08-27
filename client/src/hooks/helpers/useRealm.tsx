@@ -1,10 +1,5 @@
-import {
-  BASE_POPULATION_CAPACITY,
-  ContractAddress,
-  ID,
-  getOrderName,
-  getQuestResources as getStartingResources,
-} from "@bibliothecadao/eternum";
+import { ClientConfigManager } from "@/dojo/modelManager/ClientConfigManager";
+import { ContractAddress, ID, getOrderName } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -22,12 +17,14 @@ export function useRealm() {
       components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
+  const config = ClientConfigManager.instance();
+
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const getQuestResources = () => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
-    return getStartingResources(resourcesProduced);
+    return config.getStartingResources(resourcesProduced);
   };
 
   const getEntityOwner = (entityId: ID) => {
@@ -171,6 +168,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
     },
   } = useDojo();
 
+  const config = ClientConfigManager.instance();
   const query = useEntityQuery([HasValue(Realm, { entity_id: realmEntityId })]);
 
   const realm = useMemo((): any => {
@@ -197,6 +195,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
         const name = getRealmNameById(realm_id);
 
         const { address } = owner;
+        const basePopulationCapacity = config.getBasePopulationCapacity();
 
         return {
           realmId: realm_id,
@@ -211,7 +210,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
           order,
           position,
           ...population,
-          hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+          hasCapacity: !population || population.capacity + basePopulationCapacity > population.population,
           owner: address,
         };
       }
