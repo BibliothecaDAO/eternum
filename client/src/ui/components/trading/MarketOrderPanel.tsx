@@ -271,6 +271,10 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
 
   console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
 
+  const calculatedResourceAmount = useMemo(() => {
+    return inputValue * EternumGlobalConfig.resources.resourcePrecision;
+  }, [inputValue, getsDisplay, getTotalLords]);
+
   const calculatedLords = useMemo(() => {
     return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
   }, [inputValue, getsDisplay, getTotalLords]);
@@ -288,7 +292,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
         trade_id: offer.tradeId,
         maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
         taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
-        taker_gives_actual_amount: calculatedLords,
+        taker_gives_actual_amount: isBuy ? calculatedResourceAmount : calculatedLords,
       });
     } catch (error) {
       console.error("Failed to accept order", error);
