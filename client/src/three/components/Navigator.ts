@@ -10,8 +10,8 @@ export class Navigator {
   private target: HexPosition | null = null;
   private guiFolder: any;
   private camera: THREE.PerspectiveCamera;
-  private visibleAreaSizeX: number = 10;
-  private visibleAreaSizeZ: number = 7;
+  private visibleAreaWidth: number = 0;
+  private visibleAreaHeight: number = 0;
 
   constructor(scene: THREE.Scene, controls: MapControls, guiFolder: any) {
     this.scene = scene;
@@ -19,6 +19,7 @@ export class Navigator {
     this.camera = this.controls.object as THREE.PerspectiveCamera;
     this.guiFolder = guiFolder;
     this.createArrowMesh();
+    this.updateVisibleArea();
   }
 
   private createArrowMesh() {
@@ -30,8 +31,6 @@ export class Navigator {
     const { x, z } = getWorldPositionForHex({ col: 1, row: 1 });
     this.arrowMesh.position.set(x, 2, z);
     this.scene.add(this.arrowMesh);
-    this.guiFolder.add(this, "visibleAreaSizeX", 0, 20);
-    this.guiFolder.add(this, "visibleAreaSizeZ", 0, 20);
   }
 
   setNavigationTarget(col: number, row: number) {
@@ -48,14 +47,14 @@ export class Navigator {
     const { x, z } = getWorldPositionForHex(this.target);
     const y = 2; // Height above the ground
 
-    // Calculate the visible area bounds with different sizes for X and Z
+    this.updateVisibleArea();
 
     const controlsTargetPosition = this.controls.target;
     const bounds = {
-      minX: controlsTargetPosition.x - this.visibleAreaSizeX,
-      maxX: controlsTargetPosition.x + this.visibleAreaSizeX,
-      minZ: controlsTargetPosition.z - this.visibleAreaSizeZ,
-      maxZ: controlsTargetPosition.z + this.visibleAreaSizeZ,
+      minX: controlsTargetPosition.x - this.visibleAreaWidth / 2,
+      maxX: controlsTargetPosition.x + this.visibleAreaWidth / 2,
+      minZ: controlsTargetPosition.z - this.visibleAreaHeight / 2,
+      maxZ: controlsTargetPosition.z + this.visibleAreaHeight / 2,
     };
 
     // Clamp the arrow position within the visible area
@@ -73,6 +72,13 @@ export class Navigator {
     this.arrowMesh.lookAt(targetPosition);
     // Rotate 180 degrees so it points away from the camera
     this.arrowMesh.rotateX(Math.PI / 2);
+  }
+
+  private updateVisibleArea() {
+    const distance = this.controls.target.distanceTo(this.camera.position);
+    const vFov = THREE.MathUtils.degToRad(this.camera.fov);
+    this.visibleAreaHeight = 2 * Math.tan(vFov / 2) * distance;
+    this.visibleAreaWidth = this.visibleAreaHeight * this.camera.aspect;
   }
 
   update() {
