@@ -28,7 +28,7 @@ export class Navigator {
     this.arrowMesh.rotation.x = Math.PI / 2;
     this.arrowMesh.visible = true;
     const { x, z } = getWorldPositionForHex({ col: 1, row: 1 });
-    this.arrowMesh.position.set(x, 3, z);
+    this.arrowMesh.position.set(x, 2, z);
     this.scene.add(this.arrowMesh);
     this.guiFolder.add(this, "visibleAreaSizeX", 0, 20);
     this.guiFolder.add(this, "visibleAreaSizeZ", 0, 20);
@@ -46,7 +46,7 @@ export class Navigator {
     if (!this.target || !this.arrowMesh) return;
 
     const { x, z } = getWorldPositionForHex(this.target);
-    const y = 3; // Height above the ground
+    const y = 2; // Height above the ground
 
     // Calculate the visible area bounds with different sizes for X and Z
 
