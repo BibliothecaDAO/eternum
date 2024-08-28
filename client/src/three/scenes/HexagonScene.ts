@@ -16,6 +16,7 @@ import _, { throttle } from "lodash";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
+import { Navigator } from "../components/Navigator";
 import { SystemManager } from "../systems/SystemManager";
 import { biomeModelPaths, HEX_SIZE } from "./constants";
 
@@ -35,6 +36,7 @@ export abstract class HexagonScene {
   protected modelLoadPromises: Promise<void>[] = [];
   protected state: AppStore;
   protected fog: THREE.Fog;
+  protected navigator: Navigator;
 
   constructor(
     protected sceneName: SceneName,
@@ -129,6 +131,21 @@ export abstract class HexagonScene {
 
     this.fog = new THREE.Fog(0xffffff, 21, 30);
     this.scene.fog = this.fog;
+
+    this.navigator = new Navigator(this.scene, this.controls);
+    const navigatorFolder = this.GUIFolder.addFolder("Navigator");
+    const navigatorParams = { col: 269, row: 153 };
+    navigatorFolder.add(navigatorParams, "col").name("Col");
+    navigatorFolder.add(navigatorParams, "row").name("Row");
+    navigatorFolder
+      .add(
+        {
+          setNavigationTarget: () => this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row),
+        },
+        "setNavigationTarget",
+      )
+      .name("Navigate to Col Row");
+    navigatorFolder.close();
   }
 
   protected abstract onHexagonMouseMove({
@@ -370,5 +387,11 @@ export abstract class HexagonScene {
     const pulseFactor = Math.abs(Math.sin(elapsedTime * 2) / 16);
     this.highlightHexManager.updateHighlightPulse(pulseFactor);
     this.updateLights();
+    this.navigator.update();
+  }
+
+  // You can add a method to set the navigation target
+  setNavigationTarget(col: number, row: number) {
+    this.navigator.setNavigationTarget(col, row);
   }
 }
