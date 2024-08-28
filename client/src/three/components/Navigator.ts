@@ -10,11 +10,14 @@ export class Navigator {
   private target: HexPosition | null = null;
   private guiFolder: any;
   private camera: THREE.PerspectiveCamera;
+  private visibleAreaSizeX: number = 10;
+  private visibleAreaSizeZ: number = 7;
 
-  constructor(scene: THREE.Scene, controls: MapControls) {
+  constructor(scene: THREE.Scene, controls: MapControls, guiFolder: any) {
     this.scene = scene;
     this.controls = controls;
     this.camera = this.controls.object as THREE.PerspectiveCamera;
+    this.guiFolder = guiFolder;
     this.createArrowMesh();
   }
 
@@ -27,6 +30,8 @@ export class Navigator {
     const { x, z } = getWorldPositionForHex({ col: 1, row: 1 });
     this.arrowMesh.position.set(x, 3, z);
     this.scene.add(this.arrowMesh);
+    this.guiFolder.add(this, "visibleAreaSizeX", 0, 20);
+    this.guiFolder.add(this, "visibleAreaSizeZ", 0, 20);
   }
 
   setNavigationTarget(col: number, row: number) {
@@ -43,7 +48,21 @@ export class Navigator {
     const { x, z } = getWorldPositionForHex(this.target);
     const y = 3; // Height above the ground
 
-    this.arrowMesh.position.set(x, y, z);
+    // Calculate the visible area bounds with different sizes for X and Z
+
+    const controlsTargetPosition = this.controls.target;
+    const bounds = {
+      minX: controlsTargetPosition.x - this.visibleAreaSizeX,
+      maxX: controlsTargetPosition.x + this.visibleAreaSizeX,
+      minZ: controlsTargetPosition.z - this.visibleAreaSizeZ,
+      maxZ: controlsTargetPosition.z + this.visibleAreaSizeZ,
+    };
+
+    // Clamp the arrow position within the visible area
+    const clampedX = Math.max(bounds.minX, Math.min(bounds.maxX, x));
+    const clampedZ = Math.max(bounds.minZ, Math.min(bounds.maxZ, z));
+
+    this.arrowMesh.position.set(clampedX, y, clampedZ);
     this.updateArrowRotation();
   }
 

@@ -132,7 +132,7 @@ export abstract class HexagonScene {
     this.fog = new THREE.Fog(0xffffff, 21, 30);
     this.scene.fog = this.fog;
 
-    this.navigator = new Navigator(this.scene, this.controls);
+    this.navigator = new Navigator(this.scene, this.controls, this.GUIFolder);
     const navigatorFolder = this.GUIFolder.addFolder("Navigator");
     const navigatorParams = { col: 269, row: 153 };
     navigatorFolder.add(navigatorParams, "col").name("Col");
