@@ -12,25 +12,52 @@ export class Navigator {
   private camera: THREE.PerspectiveCamera;
   private visibleAreaWidth: number = 0;
   private visibleAreaHeight: number = 0;
+  private arrowOffset: THREE.Vector3;
 
   constructor(scene: THREE.Scene, controls: MapControls, guiFolder: any) {
     this.scene = scene;
     this.controls = controls;
     this.camera = this.controls.object as THREE.PerspectiveCamera;
     this.guiFolder = guiFolder;
+    this.arrowOffset = new THREE.Vector3(0, 5, 0);
     this.createArrowMesh();
-    this.updateVisibleArea();
+    this.updateArrowPosition();
+    this.addGuiControls(guiFolder);
   }
 
   private createArrowMesh() {
-    const arrowGeometry = new THREE.ConeGeometry(0.5, 1, 32);
+    const arrowGeometry = new THREE.ConeGeometry(0.25, 0.5, 32);
     const arrowMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
     this.arrowMesh = new THREE.Mesh(arrowGeometry, arrowMaterial);
     this.arrowMesh.rotation.x = Math.PI / 2;
-    this.arrowMesh.visible = true;
+    this.arrowMesh.visible = false;
     const { x, z } = getWorldPositionForHex({ col: 1, row: 1 });
     this.arrowMesh.position.set(x, 2, z);
+    this.arrowMesh.renderOrder = 3;
     this.scene.add(this.arrowMesh);
+  }
+
+  private addGuiControls(guiFolder: any) {
+    const offsetFolder = guiFolder.addFolder("Arrow Offset");
+    offsetFolder
+      .add(this.arrowOffset, "x", -10, 10, 0.1)
+      .name("X Offset")
+      .onChange(() => this.updateArrowPosition());
+    offsetFolder
+      .add(this.arrowOffset, "y", -10, 10, 0.1)
+      .name("Y Offset")
+      .onChange(() => this.updateArrowPosition());
+    offsetFolder
+      .add(this.arrowOffset, "z", -10, 10, 0.1)
+      .name("Z Offset")
+      .onChange(() => this.updateArrowPosition());
+  }
+
+  clearNavigationTarget() {
+    this.target = null;
+    if (this.arrowMesh) {
+      this.arrowMesh.visible = false;
+    }
   }
 
   setNavigationTarget(col: number, row: number) {
@@ -42,48 +69,26 @@ export class Navigator {
   }
 
   private updateArrowPosition() {
-    if (!this.target || !this.arrowMesh) return;
-
-    const { x, z } = getWorldPositionForHex(this.target);
-    const y = 2; // Height above the ground
-
-    this.updateVisibleArea();
+    if (!this.arrowMesh) return;
 
     const controlsTargetPosition = this.controls.target;
-    const bounds = {
-      minX: controlsTargetPosition.x - this.visibleAreaWidth / 2,
-      maxX: controlsTargetPosition.x + this.visibleAreaWidth / 2,
-      minZ: controlsTargetPosition.z - this.visibleAreaHeight / 2,
-      maxZ: controlsTargetPosition.z + this.visibleAreaHeight / 2,
-    };
+    this.arrowMesh.position.copy(controlsTargetPosition).add(this.arrowOffset);
 
-    // Clamp the arrow position within the visible area
-    const clampedX = Math.max(bounds.minX, Math.min(bounds.maxX, x));
-    const clampedZ = Math.max(bounds.minZ, Math.min(bounds.maxZ, z));
-
-    this.arrowMesh.position.set(clampedX, y, clampedZ);
     this.updateArrowRotation();
   }
 
   private updateArrowRotation() {
     if (!this.arrowMesh || !this.target) return;
 
-    const targetPosition = getWorldPositionForHex(this.target);
+    const targetPosition = getWorldPositionForHex(this.target, true);
+
+    // Make the arrow point downwards towards the target
+
     this.arrowMesh.lookAt(targetPosition);
-    // Rotate 180 degrees so it points away from the camera
     this.arrowMesh.rotateX(Math.PI / 2);
   }
 
-  private updateVisibleArea() {
-    const distance = this.controls.target.distanceTo(this.camera.position);
-    const vFov = THREE.MathUtils.degToRad(this.camera.fov);
-    this.visibleAreaHeight = 2 * Math.tan(vFov / 2) * distance;
-    this.visibleAreaWidth = this.visibleAreaHeight * this.camera.aspect;
-  }
-
   update() {
-    if (this.target) {
-      this.updateArrowPosition();
-    }
+    this.updateArrowPosition();
   }
 }
