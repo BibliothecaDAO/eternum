@@ -9,48 +9,27 @@ export class Navigator {
   private arrowMesh: THREE.Mesh | null = null;
   private target: HexPosition | null = null;
   private guiFolder: any;
-  private camera: THREE.PerspectiveCamera;
-  private visibleAreaWidth: number = 0;
-  private visibleAreaHeight: number = 0;
-  private arrowOffset: THREE.Vector3;
+  private arrowGroup: THREE.Group | null = null;
 
   constructor(scene: THREE.Scene, controls: MapControls, guiFolder: any) {
     this.scene = scene;
     this.controls = controls;
-    this.camera = this.controls.object as THREE.PerspectiveCamera;
     this.guiFolder = guiFolder;
-    this.arrowOffset = new THREE.Vector3(0, 5, 0);
     this.createArrowMesh();
-    this.updateArrowPosition();
-    this.addGuiControls(guiFolder);
+    this.updateArrowRotation();
   }
 
   private createArrowMesh() {
+    this.arrowGroup = new THREE.Group();
     const arrowGeometry = new THREE.ConeGeometry(0.25, 0.5, 32);
     const arrowMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
     this.arrowMesh = new THREE.Mesh(arrowGeometry, arrowMaterial);
-    this.arrowMesh.rotation.x = Math.PI / 2;
-    this.arrowMesh.visible = false;
-    const { x, z } = getWorldPositionForHex({ col: 1, row: 1 });
-    this.arrowMesh.position.set(x, 2, z);
-    this.arrowMesh.renderOrder = 3;
-    this.scene.add(this.arrowMesh);
-  }
+    this.arrowMesh.visible = true;
 
-  private addGuiControls(guiFolder: any) {
-    const offsetFolder = guiFolder.addFolder("Arrow Offset");
-    offsetFolder
-      .add(this.arrowOffset, "x", -10, 10, 0.1)
-      .name("X Offset")
-      .onChange(() => this.updateArrowPosition());
-    offsetFolder
-      .add(this.arrowOffset, "y", -10, 10, 0.1)
-      .name("Y Offset")
-      .onChange(() => this.updateArrowPosition());
-    offsetFolder
-      .add(this.arrowOffset, "z", -10, 10, 0.1)
-      .name("Z Offset")
-      .onChange(() => this.updateArrowPosition());
+    this.arrowGroup.position.set(0, 4, 0);
+    this.arrowGroup.add(this.arrowMesh);
+    this.arrowGroup.rotateX(Math.PI / 2);
+    this.scene.add(this.arrowGroup);
   }
 
   clearNavigationTarget() {
@@ -64,17 +43,8 @@ export class Navigator {
     this.target = { col, row };
     if (this.arrowMesh) {
       this.arrowMesh.visible = true;
-      this.updateArrowPosition();
+      this.updateArrowRotation();
     }
-  }
-
-  private updateArrowPosition() {
-    if (!this.arrowMesh) return;
-
-    const controlsTargetPosition = this.controls.target;
-    this.arrowMesh.position.copy(controlsTargetPosition).add(this.arrowOffset);
-
-    this.updateArrowRotation();
   }
 
   private updateArrowRotation() {
@@ -89,6 +59,6 @@ export class Navigator {
   }
 
   update() {
-    this.updateArrowPosition();
+    this.updateArrowRotation();
   }
 }
