@@ -132,6 +132,14 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   };
 };
 
+export const calculateDistanceInHexes = (start: Position, destination: Position): number | undefined => {
+  const distance = calculateDistance(start, destination);
+  if (distance) {
+    return Math.round(distance / HEX_SIZE / 2);
+  }
+  return undefined;
+};
+
 export const calculateOffset = (index: number, total: number, radius: number) => {
   if (total === 1) return { x: 0, y: 0 };
 

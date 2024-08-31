@@ -1,6 +1,8 @@
 import { HexPosition } from "@/types";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { calculateDistanceInHexes, getWorldPositionForHex } from "@/ui/utils/utils";
+import { throttle } from "lodash";
 import * as THREE from "three";
+import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
@@ -12,12 +14,22 @@ export class Navigator {
   private arrowModel: THREE.Object3D | null = null;
   private target: HexPosition | null = null;
   private guiFolder: any;
-  private arrowGroup: THREE.Group | null = null;
+  private label: THREE.Group | null = null;
+  private distanceDiv: HTMLElement | null = null;
 
   constructor(scene: THREE.Scene, controls: MapControls, guiFolder: any) {
     this.scene = scene;
     this.controls = controls;
     this.guiFolder = guiFolder;
+    this.label = new THREE.Group();
+    this.scene.add(this.label);
+    this.distanceDiv = document.createElement("div");
+    this.distanceDiv.className = "label";
+    this.distanceDiv.style.backgroundColor = "transparent";
+
+    const posLabel = new CSS2DObject(this.distanceDiv);
+    posLabel.position.set(0, 7.5, 0);
+    this.label!.add(posLabel);
     this.loadArrowModel();
   }
 
@@ -25,29 +37,25 @@ export class Navigator {
     const loader = new GLTFLoader();
     loader.load("/models/arrow.glb", (gltf) => {
       this.arrowModel = gltf.scene;
-      this.arrowGroup = new THREE.Group();
-      this.arrowGroup.add(this.arrowModel);
-      this.arrowGroup.position.set(0, 8, 0);
-      const arrowFolder = this.guiFolder.addFolder("Arrow Controls");
-      arrowFolder.add(this.arrowGroup.rotation, "x", 0, Math.PI * 2).name("Rotate X");
-      arrowFolder.add(this.arrowGroup.rotation, "y", 0, Math.PI * 2).name("Rotate Y");
-      arrowFolder.add(this.arrowGroup.rotation, "z", 0, Math.PI * 2).name("Rotate Z");
-      this.scene.add(this.arrowGroup);
+      this.arrowModel.scale.set(0.5, 0.5, 0.5);
+      this.arrowModel.position.set(0, 8.5, 0);
+      this.arrowModel.visible = false;
+      this.scene.add(this.arrowModel);
       this.updateArrowRotation();
     });
   }
 
   clearNavigationTarget() {
     this.target = null;
-    if (this.arrowGroup) {
-      this.arrowGroup.visible = false;
+    if (this.arrowModel) {
+      this.arrowModel.visible = false;
     }
   }
 
   setNavigationTarget(col: number, row: number) {
     this.target = { col, row };
-    if (this.arrowGroup) {
-      this.arrowGroup.visible = true;
+    if (this.arrowModel) {
+      this.arrowModel.visible = true;
       this.updateArrowRotation();
     }
   }
@@ -56,17 +64,38 @@ export class Navigator {
     if (!this.arrowModel || !this.target) return;
 
     const targetPosition = getWorldPositionForHex(this.target, true);
-
     const controlsTargetPosition = this.controls.target;
     dummyObject.position.copy(controlsTargetPosition).add(arrowOffset);
-
     dummyObject.lookAt(targetPosition);
     dummyObject.rotateX(Math.PI);
 
     this.arrowModel.rotation.copy(dummyObject.rotation);
   }
 
+  private calculateDistance = throttle(() => {
+    if (!this.target) return;
+
+    const targetPosition = getWorldPositionForHex(this.target, true);
+    const controlsTargetPosition = this.controls.target;
+    const distance = calculateDistanceInHexes(
+      {
+        x: controlsTargetPosition.x,
+        y: controlsTargetPosition.z,
+      },
+      {
+        x: targetPosition.x,
+        y: targetPosition.z,
+      },
+    );
+    if (distance) {
+      this.distanceDiv!.textContent = `You are ${distance} hex away`;
+    } else {
+      this.distanceDiv!.textContent = "";
+    }
+  }, 100);
+
   update() {
     this.updateArrowRotation();
+    this.calculateDistance();
   }
 }

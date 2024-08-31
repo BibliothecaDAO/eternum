@@ -23,7 +23,7 @@ export default class HUDScene {
 
     this.navigator = new Navigator(this.scene, this.controls, this.GUIFolder);
     const navigatorParams = { col: 269, row: 143 };
-    this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row);
+    //this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row);
     this.GUIFolder.add(navigatorParams, "col").name("Col");
     this.GUIFolder.add(navigatorParams, "row").name("Row");
     this.GUIFolder.add(
@@ -64,7 +64,7 @@ export default class HUDScene {
   }
 
   private addAmbientLight() {
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 1);
     this.scene.add(this.ambientLight);
 
     // Add GUI control for ambient light intensity
@@ -72,12 +72,14 @@ export default class HUDScene {
   }
 
   private addDirectionalLight() {
-    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    this.directionalLight.position.set(5, 5, 5);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    this.directionalLight.position.set(0, 0, 5);
+    this.scene.add(this.directionalLight.target);
+    this.directionalLight.target.position.set(0, 8, 0);
     this.scene.add(this.directionalLight);
 
     // Add GUI controls for directional light
-    this.GUIFolder.add(this.directionalLight, "intensity", 0, 1).name("Directional Light Intensity");
+    this.GUIFolder.add(this.directionalLight, "intensity", 0, 5).name("Directional Light Intensity");
     this.GUIFolder.add(this.directionalLight.position, "x", -10, 10).name("Dir. Light X");
     this.GUIFolder.add(this.directionalLight.position, "y", -10, 10).name("Dir. Light Y");
     this.GUIFolder.add(this.directionalLight.position, "z", -10, 10).name("Dir. Light Z");

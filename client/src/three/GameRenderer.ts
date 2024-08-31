@@ -121,6 +121,7 @@ export default class GameRenderer {
     this.labelRenderer.domElement.style.position = "absolute";
     this.labelRenderer.domElement.style.top = "0px";
     this.labelRenderer.domElement.style.pointerEvents = "none";
+    this.labelRenderer.domElement.style.zIndex = "10";
     document.body.appendChild(this.labelRenderer.domElement);
   }
 
@@ -295,6 +296,7 @@ export default class GameRenderer {
     this.hudScene.update(deltaTime);
     this.renderer.clearDepth(); // Clear only the depth buffer
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
+    this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
 
     requestAnimationFrame(() => {
       this.animate();
