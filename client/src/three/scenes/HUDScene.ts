@@ -11,8 +11,8 @@ export default class HUDScene {
   private controls: MapControls;
   private GUIFolder: any;
   private navigator: Navigator;
-  private ambientLight: THREE.AmbientLight;
-  private directionalLight: THREE.DirectionalLight;
+  private ambientLight!: THREE.AmbientLight;
+  private directionalLight!: THREE.DirectionalLight;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new THREE.Scene();
@@ -23,7 +23,7 @@ export default class HUDScene {
 
     this.navigator = new Navigator(this.scene, this.controls, this.GUIFolder);
     const navigatorParams = { col: 269, row: 143 };
-    //this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row);
+    this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row);
     this.GUIFolder.add(navigatorParams, "col").name("Col");
     this.GUIFolder.add(navigatorParams, "row").name("Row");
     this.GUIFolder.add(

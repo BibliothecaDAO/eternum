@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
 const dummyObject = new THREE.Object3D();
-const arrowHeight = { value: 5 };
+const arrowOffset = new THREE.Vector3(0, 1, 0);
 export class Navigator {
   private scene: THREE.Scene;
   private controls: MapControls;
@@ -28,13 +28,9 @@ export class Navigator {
     this.arrowMesh = new THREE.Mesh(arrowGeometry, arrowMaterial);
     this.arrowMesh.visible = true;
 
-    this.arrowGroup.position.set(0, 4, 0);
-    this.arrowGroup.rotateX(Math.PI);
+    this.arrowGroup.position.set(0, 8, 0);
     this.arrowGroup.add(this.arrowMesh);
-    this.guiFolder.add(this.arrowGroup.rotation, "x", -Math.PI, Math.PI).name("Arrow Rotation X");
-    this.guiFolder.add(this.arrowGroup.rotation, "y", -Math.PI, Math.PI).name("Arrow Rotation Y");
-    this.guiFolder.add(this.arrowGroup.rotation, "z", -Math.PI, Math.PI).name("Arrow Rotation Z");
-    this.guiFolder.add(arrowHeight, "value", 0, 10).name("Arrow Height");
+
     this.scene.add(this.arrowGroup);
   }
 
@@ -57,10 +53,14 @@ export class Navigator {
     if (!this.arrowMesh || !this.target) return;
 
     const targetPosition = getWorldPositionForHex(this.target, true);
-    dummyObject.position.copy(this.controls.target);
-    dummyObject.position.y += arrowHeight.value;
+
+    const controlsTargetPosition = this.controls.target;
+    dummyObject.position.copy(controlsTargetPosition).add(arrowOffset);
+
     dummyObject.lookAt(targetPosition);
-    this.arrowMesh.quaternion.copy(dummyObject.quaternion);
+    dummyObject.rotateX(Math.PI / 2);
+
+    this.arrowMesh.rotation.copy(dummyObject.rotation);
   }
 
   update() {
