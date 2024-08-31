@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
 const dummyObject = new THREE.Object3D();
-const arrowOffset = new THREE.Vector3(0, 1, 0);
+const arrowOffset = new THREE.Vector3(0, 3, 0);
 export class Navigator {
   private scene: THREE.Scene;
   private controls: MapControls;
