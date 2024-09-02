@@ -26,6 +26,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   offset: Position;
   health: ComponentValue<ClientComponents["Health"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
@@ -120,6 +121,7 @@ const formatArmies = (
         protectee,
         health,
         movable,
+        quantity,
         totalCapacity,
         weight,
         arrivalTime,
