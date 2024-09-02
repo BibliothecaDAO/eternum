@@ -4,6 +4,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { displayAddress } from "@/ui/utils/utils";
 import TextInput from "@/ui/elements/TextInput";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 
 export const ShardMinePanel = ({ entity }: any) => {
   const {
@@ -14,6 +15,9 @@ export const ShardMinePanel = ({ entity }: any) => {
   const [isLoading, setIsLoading] = useState(false);
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
+
+  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const ownerName = getAddressNameFromEntity(entity.entity_id);
 
   return (
     <div className="flex flex-col h-[50vh] justify-between">
@@ -60,7 +64,7 @@ export const ShardMinePanel = ({ entity }: any) => {
           )}
         </div>
 
-        <div className=" align-text-bottom">Creator: {`${displayAddress(entity.owner)}`}</div>
+        <div className=" align-text-bottom">Owner: {ownerName ? ownerName : "Mercenaries"}</div>
       </div>
     </div>
   );
