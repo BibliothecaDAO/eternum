@@ -32,12 +32,11 @@ async fn setup_torii_client(token: String, database: SqlitePool) {
     let config = ProgramConfig::from_dotenv();
 
     tokio::spawn(async move {
-        let http = serenity::Http::new(&token.clone());
         println!("Setting up Torii client");
         let client = Client::new(
-            config.vite_public_torii_url,
-            config.vite_public_rpc_url,
-            config.vite_public_relay_url,
+            config.vite_public_torii,
+            config.vite_public_node_url,
+            config.vite_public_torii_relay,
             Felt::from_hex_unchecked(&config.vite_public_world_address),
         )
         .await

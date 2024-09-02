@@ -550,9 +550,9 @@ impl EventHandler {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ProgramConfig {
-    pub vite_public_torii_url: String,
-    pub vite_public_rpc_url: String,
-    pub vite_public_relay_url: String,
+    pub vite_public_torii: String,
+    pub vite_public_node_url: String,
+    pub vite_public_torii_relay: String,
     pub vite_public_world_address: String,
 }
 
