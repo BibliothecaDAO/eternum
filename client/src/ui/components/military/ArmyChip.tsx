@@ -3,6 +3,7 @@ import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { armyHasTroops } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
@@ -78,10 +79,12 @@ export const ArmyChip = ({
                     </div>
                   )}
                 </div>
-                <div className="font-bold text-xs">
-                  <StaminaResource entityId={updatedArmy!.entity_id} />
-                  <ArmyCapacity army={updatedArmy} />
-                </div>
+                {!army.protectee && armyHasTroops([updatedArmy]) && (
+                  <div className="font-bold text-xs">
+                    <StaminaResource entityId={updatedArmy!.entity_id} />
+                    <ArmyCapacity army={updatedArmy} />
+                  </div>
+                )}
               </div>
               <div className="flex flex-col content-center w-[55%]">
                 <TroopMenuRow troops={updatedArmy!.troops} />
