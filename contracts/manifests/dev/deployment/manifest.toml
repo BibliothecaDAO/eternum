@@ -5,7 +5,7 @@ original_class_hash = "0xa349b743d361ce4567361475a89b84a386bb383448c6926954e5fe0
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x6918fe8c1ba16bdc83b9790cd9168d730aa98a22c65164578ef99af1c8cbc76"
 transaction_hash = "0x4787c2c1b826c8eb54fdd0883586c40e2d6f38955e1d5358b11010bc542bf05"
-block_number = 42
+block_number = 48
 seed = "eternum"
 manifest_name = "dojo-world"
 
@@ -57,8 +57,8 @@ manifest_name = "eternum-building_systems-4b0f3026"
 [[contracts]]
 kind = "DojoContract"
 address = "0x62015209a524b97052852f42d283fc0f67081bce90d04cdc03a951009f55a64"
-class_hash = "0x64f47a5c99ad03b57f399a241758b7666706630ca5f784ef237891974accf71"
-original_class_hash = "0x64f47a5c99ad03b57f399a241758b7666706630ca5f784ef237891974accf71"
+class_hash = "0x294ebc36c3ef1897a5bbe523dfb0aa79fda96c24f11a5d71d52e6104de71f47"
+original_class_hash = "0x294ebc36c3ef1897a5bbe523dfb0aa79fda96c24f11a5d71d52e6104de71f47"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-combat_systems-27f37676.json"
 reads = []
@@ -3217,117 +3217,4 @@ key = false
 [[models.members]]
 name = "realm_l2_contract"
 type = "ContractAddress"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7529bbb0721f0eb7a0771a69e768446113856f7cc4d98d1d453cc3ecd13840"
-original_class_hash = "0x7529bbb0721f0eb7a0771a69e768446113856f7cc4d98d1d453cc3ecd13840"
-abi = "manifests/dev/deployment/abis/models/haiku-BattleStartEvent-12ad23cf.json"
-tag = "haiku-BattleStartEvent"
-qualified_path = "eternum::models::event::battle_start_event"
-manifest_name = "haiku-BattleStartEvent-12ad23cf"
-
-[[models.members]]
-name = "id"
-type = "ID"
-key = true
-
-[[models.members]]
-name = "event_id"
-type = "EventType"
-key = true
-
-[[models.members]]
-name = "battle_entity_id"
-type = "ID"
-key = false
-
-[[models.members]]
-name = "attacker"
-type = "ContractAddress"
-key = false
-
-[[models.members]]
-name = "attacker_name"
-type = "felt252"
-key = false
-
-[[models.members]]
-name = "attacker_army_entity_id"
-type = "ID"
-key = false
-
-[[models.members]]
-name = "defender_name"
-type = "felt252"
-key = false
-
-[[models.members]]
-name = "defender"
-type = "ContractAddress"
-key = false
-
-[[models.members]]
-name = "defender_army_entity_id"
-type = "ID"
-key = false
-
-[[models.members]]
-name = "duration_left"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "x"
-type = "u32"
-key = false
-
-[[models.members]]
-name = "y"
-type = "u32"
-key = false
-
-[[models.members]]
-name = "structure_type"
-type = "StructureCategory"
-key = false
-
-[[models.members]]
-name = "timestamp"
-type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x1db14cac86795ac0ff8dac3d7e426273d98e209007288169b9d8353bcbdd0e"
-original_class_hash = "0x1db14cac86795ac0ff8dac3d7e426273d98e209007288169b9d8353bcbdd0e"
-abi = "manifests/dev/deployment/abis/models/haiku-PromptMessage-461b562f.json"
-tag = "haiku-PromptMessage"
-qualified_path = "haiku_event::prompt_message"
-manifest_name = "haiku-PromptMessage-461b562f"
-
-[[models.members]]
-name = "identity"
-type = "ContractAddress"
-key = true
-
-[[models.members]]
-name = "event_id"
-type = "u32"
-key = true
-
-[[models.members]]
-name = "event_tag"
-type = "ByteArray"
-key = false
-
-[[models.members]]
-name = "prompt"
-type = "ByteArray"
-key = false
-
-[[models.members]]
-name = "timestamp"
-type = "u64"
 key = false
