@@ -54,7 +54,6 @@ use starknet::contract_address_const;
 
 // used to spawn a test world with all the models and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
-
     let world = spawn_test_world!();
 
     world.uuid();
