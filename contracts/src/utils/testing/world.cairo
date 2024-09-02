@@ -129,6 +129,8 @@ fn spawn_eternum() -> IWorldDispatcher {
 
     let world = spawn_test_world(["eternum"].span(), models.span());
 
+    world.uuid();
+
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player3'>());
