@@ -56,8 +56,6 @@ use starknet::contract_address_const;
 fn spawn_eternum() -> IWorldDispatcher {
     let world = spawn_test_world!();
 
-    world.uuid();
-
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player3'>());
