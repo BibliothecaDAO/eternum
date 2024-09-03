@@ -10,7 +10,6 @@ use shuttle_runtime::SecretStore;
 use sqlx::{Executor, PgPool};
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tracing_subscriber::EnvFilter;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;

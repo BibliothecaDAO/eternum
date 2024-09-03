@@ -127,7 +127,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         entity_name::TEST_CLASS_HASH,
     ];
 
-    let world = spawn_test_world("eternum", models);
+    let world = spawn_test_world(["eternum"].span(), models.span());
 
     world.uuid();
 
