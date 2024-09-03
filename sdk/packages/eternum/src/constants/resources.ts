@@ -896,7 +896,7 @@ export const QUEST_RESOURCES = {
     { resource: ResourcesIds.Crossbowman, amount: 3 },
     { resource: ResourcesIds.Paladin, amount: 3 },
   ],
-  [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10 }],
+  [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Travel]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Population]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Market]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
@@ -904,6 +904,6 @@ export const QUEST_RESOURCES = {
   [QuestType.Pillage]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Contribution]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.PauseProduction]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
+  [QuestType.PauseProduction]: [{ resource: ResourcesIds.Earthenshard, amount: 2.5 }],
+  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.Earthenshard, amount: 2.5 }],
 };
