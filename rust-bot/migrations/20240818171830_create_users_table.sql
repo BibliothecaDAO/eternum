@@ -6,7 +6,7 @@ BEGIN
     IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users') THEN
         CREATE TABLE users (
             id SERIAL PRIMARY KEY,
-            address VARCHAR(42) UNIQUE NOT NULL,
+            address VARCHAR(65) UNIQUE NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             discord VARCHAR(255),
             telegram VARCHAR(255),
