@@ -77,8 +77,8 @@ export class ProductionManager {
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
-      Number(quantity) * EternumGlobalConfig.resources.storehouseCapacityKg +
-      EternumGlobalConfig.resources.storehouseCapacityKg
+      (Number(quantity) * EternumGlobalConfig.resources.storehouseCapacityKg +
+      EternumGlobalConfig.resources.storehouseCapacityKg) * EternumGlobalConfig.resources.resourcePrecision
     );
   }
 
