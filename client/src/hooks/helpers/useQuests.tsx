@@ -53,6 +53,7 @@ export const useQuests = () => {
     createQuest(QuestId.BuildResource),
     createQuest(QuestId.PauseProduction),
     createQuest(QuestId.CreateTrade),
+    createQuest(QuestId.CreateDefenseArmy),
     createQuest(QuestId.CreateArmy),
     createQuest(QuestId.Travel),
     createQuest(QuestId.BuildWorkersHut),
@@ -82,7 +83,10 @@ const useQuestDependencies = () => {
   });
 
   const existingBuildings = useMemo(() => tileManager.existingBuildings(), [realm]);
-  const hasAnyPausedBuilding = useMemo(() => existingBuildings.some(building => building.paused), [existingBuildings]);
+  const hasAnyPausedBuilding = useMemo(
+    () => existingBuildings.some((building) => building.paused),
+    [existingBuildings],
+  );
 
   const entityUpdate = useEntityQuery([
     HasValue(setup.components.EntityOwner, { entity_owner_id: realmEntityId || 0 }),
@@ -91,6 +95,11 @@ const useQuestDependencies = () => {
   const buildingQuantities = useBuildingQuantities(realmEntityId);
 
   const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId || 0 });
+  const hasDefensiveArmy = useMemo(
+    () => entityArmies.some((army) => army.protectee?.protectee_id === realmEntityId),
+    [entityArmies],
+  );
+
   const orders = useGetMyOffers();
 
   const hasTroops = useMemo(() => armyHasTroops(entityArmies), [entityArmies]);
@@ -157,7 +166,7 @@ const useQuestDependencies = () => {
           ? QuestStatus.Completed
           : QuestStatus.InProgress,
       },
-      
+
       [QuestId.PauseProduction]: {
         value: questClaimStatus[QuestId.PauseProduction] ? null : hasAnyPausedBuilding,
         status: questClaimStatus[QuestId.PauseProduction]
@@ -172,6 +181,15 @@ const useQuestDependencies = () => {
         status: questClaimStatus[QuestId.CreateTrade]
           ? QuestStatus.Claimed
           : orders.length > 0
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
+      },
+
+      [QuestId.CreateDefenseArmy]: {
+        value: questClaimStatus[QuestId.CreateDefenseArmy] ? null : hasDefensiveArmy,
+        status: questClaimStatus[QuestId.CreateDefenseArmy]
+          ? QuestStatus.Claimed
+          : hasDefensiveArmy
           ? QuestStatus.Completed
           : QuestStatus.InProgress,
       },

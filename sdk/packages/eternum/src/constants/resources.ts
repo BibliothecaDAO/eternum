@@ -845,6 +845,7 @@ export enum QuestType {
   Hyperstructure = 16,
   Contribution = 17,
   PauseProduction = 18,
+  CreateDefenseArmy = 19,
 }
 
 export const QUEST_RESOURCES = {
@@ -904,4 +905,5 @@ export const QUEST_RESOURCES = {
   [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Contribution]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.PauseProduction]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
+  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
 };

@@ -15,6 +15,7 @@ export enum QuestId {
   BuildResource,
   PauseProduction,
   CreateTrade,
+  CreateDefenseArmy,
   CreateArmy,
   Travel,
   BuildWorkersHut,
@@ -93,6 +94,16 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
       steps: [],
       prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
       depth: 3,
+    },
+  ],
+  [
+    QuestId.CreateDefenseArmy,
+    {
+      name: "Create a Defensive Army",
+      description: "Create a defensive army to protect your realm",
+      steps: [""],
+      prizes: [{ id: QuestType.CreateDefenseArmy, title: "Create Defensive Army" }],
+      depth: 4,
     },
   ],
   [
