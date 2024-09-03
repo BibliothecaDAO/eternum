@@ -1,3 +1,4 @@
+use crate::types::User;
 use crate::Context;
 use crate::Error;
 
@@ -6,7 +7,8 @@ pub async fn get_user(
     ctx: Context<'_>,
     #[description = "User's address"] address: String,
 ) -> Result<(), Error> {
-    let user = sqlx::query!("SELECT * FROM users WHERE address = ?", address)
+    let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE address = $1")
+        .bind(address)
         .fetch_optional(&ctx.data().database)
         .await?;
 

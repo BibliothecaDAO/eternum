@@ -1,43 +1,57 @@
 mod commands;
 mod types;
-use poise::serenity_prelude as serenity;
-use serenity::futures::StreamExt;
-use sqlx::SqlitePool;
+use ::serenity::Client;
+use anyhow::Context as _;
+use serenity::{
+    all::{GatewayIntents, Http},
+    futures::StreamExt,
+};
+use shuttle_runtime::SecretStore;
+use sqlx::{Executor, PgPool};
 use std::sync::Arc;
 use tokio::sync::mpsc;
+
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
 use starknet_crypto::Felt;
-use torii_client::client::Client;
+use torii_client::client::Client as ToriiClient;
 
 use torii_grpc::types::{EntityKeysClause, KeysClause};
 
-use crate::types::{process_event, EventHandler, MessageDispatcher, ProgramConfig};
+use crate::types::{process_event, Config, EventHandler, MessageDispatcher};
 
 struct Data {
-    database: SqlitePool,
+    database: PgPool,
 }
 
 async fn check_user_in_database(
-    pool: &SqlitePool,
+    pool: &PgPool,
     address: &str,
-) -> Result<Option<Option<std::string::String>>, sqlx::Error> {
-    sqlx::query_scalar!("SELECT discord FROM users WHERE address = ?", address)
+) -> Result<Option<Option<String>>, sqlx::Error> {
+    sqlx::query_scalar("SELECT discord FROM users WHERE address = $1")
+        .bind(address)
         .fetch_optional(pool)
         .await
 }
 
-async fn setup_torii_client(token: String, database: SqlitePool) {
-    let config = ProgramConfig::from_dotenv();
+async fn setup_torii_client(
+    token: String,
+    database: PgPool,
+    secret_store: SecretStore,
+) -> eyre::Result<()> {
+    println!("Heyyyyyyyyy");
+    let config = Config::from_secrets(secret_store)?;
+    println!("1");
 
     tokio::spawn(async move {
+        println!("Heyyyyyyyyy 2222");
         println!("Setting up Torii client");
-        let client = Client::new(
-            config.vite_public_torii,
-            config.vite_public_node_url,
-            config.vite_public_torii_relay,
-            Felt::from_hex_unchecked(&config.vite_public_world_address),
+        let client = ToriiClient::new(
+            config.torii_url,
+            config.node_url,
+            config.torii_relay_url,
+            Felt::from_hex_unchecked(&config.world_address),
         )
         .await
         .unwrap();
@@ -54,12 +68,9 @@ async fn setup_torii_client(token: String, database: SqlitePool) {
         let (event_sender, mut event_receiver) = mpsc::channel(100);
         let (message_sender, message_receiver) = mpsc::channel(100);
 
-        let event_handler = EventHandler {
-            event_sender,
-            database: database.clone(),
-        };
+        let event_handler = EventHandler { event_sender };
         let mut message_dispatcher = MessageDispatcher {
-            http: Arc::new(serenity::Http::new(&token)),
+            http: Arc::new(Http::new(&token)),
             message_receiver,
         };
 
@@ -79,18 +90,27 @@ async fn setup_torii_client(token: String, database: SqlitePool) {
     });
 
     println!("Torii client setup task spawned");
+
+    Ok(())
 }
 
-#[tokio::main]
-async fn main() {
-    let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
-    let token_clone = token.clone();
-    let database_url = std::env::var("DATABASE_URL").expect("missing DATABASE_URL");
-    let intents = serenity::GatewayIntents::non_privileged();
+#[shuttle_runtime::main]
+async fn main(
+    #[shuttle_shared_db::Postgres] pool: PgPool,
+    #[shuttle_runtime::Secrets] secret_store: SecretStore,
+) -> shuttle_serenity::ShuttleSerenity {
+    // Run the schema migration
+    pool.execute(include_str!(
+        "../migrations/20240818171830_create_users_table.sql"
+    ))
+    .await
+    .context("failed to run migrations")?;
 
-    let database = SqlitePool::connect(&database_url)
-        .await
-        .expect("Failed to connect to the database");
+    let secret = secret_store.get("DISCORD_TOKEN").unwrap();
+
+    let token = secret.clone();
+
+    let intents = GatewayIntents::non_privileged();
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -104,14 +124,18 @@ async fn main() {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                setup_torii_client(token_clone, database.clone()).await;
-                Ok(Data { database })
+                setup_torii_client(token.clone(), pool.clone(), secret_store.clone()).await;
+                Ok(Data {
+                    database: pool.clone(),
+                })
             })
         })
         .build();
 
-    let client = serenity::ClientBuilder::new(token, intents)
+    let client = Client::builder(secret, intents)
         .framework(framework)
-        .await;
-    client.unwrap().start().await.unwrap();
+        .await
+        .expect("Failed to build client");
+
+    Ok(client.into())
 }

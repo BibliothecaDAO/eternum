@@ -11,14 +11,12 @@ pub async fn add_user(
 
     println!("Adding user: {} {}", address, discord_id);
 
-    sqlx::query!(
-        "INSERT INTO users (address, discord, telegram) VALUES (?, ?, ?)",
-        address,
-        discord_id,
-        telegram,
-    )
-    .execute(&ctx.data().database)
-    .await?;
+    sqlx::query("INSERT INTO users (address, discord, telegram) VALUES ($1, $2, $3)")
+        .bind(address)
+        .bind(discord_id)
+        .bind(telegram)
+        .execute(&ctx.data().database)
+        .await?;
 
     ctx.say("User added successfully!").await?;
     Ok(())
