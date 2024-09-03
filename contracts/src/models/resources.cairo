@@ -4,10 +4,10 @@ use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
-use eternum::constants::{ResourceTypes, resource_type_name};
-use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
+use eternum::constants::{ResourceTypes, resource_type_name, WORLD_CONFIG_ID};
+use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION};
 use eternum::models::buildings::{Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2};
-use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
+use eternum::models::config::{ProductionConfig, StorehouseCapacityConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
 use eternum::models::realm::Realm;
@@ -198,8 +198,10 @@ impl ResourceCustomImpl of ResourceCustomTrait {
             let mut storehouse_building_quantity: BuildingQuantityv2 = get!(
                 world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantityv2
             );
-            let max_resource_balance = BASE_STOREHOUSE_CAPACITY * RESOURCE_PRECISION
-                + (storehouse_building_quantity.value.into() * BASE_STOREHOUSE_CAPACITY * RESOURCE_PRECISION);
+            let storehouse_capacity_gram = get!(world, WORLD_CONFIG_ID, StorehouseCapacityConfig).weight_gram;
+
+            let max_resource_balance = storehouse_capacity_gram
+                + (storehouse_building_quantity.value.into() * storehouse_capacity_gram);
             self.balance = min(self.balance, max_resource_balance);
         }
 

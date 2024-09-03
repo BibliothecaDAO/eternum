@@ -1,12 +1,5 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  BuildingType,
-  EternumGlobalConfig,
-  ID,
-  RESOURCE_INPUTS_SCALED,
-  ResourcesIds,
-  STOREHOUSE_CAPACITY,
-} from "@bibliothecadao/eternum";
+import { BuildingType, EternumGlobalConfig, ID, RESOURCE_INPUTS_SCALED, ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { SetupResult } from "../setup";
 
@@ -14,11 +7,7 @@ export class ProductionManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
-  constructor(
-    private setup: SetupResult,
-    entityId: ID,
-    resourceId: ResourcesIds,
-  ) {
+  constructor(private setup: SetupResult, entityId: ID, resourceId: ResourcesIds) {
     this.entityId = entityId;
     this.resourceId = resourceId;
   }
@@ -88,7 +77,8 @@ export class ProductionManager {
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
-      (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * EternumGlobalConfig.resources.resourcePrecision
+      Number(quantity) * EternumGlobalConfig.resources.storehouseCapacityKg +
+      EternumGlobalConfig.resources.storehouseCapacityKg
     );
   }
 

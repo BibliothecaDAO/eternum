@@ -379,3 +379,11 @@ pub struct HasClaimedStartingResources {
     config_id: ID,
     claimed: bool,
 }
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StorehouseCapacityConfig {
+    #[key]
+    config_id: ID,
+    weight_gram: u128,
+}

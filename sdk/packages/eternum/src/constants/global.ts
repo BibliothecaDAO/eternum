@@ -19,6 +19,7 @@ export const EternumGlobalConfig = {
       { resourceId: ResourcesIds.Wheat, amount: 1500 },
       { resourceId: ResourcesIds.Fish, amount: 1500 },
     ],
+    storehouseCapacityKg: 10_000_000,
   },
   banks: {
     lordsCost: 1000,

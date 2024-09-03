@@ -21,6 +21,7 @@
     "StaminaConfig",
     "StaminaRefillConfig",
     "MercenariesConfig",
+    "StorehouseCapacityConfig",
     "Position",
     "ProductionOutput",
     "DetachedResource",

@@ -3,10 +3,10 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
+  EternumGlobalConfig,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
-  STOREHOUSE_CAPACITY,
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -33,7 +33,7 @@ export const Resources = () => {
       content: (
         <p className="my-5">
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
-          <span className="font-bold"> {STOREHOUSE_CAPACITY / 1000000}M capacity per resource type</span>. Build more
+          <span className="font-bold"> {EternumGlobalConfig.resources.storehouseCapacityKg / 1_000_000}M capacity per resource type</span>. Build more
           storehouses to increase storage.
         </p>
       ),
