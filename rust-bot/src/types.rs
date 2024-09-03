@@ -170,7 +170,9 @@ pub async fn process_event(
             y,
             structure_type: _,
         } => {
+            tracing::info!("BattleStart event: {:?}", defender);
             if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &defender).await {
+                tracing::info!("User found in the database: {}", discord_id);
                 if let Ok(user_id) = discord_id.parse::<u64>() {
                     let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
                     let embed = CreateEmbed::new()
