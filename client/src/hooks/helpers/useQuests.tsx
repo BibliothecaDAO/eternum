@@ -333,7 +333,7 @@ const useBuildingQuantities = (realmEntityId: ID | undefined) => {
   );
 };
 
-const armyHasTroops = (entityArmies: ArmyInfo[]) => {
+export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
   return (
     entityArmies &&
     entityArmies[0] &&

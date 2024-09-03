@@ -15,7 +15,6 @@ enum CapacityColor {
 
 export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; className?: string }) => {
   if (!army) return null;
-  if (army.quantity.value === 0n) return null;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
@@ -29,7 +28,7 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
   const weightPercentage = useMemo(() => ((Number(army.weight) / Number(army.totalCapacity)) * 100).toFixed(0), [army]);
 
   return (
-    <div>
+    army.totalCapacity !== 0n && (
       <div
         onMouseEnter={() => {
           setTooltip({
@@ -52,7 +51,7 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
         <div className="flex flex-row items-center">
           <div className="bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 border border-y w-16">
             <div
-              className={`${capacityColor}  h-1 rounded-full  bg-yellow}`}
+              className={`${capacityColor} h-1 rounded-full`}
               style={{ width: `${weightPercentage}%` }}
             ></div>
           </div>
@@ -60,6 +59,6 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
           <Weight className="fill-gold w-3 ml-1" />
         </div>
       </div>
-    </div>
+    )
   );
 };

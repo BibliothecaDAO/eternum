@@ -340,7 +340,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             isLoading={isLoading}
             onClick={handleBuyArmy}
           >
-            {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
+            {checkSamePosition ? "Reinforce army" : "Must be at Base to Reinforce"}
           </Button>
         </div>
       </>
