@@ -11,6 +11,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
+import { MILLION } from "@/ui/constants";
 
 export const Resources = () => {
   const chapters = [
@@ -34,8 +35,7 @@ export const Resources = () => {
         <p className="my-5">
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
           <span className="font-bold">
-            {" "}
-            {EternumGlobalConfig.resources.storehouseCapacityKg / 1_000_000}M capacity per resource type
+            {` ${EternumGlobalConfig.resources.storehouseCapacityKg / MILLION}M capacity per resource type`}
           </span>
           . Build more storehouses to increase storage.
         </p>

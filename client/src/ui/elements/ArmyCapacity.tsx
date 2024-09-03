@@ -2,7 +2,6 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
-// import { formatNumber } from "../utils/utils";
 import { ReactComponent as Weight } from "@/assets/icons/common/weight.svg";
 import useUIStore from "@/hooks/store/useUIStore";
 import { formatNumber } from "../utils/utils";
@@ -50,10 +49,7 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
       >
         <div className="flex flex-row items-center">
           <div className="bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 border border-y w-16">
-            <div
-              className={`${capacityColor} h-1 rounded-full`}
-              style={{ width: `${weightPercentage}%` }}
-            ></div>
+            <div className={`${capacityColor} h-1 rounded-full`} style={{ width: `${weightPercentage}%` }}></div>
           </div>
 
           <Weight className="fill-gold w-3 ml-1" />

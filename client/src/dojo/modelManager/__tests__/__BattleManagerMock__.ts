@@ -102,6 +102,7 @@ export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleEn
       intermediate_coord_x: 0,
       intermediate_coord_y: 0,
     },
+    quantity: { entity_id: ARMY_ENTITY_ID, value: 0n },
     totalCapacity: 10n,
     weight: 0n,
     arrivalTime: { entity_id: ARMY_ENTITY_ID, arrives_at: 0n },

@@ -1,4 +1,5 @@
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
 import { BuildingType, ContractAddress, ID, QuestType, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -6,10 +7,10 @@ import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDojo } from "../context/DojoContext";
+import useUIStore from "../store/useUIStore";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
-import { useEntities } from "./useEntities";
+import { getEntitiesUtils, useEntities } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
-import { TileManager } from "@/dojo/modelManager/TileManager";
 
 export interface Quest {
   id: QuestId;
@@ -73,47 +74,51 @@ const useQuestDependencies = () => {
     account: { account },
   } = useDojo();
 
-  const { playerRealms } = useEntities();
-  const realm = useMemo(() => playerRealms()[0], [playerRealms]);
-  const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const { getEntityInfo } = getEntitiesUtils();
+  const structurePosition = getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 };
 
   const tileManager = new TileManager(setup, {
-    col: realm?.position.x,
-    row: realm?.position.y,
+    col: structurePosition.x,
+    row: structurePosition.y,
   });
 
-  const existingBuildings = useMemo(() => tileManager.existingBuildings(), [realm]);
+  const existingBuildings = useMemo(() => tileManager.existingBuildings(), [structurePosition]);
   const hasAnyPausedBuilding = useMemo(
     () => existingBuildings.some((building) => building.paused),
     [existingBuildings],
   );
 
   const entityUpdate = useEntityQuery([
-    HasValue(setup.components.EntityOwner, { entity_owner_id: realmEntityId || 0 }),
+    HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
   ]);
 
-  const buildingQuantities = useBuildingQuantities(realmEntityId);
+  const buildingQuantities = useBuildingQuantities(structureEntityId);
 
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId || 0 });
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
   const hasDefensiveArmy = useMemo(
-    () => entityArmies.some((army) => army.protectee?.protectee_id === realmEntityId),
+    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId),
     [entityArmies],
   );
 
   const orders = useGetMyOffers();
 
   const hasTroops = useMemo(() => armyHasTroops(entityArmies), [entityArmies]);
-  const hasTraveled = useMemo(() => armyHasTraveled(entityArmies, realm?.position), [entityArmies, realm?.position]);
+  const hasTraveled = useMemo(
+    () => armyHasTraveled(entityArmies, structurePosition),
+    [entityArmies, structurePosition],
+  );
 
   const [pillageHistoryLength, setPillageHistoryLength] = useState<number>(0);
 
   useEffect(() => {
     const fetchPillageHistory = async () => {
-      const eventsLength = await getPillageEvents(realmEntityId || 0);
+      const eventsLength = await getPillageEvents(structureEntityId || 0);
       setPillageHistoryLength(eventsLength);
     };
     fetchPillageHistory();
-  }, [realmEntityId]);
+  }, [structureEntityId]);
 
   const { playerStructures } = useEntities();
   const structures = playerStructures();
@@ -127,18 +132,18 @@ const useQuestDependencies = () => {
 
   const fragmentMines = useMemo(
     () => countStructuresByCategory(StructureType[StructureType.FragmentMine]),
-    [realmEntityId],
+    [structureEntityId],
   );
 
   const hyperstructures = useMemo(
     () => countStructuresByCategory(StructureType[StructureType.Hyperstructure]),
-    [realmEntityId],
+    [structureEntityId],
   );
 
   const hyperstructureContributions = useMemo(
     () =>
       runQuery([HasValue(setup.components.Contribution, { player_address: ContractAddress(account.address) })]).size,
-    [realmEntityId],
+    [structureEntityId],
   );
 
   const { questClaimStatus } = useQuestClaimStatus();
@@ -260,7 +265,12 @@ const useQuestDependencies = () => {
             : QuestStatus.InProgress,
       },
     }),
-    [questClaimStatus, unclaimedQuestsCount > 0 ? entityUpdate : null, unclaimedQuestsCount > 0 ? orders : null],
+    [
+      structureEntityId,
+      questClaimStatus,
+      unclaimedQuestsCount > 0 ? entityUpdate : null,
+      unclaimedQuestsCount > 0 ? orders : null,
+    ],
   );
 };
 
@@ -270,18 +280,15 @@ export const useQuestClaimStatus = () => {
       components: { HasClaimedStartingResources },
     },
   } = useDojo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { playerRealms } = useEntities();
-  const realm = useMemo(() => playerRealms()[0], [playerRealms]);
-  const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
-
-  const prizeUpdate = useEntityQuery([HasValue(HasClaimedStartingResources, { entity_id: realmEntityId || 0 })]);
+  const prizeUpdate = useEntityQuery([HasValue(HasClaimedStartingResources, { entity_id: structureEntityId || 0 })]);
 
   const checkPrizesClaimed = (prizes: Prize[]) => {
     return prizes.every((prize) => {
       const value = getComponentValue(
         HasClaimedStartingResources,
-        getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(prize.id)]),
+        getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(prize.id)]),
       );
       return value?.claimed;
     });
@@ -311,15 +318,15 @@ export const useUnclaimedQuestsCount = () => {
   return { unclaimedQuestsCount };
 };
 
-const useBuildingQuantities = (realmEntityId: ID | undefined) => {
+const useBuildingQuantities = (structureEntityId: ID | undefined) => {
   const {
     setup: {
       components: { BuildingQuantityv2, EntityOwner },
     },
   } = useDojo();
-  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId || 0 })]);
+  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: structureEntityId || 0 })]);
   const getBuildingQuantity = (buildingType: BuildingType) =>
-    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(buildingType)]))
+    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(buildingType)]))
       ?.value || 0;
 
   return useMemo(
@@ -329,7 +336,7 @@ const useBuildingQuantities = (realmEntityId: ID | undefined) => {
       workersHut: getBuildingQuantity(BuildingType.WorkersHut),
       markets: getBuildingQuantity(BuildingType.Market),
     }),
-    [realmEntityId, entityUpdate],
+    [structureEntityId, entityUpdate],
   );
 };
 
