@@ -343,7 +343,7 @@ impl EventHandler {
                 "eternum-BattleClaimData" => self.parse_battle_claim(model),
                 "eternum-BattlePillageData" => self.parse_battle_pillage(model),
                 _ => {
-                    tracing::error!("Unknown model name: {}", model.name); // Add this line for debugging
+                    tracing::warn!("Unknown model name: {}", model.name); // Add this line for debugging
                     None
                 }
             })
