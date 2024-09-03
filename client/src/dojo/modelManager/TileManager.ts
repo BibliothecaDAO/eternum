@@ -48,6 +48,7 @@ export class TileManager {
         row: Number(productionModelValue?.inner_row),
         category,
         resource: productionModelValue?.produced_resource_type,
+        paused: productionModelValue?.paused,
       };
     });
 

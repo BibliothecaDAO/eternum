@@ -13,6 +13,7 @@ export enum QuestId {
   Settle,
   BuildFarm,
   BuildResource,
+  PauseProduction,
   CreateTrade,
   CreateArmy,
   Travel,
@@ -68,6 +69,20 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
       ],
       prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
       depth: 2,
+    },
+  ],
+  [
+    QuestId.PauseProduction,
+    {
+      name: "Pause Production",
+      description: "",
+      steps: [
+        "Navigate to the construction menu",
+        "Select a building",
+        "Click the pause button",
+      ],
+      prizes: [{ id: QuestType.PauseProduction, title: "Pause Production" }],
+      depth: 3,
     },
   ],
   [

@@ -844,6 +844,7 @@ export enum QuestType {
   Pillage = 15,
   Hyperstructure = 16,
   Contribution = 17,
+  PauseProduction = 18,
 }
 
 export const QUEST_RESOURCES = {
@@ -902,4 +903,5 @@ export const QUEST_RESOURCES = {
   [QuestType.Pillage]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Contribution]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
+  [QuestType.PauseProduction]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
 };
