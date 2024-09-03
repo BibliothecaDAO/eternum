@@ -10,6 +10,7 @@ use shuttle_runtime::SecretStore;
 use sqlx::{Executor, PgPool};
 use std::sync::Arc;
 use tokio::sync::mpsc;
+use tracing_subscriber::EnvFilter;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -40,13 +41,10 @@ async fn setup_torii_client(
     database: PgPool,
     secret_store: SecretStore,
 ) -> eyre::Result<()> {
-    println!("Heyyyyyyyyy");
     let config = Config::from_secrets(secret_store)?;
-    println!("1");
 
     tokio::spawn(async move {
-        println!("Heyyyyyyyyy 2222");
-        println!("Setting up Torii client");
+        tracing::info!("Setting up Torii client");
         let client = ToriiClient::new(
             config.torii_url,
             config.node_url,
@@ -83,13 +81,13 @@ async fn setup_torii_client(
         tokio::spawn(async move {
             message_dispatcher.run().await;
         });
-
+        tracing::info!("Everything set up correctly");
         while let Some(Ok((_, entity))) = rcv.next().await {
             event_handler.handle_event(entity).await;
         }
     });
 
-    println!("Torii client setup task spawned");
+    tracing::info!("Torii client setup task spawned");
 
     Ok(())
 }
@@ -99,6 +97,12 @@ async fn main(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
 ) -> shuttle_serenity::ShuttleSerenity {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::new("eternum_discord=trace"))
+        .with_file(true)
+        .with_line_number(true)
+        .init();
+
     // Run the schema migration
     pool.execute(include_str!(
         "../migrations/20240818171830_create_users_table.sql"
@@ -124,7 +128,7 @@ async fn main(
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                setup_torii_client(token.clone(), pool.clone(), secret_store.clone()).await;
+                let _ = setup_torii_client(token.clone(), pool.clone(), secret_store.clone()).await;
                 Ok(Data {
                     database: pool.clone(),
                 })

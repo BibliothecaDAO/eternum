@@ -9,7 +9,7 @@ pub async fn add_user(
 ) -> Result<(), Error> {
     let discord_id = ctx.author().id.to_string();
 
-    println!("Adding user: {} {}", address, discord_id);
+    tracing::info!("Adding user: {} {}", address, discord_id);
 
     sqlx::query("INSERT INTO users (address, discord, telegram) VALUES ($1, $2, $3)")
         .bind(address)

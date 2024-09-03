@@ -2581,40 +2581,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
 
 [[package]]
-name = "e06_sample_bot_structure"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cainome 0.2.3 (git+https://github.com/cartridge-gg/cainome)",
- "cairo-lang-filesystem",
- "dojo-types",
- "dojo-world",
- "dotenv",
- "dotenvy",
- "envy",
- "eyre",
- "poise",
- "scarb",
- "serde",
- "serenity",
- "shuttle-rocket",
- "shuttle-runtime",
- "shuttle-serenity",
- "shuttle-shared-db",
- "sqlx",
- "starknet 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "starknet-crypto 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "starknet-types-core 0.1.5 (git+https://github.com/dojoengine/types-rs?rev=289e2f0)",
- "tokio",
- "toml 0.7.8",
- "torii-client",
- "torii-grpc",
- "torii-relay",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "ecdsa"
 version = "0.16.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2795,6 +2761,40 @@ dependencies = [
  "cfg-if",
  "home",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "eternum-discord"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cainome 0.2.3 (git+https://github.com/cartridge-gg/cainome)",
+ "cairo-lang-filesystem",
+ "dojo-types",
+ "dojo-world",
+ "dotenv",
+ "dotenvy",
+ "envy",
+ "eyre",
+ "poise",
+ "scarb",
+ "serde",
+ "serenity",
+ "shuttle-rocket",
+ "shuttle-runtime",
+ "shuttle-serenity",
+ "shuttle-shared-db",
+ "sqlx",
+ "starknet 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starknet-crypto 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starknet-types-core 0.1.5 (git+https://github.com/dojoengine/types-rs?rev=289e2f0)",
+ "tokio",
+ "toml 0.7.8",
+ "torii-client",
+ "torii-grpc",
+ "torii-relay",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

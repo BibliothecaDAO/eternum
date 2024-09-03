@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use dojo_types::primitive::Primitive::ContractAddress;
 use serde::Deserialize;
@@ -111,7 +111,7 @@ impl MessageDispatcher {
     pub async fn run(&mut self) {
         while let Some(message) = self.message_receiver.recv().await {
             if let Err(e) = self.send_message(message).await {
-                println!("Failed to send message: {:?}", e);
+                tracing::warn!("Failed to send message: {:?}", e);
             }
         }
     }
@@ -122,17 +122,17 @@ impl MessageDispatcher {
                 let user = UserId::new(user_id);
                 match user.create_dm_channel(&self.http).await {
                     Ok(channel) => {
-                        println!("DM channel created for user {}", user_id);
+                        tracing::info!("DM channel created for user {}", user_id);
 
                         if let Err(e) = channel.send_message(&self.http, content).await {
-                            println!("Failed to send DM: {:?}", e);
+                            tracing::error!("Failed to send DM: {:?}", e);
                         }
 
                         // channel.say(&self.http, content).await?;
-                        println!("DM sent to user {}", user_id);
+                        tracing::info!("DM sent to user {}", user_id);
                     }
                     Err(e) => {
-                        println!("Failed to create DM channel for user {}: {:?}", user_id, e);
+                        tracing::warn!("Failed to create DM channel for user {}: {:?}", user_id, e);
                         return Err(e);
                     }
                 }
@@ -142,7 +142,7 @@ impl MessageDispatcher {
                 content,
             } => {
                 channel_id.send_message(&self.http, content).await?;
-                println!("Message sent to channel {}", channel_id);
+                tracing::info!("Message sent to channel {}", channel_id);
             }
         }
         Ok(())
@@ -213,9 +213,9 @@ pub async fn process_event(
             x,
             y,
         } => {
-            println!("BattleLeave event: {:?}", leaver);
+            tracing::info!("BattleLeave event: {:?}", leaver);
             if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &leaver).await {
-                println!("User found in the database: {}", discord_id);
+                tracing::info!("User found in the database: {}", discord_id);
                 if let Ok(user_id) = discord_id.parse::<u64>() {
                     let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
                     let embed = CreateEmbed::new()
@@ -258,7 +258,7 @@ pub async fn process_event(
             structure_type,
             pillaged_resources,
         } => {
-            println!("BattlePillage event: {:?}", pillaged_structure_owner);
+            tracing::info!("BattlePillage event: {:?}", pillaged_structure_owner);
             if let Ok(Some(Some(discord_id))) =
                 check_user_in_database(database, &pillaged_structure_owner).await
             {
@@ -343,7 +343,7 @@ impl EventHandler {
                 "eternum-BattleClaimData" => self.parse_battle_claim(model),
                 "eternum-BattlePillageData" => self.parse_battle_pillage(model),
                 _ => {
-                    println!("Unknown model name: {}", model.name); // Add this line for debugging
+                    tracing::error!("Unknown model name: {}", model.name); // Add this line for debugging
                     None
                 }
             })
@@ -464,7 +464,7 @@ impl EventHandler {
     }
 
     fn parse_battle_pillage(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
-        println!("Model: {:?}", model);
+        tracing::info!("Model: {:?}", model);
         // ... Parse BattlePillage event
         let id = self.extract_u32(&model.children[0]);
         let event_id = self.extract_u32(&model.children[1]);
