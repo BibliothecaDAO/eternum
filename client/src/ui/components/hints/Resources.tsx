@@ -33,8 +33,11 @@ export const Resources = () => {
       content: (
         <p className="my-5">
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
-          <span className="font-bold"> {EternumGlobalConfig.resources.storehouseCapacityKg / 1_000_000}M capacity per resource type</span>. Build more
-          storehouses to increase storage.
+          <span className="font-bold">
+            {" "}
+            {EternumGlobalConfig.resources.storehouseCapacityKg / 1_000_000}M capacity per resource type
+          </span>
+          . Build more storehouses to increase storage.
         </p>
       ),
     },

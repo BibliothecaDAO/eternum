@@ -7,7 +7,11 @@ export class ProductionManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
-  constructor(private setup: SetupResult, entityId: ID, resourceId: ResourcesIds) {
+  constructor(
+    private setup: SetupResult,
+    entityId: ID,
+    resourceId: ResourcesIds,
+  ) {
     this.entityId = entityId;
     this.resourceId = resourceId;
   }
@@ -78,7 +82,8 @@ export class ProductionManager {
       )?.value || 0;
     return (
       (Number(quantity) * EternumGlobalConfig.resources.storehouseCapacityKg +
-      EternumGlobalConfig.resources.storehouseCapacityKg) * EternumGlobalConfig.resources.resourcePrecision
+        EternumGlobalConfig.resources.storehouseCapacityKg) *
+      EternumGlobalConfig.resources.resourcePrecision
     );
   }
 
