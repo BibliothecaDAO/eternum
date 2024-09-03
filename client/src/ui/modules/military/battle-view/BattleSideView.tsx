@@ -69,13 +69,14 @@ export const BattleSideView = ({
         />
         <div className="flex flex-col gap-1 mb-2">
           {React.Children.toArray(
-            ownSideArmies.map((a) => {
+            ownSideArmies.map((army) => {
+              if (!army) return;
               return (
                 <div className="px-2 py-1 rounded bg-black/70 text-xs flex gap-2 border-gold/10 border">
-                  <span>{getRealmNameById(a?.realm?.entity_id || 0)}</span>
-                  <span>{a?.name}</span>
-                  {a?.isMine && (
-                    <span className="font-bold uppercase border px-1 rounded">{a?.isMine ? "me" : ""}</span>
+                  <span>{getRealmNameById(army?.realm?.entity_id || 0)}</span>
+                  <span>{army?.name}</span>
+                  {army?.isMine && (
+                    <span className="font-bold uppercase border px-1 rounded">{army?.isMine ? "me" : ""}</span>
                   )}
                 </div>
               );
