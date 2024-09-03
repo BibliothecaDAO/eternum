@@ -76,12 +76,9 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.PauseProduction,
     {
       name: "Pause Production",
-      description: "",
-      steps: [
-        "Navigate to the construction menu",
-        "Select a building",
-        "Click the pause button",
-      ],
+      description:
+        "Resource facilities will produce resources automatically. Pause production to stop its consumption.",
+      steps: ["Select a building", "Pause its production"],
       prizes: [{ id: QuestType.PauseProduction, title: "Pause Production" }],
       depth: 3,
     },
@@ -100,8 +97,12 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.CreateDefenseArmy,
     {
       name: "Create a Defensive Army",
-      description: "Create a defensive army to protect your realm",
-      steps: [""],
+      description: "Your realm is always at risk. Create a defensive army to protect it",
+      steps: [
+        "Go to the military menu",
+        "Create a defensive army for your realm",
+        "Optionally, assign troops to your army",
+      ],
       prizes: [{ id: QuestType.CreateDefenseArmy, title: "Create Defensive Army" }],
       depth: 4,
     },
