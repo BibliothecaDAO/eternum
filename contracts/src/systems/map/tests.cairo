@@ -103,6 +103,13 @@ fn test_map_explore() {
 fn test_mercenaries_protector() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
 
+    starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
+
+    let (initial_realm_wheat, initial_realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
+    assert_eq!(initial_realm_wheat.balance, INITIAL_WHEAT_BALANCE, "wrong initial wheat balance");
+    assert_eq!(initial_realm_fish.balance, INITIAL_FISH_BALANCE, "wrong initial wheat balance");
+
     let mut _army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
     let explore_tile_direction: Direction = Direction::West;
 
