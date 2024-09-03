@@ -97,12 +97,6 @@ async fn main(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
 ) -> shuttle_serenity::ShuttleSerenity {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::new("eternum_discord=trace"))
-        .with_file(true)
-        .with_line_number(true)
-        .init();
-
     // Run the schema migration
     pool.execute(include_str!(
         "../migrations/20240818171830_create_users_table.sql"
