@@ -37,7 +37,7 @@ export const InventoryResources = ({
   const maxResources = updatedMax - dynamicResources.length;
   let currentCount = 0;
 
-  return (inventoriesResources && inventoriesResources.length > 0) ||
+  return (inventoriesResources && inventoriesResources[0].length > 0) ||
     (dynamicResources && dynamicResources.length > 0) ? (
     <div className={`p-2 bg-gold/10  ${className}`}>
       {dynamicResources &&
