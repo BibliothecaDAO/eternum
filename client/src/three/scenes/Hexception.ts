@@ -65,8 +65,9 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
 
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
-  private buildingModels: Map<BuildingType, THREE.Group> = new Map();
+  private buildingModels: Map<BuildingType, { model: THREE.Group; animations: THREE.AnimationClip[] }> = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
+  private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
   centerColRow: number[] = [0, 0];
@@ -137,6 +138,7 @@ export default class HexceptionScene extends HexagonScene {
             const model = gltf.scene as THREE.Group;
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
+
             model.traverse((child) => {
               if (child instanceof THREE.Mesh) {
                 if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
@@ -148,7 +150,8 @@ export default class HexceptionScene extends HexagonScene {
               }
             });
 
-            this.buildingModels.set(building as any, model);
+            // Store animations along with the model
+            this.buildingModels.set(building as any, { model, animations: gltf.animations });
             resolve();
           },
           undefined,
@@ -295,12 +298,23 @@ export default class HexceptionScene extends HexagonScene {
 
       // add buildings to the scene in the center hex
       for (const building of this.buildings) {
-        const buildingModel = this.buildingModels.get(BuildingType[building.category].toString() as any);
-        if (buildingModel) {
-          const instance = buildingModel.clone();
+        const buildingData = this.buildingModels.get(BuildingType[building.category].toString() as any);
+        if (buildingData) {
+          const instance = buildingData.model.clone();
           instance.applyMatrix4(building.matrix);
           this.scene.add(instance);
           this.buildingInstances.set(`${building.col},${building.row}`, instance);
+
+          // Check if the model has animations and start them
+          const animations = buildingData.animations;
+          if (animations && animations.length > 0) {
+            const mixer = new THREE.AnimationMixer(instance);
+            animations.forEach((clip: THREE.AnimationClip) => {
+              mixer.clipAction(clip).play();
+            });
+            // Store the mixer for later use (e.g., updating in the animation loop)
+            this.buildingMixers.set(`${building.col},${building.row}`, mixer);
+          }
         }
       }
 
@@ -419,5 +433,12 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(instance);
       this.buildingInstances.delete(key);
     }
+  }
+
+  update(deltaTime: number) {
+    super.update(deltaTime);
+    this.buildingMixers.forEach((mixer) => {
+      mixer.update(deltaTime);
+    });
   }
 }
