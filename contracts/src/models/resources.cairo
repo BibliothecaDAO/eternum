@@ -319,7 +319,7 @@ mod tests_resource_traits {
     use eternum::models::structure::{Structure, StructureCategory};
     use eternum::systems::config::contracts::config_systems;
     use eternum::systems::config::contracts::{IProductionConfigDispatcher, IProductionConfigDispatcherTrait};
-    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_storehouse_capacity_config};
     use super::{Production, ProductionOutputCustomImpl, Resource, ResourceCustomImpl};
     use traits::Into;
     use traits::TryInto;
@@ -339,6 +339,7 @@ mod tests_resource_traits {
         let world = spawn_eternum();
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
+        set_storehouse_capacity_config(config_systems_address);
         // set tick config
         let tick_config = TickConfig {
             config_id: WORLD_CONFIG_ID, tick_id: TickIds::DEFAULT, tick_interval_in_seconds: 5
@@ -466,7 +467,8 @@ mod owned_resources_tracker_tests {
     use eternum::constants::ResourceTypes;
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::structure::{Structure, StructureCategory};
-    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+    use eternum::systems::config::contracts::config_systems;
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_storehouse_capacity_config};
     use super::{OwnedResourcesTracker, OwnedResourcesTrackerCustomTrait};
 
 
@@ -491,6 +493,10 @@ mod owned_resources_tracker_tests {
     #[test]
     fn test_get_and_set_resource_ownership_after_resource_save() {
         let world = spawn_eternum();
+
+        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+        set_storehouse_capacity_config(config_systems_address);
+
         let entity_id = 44;
         // make entity a structure
         set!(world, (Structure { entity_id, category: StructureCategory::Realm, }));

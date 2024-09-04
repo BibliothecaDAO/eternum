@@ -24,7 +24,8 @@ use eternum::systems::trade::contracts::trade_systems::{
 };
 
 use eternum::utils::testing::{
-    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm}
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
+    config::set_storehouse_capacity_config
 };
 use starknet::contract_address_const;
 
@@ -34,6 +35,8 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
     world.uuid();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+
+    set_storehouse_capacity_config(config_systems_address);
 
     // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }

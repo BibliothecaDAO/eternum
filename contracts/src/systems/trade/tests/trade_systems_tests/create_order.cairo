@@ -24,7 +24,7 @@ use eternum::systems::trade::contracts::trade_systems::{
 
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
-    general::{spawn_realm, get_default_realm_pos}
+    general::{spawn_realm, get_default_realm_pos}, config::set_storehouse_capacity_config
 };
 use starknet::contract_address_const;
 
@@ -35,6 +35,8 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let dev_resource_systems = deploy_dev_resource_systems(world);
     let realm_systems_dispatcher = deploy_realm_systems(world);
+
+    set_storehouse_capacity_config(config_systems_address);
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }

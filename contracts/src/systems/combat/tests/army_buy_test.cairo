@@ -17,8 +17,8 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    config::{get_combat_config, set_storehouse_capacity_config}, world::spawn_eternum, systems::{deploy_realm_systems, deploy_combat_systems, deploy_system},
-    general::mint
+    config::{get_combat_config, set_storehouse_capacity_config}, world::spawn_eternum,
+    systems::{deploy_realm_systems, deploy_combat_systems, deploy_system}, general::mint
 };
 
 use starknet::ContractAddress;

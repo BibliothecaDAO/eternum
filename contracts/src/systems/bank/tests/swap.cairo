@@ -54,7 +54,7 @@ fn setup(
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
     bank_config_dispatcher.set_bank_config(0, lp_fee_num, lp_fee_denom);
-    
+
     set_storehouse_capacity_config(config_systems_address);
 
     let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
