@@ -28,7 +28,7 @@ export const GettingStarted = () => {
     {
       title: "Travel",
       content:
-        "Armies possess a limited amount of stamina, which is expended during movement on the map. This vital resource is fully restored at the dawn of each new Eternum Day, allowing for strategic planning of military maneuvers.",
+        "Armies possess a limited amount of stamina, which is expended during movement on the map. This vital resource is partially restored at the dawn of each new Eternum Day, allowing for strategic planning of military maneuvers.",
     },
   ];
 

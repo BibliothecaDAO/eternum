@@ -28,7 +28,7 @@ export const WorldStructures = () => {
         content: (
           <div>
             Naturally occurring structures discovered during exploration, enabling players to harvest precious resources
-            from the world.
+            from the world. Be weary of the bandits that inhabit these mines!
           </div>
         ),
       },
