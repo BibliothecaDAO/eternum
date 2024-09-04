@@ -1,6 +1,7 @@
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import {
+  findResourceById,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
@@ -29,8 +30,9 @@ export const WorldStructures = () => {
         title: "Mines",
         content: (
           <div>
-            Naturally occurring structures discovered during exploration, enabling players to harvest precious resources
-            from the world. Be weary of the bandits that inhabit these mines!
+            Naturally occurring structures discovered during exploration, enabling players to harvest precious{" "}
+            <span className="font-bold">{findResourceById(Number(ResourcesIds.Earthenshard))?.trait}</span> from the
+            world. Be weary of the bandits that inhabit these mines!
           </div>
         ),
       },
@@ -95,8 +97,7 @@ const HyperstructureCreationTable = () => {
               <br />
               Defending your Hyperstructure is crucial. If captured by another player, they can redistribute the shares,
               potentially cutting off your point income.
-              <br />
-              A new set of shareholers can be set every {formatTime(HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S)}.
+              <br />A new set of shareholers can be set every {formatTime(HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S)}.
             </td>
           </tr>
         </tfoot>
