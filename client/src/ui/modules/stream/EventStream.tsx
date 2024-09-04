@@ -79,7 +79,7 @@ export const EventStream = () => {
   // use effect will run 2 times in dev because of strict mode activated
   // so events will be duplicated
   useEffect(() => {
-    Object.entries(EVENT_CONFIG).forEach(([eventType, _]) => {
+    Object.keys(EVENT_CONFIG).forEach((eventType) => {
       createEventStream(world, components.events[eventType as keyof typeof components.events], eventType as EventType);
     });
 
