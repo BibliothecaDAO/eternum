@@ -48,6 +48,9 @@ export const EternumGlobalConfig = {
     donkey: 6,
     army: 1,
   },
+  battle: {
+    graceTickCount: 2,
+  },
   troop: {
     // The 7,200 health value makes battles last up to 20hours at a maximum.
     // This max will be reached if both armies are very similar in strength and health

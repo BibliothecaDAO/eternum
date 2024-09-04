@@ -326,7 +326,7 @@ impl TroopConfigCustomImpl of TroopConfigCustomTrait {
 pub struct BattleConfig {
     #[key]
     config_id: ID,
-    structure_grace_period: u64,
+    battle_grace_tick_count: u8,
 }
 
 #[generate_trait]

@@ -199,12 +199,12 @@ export function defineContractComponents (world: World) {
     BattleConfig: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, structure_grace_period: RecsType.BigInt },
+        { entity_id: RecsType.Number, battle_grace_tick_count: RecsType.Number },
         {
           metadata: {
             namespace: 'eternum',
             name: 'BattleConfig',
-            types: ['u32', 'u64'],
+            types: ['u32', 'u8'],
             customTypes: []
           }
         }

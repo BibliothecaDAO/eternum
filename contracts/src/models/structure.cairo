@@ -1,6 +1,6 @@
 use array::SpanTrait;
 use eternum::alias::ID;
-use eternum::models::config::BattleConfig;
+use eternum::models::config::{BattleConfig, TickConfig, TickTrait};
 use eternum::models::position::Coord;
 use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
@@ -22,8 +22,8 @@ impl StructureCustomImpl of StructureCustomTrait {
         assert!(self.is_structure(), "entity {} is not a structure", self.entity_id)
     }
 
-    fn assert_can_be_attacked(self: Structure, config: BattleConfig) {
-        let (can_be_attacked, reason) = self.can_be_attacked(config);
+    fn assert_can_be_attacked(self: Structure, battle_config: BattleConfig, tick_config: TickConfig) {
+        let (can_be_attacked, reason) = self.can_be_attacked(battle_config, tick_config);
         assert!(can_be_attacked, "{}", reason);
     }
 
@@ -31,18 +31,15 @@ impl StructureCustomImpl of StructureCustomTrait {
         self.category != StructureCategory::None
     }
 
-    fn can_be_attacked(self: Structure, config: BattleConfig) -> (bool, ByteArray) {
-        let now = starknet::get_block_timestamp();
-        if self.created_at + config.structure_grace_period > now {
-            let remaining_time_seconds = (self.created_at + config.structure_grace_period - now);
-            let remaining_time_minutes = remaining_time_seconds / 60;
+    fn can_be_attacked(self: Structure, battle_config: BattleConfig, tick_config: TickConfig) -> (bool, ByteArray) {
+        let current_tick = tick_config.current();
+        let allow_attack_tick = tick_config.at(self.created_at) + battle_config.battle_grace_tick_count.into();
+
+        if current_tick < allow_attack_tick {
+            let remaining_ticks = allow_attack_tick - current_tick;
             return (
                 false,
-                format!(
-                    "structure and related entities cannot be attacked for another {} minutes ({} seconds)",
-                    remaining_time_minutes,
-                    remaining_time_seconds
-                )
+                format!("structure and related entities cannot be attacked for another {} ticks", remaining_ticks)
             );
         }
 
