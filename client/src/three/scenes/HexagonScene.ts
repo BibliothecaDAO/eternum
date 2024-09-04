@@ -20,21 +20,22 @@ import { SystemManager } from "../systems/SystemManager";
 import { biomeModelPaths, HEX_SIZE } from "./constants";
 
 export abstract class HexagonScene {
-  protected scene: THREE.Scene;
-  protected camera: THREE.PerspectiveCamera;
-  protected inputManager: InputManager;
-  protected interactiveHexManager: InteractiveHexManager;
-  protected systemManager: SystemManager;
-  protected highlightHexManager: HighlightHexManager;
+  protected scene!: THREE.Scene;
+  protected camera!: THREE.PerspectiveCamera;
+  protected inputManager!: InputManager;
+  protected interactiveHexManager!: InteractiveHexManager;
+  protected systemManager!: SystemManager;
+  protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
+  protected GUIFolder!: any;
+  protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
+  protected modelLoadPromises: Promise<void>[] = [];
+  protected state!: AppStore;
+  protected fog!: THREE.Fog;
+
   private mainDirectionalLight!: THREE.DirectionalLight;
   private hemisphereLight!: THREE.HemisphereLight;
   private lightHelper!: THREE.DirectionalLightHelper;
-  protected GUIFolder: any;
-  protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
-  protected modelLoadPromises: Promise<void>[] = [];
-  protected state: AppStore;
-  protected fog: THREE.Fog;
 
   constructor(
     protected sceneName: SceneName,
@@ -44,28 +45,46 @@ export abstract class HexagonScene {
     private raycaster: THREE.Raycaster,
     protected sceneManager: SceneManager,
   ) {
-    this.GUIFolder = GUIManager.addFolder(sceneName);
+    this.initializeScene();
+    this.setupLighting();
+    this.setupInputHandlers();
+    this.setupGUI();
+    this.createGroundMesh();
+  }
+
+  private initializeScene(): void {
     this.scene = new THREE.Scene();
-    this.camera = controls.object as THREE.PerspectiveCamera;
-    this.dojo = dojo;
+    this.camera = this.controls.object as THREE.PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.systemManager = new SystemManager(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.scene.background = new THREE.Color(0x8790a1);
-    this.GUIFolder.addColor(this.scene, "background");
-    this.GUIFolder.close();
+    this.state = useUIStore.getState();
+    this.fog = new THREE.Fog(0xffffff, 21, 30);
+    this.scene.fog = this.fog;
+  }
 
+  private setupLighting(): void {
+    this.setupHemisphereLight();
+    this.setupDirectionalLight();
+    this.setupLightHelper();
+  }
+
+  private setupHemisphereLight(): void {
     this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
-    const hemisphereLightFolder = this.GUIFolder.addFolder("Hemisphere Light");
-    hemisphereLightFolder.addColor(this.hemisphereLight, "color");
-    hemisphereLightFolder.addColor(this.hemisphereLight, "groundColor");
-    hemisphereLightFolder.add(this.hemisphereLight, "intensity", 0, 3, 0.1);
-    hemisphereLightFolder.close();
     this.scene.add(this.hemisphereLight);
+  }
 
+  private setupDirectionalLight(): void {
     this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    this.configureDirectionalLight();
+    this.scene.add(this.mainDirectionalLight);
+    this.scene.add(this.mainDirectionalLight.target);
+  }
+
+  private configureDirectionalLight(): void {
     this.mainDirectionalLight.castShadow = true;
     this.mainDirectionalLight.shadow.mapSize.width = 2048;
     this.mainDirectionalLight.shadow.mapSize.height = 2048;
@@ -77,17 +96,62 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.shadow.camera.near = 8;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
+  }
 
-    const shadowFolder = this.GUIFolder.addFolder("Shadow");
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.001, 0.001, 0.0001);
-    shadowFolder.close();
+  private setupLightHelper(): void {
+    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
+    if (import.meta.env.DEV) this.scene.add(this.lightHelper);
+  }
 
+  private setupInputHandlers(): void {
+    this.inputManager.addListener("mousemove", throttle(this.handleMouseMove.bind(this), 50));
+    this.inputManager.addListener("dblclick", this.handleDoubleClick.bind(this));
+    this.inputManager.addListener("click", this.handleClick.bind(this));
+    this.inputManager.addListener("contextmenu", this.handleRightClick.bind(this));
+  }
+
+  private handleMouseMove(raycaster: THREE.Raycaster): void {
+    const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
+    hoveredHex && this.onHexagonMouseMove(hoveredHex);
+  }
+
+  private handleDoubleClick(raycaster: THREE.Raycaster): void {
+    const clickedHex = this.interactiveHexManager.onClick(raycaster);
+    clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
+  }
+
+  private handleClick(raycaster: THREE.Raycaster): void {
+    const clickedHex = this.interactiveHexManager.onClick(raycaster);
+    clickedHex && this.onHexagonClick(clickedHex.hexCoords);
+  }
+
+  private handleRightClick(raycaster: THREE.Raycaster): void {
+    const clickedHex = this.interactiveHexManager.onClick(raycaster);
+    clickedHex && this.onHexagonRightClick(clickedHex.hexCoords);
+  }
+
+  private setupGUI(): void {
+    this.GUIFolder = GUIManager.addFolder(this.sceneName);
+    this.setupSceneGUI();
+    this.setupHemisphereLightGUI();
+    this.setupDirectionalLightGUI();
+    this.setupShadowGUI();
+  }
+
+  private setupSceneGUI(): void {
+    this.GUIFolder.addColor(this.scene, "background");
+    this.GUIFolder.close();
+  }
+
+  private setupHemisphereLightGUI(): void {
+    const hemisphereLightFolder = this.GUIFolder.addFolder("Hemisphere Light");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "color");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "groundColor");
+    hemisphereLightFolder.add(this.hemisphereLight, "intensity", 0, 3, 0.1);
+    hemisphereLightFolder.close();
+  }
+
+  private setupDirectionalLightGUI(): void {
     const directionalLightFolder = this.GUIFolder.addFolder("Directional Light");
     directionalLightFolder.addColor(this.mainDirectionalLight, "color");
     directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
@@ -98,51 +162,19 @@ export abstract class HexagonScene {
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
     directionalLightFolder.close();
-    this.scene.add(this.mainDirectionalLight);
-    this.scene.add(this.mainDirectionalLight.target);
-
-    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-    this.scene.add(this.lightHelper);
-
-    this.inputManager.addListener(
-      "mousemove",
-      throttle((raycaster) => {
-        const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
-        hoveredHex && this.onHexagonMouseMove(hoveredHex);
-      }, 50),
-    );
-    this.inputManager.addListener("dblclick", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onClick(raycaster);
-      clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
-    });
-    this.inputManager.addListener("click", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onClick(raycaster);
-      clickedHex && this.onHexagonClick(clickedHex.hexCoords);
-    });
-    this.inputManager.addListener("contextmenu", (raycaster) => {
-      const clickedHex = this.interactiveHexManager.onClick(raycaster);
-      clickedHex && this.onHexagonRightClick(clickedHex.hexCoords);
-    });
-
-    this.state = useUIStore.getState();
-    this.createGroundMesh();
-
-    this.fog = new THREE.Fog(0xffffff, 21, 30);
-    this.scene.fog = this.fog;
   }
 
-  protected abstract onHexagonMouseMove({
-    hexCoords,
-    position,
-  }: {
-    hexCoords: HexPosition;
-    position: THREE.Vector3;
-  }): void;
-  protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
-  protected abstract onHexagonClick(hexCoords: HexPosition): void;
-  protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
-
-  public abstract setup(): void;
+  private setupShadowGUI(): void {
+    const shadowFolder = this.GUIFolder.addFolder("Shadow");
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.001, 0.001, 0.0001);
+    shadowFolder.close();
+  }
 
   public getScene() {
     return this.scene;
@@ -190,8 +222,6 @@ export abstract class HexagonScene {
 
     return { row, col, x: position.x, z: position.z };
   }
-
-  public abstract moveCameraToURLLocation(): void;
 
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
@@ -277,22 +307,6 @@ export abstract class HexagonScene {
     this.controls.update();
   }
 
-  private updateLights = _.throttle(() => {
-    if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.position.set(
-        this.controls.target.x - 15,
-        this.controls.target.y + 13,
-        this.controls.target.z + 8,
-      );
-      this.mainDirectionalLight.target.position.set(
-        this.controls.target.x,
-        this.controls.target.y,
-        this.controls.target.z - 5.2,
-      );
-      this.mainDirectionalLight.target.updateMatrixWorld();
-    }
-  }, 30);
-
   loadBiomeModels(maxInstances: number) {
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
@@ -357,18 +371,39 @@ export abstract class HexagonScene {
     this.scene.add(mesh);
   }
 
-  update(deltaTime: number) {
+  update(deltaTime: number): void {
     this.interactiveHexManager.update();
+    this.updateLights();
+    this.updateHighlightPulse();
+  }
 
+  private updateLights = _.throttle(() => {
     if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
+      const { x, y, z } = this.controls.target;
+      this.mainDirectionalLight.position.set(x - 15, y + 13, z + 8);
+      this.mainDirectionalLight.target.position.set(x, y, z - 5.2);
+      this.mainDirectionalLight.target.updateMatrixWorld();
     }
     if (this.lightHelper) this.lightHelper.update();
+  }, 30);
 
-    // Update highlight pulse
-    const elapsedTime = performance.now() / 1000; // Convert to seconds
+  private updateHighlightPulse(): void {
+    const elapsedTime = performance.now() / 1000;
     const pulseFactor = Math.abs(Math.sin(elapsedTime * 2) / 16);
     this.highlightHexManager.updateHighlightPulse(pulseFactor);
-    this.updateLights();
   }
+
+  // Abstract methods
+  protected abstract onHexagonMouseMove({
+    hexCoords,
+    position,
+  }: {
+    hexCoords: HexPosition;
+    position: THREE.Vector3;
+  }): void;
+  protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
+  protected abstract onHexagonClick(hexCoords: HexPosition): void;
+  protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
+  public abstract setup(): void;
+  public abstract moveCameraToURLLocation(): void;
 }
