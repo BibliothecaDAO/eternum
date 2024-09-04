@@ -37,8 +37,8 @@ export const Resources = () => {
       content: (
         <p className="my-5">
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
-          <span className="font-bold"> {STOREHOUSE_CAPACITY / 1000000}M capacity per resource type</span>. Build more
-          of them to increase storage.
+          <span className="font-bold"> {STOREHOUSE_CAPACITY / 1000000}M capacity per resource type</span>. Build more of
+          them to increase storage.
         </p>
       ),
     },

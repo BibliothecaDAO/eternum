@@ -1,15 +1,15 @@
 import { Headline } from "@/ui/elements/Headline";
-import { tableOfContents } from "./utils";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 import {
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  StructureType,
-  STRUCTURE_COSTS_SCALED,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   ResourcesIds,
+  STRUCTURE_COSTS_SCALED,
+  StructureType,
 } from "@bibliothecadao/eternum";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { useMemo } from "react";
+import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
+import { tableOfContents } from "./utils";
 
 export const WorldStructures = () => {
   const chapters = useMemo(
@@ -87,8 +87,12 @@ const HyperstructureCreationTable = () => {
           <tr>
             <td colSpan={2} className="p-2">
               Hyperstructures are key to victory and can be constructed collaboratively. Once built, Hyperstructures
-              generate {HYPERSTRUCTURE_POINTS_PER_CYCLE} points per Eternum Day. Your share of these points is
-              proportional to your contribution to its construction
+              generate {HYPERSTRUCTURE_POINTS_PER_CYCLE} points per Eternum Day. Once completed, the Hyperstructure
+              owner can distribute shares to others, allowing shareholders to earn a portion of the generated points.
+              <br />
+              <br />
+              Defending your Hyperstructure is crucial. If captured by another player, they can redistribute the shares,
+              potentially cutting off your point income.
             </td>
           </tr>
         </tfoot>
