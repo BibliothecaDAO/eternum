@@ -1,6 +1,7 @@
 use array::SpanTrait;
 use eternum::alias::ID;
 use eternum::models::position::Coord;
+use eternum::models::config::BattleConfig;
 use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
@@ -10,7 +11,8 @@ use traits::Into;
 pub struct Structure {
     #[key]
     entity_id: ID,
-    category: StructureCategory
+    category: StructureCategory,
+    created_at: u64
 }
 
 
@@ -21,6 +23,21 @@ impl StructureCustomImpl of StructureCustomTrait {
     }
     fn is_structure(self: Structure) -> bool {
         self.category != StructureCategory::None
+    }
+
+    fn can_be_attacked(self: Structure, config: BattleConfig) -> (bool, ByteArray) {
+        let now = starknet::get_block_timestamp();
+        if self.created_at + config.structure_grace_period > now  {
+            let remaining_time_seconds = (self.created_at + config.structure_grace_period - now);
+            let remaining_time_minutes = remaining_time_seconds / 60;
+            return (false, format!("Structure is still in battle grace period, cannot be attacked for {} minutes ({} seconds)", remaining_time_minutes, remaining_time_seconds));
+        }
+
+        if self.category == StructureCategory::Bank {
+            return (false, "Banks cannot be attacked");
+        }
+
+        return (true, "");
     }
 }
 

@@ -325,8 +325,8 @@ impl TroopConfigCustomImpl of TroopConfigCustomTrait {
 #[dojo::model]
 pub struct BattleConfig {
     #[key]
-    entity_id: ID,
-    max_tick_duration: u64,
+    config_id: ID,
+    structure_grace_period: u64,
 }
 
 #[generate_trait]
