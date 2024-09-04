@@ -298,22 +298,25 @@ export default class HexceptionScene extends HexagonScene {
 
       // add buildings to the scene in the center hex
       for (const building of this.buildings) {
-        const buildingData = this.buildingModels.get(BuildingType[building.category].toString() as any);
-        if (buildingData) {
-          const instance = buildingData.model.clone();
-          instance.applyMatrix4(building.matrix);
-          this.scene.add(instance);
-          this.buildingInstances.set(`${building.col},${building.row}`, instance);
+        const key = `${building.col},${building.row}`;
+        if (!this.buildingInstances.has(key)) {
+          const buildingData = this.buildingModels.get(BuildingType[building.category].toString() as any);
+          if (buildingData) {
+            const instance = buildingData.model.clone();
+            instance.applyMatrix4(building.matrix);
+            this.scene.add(instance);
+            this.buildingInstances.set(key, instance);
 
-          // Check if the model has animations and start them
-          const animations = buildingData.animations;
-          if (animations && animations.length > 0) {
-            const mixer = new THREE.AnimationMixer(instance);
-            animations.forEach((clip: THREE.AnimationClip) => {
-              mixer.clipAction(clip).play();
-            });
-            // Store the mixer for later use (e.g., updating in the animation loop)
-            this.buildingMixers.set(`${building.col},${building.row}`, mixer);
+            // Check if the model has animations and start them
+            const animations = buildingData.animations;
+            if (animations && animations.length > 0) {
+              const mixer = new THREE.AnimationMixer(instance);
+              animations.forEach((clip: THREE.AnimationClip) => {
+                mixer.clipAction(clip).play();
+              });
+              // Store the mixer for later use (e.g., updating in the animation loop)
+              this.buildingMixers.set(key, mixer);
+            }
           }
         }
       }
