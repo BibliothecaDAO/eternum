@@ -89,10 +89,7 @@ export const BattleActions = ({
     setView(View.None);
     toggleModal(
       <ModalContainer size="half">
-        <PillageHistory
-          structureId={structure!.entity_id}
-          attackerRealmEntityId={selectedArmy!.entityOwner.entity_owner_id}
-        />
+        <PillageHistory structureId={structure!.entity_id} />
       </ModalContainer>,
     );
   };
