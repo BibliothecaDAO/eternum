@@ -21,6 +21,7 @@
     "StaminaConfig",
     "StaminaRefillConfig",
     "MercenariesConfig",
+    "BattleConfig",
     "Position",
     "ProductionOutput",
     "DetachedResource",
