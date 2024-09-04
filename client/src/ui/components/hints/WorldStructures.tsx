@@ -2,6 +2,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import {
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   ResourcesIds,
   STRUCTURE_COSTS_SCALED,
@@ -10,6 +11,7 @@ import {
 import { useMemo } from "react";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { tableOfContents } from "./utils";
+import { formatTime } from "@/ui/utils/utils";
 
 export const WorldStructures = () => {
   const chapters = useMemo(
@@ -93,6 +95,8 @@ const HyperstructureCreationTable = () => {
               <br />
               Defending your Hyperstructure is crucial. If captured by another player, they can redistribute the shares,
               potentially cutting off your point income.
+              <br />
+              A new set of shareholers can be set every {formatTime(HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S)}.
             </td>
           </tr>
         </tfoot>
