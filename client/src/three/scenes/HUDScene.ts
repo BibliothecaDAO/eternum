@@ -3,6 +3,8 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { Navigator } from "../components/Navigator";
 import { GUIManager } from "../helpers/GUIManager";
+// Remove import for DirectionalLightHelper
+// import { DirectionalLightHelper } from "three";
 
 export default class HUDScene {
   private scene: THREE.Scene;
@@ -12,7 +14,7 @@ export default class HUDScene {
   private GUIFolder: any;
   private navigator: Navigator;
   private ambientLight!: THREE.AmbientLight;
-  private directionalLight!: THREE.DirectionalLight;
+  private hemisphereLight!: THREE.HemisphereLight;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new THREE.Scene();
@@ -35,7 +37,7 @@ export default class HUDScene {
     this.GUIFolder.close();
 
     this.addAmbientLight();
-    this.addDirectionalLight();
+    this.addHemisphereLight(); // Add this line
   }
 
   private createOrthographicCamera(): THREE.OrthographicCamera {
@@ -64,25 +66,23 @@ export default class HUDScene {
   }
 
   private addAmbientLight() {
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    this.ambientLight = new THREE.AmbientLight(0xf3c99f, 3.5);
     this.scene.add(this.ambientLight);
 
     // Add GUI control for ambient light intensity
-    this.GUIFolder.add(this.ambientLight, "intensity", 0, 1).name("Ambient Light Intensity");
+    this.GUIFolder.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
   }
 
-  private addDirectionalLight() {
-    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    this.directionalLight.position.set(0, 0, 5);
-    this.scene.add(this.directionalLight.target);
-    this.directionalLight.target.position.set(0, 8, 0);
-    this.scene.add(this.directionalLight);
+  private addHemisphereLight() {
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3c99f, 0xffffff, 0.5);
+    this.hemisphereLight.position.set(0, 20, 0);
+    this.scene.add(this.hemisphereLight);
 
-    // Add GUI controls for directional light
-    this.GUIFolder.add(this.directionalLight, "intensity", 0, 5).name("Directional Light Intensity");
-    this.GUIFolder.add(this.directionalLight.position, "x", -10, 10).name("Dir. Light X");
-    this.GUIFolder.add(this.directionalLight.position, "y", -10, 10).name("Dir. Light Y");
-    this.GUIFolder.add(this.directionalLight.position, "z", -10, 10).name("Dir. Light Z");
+    // Add GUI controls for hemisphere light
+    this.GUIFolder.add(this.hemisphereLight, "intensity", 0, 5).name("Hemisphere Light Intensity");
+    this.GUIFolder.add(this.hemisphereLight.position, "x", -10, 10).name("Hemisphere Light X");
+    this.GUIFolder.add(this.hemisphereLight.position, "y", -10, 10).name("Hemisphere Light Y");
+    this.GUIFolder.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
   }
 
   getScene(): THREE.Scene {
