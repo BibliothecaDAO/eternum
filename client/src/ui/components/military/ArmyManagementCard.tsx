@@ -13,6 +13,7 @@ import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { ArmyManager } from "@/dojo/modelManager/ArmyManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
@@ -36,10 +37,12 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { army_buy_troops, delete_army },
+      systemCalls: { army_buy_troops },
       components: { Position },
     },
   } = useDojo();
+
+  const dojo = useDojo();
 
   const isDefendingArmy = Boolean(army?.protectee);
 
@@ -109,11 +112,10 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const handleDeleteArmy = async () => {
     setIsLoading(true);
+    const armyManager = new ArmyManager(dojo);
+
     try {
-      await delete_army({
-        signer: account,
-        army_id: army?.entity_id || 0n,
-      });
+      await armyManager.deleteArmy(army?.entity_id || 0);
       setSelectedEntity && setSelectedEntity(null);
     } catch (e) {
       console.error(e);

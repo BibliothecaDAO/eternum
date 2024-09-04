@@ -3,15 +3,13 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
+import { getRealmNameById } from "@/ui/utils/realms";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-import { useState } from "react";
+import React, { useState } from "react";
 import { BattleDetails } from "./BattleDetails";
 import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
-import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { getRealmNameById } from "@/ui/utils/realms";
 
 export const BattleSideView = ({
   battleSide,
@@ -70,15 +68,20 @@ export const BattleSideView = ({
           show={ownSideArmies.length > 0}
         />
         <div className="flex flex-col gap-1 mb-2">
-          {ownSideArmies.map((a) => {
-            return (
-              <div className="px-2 py-1 rounded bg-black/70 text-xs flex gap-2 border-gold/10 border">
-                <span>{getRealmNameById(a?.realm?.entity_id || 0)}</span>
-                <span>{a?.name}</span>
-                {a?.isMine && <span className="font-bold uppercase border px-1 rounded">{a?.isMine ? "me" : ""}</span>}
-              </div>
-            );
-          })}
+          {React.Children.toArray(
+            ownSideArmies.map((army) => {
+              if (!army) return;
+              return (
+                <div className="px-2 py-1 rounded bg-black/70 text-xs flex gap-2 border-gold/10 border">
+                  <span>{getRealmNameById(army?.realm?.entity_id || 0)}</span>
+                  <span>{army?.name}</span>
+                  {army?.isMine && (
+                    <span className="font-bold uppercase border px-1 rounded">{army?.isMine ? "me" : ""}</span>
+                  )}
+                </div>
+              );
+            }),
+          )}
         </div>
 
         {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (

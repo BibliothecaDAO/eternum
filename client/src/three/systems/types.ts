@@ -29,6 +29,7 @@ export type BattleSystemUpdate = {
   entityId: ID;
   hexCoords: Position;
   isEmpty: boolean;
+  deleted: boolean;
 };
 
 export type BuildingSystemUpdate = {
