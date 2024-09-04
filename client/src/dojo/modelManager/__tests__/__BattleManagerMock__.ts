@@ -1,8 +1,8 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Structure } from "@/hooks/helpers/useStructures";
-import { BattleSide, ID, StructureType } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { type ClientComponents } from "@/dojo/createClientComponents";
+import { type ArmyInfo } from "@/hooks/helpers/useArmies";
+import { type Structure } from "@/hooks/helpers/useStructures";
+import { BattleSide, type ID, StructureType } from "@bibliothecadao/eternum";
+import { type ComponentValue } from "@dojoengine/recs";
 
 export const CURRENT_TIMESTAMP = 2;
 export const DURATION_LEFT_IF_ONGOING = 1000n;
@@ -127,6 +127,7 @@ export const generateMockStructure = (structureType: StructureType, isMine?: boo
     entity_id: 1,
     category: StructureType[structureType],
     isMine: isMine ?? false,
+    created_at: 0n,
     isMercenary: false,
     name: "Mock Structure",
     protector: undefined,
