@@ -607,6 +607,11 @@ mod combat_systems {
             get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
+            let defending_army_owner_entity_id = get!(world, defending_army_id, EntityOwner).entity_owner_id;
+            let defending_army_owner_structure = get!(world, defending_army_owner_entity_id, Structure);
+            if defending_army_owner_structure.category != StructureCategory::None {
+                defending_army_owner_structure.assert_can_be_attacked(BattleConfigCustomImpl::get(world));
+            }
             if defending_army.battle_id.is_non_zero() {
                 // defending army appears to be in battle
                 // so we want to update the defending army's battle status
@@ -892,6 +897,7 @@ mod combat_systems {
             // ensure entity being claimed is a structure
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
+            structure.assert_can_be_attacked(BattleConfigCustomImpl::get(world));
 
             // ensure claimer army is not in battle
             let claimer_army: Army = get!(world, army_id, Army);
@@ -950,6 +956,7 @@ mod combat_systems {
             // ensure entity being pillaged is a structure
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
+            structure.assert_can_be_attacked(BattleConfigCustomImpl::get(world));
 
             // ensure attacking army is not in a battle
             let mut attacking_army: Army = get!(world, army_id, Army);
@@ -1544,6 +1551,7 @@ mod combat_systems {
 
             // note: army quantity would be used inside `withdraw_balance_and_reward`
             let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+            set!(world, (army_quantity));
 
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);

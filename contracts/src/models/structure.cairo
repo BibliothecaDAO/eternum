@@ -1,7 +1,7 @@
 use array::SpanTrait;
 use eternum::alias::ID;
-use eternum::models::position::Coord;
 use eternum::models::config::BattleConfig;
+use eternum::models::position::Coord;
 use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
@@ -21,20 +21,29 @@ impl StructureCustomImpl of StructureCustomTrait {
     fn assert_is_structure(self: Structure) {
         assert!(self.is_structure(), "entity {} is not a structure", self.entity_id)
     }
+
+    fn assert_can_be_attacked(self: Structure, config: BattleConfig) {
+        let (can_be_attacked, reason) = self.can_be_attacked(config);
+        assert!(can_be_attacked, "{}", reason);
+    }
+
     fn is_structure(self: Structure) -> bool {
         self.category != StructureCategory::None
     }
 
     fn can_be_attacked(self: Structure, config: BattleConfig) -> (bool, ByteArray) {
         let now = starknet::get_block_timestamp();
-        if self.created_at + config.structure_grace_period > now  {
+        if self.created_at + config.structure_grace_period > now {
             let remaining_time_seconds = (self.created_at + config.structure_grace_period - now);
             let remaining_time_minutes = remaining_time_seconds / 60;
-            return (false, format!("Structure is still in battle grace period, cannot be attacked for {} minutes ({} seconds)", remaining_time_minutes, remaining_time_seconds));
-        }
-
-        if self.category == StructureCategory::Bank {
-            return (false, "Banks cannot be attacked");
+            return (
+                false,
+                format!(
+                    "structure and related entities cannot be attacked for another {} minutes ({} seconds)",
+                    remaining_time_minutes,
+                    remaining_time_seconds
+                )
+            );
         }
 
         return (true, "");
