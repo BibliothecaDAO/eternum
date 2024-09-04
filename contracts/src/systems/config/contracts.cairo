@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig,BattleConfig, MercenariesConfig};
+use eternum::models::config::{TroopConfig, BattleConfig, MercenariesConfig};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
