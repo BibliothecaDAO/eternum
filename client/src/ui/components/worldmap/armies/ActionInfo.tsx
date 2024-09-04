@@ -10,13 +10,17 @@ import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const ActionInfo = () => {
-  const { hoveredHex, selectedEntityId, travelPaths } = useUIStore((state) => state.armyActions);
+  const hoveredHex = useUIStore((state) => state.armyActions.hoveredHex);
+  const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const { getBalance } = getResourceBalance();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const travelPath = useMemo(() => {
-    if (hoveredHex) return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
-  }, [hoveredHex, travelPaths]);
+    if (hoveredHex)
+      return useUIStore
+        .getState()
+        .armyActions.travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
+  }, [hoveredHex, useUIStore.getState().armyActions.travelPaths]);
 
   const showTooltip = useMemo(() => {
     return travelPath !== undefined && travelPath.path.length >= 2 && selectedEntityId !== null;

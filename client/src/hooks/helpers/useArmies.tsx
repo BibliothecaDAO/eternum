@@ -395,7 +395,7 @@ export const useOwnArmiesByPosition = ({
       ).filter((army) =>
         playerStructures.some((structure) => structure.entity_id === army.entityOwner.entity_owner_id),
       );
-    }, [ownArmiesAtPosition]);
+    }, [ownArmiesAtPosition, position.x, position.y]);
 
     return ownArmies;
   }

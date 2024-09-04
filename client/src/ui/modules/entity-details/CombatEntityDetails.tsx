@@ -17,18 +17,15 @@ export const CombatEntityDetails = () => {
   const dojo = useDojo();
 
   const selectedHex = useUIStore((state) => state.selectedHex);
+  const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
 
   const [selectedTab, setSelectedTab] = useState(0);
-  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>();
 
   const getStructures = getPlayerStructures();
-
-  const hexPosition = useMemo(() => {
-    return new Position({ x: selectedHex.col, y: selectedHex.row });
-  }, [selectedHex]);
+  const hexPosition = useMemo(() => new Position({ x: selectedHex.col, y: selectedHex.row }), [selectedHex]);
 
   const ownArmiesAtPosition = useOwnArmiesByPosition({
-    position: { x: selectedHex.col, y: selectedHex.row },
+    position: hexPosition.getContract(),
     inBattle: false,
     playerStructures: getStructures(ContractAddress(dojo.account.account.address)),
   });
@@ -38,22 +35,19 @@ export const CombatEntityDetails = () => {
     [ownArmiesAtPosition],
   );
 
+  const [selectedArmyEntityId, setSelectedArmyEntityId] = useState<ID>(userArmies?.[0]?.entity_id || 0);
+
   useEffect(() => {
-    if (ownArmySelected) return;
-    const firstArmyId = userArmies[0]?.entity_id;
-    if (!firstArmyId) return;
-    setOwnArmySelected({
-      id: firstArmyId,
-      position: hexPosition,
-    });
-  }, [userArmies, selectedHex]);
+    setSelectedArmyEntityId(userArmies?.[0]?.entity_id || 0);
+  }, [userArmies]);
+
+  useEffect(() => {
+    updateSelectedEntityId(selectedArmyEntityId);
+  }, [selectedArmyEntityId, updateSelectedEntityId]);
 
   const ownArmy = useMemo(() => {
-    if (!ownArmySelected) {
-      return;
-    }
-    return userArmies.find((army) => army.entity_id === ownArmySelected.id);
-  }, [userArmies, ownArmySelected, selectedHex.col, selectedHex.row]);
+    return ownArmiesAtPosition.find((army) => army.entity_id === selectedArmyEntityId);
+  }, [ownArmiesAtPosition, selectedArmyEntityId]);
 
   const tabs = useMemo(
     () => [
@@ -76,7 +70,7 @@ export const CombatEntityDetails = () => {
         component: <Battles position={hexPosition} ownArmy={ownArmy} />,
       },
     ],
-    [selectedHex, userArmies, ownArmy?.entity_id, ownArmySelected?.id],
+    [selectedHex, userArmies, ownArmy?.entity_id, selectedArmyEntityId],
   );
 
   return (
@@ -93,8 +87,8 @@ export const CombatEntityDetails = () => {
             </Tabs.List>
             {userArmies.length > 0 && (
               <SelectActiveArmy
-                selectedEntity={ownArmySelected}
-                setOwnArmySelected={setOwnArmySelected}
+                selectedEntity={selectedArmyEntityId}
+                setOwnArmySelected={setSelectedArmyEntityId}
                 userAttackingArmies={userArmies}
               />
             )}
@@ -118,21 +112,16 @@ const SelectActiveArmy = ({
   setOwnArmySelected,
   userAttackingArmies,
 }: {
-  selectedEntity:
-    | {
-        id: ID;
-        position: Position;
-      }
-    | undefined;
-  setOwnArmySelected: (val: { id: ID; position: Position } | undefined) => void;
+  selectedEntity: ID;
+  setOwnArmySelected: (id: ID) => void;
   userAttackingArmies: ArmyInfo[];
 }) => {
   return (
     <div className="w-[31rem]">
       <Select
-        value={selectedEntity?.id.toString() || ""}
+        value={selectedEntity.toString()}
         onValueChange={(a: string) => {
-          setOwnArmySelected({ id: ID(a), position: selectedEntity?.position || new Position({ x: 0, y: 0 }) });
+          setOwnArmySelected(ID(a));
         }}
       >
         <SelectTrigger className="w-[31rem] px-2">
