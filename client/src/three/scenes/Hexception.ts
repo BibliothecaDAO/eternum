@@ -5,19 +5,19 @@ import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
+import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Biome, BiomeType } from "../components/Biome";
+import { BuildingPreview } from "../components/BuildingPreview";
+import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
+import { BuildingSystemUpdate } from "../systems/types";
 import { buildingModelPaths, BUILDINGS_CENTER, HEX_SIZE, structureTypeToBuildingType } from "./constants";
 import { HexagonScene } from "./HexagonScene";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
-import { BuildingPreview } from "../components/BuildingPreview";
-import { BuildingSystemUpdate } from "../systems/types";
-import InstancedModel from "../components/InstancedModel";
 
 const loader = new GLTFLoader();
 
@@ -65,7 +65,8 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
 
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
-  private buildingModels: Map<BuildingType, InstancedModel> = new Map();
+  private buildingModels: Map<BuildingType, THREE.Group> = new Map();
+  private buildingInstances: Map<string, THREE.Group> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
   centerColRow: number[] = [0, 0];
@@ -136,10 +137,18 @@ export default class HexceptionScene extends HexagonScene {
             const model = gltf.scene as THREE.Group;
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
+            model.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
+                  child.castShadow = true;
+                }
+                if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
+                  child.receiveShadow = true;
+                }
+              }
+            });
 
-            const tmp = new InstancedModel(model, 50);
-            this.buildingModels.set(building as any, tmp);
-            this.scene.add(tmp.group);
+            this.buildingModels.set(building as any, model);
             resolve();
           },
           undefined,
@@ -165,10 +174,11 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager.setTile({ col, row });
 
-    // remove all previous buildings when switching to a new hex
-    this.buildingModels.forEach((buildingMesh) => {
-      buildingMesh.setCount(0);
+    // remove all previous building instances
+    this.buildingInstances.forEach((instance) => {
+      this.scene.remove(instance);
     });
+    this.buildingInstances.clear();
 
     // subscribe to buiding updates (create and destroy)
     this.subscription?.unsubscribe();
@@ -283,22 +293,14 @@ export default class HexceptionScene extends HexagonScene {
         }
       }
 
-      // add buildings to the instance meshes in the center hex
-      let counts: Record<string, number> = {};
+      // add buildings to the scene in the center hex
       for (const building of this.buildings) {
-        const buildingMesh = this.buildingModels.get(BuildingType[building.category].toString() as any);
-        if (buildingMesh) {
-          // Store the instanceId for the building based on col and row
-          const instanceId = counts[building.category] || 0;
-          // store the instance id
-          this.buildingInstanceIds.set(`${building.col},${building.row}`, {
-            index: instanceId,
-            category: building.category,
-          });
-
-          counts[building.category] = instanceId + 1;
-          buildingMesh.setMatrixAt(counts[building.category] - 1, building.matrix);
-          buildingMesh.setCount(counts[building.category]);
+        const buildingModel = this.buildingModels.get(BuildingType[building.category].toString() as any);
+        if (buildingModel) {
+          const instance = buildingModel.clone();
+          instance.applyMatrix4(building.matrix);
+          this.scene.add(instance);
+          this.buildingInstances.set(`${building.col},${building.row}`, instance);
         }
       }
 
@@ -364,7 +366,7 @@ export default class HexceptionScene extends HexagonScene {
         const buildingObj = dummy.clone();
         const rotation = Math.PI / 3;
         if (building.category === BuildingType[BuildingType.Castle]) {
-          buildingObj.rotation.y = rotation * 3;
+          buildingObj.rotation.y = rotation * 2;
         } else {
           buildingObj.rotation.y = rotation * 4;
         }
@@ -411,15 +413,11 @@ export default class HexceptionScene extends HexagonScene {
   };
 
   removeBuilding(innerCol: number, innerRow: number) {
-    const building = this.buildingInstanceIds.get(`${innerCol},${innerRow}`);
-
-    if (building) {
-      const buildingMesh = this.buildingModels.get(
-        BuildingType[building.category as keyof typeof BuildingType].toString() as any,
-      );
-      console.log({ buildingMesh });
-      buildingMesh?.removeInstance(building.index);
-      this.buildingInstanceIds.delete(`${innerCol},${innerRow}`);
+    const key = `${innerCol},${innerRow}`;
+    const instance = this.buildingInstances.get(key);
+    if (instance) {
+      this.scene.remove(instance);
+      this.buildingInstances.delete(key);
     }
   }
 }
