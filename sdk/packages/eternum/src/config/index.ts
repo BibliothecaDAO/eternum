@@ -143,6 +143,18 @@ export const setWeightConfig = async (account: Account, provider: EternumProvide
   console.log(`Configuring weight config  ${tx.statusReceipt}...`);
 };
 
+export const setBattleConfig = async (account: Account, provider: EternumProvider) => {
+  const { graceTickCount: battle_grace_tick_count } = EternumGlobalConfig.battle;
+
+  const tx = await provider.set_battle_config({
+    signer: account,
+    config_id: 0,
+    battle_grace_tick_count,
+  });
+
+  console.log(`Configuring battle config ${tx.statusReceipt}...`);
+};
+
 export const setCombatConfig = async (account: Account, provider: EternumProvider) => {
   const {
     health: health,

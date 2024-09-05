@@ -180,7 +180,11 @@ mod map_systems {
                 world,
                 (
                     EntityOwner { entity_id: entity_id, entity_owner_id: entity_id },
-                    Structure { entity_id: entity_id, category: StructureCategory::FragmentMine },
+                    Structure {
+                        entity_id: entity_id,
+                        category: StructureCategory::FragmentMine,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord: coord, count: 1 },
                     Position { entity_id: entity_id, x: coord.x, y: coord.y },
                 )
