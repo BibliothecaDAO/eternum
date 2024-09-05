@@ -1,6 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { getPlayerStructures } from "@/hooks/helpers/useEntities";
+import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { HintSection } from "@/ui/components/hints/HintModal";
@@ -56,6 +57,8 @@ export const CombatEntityDetails = () => {
     return userArmies.find((army) => army.entity_id === ownArmySelected.id);
   }, [userArmies, ownArmySelected, selectedHex.col, selectedHex.row]);
 
+  const structure = getStructureAtPosition(hexPosition.getContract());
+
   const tabs = useMemo(
     () => [
       {
@@ -76,8 +79,21 @@ export const CombatEntityDetails = () => {
         ),
         component: <Battles position={hexPosition} ownArmy={ownArmy} />,
       },
+      ...(structure
+        ? [
+            {
+              key: "pillages",
+              label: (
+                <div className="flex relative group flex-col items-center">
+                  <div>Pillage History</div>
+                </div>
+              ),
+              component: <PillageHistory structureId={structure.entity_id} />,
+            },
+          ]
+        : []),
     ],
-    [selectedHex, userArmies, ownArmy?.entity_id, ownArmySelected?.id],
+    [selectedHex, userArmies, ownArmy?.entity_id, ownArmySelected?.id, structure],
   );
 
   return (
@@ -92,7 +108,7 @@ export const CombatEntityDetails = () => {
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}
             </Tabs.List>
-            {userArmies.length > 0 && (
+            {selectedTab !== 2 && userArmies.length > 0 && (
               <SelectActiveArmy
                 selectedEntity={ownArmySelected}
                 setOwnArmySelected={setOwnArmySelected}
@@ -109,7 +125,6 @@ export const CombatEntityDetails = () => {
             </Tabs.Panels>
           </Tabs>
         </div>
-        <PillageHistory structureId={39}></PillageHistory>
       </div>
     )
   );

@@ -4,7 +4,7 @@ import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, formatSecondsLeftInDaysHoursMinutes } from "@/ui/utils/utils";
 import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
-import { ComponentValue, defineQuery, getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
+import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 
 type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData"]["schema"]>;
@@ -18,13 +18,13 @@ const formatResources = (resources: any[]): Resource[] => {
 
 const PillageHistoryItem = ({ addressName, history }: { addressName: string; history: PillageEvent }) => {
   const isSuccess = history.winner === BattleSide[BattleSide.Attack];
-  const formattedResources = useMemo(() => formatResources([]), []);
+  const formattedResources = useMemo(() => formatResources(history.pillaged_resources), [history.pillaged_resources]);
 
   return (
     <div className="group hover:bg-gold/10 relative bg-gold/20 text-gold p-3">
       <div className="flex w-full justify-between font-bold ">
-        <div className={`text-lg ${isSuccess ? "text-order-brilliance" : "text-order-giants"}`}>
-          {isSuccess ? "Success" : "Fail"}
+        <div className={` ${isSuccess ? "text-order-brilliance" : "text-order-giants"}`}>
+          {isSuccess ? "success" : "Fail"}
         </div>
         <div>{`player: ${addressName}`}</div>
       </div>
@@ -44,9 +44,9 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
               : "None"}
           </div>
         </div>
-        <div>
-          <div className="text-sm">Destroyed Building</div>
-          <div className="text-xs">{history.destroyed_building_category.replace(/([A-Z])/g, " $1").trim()}</div>
+        <div className="flex flex-col text-xs items-center">
+          <div>Destroyed Building</div>
+          <div className="text-center">{history.destroyed_building_category.replace(/([A-Z])/g, " $1").trim()}</div>
         </div>
       </div>
       <div className="absolute bottom-1 right-2 text-xs text-gold/60">
@@ -67,13 +67,16 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
+  console.log({ structureId });
+
   useEffect(() => {
-    const query = defineQuery([Has(events.BattlePillageData)], {
+    const query = defineQuery([HasValue(events.BattlePillageData, { pillaged_structure_entity_id: structureId })], {
       runOnInit: true,
     });
 
     const subscription = query.update$.subscribe((update) => {
       if (isComponentUpdate(update, events.BattlePillageData)) {
+        console.log({ update });
         const event = getComponentValue(events.BattlePillageData, update.entity);
         setPillageHistory((prev) => [event!, ...prev]);
       }
@@ -83,9 +86,9 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
   }, [events.BattlePillageData, structureId]);
 
   return (
-    <div className="p-6 h-full pt-12">
+    <div className="p-6 h-full pt-2">
       <div className="overflow-auto h-full">
-        <div className="overflow-scroll-y max-h-[300px] grid grid-cols-1 gap-4">
+        <div className="overflow-scroll-y grid grid-cols-1 gap-4">
           {pillageHistory
             .sort((a, b) => b.timestamp - a.timestamp)
             .slice(0, 20)

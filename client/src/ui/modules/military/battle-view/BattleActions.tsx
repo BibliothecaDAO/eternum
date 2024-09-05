@@ -8,6 +8,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { ModalContainer } from "@/ui/components/ModalContainer";
 import Button from "@/ui/elements/Button";
+import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
@@ -89,6 +90,7 @@ export const BattleActions = ({
     setView(View.None);
     toggleModal(
       <ModalContainer size="half">
+        <Headline>Pillage History</Headline>
         <PillageHistory structureId={structure!.entity_id} />
       </ModalContainer>,
     );
