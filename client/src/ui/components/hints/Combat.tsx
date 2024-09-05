@@ -67,7 +67,8 @@ const Battles = () => {
         <img className="w-20" src="/images/icons/raid.png" alt="coin" />
         <p>
           Pillaging enemy structures becomes easier as their defensive forces weaken. Successful raids yield a portion
-          of the structure's resources.
+          of the structure's resources. <br />
+          The pillaging army will use up its entire stamina, but the more it has, the more resources it can retrieve.
         </p>
       </div>
 
@@ -81,7 +82,10 @@ const Battles = () => {
 
       <div className="flex flex-row items-center gap-2">
         <img className="w-20" src="/images/icons/leave-battle.png" alt="coin" />
-        <p>Exiting a battle is possible at any moment, but comes at the cost of resources, health, and troop losses.</p>
+        <p>
+          You can exit a battle at any time, but there are consequences. Any resources your army is carrying will be
+          lost, and some of your troops will desert.
+        </p>
       </div>
     </div>
   );

@@ -64,8 +64,12 @@ export const Buildings = () => {
                 />
               </td>
               <td className="text text-left">
-                Housing: + {building.building_capacity} <br />
-                Population: +{building.building_population}
+                {building.building_capacity !== 0 && (
+                  <>
+                    Housing: + {building.building_capacity} <br />
+                  </>
+                )}
+                {building.building_population !== 0 && <>Population: +{building.building_population}</>}
               </td>
               <td className="gap-1 flex flex-col  p-2">
                 {building.cost_of_building.map((cost, index) => (
