@@ -67,8 +67,6 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
-  console.log({ structureId });
-
   useEffect(() => {
     const query = defineQuery([HasValue(events.BattlePillageData, { pillaged_structure_entity_id: structureId })], {
       runOnInit: true,
@@ -76,7 +74,6 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
 
     const subscription = query.update$.subscribe((update) => {
       if (isComponentUpdate(update, events.BattlePillageData)) {
-        console.log({ update });
         const event = getComponentValue(events.BattlePillageData, update.entity);
         setPillageHistory((prev) => [event!, ...prev]);
       }
