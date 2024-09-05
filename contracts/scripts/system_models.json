@@ -22,6 +22,7 @@
     "StaminaRefillConfig",
     "MercenariesConfig",
     "StorehouseCapacityConfig",
+    "BattleConfig",
     "Position",
     "ProductionOutput",
     "DetachedResource",

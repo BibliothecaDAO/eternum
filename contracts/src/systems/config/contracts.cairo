@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, MercenariesConfig};
+use eternum::models::config::{TroopConfig, BattleConfig, MercenariesConfig};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -24,6 +24,11 @@ trait IRealmFreeMintConfig {
 #[dojo::interface]
 trait IWeightConfig {
     fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
+}
+
+#[dojo::interface]
+trait IBattleConfig {
+    fn set_battle_config(ref world: IWorldDispatcher, battle_config: BattleConfig);
 }
 
 #[dojo::interface]
@@ -154,7 +159,7 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig,
         MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig,
         BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig,
-        StaminaRefillConfig, MercenariesConfig, StorehouseCapacityConfig
+        StaminaRefillConfig, MercenariesConfig, BattleConfig, StorehouseCapacityConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -278,6 +283,16 @@ mod config_systems {
                 world,
                 (WeightConfig { config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram, })
             );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl BattleConfigCustomImpl of super::IBattleConfig<ContractState> {
+        fn set_battle_config(ref world: IWorldDispatcher, mut battle_config: BattleConfig) {
+            assert_caller_is_admin(world);
+
+            battle_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (battle_config));
         }
     }
 

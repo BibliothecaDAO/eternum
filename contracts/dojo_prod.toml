@@ -3,7 +3,6 @@ default = "eternum"
 
 [env]
 ## dev
-# world_address = "0x5889930b9e39f7138c9a16b4a68725066a53970d03dfda280a9e479e3d8c2ac"
 account_address = "0x3501b8b055c43cc73e01a766a6df019e4ec2beb3667d26852cd66d42b1ea1"
 private_key = "0x70da7559cd23cc1d2f75f1238587660c546fc75af677b949a7bc70aac294023"
 rpc_url = "https://api.cartridge.gg/x/eternum-35/katana"

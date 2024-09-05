@@ -1,30 +1,26 @@
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getPlayerStructures } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { EntityList } from "@/ui/components/list/EntityList";
-import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
+import { EntityArmyList } from "@/ui/components/military/ArmyList";
 import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ID } from "@bibliothecadao/eternum";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { useMemo } from "react";
 
 export const Military = ({ entityId }: { entityId: ID | undefined }) => {
-  const { playerStructures } = useEntities();
-
+  const {
+    account: { account },
+  } = useDojo();
   const { isMapView } = useQuery();
+
+  const getStructures = getPlayerStructures();
+
+  const selectedStructure = useMemo(() => {
+    return getStructures(ContractAddress(account.address)).find((structure) => structure.entity_id === entityId);
+  }, [getStructures, entityId]);
 
   return (
     <div className="relative">
-      {isMapView ? (
-        <EntitiesArmyTable />
-      ) : (
-        <EntityList
-          current={entityId}
-          list={playerStructures()}
-          title="structures"
-          panel={({ entity }) => <ArmyPanel structure={entity} />}
-          extraBackButtonContent={<HintModalButton className="absolute top-1 right-1" section={HintSection.Combat} />}
-        />
-      )}
+      {isMapView ? <EntitiesArmyTable /> : selectedStructure && <EntityArmyList structure={selectedStructure} />}
     </div>
   );
 };

@@ -27,6 +27,7 @@ export const BattleActions = ({
   userArmiesInBattle,
   isActive,
   ownArmyEntityId,
+  attackerArmies,
   defenderArmies,
   structure,
   battleAdjusted,
@@ -34,6 +35,7 @@ export const BattleActions = ({
   battleManager: BattleManager;
   userArmiesInBattle: (ArmyInfo | undefined)[];
   ownArmyEntityId: ID | undefined;
+  attackerArmies: (ArmyInfo | undefined)[];
   defenderArmies: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
@@ -139,11 +141,21 @@ export const BattleActions = ({
       signer: account,
       army_id: selectedArmy!.entity_id,
       battle_id: battleManager?.battleEntityId || 0,
-    });
+    }).then(() => {
+      setLoading(Loading.None);
+      setBattleView(null);
+      setView(View.None);
 
-    setLoading(Loading.None);
-    setBattleView(null);
-    setView(View.None);
+      const attackerArmiesLength = attackerArmies.some((army) => army?.entity_id === selectedArmy?.entity_id)
+        ? attackerArmies.length - 1
+        : attackerArmies.length;
+      const defenderArmiesLength = defenderArmies.some((army) => army?.entity_id === selectedArmy?.entity_id)
+        ? defenderArmies.length - 1
+        : defenderArmies.length;
+      if (attackerArmiesLength === 0 && defenderArmiesLength === 0) {
+        battleManager.deleteBattle();
+      }
+    });
   };
 
   const isClaimable = useMemo(

@@ -100,6 +100,7 @@ export const Battle = ({
                 battleManager={battleManager}
                 userArmiesInBattle={userArmiesInBattle}
                 ownArmyEntityId={ownArmyEntityId}
+                attackerArmies={attackerArmies}
                 defenderArmies={defenderArmies}
                 structure={structure}
                 battleAdjusted={battleAdjusted}

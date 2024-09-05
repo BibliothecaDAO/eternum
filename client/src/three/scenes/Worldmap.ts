@@ -136,6 +136,16 @@ export default class WorldmapScene extends HexagonScene {
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
+
+    // subscribe to changes in the selected army coming from React
+    useUIStore.subscribe(
+      (state) => state.armyActions.selectedEntityId,
+      (selectedEntityId) => {
+        if (selectedEntityId) {
+          this.onArmyRightClick(selectedEntityId);
+        }
+      },
+    );
   }
 
   public moveCameraToURLLocation() {
@@ -212,7 +222,10 @@ export default class WorldmapScene extends HexagonScene {
     } else {
       const position = getWorldPositionForHex(hexCoords);
       this.selectedHexManager.setPosition(position.x, position.z);
-      this.state.setSelectedHex({ col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER });
+      this.state.setSelectedHex({
+        col: hexCoords.col + FELT_CENTER,
+        row: hexCoords.row + FELT_CENTER,
+      });
       this.state.setLeftNavigationView(View.EntityView);
     }
   }

@@ -3,7 +3,15 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
 import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
-import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import {
+  ComponentValue,
+  Components,
+  Has,
+  HasValue,
+  getComponentValue,
+  removeComponent,
+  runQuery,
+} from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
 import { StaminaManager } from "./StaminaManager";
@@ -94,6 +102,12 @@ export class BattleManager {
     } else {
       return undefined;
     }
+  }
+
+  public deleteBattle() {
+    removeComponent(this.dojo.setup.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+    this.dojo.network.world.deleteEntity(getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+    this.battleEntityId = 0;
   }
 
   public isBattleOngoing(currentTimestamp: number): boolean {

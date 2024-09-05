@@ -606,7 +606,15 @@ mod combat_systems {
 
             get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
+            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let battle_config = BattleConfigCustomImpl::get(world);
+
             let mut defending_army: Army = get!(world, defending_army_id, Army);
+            let defending_army_owner_entity_id = get!(world, defending_army_id, EntityOwner).entity_owner_id;
+            let defending_army_owner_structure = get!(world, defending_army_owner_entity_id, Structure);
+            if defending_army_owner_structure.category != StructureCategory::None {
+                defending_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
+            }
             if defending_army.battle_id.is_non_zero() {
                 // defending army appears to be in battle
                 // so we want to update the defending army's battle status
@@ -893,6 +901,10 @@ mod combat_systems {
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
 
+            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let battle_config = BattleConfigCustomImpl::get(world);
+            structure.assert_can_be_attacked(battle_config, armies_tick_config);
+
             // ensure claimer army is not in battle
             let claimer_army: Army = get!(world, army_id, Army);
             claimer_army.assert_not_in_battle();
@@ -950,6 +962,9 @@ mod combat_systems {
             // ensure entity being pillaged is a structure
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
+            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let battle_config = BattleConfigCustomImpl::get(world);
+            structure.assert_can_be_attacked(battle_config, armies_tick_config);
 
             // ensure attacking army is not in a battle
             let mut attacking_army: Army = get!(world, army_id, Army);
