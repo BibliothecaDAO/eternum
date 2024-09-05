@@ -115,7 +115,9 @@ async fn main(
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                let _ = setup_torii_client(pool.clone(), config.clone()).await;
+                setup_torii_client(pool.clone(), config.clone())
+                    .await
+                    .expect("Failed to setup torii client");
                 Ok(Data {
                     database: pool.clone(),
                 })
