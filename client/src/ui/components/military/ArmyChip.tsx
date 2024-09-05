@@ -27,6 +27,7 @@ export const ArmyChip = ({
   showButtons?: boolean;
 }) => {
   const dojo = useDojo();
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [showInventory, setShowInventory] = useState(false);
   const [showTroopSwap, setShowTroopSwap] = useState(false);
@@ -77,7 +78,19 @@ export const ArmyChip = ({
                             className={
                               "my-auto w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
                             }
-                            onClick={() => setEditMode(!editMode)}
+                            onClick={() => {
+                              setTooltip(null);
+                              setEditMode(!editMode);
+                            }}
+                            onMouseEnter={() => {
+                              setTooltip({
+                                content: "Edit",
+                                position: "top",
+                              });
+                            }}
+                            onMouseLeave={() => {
+                              setTooltip(null);
+                            }}
                           />
                           <ViewOnMapIcon
                             className={"my-auto hover:scale-125  hover:grow"}
@@ -85,13 +98,37 @@ export const ArmyChip = ({
                           />
                           <Swap
                             className="my-auto w-5 ml-1 mx-auto my-auto align-middle hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-                            onClick={() => setShowTroopSwap(!showTroopSwap)}
+                            onClick={() => {
+                              setTooltip(null);
+                              setShowTroopSwap(!showTroopSwap);
+                            }}
+                            onMouseEnter={() => {
+                              setTooltip({
+                                content: "Swap troops (only possible on same hex)",
+                                position: "top",
+                              });
+                            }}
+                            onMouseLeave={() => {
+                              setTooltip(null);
+                            }}
                           />
                         </React.Fragment>
                       )}
                       <Inventory
                         className="my-auto w-4 ml-1 mx-auto hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-                        onClick={() => setShowInventory(!showInventory)}
+                        onClick={() => {
+                          setTooltip(null);
+                          setShowInventory(!showInventory);
+                        }}
+                        onMouseEnter={() => {
+                          setTooltip({
+                            content: "Inventory",
+                            position: "top",
+                          });
+                        }}
+                        onMouseLeave={() => {
+                          setTooltip(null);
+                        }}
                       />
                     </div>
                   )}
