@@ -1,9 +1,10 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
+import { BattleSide, BuildingType, ID, Resource } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 
@@ -47,6 +48,25 @@ const PillageHistoryItem = ({ history }: { history: PillageEvent }) => {
                 : "None"}
             </div>
           </div>
+          {history.destroyed_building_category !== BuildingType[BuildingType.None] && (
+            <div className="text-center">
+              <Headline>Destroyed Building</Headline>
+              {
+                <img
+                  src={`${
+                    BUILDING_IMAGES_PATH[
+                      BuildingType[
+                        history.destroyed_building_category as keyof typeof BuildingType
+                      ] as keyof typeof BUILDING_IMAGES_PATH
+                    ]
+                  }`}
+                  alt="Destroyed Building"
+                  className="w-24 h-24 mx-auto"
+                />
+              }
+              <div>{history.destroyed_building_category.replace(/([A-Z])/g, " $1").trim()}</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+use eternum::models::buildings::BuildingCategory;
 use eternum::{alias::ID, models::combat::BattleSide, models::structure::StructureCategory};
 use starknet::ContractAddress;
 
@@ -120,6 +121,7 @@ pub struct BattlePillageData {
     event_id: EventType,
     pillager: ContractAddress,
     pillager_name: felt252,
+    pillager_realm_entity_id: ID,
     pillager_army_entity_id: ID,
     pillaged_structure_owner: ContractAddress,
     pillaged_structure_entity_id: ID,
@@ -128,5 +130,6 @@ pub struct BattlePillageData {
     y: u32,
     structure_type: StructureCategory,
     pillaged_resources: Span<(u8, u128)>,
+    destroyed_building_category: BuildingCategory,
     timestamp: u64,
 }

@@ -5,6 +5,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
+import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
@@ -108,6 +109,7 @@ export const CombatEntityDetails = () => {
             </Tabs.Panels>
           </Tabs>
         </div>
+        <PillageHistory structureId={39}></PillageHistory>
       </div>
     )
   );
