@@ -10,8 +10,8 @@ export const Military = ({ entityId }: { entityId: ID | undefined }) => {
   const {
     account: { account },
   } = useDojo();
-  const { isMapView } = useQuery();
 
+  const { isMapView } = useQuery();
   const getStructures = getPlayerStructures();
 
   const selectedStructure = useMemo(() => {

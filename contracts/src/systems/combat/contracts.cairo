@@ -547,7 +547,6 @@ mod combat_systems {
             // ensure caller owns from and to armies
             let mut from_army_owner: EntityOwner = get!(world, from_army_id, EntityOwner);
             from_army_owner.assert_caller_owner(world);
-            get!(world, to_army_id, EntityOwner).assert_caller_owner(world);
 
             // ensure from and to armies are at the same position
             let from_army_position: Position = get!(world, from_army_id, Position);

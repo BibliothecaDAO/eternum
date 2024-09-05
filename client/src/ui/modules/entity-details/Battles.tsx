@@ -1,11 +1,8 @@
-import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
+import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Position } from "@/types/Position";
 import { BattleListItem } from "@/ui/components/battles/BattleListItem";
 
-export const Battles = ({ position, ownArmy }: { position: Position; ownArmy: ArmyInfo | undefined }) => {
-  const battles = useBattlesByPosition(position.getContract());
-
+export const Battles = ({ ownArmy, battles }: { ownArmy: ArmyInfo | undefined; battles: BattleInfo[] }) => {
   return (
     <div className="px-2 w-[31rem] py-2">
       {battles.length > 0 && (
