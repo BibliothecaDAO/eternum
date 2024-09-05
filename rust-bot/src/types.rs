@@ -1,26 +1,23 @@
 use std::sync::Arc;
 
-use dojo_types::primitive::Primitive::{ContractAddress, Felt252, I32, I64};
+use dojo_types::primitive::Primitive::ContractAddress;
+use serde::Deserialize;
 use serenity::{
-    all::{CreateEmbed, CreateEmbedFooter, CreateMessage, MessageBuilder, Timestamp, UserId},
+    all::{CreateEmbed, CreateEmbedFooter, CreateMessage, Timestamp, UserId},
     model::id::ChannelId,
 };
-use sqlx::SqlitePool;
+use shuttle_runtime::SecretStore;
+use sqlx::{prelude::FromRow, PgPool};
 use starknet_crypto::Felt;
 use tokio::sync::mpsc;
-use torii_grpc::{
-    client::EntityUpdateStreaming,
-    types::{schema::Entity, EntityKeysClause, KeysClause},
-};
+use torii_grpc::types::schema::Entity;
 
-use starknet::core::utils::{
-    cairo_short_string_to_felt, parse_cairo_short_string, CairoShortStringToFeltError,
-    ParseCairoShortStringError,
-};
+use starknet::core::utils::parse_cairo_short_string;
 
 use crate::check_user_in_database;
 
 // Event types
+#[allow(dead_code)]
 pub enum GameEvent {
     BattleStart {
         id: u32,
@@ -108,14 +105,13 @@ pub struct MessageDispatcher {
 
 pub struct EventHandler {
     pub event_sender: mpsc::Sender<GameEvent>,
-    pub database: SqlitePool,
 }
 
 impl MessageDispatcher {
     pub async fn run(&mut self) {
         while let Some(message) = self.message_receiver.recv().await {
             if let Err(e) = self.send_message(message).await {
-                println!("Failed to send message: {:?}", e);
+                tracing::warn!("Failed to send message: {:?}", e);
             }
         }
     }
@@ -126,17 +122,17 @@ impl MessageDispatcher {
                 let user = UserId::new(user_id);
                 match user.create_dm_channel(&self.http).await {
                     Ok(channel) => {
-                        println!("DM channel created for user {}", user_id);
+                        tracing::info!("DM channel created for user {}", user_id);
 
                         if let Err(e) = channel.send_message(&self.http, content).await {
-                            println!("Failed to send DM: {:?}", e);
+                            tracing::error!("Failed to send DM: {:?}", e);
                         }
 
                         // channel.say(&self.http, content).await?;
-                        println!("DM sent to user {}", user_id);
+                        tracing::info!("DM sent to user {}", user_id);
                     }
                     Err(e) => {
-                        println!("Failed to create DM channel for user {}: {:?}", user_id, e);
+                        tracing::warn!("Failed to create DM channel for user {}: {:?}", user_id, e);
                         return Err(e);
                     }
                 }
@@ -146,7 +142,7 @@ impl MessageDispatcher {
                 content,
             } => {
                 channel_id.send_message(&self.http, content).await?;
-                println!("Message sent to channel {}", channel_id);
+                tracing::info!("Message sent to channel {}", channel_id);
             }
         }
         Ok(())
@@ -155,26 +151,28 @@ impl MessageDispatcher {
 
 pub async fn process_event(
     event: GameEvent,
-    database: &SqlitePool,
+    database: &PgPool,
     message_sender: &mpsc::Sender<DiscordMessage>,
 ) {
     match event {
         GameEvent::BattleStart {
-            id,
-            event_id,
-            battle_entity_id,
-            attacker,
+            id: _,
+            event_id: _,
+            battle_entity_id: _,
+            attacker: _,
             attacker_name,
-            attacker_army_entity_id,
+            attacker_army_entity_id: _,
             defender,
             defender_name,
-            defender_army_entity_id,
+            defender_army_entity_id: _,
             duration_left,
             x,
             y,
-            structure_type,
+            structure_type: _,
         } => {
+            tracing::info!("BattleStart event: {:?}", defender);
             if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &defender).await {
+                tracing::info!("User found in the database: {}", discord_id);
                 if let Ok(user_id) = discord_id.parse::<u64>() {
                     let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
                     let embed = CreateEmbed::new()
@@ -206,20 +204,20 @@ pub async fn process_event(
             }
         }
         GameEvent::BattleLeave {
-            id,
-            event_id,
-            battle_entity_id,
+            id: _,
+            event_id: _,
+            battle_entity_id: _,
             leaver,
             leaver_name,
-            leaver_army_entity_id,
-            leaver_side,
+            leaver_army_entity_id: _,
+            leaver_side: _,
             duration_left,
             x,
             y,
         } => {
-            println!("BattleLeave event: {:?}", leaver);
+            tracing::info!("BattleLeave event: {:?}", leaver);
             if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &leaver).await {
-                println!("User found in the database: {}", discord_id);
+                tracing::info!("User found in the database: {}", discord_id);
                 if let Ok(user_id) = discord_id.parse::<u64>() {
                     let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
                     let embed = CreateEmbed::new()
@@ -249,20 +247,20 @@ pub async fn process_event(
             }
         }
         GameEvent::BattlePillage {
-            id,
-            event_id,
-            pillager,
+            id: _,
+            event_id: _,
+            pillager: _,
             pillager_name,
-            pillager_army_entity_id,
+            pillager_army_entity_id: _,
             pillaged_structure_owner,
-            pillaged_structure_entity_id,
-            winner,
+            pillaged_structure_entity_id: _,
+            winner: _,
             x,
             y,
             structure_type,
             pillaged_resources,
         } => {
-            println!("BattlePillage event: {:?}", pillaged_structure_owner);
+            tracing::info!("BattlePillage event: {:?}", pillaged_structure_owner);
             if let Ok(Some(Some(discord_id))) =
                 check_user_in_database(database, &pillaged_structure_owner).await
             {
@@ -301,41 +299,35 @@ pub async fn process_event(
             }
         }
         GameEvent::BattleJoin {
-            id,
-            event_id,
-            battle_entity_id,
-            joiner,
-            joiner_name,
-            joiner_army_entity_id,
-            joiner_side,
-            duration_left,
-            x,
-            y,
+            id: _,
+            event_id: _,
+            battle_entity_id: _,
+            joiner: _,
+            joiner_name: _,
+            joiner_army_entity_id: _,
+            joiner_side: _,
+            duration_left: _,
+            x: _,
+            y: _,
         } => {
             // ... Process BattleJoin event
         }
         GameEvent::BattleClaim {
-            id,
-            event_id,
-            structure_entity_id,
-            claimer,
-            claimer_name,
-            claimer_army_entity_id,
-            previous_owner,
-            x,
-            y,
-            structure_type,
+            id: _,
+            event_id: _,
+            structure_entity_id: _,
+            claimer: _,
+            claimer_name: _,
+            claimer_army_entity_id: _,
+            previous_owner: _,
+            x: _,
+            y: _,
+            structure_type: _,
         } => {}
     }
 }
 
 impl EventHandler {
-    pub fn new(event_sender: mpsc::Sender<GameEvent>, database: SqlitePool) -> Self {
-        Self {
-            event_sender,
-            database,
-        }
-    }
     pub async fn handle_event(&self, entity: Entity) {
         if let Some(event) = self.parse_event(entity) {
             self.event_sender.send(event).await.unwrap();
@@ -353,7 +345,7 @@ impl EventHandler {
                 "eternum-BattleClaimData" => self.parse_battle_claim(model),
                 "eternum-BattlePillageData" => self.parse_battle_pillage(model),
                 _ => {
-                    println!("Unknown model name: {}", model.name); // Add this line for debugging
+                    tracing::warn!("Unknown model name: {}", model.name); // Add this line for debugging
                     None
                 }
             })
@@ -474,7 +466,7 @@ impl EventHandler {
     }
 
     fn parse_battle_pillage(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
-        println!("Model: {:?}", model);
+        tracing::info!("Model: {:?}", model);
         // ... Parse BattlePillage event
         let id = self.extract_u32(&model.children[0]);
         let event_id = self.extract_u32(&model.children[1]);
@@ -551,4 +543,42 @@ impl EventHandler {
                     .expect("Failed to parse default Cairo short string")
             })
     }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Config {
+    pub discord_token: String,
+    pub torii_url: String,
+    pub node_url: String,
+    pub torii_relay_url: String,
+    pub world_address: String,
+}
+
+impl Config {
+    pub fn from_secrets(secret_store: SecretStore) -> eyre::Result<Self> {
+        let discord_token = secret_store.get("DISCORD_TOKEN").unwrap();
+        let torii_url = secret_store.get("TORII_URL").unwrap();
+        let node_url = secret_store.get("NODE_URL").unwrap();
+        let torii_relay_url = secret_store.get("TORII_RELAY_URL").unwrap();
+        let world_address = secret_store.get("WORLD_ADDRESS").unwrap();
+
+        let config = Config {
+            discord_token,
+            torii_url,
+            node_url,
+            torii_relay_url,
+            world_address,
+        };
+
+        Ok(config)
+    }
+}
+
+#[derive(FromRow)]
+pub struct User {
+    pub address: String,
+    pub discord: Option<String>,
+    pub telegram: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
