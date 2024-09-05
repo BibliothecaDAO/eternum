@@ -3,8 +3,6 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { Navigator } from "../components/Navigator";
 import { GUIManager } from "../helpers/GUIManager";
-// Remove import for DirectionalLightHelper
-// import { DirectionalLightHelper } from "three";
 
 export default class HUDScene {
   private scene: THREE.Scene;
@@ -25,7 +23,7 @@ export default class HUDScene {
 
     this.navigator = new Navigator(this.scene, this.controls, this.GUIFolder);
     const navigatorParams = { col: 269, row: 143 };
-    //this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row);
+
     this.GUIFolder.add(navigatorParams, "col").name("Col");
     this.GUIFolder.add(navigatorParams, "row").name("Row");
     this.GUIFolder.add(
@@ -52,7 +50,6 @@ export default class HUDScene {
       1000,
     );
 
-    // Set camera position and orientation similar to GameRenderer
     const cameraDistance = Math.sqrt(2 * 7 * 7);
     const cameraAngle = 60 * (Math.PI / 180);
     const cameraHeight = Math.sin(cameraAngle) * cameraDistance;
@@ -69,7 +66,6 @@ export default class HUDScene {
     this.ambientLight = new THREE.AmbientLight(0xf3c99f, 3.5);
     this.scene.add(this.ambientLight);
 
-    // Add GUI control for ambient light intensity
     this.GUIFolder.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
   }
 
@@ -78,7 +74,6 @@ export default class HUDScene {
     this.hemisphereLight.position.set(0, 20, 0);
     this.scene.add(this.hemisphereLight);
 
-    // Add GUI controls for hemisphere light
     this.GUIFolder.add(this.hemisphereLight, "intensity", 0, 5).name("Hemisphere Light Intensity");
     this.GUIFolder.add(this.hemisphereLight.position, "x", -10, 10).name("Hemisphere Light X");
     this.GUIFolder.add(this.hemisphereLight.position, "y", -10, 10).name("Hemisphere Light Y");
@@ -94,7 +89,6 @@ export default class HUDScene {
   }
 
   update(deltaTime: number) {
-    // Update HUD elements if needed
     this.navigator.update();
   }
 
