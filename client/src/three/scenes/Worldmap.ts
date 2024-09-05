@@ -2,11 +2,13 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
@@ -16,12 +18,13 @@ import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
+import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
-import { TileSystemUpdate } from "../systems/types";
+import { StructurePreview } from "../components/StructurePreview";
+import { LocationManager } from "../helpers/LocationManager";
+import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
-import { StructurePreview } from "../components/StructurePreview";
-import { TileManager } from "@/dojo/modelManager/TileManager";
 
 export default class WorldmapScene extends HexagonScene {
   private biome!: Biome;
@@ -43,8 +46,9 @@ export default class WorldmapScene extends HexagonScene {
   private battles: Map<number, Set<number>> = new Map();
   private tileManager: TileManager;
   private structurePreview: StructurePreview | null = null;
-
-  private realmEntityId: ID = 0;
+  private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
+  private armySubscription: any;
+  private selectedHexManager: SelectedHexManager;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -83,9 +87,9 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     useUIStore.subscribe(
-      (state) => state.realmEntityId,
-      (realmEntityId) => {
-        this.realmEntityId = realmEntityId;
+      (state) => state.structureEntityId,
+      (structureEntityId) => {
+        this.structureEntityId = structureEntityId;
       },
     );
 
@@ -93,7 +97,11 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager = new StructureManager(this.scene);
     this.battleManager = new BattleManager(this.scene);
 
-    this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
+    this.armySubscription?.unsubscribe();
+    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) =>
+      this.armyManager.onUpdate(update),
+    );
+
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Structure.onUpdate((value) => {
@@ -125,6 +133,19 @@ export default class WorldmapScene extends HexagonScene {
       const selectedEntityId = this.armyManager.onRightClick(raycaster);
       this.onArmyRightClick(selectedEntityId);
     });
+
+    // add particles
+    this.selectedHexManager = new SelectedHexManager(this.scene);
+
+    // subscribe to changes in the selected army coming from React
+    useUIStore.subscribe(
+      (state) => state.armyActions.selectedEntityId,
+      (selectedEntityId) => {
+        if (selectedEntityId) {
+          this.onArmyRightClick(selectedEntityId);
+        }
+      },
+    );
   }
 
   public moveCameraToURLLocation() {
@@ -171,9 +192,11 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    const url = new Position({ x: hexCoords.col, y: hexCoords.row }).toHexLocationUrl();
-    window.history.replaceState({}, "", url);
-    window.dispatchEvent(new Event("urlChanged"));
+    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const isBattle = this.battleManager.battles.hasByPosition(position);
+    if (isBattle) return;
+    const url = position.toHexLocationUrl();
+    LocationManager.updateUrl(url);
   }
 
   protected onHexagonClick(hexCoords: HexPosition) {
@@ -183,7 +206,7 @@ export default class WorldmapScene extends HexagonScene {
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
       const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
-      this.tileManager.placeStructure(this.realmEntityId, buildingType.type, normalizedHexCoords);
+      this.tileManager.placeStructure(this.structureEntityId, buildingType.type, normalizedHexCoords);
       this.clearEntitySelection();
     } else if (selectedEntityId && travelPaths.size > 0) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
@@ -192,12 +215,17 @@ export default class WorldmapScene extends HexagonScene {
         const isExplored = travelPath.isExplored ?? false;
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-          armyMovementManager.moveArmy(selectedPath, isExplored);
+          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
           this.clearEntitySelection();
         }
       }
     } else {
-      this.state.setSelectedHex({ col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER });
+      const position = getWorldPositionForHex(hexCoords);
+      this.selectedHexManager.setPosition(position.x, position.z);
+      this.state.setSelectedHex({
+        col: hexCoords.col + FELT_CENTER,
+        row: hexCoords.row + FELT_CENTER,
+      });
       this.state.setLeftNavigationView(View.EntityView);
     }
   }
@@ -210,7 +238,11 @@ export default class WorldmapScene extends HexagonScene {
     }
     this.state.updateSelectedEntityId(selectedEntityId);
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-    const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
+    const travelPaths = armyMovementManager.findPaths(
+      this.exploredTiles,
+      this.state.currentDefaultTick,
+      this.state.currentArmiesTick,
+    );
     this.state.updateTravelPaths(travelPaths.getPaths());
     this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
   }
@@ -223,12 +255,21 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   setup() {
+    this.controls.maxDistance = 20;
+    this.controls.enablePan = true;
+    this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
-    const col = update.hexCoords.col - FELT_CENTER;
-    const row = update.hexCoords.row - FELT_CENTER;
+    const { hexCoords, removeExplored } = update;
+
+    if (removeExplored) {
+      return;
+    }
+
+    const col = hexCoords.col - FELT_CENTER;
+    const row = hexCoords.row - FELT_CENTER;
     if (!this.exploredTiles.has(col)) {
       this.exploredTiles.set(col, new Set());
     }
@@ -238,6 +279,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const dummy = new THREE.Object3D();
     const pos = getWorldPositionForHex({ row, col });
+
     dummy.position.copy(pos);
 
     const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
@@ -274,7 +316,7 @@ export default class WorldmapScene extends HexagonScene {
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
-      const neighborOffsets = row % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
+      const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
 
       neighborOffsets.forEach(({ i, j }) => {
         const neighborCol = col + i;
@@ -318,7 +360,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const dummy = new THREE.Object3D();
-    const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
+    const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
       Ocean: [],
       DeepOcean: [],
       Beach: [],
@@ -335,6 +377,7 @@ export default class WorldmapScene extends HexagonScene {
       SubtropicalDesert: [],
       TropicalSeasonalForest: [],
       TropicalRainForest: [],
+      Outline: [],
     };
 
     const hexPositions: THREE.Vector3[] = [];
@@ -357,14 +400,14 @@ export default class WorldmapScene extends HexagonScene {
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const isBattle = this.battles.get(globalCol)?.has(globalRow) || false;
         const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-        if (isStructure || !isExplored || isBattle) {
+        if (isStructure || isBattle) {
           dummy.scale.set(0, 0, 0);
         } else {
           dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         }
 
         if (!isExplored) {
-          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
+          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
             const neighborRow = globalRow + j;
@@ -387,7 +430,11 @@ export default class WorldmapScene extends HexagonScene {
 
         dummy.updateMatrix();
 
-        biomeHexes[biome].push(dummy.matrix.clone());
+        if (isExplored) {
+          biomeHexes[biome].push(dummy.matrix.clone());
+        } else {
+          biomeHexes["Outline"].push(dummy.matrix.clone());
+        }
       }
 
       currentIndex = endIndex;
@@ -409,35 +456,6 @@ export default class WorldmapScene extends HexagonScene {
     Promise.all(this.modelLoadPromises).then(() => {
       requestAnimationFrame(processBatch);
     });
-  }
-
-  public createGroundMesh() {
-    const scale = 60;
-    const metalness = 0.5;
-    const roughness = 0.7;
-
-    const geometry = new THREE.PlaneGeometry(2668, 1390.35);
-    const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(scale, scale / 2.5);
-    });
-
-    const material = new THREE.MeshStandardMaterial({
-      map: texture,
-      metalness: metalness,
-      roughness: roughness,
-      side: THREE.DoubleSide,
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.rotation.set(Math.PI / 2, 0, 0);
-    mesh.position.set(1334.1, 0.05, -695.175);
-    mesh.receiveShadow = true;
-    // disable raycast
-    mesh.raycast = () => {};
-
-    this.scene.add(mesh);
   }
 
   private cacheMatricesForChunk(startRow: number, startCol: number) {
@@ -471,7 +489,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
     const chunkX = Math.floor(x / (this.chunkSize * HEX_SIZE * Math.sqrt(3)));
-    const chunkZ = Math.floor(-z / (this.chunkSize * HEX_SIZE * 1.5));
+    const chunkZ = Math.floor(z / (this.chunkSize * HEX_SIZE * 1.5));
     return { chunkX, chunkZ };
   }
 
@@ -481,7 +499,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
-    const adjustedZ = cameraPosition.z - (this.chunkSize * HEX_SIZE * 1.5) / 3;
+    const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
     const startCol = chunkX * this.chunkSize;
@@ -497,5 +515,6 @@ export default class WorldmapScene extends HexagonScene {
   update(deltaTime: number) {
     super.update(deltaTime);
     this.armyManager.update(deltaTime);
+    this.selectedHexManager.update(deltaTime);
   }
 }

@@ -17,7 +17,8 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems, general::mint
+    config::get_combat_config, world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems,
+    general::mint
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -69,18 +70,7 @@ fn set_configurations(world: IWorldDispatcher) {
     set!(
         world,
         (
-            TroopConfig {
-                config_id: WORLD_CONFIG_ID,
-                health: 7_200,
-                knight_strength: 1,
-                paladin_strength: 1,
-                crossbowman_strength: 1,
-                advantage_percent: 1000,
-                disadvantage_percent: 1000,
-                pillage_health_divisor: 8,
-                army_free_per_structure: 3,
-                army_extra_per_building: 2,
-            },
+            get_combat_config(),
             TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
             CapacityConfig {
                 config_id: WORLD_CONFIG_ID,
@@ -220,9 +210,9 @@ fn test_battle_leave_by_winner() {
     let (
         world,
         combat_system_dispatcher,
-        player_1_realm_id,
-        player_2_realm_id,
-        player_3_realm_id,
+        _player_1_realm_id,
+        _player_2_realm_id,
+        _player_3_realm_id,
         player_1_army_id,
         player_2_army_id,
         player_3_army_id
@@ -261,7 +251,7 @@ fn test_battle_leave_by_winner() {
 
     // ensure player_1's army troop count is correct
     let player_1_army: Army = get!(world, player_1_army_id, Army);
-    assert_eq!(player_1_army.troops.count(), 8_747_643);
+    assert_eq!(player_1_army.troops.count(), 8_745_000);
 
     // ensure the battle was updated correctly
     let battle: Battle = get!(world, battle_id, Battle);
@@ -283,9 +273,9 @@ fn test_battle_leave_by_loser() {
     let (
         world,
         combat_system_dispatcher,
-        player_1_realm_id,
-        player_2_realm_id,
-        player_3_realm_id,
+        _player_1_realm_id,
+        _player_2_realm_id,
+        _player_3_realm_id,
         player_1_army_id,
         player_2_army_id,
         player_3_army_id

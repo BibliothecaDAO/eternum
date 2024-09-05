@@ -32,6 +32,8 @@ mod swap_systems {
         bank_entity_id: ID,
         #[key]
         entity_id: ID,
+        #[key]
+        id: ID,
         resource_type: u8,
         lords_amount: u128,
         resource_amount: u128,
@@ -162,6 +164,7 @@ mod swap_systems {
             emit!(
                 world,
                 (SwapEvent {
+                    id: world.uuid(),
                     bank_entity_id: market.bank_entity_id,
                     entity_id,
                     resource_type: market.resource_type,

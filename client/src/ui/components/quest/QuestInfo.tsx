@@ -49,7 +49,7 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
       </Button>
 
       <div
-        className={` p-4  text-gold clip-angled-sm  ${
+        className={` p-4  text-gold   ${
           quest.status === QuestStatus.Completed || quest.status === QuestStatus.Claimed
             ? "bg-green/5"
             : " bg-green/30 "

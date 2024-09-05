@@ -35,16 +35,7 @@ export class InputManager {
           return;
         }
         // Check if a double-click occurred
-        if (this.clickTimer) {
-          clearTimeout(this.clickTimer);
-          this.clickTimer = null;
-          return; // Suppress the click event
-        }
-        // Set a timer to check for double-click
-        this.clickTimer = setTimeout(() => {
-          this.clickTimer = null;
-          callback(this.raycaster);
-        }, 200); // Adjust the delay as needed
+        callback(this.raycaster);
       } else {
         callback(this.raycaster);
       }

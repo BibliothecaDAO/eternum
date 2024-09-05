@@ -119,7 +119,11 @@ mod realm_systems {
                 (
                     Owner { entity_id: entity_id.into(), address: caller },
                     EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
-                    Structure { entity_id: entity_id.into(), category: StructureCategory::Realm },
+                    Structure {
+                        entity_id: entity_id.into(),
+                        category: StructureCategory::Realm,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord, count: 1 },
                     Realm {
                         entity_id: entity_id.into(),
@@ -141,7 +145,7 @@ mod realm_systems {
             let mut tile: Tile = get!(world, (position.x, position.y), Tile);
             if tile.explored_at == 0 {
                 // set realm's position tile to explored
-                InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![].span());
+                InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![(1, 0)].span());
             }
 
             entity_id.into()

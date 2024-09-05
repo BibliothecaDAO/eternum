@@ -1,5 +1,5 @@
 import { DojoConfig } from "@dojoengine/core";
-import { getSyncEntities } from "@dojoengine/state";
+import { getSyncEntities, getSyncEvents } from "@dojoengine/state";
 import { createClientComponents } from "./createClientComponents";
 import { createSystemCalls } from "./createSystemCalls";
 import { createUpdates } from "./createUpdates";
@@ -16,11 +16,14 @@ export async function setup({ ...config }: DojoConfig) {
   // fetch all existing entities from torii
   const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, [], 1000);
 
+  const eventSync = getSyncEvents(network.toriiClient, network.contractComponents.events as any, undefined, []);
+
   return {
     network,
     components,
     systemCalls,
     updates,
     sync,
+    eventSync,
   };
 }

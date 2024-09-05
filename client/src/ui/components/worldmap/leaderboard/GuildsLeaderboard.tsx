@@ -1,7 +1,6 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { GuildPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
@@ -9,6 +8,7 @@ import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { currencyIntlFormat, sortItems } from "../../../utils/utils";
+import useUIStore from "@/hooks/store/useUIStore";
 
 type GuildPointsLeaderboardKeys = keyof GuildPointsLeaderboardInterface;
 
@@ -41,7 +41,7 @@ export const GuildsLeaderboard = () => {
 
   const guildLeaderboard = useMemo(() => {
     return LeaderboardManager.instance().getGuildsByRank(
-      useBlockchainStore.getState().nextBlockTimestamp!,
+      useUIStore.getState().nextBlockTimestamp!,
       getGuildFromPlayerAddress,
     );
   }, []);
@@ -74,9 +74,7 @@ export const GuildsLeaderboard = () => {
             return (
               <div
                 key={index}
-                className={`grid grid-cols-4 gap-4 clip-angled-sm p-1 ${
-                  guild.isOwner ? "bg-green/20" : ""
-                }  text-xxs text-gold`}
+                className={`grid grid-cols-4 gap-4  p-1 ${guild.isOwner ? "bg-green/20" : ""}  text-xxs text-gold`}
               >
                 <div className="col-span-1">{`#${index + 1}`}</div>
                 <div className="col-span-2">{guild.name}</div>

@@ -6,7 +6,7 @@ export const BattleDetails = ({ armies }: { armies: (ArmyInfo | undefined)[] | u
   const { getAddressName } = useRealm();
   return (
     <div className="w-full">
-      <div className="w-full grid grid-cols-2 text-gold border-gold/20 border-gradient clip-angled p-2">
+      <div className="w-full grid grid-cols-2 text-gold border-gold/20 border-gradient  p-2">
         <div key={0} className="mb-4 tile h-6 text-left border border-gold/20">
           Army
         </div>
@@ -22,7 +22,7 @@ export const BattleDetails = ({ armies }: { armies: (ArmyInfo | undefined)[] | u
                     {army?.name}
                   </div>
                   <div key={`${index}_player_address`} className="tile h-[2vh] text-left mb-2">
-                    {army?.entityOwner ? getAddressName(army.owner.address) : "Bandits"}
+                    {army?.owner ? getAddressName(army.owner.address) : "Bandits"}
                   </div>
                 </React.Fragment>
               ),

@@ -1,5 +1,0 @@
-# deps
-node_modules/
-
-.env
-.dev.vars

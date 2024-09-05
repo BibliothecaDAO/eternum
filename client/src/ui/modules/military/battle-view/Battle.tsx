@@ -78,7 +78,7 @@ export const Battle = ({
           defenderArmies={defenderArmies}
           structure={structure}
         />
-        <div className="w-screen bg-brown/80 -top bg-map h-[35vh]">
+        <div className="w-screen bg-[#1b1a1a] -top bg-hex-bg h-[35vh]">
           <div className="grid grid-cols-12 justify-between gap-4 h-full">
             <BattleSideView
               battleSide={BattleSide.Attack}
@@ -100,6 +100,7 @@ export const Battle = ({
                 battleManager={battleManager}
                 userArmiesInBattle={userArmiesInBattle}
                 ownArmyEntityId={ownArmyEntityId}
+                attackerArmies={attackerArmies}
                 defenderArmies={defenderArmies}
                 structure={structure}
                 battleAdjusted={battleAdjusted}

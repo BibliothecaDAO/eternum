@@ -9,8 +9,9 @@ import {
   EternumGlobalConfig,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   ResourcesIds,
+  STAMINA_REFILL_PER_TICK,
   TROOPS_STAMINAS,
-  WEIGHTS,
+  WEIGHTS_GRAM,
 } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
@@ -129,9 +130,9 @@ export const setResourceBuildingConfig = async (account: Account, provider: Eter
 };
 
 export const setWeightConfig = async (account: Account, provider: EternumProvider) => {
-  const calldataArray = Object.entries(WEIGHTS).map(([resourceId, weight]) => ({
+  const calldataArray = Object.entries(WEIGHTS_GRAM).map(([resourceId, weight]) => ({
     entity_type: resourceId,
-    weight_gram: weight * EternumGlobalConfig.resources.resourceMultiplier,
+    weight_gram: weight,
   }));
 
   const tx = await provider.set_weight_config({
@@ -142,6 +143,18 @@ export const setWeightConfig = async (account: Account, provider: EternumProvide
   console.log(`Configuring weight config  ${tx.statusReceipt}...`);
 };
 
+export const setBattleConfig = async (account: Account, provider: EternumProvider) => {
+  const { graceTickCount: battle_grace_tick_count } = EternumGlobalConfig.battle;
+
+  const tx = await provider.set_battle_config({
+    signer: account,
+    config_id: 0,
+    battle_grace_tick_count,
+  });
+
+  console.log(`Configuring battle config ${tx.statusReceipt}...`);
+};
+
 export const setCombatConfig = async (account: Account, provider: EternumProvider) => {
   const {
     health: health,
@@ -150,9 +163,12 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowmanStrength: crossbowman_strength,
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
+    maxTroopCount: max_troop_count,
     pillageHealthDivisor: pillage_health_divisor,
     baseArmyNumberForStructure: army_free_per_structure,
     armyExtraPerMilitaryBuilding: army_extra_per_military_building,
+    battleLeaveSlashNum: battle_leave_slash_num,
+    battleLeaveSlashDenom: battle_leave_slash_denom,
   } = EternumGlobalConfig.troop;
 
   const tx = await provider.set_troop_config({
@@ -164,9 +180,12 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
+    max_troop_count: max_troop_count * EternumGlobalConfig.resources.resourcePrecision,
     pillage_health_divisor: pillage_health_divisor,
     army_free_per_structure: army_free_per_structure,
     army_extra_per_military_building: army_extra_per_military_building,
+    battle_leave_slash_num,
+    battle_leave_slash_denom,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);
@@ -213,7 +232,7 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txDonkey = await provider.set_capacity_config({
     signer: account,
     entity_type: DONKEY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacity.donkey * EternumGlobalConfig.resources.resourcePrecision,
+    weight_gram: EternumGlobalConfig.carryCapacityGram.donkey,
   });
 
   console.log(`Configuring capacity Donkey config ${txDonkey.statusReceipt}...`);
@@ -221,8 +240,7 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txArmy = await provider.set_capacity_config({
     signer: account,
     entity_type: ARMY_ENTITY_TYPE,
-    // No precision mod used because weight check in contract uses army qty x precision
-    weight_gram: EternumGlobalConfig.carryCapacity.army,
+    weight_gram: EternumGlobalConfig.carryCapacityGram.army,
   });
 
   console.log(`Configuring capacity Army config ${txArmy.statusReceipt}...`);
@@ -267,6 +285,14 @@ export const setStaminaConfig = async (account: Account, provider: EternumProvid
     });
     console.log(`Configuring staminas ${unit_type} ${tx.statusReceipt}...`);
   }
+};
+
+export const setStaminaRefillConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_stamina_refill_config({
+    signer: account,
+    amount_per_tick: STAMINA_REFILL_PER_TICK,
+  });
+  console.log(`Configuring stamina refill per tick to ${STAMINA_REFILL_PER_TICK} ${tx.statusReceipt}...`);
 };
 
 export const setMercenariesConfig = async (account: Account, provider: EternumProvider) => {

@@ -9,7 +9,7 @@ use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_
 
 use eternum::constants::{ResourceTypes, TickIds};
 use eternum::models::combat::{Army, BattleSide, Troops};
-use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, LevelingConfig, TickImpl};
+use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -74,7 +74,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatch
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -269,7 +269,7 @@ fn test_travel_with_realm_and_order_bonus() {
 fn test_travel_with_road() {
     let (
         world,
-        realm_entity_id,
+        _realm_entity_id,
         travelling_entity_id,
         travelling_entity_position,
         destination_coord,
@@ -348,7 +348,7 @@ fn test_no_speed() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
 fn test_blocked() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -373,7 +373,7 @@ fn test_blocked() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
 fn test_in_transit() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -412,6 +412,8 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
         config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
     };
     set!(world, (tick_config));
+
+    set!(world, (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: MAX_STAMINA }));
 
     set!(
         world,

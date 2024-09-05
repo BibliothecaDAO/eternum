@@ -10,9 +10,7 @@ import { useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { order_statments } from "../../../../data/orders";
 import { getPosition } from "@/ui/utils/utils";
-import useUIStore from "@/hooks/store/useUIStore";
-
-export const MAX_REALMS = 1;
+import { MAX_REALMS } from "@/ui/constants";
 
 const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -29,24 +27,16 @@ const SettleRealmComponent = () => {
 
   const { play: playSign } = useUiSounds(soundSelector.sign);
 
-  const realmEntityIds = useUIStore((state) => state.realmEntityIds);
-
-  const chosenOrder = useMemo(
-    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),
-    [account, realmEntityIds],
-  );
-  const canSettle = realmEntityIds.length < MAX_REALMS;
-
   const settleRealms = async () => {
     setIsLoading(true);
     let calldata = [];
 
-    let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
+    let new_realm_id = getNextRealmIdForOrder(selectedOrder);
 
     for (let i = 0; i < MAX_REALMS; i++) {
       // if no realm id latest realm id is 0
       if (i > 0) {
-        new_realm_id = getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id);
+        new_realm_id = getRealmIdForOrderAfter(selectedOrder, new_realm_id);
       }
       // take next realm id
       let realm = getRealm(new_realm_id);
@@ -88,20 +78,16 @@ const SettleRealmComponent = () => {
                 key={orderId}
                 className={clsx(
                   " flex relative group items-center justify-center  w-16 h-16 border-2  rounded-lg",
-                  selectedOrder == orderId && !chosenOrder ? "border-gold !cursor-pointer" : "border-transparent",
-                  chosenOrder && chosenOrder == orderId && "!border-gold",
-                  chosenOrder && chosenOrder !== orderId && "opacity-30 cursor-not-allowed",
-                  !chosenOrder && "hover:bg-white/10 cursor-pointer",
+                  selectedOrder == orderId ? "border-gold !cursor-pointer" : "border-transparent",
+                  "hover:bg-white/10 cursor-pointer",
                 )}
-                onClick={() => (!chosenOrder ? setSelectedOrder(orderId) : null)}
+                onClick={() => setSelectedOrder(orderId)}
               >
                 <OrderIcon
                   size={"md"}
-                  withTooltip={!chosenOrder || chosenOrder == orderId}
+                  withTooltip={selectedOrder == orderId}
                   order={getOrderName(orderId)}
-                  className={clsx(
-                    selectedOrder == orderId && !chosenOrder ? "opacity-100" : "opacity-30 group-hover:opacity-100",
-                  )}
+                  className={clsx(selectedOrder == orderId ? "opacity-100" : "opacity-30 group-hover:opacity-100")}
                 />
               </div>
             ))}
@@ -110,7 +96,6 @@ const SettleRealmComponent = () => {
           <div className="text-lg mt-2 text-gold text-center">{order_statments[selectedOrder - 1]}</div>
         </div>
         <Button
-          disabled={!canSettle}
           isLoading={isLoading}
           onClick={() => (!isLoading ? settleRealms() : null)}
           className="mx-auto mt-4 text-xl"

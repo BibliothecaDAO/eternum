@@ -1,7 +1,7 @@
-use eternum::alias::ID;
-use eternum::models::quantity::{Quantity, QuantityCustomTrait};
-use eternum::models::weight::{Weight};
-
+use eternum::{
+    alias::ID, models::quantity::{Quantity, QuantityCustomTrait}, models::weight::{Weight},
+    constants::RESOURCE_PRECISION
+};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -20,7 +20,7 @@ impl CapacityCustomImpl of CapacityCustomTrait {
 
     fn can_carry(self: Capacity, quantity: Quantity, weight: Weight) -> bool {
         if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram * quantity.get_value();
+            let entity_total_weight_capacity = self.weight_gram * (quantity.get_value() / RESOURCE_PRECISION);
             if entity_total_weight_capacity < weight.value {
                 return false;
             };

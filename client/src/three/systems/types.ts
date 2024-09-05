@@ -8,6 +8,7 @@ export type ArmySystemUpdate = {
   hexCoords: HexPosition;
   isMine: boolean;
   battleId: ID;
+  defender: boolean;
   currentHealth: bigint;
 };
 
@@ -21,12 +22,14 @@ export type StructureSystemUpdate = {
 
 export type TileSystemUpdate = {
   hexCoords: HexPosition;
+  removeExplored: boolean;
 };
 
 export type BattleSystemUpdate = {
   entityId: ID;
   hexCoords: Position;
   isEmpty: boolean;
+  deleted: boolean;
 };
 
 export type BuildingSystemUpdate = {

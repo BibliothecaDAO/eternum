@@ -1,37 +1,26 @@
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { EntityList } from "@/ui/components/list/EntityList";
-import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getPlayerStructures } from "@/hooks/helpers/useEntities";
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { EntityArmyList } from "@/ui/components/military/ArmyList";
 import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ID } from "@bibliothecadao/eternum";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import { useLocation } from "wouter";
 
 export const Military = ({ entityId }: { entityId: ID | undefined }) => {
-  const { playerStructures } = useEntities();
+  const {
+    account: { account },
+  } = useDojo();
+  const { isMapView } = useQuery();
 
-  const [location, _] = useLocation();
+  const getStructures = getPlayerStructures();
 
-  const isMap = useMemo(() => {
-    return location === "/map";
-  }, [location]);
+  const selectedStructure = useMemo(() => {
+    return getStructures(ContractAddress(account.address)).find((structure) => structure.entity_id === entityId);
+  }, [getStructures, entityId]);
 
   return (
     <div className="relative">
-      <div className="flex justify-end">
-        <HintModalButton className="relative top-1 right-1" section={HintSection.Combat} />
-      </div>
-      {isMap ? (
-        <EntitiesArmyTable />
-      ) : (
-        <EntityList
-          current={entityId}
-          list={playerStructures()}
-          title="armies"
-          panel={({ entity }) => <ArmyPanel structure={entity} />}
-        />
-      )}
+      {isMapView ? <EntitiesArmyTable /> : selectedStructure && <EntityArmyList structure={selectedStructure} />}
     </div>
   );
 };

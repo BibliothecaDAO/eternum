@@ -137,9 +137,13 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
       <div className="flex justify-center gap-4 mb-8 text-xl">
         {selectedEntityIdFrom?.toString() && selectedEntityIdTo?.toString() && (
           <>
-            <div className="p-2 self-center">Transfer From: {selectedEntityIdFrom?.name}</div>
+            <div className="p-2 self-center">
+              Transfer From: <span className="font-bold">{selectedEntityIdFrom?.name}</span>{" "}
+            </div>
             <ArrowRight className="self-center" />
-            <div className="p-2 self-center">Transfer To: {selectedEntityIdTo?.name}</div>
+            <div className="p-2 self-center">
+              Transfer To: <span className="font-bold">{selectedEntityIdTo?.name}</span>
+            </div>
           </>
         )}
       </div>
@@ -153,7 +157,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
             <div className="justify-around">
               <Headline>From</Headline>
               <TextInput
-                placeholder="Search entities..."
+                placeholder="Search Structures..."
                 value={fromSearchTerm}
                 onChange={(fromSearchTerm) => setFromSearchTerm(fromSearchTerm)}
                 className="my-2"
@@ -224,7 +228,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
 
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
         <div className="grid grid-cols-2 gap-16 px-16 h-full">
-          <div className="p-4  clip-angled-sm h-full">
+          <div className="p-4   h-full">
             <SelectResources
               selectedResourceIds={selectedResourceIds}
               setSelectedResourceIds={setSelectedResourceIds}
@@ -235,7 +239,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
           </div>
 
           <div className=" ">
-            <div className="p-10 bg-gold/10 clip-angled-sm h-auto">
+            <div className="p-10 bg-gold/10  h-auto border border-gold/40">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
                   entityId={isOriginDonkeys ? selectedEntityIdFrom?.entityId! : selectedEntityIdTo?.entityId!}
@@ -289,7 +293,7 @@ const SelectEntityFromList = ({
   const { getRealmAddressName } = useRealm();
 
   return (
-    <div className="overflow-y-scroll max-h-72 border border-gold/10">
+    <div className="overflow-y-scroll max-h-72 border border-gold/10 gap-2 flex-col">
       {entities.map((entity, index) => {
         const realmName = getRealmAddressName(entity.entity_id);
         return (
@@ -299,15 +303,15 @@ const SelectEntityFromList = ({
               "flex w-full justify-between hover:bg-white/10 items-center p-1 text-xs pl-2",
               selectedEntityId === entity.entity_id && "border-gold/10 border",
             )}
+            onClick={() => onSelect(entity.name, entity.entity_id!)}
           >
-            <h6 className="text-sm">
+            <div className="text-sm">
               {realmName} ({entity.name})
-            </h6>
+            </div>
             <Button
               disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
-              size="xs"
-              variant="default"
-              onClick={() => onSelect(entity.name, entity.entity_id!)}
+              size="md"
+              variant="outline"
             >
               {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
             </Button>

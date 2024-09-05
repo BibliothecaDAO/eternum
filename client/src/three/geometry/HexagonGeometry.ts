@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { HEX_SIZE } from "../scenes/constants";
 
 export const createHexagonShape = (radius: number) => {
   const shape = new THREE.Shape();
@@ -17,3 +18,14 @@ export const createHexagonShape = (radius: number) => {
 
   return shape;
 };
+
+const edgesGeometry = new THREE.EdgesGeometry(new THREE.ShapeGeometry(createHexagonShape(HEX_SIZE)));
+const edgesMaterial = new THREE.LineBasicMaterial({
+  color: "black",
+  linewidth: 1,
+  transparent: true,
+  opacity: 0.15,
+});
+
+const hexagonEdgeMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+hexagonEdgeMesh.rotateX(Math.PI / 2);

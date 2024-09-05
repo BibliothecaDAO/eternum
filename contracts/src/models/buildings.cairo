@@ -7,7 +7,7 @@ use eternum::models::config::{
     TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigCustomImpl,
     BuildingCategoryPopConfigCustomTrait, PopulationConfig
 };
-use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner};
+use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
 use eternum::models::population::{Population, PopulationCustomTrait};
 use eternum::models::position::{Coord, Position, Direction, PositionCustomTrait, CoordTrait};
 use eternum::models::production::{
@@ -34,6 +34,7 @@ pub struct Building {
     bonus_percent: u32,
     entity_id: ID,
     outer_entity_id: ID,
+    paused: bool,
 }
 
 #[derive(PartialEq, Copy, Drop, Serde)]
@@ -284,7 +285,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
     }
 
     fn production_amount(self: @Building, world: IWorldDispatcher) -> u128 {
-        if (*self).is_active() == false {
+        if (*self).exists() == false {
             return 0;
         }
 
@@ -359,8 +360,15 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
 
 
     fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, world: IWorldDispatcher) -> u32 {
-        get!(world, (self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y), Building)
-            .boost_adjacent_building_production_by()
+        // only get bonuses from buildings that are active (not paused)
+        let bonus_giver_building: Building = get!(
+            world, (self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y), Building
+        );
+        if bonus_giver_building.paused {
+            return 0;
+        } else {
+            return bonus_giver_building.boost_adjacent_building_production_by();
+        }
     }
 
 
@@ -368,7 +376,9 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
         let mut bonus_receiver_building: Building = get!(
             world, (self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y), Building
         );
-        if bonus_receiver_building.is_active() && bonus_receiver_building.is_resource_producer() {
+        if bonus_receiver_building.exists()
+            && !bonus_receiver_building.paused // only give bonus to active buildings
+            && bonus_receiver_building.is_resource_producer() {
             let bonus_receiver_produced_resource_type = bonus_receiver_building.produced_resource();
             let mut bonus_receiver_produced_resource = get!(
                 world, (self.outer_entity_id, bonus_receiver_produced_resource_type), Resource
@@ -410,6 +420,8 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         Coord { x: 10, y: 10 }
     }
 
+    /// Create a new building on a structure
+    ///
     fn create(
         world: IWorldDispatcher,
         outer_entity_id: ID,
@@ -428,7 +440,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
             world, (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building
         );
 
-        assert!(!building.is_active(), "space is occupied");
+        assert!(!building.exists(), "space is occupied");
 
         // set building
         building.entity_id = world.uuid();
@@ -479,15 +491,67 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         building
     }
 
-
-    fn destroy(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
-        get!(world, outer_entity_id, Owner).assert_caller_owner();
+    /// Pause building production without removing the building
+    ///
+    /// When you pause production, the building stops producing resources,
+    /// stops consuming resources, stops giving bonuses to adjacent buildings,
+    /// and stops receiving bonuses from adjacent buildings.
+    ///
+    fn pause_production(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) {
+        get!(world, outer_entity_id, EntityOwner).assert_caller_owner(world);
 
         // check that the outer entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);
         outer_entity_position.assert_not_zero();
 
-        // todo@credence: ensure that the bounds are within the inner realm bounds
+        // ensure that inner coordinate is occupied
+        let mut building: Building = get!(
+            world, (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building
+        );
+        assert!(building.entity_id != 0, "building does not exist");
+        assert!(building.paused == false, "building production is already paused");
+
+        // stop building production
+        building.stop_production(world);
+        building.paused = true;
+        set!(world, (building));
+    }
+
+    /// Restart building production without removing the building
+    ///
+    /// When you restart production, the building resumes producing resources,
+    /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
+    ///
+    fn resume_production(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) {
+        get!(world, outer_entity_id, EntityOwner).assert_caller_owner(world);
+
+        // check that the outer entity has a position
+        let outer_entity_position = get!(world, outer_entity_id, Position);
+        outer_entity_position.assert_not_zero();
+
+        // ensure that inner coordinate is occupied
+        let mut building: Building = get!(
+            world, (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building
+        );
+        assert!(building.entity_id != 0, "building does not exist");
+
+        assert!(building.exists(), "building is not active");
+        assert!(building.paused, "building production is not paused");
+
+        // restart building production
+        building.start_production(world);
+        building.paused = false;
+        set!(world, (building));
+    }
+
+    /// Destroy building and remove it from the structure
+    ///
+    fn destroy(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
+        get!(world, outer_entity_id, EntityOwner).assert_caller_owner(world);
+
+        // check that the outer entity has a position
+        let outer_entity_position = get!(world, outer_entity_id, Position);
+        outer_entity_position.assert_not_zero();
 
         // ensure that inner coordinate is occupied
         let mut building: Building = get!(
@@ -496,7 +560,9 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         assert!(building.entity_id != 0, "building does not exist");
 
         // stop production related to building
-        building.stop_production(world);
+        if !building.paused {
+            building.stop_production(world);
+        }
 
         // decrease building type count for realm
         let mut building_quantity: BuildingQuantityv2 = get!(
@@ -524,15 +590,10 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         // set population
         set!(world, (population));
 
-        // remove building
         let destroyed_building_category = building.category;
-        building.entity_id = 0;
-        building.category = BuildingCategory::None;
-        building.outer_entity_id = 0;
-        building.produced_resource_type = 0;
-        building.bonus_percent = 0;
 
-        set!(world, (building));
+        // remove building
+        delete!(world, (building));
 
         destroyed_building_category
     }
@@ -553,7 +614,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         };
     }
 
-    fn is_active(self: Building) -> bool {
-        self.entity_id != 0
+    fn exists(self: Building) -> bool {
+        self.entity_id.is_non_zero()
     }
 }

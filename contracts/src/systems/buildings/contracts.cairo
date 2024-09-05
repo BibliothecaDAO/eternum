@@ -9,6 +9,8 @@ trait IBuildingContract<TContractState> {
         building_category: eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
     );
+    fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: eternum::models::position::Coord);
+    fn resume_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: eternum::models::position::Coord);
     fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: eternum::models::position::Coord);
 }
 
@@ -60,7 +62,12 @@ mod building_systems {
                 world, building.outer_entity_id, building.category, building.produced_resource_type
             );
         }
-
+        fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            BuildingCustomImpl::pause_production(world, entity_id, building_coord);
+        }
+        fn resume_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            BuildingCustomImpl::resume_production(world, entity_id, building_coord);
+        }
         fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
             BuildingCustomImpl::destroy(world, entity_id, building_coord);
         }

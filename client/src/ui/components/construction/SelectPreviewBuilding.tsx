@@ -9,12 +9,13 @@ import {
   BuildingEnumToString,
   BuildingType,
   EternumGlobalConfig,
+  findResourceById,
   ID,
+  RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
-  findResourceById,
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
@@ -33,7 +34,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { ResourceIdToMiningType } from "@/ui/utils/utils";
+import { isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
@@ -43,10 +44,10 @@ import { HintSection } from "../hints/HintModal";
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realm } = useGetRealm(realmEntityId);
+  const { realm } = useGetRealm(structureEntityId);
 
   const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
@@ -78,7 +79,7 @@ export const SelectPreviewBuildingMenu = () => {
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(realmEntityId, resourceCost.resource);
+      const balance = getBalance(structureEntityId, resourceCost.resource);
       return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
@@ -104,7 +105,7 @@ export const SelectPreviewBuildingMenu = () => {
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const cost = [...BUILDING_COSTS_SCALED[BuildingType.Resource], ...RESOURCE_INPUTS_SCALED[resourceId]];
+              const cost = [...RESOURCE_BUILDING_COSTS_SCALED[resourceId], ...RESOURCE_INPUTS_SCALED[resourceId]];
               const hasBalance = checkBalance(cost);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
@@ -133,8 +134,9 @@ export const SelectPreviewBuildingMenu = () => {
                     }
                   }}
                   active={previewBuilding?.resource === resourceId}
-                  name={resource?.trait}
-                  toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
+                  buildingName={resource?.trait}
+                  resourceName={resource?.trait}
+                  toolTip={<ResourceInfo resourceId={resourceId} entityId={structureEntityId} />}
                   hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
                 />
@@ -166,6 +168,7 @@ export const SelectPreviewBuildingMenu = () => {
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
                 const isFarm = building === BuildingType["Farm"];
+                const isFishingVillage = building === BuildingType["FishingVillage"];
                 const isWorkersHut = building === BuildingType["WorkersHut"];
                 const isMarket = building === BuildingType["Market"];
 
@@ -197,8 +200,9 @@ export const SelectPreviewBuildingMenu = () => {
                       }
                     }}
                     active={previewBuilding?.type === building}
-                    name={BuildingEnumToString[building]}
-                    toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
+                    buildingName={BuildingEnumToString[building]}
+                    resourceName={isFishingVillage ? "Fish" : isFarm ? "Wheat" : undefined}
+                    toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
                   />
@@ -228,6 +232,10 @@ export const SelectPreviewBuildingMenu = () => {
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
+                const isBarracks = building === BuildingType["Barracks"];
+                const isArcheryRange = building === BuildingType["ArcheryRange"];
+                const isStable = building === BuildingType["Stable"];
+
                 return (
                   <BuildingCard
                     className={clsx({
@@ -246,8 +254,11 @@ export const SelectPreviewBuildingMenu = () => {
                       }
                     }}
                     active={previewBuilding?.type === building}
-                    name={BuildingEnumToString[building]}
-                    toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
+                    buildingName={BuildingEnumToString[building]}
+                    resourceName={
+                      isBarracks ? "Knight" : isArcheryRange ? "Crossbowman" : isStable ? "Paladin" : undefined
+                    }
+                    toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
                   />
@@ -257,7 +268,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
     ],
-    [realm, realmEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, structureEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (
@@ -290,7 +301,8 @@ const BuildingCard = ({
   buildingId,
   onClick,
   active,
-  name,
+  buildingName,
+  resourceName,
   toolTip,
   hasFunds,
   hasPopulation,
@@ -300,7 +312,8 @@ const BuildingCard = ({
   buildingId: BuildingType;
   onClick: () => void;
   active: boolean;
-  name: string;
+  buildingName: string;
+  resourceName?: string;
   toolTip: React.ReactElement;
   hasFunds?: boolean;
   hasPopulation?: boolean;
@@ -316,12 +329,13 @@ const BuildingCard = ({
             ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
             : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
         })`,
-        backgroundSize: "cover",
+        backgroundSize: "contain",
         backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
       onClick={onClick}
       className={clsx(
-        "hover:opacity-90 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
+        "text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-36 min-w-20  hover:border-gradient hover:border-2 hover:bg-gold/20",
         {
           "!border-lightest": active,
         },
@@ -329,17 +343,17 @@ const BuildingCard = ({
       )}
     >
       {(!hasFunds || !hasPopulation) && (
-        <div className="absolute w-full h-full bg-black/75 text-white/60 p-4 text-xs  flex justify-center ">
+        <div className="absolute w-full h-full bg-black/90 text-white/60 p-4 text-xs  flex justify-center ">
           <div className="self-center">{`${!hasFunds ? "Insufficient funds. " : ""} ${
             !hasPopulation ? "Insufficient population. " : ""
           }`}</div>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/75 ">
-        <div className="truncate">{name}</div>
+      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/90 ">
+        <div className="truncate">{buildingName}</div>
       </div>
       <div className="flex relative flex-col items-start text-xs font-bold p-2">
-        {buildingId === BuildingType.Resource && <ResourceIcon resource={name} size="lg" />}
+        {isResourceProductionBuilding(buildingId) && resourceName && <ResourceIcon resource={resourceName} size="lg" />}
 
         <InfoIcon
           onMouseEnter={() => {
@@ -361,15 +375,15 @@ const BuildingCard = ({
 export const ResourceInfo = ({
   resourceId,
   entityId,
-  extraButtons = [],
+  isPaused,
 }: {
   resourceId: number;
   entityId: ID | undefined;
-  extraButtons?: React.ReactNode[];
+  isPaused?: boolean;
 }) => {
-  const cost = RESOURCE_INPUTS_SCALED[resourceId];
+  const cost = RESOURCE_INPUTS[resourceId];
 
-  const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
+  const buildingCost = RESOURCE_BUILDING_COSTS_SCALED[resourceId];
 
   const population = BUILDING_POPULATION[BuildingType.Resource];
 
@@ -377,23 +391,42 @@ export const ResourceInfo = ({
 
   const { getBalance } = getResourceBalance();
 
+  const usedIn = useMemo(() => {
+    return getUsedIn(resourceId);
+  }, [resourceId]);
+
   return (
-    <div className="flex flex-col text-gold text-sm p-1 space-y-1">
+    <div className="flex flex-col text-gold text-sm p-2 space-y-1">
       <Headline className="py-3">Resource Building </Headline>
 
-      {population !== 0 && <div className="font-bold">Increases Population: +{population}</div>}
+      {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
-      {capacity !== 0 && <div className=" pt-3 font-bold">Increases Capacity: +{capacity}</div>}
-
-      {findResourceById(resourceId)?.trait && (
-        <div className=" flex pt-3 font-bold">
-          <div>Produces: +10</div>
-          <ResourceIcon className="self-center ml-1" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-          {findResourceById(resourceId)?.trait || ""} every cycle
+      {population !== 0 && (
+        <div className="font-bold uppercase">
+          <span className="font-bold">Population </span> <br />+{population}{" "}
         </div>
       )}
 
-      <div className="pt-3 font-bold">consumed per/s</div>
+      {capacity !== 0 && (
+        <div className=" pt-3  uppercase">
+          <span className="font-bold">Capacity </span>
+          <br /> +{capacity}
+        </div>
+      )}
+
+      {findResourceById(resourceId)?.trait && (
+        <div className=" pt-3 uppercase">
+          <div className="w-full font-bold ">Produces</div>
+
+          <div className="flex gap-2">
+            + {EternumGlobalConfig.resources.resourceAmountPerTick}
+            <ResourceIcon className="self-center" resource={findResourceById(resourceId)?.trait || ""} size="md" />
+            {findResourceById(resourceId)?.trait || ""} every cycle
+          </div>
+        </div>
+      )}
+
+      <div className="pt-3 font-bold uppercase">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
           const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
@@ -409,7 +442,7 @@ export const ResourceInfo = ({
         })}
       </div>
 
-      <div className="pt-3 font-bold">One Time Cost</div>
+      <div className="pt-3 font-bold uppercase">One Time Cost</div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
@@ -424,7 +457,23 @@ export const ResourceInfo = ({
           );
         })}
       </div>
-      {extraButtons}
+      {usedIn.length > 0 && (
+        <>
+          <div className="mb-4 font-bold uppercase">Used in</div>
+          <div className="grid grid-cols-2 gap-2">
+            {React.Children.toArray(
+              usedIn.map((resourceId, index) => {
+                return (
+                  <>
+                    {findResourceById(resourceId || 0)?.trait}
+                    <ResourceIcon key={index} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+                  </>
+                );
+              }),
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -432,13 +481,15 @@ export const ResourceInfo = ({
 export const BuildingInfo = ({
   buildingId,
   entityId,
-  extraButtons = [],
   name = BuildingEnumToString[buildingId],
+  hintModal = false,
+  isPaused,
 }: {
   buildingId: number;
   entityId: ID | undefined;
-  extraButtons?: React.ReactNode[];
   name?: string;
+  hintModal?: boolean;
+  isPaused?: boolean;
 }) => {
   const cost = BUILDING_COSTS_SCALED[buildingId] || [];
 
@@ -451,13 +502,24 @@ export const BuildingInfo = ({
 
   const { getBalance } = getResourceBalance();
 
+  const usedIn = useMemo(() => {
+    return getUsedIn(resourceProduced);
+  }, [resourceProduced]);
+
   return (
     <div className="p-2 text-sm text-gold">
-      <Headline className="pb-3"> {name} </Headline>
+      <Headline className="pb-3">
+        <div className="flex gap-2">
+          <div className="self-center">{name} </div>
+          {hintModal && <HintModalButton section={HintSection.Buildings} />}
+        </div>
+      </Headline>
+
+      {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
       {resourceProduced !== 0 && (
-        <div className=" flex flex-wrap">
-          <div className="font-bold uppercase w-full text-xs">Produces </div>
+        <div className=" flex flex-wrap mt-2">
+          <div className="font-bold uppercase w-full">Produces </div>
           <div className="flex justify-between">
             +{perTick}
             <ResourceIcon
@@ -472,7 +534,7 @@ export const BuildingInfo = ({
 
       {population !== 0 ? (
         <div className="font-bold pt-3 ">
-          <span className="uppercase text-xs">Population</span>
+          <span className="uppercase">Population</span>
           <br /> +{population}
         </div>
       ) : (
@@ -481,7 +543,7 @@ export const BuildingInfo = ({
 
       {capacity !== 0 ? (
         <div className="font-bold pt-3 ">
-          <span className="uppercase text-xs">Capacity</span>
+          <span className="uppercase">Capacity</span>
           <br /> +{capacity}
         </div>
       ) : (
@@ -490,7 +552,7 @@ export const BuildingInfo = ({
 
       {ongoingCost && ongoingCost.length ? (
         <>
-          <div className="pt-3 font-bold">Cost per cycle</div>
+          <div className="mb-4 font-bold">Cost per cycle</div>
           <div className="grid grid-cols-2 gap-2">
             {resourceProduced !== 0 &&
               ongoingCost &&
@@ -514,7 +576,7 @@ export const BuildingInfo = ({
 
       {cost.length != 0 && (
         <>
-          <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
+          <div className="pt-3 font-bold uppercase mb-1"> One time cost</div>
           <div className="grid grid-cols-1 gap-2 text-sm">
             {Object.keys(cost).map((resourceId, index) => {
               const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
@@ -531,7 +593,36 @@ export const BuildingInfo = ({
           </div>
         </>
       )}
-      <div className="w-full flex flex-col">{extraButtons}</div>
+      {usedIn.length > 0 && (
+        <>
+          <div className="pt-3 font-bold uppercase">Used in</div>
+          <div className="grid grid-cols-2 gap-2">
+            {React.Children.toArray(
+              usedIn.map((resourceId, index) => {
+                return (
+                  <>
+                    {findResourceById(resourceId || 0)?.trait}
+                    <ResourceIcon key={index} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+                  </>
+                );
+              }),
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
+};
+
+const getUsedIn = (resourceProduced: ResourcesIds) => {
+  return Object.entries(RESOURCE_INPUTS)
+    .map(([resourceId, inputs]) => {
+      const resource = inputs.find(
+        (input: { resource: number; amount: number }) => input.resource === resourceProduced,
+      );
+      if (resource) {
+        return Number(resourceId);
+      }
+    })
+    .filter(Boolean);
 };

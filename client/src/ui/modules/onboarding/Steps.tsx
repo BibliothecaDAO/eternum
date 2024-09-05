@@ -4,6 +4,7 @@ import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -19,7 +20,6 @@ import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { shortString } from "starknet";
-import { useLocation } from "wouter";
 
 export const ACCOUNT_CHANGE_EVENT = "addressChanged";
 
@@ -32,7 +32,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-black/75 rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground bg-hex-bg ">
+      <div className="self-center bg-black/90 rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground bg-hex-bg bg-cover ">
         {children}
       </div>
     </motion.div>
@@ -384,7 +384,7 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
 const NavigateToRealm = ({ text }: { text: string }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const [_location, setLocation] = useLocation();
+  const { handleUrlChange } = useQuery();
   const { playerRealms } = useEntities();
 
   const url = new Position(playerRealms()[0]?.position).toHexLocationUrl();
@@ -397,8 +397,7 @@ const NavigateToRealm = ({ text }: { text: string }) => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
-          setLocation(url);
-          window.dispatchEvent(new Event("urlChanged"));
+          handleUrlChange(url);
           window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
         }, 250);
       }}

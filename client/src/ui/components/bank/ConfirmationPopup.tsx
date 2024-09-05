@@ -22,8 +22,8 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
   disabled,
 }) => {
   return (
-    <div className="fixed bottom-100 inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center">
-      <div className="border border-gold/10 bg-brown rounded-lg p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
+    <div className="fixed bottom-100 inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center ">
+      <div className="border border-gold/10 bg-black/90 bg-hex-bg rounded p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
         <div className="absolute top-3 right-3">
           <Button className="!p-4" size="xs" variant="default" onClick={onCancel}>
             <X className="w-4 h-4" />

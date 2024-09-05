@@ -47,6 +47,7 @@ mod travel_systems {
         entity_id: ID,
         travel_time: u64,
         travel_path: Span<Coord>,
+        timestamp: u64,
     }
 
 
@@ -185,7 +186,8 @@ mod travel_systems {
                     travel_time: 0,
                     travel_path: travel_path.span(),
                     owner: entityOwner.owner_address(world),
-                    entity_id: transport_id
+                    entity_id: transport_id,
+                    timestamp: starknet::get_block_timestamp()
                 })
             );
         }
@@ -242,7 +244,8 @@ mod travel_systems {
                     travel_time,
                     travel_path: array![from_coord, to_coord].span(),
                     owner: owner.address,
-                    entity_id: transport_id
+                    entity_id: transport_id,
+                    timestamp: starknet::get_block_timestamp()
                 })
             );
         }

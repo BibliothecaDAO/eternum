@@ -82,7 +82,7 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
           return (
             <div
               key={member.guildMember.address}
-              className={`grid grid-cols-3 gap-4 text-sm clip-angled-sm p-1 ${
+              className={`grid grid-cols-3 gap-4 text-sm  p-1 ${
                 member.playerAddress == account.address ? "bg-green/20" : ""
               } `}
             >

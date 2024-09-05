@@ -1,26 +1,31 @@
-import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/constants";
+import { HEX_SIZE } from "@/three/scenes/constants";
 import { HexPosition, ResourceMiningTypes } from "@/types";
-import { ContractAddress, ID, Position, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  ContractAddress,
+  EternumGlobalConfig,
+  ID,
+  Position,
+  Resource,
+  ResourcesIds,
+  WEIGHTS_GRAM,
+} from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
-import {
-  default as realmHexPositions,
-  default as realmsHexPositions,
-} from "../../data/geodata/hex/realmHexPositions.json";
-import { FELT_CENTER } from "../config";
+import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
 import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
-export const formatNumber = (num: any, decimals: number) => {
+export const formatNumber = (num: number, decimals: number): string => {
   return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
 
-export const currencyFormat = (num: any, decimals: number) => {
-  return formatNumber(divideByPrecision(Number(num)), decimals);
+export const currencyFormat = (num: number, decimals: number): string => {
+  return formatNumber(divideByPrecision(num), decimals);
 };
 
-export function currencyIntlFormat(num: any, decimals: number = 2) {
+export function currencyIntlFormat(num: number, decimals: number = 2): string {
   return Intl.NumberFormat("en-US", {
     notation: "compact",
     maximumFractionDigits: decimals,
@@ -36,14 +41,12 @@ export function displayAddress(string: string) {
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
 
-const PRECISION = 1000;
-
 export function multiplyByPrecision(value: number): number {
-  return Math.floor(value * PRECISION);
+  return Math.floor(value * EternumGlobalConfig.resources.resourcePrecision);
 }
 
 export function divideByPrecision(value: number): number {
-  return value / PRECISION;
+  return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
 export function getPosition(realm_id: ID): { x: number; y: number } {
@@ -97,24 +100,44 @@ export const getHexagonCoordinates = (
   return { hexCoords, position };
 };
 
-export const getWorldPositionForHex = (hexCoords: HexPosition) => {
-  const { row, col } = hexCoords;
-  // Calculate the x and z coordinates
-  const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
-  const z = -row * HEX_VERTICAL_SPACING;
+export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
+  const hexRadius = HEX_SIZE;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
 
-  // y coordinate is half of the hexagon height
-  const y = 0;
-
+  const col = hexCoords.col;
+  const row = hexCoords.row;
+  const x = col * horizDist - ((row % 2) * horizDist) / 2;
+  const z = row * vertDist;
+  const y = flat ? 0 : pseudoRandom(x, z) * 2;
   return new THREE.Vector3(x, y, z);
 };
 
 export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
-  const { x, y, z } = worldPosition;
-  const row = -Math.round(z / HEX_VERTICAL_SPACING);
-  const col = Math.round((x - ((row % 2) * HEX_HORIZONTAL_SPACING) / 2) / HEX_HORIZONTAL_SPACING);
+  const hexRadius = HEX_SIZE;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
 
-  return { row, col };
+  const row = Math.round(worldPosition.z / vertDist);
+  // hexception offsets hack
+  const col = Math.round((worldPosition.x + ((row % 2) * horizDist) / 2) / horizDist);
+
+  return {
+    col,
+    row,
+  };
+};
+
+export const calculateDistanceInHexes = (start: Position, destination: Position): number | undefined => {
+  const distance = calculateDistance(start, destination);
+  if (distance) {
+    return Math.round(distance / HEX_SIZE / 2);
+  }
+  return undefined;
 };
 
 export const calculateOffset = (index: number, total: number, radius: number) => {
@@ -136,7 +159,7 @@ export const calculateOffset = (index: number, total: number, radius: number) =>
   };
 };
 
-export const pseudoRandom = (x: number, y: number) => {
+const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
@@ -219,14 +242,14 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     });
 };
 
-export const isRealmSelected = (realmEntityId: ID, structures: any) => {
-  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
+export const isRealmSelected = (structureEntityId: ID, structures: any) => {
+  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === structureEntityId);
   return selectedStructure?.category === "Realm";
 };
 
 export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
   return resources.reduce(
-    (total, resource) => total + (resource ? resource.amount * WEIGHTS[resource.resourceId] || 0 : 0),
+    (total, resource) => total + (resource ? resource.amount * WEIGHTS_GRAM[resource.resourceId] || 0 : 0),
     0,
   );
 };
@@ -245,4 +268,15 @@ export const formatSecondsLeftInDaysHours = (seconds: number) => {
   const minutes = Math.floor((secondsLeft % 3600) / 60);
 
   return `${days} days ${hours}h ${minutes}m`;
+};
+
+export const isResourceProductionBuilding = (buildingId: BuildingType) => {
+  return (
+    buildingId === BuildingType.Resource ||
+    buildingId === BuildingType.Farm ||
+    buildingId === BuildingType.FishingVillage ||
+    buildingId === BuildingType.Barracks ||
+    buildingId === BuildingType.ArcheryRange ||
+    buildingId === BuildingType.Stable
+  );
 };

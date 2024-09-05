@@ -2,11 +2,9 @@ import { BuildingType, StructureType } from "@bibliothecadao/eternum";
 import { BiomeType } from "../components/Biome";
 
 export const HEX_SIZE = 1;
-export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
-export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 export const BUILDINGS_CENTER = [10, 10];
 
-export const PREVIEW_BUILD_COLOR_VALID = 0x00ff00;
+export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
@@ -20,7 +18,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
 export const buildingModelPaths: Record<BuildingType, string> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
-  [BuildingType.Bank]: "/models/buildings/bank.glb",
+  [BuildingType.Bank]: "/models/buildings/market.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
   [BuildingType.Castle]: "/models/buildings/castle2.glb",
@@ -30,7 +28,9 @@ export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Market]: "/models/buildings/market.glb",
   [BuildingType.Resource]: "/models/buildings/mine.glb",
   [BuildingType.Stable]: "/models/buildings/stable.glb",
-  [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
+  // PLACEHOLDER STOREHOUSE
+  [BuildingType.Storehouse]: "/models/buildings/farm.glb",
+  // [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
   [BuildingType.TradingPost]: "/models/buildings/market.glb",
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
@@ -38,7 +38,7 @@ export const buildingModelPaths: Record<BuildingType, string> = {
 };
 
 const BASE_PATH = "/models/bevel-biomes/";
-export const biomeModelPaths: Record<BiomeType, string> = {
+export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   DeepOcean: BASE_PATH + "deepocean.glb",
   Ocean: BASE_PATH + "ocean.glb",
   Beach: BASE_PATH + "beach.glb",
@@ -55,6 +55,7 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
   TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
+  Outline: BASE_PATH + "outline.glb",
 };
 
 export const PROGRESS_HALF_THRESHOLD = 0.5;
@@ -74,7 +75,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     "models/buildings/hyperstructure_half.glb",
     "models/buildings/hyperstructure_final.glb",
   ],
-  [StructureType.Bank]: ["models/buildings/bank.glb"],
+  [StructureType.Bank]: ["/models/buildings/market.glb"],
   [StructureType.FragmentMine]: ["models/buildings/mine.glb"],
   // placeholder for now
   [StructureType.Settlement]: ["models/buildings/mine.glb"],
@@ -85,7 +86,7 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/shard_label.png",
   // placeholder for now
-  [StructureType.Bank]: "textures/shard_label.png",
+  [StructureType.Bank]: "",
   // placeholder for now
   [StructureType.Settlement]: "textures/shard_label.png",
 };

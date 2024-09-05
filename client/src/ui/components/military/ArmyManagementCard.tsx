@@ -4,23 +4,26 @@ import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { ArmyManager } from "@/dojo/modelManager/ArmyManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { LucideArrowRight } from "lucide-react";
+
+const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -34,14 +37,18 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { army_buy_troops, delete_army },
+      systemCalls: { army_buy_troops },
       components: { Position },
     },
   } = useDojo();
 
+  const dojo = useDojo();
+
+  const isDefendingArmy = Boolean(army?.protectee);
+
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { getBalance } = getResourceBalance();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -79,17 +86,36 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     [ResourcesIds.Paladin]: 1000,
   });
 
+  const remainingTroops = useMemo(() => {
+    return Math.max(0, MAX_TROOPS_PER_ARMY - Object.values(troopCounts).reduce((a, b) => a + b, 0));
+  }, [troopCounts]);
+
+  const getMaxTroopCount = useCallback(
+    (balance: number, troopName: number) => {
+      const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+      if (!balance) return 0;
+
+      const maxFromBalance = Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision);
+
+      if (isDefendingArmy) {
+        return maxFromBalance;
+      } else {
+        return Math.min(maxFromBalance, remainingTroops + troopCounts[troopName]);
+      }
+    },
+    [isDefendingArmy, remainingTroops, troopCounts],
+  );
+
   const handleTroopCountChange = (troopName: number, count: number) => {
     setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
   };
 
   const handleDeleteArmy = async () => {
     setIsLoading(true);
+    const armyManager = new ArmyManager(dojo);
+
     try {
-      await delete_army({
-        signer: account,
-        army_id: army?.entity_id || 0n,
-      });
+      await armyManager.deleteArmy(army?.entity_id || 0);
       setSelectedEntity && setSelectedEntity(null);
     } catch (e) {
       console.error(e);
@@ -150,7 +176,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Paladin",
       weak: "Crossbowman",
-      current: currencyFormat(army?.troops.knight_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
     },
     {
       name: ResourcesIds.Crossbowman,
@@ -159,7 +185,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Knight",
       weak: "Paladin",
-      current: currencyFormat(army?.troops.crossbowman_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
     },
     {
       name: ResourcesIds.Paladin,
@@ -168,7 +194,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       defense: 10,
       strong: "Crossbowman",
       weak: "Knight",
-      current: currencyFormat(army?.troops.paladin_count || 0, 0),
+      current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
     },
   ];
 
@@ -191,7 +217,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
               "Idle"
             )}
           </div>
-          <ViewOnMapButton position={armyPosition} />
+          <ViewOnMapIcon position={armyPosition} />
         </div>
         <div className="flex flex-col relative  p-2">
           {travelWindow && (
@@ -270,19 +296,23 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             )}
           </div>
 
+          {!isDefendingArmy && (
+            <div className="text-xs text-yellow-500 mb-2">
+              ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-3 my-4">
             {troops.map((troop) => {
               const balance = getBalance(owner_entity, troop.name).balance;
 
-              const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
-
               return (
-                <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
+                <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>
                   <div className="font-bold mb-4">
                     <div className="flex justify-between">
                       <div className="text-md">{ResourcesIds[troop.name]}</div>
                     </div>
-                    <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
+                    <div className="px-2 py-1 bg-white/10  flex justify-between">
                       <ResourceIcon withTooltip={false} resource={ResourcesIds[troop.name]} size="lg" />
                       <div className="text-green self-center">x {troop.current}</div>
                     </div>
@@ -293,9 +323,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                       Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
                     </div>
                     <NumberInput
-                      max={
-                        balance ? Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision) : 0
-                      }
+                      max={getMaxTroopCount(balance, troop.name)}
                       min={0}
                       step={100}
                       value={troopCounts[troop.name]}
@@ -314,7 +342,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             isLoading={isLoading}
             onClick={handleBuyArmy}
           >
-            {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
+            {checkSamePosition ? "Reinforce army" : "Must be at Base to Reinforce"}
           </Button>
         </div>
       </>
@@ -323,45 +351,24 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 };
 
 export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
-  const [location, setLocation] = useLocation();
+  const { handleUrlChange, isMapView } = useQuery();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const url = new PositionInterface(position).toMapLocationUrl();
 
   return (
     <Map
-      className={className}
+      className={clsx(
+        "h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all",
+        className,
+      )}
       onClick={() => {
-        setLocation(url);
-        if (location === "/map") {
-          window.dispatchEvent(new Event("urlChanged"));
-        } else {
+        handleUrlChange(url);
+        if (!isMapView) {
           setIsLoadingScreenEnabled(true);
-          window.dispatchEvent(new Event("urlChanged"));
         }
       }}
     />
-  );
-};
-
-export const ViewOnMapButton = ({ position, className }: { position: Position; className?: string }) => {
-  const [location, setLocation] = useLocation();
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-
-  const url = new PositionInterface(position).toMapLocationUrl();
-
-  return (
-    <Button
-      className={className}
-      variant="primary"
-      size="xs"
-      onClick={() => {
-        setLocation(url);
-        window.dispatchEvent(new Event("urlChanged"));
-      }}
-    >
-      <span>map</span>
-    </Button>
   );
 };
 
@@ -402,7 +409,7 @@ const TravelToLocation = ({
   };
 
   return (
-    <div className="absolute h-full w-full bg-brown top-0 z-10 ">
+    <div className="absolute h-full w-full bg-black/90 top-0 z-10 ">
       <div className="flex justify-between mb-3">
         <div className="flex">
           <div className="my-2 uppercase mb-1 font-bold">Status:</div>

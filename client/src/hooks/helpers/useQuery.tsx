@@ -1,8 +1,17 @@
 import { useMemo } from "react";
+import { useLocation } from "wouter";
 import { useSearch } from "wouter/use-location";
 
 export const useQuery = () => {
   const searchString = useSearch();
+  const [location, setLocation] = useLocation();
+
+  const handleUrlChange = (url: string) => {
+    setLocation(url);
+    window.dispatchEvent(new Event("urlChanged"));
+  };
+
+  const isMapView = location.includes(`/map`);
 
   const hexPosition = useMemo(() => {
     const params = new URLSearchParams(searchString);
@@ -16,7 +25,9 @@ export const useQuery = () => {
   };
 
   return {
-    hexPosition,
     isLocation,
+    handleUrlChange,
+    hexPosition,
+    isMapView,
   };
 };

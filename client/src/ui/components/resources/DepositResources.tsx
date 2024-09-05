@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { EntityState, ID, determineEntityState } from "@bibliothecadao/eternum";
@@ -21,7 +21,7 @@ export const DepositResources = ({ entityId, battleInProgress, armyInBattle }: D
 
   const inventoryResources = getResourcesFromBalance(entityId);
 
-  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
 
   const arrivalTime = getComponentValue(setup.components.ArrivalTime, getEntityIdFromKeys([BigInt(entityId)]));

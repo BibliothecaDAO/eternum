@@ -1,6 +1,15 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { SetupResult } from "@/dojo/setup";
+import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
-import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, StructureType } from "@bibliothecadao/eternum";
+import {
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  HyperstructureResourceMultipliers,
+  ID,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
@@ -12,6 +21,8 @@ import {
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
 import {
   ArmySystemUpdate,
   BattleSystemUpdate,
@@ -19,16 +30,11 @@ import {
   StructureSystemUpdate,
   TileSystemUpdate,
 } from "./types";
-import { HexPosition } from "@/types";
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD, StructureProgress } from "../scenes/constants";
-import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
-import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
-import { ClientComponents } from "@/dojo/createClientComponents";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  constructor(private dojo: SetupResult) {}
+  constructor(private setup: SetupResult) {}
 
   private setupSystem<T>(
     component: Component,
@@ -41,43 +47,60 @@ export class SystemManager {
       if (value) callback(value);
     };
 
-    defineComponentSystem(this.dojo.network.world, component, handleUpdate, { runOnInit });
+    defineComponentSystem(this.setup.network.world, component, handleUpdate, { runOnInit });
   }
 
   public get Army() {
     return {
       onUpdate: (callback: (value: ArmySystemUpdate) => void) => {
-        this.setupSystem(this.dojo.components.Position, callback, (update: any) => {
-          const army = getComponentValue(this.dojo.components.Army, update.entity);
-          if (!army) return;
+        const query = defineQuery(
+          [
+            Has(this.setup.components.Army),
+            Has(this.setup.components.Position),
+            Has(this.setup.components.EntityOwner),
+            Has(this.setup.components.Health),
+          ],
+          { runOnInit: true },
+        );
 
-          const health = getComponentValue(this.dojo.components.Health, update.entity);
-          if (!health) {
-            // console.log(`[MyApp] in here for entity id ${army.entity_id}`);
-            return;
+        return query.update$.subscribe((update) => {
+          if (
+            isComponentUpdate(update, this.setup.components.Army) ||
+            isComponentUpdate(update, this.setup.components.Position)
+          ) {
+            const army = getComponentValue(this.setup.components.Army, update.entity);
+            if (!army) return;
+
+            const position = getComponentValue(this.setup.components.Position, update.entity);
+            if (!position) return;
+
+            const health = getComponentValue(this.setup.components.Health, update.entity);
+            if (!health) return;
+
+            const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
+            if (protectee) return;
+
+            const healthMultiplier =
+              EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+
+            const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
+            if (!entityOwner) return;
+
+            const owner = getComponentValue(
+              this.setup.components.Owner,
+              getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+            );
+            const isMine = this.isOwner(owner);
+
+            callback({
+              entityId: army.entity_id,
+              hexCoords: { col: position.x, row: position.y },
+              isMine,
+              battleId: army.battle_id,
+              defender: Boolean(protectee),
+              currentHealth: health.current / healthMultiplier,
+            });
           }
-
-          const protectee = getComponentValue(this.dojo.components.Protectee, update.entity);
-          if (protectee) {
-            //   console.log(`[MyApp] army is defender ${entityId}`);
-            return;
-          }
-
-          const healthMultiplier =
-            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
-
-          const owner = getComponentValue(this.dojo.components.Owner, update.entity);
-          const isMine = this.isOwner(owner);
-
-          //   console.log(`[MyApp] got update for ${army.entity_id}`);
-          return {
-            entityId: army.entity_id,
-            hexCoords: this.getHexCoords(update.value),
-            isMine,
-            battleId: army.battle_id,
-            defender: Boolean(protectee),
-            currentHealth: health.current / healthMultiplier,
-          };
         });
       },
     };
@@ -86,11 +109,11 @@ export class SystemManager {
   public get Structure() {
     return {
       onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
-        this.setupSystem(this.dojo.components.Position, callback, (update: any) => {
-          const structure = getComponentValue(this.dojo.components.Structure, update.entity);
+        this.setupSystem(this.setup.components.Position, callback, (update: any) => {
+          const structure = getComponentValue(this.setup.components.Structure, update.entity);
           if (!structure) return;
 
-          const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+          const owner = getComponentValue(this.setup.components.Owner, update.entity);
           const isMine = this.isOwner(owner);
 
           const categoryKey = structure.category as keyof typeof StructureType;
@@ -112,22 +135,31 @@ export class SystemManager {
   public get Battle() {
     return {
       onUpdate: (callback: (value: BattleSystemUpdate) => void) => {
-        this.setupSystem(this.dojo.components.Battle, callback, (update: any) => {
-          const battle = getComponentValue(this.dojo.components.Battle, update.entity);
-          if (!battle) return;
+        this.setupSystem(this.setup.components.Battle, callback, (update: any) => {
+          const battle = getComponentValue(this.setup.components.Battle, update.entity);
+          if (!battle) {
+            return {
+              entityId: update.value[1].entity_id,
+              hexCoords: new Position({ x: 0, y: 0 }),
+              isEmpty: false,
+              deleted: true,
+            };
+          }
 
-          const position = getComponentValue(this.dojo.components.Position, update.entity);
+          const position = getComponentValue(this.setup.components.Position, update.entity);
           if (!position) return;
 
           const healthMultiplier =
             EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          const isEmpty =
+            battle.attack_army_health.current < healthMultiplier &&
+            battle.defence_army_health.current < healthMultiplier;
 
           return {
             entityId: battle.entity_id,
-            hexCoords: new Position(position),
-            isEmpty:
-              battle.attack_army_health.current < healthMultiplier &&
-              battle.defence_army_health.current < healthMultiplier,
+            hexCoords: new Position({ x: position.x, y: position.y }),
+            isEmpty,
+            deleted: false,
           };
         });
       },
@@ -137,10 +169,15 @@ export class SystemManager {
   public get Tile() {
     return {
       onUpdate: (callback: (value: TileSystemUpdate) => void) => {
-        this.setupSystem(this.dojo.components.Tile, callback, (update: any) => {
-          if (!update.value[0]) return;
+        this.setupSystem(this.setup.components.Tile, callback, (update: any) => {
+          const newState = update.value[0];
+          const prevState = update.value[1];
 
-          return { hexCoords: { col: update.value[0]?.col || 0, row: update.value[0]?.row || 0 } };
+          const { col, row } = prevState || newState;
+          return {
+            hexCoords: { col, row },
+            removeExplored: !newState,
+          };
         });
       },
     };
@@ -150,15 +187,15 @@ export class SystemManager {
     return {
       subscribeToHexUpdates: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
         const query = defineQuery([
-          HasValue(this.dojo.components.Building, {
+          HasValue(this.setup.components.Building, {
             outer_col: hexCoords.col,
             outer_row: hexCoords.row,
           }),
         ]);
 
         return query.update$.subscribe((update) => {
-          if (isComponentUpdate(update, this.dojo.components.Building)) {
-            const building = getComponentValue(this.dojo.components.Building, update.entity);
+          if (isComponentUpdate(update, this.setup.components.Building)) {
+            const building = getComponentValue(this.setup.components.Building, update.entity);
             if (!building) return;
 
             const innerCol = building.inner_col;
@@ -177,7 +214,7 @@ export class SystemManager {
   }
 
   private isOwner(owner: any): boolean {
-    return owner?.address === BigInt(this.dojo.network.burnerManager.account?.address || 0);
+    return owner?.address === BigInt(this.setup.network.burnerManager.account?.address || 0);
   }
 
   private getHexCoords(value: any): { col: number; row: number } {
@@ -188,13 +225,13 @@ export class SystemManager {
     if (structureType === StructureType.Hyperstructure) {
       const progressQueryResult = Array.from(
         runQuery([
-          Has(this.dojo.components.Progress),
-          HasValue(this.dojo.components.Progress, { hyperstructure_entity_id: entityId }),
+          Has(this.setup.components.Progress),
+          HasValue(this.setup.components.Progress, { hyperstructure_entity_id: entityId }),
         ]),
       );
 
       const progresses = progressQueryResult.map((progressEntityId) => {
-        return getComponentValue(this.dojo.components.Progress, progressEntityId);
+        return getComponentValue(this.setup.components.Progress, progressEntityId);
       });
 
       const { percentage } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
@@ -230,7 +267,10 @@ export class SystemManager {
         costNeeded: resourceCost,
       };
       percentage +=
-        (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+        (progress.amount *
+          HyperstructureResourceMultipliers[
+            progress.resource_type as keyof typeof HyperstructureResourceMultipliers
+          ]!) /
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;
     });

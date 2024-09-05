@@ -1,26 +1,33 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { getPlayerStructures } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
-import { ID, Position } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { useEffect, useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
 
 export const CombatEntityDetails = () => {
+  const dojo = useDojo();
+
   const selectedHex = useUIStore((state) => state.selectedHex);
+  const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
+
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const hexPosition = useMemo(() => {
-    return { x: selectedHex.col, y: selectedHex.row };
-  }, [selectedHex]);
+  const getStructures = getPlayerStructures();
+  const hexPosition = useMemo(() => new Position({ x: selectedHex.col, y: selectedHex.row }), [selectedHex]);
 
   const ownArmiesAtPosition = useOwnArmiesByPosition({
-    position: { x: selectedHex.col, y: selectedHex.row },
+    position: hexPosition.getContract(),
     inBattle: false,
+    playerStructures: getStructures(ContractAddress(dojo.account.account.address)),
   });
 
   const userArmies = useMemo(
@@ -28,20 +35,19 @@ export const CombatEntityDetails = () => {
     [ownArmiesAtPosition],
   );
 
-  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>({
-    id: userArmies?.[0]?.entity_id || 0,
-    position: {
-      x: selectedHex.col,
-      y: selectedHex.row,
-    },
-  });
+  const [selectedArmyEntityId, setSelectedArmyEntityId] = useState<ID>(userArmies?.[0]?.entity_id || 0);
+
+  useEffect(() => {
+    setSelectedArmyEntityId(userArmies?.[0]?.entity_id || 0);
+  }, [userArmies]);
+
+  useEffect(() => {
+    updateSelectedEntityId(selectedArmyEntityId);
+  }, [selectedArmyEntityId, updateSelectedEntityId]);
 
   const ownArmy = useMemo(() => {
-    if (!ownArmySelected) {
-      return;
-    }
-    return userArmies.find((army) => army.entity_id === ownArmySelected.id);
-  }, [userArmies, ownArmySelected, selectedHex.col, selectedHex.row]);
+    return ownArmiesAtPosition.find((army) => army.entity_id === selectedArmyEntityId);
+  }, [ownArmiesAtPosition, selectedArmyEntityId]);
 
   const tabs = useMemo(
     () => [
@@ -64,35 +70,38 @@ export const CombatEntityDetails = () => {
         component: <Battles position={hexPosition} ownArmy={ownArmy} />,
       },
     ],
-    [selectedHex, userArmies, ownArmy?.entity_id, ownArmySelected?.id],
+    [selectedHex, userArmies, ownArmy?.entity_id, selectedArmyEntityId],
   );
 
   return (
     hexPosition && (
       <div className="px-2 h-full">
-        <CoordinatesAndBiome position={hexPosition} />
-        {userArmies.length > 0 && (
-          <SelectActiveArmy
-            selectedEntity={ownArmySelected}
-            setOwnArmySelected={setOwnArmySelected}
-            userAttackingArmies={userArmies}
-          />
-        )}
+        <HintModalButton className="absolute top-1 right-1" section={HintSection.Combat} />
 
-        <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
-          <Tabs.List>
-            {tabs.map((tab, index) => (
-              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-            ))}
-          </Tabs.List>
-          <Tabs.Panels className="">
-            {tabs.map((tab, index) => (
-              <Tabs.Panel key={index} className="h-full">
-                {tab.component}
-              </Tabs.Panel>
-            ))}
-          </Tabs.Panels>
-        </Tabs>
+        <div>
+          <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
+            <Tabs.List>
+              {tabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
+            {userArmies.length > 0 && (
+              <SelectActiveArmy
+                selectedEntity={selectedArmyEntityId}
+                setOwnArmySelected={setSelectedArmyEntityId}
+                userAttackingArmies={userArmies}
+              />
+            )}
+
+            <Tabs.Panels className="">
+              {tabs.map((tab, index) => (
+                <Tabs.Panel key={index} className="h-full">
+                  {tab.component}
+                </Tabs.Panel>
+              ))}
+            </Tabs.Panels>
+          </Tabs>
+        </div>
       </div>
     )
   );
@@ -103,21 +112,16 @@ const SelectActiveArmy = ({
   setOwnArmySelected,
   userAttackingArmies,
 }: {
-  selectedEntity:
-    | {
-        id: ID;
-        position: Position;
-      }
-    | undefined;
-  setOwnArmySelected: (val: { id: ID; position: Position } | undefined) => void;
+  selectedEntity: ID;
+  setOwnArmySelected: (id: ID) => void;
   userAttackingArmies: ArmyInfo[];
 }) => {
   return (
     <div className="w-[31rem]">
       <Select
-        value={selectedEntity?.id.toString() || ""}
+        value={selectedEntity.toString()}
         onValueChange={(a: string) => {
-          setOwnArmySelected({ id: ID(a), position: selectedEntity?.position || { x: 0, y: 0 } });
+          setOwnArmySelected(ID(a));
         }}
       >
         <SelectTrigger className="w-[31rem] px-2">
@@ -137,18 +141,6 @@ const SelectActiveArmy = ({
           })}
         </SelectContent>
       </Select>
-    </div>
-  );
-};
-
-const CoordinatesAndBiome = ({ position }: { position: Position }) => {
-  return (
-    <div className="p-2 flex justify-between text-xs">
-      <div className="font-bold flex space-x-2 justify-between self-center ">
-        <div>{`x: ${position.x?.toLocaleString()}`}</div>
-        <div>{`y: ${position.y?.toLocaleString()}`}</div>
-      </div>
-      <HintModalButton className="top-1 right-1" section={HintSection.Combat} />
     </div>
   );
 };

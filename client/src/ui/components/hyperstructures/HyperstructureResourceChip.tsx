@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 
 type HyperstructureResourceChipProps = {
-  realmEntityId: ID;
+  structureEntityId: ID;
   resourceId: number;
   progress: ProgressWithPercentage;
   contributions: Record<number, number>;
@@ -18,7 +18,7 @@ type HyperstructureResourceChipProps = {
 };
 
 export const HyperstructureResourceChip = ({
-  realmEntityId,
+  structureEntityId,
   resourceId,
   contributions,
   setContributions,
@@ -29,8 +29,8 @@ export const HyperstructureResourceChip = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { getBalance, getResourceProductionInfo } = getResourceBalance();
-  const balance = divideByPrecision(getBalance(realmEntityId, resourceId).balance);
-  const production = getResourceProductionInfo(realmEntityId, resourceId);
+  const balance = divideByPrecision(getBalance(structureEntityId, resourceId).balance);
+  const production = getResourceProductionInfo(structureEntityId, resourceId);
 
   const safetyMargin = production !== undefined && production?.consumption_rate !== 0n ? 0.95 : 1;
 
@@ -55,7 +55,8 @@ export const HyperstructureResourceChip = ({
   }, [resetContributions]);
 
   return (
-    <div className="flex mt-1 grid grid-cols-8 gap-2">
+    // <div className="flex mt-1 grid grid-cols-8 gap-2">
+    <div className="mt-1 grid grid-cols-8 gap-2">
       <div
         className={`flex relative items-center text-xs px-2 p-1 col-span-4`}
         style={{

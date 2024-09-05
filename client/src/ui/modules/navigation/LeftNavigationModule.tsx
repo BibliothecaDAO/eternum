@@ -12,13 +12,13 @@ import { motion } from "framer-motion";
 import { debounce } from "lodash";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useLocation } from "wouter";
 import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { EntityDetails } from "../entity-details/EntityDetails";
 import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -46,7 +46,7 @@ export enum View {
 }
 
 export const LeftNavigationModule = () => {
-  const [lastView, setLastView] = useState<View>(View.None);
+  const [lastView, setLastView] = useState<View>(View.EntityView);
 
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
@@ -56,12 +56,11 @@ export const LeftNavigationModule = () => {
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const { questClaimStatus } = useQuestClaimStatus();
-  const [location, _] = useLocation();
 
-  const isWorldView = useMemo(() => location === "/map", [location]);
+  const { isMapView } = useQuery();
 
   const isBuildQuest = useMemo(() => {
     return (
@@ -69,11 +68,11 @@ export const LeftNavigationModule = () => {
       selectedQuest?.id === QuestId.BuildResource ||
       selectedQuest?.id === QuestId.BuildWorkersHut ||
       selectedQuest?.id === QuestId.Market ||
-      (selectedQuest?.id === QuestId.Hyperstructure && isWorldView)
+      (selectedQuest?.id === QuestId.Hyperstructure && isMapView)
     );
-  }, [selectedQuest, isWorldView]);
+  }, [selectedQuest, isMapView]);
   const { getEntityInfo } = getEntitiesUtils();
-  const realmIsMine = getEntityInfo(realmEntityId).isMine;
+  const structureIsMine = getEntityInfo(structureEntityId).isMine;
 
   const navigation = useMemo(() => {
     const navigation = [
@@ -81,15 +80,18 @@ export const LeftNavigationModule = () => {
         name: "entityDetails",
         button: (
           <CircleButton
-            className={clsx({ hidden: !questClaimStatus[QuestId.CreateArmy] })}
             image={BuildingThumbs.hex}
             tooltipLocation="top"
             label={"Details"}
             active={view === View.EntityView}
             size="xl"
             onClick={() => {
-              setLastView(View.EntityView);
-              setView(View.EntityView);
+              if (view === View.EntityView) {
+                setView(View.None);
+              } else {
+                setLastView(View.EntityView);
+                setView(View.EntityView);
+              }
             }}
           />
         ),
@@ -98,6 +100,7 @@ export const LeftNavigationModule = () => {
         name: "military",
         button: (
           <CircleButton
+            disabled={!structureIsMine}
             className={clsx({
               "animate-pulse":
                 view != View.ConstructionView && selectedQuest?.id === QuestId.CreateArmy && isPopupOpen(questsPopup),
@@ -109,8 +112,12 @@ export const LeftNavigationModule = () => {
             active={view === View.MilitaryView}
             size="xl"
             onClick={() => {
-              setLastView(View.MilitaryView);
-              setView(View.MilitaryView);
+              if (view === View.MilitaryView) {
+                setView(View.None);
+              } else {
+                setLastView(View.MilitaryView);
+                setView(View.MilitaryView);
+              }
             }}
           />
         ),
@@ -119,7 +126,7 @@ export const LeftNavigationModule = () => {
         name: "construction",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({
               "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.Settle],
@@ -130,8 +137,12 @@ export const LeftNavigationModule = () => {
             active={view === View.ConstructionView}
             size="xl"
             onClick={() => {
-              setLastView(View.ConstructionView);
-              setView(View.ConstructionView);
+              if (view === View.ConstructionView) {
+                setView(View.None);
+              } else {
+                setLastView(View.ConstructionView);
+                setView(View.ConstructionView);
+              }
             }}
           />
         ),
@@ -140,6 +151,7 @@ export const LeftNavigationModule = () => {
         name: "worldStructures",
         button: (
           <CircleButton
+            disabled={!structureIsMine}
             className={clsx({
               hidden: !questClaimStatus[QuestId.CreateArmy],
               "animate-pulse":
@@ -151,15 +163,19 @@ export const LeftNavigationModule = () => {
             active={view === View.WorldStructuresView}
             size="xl"
             onClick={() => {
-              setLastView(View.WorldStructuresView);
-              setView(View.WorldStructuresView);
+              if (view === View.WorldStructuresView) {
+                setView(View.None);
+              } else {
+                setLastView(View.WorldStructuresView);
+                setView(View.WorldStructuresView);
+              }
             }}
           />
         ),
       },
     ];
 
-    return isWorldView
+    return isMapView
       ? navigation.filter(
           (item) =>
             item.name === MenuEnum.entityDetails ||
@@ -174,11 +190,7 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, openedPopups, selectedQuest, questClaimStatus, realmEntityId]);
-
-  if (realmEntityId === undefined) {
-    return null;
-  }
+  }, [location, view, openedPopups, selectedQuest, questClaimStatus, structureEntityId]);
 
   // Open & close panel automatically when building
   const debouncedSetIsOffscreen = debounce(() => {
@@ -214,9 +226,9 @@ export const LeftNavigationModule = () => {
           className={`w-full pointer-events-auto overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}
         >
           {view === View.EntityView && <EntityDetails />}
-          {view === View.MilitaryView && <Military entityId={realmEntityId} />}
-          {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
-          {isWorldView && view === View.ConstructionView && <StructureConstructionMenu />}
+          {view === View.MilitaryView && <Military entityId={structureEntityId} />}
+          {!isMapView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
+          {isMapView && view === View.ConstructionView && <StructureConstructionMenu />}
           {view === View.WorldStructuresView && <WorldStructuresMenu />}
         </BaseContainer>
         <motion.div
@@ -225,11 +237,6 @@ export const LeftNavigationModule = () => {
           animate="visible"
           className="gap-2 flex flex-col justify-center self-center pointer-events-auto"
         >
-          <div>
-            <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
-              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen(view) ? "" : "rotate-180"}`} />
-            </Button>
-          </div>
           <div className="flex flex-col gap-2 mb-auto">
             <div className="flex flex-col space-y-2 py-2">
               {navigation.map((a, index) => (

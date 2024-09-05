@@ -4,6 +4,7 @@ import {
   getTotalPointsPercentage,
   TOTAL_CONTRIBUTABLE_AMOUNT,
 } from "./LeaderboardUtils";
+import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
 
 const EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT = 2;
 
@@ -21,14 +22,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
       { resource: 1, amount: 1 },
       { resource: 2, amount: 1 },
     ],
-  };
-});
-
-vi.mock("./constants", async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as any),
-    ResourceMultipliers: {
+    HyperstructureResourceMultipliers: {
       ["1"]: 1.0,
       ["2"]: 1.0,
     },

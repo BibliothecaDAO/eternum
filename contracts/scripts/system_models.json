@@ -19,14 +19,16 @@
     "HyperstructureResourceConfig",
     "HyperstructureConfig",
     "StaminaConfig",
+    "StaminaRefillConfig",
     "MercenariesConfig",
+    "BattleConfig",
     "Position",
     "ProductionOutput",
     "DetachedResource",
     "ResourceCost"
   ],
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
-  "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank"],
+  "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount"],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",

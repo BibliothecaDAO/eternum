@@ -1,11 +1,11 @@
-import { useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
+import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
-import { useFetchBlockchainData } from "../../hooks/store/useBlockchainStore";
 
 export const HooksComponent = () => {
   useFetchBlockchainData();
   useSubscriptionToHyperstructureEvents();
-  useHexPosition();
+  useStructureEntityId();
 
   return <></>;
 };

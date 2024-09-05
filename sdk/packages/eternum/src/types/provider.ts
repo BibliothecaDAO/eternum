@@ -81,6 +81,14 @@ export interface AcceptOrderProps extends SystemSigner {
   taker_gives_resources: num.BigNumberish[];
 }
 
+export interface AcceptPartialOrderProps extends SystemSigner {
+  taker_id: num.BigNumberish;
+  trade_id: num.BigNumberish;
+  maker_gives_resources: num.BigNumberish[];
+  taker_gives_resources: num.BigNumberish[];
+  taker_gives_actual_amount: num.BigNumberish;
+}
+
 export interface CancelOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
   return_resources: num.BigNumberish[];
@@ -182,15 +190,28 @@ export interface TransferItemsFromMultipleProps extends SystemSigner {
 
 export interface CreateBuildingProps extends SystemSigner {
   entity_id: num.BigNumberish;
-  building_coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
+  directions: num.BigNumberish[];
   building_category: BuildingType;
   produce_resource_type: CairoOption<Number>;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}
+
+export interface PauseProductionProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}
+
+export interface ResumeProductionProps extends SystemSigner {
   entity_id: num.BigNumberish;
   building_coord: {
     x: num.BigNumberish;
@@ -397,6 +418,10 @@ export interface SetBankConfigProps extends SystemSigner {
   lp_fee_denom: num.BigNumberish;
 }
 
+export interface SetBattleConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  battle_grace_tick_count: num.BigNumberish;
+}
 export interface SetTroopConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
   health: num.BigNumberish;
@@ -405,9 +430,12 @@ export interface SetTroopConfigProps extends SystemSigner {
   crossbowman_strength: num.BigNumberish;
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
+  max_troop_count: num.BigNumberish;
   pillage_health_divisor: num.BigNumberish;
   army_free_per_structure: num.BigNumberish;
   army_extra_per_military_building: num.BigNumberish;
+  battle_leave_slash_num: num.BigNumberish;
+  battle_leave_slash_denom: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
@@ -460,6 +488,10 @@ export interface SetCoOwnersProps extends SystemSigner {
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: num.BigNumberish;
   max_stamina: num.BigNumberish;
+}
+
+export interface SetStaminaRefillConfigProps extends SystemSigner {
+  amount_per_tick: num.BigNumberish;
 }
 
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;

@@ -112,7 +112,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move z-30 p-2 rounded-t bg-black/30  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
+      " items-center relative cursor-move z-30 p-2 rounded-t bg-black/90  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
       className,
     )}
     onKeyDown={(e) => {
@@ -127,7 +127,7 @@ SecondaryPopup.Head = ({
       {hintSection && <HintModalButton className="mr-2" section={hintSection} />}
 
       {onClose && (
-        <Button variant="default" size="xs" onClick={onClose}>
+        <Button variant="default" onClick={onClose}>
           <X className="w-5 h-5" />
         </Button>
       )}
@@ -177,7 +177,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 flex flex-col bg-black/75 border-gradient border rounded-b overflow-auto bg-hex-bg bg-repeat`,
+        `relative z-10 flex flex-col bg-black/90 border-gradient border rounded-b overflow-auto bg-hex-bg bg-repeat`,
       )}
       style={{
         width: width ? width : "",

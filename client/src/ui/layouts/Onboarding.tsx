@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { MAX_REALMS } from "../components/cityview/realm/SettleRealmComponent";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Naming, StepOne, StepThree, StepTwo, StepFour, StepFive, StepSix } from "../modules/onboarding/Steps";
+import { MAX_REALMS } from "../constants";
 
 export const Onboarding = () => {
   const { playerRealms } = useEntities();

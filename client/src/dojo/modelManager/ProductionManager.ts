@@ -7,40 +7,20 @@ import {
   ResourcesIds,
   STOREHOUSE_CAPACITY,
 } from "@bibliothecadao/eternum";
-import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
-import { ClientComponents } from "../createClientComponents";
+import { getComponentValue } from "@dojoengine/recs";
+import { SetupResult } from "../setup";
 
 export class ProductionManager {
-  productionModel:
-    | Component<ClientComponents["Production"]["schema"]>
-    | OverridableComponent<ClientComponents["Production"]["schema"]>;
-  resourceModel:
-    | Component<ClientComponents["Resource"]["schema"]>
-    | OverridableComponent<ClientComponents["Resource"]["schema"]>;
-  buildingQuantity:
-    | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
-    | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>;
   entityId: ID;
   resourceId: ResourcesIds;
 
   constructor(
-    productionModel:
-      | Component<ClientComponents["Production"]["schema"]>
-      | OverridableComponent<ClientComponents["Production"]["schema"]>,
-    resourceModel:
-      | Component<ClientComponents["Resource"]["schema"]>
-      | OverridableComponent<ClientComponents["Resource"]["schema"]>,
-    buildingQuantity:
-      | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
-      | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>,
+    private setup: SetupResult,
     entityId: ID,
     resourceId: ResourcesIds,
   ) {
-    this.productionModel = productionModel;
-    this.buildingQuantity = buildingQuantity;
     this.entityId = entityId;
     this.resourceId = resourceId;
-    this.resourceModel = resourceModel;
   }
 
   public getProduction() {
@@ -104,7 +84,7 @@ export class ProductionManager {
   public getStoreCapacity(): number {
     const quantity =
       getComponentValue(
-        this.buildingQuantity,
+        this.setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
@@ -216,10 +196,16 @@ export class ProductionManager {
   }
 
   private _getProduction(resourceId: ResourcesIds) {
-    return getComponentValue(this.productionModel, getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]));
+    return getComponentValue(
+      this.setup.components.Production,
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+    );
   }
 
   private _getResource(resourceId: ResourcesIds) {
-    return getComponentValue(this.resourceModel, getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]));
+    return getComponentValue(
+      this.setup.components.Resource,
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+    );
   }
 }

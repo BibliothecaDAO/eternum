@@ -3,6 +3,7 @@ import productionManifest from "../contracts/manifests/prod/deployment/manifest.
 
 import {
   EternumProvider,
+  setBattleConfig,
   setBuildingCategoryPopConfig,
   setBuildingConfig,
   setCapacityConfig,
@@ -14,6 +15,7 @@ import {
   setResourceBuildingConfig,
   setSpeedConfig,
   setStaminaConfig,
+  setStaminaRefillConfig,
   setupGlobals,
   setWeightConfig,
 } from "@bibliothecadao/eternum";
@@ -44,9 +46,11 @@ await setBuildingConfig(account, provider);
 await setResourceBuildingConfig(account, provider);
 await setWeightConfig(account, provider);
 await setCombatConfig(account, provider);
+await setBattleConfig(account, provider);
 await setCapacityConfig(account, provider);
 await setSpeedConfig(account, provider);
 await setupGlobals(account, provider);
 await setHyperstructureConfig(account, provider);
 await setStaminaConfig(account, provider);
+await setStaminaRefillConfig(account, provider);
 await setMercenariesConfig(account, provider);

@@ -6,7 +6,7 @@ use core::traits::Into;
 use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
-use eternum::constants::all_resource_ids;
+use eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
 use eternum::models::capacity::{Capacity, CapacityCustomTrait};
 use eternum::models::config::{BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait};
 use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
@@ -22,6 +22,7 @@ use eternum::models::resources::{
 use eternum::models::structure::{Structure, StructureCustomImpl};
 use eternum::models::weight::Weight;
 use eternum::models::weight::WeightCustomTrait;
+use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max};
 use eternum::utils::number::NumberTrait;
 
@@ -66,7 +67,7 @@ impl HealthCustomImpl of HealthCustomTrait {
     }
 
     fn steps_to_die(self: @Health, mut deduction: u128) -> u128 {
-        if deduction == 0 {
+        if *self.current == 0 || deduction == 0 {
             return 0;
         };
 
@@ -113,12 +114,23 @@ impl TroopsImpl of TroopsTrait {
         self.knight_count += other.knight_count;
         self.paladin_count += other.paladin_count;
         self.crossbowman_count += other.crossbowman_count;
+        self.normalize_counts();
     }
 
     fn deduct(ref self: Troops, other: Troops) {
         self.knight_count -= other.knight_count;
         self.paladin_count -= other.paladin_count;
         self.crossbowman_count -= other.crossbowman_count;
+        self.normalize_counts();
+    }
+
+    // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+    // so that troop units only exists as whole and not decimals
+    fn normalize_counts(ref self: Troops) {
+        let resource_precision_u64: u64 = RESOURCE_PRECISION.try_into().unwrap();
+        self.knight_count -= self.knight_count % resource_precision_u64;
+        self.paladin_count -= self.paladin_count % resource_precision_u64;
+        self.crossbowman_count -= self.crossbowman_count % resource_precision_u64;
     }
 
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
@@ -379,6 +391,10 @@ impl ArmyCustomImpl of ArmyCustomTrait {
         assert!(self.battle_id.is_non_zero(), "army not in battle")
     }
 
+    fn assert_within_limit(self: Army, troop_config: TroopConfig) {
+        assert!(self.troops.count() <= troop_config.max_troop_count, "army count exceeds limit");
+    }
+
     fn assert_not_in_battle(self: Army) {
         assert!(self.battle_id.is_zero(), "army in battle")
     }
@@ -539,7 +555,6 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
         let mut all_resources = all_resource_ids();
         let mut subtracted_resources_weight = 0;
-        let mut added_resources_weight = 0;
 
         loop {
             match all_resources.pop_front() {
@@ -549,13 +564,13 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             world, (to_army_protectee_id, resource_type)
                         );
                         if to_army_lost_or_battle_not_ended {
-                            // army forfeits resources
-                            to_army_resource.burn((to_army_resource.balance));
-                            to_army_resource.save(world);
-
                             // update army's subtracted weight
                             subtracted_resources_weight +=
                                 WeightConfigCustomImpl::get_weight(world, resource_type, to_army_resource.balance);
+
+                            // army forfeits resources
+                            to_army_resource.burn((to_army_resource.balance));
+                            to_army_resource.save(world);
                         } else {
                             // army won or drew so it can leave with its resources
                             //
@@ -589,16 +604,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             other_side_escrow_resource.burn(share_amount);
                             other_side_escrow_resource.save(world);
 
-                            // give loot share to winner
-                            let mut to_army_resource = ResourceCustomImpl::get(
-                                world, (to_army_protectee_id, resource_type)
+                            // send loot to winner
+                            InternalResourceSystemsImpl::mint_if_adequate_capacity(
+                                world, to_army_protectee_id, (resource_type, share_amount), false
                             );
-                            to_army_resource.add(share_amount);
-                            to_army_resource.save(world);
-
-                            // update army's added weight
-                            added_resources_weight +=
-                                WeightConfigCustomImpl::get_weight(world, resource_type, share_amount);
                         }
                     }
                 },
@@ -609,17 +618,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // update weight after balance update
         let mut to_army_protectee_weight: Weight = get!(world, to_army_protectee_id, Weight);
         let to_army_protectee_capacity: Capacity = get!(world, to_army_protectee_id, Capacity);
-        let to_army_protectee_quantity: Quantity = get!(world, to_army_protectee_id, Quantity);
         // decrease protectee weight if necessary
         if subtracted_resources_weight.is_non_zero() {
             to_army_protectee_weight.deduct(to_army_protectee_capacity, subtracted_resources_weight);
         }
-        // increase protectee weight if necessary
-        if added_resources_weight.is_non_zero() {
-            to_army_protectee_weight
-                .add(to_army_protectee_capacity, to_army_protectee_quantity, added_resources_weight);
-        }
-        set!(world, (to_army_protectee_weight));
 
         // release lock on resource
         let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
@@ -749,9 +751,12 @@ mod tests {
             crossbowman_strength: 1,
             advantage_percent: 1000,
             disadvantage_percent: 1000,
+            max_troop_count: 10_000_000_000_000 * 1000,
             pillage_health_divisor: 8,
             army_free_per_structure: 100,
             army_extra_per_building: 100,
+            battle_leave_slash_num: 25,
+            battle_leave_slash_denom: 100
         }
     }
 

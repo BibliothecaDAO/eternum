@@ -1,0 +1,42 @@
+[package]
+name = "e06_sample_bot_structure"
+version = "0.1.0"
+authors = ["my name <my@email.address>"]
+edition = "2018"
+
+[dependencies]
+dotenv = "0.15"
+tracing = "0.1.23"
+tracing-subscriber = "0.3"
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite"] }
+poise = { version = "0.6.1" }
+starknet = "0.11.0"
+starknet-crypto = "0.7.0"
+starknet-types-core = "~0.1.4"
+dojo-types = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+torii-client = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+torii-grpc = { git = "https://github.com/dojoengine/dojo", features = [
+    "client",
+], tag = "v1.0.0-alpha.9" }
+torii-relay = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+dojo-world = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+
+cainome = { git = "https://github.com/cartridge-gg/cainome" }
+cairo-lang-filesystem = "=2.7.0"
+scarb = { git = "https://github.com/software-mansion/scarb", tag = "v2.7.0" }
+
+[dependencies.tokio]
+version = "1.0"
+features = ["macros", "signal", "rt-multi-thread"]
+
+[dependencies.serenity]
+version = "0.12.2"
+features = ["cache", "framework", "standard_framework", "rustls_backend"]
+
+[patch.crates-io]
+# Remove this patch once the following PR is merged: <https://github.com/xJonathanLEI/starknet-rs/pull/615>
+#
+# To enable std feature on `starknet-types-core`.
+# To re-export the entire `felt` module from `starknet-types-core`.
+starknet-core = { git = "https://github.com/kariy/starknet-rs", branch = "dojo-patch" }
+starknet-types-core = { git = "https://github.com/dojoengine/types-rs", rev = "289e2f0" }

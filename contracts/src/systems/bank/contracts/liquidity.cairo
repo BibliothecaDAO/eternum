@@ -42,6 +42,7 @@ mod liquidity_systems {
         // price in lords for 1000 resource
         resource_price: u128,
         add: bool,
+        timestamp: u64,
     }
 
     #[abi(embed_v0)]
@@ -149,7 +150,8 @@ mod liquidity_systems {
                     lords_amount,
                     resource_amount,
                     resource_price: resource_price,
-                    add
+                    add,
+                    timestamp: starknet::get_block_timestamp()
                 })
             );
         }

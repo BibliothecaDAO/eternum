@@ -171,7 +171,12 @@ export const MyGuild = () => {
                         value={playerAddress}
                         onChange={(playerAddress) => setPlayerAddress(playerAddress)}
                       />
-                      <Button size="xs" onClick={transferGuildOwnership} disabled={playerAddress == ""}>
+                      <Button
+                        variant="primary"
+                        size="xs"
+                        onClick={transferGuildOwnership}
+                        disabled={playerAddress == ""}
+                      >
                         Confirm
                       </Button>
                     </>
@@ -183,17 +188,18 @@ export const MyGuild = () => {
                       isLoading={isLoading}
                       onClick={() => setIsTransferingOwnership(!isTransferingOwnership)}
                       size="xs"
+                      variant="primary"
                     >
                       Assign new leader
                     </Button>
                   ) : (
-                    <Button isLoading={isLoading} onClick={leaveGuild} size="xs">
+                    <Button variant="primary" isLoading={isLoading} onClick={leaveGuild} size="xs">
                       Disband Guild
                     </Button>
                   )}
                 </div>
               ) : (
-                <Button isLoading={isLoading} onClick={leaveGuild} size="xs">
+                <Button variant="primary" isLoading={isLoading} onClick={leaveGuild} size="xs">
                   Leave Guild
                 </Button>
               )}
@@ -203,14 +209,14 @@ export const MyGuild = () => {
       ) : (
         <>
           <div className="flex my-2 p-4 justify-center">
-            <Button isLoading={isLoading} onClick={() => setIsCreatingGuild(!isCreatingGuild)}>
+            <Button variant="primary" isLoading={isLoading} onClick={() => setIsCreatingGuild(!isCreatingGuild)}>
               Create Guild
             </Button>
           </div>
 
           {isCreatingGuild && (
-            <div className="flex flex-wrap justify-between mx-3 mb-3 items-baseline gap-2">
-              <div className="w-full">Guild Name</div>
+            <div className="flex  justify-between items-baseline gap-4 p-4">
+              <div className="w-full text-xl">Guild Name</div>
 
               <TextInput
                 value={newGuildName}
@@ -218,12 +224,12 @@ export const MyGuild = () => {
                 maxLength={MAX_NAME_LENGTH}
               />
               <div className="flex justify-center gap-2">
-                <Button onClick={createGuild} disabled={newGuildName == ""}>
-                  Confirm
-                </Button>
                 <SelectBox selected={isPublic} onClick={() => setIsPublic(!isPublic)}>
                   Public
                 </SelectBox>
+                <Button variant="primary" onClick={createGuild} disabled={newGuildName == ""}>
+                  Confirm
+                </Button>
               </div>
             </div>
           )}

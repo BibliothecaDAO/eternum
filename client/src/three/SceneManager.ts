@@ -11,6 +11,10 @@ export class SceneManager {
     return this.currentScene;
   }
 
+  getSceneByName(name: SceneName) {
+    return this.scenes.get(name);
+  }
+
   _updateCurrentScene(name: SceneName) {
     this.currentScene = name;
   }
@@ -30,6 +34,7 @@ export class SceneManager {
         this.transitionManager.fadeIn();
       });
     }
+    this.moveCameraForScene();
   }
 
   moveCameraForScene() {

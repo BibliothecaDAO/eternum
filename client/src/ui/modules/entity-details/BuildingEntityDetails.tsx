@@ -1,6 +1,5 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
@@ -8,81 +7,115 @@ import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectP
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "../navigation/LeftNavigationModule";
+import { useComponentValue } from "@dojoengine/react";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
 
-  const [buildingType, setBuildingType] = useState<BuildingType | undefined>(undefined);
-  const [resource, setResource] = useState<ResourcesIds | undefined>(undefined);
-  const [ownerEntityId, setOwnerEntityId] = useState<ID | undefined>(undefined);
-  const [canBeDestroyed, setCanBeDestroyed] = useState<boolean>(false);
-  const { playerRealms } = useEntities();
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [buildingState, setBuildingState] = useState<{
+    buildingType: BuildingType | undefined;
+    resource: ResourcesIds | undefined;
+    ownerEntityId: ID | undefined;
+  }>({
+    buildingType: undefined,
+    resource: undefined,
+    ownerEntityId: undefined,
+  });
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
   const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
   const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
 
-  useEffect(() => {
-    const building = getComponentValue(
-      dojo.setup.components.Building,
-      getEntityIdFromKeys(Object.values(selectedBuildingHex).map((v) => BigInt(v))),
-    );
-
-    if (building) {
-      setBuildingType(BuildingType[building.category as keyof typeof BuildingType]);
-      setResource(building.produced_resource_type as ResourcesIds);
-      setOwnerEntityId(building.outer_entity_id);
-      const canBeDestroyed = playerRealms().some((realm) => realm.entity_id === building.outer_entity_id);
-      setCanBeDestroyed(canBeDestroyed);
-    } else {
-      setBuildingType(undefined);
-      setResource(undefined);
-      setOwnerEntityId(undefined);
-      setCanBeDestroyed(false);
-    }
-  }, [selectedBuildingHex]);
-
-  const destroyButton = canBeDestroyed && selectedBuildingHex && (
-    <Button
-      key="destroy-button"
-      onClick={() => {
-        const tileManager = new TileManager(dojo.setup, {
-          col: selectedBuildingHex.outerCol,
-          row: selectedBuildingHex.outerRow,
-        });
-        tileManager.destroyBuilding(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow);
-        if (
-          buildingType === BuildingType.Resource &&
-          (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge ||
-            ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)
-        ) {
-          playDestroyStone();
-        } else {
-          playDestroyWooden();
-        }
-        setLeftNavigationView(View.None);
-      }}
-      variant="danger"
-      className="mt-3"
-      withoutSound
-    >
-      Destroy
-    </Button>
+  const building = useComponentValue(
+    dojo.setup.components.Building,
+    getEntityIdFromKeys(Object.values(selectedBuildingHex).map((v) => BigInt(v))),
   );
+
+  useEffect(() => {
+    if (building) {
+      setBuildingState({
+        buildingType: BuildingType[building.category as keyof typeof BuildingType],
+        resource: building.produced_resource_type as ResourcesIds,
+        ownerEntityId: building.outer_entity_id,
+      });
+      setIsPaused(building.paused);
+    } else {
+      setBuildingState({
+        buildingType: undefined,
+        resource: undefined,
+        ownerEntityId: undefined,
+      });
+    }
+  }, [selectedBuildingHex, building]);
+
+  const handlePauseResumeProduction = useCallback(() => {
+    setIsLoading(true);
+    const tileManager = new TileManager(dojo.setup, {
+      col: selectedBuildingHex.outerCol,
+      row: selectedBuildingHex.outerRow,
+    });
+    const action = !isPaused ? tileManager.pauseProduction : tileManager.resumeProduction;
+    action(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).then(() => {
+      setIsLoading(false);
+    });
+  }, [selectedBuildingHex, isPaused]);
+
+  const handleDestroyBuilding = useCallback(() => {
+    const tileManager = new TileManager(dojo.setup, {
+      col: selectedBuildingHex.outerCol,
+      row: selectedBuildingHex.outerRow,
+    });
+    tileManager.destroyBuilding(selectedBuildingHex.innerCol, selectedBuildingHex.innerRow);
+    if (
+      buildingState.buildingType === BuildingType.Resource &&
+      (ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Forge ||
+        ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Mine)
+    ) {
+      playDestroyStone();
+    } else {
+      playDestroyWooden();
+    }
+    setLeftNavigationView(View.None);
+  }, [selectedBuildingHex, buildingState]);
 
   return (
     <div>
-      <div className="flex flex-col p-1 space-y-1 text-sm">
-        {buildingType === BuildingType.Resource && resource !== undefined && (
-          <ResourceInfo resourceId={resource} entityId={ownerEntityId} extraButtons={[destroyButton]} />
+      <div className="flex flex-col p-1 w-full space-y-1 text-sm">
+        {buildingState.buildingType === BuildingType.Resource && buildingState.resource !== undefined && (
+          <ResourceInfo
+            isPaused={isPaused}
+            resourceId={buildingState.resource}
+            entityId={buildingState.ownerEntityId}
+          />
         )}
-        {buildingType !== undefined && buildingType !== BuildingType.Resource && (
-          <BuildingInfo buildingId={buildingType} entityId={ownerEntityId} extraButtons={[destroyButton]} />
+        {buildingState.buildingType !== undefined && buildingState.buildingType !== BuildingType.Resource && (
+          <BuildingInfo
+            isPaused={isPaused}
+            buildingId={buildingState.buildingType}
+            entityId={buildingState.ownerEntityId}
+            hintModal
+          />
+        )}
+        {buildingState.buildingType !== undefined && selectedBuildingHex && (
+          <div className="flex justify-center space-x-3">
+            <Button
+              onClick={handlePauseResumeProduction}
+              isLoading={isLoading}
+              variant="outline"
+              className="mt-3"
+              withoutSound
+            >
+              {isPaused ? "Resume" : "Pause"}
+            </Button>
+            <Button onClick={handleDestroyBuilding} variant="danger" className="mt-3" withoutSound>
+              Destroy
+            </Button>
+          </div>
         )}
       </div>
     </div>

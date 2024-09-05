@@ -215,3 +215,15 @@ canvas {
   position: relative;
   z-index: 1;
 }
+
+.vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  box-shadow: 0 0 300px 50px rgba(0, 0, 0, 1) inset;
+  opacity: 0.3;
+  z-index: 20;
+  pointer-events: none;
+}

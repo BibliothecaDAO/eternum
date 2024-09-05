@@ -2,15 +2,40 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
-import { BattleSide, EternumGlobalConfig, ID, StructureType } from "@bibliothecadao/eternum";
-import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import {
+  ComponentValue,
+  Components,
+  Has,
+  HasValue,
+  getComponentValue,
+  removeComponent,
+  runQuery,
+} from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
+import { StaminaManager } from "./StaminaManager";
 
 export enum BattleType {
   Hex,
   Structure,
-  Realm,
+}
+
+export enum BattleStatus {
+  BattleStart = "Start battle",
+  BattleOngoing = "",
+  UserWon = "Victory",
+  UserLost = "Defeat",
+  BattleEnded = "Battle has ended",
+}
+
+export enum RaidStatus {
+  isRaidable = "Raid!",
+  NoStamina = "Not enough stamina",
+  NoStructure = "No structure to raid",
+  OwnStructure = "Can't raid your own structure",
+  NoArmy = "No army selected",
+  ArmyNotInBattle = "Selected army not in this battle",
 }
 
 export class BattleManager {
@@ -18,7 +43,6 @@ export class BattleManager {
   dojo: DojoResult;
   battleType: BattleType | undefined;
   private battleIsClaimable: boolean | undefined;
-  private battleIsRaidable: boolean | undefined;
 
   constructor(battleEntityId: ID, dojo: DojoResult) {
     this.battleEntityId = battleEntityId;
@@ -78,6 +102,12 @@ export class BattleManager {
     } else {
       return undefined;
     }
+  }
+
+  public deleteBattle() {
+    removeComponent(this.dojo.setup.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+    this.dojo.network.world.deleteEntity(getEntityIdFromKeys([BigInt(this.battleEntityId)]));
+    this.battleEntityId = 0;
   }
 
   public isBattleOngoing(currentTimestamp: number): boolean {
@@ -172,6 +202,7 @@ export class BattleManager {
       this.battleIsClaimable = false;
       return false;
     }
+
     if (this.getBattleType(structure) !== BattleType.Structure) {
       this.battleIsClaimable = false;
       return false;
@@ -207,28 +238,28 @@ export class BattleManager {
 
   public isRaidable(
     currentTimestamp: number,
+    currentArmiesTick: number,
     selectedArmy: ArmyInfo | undefined,
     structure: Structure | undefined,
-  ): boolean {
-    if (!selectedArmy) return false;
+  ): RaidStatus {
+    if (!selectedArmy) return RaidStatus.NoArmy;
 
-    if (!structure) return false;
-
-    if (this.battleIsRaidable) return this.battleIsRaidable;
+    if (!structure) return RaidStatus.NoStructure;
 
     if (this.isBattleOngoing(currentTimestamp) && selectedArmy.battle_id !== this.battleEntityId) {
-      return false;
+      return RaidStatus.ArmyNotInBattle;
     }
 
     if (this.getBattleType(structure) === BattleType.Hex) {
-      this.battleIsRaidable = false;
-      return false;
+      return RaidStatus.NoStructure;
     }
 
-    if (structure.isMine) return false;
+    if (structure.isMine) return RaidStatus.OwnStructure;
 
-    this.battleIsRaidable = true;
-    return true;
+    const staminaManager = new StaminaManager(this.dojo.setup, selectedArmy.entity_id);
+    if (staminaManager.getStamina(currentArmiesTick).amount === 0) return RaidStatus.NoStamina;
+
+    return RaidStatus.isRaidable;
   }
 
   public isAttackable(defender: ArmyInfo | undefined): boolean {
@@ -283,10 +314,27 @@ export class BattleManager {
       return this.battleType;
     }
 
-    this.battleType =
-      structure.category === StructureType[StructureType.Realm] ? BattleType.Realm : BattleType.Structure;
-
+    this.battleType = BattleType.Structure;
     return this.battleType;
+  }
+
+  public getWinner(currentTimestamp: number, ownArmySide: string): BattleStatus {
+    const battle = this.getUpdatedBattle(currentTimestamp);
+    if (!battle) return BattleStatus.BattleStart;
+
+    if (battle.attack_army_health.current > 0 && battle.defence_army_health.current > 0)
+      return BattleStatus.BattleOngoing;
+
+    if (ownArmySide === BattleSide[BattleSide.None]) {
+      return BattleStatus.BattleEnded;
+    }
+
+    const { ownArmyHealth, opponentArmyHealth } =
+      ownArmySide === BattleSide[BattleSide.Attack]
+        ? { ownArmyHealth: battle.attack_army_health.current, opponentArmyHealth: battle.defence_army_health.current }
+        : { ownArmyHealth: battle.defence_army_health.current, opponentArmyHealth: battle.attack_army_health.current };
+
+    return ownArmyHealth > opponentArmyHealth ? BattleStatus.UserWon : BattleStatus.UserLost;
   }
 
   private getTroopFullHealth(troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>): bigint {
@@ -370,6 +418,7 @@ export class BattleManager {
   }
 
   private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint) {
+    if (lifetime_troops === 0n) return 0;
     return Number(current_troops) / Number(lifetime_troops);
   }
 }

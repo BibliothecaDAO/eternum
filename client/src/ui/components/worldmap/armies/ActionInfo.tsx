@@ -10,13 +10,17 @@ import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const ActionInfo = () => {
-  const { hoveredHex, selectedEntityId, travelPaths } = useUIStore((state) => state.armyActions);
+  const hoveredHex = useUIStore((state) => state.armyActions.hoveredHex);
+  const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const { getBalance } = getResourceBalance();
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const travelPath = useMemo(() => {
-    if (hoveredHex) return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
-  }, [hoveredHex, travelPaths]);
+    if (hoveredHex)
+      return useUIStore
+        .getState()
+        .armyActions.travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
+  }, [hoveredHex, useUIStore.getState().armyActions.travelPaths]);
 
   const showTooltip = useMemo(() => {
     return travelPath !== undefined && travelPath.path.length >= 2 && selectedEntityId !== null;
@@ -35,12 +39,12 @@ export const ActionInfo = () => {
               <ResourceCost
                 amount={-EternumGlobalConfig.exploration.wheatBurn}
                 resourceId={ResourcesIds.Wheat}
-                balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
+                balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
                 amount={-EternumGlobalConfig.exploration.fishBurn}
                 resourceId={ResourcesIds.Fish}
-                balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
+                balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
             </div>
           )}
@@ -50,19 +54,10 @@ export const ActionInfo = () => {
             travelLength={travelPath!.path.length - 1}
           />
           {!isExplored && (
-            <div className="flex flex-row text-xs">
-              <div
-                style={{
-                  backgroundImage: `url(${BuildingThumbs.resources})`,
-                  backgroundSize: "calc(100% - 10px)",
-                  backgroundPosition: "center",
-                }}
-                className="w-8 h-8 bg-no-repeat"
-              ></div>
-
+            <div className="flex flex-row text-xs ml-1">
+              <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
               <div className="flex flex-col p-1 text-xs">
-                <div>+{EternumGlobalConfig.exploration.reward}</div>
-                <div>Reward</div>
+                <div>+{EternumGlobalConfig.exploration.reward} Random resource</div>
               </div>
             </div>
           )}

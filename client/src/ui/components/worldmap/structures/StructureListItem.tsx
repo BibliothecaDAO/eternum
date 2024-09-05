@@ -7,7 +7,6 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { Structure } from "@/hooks/helpers/useStructures";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
@@ -24,7 +23,7 @@ type StructureListItemProps = {
 export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmySelected }: StructureListItemProps) => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const [showInventory, setShowInventory] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
@@ -42,16 +41,16 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const battleManager = useMemo(() => new BattleManager(structure.protector?.battle_id || 0, dojo), [structure]);
 
   const { updatedBattle } = useMemo(() => {
-    if (!currentTimestamp) throw new Error("Current timestamp is undefined");
-    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
+    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     return { updatedBattle };
-  }, [currentTimestamp]);
+  }, [nextBlockTimestamp]);
 
   const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
 
   const battleButtons = useMemo(() => {
-    if (!currentTimestamp) throw new Error("Current timestamp is undefined");
-    const isBattleOngoing = battleManager.isBattleOngoing(currentTimestamp);
+    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
+    const isBattleOngoing = battleManager.isBattleOngoing(nextBlockTimestamp);
     const eyeButton = (
       <Eye
         key={"eye-0"}
@@ -117,12 +116,12 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         />,
       ];
     }
-  }, [currentTimestamp, userArmyInBattle, ownArmySelected, updatedBattle, setBattleView, setShowMergeTroopsPopup]);
+  }, [nextBlockTimestamp, userArmyInBattle, ownArmySelected, updatedBattle, setBattleView, setShowMergeTroopsPopup]);
 
   return (
     <div className="flex justify-between flex-row mt-2 ">
       <div
-        className={`flex w-[27rem] h-full justify-between clip-angled ${
+        className={`flex w-[27rem] h-full justify-between  ${
           structure.isMine ? "bg-blueish/20" : "bg-red/20"
         } rounded-md border-gold/20 p-2`}
       >

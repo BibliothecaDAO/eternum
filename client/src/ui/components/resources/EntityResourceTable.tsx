@@ -1,4 +1,5 @@
 import { ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { useMemo } from "react";
 import { ResourceChip } from "./ResourceChip";
 
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
@@ -6,7 +7,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
     return <div>Entity not found</div>;
   }
 
-  const resourceElements = () => {
+  const resourceElements = useMemo(() => {
     return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
       const resources = resourceIds.map((resourceId: any) => {
         return <ResourceChip key={resourceId} resourceId={resourceId} entityId={entityId} />;
@@ -18,7 +19,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
         </div>
       );
     });
-  };
+  }, [entityId]);
 
-  return <div>{resourceElements()}</div>;
+  return <div>{resourceElements}</div>;
 };

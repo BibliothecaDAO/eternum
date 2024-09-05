@@ -1,7 +1,7 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
@@ -26,12 +26,12 @@ export const Leaderboard = ({
     },
   } = useDojo();
 
-  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const { getAddressName, getAddressOrder } = useRealm();
 
   const playerPointsLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance().getPlayersByRank(currentTimestamp || 0, hyperstructureEntityId);
-  }, [currentTimestamp, hyperstructureEntityId]);
+    return LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId);
+  }, [nextBlockTimestamp, hyperstructureEntityId]);
 
   const updateEntityIds = useEntityQuery([
     HasValue(HyperstructureUpdate, { hyperstructure_entity_id: hyperstructureEntityId }),

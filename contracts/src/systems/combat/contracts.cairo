@@ -383,15 +383,20 @@ mod combat_systems {
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
     use eternum::models::capacity::Capacity;
-    use eternum::models::combat::BattleEscrowTrait;
-    use eternum::models::combat::ProtectorCustomTrait;
+    use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
         BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use eternum::models::event::{
+        EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
+        BattlePillageData
+    };
 
     use eternum::models::movable::{Movable, MovableCustomTrait};
+
+    use eternum::models::name::{AddressName, EntityName};
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
     use eternum::models::position::CoordTrait;
     use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
@@ -399,9 +404,10 @@ mod combat_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
     use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
-    use eternum::models::stamina::Stamina;
+    use eternum::models::stamina::{Stamina, StaminaCustomTrait};
     use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::models::weight::Weight;
+
     use eternum::models::{
         combat::{
             Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
@@ -430,7 +436,8 @@ mod combat_systems {
         army_id: ID,
         winner: BattleSide,
         pillaged_resources: Span<(u8, u128)>,
-        destroyed_building_category: BuildingCategory
+        destroyed_building_category: BuildingCategory,
+        timestamp: u64,
     }
 
 
@@ -574,8 +581,9 @@ mod combat_systems {
             from_army_quantity.value -= troops.count().into();
             set!(world, (from_army_quantity));
 
-            // delete army if troop count is 0
-            if from_army.troops.count().is_zero() {
+            // delete army if troop count is 0 and if it's not a defensive army
+            let protectee = get!(world, from_army_id, Protectee);
+            if from_army.troops.count().is_zero() && protectee.is_none() {
                 InternalCombatImpl::delete_army(world, ref from_army_owner, ref from_army);
             }
 
@@ -598,7 +606,15 @@ mod combat_systems {
 
             get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
+            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let battle_config = BattleConfigCustomImpl::get(world);
+
             let mut defending_army: Army = get!(world, defending_army_id, Army);
+            let defending_army_owner_entity_id = get!(world, defending_army_id, EntityOwner).entity_owner_id;
+            let defending_army_owner_structure = get!(world, defending_army_owner_entity_id, Structure);
+            if defending_army_owner_structure.category != StructureCategory::None {
+                defending_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
+            }
             if defending_army.battle_id.is_non_zero() {
                 // defending army appears to be in battle
                 // so we want to update the defending army's battle status
@@ -686,6 +702,33 @@ mod combat_systems {
 
             set!(world, (battle));
 
+            let id = world.uuid();
+
+            let attacker = starknet::get_caller_address();
+            let defender_entity_owner = get!(world, defending_army_id, EntityOwner).entity_owner_id;
+            let defender = get!(world, defender_entity_owner, Owner).address;
+
+            let protectee = get!(world, defending_army_id, Protectee).protectee_id;
+            let defender_structure = get!(world, protectee, Structure);
+            emit!(
+                world,
+                BattleStartData {
+                    id,
+                    event_id: EventType::BattleStart,
+                    battle_entity_id: battle_id,
+                    attacker,
+                    attacker_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    attacker_army_entity_id: attacking_army_id,
+                    defender_name: get!(world, defender, AddressName).name,
+                    defender,
+                    defender_army_entity_id: defending_army_id,
+                    duration_left: battle.duration_left,
+                    x: battle_position.x,
+                    y: battle_position.y,
+                    structure_type: defender_structure.category,
+                    timestamp: starknet::get_block_timestamp(),
+                }
+            );
             battle_id
         }
 
@@ -767,6 +810,26 @@ mod combat_systems {
 
             battle.reset_delta(troop_config);
             set!(world, (battle));
+
+            let id = world.uuid();
+            let joiner = starknet::get_caller_address();
+
+            emit!(
+                world,
+                BattleJoinData {
+                    id,
+                    event_id: EventType::BattleJoin,
+                    battle_entity_id: battle_id,
+                    joiner,
+                    joiner_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    joiner_army_entity_id: army_id,
+                    joiner_side: battle_side,
+                    duration_left: battle.duration_left,
+                    x: battle_position.x,
+                    y: battle_position.y,
+                    timestamp: starknet::get_block_timestamp(),
+                }
+            );
         }
 
 
@@ -781,7 +844,52 @@ mod combat_systems {
 
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
+            battle.update_state();
+            let battle_was_active = !battle.has_ended();
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
+
+            // slash army if battle was not concluded before they left
+            if battle_was_active {
+                let troop_config = TroopConfigCustomImpl::get(world);
+                let mut army = get!(world, army_id, Army);
+                let troops_deducted = Troops {
+                    knight_count: (army.troops.knight_count * troop_config.battle_leave_slash_num.into())
+                        / troop_config.battle_leave_slash_denom.into(),
+                    paladin_count: (army.troops.paladin_count * troop_config.battle_leave_slash_num.into())
+                        / troop_config.battle_leave_slash_denom.into(),
+                    crossbowman_count: (army.troops.crossbowman_count * troop_config.battle_leave_slash_num.into())
+                        / troop_config.battle_leave_slash_denom.into(),
+                };
+                army.troops.deduct(troops_deducted);
+
+                let army_health = Health {
+                    entity_id: army_id,
+                    current: army.troops.full_health(troop_config),
+                    lifetime: army.troops.full_health(troop_config)
+                };
+
+                let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+                set!(world, (army, army_health, army_quantity));
+            }
+
+            // emit battle leave event
+            let battle_position = get!(world, battle_id, Position);
+            emit!(
+                world,
+                BattleLeaveData {
+                    id: world.uuid(),
+                    event_id: EventType::BattleLeave,
+                    battle_entity_id: battle_id,
+                    leaver: starknet::get_caller_address(),
+                    leaver_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    leaver_army_entity_id: army_id,
+                    leaver_side: caller_army.battle_side,
+                    duration_left: battle.duration_left,
+                    x: battle_position.x,
+                    y: battle_position.y,
+                    timestamp: starknet::get_block_timestamp(),
+                }
+            );
         }
 
 
@@ -793,8 +901,9 @@ mod combat_systems {
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
 
-            // ensure structure is not a realm
-            assert!(structure.category != StructureCategory::Realm, "realms can not be claimed");
+            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let battle_config = BattleConfigCustomImpl::get(world);
+            structure.assert_can_be_attacked(battle_config, armies_tick_config);
 
             // ensure claimer army is not in battle
             let claimer_army: Army = get!(world, army_id, Army);
@@ -817,21 +926,32 @@ mod combat_systems {
                 // ensure structure army is dead
                 let structure_army_health: Health = get!(world, structure_army_id, Health);
                 assert!(!structure_army_health.is_alive(), "can only claim when structure army is dead");
-
-                let mut structure_army_owner: Owner = get!(world, structure_army_id, Owner);
-                structure_army_owner.address = starknet::get_caller_address();
-                set!(world, (structure_army_owner))
             }
 
-            // pass ownership of structure to claimer
-            let mut structure_owner_entity: EntityOwner = get!(world, structure_id, EntityOwner);
-            let claimer_army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
-            structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
-            set!(world, (structure_owner_entity));
+            let previous_owner = get!(world, structure_id, Owner).address;
 
             let mut structure_owner: Owner = get!(world, structure_id, Owner);
             structure_owner.address = starknet::get_caller_address();
             set!(world, (structure_owner));
+
+            let structure_position = get!(world, structure_id, Position);
+
+            emit!(
+                world,
+                BattleClaimData {
+                    id: world.uuid(),
+                    event_id: EventType::BattleClaim,
+                    structure_entity_id: structure_id,
+                    claimer: starknet::get_caller_address(),
+                    claimer_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    claimer_army_entity_id: army_id,
+                    previous_owner,
+                    x: structure_position.x,
+                    y: structure_position.y,
+                    structure_type: structure.category,
+                    timestamp: starknet::get_block_timestamp(),
+                }
+            );
         }
 
 
@@ -842,6 +962,9 @@ mod combat_systems {
             // ensure entity being pillaged is a structure
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
+            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let battle_config = BattleConfigCustomImpl::get(world);
+            structure.assert_can_be_attacked(battle_config, armies_tick_config);
 
             // ensure attacking army is not in a battle
             let mut attacking_army: Army = get!(world, army_id, Army);
@@ -851,6 +974,11 @@ mod combat_systems {
             let army_position: Position = get!(world, army_id, Position);
             let structure_position: Position = get!(world, structure_id, Position);
             army_position.assert_same_location(structure_position.into());
+
+            // ensure army has stamina
+            let mut army_stamina: Stamina = get!(world, army_id, Stamina);
+            army_stamina.refill_if_next_tick(world);
+            assert!(army_stamina.amount.is_non_zero(), "army needs stamina to pillage");
 
             let troop_config = TroopConfigCustomImpl::get(world);
 
@@ -937,17 +1065,24 @@ mod combat_systems {
 
                                     let resource_amount_stolen: u128 = min(max_carriable, resource_amount_stolen);
 
-                                    pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
+                                    // express resource amount stolen to be a percentage of stamina
+                                    // left
+                                    let resource_amount_stolen: u128 = (resource_amount_stolen
+                                        * army_stamina.amount.into())
+                                        / army_stamina.max(world).into();
 
-                                    InternalResourceSystemsImpl::transfer(
-                                        world,
-                                        structure_id,
-                                        army_id,
-                                        array![(*chosen_resource_type, resource_amount_stolen)].span(),
-                                        army_id,
-                                        true,
-                                        true
-                                    );
+                                    if resource_amount_stolen.is_non_zero() {
+                                        pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
+                                        InternalResourceSystemsImpl::transfer(
+                                            world,
+                                            structure_id,
+                                            army_id,
+                                            array![(*chosen_resource_type, resource_amount_stolen)].span(),
+                                            army_id,
+                                            true,
+                                            true
+                                        );
+                                    }
 
                                     break;
                                 }
@@ -958,8 +1093,11 @@ mod combat_systems {
                 };
             }
 
-            let mut destroyed_building_category = BuildingCategory::None;
+            // drain stamina
+            army_stamina.drain(world);
 
+            // destroy a building
+            let mut destroyed_building_category = BuildingCategory::None;
             if structure.category == StructureCategory::Realm {
                 // all buildings are at most 4 directions from the center
                 // so first we pick a random between within 1 and 4
@@ -1111,8 +1249,33 @@ mod combat_systems {
                         BattleSide::Defence
                     },
                     pillaged_resources: pillaged_resources.span(),
-                    destroyed_building_category
+                    destroyed_building_category,
+                    timestamp: starknet::get_block_timestamp(),
                 }),
+            );
+
+            let structure_owner = get!(world, structure_id, Owner).address;
+            emit!(
+                world,
+                BattlePillageData {
+                    id: world.uuid(),
+                    event_id: EventType::BattlePillage,
+                    pillager: starknet::get_caller_address(),
+                    pillager_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    pillager_army_entity_id: army_id,
+                    pillaged_structure_owner: structure_owner,
+                    pillaged_structure_entity_id: structure_id,
+                    winner: if *attack_successful {
+                        BattleSide::Attack
+                    } else {
+                        BattleSide::Defence
+                    },
+                    x: structure_position.x,
+                    y: structure_position.y,
+                    structure_type: structure.category,
+                    pillaged_resources: pillaged_resources.span(),
+                    timestamp: starknet::get_block_timestamp(),
+                }
             );
         }
     }
@@ -1179,9 +1342,7 @@ mod combat_systems {
 
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
-            set!(
-                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
-            );
+            set!(world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() }));
 
             army_id
         }
@@ -1223,7 +1384,6 @@ mod combat_systems {
                         entity_id: army_id, troops: Default::default(), battle_id: 0, battle_side: Default::default()
                     },
                     EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id },
-                    Owner { entity_id: army_id, address: owner_address },
                     Position { entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y }
                 )
             );
@@ -1235,6 +1395,12 @@ mod combat_systems {
             let mut army: Army = get!(world, army_id, Army);
             army.troops.add(troops);
             set!(world, (army));
+
+            let army_not_defensive = get!(world, army_id, Protectee).is_none();
+            if army_not_defensive {
+                let troop_config = TroopConfigCustomImpl::get(world);
+                army.assert_within_limit(troop_config);
+            }
 
             // increase army health
             let mut army_health: Health = get!(world, army_id, Health);
@@ -1254,57 +1420,32 @@ mod combat_systems {
             owner_armies_quantity.count -= 1;
             set!(world, (owner_armies_quantity));
 
-            // delete army
-            army.entity_id = 0;
-            set!(world, (army));
+            let protectee: Protectee = get!(world, army.entity_id, Protectee);
+            if (protectee.protectee_id != 0) {
+                delete!(world, (protectee));
+            }
 
-            entity_owner.entity_owner_id = 0;
-            set!(world, (entity_owner));
-
-            let mut position: Position = get!(world, army.entity_id, Position);
-            position.x = 0;
-            position.y = 0;
-            set!(world, (position));
-            // reset components connected to army
-        // let (
-        //     owner,
-        //     position,
-        //     quantity,
-        //     health,
-        //     stamina,
-        //     resource_transfer_lock,
-        //     movable,
-        //     capacity
-        // ) =
-        //     get!(
-        //     world,
-        //     army_id,
-        //     (
-        //         Owner,
-        //         Position,
-        //         Quantity,
-        //         Health,
-        //         Stamina,
-        //         ResourceTransferLock,
-        //         Movable,
-        //         Capacity
-        //     )
-        // );
-        // delete!(
-        //     world,
-        //     (
-        //         army,
-        //         entity_owner,
-        //         owner,
-        //         position,
-        //         quantity,
-        //         health,
-        //         stamina,
-        //         resource_transfer_lock,
-        //         movable,
-        //         capacity
-        //     )
-        // );
+            // delete army by resetting components connected to army
+            let (owner, position, quantity, health, stamina, resource_transfer_lock, movable, capacity) = get!(
+                world,
+                army.entity_id,
+                (Owner, Position, Quantity, Health, Stamina, ResourceTransferLock, Movable, Capacity)
+            );
+            delete!(
+                world,
+                (
+                    army,
+                    entity_owner,
+                    owner,
+                    position,
+                    quantity,
+                    health,
+                    stamina,
+                    resource_transfer_lock,
+                    movable,
+                    capacity
+                )
+            );
         }
 
         /// Updates battle and removes army if battle has ended
@@ -1415,14 +1556,10 @@ mod combat_systems {
                             * battle_army.troops.crossbowman_count
                             / battle_army_lifetime.troops.crossbowman_count
                     };
-            let army_health = Health {
-                entity_id: army_id,
-                current: army.troops.full_health(troop_config),
-                lifetime: army.troops.full_health(troop_config)
-            };
 
+            // note: army quantity would be used inside `withdraw_balance_and_reward`
             let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-            set!(world, (army_health, army_quantity));
+            set!(world, (army_quantity));
 
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);
@@ -1430,7 +1567,6 @@ mod combat_systems {
             // remove army from battle
             army.battle_id = 0;
             army.battle_side = BattleSide::None;
-            set!(world, (army));
 
             // update battle army count and health
             battle_army.troops.knight_count -= army.troops.knight_count;
@@ -1454,9 +1590,27 @@ mod combat_systems {
                 battle.attack_army_health = battle_army_health;
             }
 
-            battle.reset_delta(troop_config);
+            // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+            army.troops.normalize_counts();
 
-            set!(world, (battle));
+            let army_health = Health {
+                entity_id: army_id,
+                current: army.troops.full_health(troop_config),
+                lifetime: army.troops.full_health(troop_config)
+            };
+
+            // note: army quantity would be used inside `withdraw_balance_and_reward`
+            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+            set!(world, (army_health, army_quantity));
+            set!(world, (army));
+
+            if (battle.attack_army_lifetime.troops.count().is_zero()
+                && battle.defence_army_lifetime.troops.count().is_zero()) {
+                delete!(world, (battle));
+            } else {
+                battle.reset_delta(troop_config);
+                set!(world, (battle));
+            }
         }
     }
 }

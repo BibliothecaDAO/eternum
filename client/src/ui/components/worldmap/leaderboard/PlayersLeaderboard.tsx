@@ -1,7 +1,7 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ContractAddress, getOrderName } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { PlayerPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
@@ -31,7 +31,7 @@ export const PlayersLeaderboard = () => {
   });
 
   const playerLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance().getPlayersByRank(useBlockchainStore.getState().nextBlockTimestamp!);
+    return LeaderboardManager.instance().getPlayersByRank(useUIStore.getState().nextBlockTimestamp!);
   }, []);
 
   const sortingParams: SortingParamPlayerPointsLeaderboard[] = useMemo(() => {
@@ -75,9 +75,7 @@ export const PlayersLeaderboard = () => {
           return (
             <div
               key={index}
-              className={`grid grid-cols-6 gap-4 clip-angled-sm p-1 ${
-                isOwner ? "bg-green/20" : ""
-              }  text-xxs text-gold`}
+              className={`grid grid-cols-6 gap-4  p-1 ${isOwner ? "bg-green/20" : ""}  text-xxs text-gold`}
             >
               <div className="col-span-1 ">{`#${index + 1}`}</div>
               <div className="col-span-1">{playerName}</div>

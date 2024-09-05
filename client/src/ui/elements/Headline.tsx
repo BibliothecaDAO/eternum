@@ -11,12 +11,7 @@ type HeadlineProps = {
 };
 
 export const Headline = ({ children, className }: HeadlineProps) => (
-  <div
-    className={clsx(
-      "flex items-center justify-center select-none w-full clip-angled bg-gold/5 p-2 h6 font-bold",
-      className,
-    )}
-  >
+  <div className={clsx("flex items-center justify-center select-none w-full  bg-gold/5 p-1 h6 font-bold", className)}>
     <div className="flex flex-1 items-center">
       <svg width="28" height="11" viewBox="0 0 28 11" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path

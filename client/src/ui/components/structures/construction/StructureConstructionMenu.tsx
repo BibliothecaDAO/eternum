@@ -28,7 +28,7 @@ export const StructureConstructionMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getBalance } = getResourceBalance();
@@ -42,12 +42,12 @@ export const StructureConstructionMenu = () => {
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(realmEntityId, resourceCost.resource);
+      const balance = getBalance(structureEntityId, resourceCost.resource);
       return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
   return (
-    <div className="grid grid-cols-4 gap-2 p-2">
+    <div className="grid grid-cols-2 gap-2 p-2">
       {buildingTypes.map((structureType, index) => {
         const building = StructureType[structureType as keyof typeof StructureType];
         const cost = STRUCTURE_COSTS_SCALED[building];
@@ -72,7 +72,7 @@ export const StructureConstructionMenu = () => {
             }}
             active={previewBuilding !== null && previewBuilding.type === building}
             name={StructureType[building]}
-            toolTip={<StructureInfo structureId={building} entityId={realmEntityId} />}
+            toolTip={<StructureInfo structureId={building} entityId={structureEntityId} />}
             canBuild={hasBalance}
           />
         );

@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, MercenariesConfig};
+use eternum::models::config::{TroopConfig, BattleConfig, MercenariesConfig};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -27,6 +27,11 @@ trait IWeightConfig {
 }
 
 #[dojo::interface]
+trait IBattleConfig {
+    fn set_battle_config(ref world: IWorldDispatcher, battle_config: BattleConfig);
+}
+
+#[dojo::interface]
 trait ICapacityConfig {
     fn set_capacity_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
 }
@@ -39,6 +44,10 @@ trait ITickConfig {
 #[dojo::interface]
 trait IStaminaConfig {
     fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16);
+}
+#[dojo::interface]
+trait IStaminaRefillConfig {
+    fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16);
 }
 
 #[dojo::interface]
@@ -145,7 +154,7 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig,
         MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig,
         BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig,
-        MercenariesConfig
+        StaminaRefillConfig, MercenariesConfig, BattleConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -273,6 +282,16 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
+    impl BattleConfigCustomImpl of super::IBattleConfig<ContractState> {
+        fn set_battle_config(ref world: IWorldDispatcher, mut battle_config: BattleConfig) {
+            assert_caller_is_admin(world);
+
+            battle_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (battle_config));
+        }
+    }
+
+    #[abi(embed_v0)]
     impl TickConfigCustomImpl of super::ITickConfig<ContractState> {
         fn set_tick_config(ref world: IWorldDispatcher, tick_id: u8, tick_interval_in_seconds: u64) {
             assert_caller_is_admin(world);
@@ -287,6 +306,15 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
+        fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16) {
+            assert_caller_is_admin(world);
+
+            set!(world, (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: amount }));
         }
     }
 

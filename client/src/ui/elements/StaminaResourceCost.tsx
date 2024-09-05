@@ -1,4 +1,5 @@
-import { useStamina } from "@/hooks/helpers/useStamina";
+import { useStaminaManager } from "@/hooks/helpers/useStamina";
+import useUIStore from "@/hooks/store/useUIStore";
 import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -12,8 +13,11 @@ export const StaminaResourceCost = ({
   travelLength: number;
   isExplored: boolean;
 }) => {
-  const { useStaminaByEntityId } = useStamina();
-  const stamina = useStaminaByEntityId({ travelingEntityId: travelingEntityId || 0 });
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
+
+  const staminaManager = useStaminaManager(travelingEntityId || 0);
+
+  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 
   const destinationHex = useMemo(() => {
     if (!stamina) return;
@@ -21,7 +25,7 @@ export const StaminaResourceCost = ({
       travelLength * (isExplored ? -EternumGlobalConfig.stamina.travelCost : -EternumGlobalConfig.stamina.exploreCost);
     const balanceColor = stamina !== undefined && stamina.amount < costs ? "text-red/90" : "text-green/90";
     return { isExplored, costs, balanceColor, balance: stamina.amount };
-  }, [stamina]);
+  }, [stamina, travelLength]);
 
   return (
     destinationHex && (

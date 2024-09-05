@@ -85,10 +85,15 @@ export class BattleManager {
   async onUpdate(update: BattleSystemUpdate) {
     await this.loadPromise;
 
-    const { entityId, hexCoords, isEmpty } = update;
+    const { entityId, hexCoords, isEmpty, deleted } = update;
+
+    if (deleted) {
+      this.removeBattle(entityId);
+      return;
+    }
 
     if (isEmpty) {
-      if (this.battles.has(entityId)) {
+      if (this.battles.hasByEntityId(entityId)) {
         this.removeBattle(entityId);
         return;
       } else {
@@ -108,7 +113,7 @@ export class BattleManager {
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
-    const index = this.battles.addBattle(entityId);
+    const index = this.battles.addBattle(entityId, hexCoords);
 
     this.instancedModel.setMatrixAt(index, this.dummy.matrix);
     this.instancedModel.setCount(this.battles.counter);
@@ -141,22 +146,30 @@ export class BattleManager {
 }
 
 class Battles {
-  private battles: Map<ID, number> = new Map();
+  private battles: Map<ID, { index: number; position: Position }> = new Map();
   counter: number = 0;
 
-  addBattle(entityId: ID): number {
+  addBattle(entityId: ID, position: Position): number {
     if (!this.battles.has(entityId)) {
-      this.battles.set(entityId, this.counter);
+      this.battles.set(entityId, { index: this.counter, position });
       this.counter++;
     }
-    return this.battles.get(entityId)!;
+    return this.battles.get(entityId)!.index;
   }
 
   getBattleIndex(entityId: ID) {
-    return this.battles.get(entityId);
+    return this.battles.get(entityId)?.index;
   }
 
-  has(entityId: ID) {
+  hasByPosition(position: Position) {
+    return Array.from(this.battles.values()).some((battle) => {
+      const battlePosition = battle.position.getContract();
+      const positionContract = position.getContract();
+      return battlePosition.x === positionContract.x && battlePosition.y === positionContract.y;
+    });
+  }
+
+  hasByEntityId(entityId: ID) {
     return this.battles.has(entityId);
   }
 

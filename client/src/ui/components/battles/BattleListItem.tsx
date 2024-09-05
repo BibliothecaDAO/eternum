@@ -6,7 +6,6 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
@@ -25,7 +24,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState(false);
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
-  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const [showInventory, setShowInventory] = useState(false);
 
@@ -33,11 +32,13 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const userArmyInBattle = getUserArmyInBattle(battle.entity_id);
+
   const battleManager = useMemo(() => new BattleManager(battle.entity_id, dojo), [battle]);
+
   const updatedBattle = useMemo(() => {
-    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     return updatedBattle;
-  }, [currentTimestamp]);
+  }, [nextBlockTimestamp]);
 
   const armiesInBattle = useMemo(() => {
     const armiesEntityIds = runQuery([
@@ -49,8 +50,8 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   }, [battleManager]);
 
   const buttons = useMemo(() => {
-    if (!currentTimestamp) throw new Error("Current timestamp is undefined");
-    const isBattleOngoing = battleManager.isBattleOngoing(currentTimestamp);
+    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
+    const isBattleOngoing = battleManager.isBattleOngoing(nextBlockTimestamp);
     const eyeButton = (
       <Eye
         key="eye-0"
@@ -94,14 +95,14 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
       // just check
       return [eyeButton];
     }
-  }, [currentTimestamp, battleManager, ownArmySelected]);
+  }, [nextBlockTimestamp, battleManager, ownArmySelected]);
 
   return (
     !battleManager.isEmpty() && (
       <React.Fragment>
         <div className="flex flex-row justify-between mt-2">
           <div
-            className={`flex flex-col w-[27rem] h-full justify-between clip-angled bg-red/20 ${
+            className={`flex flex-col w-[27rem] h-full justify-between  bg-red/20 ${
               userArmyInBattle ? "animate-pulse" : ""
             } rounded-md border-gold/20 p-2`}
           >

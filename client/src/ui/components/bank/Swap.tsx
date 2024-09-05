@@ -19,10 +19,7 @@ const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.b
 export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; entityId: ID }) => {
   const {
     account: { account },
-    setup: {
-      components: { Market, Liquidity },
-      systemCalls: { buy_resources, sell_resources },
-    },
+    setup,
   } = useDojo();
 
   const { getBalance } = getResourceBalance();
@@ -36,14 +33,18 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  const lordsFee = lordsAmount * OWNER_FEE;
+  const ownerFee = lordsAmount * OWNER_FEE;
+  const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * LP_FEE;
 
-  const market = useComponentValue(Market, getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]));
   const marketManager = useMemo(
-    () => new MarketManager(Market, Liquidity, bankEntityId, ContractAddress(account.address), resourceId),
-    [Market, Liquidity, bankEntityId, resourceId, account.address, market],
+    () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
+    [setup, bankEntityId, resourceId, account.address],
   );
 
+  const market = useComponentValue(
+    setup.components.Market,
+    getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
+  );
   useEffect(() => {
     const amount = isBuyResource ? lordsAmount : resourceAmount;
     const setAmount = isBuyResource ? setResourceAmount : setLordsAmount;
@@ -53,10 +54,10 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       const cost = operation(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator);
       setAmount(divideByPrecision(cost));
     }
-  }, [lordsAmount, resourceAmount, isBuyResource, marketManager]);
+  }, [lordsAmount, resourceAmount, isBuyResource, marketManager, market]);
 
   const hasEnough = useMemo(() => {
-    const amount = isBuyResource ? lordsAmount + lordsFee : resourceAmount;
+    const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const balanceId = isBuyResource ? BigInt(ResourcesIds.Lords) : resourceId;
     return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
   }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId]);
@@ -70,7 +71,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   const onSwap = useCallback(() => {
     setIsLoading(true);
-    const operation = isBuyResource ? buy_resources : sell_resources;
+    const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
     operation({
       signer: account,
       bank_entity_id: bankEntityId,
@@ -81,36 +82,36 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, buy_resources, sell_resources, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, lordsAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
-      const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - lordsFee) : resourceAmount;
+      const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - ownerFee) : resourceAmount;
+      const selectableResources = isLords
+        ? resources.filter((r) => r.id === ResourcesIds.Lords)
+        : resources.filter((r) => r.id !== ResourcesIds.Lords);
+
       return (
         <ResourceBar
           entityId={entityId}
-          resources={
-            isLords
-              ? resources.filter((r) => r.id === ResourcesIds.Lords)
-              : resources.filter((r) => r.id !== ResourcesIds.Lords)
-          }
-          lordsFee={lordsFee}
+          resources={selectableResources}
+          lordsFee={ownerFee}
           amount={amount}
           setAmount={isLords ? setLordsAmount : setResourceAmount}
-          resourceId={resourceId}
+          resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
         />
       );
     },
-    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId, lordsFee],
+    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId, ownerFee],
   );
   const renderConfirmationPopup = useMemo(() => {
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
-    const negativeAmount = isBuyResource ? lordsAmount + lordsFee : resourceAmount;
-    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount - lordsFee;
+    const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
+    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount - ownerFee;
     const negativeResource = isBuyResource ? "Lords" : chosenResourceName || "";
     const positiveResource = isBuyResource ? chosenResourceName || "" : "Lords";
     const resourcesToTransport = isBuyResource
@@ -138,7 +139,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
-          <div className="bg-gold/10 p-2 m-2 clip-angled-sm h-auto">
+          <div className="bg-gold/10 p-2 m-2  h-auto">
             <div className="flex flex-col p-2 items-center">
               <TravelInfo
                 entityId={entityId}
@@ -156,7 +157,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     isBuyResource,
     chosenResourceName,
     lordsAmount,
-    lordsFee,
+    ownerFee,
     resourceAmount,
     resourceId,
     canCarry,
@@ -170,7 +171,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   return (
     <div>
-      <div className=" w-1/2 mx-auto bg-gold/10 px-3 py-1 clip-angled-sm">
+      <div className="mx-auto bg-gold/10 px-3 py-1">
         <div className="relative my-2 space-y-1">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
           <div className="absolute  left-1/2 top-[94px]">
@@ -182,18 +183,14 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
           </div>
           {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
         </div>
-        <div className="p-2">
-          <div className="mb-2 font-bold">
-            <table className="w-full text-right text-xs text-gold/60">
+        <div className="p-2 w-full mx-auto">
+          <div className="w-full flex flex-col justify-center ">
+            <table className="text-xs text-gold/60 mx-auto">
               <tbody>
-                <tr className="text-xl text-gold">
-                  <td>{marketManager.getMarketPrice().toFixed(2)}</td>
+                <tr className="text-gold">
+                  <td>Price</td>
                   <td className="text-left px-8 flex gap-4">
-                    <>
-                      {" "}
-                      <ResourceIcon size="sm" resource={"Lords"} /> {"/"}
-                      <ResourceIcon size="sm" resource={chosenResourceName || ""} />
-                    </>
+                    <>{`1 ${chosenResourceName} = ${marketManager.getMarketPrice().toFixed(2)} LORDS`}</>
                   </td>
                 </tr>
                 <>
@@ -202,7 +199,9 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
                     <td className="text-left text-danger px-8">
                       {(
                         marketManager.slippage(
-                          (isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount)) || 0,
+                          isBuyResource
+                            ? multiplyByPrecision(lordsAmount - lpFee)
+                            : multiplyByPrecision(resourceAmount - lpFee),
                           isBuyResource,
                         ) || 0
                       ).toFixed(2)}{" "}
@@ -212,7 +211,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
                   <tr>
                     <td>Bank Owner Fees</td>
                     <td className="text-left text-danger px-8">
-                      {(-(lordsAmount * OWNER_FEE)).toLocaleString(undefined, {
+                      {(-ownerFee).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}{" "}
@@ -222,7 +221,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
                   <tr>
                     <td>LP Fees</td>
                     <td className="text-left text-danger px-8">
-                      {(-(isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toLocaleString(undefined, {
+                      {(-lpFee).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}{" "}

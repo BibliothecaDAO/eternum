@@ -2,8 +2,6 @@ import {
   BASE_POPULATION_CAPACITY,
   ContractAddress,
   ID,
-  RealmInterface,
-  ResourcesIds,
   getOrderName,
   getQuestResources as getStartingResources,
 } from "@bibliothecadao/eternum";
@@ -13,15 +11,10 @@ import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
-import { getRealm, getRealmNameById } from "../../ui/utils/realms";
+import { getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
-
-type RealmExtended = RealmInterface & {
-  entity_id: ID;
-  resources: ResourcesIds[];
-};
 
 export function useRealm() {
   const {
@@ -29,10 +22,10 @@ export function useRealm() {
       components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const getQuestResources = () => {
-    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
     return getStartingResources(resourcesProduced);
   };

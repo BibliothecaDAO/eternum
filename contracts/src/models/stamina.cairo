@@ -2,7 +2,7 @@ use alexandria_data_structures::array_ext::ArrayTraitExt;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{
-    models::{combat::Army, config::{StaminaConfig, TickConfig, TickImpl}},
+    models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
     constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
 };
 
@@ -32,6 +32,11 @@ impl StaminaCustomImpl of StaminaCustomTrait {
         }
     }
 
+    fn drain(ref self: Stamina, world: IWorldDispatcher) {
+        self.refill_if_next_tick(world);
+        self.substract_costs(self.amount, world);
+    }
+
     fn substract_costs(ref self: Stamina, costs: u16, world: IWorldDispatcher) {
         self.amount -= costs;
         self.sset(world);
@@ -41,11 +46,10 @@ impl StaminaCustomImpl of StaminaCustomTrait {
         set!(world, (self));
     }
 
-    fn refill(ref self: Stamina, world: IWorldDispatcher) {
+    fn max(ref self: Stamina, world: IWorldDispatcher) -> u16 {
         let army = get!(world, (self.entity_id,), Army);
         let troops = army.troops;
         let mut maxes = array![];
-        let armies_tick_config = TickImpl::get_armies_tick_config(world);
 
         if (troops.knight_count > 0) {
             let knight_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), StaminaConfig);
@@ -62,8 +66,24 @@ impl StaminaCustomImpl of StaminaCustomTrait {
 
         assert(maxes.len() > 0, 'No troops in army');
 
-        self.amount = maxes.min().unwrap();
-        self.last_refill_tick = armies_tick_config.current();
+        maxes.min().unwrap()
+    }
+
+    fn refill(ref self: Stamina, world: IWorldDispatcher) {
+        let stamina_refill_config = get!(world, WORLD_CONFIG_ID, StaminaRefillConfig);
+        let stamina_per_tick = stamina_refill_config.amount_per_tick;
+
+        let current_tick = TickImpl::get_armies_tick_config(world).current();
+        let num_ticks_passed = current_tick - self.last_refill_tick;
+
+        let total_stamina = num_ticks_passed * stamina_per_tick.into();
+        let total_stamina_since_last_tick: u16 = match total_stamina.try_into() {
+            Option::Some(value) => value,
+            Option::None => { self.max(world) }
+        };
+
+        self.amount = core::cmp::min(self.amount + total_stamina_since_last_tick, self.max(world));
+        self.last_refill_tick = current_tick;
         self.sset(world);
     }
 

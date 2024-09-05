@@ -1,7 +1,6 @@
 import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
-// import { EternumGlobalConfig } from "../constants";
 import * as SystemProps from "../types/provider";
 
 export const NAMESPACE = "eternum";
@@ -72,15 +71,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_order(props: SystemProps.CreateOrderProps) {
     const { maker_id, maker_gives_resources, taker_id, taker_gives_resources, signer, expires_at } = props;
 
-    // implement that in ui instead
-    // let maker_gives_resource = maker_gives_resource_amounts.flatMap((amount, i) => {
-    //   return [maker_gives_resource_types[i], amount];
-    // });
-
-    // let taker_gives_resource = taker_gives_resource_amounts.flatMap((amount, i) => {
-    //   return [taker_gives_resource_types[i], amount];
-    // });
-
     return await this.executeAndCheckTransaction(signer, [
       {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
@@ -112,6 +102,27 @@ export class EternumProvider extends EnhancedDojoProvider {
           ...maker_gives_resources,
           taker_gives_resources.length / 2,
           ...taker_gives_resources,
+        ],
+      },
+    ]);
+  }
+
+  public async accept_partial_order(props: SystemProps.AcceptPartialOrderProps) {
+    const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, taker_gives_actual_amount, signer } =
+      props;
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+        entrypoint: "accept_partial_order",
+        calldata: [
+          taker_id,
+          trade_id,
+          maker_gives_resources.length / 2,
+          ...maker_gives_resources,
+          taker_gives_resources.length / 2,
+          ...taker_gives_resources,
+          taker_gives_actual_amount,
         ],
       },
     ]);
@@ -358,18 +369,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_building(props: SystemProps.CreateBuildingProps) {
-    const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
+    const { entity_id, directions, building_category, produce_resource_type, signer } = props;
 
     return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",
-      calldata: CallData.compile([
-        entity_id,
-        building_coord.x,
-        building_coord.y,
-        building_category,
-        produce_resource_type,
-      ]),
+      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
     });
   }
 
@@ -379,6 +384,26 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "destroy",
+      calldata: [entity_id, building_coord.x, building_coord.y],
+    });
+  }
+
+  public async pause_production(props: SystemProps.PauseProductionProps) {
+    const { entity_id, building_coord, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
+      entrypoint: "pause_production",
+      calldata: [entity_id, building_coord.x, building_coord.y],
+    });
+  }
+
+  public async resume_production(props: SystemProps.ResumeProductionProps) {
+    const { entity_id, building_coord, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
+      entrypoint: "resume_production",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
   }
@@ -775,9 +800,12 @@ export class EternumProvider extends EnhancedDojoProvider {
       crossbowman_strength,
       advantage_percent,
       disadvantage_percent,
+      max_troop_count,
       pillage_health_divisor,
       army_free_per_structure,
       army_extra_per_military_building,
+      battle_leave_slash_num,
+      battle_leave_slash_denom,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -791,10 +819,23 @@ export class EternumProvider extends EnhancedDojoProvider {
         crossbowman_strength,
         advantage_percent,
         disadvantage_percent,
+        max_troop_count,
         pillage_health_divisor,
         army_free_per_structure,
         army_extra_per_military_building,
+        battle_leave_slash_num,
+        battle_leave_slash_denom,
       ],
+    });
+  }
+
+  public async set_battle_config(props: SystemProps.SetBattleConfigProps) {
+    const { signer, config_id, battle_grace_tick_count } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_battle_config",
+      calldata: [config_id, battle_grace_tick_count],
     });
   }
 
@@ -885,6 +926,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_config",
       calldata: [unit_type, max_stamina],
+    });
+  }
+
+  public async set_stamina_refill_config(props: SystemProps.SetStaminaRefillConfigProps) {
+    const { amount_per_tick, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_stamina_refill_config",
+      calldata: [amount_per_tick],
     });
   }
 

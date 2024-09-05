@@ -33,12 +33,6 @@ async function init() {
   graphic.initScene();
   graphic.initStats();
 
-  // reinit scene game renderer when address changes
-  // const accountChange = () => {
-  //   graphic.renderModels();
-  // };
-  // window.addEventListener(ACCOUNT_CHANGE_EVENT, accountChange);
-
   inject();
   root.render(
     <React.StrictMode>

@@ -1,9 +1,12 @@
 name: lint
 
 on:
-  push:
-    branches: [main]
-  pull_request: {}
+  pull_request:
+    paths-ignore:
+      - "contracts/**"
+      - "**/manifest.json"
+      - ".github/**"
+      - "pnpm-lock.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -17,7 +20,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
       - uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 9.7.0
 
       - name: Install dependencies
         run: pnpm i

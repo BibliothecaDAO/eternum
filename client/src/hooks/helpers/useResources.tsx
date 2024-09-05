@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
-import useBlockchainStore from "../store/useBlockchainStore";
+import useUIStore from "../store/useUIStore";
 
 export function getResourcesUtils() {
   const {
@@ -76,13 +76,14 @@ export const useArrivalsWithResources = () => {
   const {
     account: { account },
     setup: {
-      components: { Position, Owner, EntityOwner, ArrivalTime, OwnedResourcesTracker },
+      components: { Position, Owner, EntityOwner, ArrivalTime, OwnedResourcesTracker, Weight },
     },
   } = useDojo();
 
   const atPositionWithInventory = useEntityQuery([
     Has(EntityOwner),
     NotValue(OwnedResourcesTracker, { resource_types: 0n }),
+    Has(Weight),
     Has(ArrivalTime),
   ]);
 
@@ -123,28 +124,12 @@ export const useArrivalsWithResources = () => {
 };
 
 export function getResourceBalance() {
-  const {
-    setup: {
-      components: { Resource, Production, BuildingQuantityv2, DetachedResource },
-    },
-  } = useDojo();
+  const dojo = useDojo();
 
   const getFoodResources = (entityId: ID): Resource[] => {
-    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
-    const wheatBalance = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
-      entityId,
-      ResourcesIds.Wheat,
-    ).balance(currentDefaultTick);
-    const fishBalance = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
-      entityId,
-      ResourcesIds.Fish,
-    ).balance(currentDefaultTick);
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+    const wheatBalance = new ProductionManager(dojo.setup, entityId, ResourcesIds.Wheat).balance(currentDefaultTick);
+    const fishBalance = new ProductionManager(dojo.setup, entityId, ResourcesIds.Fish).balance(currentDefaultTick);
 
     return [
       { resourceId: ResourcesIds.Wheat, amount: wheatBalance },
@@ -153,28 +138,32 @@ export function getResourceBalance() {
   };
 
   const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds) => {
-    const productionManager = new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
+    const productionManager = new ProductionManager(dojo.setup, entityId, resourceId);
     return productionManager.getProduction();
   };
 
   const getBalance = (entityId: ID, resourceId: ResourcesIds) => {
-    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
-    const productionManager = new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+    const productionManager = new ProductionManager(dojo.setup, entityId, resourceId);
     return { balance: productionManager.balance(currentDefaultTick), resourceId };
   };
 
   const getResourcesBalance = (entityId: ID) => {
-    const detachedResourceEntityIds = runQuery([HasValue(DetachedResource, { entity_id: entityId })]);
-    return Array.from(detachedResourceEntityIds).map((entityId) => getComponentValue(DetachedResource, entityId));
+    const detachedResourceEntityIds = runQuery([
+      HasValue(dojo.setup.components.DetachedResource, { entity_id: entityId }),
+    ]);
+    return Array.from(detachedResourceEntityIds).map((entityId) =>
+      getComponentValue(dojo.setup.components.DetachedResource, entityId),
+    );
   };
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: ID, resourceId: ResourcesIds) => {
-    const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
 
     useEffect(() => {
-      const productionManager = new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
+      const productionManager = new ProductionManager(dojo.setup, entityId, resourceId);
       setResourceBalance({ amount: productionManager.balance(currentDefaultTick), resourceId });
     }, []);
 
@@ -191,17 +180,15 @@ export function getResourceBalance() {
 }
 
 export const useProductionManager = (entityId: ID, resourceId: ResourcesIds) => {
-  const {
-    setup: {
-      components: { Resource, Production, BuildingQuantityv2 },
-    },
-  } = useDojo();
-
-  const production = useComponentValue(Production, getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]));
+  const dojo = useDojo();
+  const production = useComponentValue(
+    dojo.setup.components.Production,
+    getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]),
+  );
 
   const productionManager = useMemo(() => {
-    return new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, resourceId);
-  }, [Production, Resource, entityId, resourceId, production]);
+    return new ProductionManager(dojo.setup, entityId, resourceId);
+  }, [dojo.setup, entityId, resourceId, production]);
 
   return productionManager;
 };

@@ -5,3 +5,5 @@ export const TROOPS_STAMINAS = {
   [ResourcesIds.Knight]: 80,
   [ResourcesIds.Crossbowman]: 80,
 };
+
+export const STAMINA_REFILL_PER_TICK = 20;

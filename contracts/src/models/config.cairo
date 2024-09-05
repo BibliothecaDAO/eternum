@@ -120,6 +120,14 @@ pub struct TickConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct StaminaRefillConfig {
+    #[key]
+    config_id: ID,
+    amount_per_tick: u16,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct StaminaConfig {
     #[key]
     config_id: ID,
@@ -283,6 +291,7 @@ pub struct TroopConfig {
     crossbowman_strength: u16,
     advantage_percent: u16,
     disadvantage_percent: u16,
+    max_troop_count: u64,
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
     //
@@ -297,6 +306,10 @@ pub struct TroopConfig {
     // the number of additional  armies that can be create with
     // each new military building
     army_extra_per_building: u8,
+    // percentage to slash army by if they leave early
+    // e.g num = 25, denom = 100 // represents 25%
+    battle_leave_slash_num: u8,
+    battle_leave_slash_denom: u8
 }
 
 
@@ -312,8 +325,8 @@ impl TroopConfigCustomImpl of TroopConfigCustomTrait {
 #[dojo::model]
 pub struct BattleConfig {
     #[key]
-    entity_id: ID,
-    max_tick_duration: u64,
+    config_id: ID,
+    battle_grace_tick_count: u8,
 }
 
 #[generate_trait]

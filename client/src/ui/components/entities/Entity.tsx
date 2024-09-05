@@ -4,16 +4,15 @@ import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
 import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
+import useUIStore from "@/hooks/store/useUIStore";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
 import { TravelEntityPopup } from "./TravelEntityPopup";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -40,7 +39,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const { getEntityInfo } = getEntitiesUtils();
   const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
-  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
   const { getArmy } = getArmyByEntityId();
 
   const entity = getEntityInfo(entityId);
@@ -55,12 +54,12 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0) {
       return false;
     }
-    const currentTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+    const currentTimestamp = useUIStore.getState().nextBlockTimestamp;
     const battleManager = new BattleManager(structureAtPosition.protector.battle_id, dojo);
     return battleManager.isBattleOngoing(currentTimestamp!);
   }, [entity?.position?.x, entity?.position?.y]);
 
-  const army = useMemo(() => getArmy(entityId), [entityId]);
+  const army = useMemo(() => getArmy(entityId), [entityId, entity.resources]);
 
   if (entityState === EntityState.NotApplicable) return null;
 
@@ -106,11 +105,11 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   const name = entity.entityType === EntityType.TROOP ? army?.name : entityName[entity.entityType];
 
-  const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10 animate-pulse";
+  const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10";
 
   return (
     <div
-      className={clsx("flex flex-col p-2 clip-angled-sm  text-gold border border-gold/10", props.className, bgColour)}
+      className={clsx("flex flex-col p-2   text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}

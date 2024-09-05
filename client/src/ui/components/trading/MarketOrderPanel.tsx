@@ -1,11 +1,12 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import useMarketStore from "@/hooks/store/useMarketStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
+import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
   ID,
@@ -16,9 +17,7 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { getTotalResourceWeight } from "@/ui/utils/utils";
-import { useProductionManager } from "@/hooks/helpers/useResources";
-import { useRealm } from "@/hooks/helpers/useRealm";
+import { ConfirmationPopup } from "../bank/ConfirmationPopup";
 
 export const MarketResource = ({
   entityId,
@@ -37,7 +36,7 @@ export const MarketResource = ({
   bidPrice: string;
   depth: number;
 }) => {
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resource.id);
 
   const production = useMemo(() => {
@@ -51,7 +50,7 @@ export const MarketResource = ({
   return (
     <div
       onClick={() => onClick(resource.id)}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:clip-angled-sm clip-angled-sm group ${
+      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
         active ? "bg-gold/10" : ""
       }`}
     >
@@ -121,7 +120,7 @@ const MarketOrders = ({
     <div className=" h-full flex flex-col gap-4">
       {/* Market Price */}
       <div
-        className={`text-xl flex clip-angled-sm font-bold  justify-between p-1 px-8 border-gold/10 border ${
+        className={`text-xl flex  font-bold  justify-between p-1 px-8 border-gold/10 border ${
           !isBuy ? "bg-green/20" : "bg-red/20"
         }`}
       >
@@ -134,7 +133,7 @@ const MarketOrders = ({
         </div>
       </div>
 
-      <div className="p-1 bg-white/5  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border overflow-y-scroll h-auto">
+      <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
         <OrderRowHeader resourceId={resourceId} />
 
         <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96">
@@ -175,14 +174,19 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   const {
     account: { account },
     setup: {
-      systemCalls: { cancel_order, accept_order },
+      systemCalls: { cancel_order, accept_partial_order, accept_order },
     },
   } = useDojo();
 
   const { getRealmAddressName } = useRealm();
 
-  // TODO: Do we need this?
-  const deleteTrade = useMarketStore((state) => state.deleteTrade);
+  const [inputValue, setInputValue] = useState<number>(() => {
+    return isBuy
+      ? offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision
+      : offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision;
+  });
+
+  const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
   // TODO Distance
   const travelTime = useMemo(
@@ -198,33 +202,16 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
 
   const [loading, setLoading] = useState(false);
 
-  const onAccept = async () => {
-    setLoading(true);
-    await accept_order({
-      signer: account,
-      taker_id: entityId,
-      trade_id: offer.tradeId,
-      maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
-      taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
-    })
-      .then(() => {
-        deleteTrade(offer.tradeId);
-      })
-      .catch((error) => {
-        // Add failure indicator in UI
-        console.error("Failed to accept order", error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
   const isSelf = useMemo(() => {
     return entityId === offer.makerId;
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getsDisplay = useMemo(() => {
-    return isBuy ? currencyFormat(offer.makerGets[0].amount, 0) : currencyFormat(offer.takerGets[0].amount, 0);
+    return isBuy ? currencyFormat(offer.makerGets[0].amount, 2) : currencyFormat(offer.takerGets[0].amount, 2);
+  }, [entityId, offer.makerId, offer.tradeId]);
+
+  const getsDisplayNumber = useMemo(() => {
+    return isBuy ? offer.makerGets[0].amount : offer.takerGets[0].amount;
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getDisplayResource = useMemo(() => {
@@ -235,7 +222,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
   }, [entityId, offer.makerId, offer.tradeId]);
 
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, offer.makerGets[0].resourceId);
 
   const production = useMemo(() => {
@@ -257,7 +244,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -275,17 +262,48 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [donkeyBalance, donkeysNeeded]);
 
   const canAccept = useMemo(() => {
-    return (isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance) && enoughDonkeys;
+    return enoughDonkeys;
   }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId, enoughDonkeys]);
 
   const accountName = useMemo(() => {
     return getRealmAddressName(offer.makerId);
   }, [offer.originName]);
 
+  console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
+
+  const calculatedResourceAmount = useMemo(() => {
+    return inputValue * EternumGlobalConfig.resources.resourcePrecision;
+  }, [inputValue, getsDisplay, getTotalLords]);
+
+  const calculatedLords = useMemo(() => {
+    return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
+  }, [inputValue, getsDisplay, getTotalLords]);
+
+  console.log("calculatedLords", calculatedLords);
+
+  const onAccept = async () => {
+    try {
+      setLoading(true);
+      setConfirmOrderModal(false);
+
+      await accept_partial_order({
+        signer: account,
+        taker_id: entityId,
+        trade_id: offer.tradeId,
+        maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
+        taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
+        taker_gives_actual_amount: isBuy ? calculatedResourceAmount : calculatedLords,
+      });
+    } catch (error) {
+      console.error("Failed to accept order", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div
       key={offer.tradeId}
-      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
+      className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
@@ -311,7 +329,12 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
         </div>
         {!isSelf ? (
           canAccept ? (
-            <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
+            <Button
+              isLoading={loading}
+              onClick={() => setConfirmOrderModal(true)}
+              size="xs"
+              className="self-center flex flex-grow"
+            >
               {!isBuy ? "Buy" : "Sell"}
             </Button>
           ) : (
@@ -342,6 +365,30 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
           {accountName} ({offer.originName})
         </div>
       </div>
+      {confirmOrderModal && (
+        <ConfirmationPopup title="Confirm Trade" onConfirm={onAccept} onCancel={() => setConfirmOrderModal(false)}>
+          <div className=" p-8 rounded">
+            <div className="text-center text-lg">
+              <div className="flex gap-3">
+                <NumberInput
+                  value={inputValue}
+                  className="w-full col-span-3"
+                  onChange={setInputValue}
+                  max={getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision}
+                />
+                <Button
+                  onClick={() => setInputValue(getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision)}
+                >
+                  Max
+                </Button>
+              </div>
+              <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
+              <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
+              <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
+            </div>
+          </div>
+        </ConfirmationPopup>
+      )}
     </div>
   );
 };
@@ -360,7 +407,7 @@ const OrderCreation = ({
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
     setup: {
@@ -404,10 +451,10 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
 
   const donkeyProduction = useMemo(() => {
@@ -448,14 +495,19 @@ const OrderCreation = ({
   }, [donkeyBalance, donkeysNeeded, resourceId]);
 
   return (
-    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-gold/5 border-gold/10 border">
+    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border">
       <div className="flex w-full gap-8">
         <div className="w-1/3 gap-1 flex flex-col">
           <div className="uppercase text-sm flex gap-2 font-bold">
             <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
             {isBuy ? "Buy" : "Sell"}
           </div>
-          <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          <NumberInput
+            value={resource}
+            className="w-full col-span-3"
+            onChange={(value) => setResource(Number(value))}
+            max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+          />
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
@@ -474,7 +526,12 @@ const OrderCreation = ({
           <div className="uppercase text-sm flex gap-2 font-bold">
             <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Cost
           </div>
-          <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          <NumberInput
+            value={lords}
+            className="w-full col-span-3"
+            onChange={(value) => setLords(Number(value))}
+            max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+          />
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.
@@ -504,7 +561,7 @@ const OrderCreation = ({
         <Button
           disabled={!enoughDonkeys || !canBuy}
           isLoading={loading}
-          className="mt-4 h-8 w-60"
+          className="mt-4 h-8"
           onClick={createOrder}
           size="md"
           variant="primary"

@@ -1,5 +1,4 @@
 import { Leva } from "leva";
-import { useEffect } from "react";
 import useUIStore from "../../hooks/store/useUIStore";
 
 import { Redirect } from "wouter";
@@ -22,27 +21,20 @@ import { RightNavigationModule } from "../modules/navigation/RightNavigationModu
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { Transactions } from "../modules/transactions/Transactions";
+import { Chat } from "../modules/chat/Chat";
 import { Onboarding } from "./Onboarding";
 import clsx from "clsx";
+import { EventStream } from "../modules/stream/EventStream";
+import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const realmEntityIds = useUIStore((state) => state.realmEntityIds);
 
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
 
   const battleView = useUIStore((state) => state.battleView);
-
-  useEffect(() => {
-    if (realmEntityIds.length >= 1) {
-      setBlankOverlay(false);
-    } else {
-      setBlankOverlay(true);
-    }
-  }, [realmEntityIds]);
 
   return (
     <div
@@ -58,6 +50,7 @@ export const World = () => {
       id="world"
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
     >
+      <div className="vignette" />
       <div
         className={clsx(
           "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-black duration-300 transition-opacity",
@@ -92,8 +85,12 @@ export const World = () => {
           </BottomMiddleContainer>
 
           <BottomRightContainer>
-            <Transactions />
+            <Chat />
           </BottomRightContainer>
+
+          <BottomLeftContainer>
+            <EventStream />
+          </BottomLeftContainer>
 
           <RightMiddleContainer>
             <RightNavigationModule />

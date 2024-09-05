@@ -52,62 +52,67 @@ export const PillageHistory = ({
   };
 
   return (
-    <div className=" p-6 overflow-auto h-full ">
-      <div className="m-3 text-center">
-        <Headline>Pillage History</Headline>
-      </div>
-      <div className="overflow-scroll-y max-h-[300px] grid grid-cols-1 gap-4">
-        {pillageHistory.reverse().map((history, index) => (
-          <div key={index} className="group hover:bg-gold/10  relative bg-gold/20 text-gold  p-4 clip-angled ">
-            <div className="flex justify-center items-center p-3">
-              <div className="text-center">
-                <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
-                  {isPillageSucess(history) ? "Pillage Successful!" : "Pillage Failed"}
-                </div>
-              </div>
-            </div>
-            <div className="p-2">
-              <div className="flex justify-around items-start my-2">
-                <div className="text-center">
-                  <div>Resources</div>
-                  <div className="flex flex-wrap justify-center gap-4">
-                    {history.pillagedResources.length > 0
-                      ? history.pillagedResources.map((resource: Resource) => (
-                          <ResourceCost
-                            size="lg"
-                            textSize="lg"
-                            key={resource.resourceId}
-                            resourceId={resource.resourceId}
-                            amount={divideByPrecision(resource.amount)}
-                          />
-                        ))
-                      : "None"}
-                  </div>
-                </div>
-                {history.destroyedBuildingType !== undefined && (
+    <div className="p-6 h-full pt-12">
+      <div className="overflow-auto h-full">
+        <div className="text-center mb-4">
+          <Headline>Pillage History</Headline>
+        </div>
+        <div className="overflow-scroll-y max-h-[300px] grid grid-cols-1 gap-4">
+          {pillageHistory.reverse().map((history, index) => {
+            return (
+              <div key={index} className="group hover:bg-gold/10  relative bg-gold/20 text-gold p-4">
+                <div className="flex justify-center items-center p-3">
                   <div className="text-center">
-                    <Headline>Destroyed Building</Headline>
-                    {history.destroyedBuildingType !== undefined && (
-                      <img
-                        src={`${
-                          BUILDING_IMAGES_PATH[
-                            BuildingType[
-                              history.destroyedBuildingType as keyof typeof BuildingType
-                            ] as keyof typeof BUILDING_IMAGES_PATH
-                          ]
-                        }`}
-                        alt="Destroyed Building"
-                        className="w-24 h-24 mx-auto"
-                      />
-                    )}
-                    {/* Placeholder for Building Image */}
-                    <div>{history.destroyedBuildingType}</div>
+                    <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
+                      {isPillageSucess(history) ? "Pillage Successful!" : "Pillage Failed"}
+                    </div>
                   </div>
-                )}
+                </div>
+                <div className="p-2">
+                  <div className="flex justify-around items-start my-2">
+                    <div className="text-center">
+                      <div>Resources</div>
+                      <div className="flex flex-wrap justify-center gap-4">
+                        {history.pillagedResources.length > 0
+                          ? history.pillagedResources.map((resource: Resource) => (
+                              <ResourceCost
+                                size="lg"
+                                textSize="lg"
+                                key={resource.resourceId}
+                                resourceId={resource.resourceId}
+                                amount={divideByPrecision(resource.amount)}
+                              />
+                            ))
+                          : "None"}
+                      </div>
+                    </div>
+                    {history.destroyedBuildingType !== undefined && (
+                      <div className="text-center">
+                        <Headline>Destroyed Building</Headline>
+                        {history.destroyedBuildingType !== undefined &&
+                          history.destroyedBuildingType !== BuildingType[BuildingType.None] && (
+                            <img
+                              src={`${
+                                BUILDING_IMAGES_PATH[
+                                  BuildingType[
+                                    history.destroyedBuildingType as keyof typeof BuildingType
+                                  ] as keyof typeof BUILDING_IMAGES_PATH
+                                ]
+                              }`}
+                              alt="Destroyed Building"
+                              className="w-24 h-24 mx-auto"
+                            />
+                          )}
+                        {/* Placeholder for Building Image */}
+                        <div>{history.destroyedBuildingType}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -48,7 +48,8 @@ mod resource_systems {
         #[key]
         sending_realm_id: ID,
         sender_entity_id: ID,
-        resources: Span<(u8, u128)>
+        resources: Span<(u8, u128)>,
+        timestamp: u64,
     }
 
 
@@ -269,6 +270,48 @@ mod resource_systems {
             (actual_recipient_id, hash(resources_felt_arr.span()), total_resources_weight)
         }
 
+        fn mint_if_adequate_capacity(
+            world: IWorldDispatcher, recipient_id: ID, resource: (u8, u128), check_lock: bool
+        ) -> (u128, bool) {
+            // ensure recipient is not travelling
+            get!(world, recipient_id, ArrivalTime).assert_not_travelling();
+
+            let mut success = false;
+
+            // only add to balance if receiver can carry weight
+            let (resource_type, resource_amount) = resource;
+            let mut total_resources_weight = 0;
+            total_resources_weight += WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
+            let mut recipient_weight: Weight = get!(world, recipient_id, Weight);
+            let recipient_capacity: Capacity = get!(world, recipient_id, Capacity);
+            let recipient_quantity: Quantity = get!(world, recipient_id, Quantity);
+
+            recipient_weight.value += total_resources_weight;
+            if !recipient_capacity.is_capped() || recipient_capacity.can_carry(recipient_quantity, recipient_weight) {
+                recipient_weight.value -= total_resources_weight;
+                recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
+                set!(world, (recipient_weight));
+
+                // ensure resource recepient is not locked from receiving
+                if check_lock {
+                    let recipient_resource_lock: ResourceTransferLock = get!(world, recipient_id, ResourceTransferLock);
+                    recipient_resource_lock.assert_not_locked();
+                }
+
+                // add resource to recipient's balance
+                let mut recipient_resource = ResourceCustomImpl::get(world, (recipient_id, resource_type));
+                recipient_resource.add(resource_amount);
+                recipient_resource.save(world);
+
+                // emit transfer event
+                Self::emit_transfer_event(world, 0, recipient_id, array![resource].span());
+
+                success = true;
+            }
+
+            (total_resources_weight, success)
+        }
+
         fn emit_transfer_event(
             world: IWorldDispatcher, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>
         ) {
@@ -282,7 +325,16 @@ mod resource_systems {
                 sending_realm_id = sending_entity_owner.get_realm_id(world);
             }
 
-            emit!(world, (Transfer { recipient_entity_id, sending_realm_id, sender_entity_id, resources }));
+            emit!(
+                world,
+                (Transfer {
+                    recipient_entity_id,
+                    sending_realm_id,
+                    sender_entity_id,
+                    resources,
+                    timestamp: starknet::get_block_timestamp()
+                })
+            );
         }
     }
 }

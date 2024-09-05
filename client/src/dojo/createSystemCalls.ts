@@ -76,6 +76,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.accept_order(props);
   };
 
+  const accept_partial_order = async (props: SystemProps.AcceptPartialOrderProps) => {
+    await provider.accept_partial_order(props);
+  };
+
   const cancel_order = async (props: SystemProps.CancelOrderProps) => {
     await provider.cancel_order(props);
   };
@@ -134,6 +138,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const destroy_building = async (props: SystemProps.DestroyBuildingProps) => {
     await provider.destroy_building(props);
+  };
+
+  const pause_production = async (props: SystemProps.PauseProductionProps) => {
+    await provider.pause_production(props);
+  };
+
+  const resume_production = async (props: SystemProps.ResumeProductionProps) => {
+    await provider.resume_production(props);
   };
 
   const create_bank = async (props: SystemProps.CreateBankProps) => {
@@ -287,6 +299,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_order: withQueueing(withErrorHandling(create_order)),
     accept_order: withQueueing(withErrorHandling(accept_order)),
     cancel_order: withQueueing(withErrorHandling(cancel_order)),
+    accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
     create_realm,
     create_multiple_realms,
     create_road,
@@ -294,6 +307,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     travel,
     travel_hex: withQueueing(withErrorHandling(travel_hex)),
     destroy_building,
+    pause_production,
+    resume_production,
     create_building,
     create_army,
     delete_army,

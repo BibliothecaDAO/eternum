@@ -30,7 +30,7 @@ export enum View {
 }
 
 export const RightNavigationModule = () => {
-  const [lastView, setLastView] = useState<View>(View.None);
+  const [lastView, setLastView] = useState<View>(View.ResourceTable);
 
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
@@ -40,11 +40,11 @@ export const RightNavigationModule = () => {
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const realmEntityId = useUIStore((state) => state.realmEntityId);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { questClaimStatus } = useQuestClaimStatus();
 
   const { getEntityInfo } = getEntitiesUtils();
-  const realmIsMine = getEntityInfo(realmEntityId).isMine;
+  const structureIsMine = getEntityInfo(structureEntityId).isMine;
 
   const { getAllArrivalsWithResources } = useArrivalsWithResources();
 
@@ -62,8 +62,12 @@ export const RightNavigationModule = () => {
             label={"Balance"}
             active={view === View.ResourceTable}
             onClick={() => {
-              setLastView(View.ResourceTable);
-              setView(View.ResourceTable);
+              if (view === View.ResourceTable) {
+                setView(View.None);
+              } else {
+                setLastView(View.ResourceTable);
+                setView(View.ResourceTable);
+              }
             }}
           />
         ),
@@ -72,17 +76,20 @@ export const RightNavigationModule = () => {
         name: "resourceArrivals",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label={"Resource Arrivals"}
-            // active={isPopupOpen(trade)}
             active={view === View.ResourceArrivals}
             size="xl"
             onClick={() => {
-              setLastView(View.ResourceArrivals);
-              setView(View.ResourceArrivals);
+              if (view === View.ResourceArrivals) {
+                setView(View.None);
+              } else {
+                setLastView(View.ResourceArrivals);
+                setView(View.ResourceArrivals);
+              }
             }}
             notification={getAllArrivalsWithResources.length}
             notificationLocation="topleft"
@@ -93,7 +100,7 @@ export const RightNavigationModule = () => {
         name: "trade",
         button: (
           <CircleButton
-            disabled={!realmIsMine}
+            disabled={!structureIsMine}
             className={clsx({
               "animate-pulse":
                 selectedQuest?.id === QuestId.CreateTrade &&
@@ -107,13 +114,17 @@ export const RightNavigationModule = () => {
             active={isPopupOpen(trade)}
             size="xl"
             onClick={() => {
-              toggleModal(<MarketModal />);
+              if (isPopupOpen(trade)) {
+                toggleModal(null);
+              } else {
+                toggleModal(<MarketModal />);
+              }
             }}
           />
         ),
       },
     ];
-  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources, realmEntityId]);
+  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources, structureEntityId]);
 
   const slideRight = {
     hidden: { x: "100%" },
@@ -133,11 +144,6 @@ export const RightNavigationModule = () => {
           animate="visible"
           className="gap-2 flex flex-col justify-center self-center pointer-events-auto"
         >
-          <div>
-            <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
-              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen(view) ? "rotate-180" : ""}`} />
-            </Button>
-          </div>
           <div className="flex flex-col gap-2 mb-auto">
             {navigation.map((a, index) => (
               <div key={index}>{a.button}</div>
@@ -149,7 +155,7 @@ export const RightNavigationModule = () => {
           className={`w-full pointer-events-auto overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}
         >
           {view === View.ResourceTable ? (
-            <div className="px-2 flex flex-col space-y-1 overflow-y-auto">
+            <div className="p-2 flex flex-col space-y-1 overflow-y-auto">
               <Headline>
                 <div className="flex gap-2">
                   <div className="self-center">Resources</div>
@@ -157,7 +163,7 @@ export const RightNavigationModule = () => {
                 </div>
               </Headline>
 
-              <EntityResourceTable entityId={realmEntityId} />
+              <EntityResourceTable entityId={structureEntityId} />
             </div>
           ) : (
             <AllResourceArrivals entityIds={getAllArrivalsWithResources} />

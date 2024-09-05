@@ -42,7 +42,7 @@ const TroopCard = ({
 }) => {
   return (
     <div
-      className={`bg-gold/10 text-gold font-bold border-2 border-gradient p-2 clip-angled-sm hover:bg-gold/40 duration-300${className}`}
+      className={`bg-gold/10 text-gold font-bold border-2 border-gradient p-2  hover:bg-gold/40 duration-300${className}`}
     >
       <img
         style={defending ? { transform: "scaleX(-1)" } : {}}

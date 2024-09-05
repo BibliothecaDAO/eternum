@@ -1,10 +1,12 @@
 name: client
 
 on:
-  push:
-    branches:
-      - main
-  pull_request: {}
+  pull_request:
+    paths-ignore:
+      - "contracts/**"
+      - "**/manifest.json"
+      - ".github/**"
+      - "pnpm-lock.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -29,7 +31,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - uses: pnpm/action-setup@v4
         with:
-          version: 9.2.0
+          version: 9.7.0
 
       - uses: actions/checkout@v4
       - name: Install dependencies
@@ -37,4 +39,4 @@ jobs:
       - name: Build packages
         run: pnpm run build-packages
       - name: Execute Unit tests
-        run: cd client && pnpm run test
+        run: pnpm run test-client

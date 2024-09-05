@@ -1,19 +1,22 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { PlayerStructure } from "@/hooks/helpers/useEntities";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
+import { Headline } from "@/ui/elements/Headline";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
+import { HintSection } from "../hints/HintModal";
 import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 
@@ -24,7 +27,9 @@ enum Loading {
 }
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
-  const existingBuildings = useUIStore((state) => state.existingBuildings);
+  const dojo = useDojo();
+  const tileManager = new TileManager(dojo.setup, { col: structure.position.x, row: structure.position.y });
+  const existingBuildings = tileManager.existingBuildings();
 
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
     entity_owner_entity_id: structure?.entity_id || 0,
@@ -46,9 +51,9 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       EternumGlobalConfig.troop.baseArmyNumberForStructure +
       existingBuildings.filter(
         (building) =>
-          building.type === BuildingType.ArcheryRange ||
-          building.type === BuildingType.Barracks ||
-          building.type === BuildingType.Stable,
+          building.category === BuildingType[BuildingType.ArcheryRange] ||
+          building.category === BuildingType[BuildingType.Barracks] ||
+          building.category === BuildingType[BuildingType.Stable],
       ).length *
         EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
     );
@@ -78,12 +83,19 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   };
   return (
     <>
+      <Headline className="my-3">
+        <div className="flex gap-2">
+          <div className="self-center">{structure.name} </div>
+          <HintModalButton section={HintSection.Buildings} />
+        </div>
+      </Headline>
+
       <EntityList
         list={structureArmies}
         headerPanel={
           <>
             {" "}
-            <div className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
+            <div className="px-3 py-2 bg-blueish/20  font-bold">
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </div>
             <div className="flex justify-between">
@@ -130,7 +142,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         panel={({ entity, setSelectedEntity }) => (
           <>
             <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
-            <ArmyCapacity army={entity} className="my-2 ml-5" />
+            <ArmyCapacity army={entity} className="inline-flex" />
           </>
         )}
         questing={selectedQuest?.id === QuestId.CreateArmy}
@@ -150,16 +162,16 @@ const ArmyItem = ({
 }) => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0, dojo), [entity?.battle_id, dojo]);
 
   const updatedArmy = useMemo(() => {
-    if (!currentTimestamp) throw new Error("Current timestamp is undefined");
-    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
+    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(entity, updatedBattle);
     return updatedArmy;
-  }, [currentTimestamp, entity]);
+  }, [nextBlockTimestamp, entity]);
 
   return (
     <React.Fragment key={entity?.entity_id || 0}>

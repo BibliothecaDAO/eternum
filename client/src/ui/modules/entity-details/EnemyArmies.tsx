@@ -3,10 +3,9 @@ import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
-import { Position } from "@bibliothecadao/eternum";
 import React, { useCallback, useMemo } from "react";
 
 export const EnemyArmies = ({
@@ -20,11 +19,11 @@ export const EnemyArmies = ({
 }) => {
   const dojo = useDojo();
 
-  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const setBattleView = useUIStore((state) => state.setBattleView);
 
-  const structureAtPosition = getStructureAtPosition({ x: position.x, y: position.y });
+  const structureAtPosition = getStructureAtPosition(position.getContract());
 
   const getArmyChip = useCallback(
     (army: ArmyInfo, index: number) => {
@@ -45,8 +44,8 @@ export const EnemyArmies = ({
       armyClone.name = army.protectee ? `${structureAtPosition?.name}` : army.name;
       const battleManager = new BattleManager(army.battle_id, dojo);
       if (
-        battleManager.isBattleOngoing(currentTimestamp!) ||
-        battleManager.getUpdatedArmy(army, battleManager.getUpdatedBattle(currentTimestamp!))!.health.current <= 0
+        battleManager.isBattleOngoing(nextBlockTimestamp!) ||
+        battleManager.getUpdatedArmy(army, battleManager.getUpdatedBattle(nextBlockTimestamp!))!.health.current <= 0
       ) {
         return;
       }
@@ -57,12 +56,12 @@ export const EnemyArmies = ({
         </div>
       );
     },
-    [currentTimestamp, ownArmySelected, ownArmySelected?.entity_id, position],
+    [nextBlockTimestamp, ownArmySelected, ownArmySelected?.entity_id, position],
   );
 
   const armiesToDisplay = useMemo(() => {
     return armies.map((army: ArmyInfo, index) => getArmyChip(army, index)).filter(Boolean);
-  }, [currentTimestamp, getArmyChip]);
+  }, [nextBlockTimestamp, getArmyChip]);
 
   return (
     <div className="flex flex-col mt-2 w-[31rem]">

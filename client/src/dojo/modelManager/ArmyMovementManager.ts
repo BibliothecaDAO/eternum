@@ -1,22 +1,21 @@
+import { HexPosition } from "@/types";
+import { FELT_CENTER } from "@/ui/config";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ContractAddress,
   EternumGlobalConfig,
   ID,
   ResourcesIds,
-  WORLD_CONFIG_ID,
   getNeighborHexes,
   neighborOffsetsEven,
   neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
-import { FELT_CENTER } from "@/ui/config";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { Component, Entity, OverridableComponent, getComponentValue } from "@dojoengine/recs";
-import { ClientComponents } from "../createClientComponents";
-import { SetupResult } from "../setup";
-import { HexPosition } from "@/types";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
-import { getCurrentArmiesTick, getCurrentTick } from "@/three/helpers/ticks";
+import { SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
+import { StaminaManager } from "./StaminaManager";
+import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -68,125 +67,33 @@ export class TravelPaths {
 }
 
 export class ArmyMovementManager {
-  private tileModel: OverridableComponent<ClientComponents["Tile"]["schema"]>;
-  private staminaModel: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
-  private positionModel: OverridableComponent<ClientComponents["Position"]["schema"]>;
-  private armyModel: Component<ClientComponents["Army"]["schema"]>;
-  private ownerModel: Component<ClientComponents["Owner"]["schema"]>;
-  private capacityModel: Component<ClientComponents["Capacity"]["schema"]>;
-  private weightModel: Component<ClientComponents["Weight"]["schema"]>;
-  private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
-  private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
   private entity: Entity;
   private entityId: ID;
   private address: ContractAddress;
   private fishManager: ProductionManager;
   private wheatManager: ProductionManager;
+  private staminaManager: StaminaManager;
 
   constructor(
-    private dojo: SetupResult,
+    private setup: SetupResult,
     entityId: ID,
   ) {
-    const {
-      Tile,
-      Stamina,
-      Position,
-      Army,
-      Owner,
-      Capacity,
-      Weight,
-      EntityOwner,
-      StaminaConfig,
-      Production,
-      Resource,
-      BuildingQuantityv2,
-    } = dojo.components;
-    this.tileModel = Tile;
-    this.staminaModel = Stamina;
-    this.positionModel = Position;
-    this.armyModel = Army;
-    this.ownerModel = Owner;
-    this.capacityModel = Capacity;
-    this.weightModel = Weight;
-    this.entityOwnerModel = EntityOwner;
-    this.staminaConfigModel = StaminaConfig;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    this.address = ContractAddress(this.dojo.network.burnerManager.account?.address || 0n);
-    const entityOwnerId = getComponentValue(EntityOwner, this.entity);
-    this.wheatManager = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
-      entityOwnerId!.entity_owner_id,
-      ResourcesIds.Wheat,
-    );
-    this.fishManager = new ProductionManager(
-      Production,
-      Resource,
-      BuildingQuantityv2,
-      entityOwnerId!.entity_owner_id,
-      ResourcesIds.Fish,
-    );
+    this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
+    const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
+    this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
+    this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
+    this.staminaManager = new StaminaManager(this.setup, entityId);
   }
 
-  private _maxStamina = (troops: any): number => {
-    let maxStaminas: number[] = [];
-    if (troops.knight_count > 0) {
-      const knightConfig = getComponentValue(
-        this.staminaConfigModel,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),
-      );
-      maxStaminas.push(knightConfig!.max_stamina);
-    }
-    if (troops.crossbowman_count > 0) {
-      const crossbowmenConfig = getComponentValue(
-        this.staminaConfigModel,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
-      );
-      maxStaminas.push(crossbowmenConfig!.max_stamina);
-    }
-    if (troops.paladin_count > 0) {
-      const paladinConfig = getComponentValue(
-        this.staminaConfigModel,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Paladin)]),
-      );
-      maxStaminas.push(paladinConfig!.max_stamina);
-    }
+  private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
+    const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
-    if (maxStaminas.length === 0) return 0;
-
-    const maxArmyStamina = Math.min(...maxStaminas);
-
-    return maxArmyStamina;
-  };
-
-  getStamina() {
-    let staminaEntity = getComponentValue(this.staminaModel, this.entity);
-    if (!staminaEntity) {
-      throw Error("no stamina for entity");
-    }
-    const armyEntity = getComponentValue(this.armyModel, this.entity);
-
-    const currentArmiesTick = getCurrentArmiesTick();
-
-    if (currentArmiesTick !== Number(staminaEntity?.last_refill_tick)) {
-      staminaEntity = {
-        ...staminaEntity!,
-        last_refill_tick: BigInt(currentArmiesTick),
-        amount: this._maxStamina(armyEntity!.troops),
-      };
-    }
-    return staminaEntity;
-  }
-
-  private _canExplore(): boolean {
-    const stamina = this.getStamina().amount;
-
-    if (stamina < EternumGlobalConfig.stamina.exploreCost) {
+    if (stamina.amount < EternumGlobalConfig.stamina.exploreCost) {
       return false;
     }
-    const { wheat, fish } = this.getFood();
+    const { wheat, fish } = this.getFood(currentDefaultTick);
 
     if (fish < EternumGlobalConfig.exploration.fishBurn) {
       return false;
@@ -202,20 +109,19 @@ export class ArmyMovementManager {
     return true;
   }
 
-  private _calculateMaxTravelPossible = () => {
-    const stamina = this.getStamina();
+  private _calculateMaxTravelPossible = (currentArmiesTick: number) => {
+    const stamina = this.staminaManager.getStamina(currentArmiesTick);
     return Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
   };
 
   private _getCurrentPosition = () => {
-    const position = getComponentValue(this.positionModel, this.entity);
+    const position = getComponentValue(this.setup.components.Position, this.entity);
     return { col: position!.x, row: position!.y };
   };
 
-  public getFood() {
-    const currentTick = getCurrentTick();
-    const wheatBalance = this.wheatManager.balance(currentTick);
-    const fishBalance = this.fishManager.balance(currentTick);
+  public getFood(currentDefaultTick: number) {
+    const wheatBalance = this.wheatManager.balance(currentDefaultTick);
+    const fishBalance = this.fishManager.balance(currentDefaultTick);
 
     return {
       wheat: wheatBalance,
@@ -223,10 +129,14 @@ export class ArmyMovementManager {
     };
   }
 
-  public findPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {
+  public findPaths(
+    exploredHexes: Map<number, Set<number>>,
+    currentDefaultTick: number,
+    currentArmiesTick: number,
+  ): TravelPaths {
     const startPos = this._getCurrentPosition();
-    const maxHex = this._calculateMaxTravelPossible();
-    const canExplore = this._canExplore();
+    const maxHex = this._calculateMaxTravelPossible(currentArmiesTick);
+    const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
     const priorityQueue: { position: HexPosition; distance: number; path: HexPosition[] }[] = [
       { position: startPos, distance: 0, path: [startPos] },
@@ -267,19 +177,22 @@ export class ArmyMovementManager {
   }
 
   public isMine = () => {
-    let entityOwner = getComponentValue(this.entityOwnerModel, this.entity);
-    let owner = getComponentValue(this.ownerModel, this.entity);
+    let entityOwner = getComponentValue(this.setup.components.EntityOwner, this.entity);
+    let owner = getComponentValue(this.setup.components.Owner, this.entity);
     if (!owner && entityOwner?.entity_owner_id) {
-      owner = getComponentValue(this.ownerModel, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+      owner = getComponentValue(
+        this.setup.components.Owner,
+        getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+      );
     }
     return owner?.address === this.address;
   };
 
-  private _optimisticStaminaUpdate = (overrideId: string, cost: number) => {
-    const stamina = this.getStamina();
+  private _optimisticStaminaUpdate = (overrideId: string, cost: number, currentArmiesTick: number) => {
+    const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
     // substract the costs
-    this.staminaModel.addOverride(overrideId, {
+    this.setup.components.Stamina.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: stamina.entity_id,
@@ -292,7 +205,7 @@ export class ArmyMovementManager {
   private _optimisticTileUpdate = (overrideId: string, col: number, row: number) => {
     const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
 
-    this.tileModel.addOverride(overrideId, {
+    this.setup.components.Tile.addOverride(overrideId, {
       entity,
       value: {
         col: col,
@@ -305,7 +218,7 @@ export class ArmyMovementManager {
   };
 
   private _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
-    this.positionModel.addOverride(overrideId, {
+    this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
@@ -315,10 +228,10 @@ export class ArmyMovementManager {
     });
   };
 
-  private _optimisticExplore = (col: number, row: number) => {
+  private _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
     let overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost);
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost, currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
 
@@ -339,30 +252,33 @@ export class ArmyMovementManager {
     }
   };
 
-  private _exploreHex = async (path: HexPosition[]) => {
+  private _exploreHex = async (path: HexPosition[], currentArmiesTick: number) => {
     const direction = this._findDirection(path);
     if (direction === undefined) return;
 
-    const overrideId = this._optimisticExplore(path[1].col, path[1].row);
+    const overrideId = this._optimisticExplore(path[1].col, path[1].row, currentArmiesTick);
 
-    this.dojo.systemCalls
+    this.setup.systemCalls
       .explore({
         unit_id: this.entityId,
         direction,
-        signer: this.dojo.network.burnerManager.account!,
+        signer: this.setup.network.burnerManager.account!,
       })
       .catch((e) => {
-        this.positionModel.removeOverride(overrideId);
-        this.staminaModel.removeOverride(overrideId);
+        this.setup.components.Position.removeOverride(overrideId);
+        this.setup.components.Tile.removeOverride(overrideId);
+      })
+      .then(() => {
+        this.setup.components.Stamina.removeOverride(overrideId);
       });
   };
 
-  private _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
+  private _optimisticTravelHex = (col: number, row: number, pathLength: number, currentArmiesTick: number) => {
     let overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength);
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength, currentArmiesTick);
 
-    this.positionModel.addOverride(overrideId, {
+    this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
@@ -373,8 +289,13 @@ export class ArmyMovementManager {
     return overrideId;
   };
 
-  private _travelToHex = async (path: HexPosition[]) => {
-    const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
+  private _travelToHex = async (path: HexPosition[], currentArmiesTick: number) => {
+    const overrideId = this._optimisticTravelHex(
+      path[path.length - 1].col,
+      path[path.length - 1].row,
+      path.length - 1,
+      currentArmiesTick,
+    );
 
     const directions = path
       .map((_, i) => {
@@ -386,39 +307,35 @@ export class ArmyMovementManager {
       })
       .filter((d) => d !== undefined) as number[];
 
-    this.dojo.systemCalls
+    this.setup.systemCalls
       .travel_hex({
-        signer: this.dojo.network.burnerManager.account!,
+        signer: this.setup.network.burnerManager.account!,
         travelling_entity_id: this.entityId,
         directions,
       })
       .catch(() => {
-        this.positionModel.removeOverride(overrideId);
-        this.staminaModel.removeOverride(overrideId);
+        this.setup.components.Position.removeOverride(overrideId);
+      })
+      .then(() => {
+        this.setup.components.Stamina.removeOverride(overrideId);
       });
   };
 
-  public moveArmy = (path: HexPosition[], isExplored: boolean) => {
+  public moveArmy = (path: HexPosition[], isExplored: boolean, currentArmiesTick: number) => {
     if (!isExplored) {
-      this._exploreHex(path);
+      this._exploreHex(path, currentArmiesTick);
     } else {
-      this._travelToHex(path);
+      this._travelToHex(path, currentArmiesTick);
     }
   };
 
   private _getArmyRemainingCapacity = () => {
-    const armyCapacity = getComponentValue(this.capacityModel, this.entity);
-    const armyWeight = getComponentValue(this.weightModel, this.entity);
-    const armyEntity = getComponentValue(this.armyModel, this.entity);
+    const armyCapacity = getComponentValue(this.setup.components.Capacity, this.entity);
+    const armyWeight = getComponentValue(this.setup.components.Weight, this.entity);
+    const armyEntity = getComponentValue(this.setup.components.Army, this.entity);
 
-    const knights = armyEntity?.troops.knight_count || 0n;
-    const crossbowmen = armyEntity?.troops.crossbowman_count || 0n;
-    const paladins = armyEntity?.troops.paladin_count || 0n;
-    const troopQty = (knights + crossbowmen + paladins) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+    if (!armyEntity || !armyCapacity) return 0n;
 
-    const capacity = armyCapacity?.weight_gram || 0n;
-    const weight = (armyWeight?.value || 0n) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
-
-    return capacity * troopQty - weight;
+    return getRemainingCapacity(armyEntity, armyCapacity, armyWeight!);
   };
 }

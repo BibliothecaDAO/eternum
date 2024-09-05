@@ -40,6 +40,8 @@ mod hyperstructure_systems {
     struct HyperstructureFinished {
         #[key]
         hyperstructure_entity_id: ID,
+        #[key]
+        id: ID,
         timestamp: u64,
     }
 
@@ -81,7 +83,11 @@ mod hyperstructure_systems {
             set!(
                 world,
                 (
-                    Structure { entity_id: new_uuid, category: StructureCategory::Hyperstructure },
+                    Structure {
+                        entity_id: new_uuid,
+                        category: StructureCategory::Hyperstructure,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord, count: 1 },
                     Position { entity_id: new_uuid, x: coord.x, y: coord.y },
                     Owner { entity_id: new_uuid, address: starknet::get_caller_address() },
@@ -129,7 +135,7 @@ mod hyperstructure_systems {
             if (resource_was_completed
                 && InternalHyperstructureSystemsImpl::check_if_construction_done(world, hyperstructure_entity_id)) {
                 let timestamp = starknet::get_block_timestamp();
-                emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp }),);
+                emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp, id: world.uuid() }),);
             }
         }
 
@@ -165,7 +171,7 @@ mod hyperstructure_systems {
             let mut total: u16 = 0;
             let mut i = 0;
             while (i < co_owners.len()) {
-                let (address, percentage) = *co_owners.at(i);
+                let (_, percentage) = *co_owners.at(i);
                 total += percentage;
                 i += 1;
             };

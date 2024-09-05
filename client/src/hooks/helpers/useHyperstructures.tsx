@@ -1,5 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { ResourceMultipliers } from "@/dojo/modelManager/utils/constants";
+import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -121,7 +121,8 @@ const getAllProgressesAndTotalPercentage = (
       costNeeded: resourceCost,
     };
     percentage +=
-      (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+      (progress.amount *
+        HyperstructureResourceMultipliers[progress.resource_type as keyof typeof HyperstructureResourceMultipliers]!) /
       TOTAL_CONTRIBUTABLE_AMOUNT;
     return progress;
   });

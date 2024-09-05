@@ -48,13 +48,16 @@ mod map_systems {
     struct MapExplored {
         #[key]
         entity_id: ID,
-        entity_owner_id: ID,
         #[key]
         col: u32,
         #[key]
         row: u32,
+        #[key]
+        id: ID,
+        entity_owner_id: ID,
         biome: Biome,
-        reward: Span<(u8, u128)>
+        reward: Span<(u8, u128)>,
+        timestamp: u64,
     }
 
 
@@ -116,12 +119,14 @@ mod map_systems {
             emit!(
                 world,
                 (MapExplored {
+                    id: world.uuid(),
                     entity_id: entity_id,
                     entity_owner_id: entity_owned_by.entity_owner_id,
                     col: tile.col,
                     row: tile.row,
                     biome: tile.biome,
-                    reward
+                    reward,
+                    timestamp: starknet::get_block_timestamp()
                 })
             );
 
@@ -175,7 +180,11 @@ mod map_systems {
                 world,
                 (
                     EntityOwner { entity_id: entity_id, entity_owner_id: entity_id },
-                    Structure { entity_id: entity_id, category: StructureCategory::FragmentMine },
+                    Structure {
+                        entity_id: entity_id,
+                        category: StructureCategory::FragmentMine,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord: coord, count: 1 },
                     Position { entity_id: entity_id, x: coord.x, y: coord.y },
                 )
