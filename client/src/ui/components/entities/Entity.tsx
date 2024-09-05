@@ -7,7 +7,7 @@ import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision, formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
+import { divideByPrecision, formatSecondsLeftInDaysHoursMinutes } from "@/ui/utils/utils";
 import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
@@ -77,7 +77,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       case EntityState.Traveling:
         return entity.arrivalTime && nextBlockTimestamp ? (
           <div className="flex ml-auto -mt-2 italic self-center">
-            {formatSecondsLeftInDaysHours(Number(entity.arrivalTime) - nextBlockTimestamp)}
+            {formatSecondsLeftInDaysHoursMinutes(Number(entity.arrivalTime) - nextBlockTimestamp)}
           </div>
         ) : null;
       default:

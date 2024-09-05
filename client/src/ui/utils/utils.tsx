@@ -253,7 +253,7 @@ export const formatSecondsInHoursMinutes = (seconds: number) => {
   return `${hours}h:${minutes}m`;
 };
 
-export const formatSecondsLeftInDaysHours = (seconds: number) => {
+export const formatSecondsLeftInDaysHoursMinutes = (seconds: number) => {
   const days = Math.floor(seconds / 86400);
   const secondsLeft = seconds % 86400;
   const hours = Math.floor(secondsLeft / 3600);
