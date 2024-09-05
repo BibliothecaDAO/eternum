@@ -9,13 +9,13 @@ import {
   BuildingEnumToString,
   BuildingType,
   EternumGlobalConfig,
+  findResourceById,
   ID,
   RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
-  findResourceById,
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
@@ -391,6 +391,10 @@ export const ResourceInfo = ({
 
   const { getBalance } = getResourceBalance();
 
+  const usedIn = useMemo(() => {
+    return getUsedIn(resourceId);
+  }, [resourceId]);
+
   return (
     <div className="flex flex-col text-gold text-sm p-2 space-y-1">
       <Headline className="py-3">Resource Building </Headline>
@@ -453,6 +457,23 @@ export const ResourceInfo = ({
           );
         })}
       </div>
+      {usedIn.length > 0 && (
+        <>
+          <div className="mb-4 font-bold uppercase">Used in</div>
+          <div className="grid grid-cols-2 gap-2">
+            {React.Children.toArray(
+              usedIn.map((resourceId, index) => {
+                return (
+                  <>
+                    {findResourceById(resourceId || 0)?.trait}
+                    <ResourceIcon key={index} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+                  </>
+                );
+              }),
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -480,6 +501,10 @@ export const BuildingInfo = ({
   const perTick = RESOURCE_OUTPUTS[resourceProduced] || 0;
 
   const { getBalance } = getResourceBalance();
+
+  const usedIn = useMemo(() => {
+    return getUsedIn(resourceProduced);
+  }, [resourceProduced]);
 
   return (
     <div className="p-2 text-sm text-gold">
@@ -527,7 +552,7 @@ export const BuildingInfo = ({
 
       {ongoingCost && ongoingCost.length ? (
         <>
-          <div className="pt-3 font-bold">Cost per cycle</div>
+          <div className="mb-4 font-bold">Cost per cycle</div>
           <div className="grid grid-cols-2 gap-2">
             {resourceProduced !== 0 &&
               ongoingCost &&
@@ -568,6 +593,36 @@ export const BuildingInfo = ({
           </div>
         </>
       )}
+      {usedIn.length > 0 && (
+        <>
+          <div className="pt-3 font-bold uppercase">Used in</div>
+          <div className="grid grid-cols-2 gap-2">
+            {React.Children.toArray(
+              usedIn.map((resourceId, index) => {
+                return (
+                  <>
+                    {findResourceById(resourceId || 0)?.trait}
+                    <ResourceIcon key={index} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+                  </>
+                );
+              }),
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
+};
+
+const getUsedIn = (resourceProduced: ResourcesIds) => {
+  return Object.entries(RESOURCE_INPUTS)
+    .map(([resourceId, inputs]) => {
+      const resource = inputs.find(
+        (input: { resource: number; amount: number }) => input.resource === resourceProduced,
+      );
+      if (resource) {
+        return Number(resourceId);
+      }
+    })
+    .filter(Boolean);
 };

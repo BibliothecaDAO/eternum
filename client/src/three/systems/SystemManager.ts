@@ -137,20 +137,29 @@ export class SystemManager {
       onUpdate: (callback: (value: BattleSystemUpdate) => void) => {
         this.setupSystem(this.setup.components.Battle, callback, (update: any) => {
           const battle = getComponentValue(this.setup.components.Battle, update.entity);
-          if (!battle) return;
+          if (!battle) {
+            return {
+              entityId: update.value[1].entity_id,
+              hexCoords: new Position({ x: 0, y: 0 }),
+              isEmpty: false,
+              deleted: true,
+            };
+          }
 
           const position = getComponentValue(this.setup.components.Position, update.entity);
           if (!position) return;
 
           const healthMultiplier =
             EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          const isEmpty =
+            battle.attack_army_health.current < healthMultiplier &&
+            battle.defence_army_health.current < healthMultiplier;
 
           return {
             entityId: battle.entity_id,
             hexCoords: new Position({ x: position.x, y: position.y }),
-            isEmpty:
-              battle.attack_army_health.current < healthMultiplier &&
-              battle.defence_army_health.current < healthMultiplier,
+            isEmpty,
+            deleted: false,
           };
         });
       },

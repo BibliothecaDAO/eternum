@@ -40,7 +40,11 @@ mod dev_bank_systems {
             set!(
                 world,
                 (
-                    Structure { entity_id: ADMIN_BANK_ENTITY_ID, category: StructureCategory::Bank },
+                    Structure {
+                        entity_id: ADMIN_BANK_ENTITY_ID,
+                        category: StructureCategory::Bank,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord, count: 1 },
                     Bank { entity_id: ADMIN_BANK_ENTITY_ID, owner_fee_num, owner_fee_denom, exists: true },
                     Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },

@@ -8,9 +8,12 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
+import { Headline } from "@/ui/elements/Headline";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
+import { HintSection } from "../hints/HintModal";
 import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
@@ -80,6 +83,13 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   };
   return (
     <>
+      <Headline className="my-3">
+        <div className="flex gap-2">
+          <div className="self-center">{structure.name} </div>
+          <HintModalButton section={HintSection.Buildings} />
+        </div>
+      </Headline>
+
       <EntityList
         list={structureArmies}
         headerPanel={
@@ -132,7 +142,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         panel={({ entity, setSelectedEntity }) => (
           <>
             <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
-            <ArmyCapacity army={entity} className="my-2 ml-5" />
+            <ArmyCapacity army={entity} className="inline-flex" />
           </>
         )}
         questing={selectedQuest?.id === QuestId.CreateArmy}

@@ -75,7 +75,12 @@ impl StaminaCustomImpl of StaminaCustomTrait {
 
         let current_tick = TickImpl::get_armies_tick_config(world).current();
         let num_ticks_passed = current_tick - self.last_refill_tick;
-        let total_stamina_since_last_tick: u16 = (num_ticks_passed * stamina_per_tick.into()).try_into().unwrap();
+
+        let total_stamina = num_ticks_passed * stamina_per_tick.into();
+        let total_stamina_since_last_tick: u16 = match total_stamina.try_into() {
+            Option::Some(value) => value,
+            Option::None => { self.max(world) }
+        };
 
         self.amount = core::cmp::min(self.amount + total_stamina_since_last_tick, self.max(world));
         self.last_refill_tick = current_tick;

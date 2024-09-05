@@ -35,20 +35,14 @@ async fn check_user_in_database(
         .await
 }
 
-async fn setup_torii_client(
-    token: String,
-    database: PgPool,
-    secret_store: SecretStore,
-) -> eyre::Result<()> {
-    let config = Config::from_secrets(secret_store)?;
-
+async fn setup_torii_client(database: PgPool, config: Config) -> eyre::Result<()> {
     tokio::spawn(async move {
         tracing::info!("Setting up Torii client");
         let client = ToriiClient::new(
-            config.torii_url,
-            config.node_url,
-            config.torii_relay_url,
-            Felt::from_hex_unchecked(&config.world_address),
+            config.torii_url.clone(),
+            config.node_url.clone(),
+            config.torii_relay_url.clone(),
+            Felt::from_hex_unchecked(&config.world_address.clone()),
         )
         .await
         .unwrap();
@@ -67,7 +61,7 @@ async fn setup_torii_client(
 
         let event_handler = EventHandler { event_sender };
         let mut message_dispatcher = MessageDispatcher {
-            http: Arc::new(Http::new(&token)),
+            http: Arc::new(Http::new(&config.discord_token.clone())),
             message_receiver,
         };
 
@@ -96,16 +90,16 @@ async fn main(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
 ) -> shuttle_serenity::ShuttleSerenity {
+    let config = Config::from_secrets(secret_store).expect("Failed to get config");
+
+    let config_clone = config.clone();
+
     // Run the schema migration
     pool.execute(include_str!(
         "../migrations/20240818171830_create_users_table.sql"
     ))
     .await
     .context("failed to run migrations")?;
-
-    let secret = secret_store.get("DISCORD_TOKEN").unwrap();
-
-    let token = secret.clone();
 
     let intents = GatewayIntents::non_privileged();
 
@@ -121,7 +115,7 @@ async fn main(
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                let _ = setup_torii_client(token.clone(), pool.clone(), secret_store.clone()).await;
+                let _ = setup_torii_client(pool.clone(), config.clone()).await;
                 Ok(Data {
                     database: pool.clone(),
                 })
@@ -129,7 +123,7 @@ async fn main(
         })
         .build();
 
-    let client = Client::builder(secret, intents)
+    let client = Client::builder(config_clone.discord_token, intents)
         .framework(framework)
         .await
         .expect("Failed to build client");

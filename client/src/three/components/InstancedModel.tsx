@@ -3,8 +3,8 @@ import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
-const LAND_NAME = "land";
-const SMALL_DETAILS_NAME = "small_details";
+export const LAND_NAME = "land";
+export const SMALL_DETAILS_NAME = "small_details";
 
 export default class InstancedModel {
   public group: THREE.Group;

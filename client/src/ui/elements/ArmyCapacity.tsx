@@ -24,18 +24,20 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
   const canExplore = remainingCapacity >= BigInt(EternumGlobalConfig.exploration.reward);
 
   return (
-    <div>
-      <div
-        className={clsx(
-          remainingCapacity < BigInt(EternumGlobalConfig.exploration.reward) ? "text-red" : "",
-          className,
-        )}
-      >
-        <div className={clsx(capacityColor, className)}>
-          {!canExplore && "⚠️"} Capacity: {formatNumber(Number(army.weight), 0)} /{" "}
-          {formatNumber(Number(army.totalCapacity), 0)} kg
+    army.totalCapacity !== 0n && (
+      <div>
+        <div
+          className={clsx(
+            remainingCapacity < BigInt(EternumGlobalConfig.exploration.reward) ? "text-red" : "",
+            className,
+          )}
+        >
+          <div className={clsx(capacityColor, className)}>
+            {!canExplore && "⚠️"} Capacity: {formatNumber(Number(army.weight), 0)} /{" "}
+            {formatNumber(Number(army.totalCapacity), 0)} kg
+          </div>
         </div>
       </div>
-    </div>
+    )
   );
 };

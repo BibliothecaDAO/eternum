@@ -1,12 +1,16 @@
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import { useModalStore } from "@/hooks/store/useModalStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import CircleButton from "@/ui/elements/CircleButton";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
+import { currencyFormat } from "@/ui/utils/utils";
 import { ID, MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { BankPanel } from "../bank/BankList";
@@ -15,7 +19,6 @@ import { ModalContainer } from "../ModalContainer";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
-import useUIStore from "@/hooks/store/useUIStore";
 
 export const MarketModal = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -28,6 +31,7 @@ export const MarketModal = () => {
   const bank = banks.length === 1 ? banks[0] : null;
 
   const { bidOffers, askOffers } = useSetMarket();
+  const { useBalance } = getResourceBalance();
 
   // initial entity id
   const selectedEntityId = useUIStore((state) => state.structureEntityId);
@@ -37,6 +41,8 @@ export const MarketModal = () => {
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
 
   const structures = useMemo(() => playerStructures(), [playerStructures]);
+
+  const lordsBalance = useBalance(structureEntityId, ResourcesIds.Lords).amount;
 
   const tabs = useMemo(
     () => [
@@ -91,24 +97,29 @@ export const MarketModal = () => {
     <ModalContainer>
       <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30  h-full row-span-12 ">
         <div className="col-span-12  p-2 flex justify-between row-span-2">
-          <div className="self-center bg-black text-xl">
-            <Select
-              value={structureEntityId.toString()}
-              onValueChange={(trait) => {
-                setStructureEntityId(ID(trait));
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Structure" />
-              </SelectTrigger>
-              <SelectContent className="bg-black bg-hex-bg">
-                {structures.map((structure, index) => (
-                  <SelectItem key={index} value={structure.entity_id.toString()}>
-                    {structure.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="self-center text-xl flex gap-2 items-center">
+            <div className="bg-black">
+              <Select
+                value={structureEntityId.toString()}
+                onValueChange={(trait) => {
+                  setStructureEntityId(ID(trait));
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select Structure" />
+                </SelectTrigger>
+                <SelectContent className="bg-black bg-hex-bg">
+                  {structures.map((structure, index) => (
+                    <SelectItem key={index} value={structure.entity_id.toString()}>
+                      {structure.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className=" ml-2 bg-map align-middle flex">
+              {currencyFormat(lordsBalance, 0)} <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
+            </div>
           </div>
           <div className="self-center text-3xl">
             <h2 className="text-center">The Lords Market</h2>
