@@ -2,13 +2,13 @@ import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import React from "react";
 import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createPopupsSlice, PopupsStore } from "./_popupsStore";
-import { BattleViewInfo } from "./types";
-import { subscribeWithSelector } from "zustand/middleware";
 import { createThreeStoreSlice, ThreeStore } from "./_threeStore";
-import { createRealmStoreSlice, RealmStore } from "./useRealmStore";
+import { BattleViewInfo } from "./types";
 import { BlockchainStore, createBlockchainStore } from "./useBlockchainStore";
+import { createRealmStoreSlice, RealmStore } from "./useRealmStore";
 
 interface UIStore {
   theme: string;
