@@ -83,8 +83,8 @@ const Battles = () => {
       <div className="flex flex-row items-center gap-2">
         <img className="w-20" src="/images/icons/leave-battle.png" alt="coin" />
         <p>
-          Exiting a battle is possible at any moment, but comes at the cost; any held resources will be forfeited, and a
-          part of your troops will defect.
+          You can exit a battle at any time, but there are consequences. Any resources your army is carrying will be
+          lost, and some of your troops will desert.
         </p>
       </div>
     </div>
