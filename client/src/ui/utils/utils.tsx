@@ -32,10 +32,6 @@ export function currencyIntlFormat(num: number, decimals: number = 2): string {
   }).format(num || 0);
 }
 
-export const numberToHex = (num: number) => {
-  return "0x" + num.toString(16);
-};
-
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
@@ -261,7 +257,7 @@ export const formatSecondsInHoursMinutes = (seconds: number) => {
   return `${hours}h:${minutes}m`;
 };
 
-export const formatSecondsLeftInDaysHours = (seconds: number) => {
+export const formatSecondsLeftInDaysHoursMinutes = (seconds: number) => {
   const days = Math.floor(seconds / 86400);
   const secondsLeft = seconds % 86400;
   const hours = Math.floor(secondsLeft / 3600);

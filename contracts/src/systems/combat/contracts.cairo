@@ -320,7 +320,7 @@ trait ICombatContract<TContractState> {
     ///     - Handles the movement of the attacking army back to its owner after a successful
     ///     pillage,
     ///       if continuous pillaging is not possible.
-    ///     - Emits a `PillageEvent` to signify the outcome of the pillage action.
+    ///     - Emits a `BattlePillageData` to signify the outcome of the pillage action.
     ///
     /// # Note:
     ///     - Continous pillaging simply means you are allowed to pillage without being sent back
@@ -423,23 +423,6 @@ mod combat_systems {
     use eternum::utils::math::{min};
     use eternum::utils::random;
     use super::ICombatContract;
-
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
-    #[dojo::model]
-    struct PillageEvent {
-        #[key]
-        structure_id: ID,
-        #[key]
-        attacker_realm_entity_id: ID,
-        #[key]
-        army_id: ID,
-        winner: BattleSide,
-        pillaged_resources: Span<(u8, u128)>,
-        destroyed_building_category: BuildingCategory,
-        timestamp: u64,
-    }
-
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
@@ -1022,7 +1005,7 @@ mod combat_systems {
                 true
             )[0];
 
-            let mut pillaged_resources: Array<(u8, u128)> = array![];
+            let mut pillaged_resources: Array<(u8, u128)> = array![(0, 0)];
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
@@ -1236,23 +1219,6 @@ mod combat_systems {
 
             // emit pillage event
             let army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
-            emit!(
-                world,
-                (PillageEvent {
-                    structure_id,
-                    attacker_realm_entity_id: army_owner_entity_id,
-                    army_id,
-                    winner: if *attack_successful {
-                        BattleSide::Attack
-                    } else {
-                        BattleSide::Defence
-                    },
-                    pillaged_resources: pillaged_resources.span(),
-                    destroyed_building_category,
-                    timestamp: starknet::get_block_timestamp(),
-                }),
-            );
-
             let structure_owner = get!(world, structure_id, Owner).address;
             emit!(
                 world,
@@ -1261,6 +1227,7 @@ mod combat_systems {
                     event_id: EventType::BattlePillage,
                     pillager: starknet::get_caller_address(),
                     pillager_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    pillager_realm_entity_id: army_owner_entity_id,
                     pillager_army_entity_id: army_id,
                     pillaged_structure_owner: structure_owner,
                     pillaged_structure_entity_id: structure_id,
@@ -1273,6 +1240,7 @@ mod combat_systems {
                     y: structure_position.y,
                     structure_type: structure.category,
                     pillaged_resources: pillaged_resources.span(),
+                    destroyed_building_category,
                     timestamp: starknet::get_block_timestamp(),
                 }
             );

@@ -1,7 +1,7 @@
 import { HyperstructureFinishedEvent, LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { ContractAddress, ID } from "@bibliothecadao/eternum";
-import { useEffect, useRef, useState } from "react";
-import { Subscription } from "rxjs";
+import { defineQuery, getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { useDojo } from "../context/DojoContext";
 import { useContributions } from "../helpers/useContributions";
@@ -39,19 +39,13 @@ export const useSubscriptionToHyperstructureEvents = () => {
   const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureFinishedEvent | null>(null);
   const {
     setup: {
-      updates: {
-        eventUpdates: { createHyperstructureFinishedEvents, createHyperstructureCoOwnerChangeEvents },
+      components: {
+        events: { HyperstructureCoOwnersChange, HyperstructureFinished },
       },
     },
   } = useDojo();
 
   const { getContributions } = useContributions();
-
-  const subEventFinishedCreated = useRef<boolean>(false);
-  const eventFinishedSubscriptionRef = useRef<Subscription | undefined>();
-
-  const subEventCoOwnerChangedCreated = useRef<boolean>(false);
-  const eventCoOwnerChangedSubscriptionRef = useRef<Subscription | undefined>();
 
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
   const setFinishedHyperstructures = useLeaderBoardStore((state) => state.setFinishedHyperstructures);
@@ -62,57 +56,41 @@ export const useSubscriptionToHyperstructureEvents = () => {
   }, [newFinishedHs]);
 
   useEffect(() => {
-    if (!createHyperstructureFinishedEvents) return;
+    const query = defineQuery([Has(HyperstructureFinished)], {
+      runOnInit: true,
+    });
 
-    const subscription = async () => {
-      const observable = await createHyperstructureFinishedEvents();
-      let events: HyperstructureFinishedEvent[] = [];
-      const sub = observable.subscribe((event) => {
-        if (event) {
-          const parsedEvent: HyperstructureFinishedEvent =
-            LeaderboardManager.instance().processHyperstructureFinishedEventData(event, getContributions);
-          setNewFinishedHs(parsedEvent);
-          events.push(parsedEvent);
-        }
-      });
-      setFinishedHyperstructures(events);
+    const events: HyperstructureFinishedEvent[] = [];
 
-      eventFinishedSubscriptionRef.current = sub;
-    };
+    const subscription = query.update$.subscribe((update) => {
+      if (isComponentUpdate(update, HyperstructureFinished)) {
+        const event = getComponentValue(HyperstructureFinished, update.entity);
+        if (!event) return;
+        const parsedEvent = LeaderboardManager.instance().processHyperstructureFinishedEventData(
+          event,
+          getContributions,
+        );
+        setNewFinishedHs(parsedEvent);
+        events.push(parsedEvent);
+      }
+    });
 
-    if (subEventFinishedCreated.current) return;
+    setFinishedHyperstructures(events);
 
-    subEventFinishedCreated.current = true;
-    subscription();
-
-    return () => {
-      eventFinishedSubscriptionRef.current?.unsubscribe();
-      subEventFinishedCreated.current = false;
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!createHyperstructureCoOwnerChangeEvents) return;
+    const query = defineQuery([Has(HyperstructureCoOwnersChange)]);
 
-    const subscription = async () => {
-      const observable = await createHyperstructureCoOwnerChangeEvents();
-      const sub = observable.subscribe((event) => {
-        if (event) {
-          LeaderboardManager.instance().processHyperstructureCoOwnersChangeEvent(event);
-        }
-      });
+    const subscription = query.update$.subscribe((update) => {
+      if (isComponentUpdate(update, HyperstructureCoOwnersChange)) {
+        const event = getComponentValue(HyperstructureCoOwnersChange, update.entity);
+        if (!event) return;
+        LeaderboardManager.instance().processHyperstructureCoOwnersChangeEvent(event);
+      }
+    });
 
-      eventCoOwnerChangedSubscriptionRef.current = sub;
-    };
-
-    if (subEventCoOwnerChangedCreated.current) return;
-
-    subEventCoOwnerChangedCreated.current = true;
-    subscription();
-
-    return () => {
-      eventCoOwnerChangedSubscriptionRef.current?.unsubscribe();
-      subEventCoOwnerChangedCreated.current = false;
-    };
+    return () => subscription.unsubscribe();
   }, []);
 };

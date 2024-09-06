@@ -2,10 +2,12 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { getPlayerStructures } from "@/hooks/helpers/useEntities";
+import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
+import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
@@ -50,6 +52,7 @@ export const CombatEntityDetails = () => {
     return ownArmiesAtPosition.find((army) => army.entity_id === selectedArmyEntityId);
   }, [ownArmiesAtPosition, selectedArmyEntityId]);
 
+  const structure = getStructureAtPosition(hexPosition.getContract());
   const battles = useBattlesByPosition(hexPosition.getContract());
 
   const tabs = useMemo(
@@ -72,8 +75,21 @@ export const CombatEntityDetails = () => {
         ),
         component: <Battles ownArmy={ownArmy} battles={battles} />,
       },
+      ...(structure
+        ? [
+            {
+              key: "pillages",
+              label: (
+                <div className="flex relative group flex-col items-center">
+                  <div>Pillage History</div>
+                </div>
+              ),
+              component: <PillageHistory structureId={structure.entity_id} />,
+            },
+          ]
+        : []),
     ],
-    [selectedHex, userArmies, ownArmy?.entity_id, ownArmySelected?.id, battles],
+    [hexPosition, ownArmy, structure, battles],
   );
 
   const [selectedTab, setSelectedTab] = useState(battles.length > 0 ? 1 : 0);
@@ -90,7 +106,7 @@ export const CombatEntityDetails = () => {
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}
             </Tabs.List>
-            {userArmies.length > 0 && (
+            {selectedTab !== 2 && userArmies.length > 0 && (
               <SelectActiveArmy
                 selectedEntity={selectedArmyEntityId}
                 setOwnArmySelected={setSelectedArmyEntityId}

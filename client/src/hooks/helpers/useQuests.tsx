@@ -1,11 +1,10 @@
-import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
 import { BuildingType, ContractAddress, ID, QuestType, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
@@ -110,15 +109,9 @@ const useQuestDependencies = () => {
     [entityArmies, structurePosition],
   );
 
-  const [pillageHistoryLength, setPillageHistoryLength] = useState<number>(0);
-
-  useEffect(() => {
-    const fetchPillageHistory = async () => {
-      const eventsLength = await getPillageEvents(structureEntityId || 0);
-      setPillageHistoryLength(eventsLength);
-    };
-    fetchPillageHistory();
-  }, [structureEntityId]);
+  const playerPillages = useEntityQuery([
+    HasValue(setup.components.events.BattlePillageData, { pillager: BigInt(account.address) }),
+  ]);
 
   const { playerStructures } = useEntities();
   const structures = playerStructures();
@@ -233,10 +226,10 @@ const useQuestDependencies = () => {
             : QuestStatus.InProgress,
       },
       [QuestId.Pillage]: {
-        value: questClaimStatus[QuestId.Pillage] ? null : pillageHistoryLength,
+        value: questClaimStatus[QuestId.Pillage] ? null : playerPillages.length,
         status: questClaimStatus[QuestId.Pillage]
           ? QuestStatus.Claimed
-          : pillageHistoryLength > 0
+          : playerPillages.length > 0
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
