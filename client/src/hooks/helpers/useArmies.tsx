@@ -536,3 +536,51 @@ export const getArmyByEntityId = () => {
 
   return { getAliveArmy, getArmy };
 };
+
+export const getArmiesByPosition = () => {
+  const {
+    account: { account },
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        Weight,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+      },
+    },
+  } = useDojo();
+
+  const getArmies = (position: Position) => {
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Position, { x: position.x, y: position.y })]);
+    return formatArmies(
+      Array.from(armiesEntityIds),
+      account.address,
+      Army,
+      Protectee,
+      EntityName,
+      Health,
+      Quantity,
+      Movable,
+      Capacity,
+      Weight,
+      ArrivalTime,
+      Position,
+      EntityOwner,
+      Owner,
+      Realm,
+      Stamina,
+    );
+  };
+
+  return getArmies;
+};

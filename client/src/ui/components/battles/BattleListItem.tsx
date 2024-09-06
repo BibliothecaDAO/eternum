@@ -9,7 +9,7 @@ import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
-import { MergeTroopsPanel } from "../hyperstructures/StructureCard";
+import { StructureMergeTroopsPanel } from "../hyperstructures/StructureCard";
 import { TroopMenuRow } from "../military/TroopChip";
 import { InventoryResources } from "../resources/InventoryResources";
 
@@ -148,7 +148,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
         {showMergeTroopsPopup && (
           <div className="flex flex-col w-[100%]">
             {ownArmySelected && (
-              <MergeTroopsPanel
+              <StructureMergeTroopsPanel
                 giverArmy={ownArmySelected}
                 takerArmy={userArmyInBattle}
                 setShowMergeTroopsPopup={setShowMergeTroopsPopup}
