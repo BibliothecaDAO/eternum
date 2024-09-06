@@ -1,6 +1,6 @@
 import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Structure } from "@/hooks/helpers/useStructures";
+import { isStructureImmune, Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
 import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import {
@@ -36,6 +36,7 @@ export enum RaidStatus {
   OwnStructure = "Can't raid your own structure",
   NoArmy = "No army selected",
   ArmyNotInBattle = "Selected army not in this battle",
+  IsImmune = "Structure is immune",
 }
 
 export class BattleManager {
@@ -208,6 +209,11 @@ export class BattleManager {
       return false;
     }
 
+    if (isStructureImmune(Number(structure.created_at), currentTimestamp)) {
+      this.battleIsClaimable = false;
+      return false;
+    }
+
     if (defender === undefined) {
       this.battleIsClaimable = true;
       return true;
@@ -246,6 +252,10 @@ export class BattleManager {
 
     if (!structure) return RaidStatus.NoStructure;
 
+    if (isStructureImmune(Number(structure.created_at), currentTimestamp)) {
+      return RaidStatus.IsImmune;
+    }
+
     if (this.isBattleOngoing(currentTimestamp) && selectedArmy.battle_id !== this.battleEntityId) {
       return RaidStatus.ArmyNotInBattle;
     }
@@ -262,8 +272,16 @@ export class BattleManager {
     return RaidStatus.isRaidable;
   }
 
-  public isAttackable(defender: ArmyInfo | undefined): boolean {
+  public isAttackable(
+    defender: ArmyInfo | undefined,
+    currentTimestamp: number,
+    structure: Structure | undefined,
+  ): boolean {
     if (!defender) return false;
+
+    if (isStructureImmune(Number(structure?.created_at), currentTimestamp)) {
+      return false;
+    }
 
     if (!this.isBattle() && defender.health.current > 0n) return true;
 

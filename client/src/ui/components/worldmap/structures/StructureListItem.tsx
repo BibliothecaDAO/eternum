@@ -6,13 +6,15 @@ import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import { Structure } from "@/hooks/helpers/useStructures";
+import { isStructureImmune, Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
-import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { TroopMenuRow } from "../../military/TroopChip";
 import { InventoryResources } from "../../resources/InventoryResources";
+import clsx from "clsx";
+import { formatTime } from "@/ui/utils/utils";
 
 type StructureListItemProps = {
   structure: Structure;
@@ -48,6 +50,16 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
 
   const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
 
+  const isImmune = isStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
+
+  const immunityEndTimestamp =
+    Number(structure?.created_at) +
+    EternumGlobalConfig.battle.graceTickCount * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+  const timer = useMemo(() => {
+    if (!nextBlockTimestamp) return 0;
+    return immunityEndTimestamp - nextBlockTimestamp!;
+  }, [nextBlockTimestamp]);
+
   const battleButtons = useMemo(() => {
     if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
     const isBattleOngoing = battleManager.isBattleOngoing(nextBlockTimestamp);
@@ -76,7 +88,9 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
     const swordButton = (
       <Sword
         key={"sword-2"}
-        className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
+        className={clsx("fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125", {
+          "pointer-events-none opacity-50": isImmune,
+        })}
         onClick={() =>
           setBattleView({
             battleEntityId: updatedBattle?.entity_id,
@@ -104,7 +118,9 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
       return [
         <Sword
           key={"sword-2"}
-          className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
+          className={clsx("fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125", {
+            "pointer-events-none opacity-50": isImmune,
+          })}
           onClick={() =>
             setBattleView({
               engage: true,
@@ -140,6 +156,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
                 onClick={() => setShowInventory(!showInventory)}
               />
             </div>
+            {isImmune && <div>Immune for: {formatTime(timer)}</div>}
           </div>
           <div className="flex flex-col content-center w-[55%]">
             <TroopMenuRow troops={updatedBattle?.defence_army?.troops || structure.protector?.troops} />

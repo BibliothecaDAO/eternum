@@ -1,7 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
-import { calculateDistance } from "@/ui/utils/utils";
+import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -51,10 +51,10 @@ export const getStructureAtPosition = ({ x, y }: Position): Structure | undefine
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,
@@ -101,10 +101,10 @@ export const getStructureByPosition = () => {
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,
@@ -150,10 +150,10 @@ export const getStructureByEntityId = (entityId: ID) => {
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,
@@ -210,3 +210,13 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
 
   return { realms };
 }
+
+export const isStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
+  const tickCount = currentTickCount(currentTimestamp);
+  const allowAttackTick = currentTickCount(created_at) + EternumGlobalConfig.battle.graceTickCount;
+
+  if (tickCount < allowAttackTick) {
+    return true;
+  }
+  return false;
+};
