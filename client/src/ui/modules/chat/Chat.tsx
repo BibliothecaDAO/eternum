@@ -201,7 +201,7 @@ export const Chat = () => {
   };
 
   const getPlayers = useGetAllPlayers();
-
+  const players = getPlayers().filter((player) => player.address !== BigInt(account.address));
   return (
     <div
       className="flex flex-col gap-2 w-72 border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded"
@@ -232,10 +232,9 @@ export const Chat = () => {
           <SelectValue placeholder="Select Player or Global" />
         </SelectTrigger>
         <SelectContent>
-          {getPlayers()
-            .filter((player) => player.address !== BigInt(account.address))
-            .map((player) => (
-              <SelectItem className="flex justify-between" key={player.address} value={player.addressName || ""}>
+          {players &&
+            players.map((player) => (
+              <SelectItem className="flex justify-between" key={player.address} value={player.addressName || "  "}>
                 {player.addressName}
               </SelectItem>
             ))}
