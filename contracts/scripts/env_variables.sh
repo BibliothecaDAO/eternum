@@ -11,9 +11,9 @@ KATANA_TOML_PATH="./manifests/dev/deployment/manifest.toml"
 if [[ ! -z "$1" ]]; then
     if [[ "$1" == "prod" ]]; then
         echo "is prod"
-        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum-35/katana/"
-        DOJO_ACCOUNT_ADDRESS="0x3501b8b055c43cc73e01a766a6df019e4ec2beb3667d26852cd66d42b1ea1"
-        DOJO_PRIVATE_KEY="0x70da7559cd23cc1d2f75f1238587660c546fc75af677b949a7bc70aac294023"
+        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum-37/katana/"
+        DOJO_ACCOUNT_ADDRESS="0xac5b6dcf77ccf3412c5161c095b3db80b703461c71f66637c830786b0600da"
+        DOJO_PRIVATE_KEY="0x78a5bf59b234910abf592a3e923093c5afe0db6e5d10d6ff32e32d4d2a890f9"
         SOZO_WORLD="0x6918fe8c1ba16bdc83b9790cd9168d730aa98a22c65164578ef99af1c8cbc76"
         KATANA_TOML_PATH="./manifests/prod/deployment/manifest.toml"
     elif [[ "$1" != "dev" ]]; then
