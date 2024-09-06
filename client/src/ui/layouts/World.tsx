@@ -20,7 +20,6 @@ import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
-import { Transactions } from "../modules/transactions/Transactions";
 import { Chat } from "../modules/chat/Chat";
 import { Onboarding } from "./Onboarding";
 import clsx from "clsx";

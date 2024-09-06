@@ -6,7 +6,7 @@ import Button from "@/ui/elements/Button";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
-import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, getOrderName, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
@@ -22,7 +22,7 @@ export const Leaderboard = ({
   const {
     account: { account },
     setup: {
-      components: { HyperstructureUpdate },
+      components: { HyperstructureUpdate, Owner },
     },
   } = useDojo();
 
@@ -54,6 +54,12 @@ export const Leaderboard = ({
     sortKey: "number",
     sort: "none",
   });
+
+  const isOwner = useMemo(() => {
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
+    if (!owner) return false;
+    return ContractAddress(owner.address) === ContractAddress(account.address);
+  }, [hyperstructureEntityId]);
 
   return update ? (
     <>
@@ -96,9 +102,11 @@ export const Leaderboard = ({
         );
       })}
     </>
-  ) : (
+  ) : isOwner ? (
     <div className="w-full h-full flex flex-col justify-center items-center">
       <Button onClick={() => setSelectedTab(1)}>Set first co-owners</Button>
     </div>
+  ) : (
+    <div className="w-full h-full flex flex-col justify-center items-center">Owner hasn't set first co-owners yet</div>
   );
 };

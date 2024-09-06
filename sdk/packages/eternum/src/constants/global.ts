@@ -94,6 +94,7 @@ export const EternumGlobalConfig = {
 };
 
 export const WORLD_CONFIG_ID = 999999999n;
+export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
 export const U32_MAX = 4294967295;
 export const MAX_NAME_LENGTH = 31;
 export const ONE_MONTH = 2628000;
