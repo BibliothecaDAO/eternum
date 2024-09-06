@@ -2,6 +2,8 @@ import { Position } from "@/types/Position";
 import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { AnimationClip, AnimationMixer } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { GUIManager } from "../helpers/GUIManager";
 import { ArmySystemUpdate } from "../systems/types";
 import { LabelManager } from "./LabelManager";
@@ -13,42 +15,28 @@ const RADIUS_OFFSET = 0.09;
 
 export class ArmyManager {
   private scene: THREE.Scene;
-  private dummy: THREE.Mesh;
+  private dummy: any;
   loadPromise: Promise<void>;
-  private mesh: THREE.InstancedMesh;
+  private mesh!: THREE.InstancedMesh;
   private armies: Map<ID, { matrixIndex: number; hexCoords: Position; isMine: boolean }> = new Map();
   private scale: THREE.Vector3;
   private movingArmies: Map<ID, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
   private labels: Map<number, THREE.Points> = new Map();
   private movingLabels: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
+  private mixer: AnimationMixer | null = null;
+  private animationClip: AnimationClip | null = null;
+  private timeOffsets: Float32Array;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.dummy = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.5, 32));
-    this.mesh = new THREE.InstancedMesh(this.dummy.geometry, this.dummy.material, MAX_INSTANCES);
-    this.scale = new THREE.Vector3(1, 1, 1);
+    this.dummy = new THREE.Object3D();
+    this.loadPromise = this.loadModel();
+    this.scale = new THREE.Vector3(0.4, 0.4, 0.4);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
 
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
-
-    this.loadPromise = Promise.resolve();
-
-    this.mesh.castShadow = true;
-
-    this.mesh.morphTargetInfluences?.fill(0);
-    this.mesh.morphTargetDictionary = {};
-    this.mesh.geometry.morphTargetsRelative = false;
-
-    this.dummy.position.set(0, 0, 0);
-    this.dummy.updateMatrix();
-    this.mesh.setMatrixAt(0, this.dummy.matrix);
-
-    this.mesh.count = 0;
-    this.mesh.instanceMatrix.needsUpdate = true;
-
-    this.scene.add(this.mesh);
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -88,6 +76,43 @@ export class ArmyManager {
       )
       .name("Delete army");
     deleteArmyFolder.close();
+
+    this.timeOffsets = new Float32Array(MAX_INSTANCES);
+    for (let i = 0; i < MAX_INSTANCES; i++) {
+      this.timeOffsets[i] = Math.random() * 3;
+    }
+  }
+
+  private async loadModel(): Promise<void> {
+    const loader = new GLTFLoader();
+    return new Promise((resolve, reject) => {
+      loader.load(
+        "models/knight3.glb",
+        (gltf) => {
+          this.dummy = gltf.scene.children[0];
+          const geometry = (this.dummy as THREE.Mesh).geometry;
+          const material = (this.dummy as THREE.Mesh).material;
+
+          this.mesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
+          this.mesh.castShadow = true;
+          this.mesh.count = 0;
+          this.mesh.instanceMatrix.needsUpdate = true;
+          this.scene.add(this.mesh);
+
+          // Set up animation
+          this.mixer = new AnimationMixer(gltf.scene);
+          this.animationClip = gltf.animations[0];
+          if (this.animationClip) {
+            const action = this.mixer.clipAction(this.animationClip);
+            action.play();
+          }
+
+          resolve();
+        },
+        undefined,
+        reject,
+      );
+    });
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -104,25 +129,39 @@ export class ArmyManager {
   }
 
   public onRightClick(raycaster: THREE.Raycaster) {
-    if (!this.mesh) return;
+    if (!this.mesh) {
+      console.log("Mesh not found.");
+      return;
+    }
 
     const intersects = raycaster.intersectObject(this.mesh);
     if (intersects.length === 0) {
+      console.log("No intersections found.");
       return;
     }
 
     const clickedObject = intersects[0].object;
-    if (!(clickedObject instanceof THREE.InstancedMesh)) return;
+    if (!(clickedObject instanceof THREE.InstancedMesh)) {
+      console.log("Clicked object is not an instance of THREE.InstancedMesh.");
+      return;
+    }
 
     const instanceId = intersects[0].instanceId;
-    if (instanceId === undefined) return;
+    if (instanceId === undefined) {
+      console.log("Instance ID is undefined.");
+      return;
+    }
 
     const entityIdMap = clickedObject.userData.entityIdMap;
     if (entityIdMap) {
       const entityId = entityIdMap.get(instanceId);
+      console.log(`Entity ID: ${entityId}`);
 
       // don't return if the army is not mine
-      if (entityId && this.armies.get(entityId)?.isMine) return entityId;
+      if (entityId && this.armies.get(entityId)?.isMine) {
+        console.log(`Returning entity ID: ${entityId}`);
+        return entityId;
+      }
     }
   }
 
@@ -156,30 +195,27 @@ export class ArmyManager {
   }
 
   addArmy(entityId: ID, hexCoords: Position, isMine: boolean) {
-    const index = this.mesh.count;
-    this.mesh.count++;
-    this.armies.set(entityId, { matrixIndex: index, hexCoords, isMine });
-    const position = this.getArmyWorldPosition(entityId, hexCoords);
-
-    this.dummy.position.copy(position);
-    this.dummy.scale.copy(this.scale);
-    this.dummy.updateMatrix();
-    this.mesh.setMatrixAt(index, this.dummy.matrix);
-    this.mesh.instanceMatrix.needsUpdate = true;
-    // Update the bounding sphere of the InstancedMesh
-    this.mesh.computeBoundingSphere();
-
-    if (!this.mesh.userData.entityIdMap) {
-      this.mesh.userData.entityIdMap = new Map();
-    }
-    this.mesh.userData.entityIdMap.set(index, entityId);
-
-    this.mesh.frustumCulled = false;
-    this.mesh.computeBoundingSphere();
-
-    const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
-    this.labels.set(entityId, label);
-    this.scene.add(label);
+    // Wait for the model to load before adding armies
+    this.loadPromise.then(() => {
+      const index = this.mesh.count;
+      this.mesh.count++;
+      this.armies.set(entityId, { matrixIndex: index, hexCoords, isMine });
+      const position = this.getArmyWorldPosition(entityId, hexCoords);
+      this.dummy.position.copy(position);
+      this.dummy.scale.copy(this.scale);
+      this.dummy.updateMatrix();
+      this.mesh.setMatrixAt(index, this.dummy.matrix);
+      this.mesh.instanceMatrix.needsUpdate = true;
+      if (!this.mesh.userData.entityIdMap) {
+        this.mesh.userData.entityIdMap = new Map();
+      }
+      this.mesh.userData.entityIdMap.set(index, entityId);
+      this.mesh.frustumCulled = false;
+      this.mesh.computeBoundingSphere();
+      const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
+      this.labels.set(entityId, label);
+      this.scene.add(label);
+    });
   }
 
   moveArmy(entityId: ID, hexCoords: Position) {
@@ -218,7 +254,6 @@ export class ArmyManager {
 
   update(deltaTime: number) {
     let needsBoundingUpdate = false;
-
     this.movingArmies.forEach((movement, index) => {
       movement.progress += deltaTime * 0.5;
       if (movement.progress >= 1) {
@@ -230,13 +265,11 @@ export class ArmyManager {
       this.dummy.scale.copy(this.scale);
       this.dummy.updateMatrix();
       this.mesh.setMatrixAt(index, this.dummy.matrix);
-
       const entityId = this.mesh.userData.entityIdMap.get(index);
     });
     if (this.movingArmies.size > 0) {
       this.mesh.instanceMatrix.needsUpdate = true;
     }
-
     this.movingLabels.forEach((movement, entityId) => {
       movement.progress += deltaTime * 0.5;
       const label = this.labels.get(entityId);
@@ -251,10 +284,19 @@ export class ArmyManager {
         }
       }
     });
-
     if (needsBoundingUpdate) {
       // Update the bounding sphere of the InstancedMesh only when an army has finished moving
       this.mesh.computeBoundingSphere();
+    }
+
+    // Update animations
+    if (this.mixer && this.mesh) {
+      const time = performance.now() * 0.001; // Get current time in seconds
+      for (let i = 0; i < this.mesh.count; i++) {
+        this.mixer.setTime(time + this.timeOffsets[i]);
+        this.mesh.setMorphAt(i, this.dummy);
+      }
+      this.mesh.morphTexture!.needsUpdate = true;
     }
   }
 
