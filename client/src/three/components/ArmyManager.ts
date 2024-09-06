@@ -24,7 +24,7 @@ export class ArmyManager {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.armyModel = new ArmyModel(scene);
-    this.scale = new THREE.Vector3(0.4, 0.4, 0.4);
+    this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
 
     this.onMouseMove = this.onMouseMove.bind(this);
@@ -205,13 +205,18 @@ export class ArmyManager {
 
   update(deltaTime: number) {
     let needsBoundingUpdate = false;
+    const movementSpeed = 1.25; // Constant movement speed
+
     this.movingArmies.forEach((movement, entityId) => {
-      movement.progress += deltaTime * 0.5;
       const armyData = this.armies.get(entityId);
       if (!armyData) return;
 
       const { matrixIndex } = armyData;
       let position: THREE.Vector3;
+
+      const distance = movement.startPos.distanceTo(movement.endPos);
+      const travelTime = distance / movementSpeed;
+      movement.progress += deltaTime / travelTime;
 
       if (movement.progress >= 1) {
         position = movement.endPos;
@@ -233,9 +238,12 @@ export class ArmyManager {
     }
 
     this.movingLabels.forEach((movement, entityId) => {
-      movement.progress += deltaTime * 0.5;
       const label = this.labels.get(entityId);
       if (label) {
+        const distance = movement.startPos.distanceTo(movement.endPos);
+        const travelTime = distance / movementSpeed;
+        movement.progress += deltaTime / travelTime;
+
         if (movement.progress >= 1) {
           this.labelManager.updateLabelPosition(label, movement.endPos);
           this.movingLabels.delete(entityId);

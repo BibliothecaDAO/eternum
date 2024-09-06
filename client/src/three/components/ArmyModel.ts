@@ -63,6 +63,7 @@ export class ArmyModel {
 
   updateInstance(index: number, position: THREE.Vector3, scale: THREE.Vector3, rotation?: THREE.Euler) {
     this.dummyObject.position.copy(position);
+    this.dummyObject.position.y += 0.15;
     this.dummyObject.scale.copy(scale);
     if (rotation) {
       this.dummyObject.rotation.copy(rotation);
