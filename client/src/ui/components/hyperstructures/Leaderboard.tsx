@@ -102,11 +102,11 @@ export const Leaderboard = ({
         );
       })}
     </>
-  ) : (
+  ) : isOwner ? (
     <div className="w-full h-full flex flex-col justify-center items-center">
-      <Button disabled={!isOwner} disabledReason="You are not the owner" onClick={() => setSelectedTab(1)}>
-        Set first co-owners
-      </Button>
+      <Button onClick={() => setSelectedTab(1)}>Set first co-owners</Button>
     </div>
+  ) : (
+    <div className="w-full h-full flex flex-col justify-center items-center">Owner hasn't set first co-owners yet</div>
   );
 };

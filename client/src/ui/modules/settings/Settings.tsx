@@ -2,26 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
+import { ReactComponent as Next } from "@/assets/icons/common/fast-forward.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-import { ReactComponent as Next } from "@/assets/icons/common/fast-forward.svg";
 
-import { Headline } from "@/ui/elements/Headline";
-import Button from "@/ui/elements/Button";
-import { Checkbox } from "@/ui/elements/Checkbox";
-import { RangeInput } from "@/ui/elements/RangeInput";
-import useUIStore from "@/hooks/store/useUIStore";
-import useScreenOrientation from "@/hooks/useScreenOrientation";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
+import useUIStore from "@/hooks/store/useUIStore";
 import { useMusicPlayer } from "@/hooks/useMusic";
+import useScreenOrientation from "@/hooks/useScreenOrientation";
+import { settings } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import Avatar from "@/ui/elements/Avatar";
-import { addressToNumber } from "@/ui/utils/utils";
-import { settings } from "@/ui/components/navigation/Config";
+import Button from "@/ui/elements/Button";
+import { Checkbox } from "@/ui/elements/Checkbox";
+import { Headline } from "@/ui/elements/Headline";
+import { RangeInput } from "@/ui/elements/RangeInput";
+import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
+import { toast } from "react-toastify";
 
 export const SettingsWindow = () => {
   const {
@@ -51,6 +53,11 @@ export const SettingsWindow = () => {
     toggleFullScreen();
   };
 
+  const copyToClipBoard = () => {
+    navigator.clipboard.writeText(account.address);
+    toast("Copied address to clipboard!");
+  };
+
   const { trackName, next } = useMusicPlayer();
 
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -60,7 +67,7 @@ export const SettingsWindow = () => {
   const isLowGraphics = localStorage.getItem("LOW_GRAPHICS_FLAG");
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
-      <div className="flex space-x-1 p-4">
+      <div className="flex p-4">
         <div className="relative">
           <Avatar
             onClick={() => setShowSettings(!showSettings)}
@@ -69,7 +76,11 @@ export const SettingsWindow = () => {
             src={`/images/avatars/${addressToNumber(account.address)}.png`}
           />
         </div>
-        {addressName && <div className=" self-center text-xl px-4 border rounded border-gold">{addressName}</div>}
+        {addressName && <div className="self-center text-xl px-4 border rounded border-gold mx-2">{addressName}</div>}{" "}
+        <div className="mx-1 self-center" onClick={copyToClipBoard}>
+          {displayAddress(account.address)}
+        </div>
+        <Copy className="mx-1 w-4" onClick={copyToClipBoard} />
       </div>
       <div className="flex flex-col  space-y-2 p-3">
         <Headline>Video</Headline>

@@ -1,4 +1,3 @@
-import useUIStore from "@/hooks/store/useUIStore";
 import React from "react";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 
@@ -12,7 +11,6 @@ type ButtonProps = {
   isLoading?: boolean;
   withoutSound?: boolean;
   size?: "xs" | "md";
-  disabledReason?: string;
 } & React.ComponentPropsWithRef<"button">;
 
 const STYLES = {
@@ -46,46 +44,33 @@ const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   withoutSound = false,
   size = "md",
-  disabledReason,
   ...props
 }) => {
   const { play: playClick } = useUiSounds(soundSelector.click);
-  const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
-    <div
-      onMouseEnter={() => {
-        if (disabled) {
-          setTooltip({ content: disabledReason, position: "top" });
+    <button
+      type="button"
+      onClick={(e) => {
+        if (!disabled && !isLoading && onClick) {
+          onClick(e);
+          !withoutSound && playClick();
         }
       }}
-      onMouseLeave={() => {
-        setTooltip(null);
-      }}
+      className={` ${STYLES.baseStyle} ${STYLES[variant]} ${disabled ? STYLES.disabledStyle : STYLES.enabledStyle} ${
+        isLoading ? STYLES.loadingStyle : ""
+      } ${isPulsing ? "animate-pulse" : ""} ${className} ${SIZES[size]}`}
+      disabled={disabled || isLoading}
+      {...props}
     >
-      <button
-        type="button"
-        onClick={(e) => {
-          if (!disabled && !isLoading && onClick) {
-            onClick(e);
-            !withoutSound && playClick();
-          }
-        }}
-        className={` ${STYLES.baseStyle} ${STYLES[variant]} ${disabled ? STYLES.disabledStyle : STYLES.enabledStyle} ${
-          isLoading ? STYLES.loadingStyle : ""
-        } ${isPulsing ? "animate-pulse" : ""} ${className} ${SIZES[size]}`}
-        disabled={disabled || isLoading}
-        {...props}
-      >
-        {isLoading ? (
-          <div className={`w-full inset-0 flex flex-col items-center justify-center h-full`}>
-            <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin"></div>{" "}
-          </div>
-        ) : (
-          children
-        )}
-      </button>
-    </div>
+      {isLoading ? (
+        <div className={`w-full inset-0 flex flex-col items-center justify-center h-full`}>
+          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin"></div>{" "}
+        </div>
+      ) : (
+        children
+      )}
+    </button>
   );
 };
 

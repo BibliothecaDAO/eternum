@@ -50,7 +50,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   }, [battleManager]);
 
   const buttons = useMemo(() => {
-    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
+    if (!nextBlockTimestamp) return [];
     const isBattleOngoing = battleManager.isBattleOngoing(nextBlockTimestamp);
     const eyeButton = (
       <Eye

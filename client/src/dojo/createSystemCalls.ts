@@ -58,7 +58,16 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
       try {
         return await fn(...args);
       } catch (error: any) {
-        toast(error.message);
+        let errorMessage = error.message;
+
+        // Check for the specific error structure
+        if (error.message.includes("Failure reason:")) {
+          const match = error.message.match(/Failure reason: \\"(.*?)"/);
+          if (match && match[1]) {
+            errorMessage = match[1].slice(0, -1);
+          }
+        }
+        toast(errorMessage);
         throw error;
       }
     };
@@ -283,62 +292,62 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const systemCalls = {
     send_resources: withQueueing(withErrorHandling(send_resources)),
-    pickup_resources,
-    remove_liquidity,
-    add_liquidity,
-    sell_resources,
-    buy_resources,
-    change_bank_owner_fee,
-    open_account,
-    create_bank,
-    explore,
-    set_address_name,
-    set_entity_name,
-    level_up_realm,
-    isLive,
+    pickup_resources: withQueueing(withErrorHandling(pickup_resources)),
+    remove_liquidity: withQueueing(withErrorHandling(remove_liquidity)),
+    add_liquidity: withQueueing(withErrorHandling(add_liquidity)),
+    sell_resources: withQueueing(withErrorHandling(sell_resources)),
+    buy_resources: withQueueing(withErrorHandling(buy_resources)),
+    change_bank_owner_fee: withQueueing(withErrorHandling(change_bank_owner_fee)),
+    open_account: withQueueing(withErrorHandling(open_account)),
+    create_bank: withQueueing(withErrorHandling(create_bank)),
+    explore: withQueueing(withErrorHandling(explore)),
+    set_address_name: withQueueing(withErrorHandling(set_address_name)),
+    set_entity_name: withQueueing(withErrorHandling(set_entity_name)),
+    level_up_realm: withQueueing(withErrorHandling(level_up_realm)),
+    isLive: withQueueing(withErrorHandling(isLive)),
     create_order: withQueueing(withErrorHandling(create_order)),
     accept_order: withQueueing(withErrorHandling(accept_order)),
     cancel_order: withQueueing(withErrorHandling(cancel_order)),
     accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
-    create_realm,
-    create_multiple_realms,
-    create_road,
-    transfer_resources,
-    travel,
+    create_realm: withQueueing(withErrorHandling(create_realm)),
+    create_multiple_realms: withQueueing(withErrorHandling(create_multiple_realms)),
+    create_road: withQueueing(withErrorHandling(create_road)),
+    transfer_resources: withQueueing(withErrorHandling(transfer_resources)),
+    travel: withQueueing(withErrorHandling(travel)),
     travel_hex: withQueueing(withErrorHandling(travel_hex)),
-    destroy_building,
-    pause_production,
-    resume_production,
-    create_building,
-    create_army,
-    delete_army,
-    uuid,
-    create_hyperstructure,
-    contribute_to_construction,
-    set_co_owners,
+    destroy_building: withQueueing(withErrorHandling(destroy_building)),
+    pause_production: withQueueing(withErrorHandling(pause_production)),
+    resume_production: withQueueing(withErrorHandling(resume_production)),
+    create_building: withQueueing(withErrorHandling(create_building)),
+    create_army: withQueueing(withErrorHandling(create_army)),
+    delete_army: withQueueing(withErrorHandling(delete_army)),
+    uuid: withQueueing(withErrorHandling(uuid)),
+    create_hyperstructure: withQueueing(withErrorHandling(create_hyperstructure)),
+    contribute_to_construction: withQueueing(withErrorHandling(contribute_to_construction)),
+    set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
 
-    mint_resources,
-    mint_starting_resources,
-    mint_resources_and_claim_quest,
+    mint_resources: withQueueing(withErrorHandling(mint_resources)),
+    mint_starting_resources: withQueueing(withErrorHandling(mint_starting_resources)),
+    mint_resources_and_claim_quest: withQueueing(withErrorHandling(mint_resources_and_claim_quest)),
 
-    army_buy_troops,
-    army_merge_troops,
+    army_buy_troops: withQueueing(withErrorHandling(army_buy_troops)),
+    army_merge_troops: withQueueing(withErrorHandling(army_merge_troops)),
 
-    create_guild,
-    join_guild,
-    whitelist_player,
-    leave_guild,
-    transfer_guild_ownership,
-    remove_guild_member,
-    remove_player_from_whitelist,
+    create_guild: withQueueing(withErrorHandling(create_guild)),
+    join_guild: withQueueing(withErrorHandling(join_guild)),
+    whitelist_player: withQueueing(withErrorHandling(whitelist_player)),
+    leave_guild: withQueueing(withErrorHandling(leave_guild)),
+    transfer_guild_ownership: withQueueing(withErrorHandling(transfer_guild_ownership)),
+    remove_guild_member: withQueueing(withErrorHandling(remove_guild_member)),
+    remove_player_from_whitelist: withQueueing(withErrorHandling(remove_player_from_whitelist)),
 
-    battle_start,
-    battle_leave,
-    battle_join,
-    battle_claim,
-    battle_pillage,
-    battle_leave_and_claim,
-    battle_leave_and_pillage,
+    battle_start: withQueueing(withErrorHandling(battle_start)),
+    battle_leave: withQueueing(withErrorHandling(battle_leave)),
+    battle_join: withQueueing(withErrorHandling(battle_join)),
+    battle_claim: withQueueing(withErrorHandling(battle_claim)),
+    battle_pillage: withQueueing(withErrorHandling(battle_pillage)),
+    battle_leave_and_claim: withQueueing(withErrorHandling(battle_leave_and_claim)),
+    battle_leave_and_pillage: withQueueing(withErrorHandling(battle_leave_and_pillage)),
   };
 
   // TODO: Fix Type

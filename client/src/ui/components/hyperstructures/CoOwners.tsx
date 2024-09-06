@@ -6,12 +6,15 @@ import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
 import { AddressSelect } from "@/ui/elements/AddressSelect";
 import Button from "@/ui/elements/Button";
 
+import useUIStore from "@/hooks/store/useUIStore";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
-import { displayAddress } from "@/ui/utils/utils";
-import { ContractAddress, getOrderName, ID } from "@bibliothecadao/eternum";
+import { displayAddress, formatSecondsLeftInDaysHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { ContractAddress, getOrderName, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CoOwnersWithTimestamp } from "./types";
@@ -55,7 +58,35 @@ const CoOwnersRows = ({
 }) => {
   const {
     account: { account },
+    setup: {
+      components: { HyperstructureUpdate, HyperstructureConfig },
+    },
   } = useDojo();
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const hyperstructureConfig = useMemo(() => {
+    return getComponentValue(HyperstructureConfig, getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]));
+  }, [hyperstructureEntityId]);
+
+  const hyperstructureUpdate = useComponentValue(
+    HyperstructureUpdate,
+    getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
+  );
+
+  const canUpdate = useMemo(() => {
+    if (!hyperstructureConfig || !nextBlockTimestamp) return false;
+    if (!hyperstructureUpdate) return true;
+    if (ContractAddress(hyperstructureUpdate.last_updated_by) === ContractAddress(account.address)) {
+      return (
+        nextBlockTimestamp >
+        hyperstructureUpdate.last_updated_timestamp + hyperstructureConfig.time_between_shares_change
+      );
+    } else {
+      return true;
+    }
+  }, [hyperstructureUpdate, hyperstructureConfig, nextBlockTimestamp]);
 
   const structure = getStructureByEntityId(hyperstructureEntityId);
 
@@ -117,14 +148,29 @@ const CoOwnersRows = ({
         );
       })}
       {structure?.isMine && (
-        <Button
-          onClick={() => {
-            setIsChangingCoOwners(true);
+        <div
+          onMouseEnter={() => {
+            if (!canUpdate)
+              setTooltip({
+                content: `Wait ${formatSecondsLeftInDaysHoursMinutes(
+                  Number(hyperstructureConfig?.time_between_shares_change) -
+                    Number((nextBlockTimestamp || 0) - Number(hyperstructureUpdate?.last_updated_timestamp)),
+                )} to change`,
+                position: "top",
+              });
           }}
-          className="w-full mt-4 bg-gold/20"
+          onMouseLeave={() => setTooltip(null)}
         >
-          Change Co-Owners
-        </Button>
+          <Button
+            onClick={() => {
+              setIsChangingCoOwners(true);
+            }}
+            disabled={!canUpdate}
+            className="w-full mt-4 bg-gold/20"
+          >
+            Change Co-Owners
+          </Button>
+        </div>
       )}
     </>
   );

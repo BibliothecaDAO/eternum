@@ -485,6 +485,20 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    HyperstructureConfig: (() => {
+      return defineComponent(
+        world,
+        { config_id: RecsType.Number, time_between_shares_change: RecsType.BigInt },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "HyperstructureConfig",
+            types: ["u32", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     HyperstructureResourceConfig: (() => {
       return defineComponent(
         world,
