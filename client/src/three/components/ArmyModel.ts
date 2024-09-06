@@ -44,9 +44,17 @@ export class ArmyModel {
 
           this.mesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
           this.mesh.castShadow = true;
-          this.mesh.count = 0;
           this.mesh.instanceMatrix.needsUpdate = true;
           this.scene.add(this.mesh);
+
+          // Set initial morphs for all instances
+          for (let i = 0; i < MAX_INSTANCES; i++) {
+            this.mesh.setMorphAt(i, this.armyMesh);
+          }
+          this.mesh.morphTexture!.needsUpdate = true;
+
+          // Set count to 0 after initializing morphs
+          this.mesh.count = 0;
 
           // Set up animations
           this.mixer = new AnimationMixer(gltf.scene);
