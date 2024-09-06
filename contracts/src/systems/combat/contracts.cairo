@@ -1061,7 +1061,7 @@ mod combat_systems {
                 true
             )[0];
 
-            let mut pillaged_resources: Array<(u8, u128)> = array![];
+            let mut pillaged_resources: Array<(u8, u128)> = array![(0, 0)];
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()

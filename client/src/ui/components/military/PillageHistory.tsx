@@ -10,10 +10,12 @@ import { useEffect, useMemo, useState } from "react";
 type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData"]["schema"]>;
 
 const formatResources = (resources: any[]): Resource[] => {
-  return resources.map((resource) => ({
-    resourceId: Number(resource[0].value),
-    amount: Number(resource[1].value),
-  }));
+  return resources
+    .map((resource) => ({
+      resourceId: Number(resource[0].value),
+      amount: Number(resource[1].value),
+    }))
+    .filter((resource) => resource.amount > 0);
 };
 
 const PillageHistoryItem = ({ addressName, history }: { addressName: string; history: PillageEvent }) => {
@@ -24,13 +26,14 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
     <div className="group hover:bg-gold/10 relative bg-gold/20 text-gold p-3">
       <div className="flex w-full justify-between font-bold ">
         <div className={` ${isSuccess ? "text-order-brilliance" : "text-order-giants"}`}>
-          {isSuccess ? "success" : "Fail"}
+          {isSuccess ? "success" : "fail"}
         </div>
         <div>{`player: ${addressName}`}</div>
       </div>
-      <div className="flex justify-between items-start mt-2">
-        <div>
-          <div className="flex flex-wrap gap-2">
+      <div className="flex text-xs justify-between mb-2 mt-2">
+        <div className="flex flex-col text-xs items-center">
+          <div>Stolen Resources</div>
+          <div className="flex mt-1 flex-wrap gap-2 justify-center">
             {formattedResources.length > 0
               ? formattedResources.map((resource: Resource) => (
                   <ResourceCost
@@ -46,7 +49,9 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
         </div>
         <div className="flex flex-col text-xs items-center">
           <div>Destroyed Building</div>
-          <div className="text-center">{history.destroyed_building_category.replace(/([A-Z])/g, " $1").trim()}</div>
+          <div className="text-center mt-1">
+            {history.destroyed_building_category.replace(/([A-Z])/g, " $1").trim()}
+          </div>
         </div>
       </div>
       <div className="absolute bottom-1 right-2 text-xs text-gold/60">
