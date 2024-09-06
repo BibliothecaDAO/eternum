@@ -24,7 +24,7 @@ use eternum::utils::testing::{
         spawn_realm, get_default_realm_pos, generate_realm_positions, spawn_hyperstructure,
         get_default_hyperstructure_coord
     },
-    config::{set_combat_config}
+    config::{set_combat_config, set_storehouse_capacity_config}
 };
 use starknet::contract_address_const;
 
@@ -44,6 +44,8 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     let realm_systems_dispatcher = deploy_realm_systems(world);
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+
+    set_storehouse_capacity_config(config_systems_address);
 
     // set initially minted resources
     let initial_resources = array![

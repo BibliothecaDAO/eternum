@@ -136,6 +136,11 @@ trait IMercenariesConfig {
     fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>);
 }
 
+#[dojo::interface]
+trait IStorehouseCapacityConfig {
+    fn set_storehouse_capacity_config(ref world: IWorldDispatcher, weight_gram: u128);
+}
+
 
 #[dojo::contract]
 mod config_systems {
@@ -154,7 +159,7 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig,
         MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig,
         BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig,
-        StaminaRefillConfig, MercenariesConfig, BattleConfig
+        StaminaRefillConfig, MercenariesConfig, BattleConfig, StorehouseCapacityConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -608,6 +613,15 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (MercenariesConfig { config_id: WORLD_CONFIG_ID, troops, rewards }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IStorehouseCapacityConfig of super::IStorehouseCapacityConfig<ContractState> {
+        fn set_storehouse_capacity_config(ref world: IWorldDispatcher, weight_gram: u128) {
+            assert_caller_is_admin(world);
+
+            set!(world, (StorehouseCapacityConfig { config_id: WORLD_CONFIG_ID, weight_gram }));
         }
     }
 }

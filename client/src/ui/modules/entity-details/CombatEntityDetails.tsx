@@ -1,4 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { getPlayerStructures } from "@/hooks/helpers/useEntities";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
@@ -21,7 +22,7 @@ export const CombatEntityDetails = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
 
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>();
 
   const getStructures = getPlayerStructures();
   const hexPosition = useMemo(() => new Position({ x: selectedHex.col, y: selectedHex.row }), [selectedHex]);
@@ -52,6 +53,7 @@ export const CombatEntityDetails = () => {
   }, [ownArmiesAtPosition, selectedArmyEntityId]);
 
   const structure = getStructureAtPosition(hexPosition.getContract());
+  const battles = useBattlesByPosition(hexPosition.getContract());
 
   const tabs = useMemo(
     () => [
@@ -71,7 +73,7 @@ export const CombatEntityDetails = () => {
             <div>Battles</div>
           </div>
         ),
-        component: <Battles position={hexPosition} ownArmy={ownArmy} />,
+        component: <Battles ownArmy={ownArmy} battles={battles} />,
       },
       ...(structure
         ? [
@@ -87,8 +89,10 @@ export const CombatEntityDetails = () => {
           ]
         : []),
     ],
-    [hexPosition, ownArmy, structure],
+    [hexPosition, ownArmy, structure, battles],
   );
+
+  const [selectedTab, setSelectedTab] = useState(battles.length > 0 ? 1 : 0);
 
   return (
     hexPosition && (
@@ -152,7 +156,7 @@ const SelectActiveArmy = ({
                 key={index}
                 value={army.entity_id?.toString() || ""}
               >
-                <ArmyChip className={`w-[27rem] bg-green/10`} army={army} />
+                <ArmyChip className={`w-[27rem] bg-green/10`} army={army} showButtons={false} />
               </SelectItem>
             );
           })}

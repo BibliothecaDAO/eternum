@@ -254,7 +254,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, []);
 
   const donkeyBalance = useMemo(() => {
-    return donkeyProductionManager.balance(currentDefaultTick);
+    return divideByPrecision(donkeyProductionManager.balance(currentDefaultTick));
   }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
 
   const enoughDonkeys = useMemo(() => {
@@ -385,6 +385,13 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
               <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
               <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
               <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
+            </div>
+
+            <div className="flex justify-between mt-4">
+              <div className="text-right">Donkeys Required for Transfer</div>
+              <div className={`text-gold text-left ${donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}`}>
+                {donkeysNeeded} [{donkeyBalance}]
+              </div>
             </div>
           </div>
         </ConfirmationPopup>

@@ -10,12 +10,13 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IStorehouseCapacityConfigDispatcher,
+    IStorehouseCapacityConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM
+    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS
 };
 
 use starknet::{ContractAddress};
@@ -109,4 +110,9 @@ fn set_weight_config(config_systems_address: ContractAddress) {
             .set_weight_config(resource_id.into(), weight);
         i += 1;
     }
+}
+
+fn set_storehouse_capacity_config(config_systems_address: ContractAddress) {
+    IStorehouseCapacityConfigDispatcher { contract_address: config_systems_address }
+        .set_storehouse_capacity_config(STOREHOUSE_CAPACITY_GRAMS);
 }

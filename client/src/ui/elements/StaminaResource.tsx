@@ -8,10 +8,9 @@ import { useMemo } from "react";
 
 export const StaminaResource = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const { setup } = useDojo();
-
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
-
   const staminaManager = useStaminaManager(entityId || 0);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const maxStamina = staminaManager.getMaxStamina(
     getComponentValue(setup.components.Army, getEntityIdFromKeys([BigInt(entityId || 0)]))?.troops,
@@ -32,10 +31,26 @@ export const StaminaResource = ({ entityId, className }: { entityId: ID | undefi
   );
 
   return (
-    <div className={`flex flex-col text-xs font-bold uppercase self-center ${className}`}>
-      <div className="bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 border border-y w-16">
-        <div className={`${staminaColor} h-1 rounded-full  bg-yellow`} style={{ width: `${staminaPercentage}%` }}></div>
+    maxStamina !== 0 && (
+      <div
+        onMouseEnter={() => {
+          setTooltip({
+            content: `Stamina: ${staminaAmount} / ${maxStamina}`,
+            position: "right",
+          });
+        }}
+        onMouseLeave={() => {
+          setTooltip(null);
+        }}
+        className={`flex flex-col text-xs font-bold uppercase self-center ${className}`}
+      >
+        <div className="bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 border border-y w-16">
+          <div
+            className={`${staminaColor} h-1 rounded-full  bg-yellow`}
+            style={{ width: `${staminaPercentage}%` }}
+          ></div>
+        </div>
       </div>
-    </div>
+    )
   );
 };

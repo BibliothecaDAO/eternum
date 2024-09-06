@@ -17,8 +17,8 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    config::get_combat_config, world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems,
-    general::mint
+    config::{get_combat_config, set_storehouse_capacity_config}, world::spawn_eternum,
+    systems::{deploy_realm_systems, deploy_combat_systems, deploy_system}, general::mint
 };
 
 use starknet::ContractAddress;
@@ -57,6 +57,9 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     let realm_system_dispatcher = deploy_realm_systems(world);
     let combat_system_dispatcher = deploy_combat_systems(world);
 
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    set_storehouse_capacity_config(config_systems_address);
+
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
@@ -84,6 +87,7 @@ fn test_army_buy() {
     let (world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
+
     let troops = Troops {
         knight_count: STARTING_KNIGHT_COUNT.try_into().unwrap(),
         paladin_count: STARTING_PALADIN_COUNT.try_into().unwrap(),

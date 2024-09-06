@@ -41,6 +41,10 @@ export const BottomNavigation = () => {
 
   const questToClaim = quests?.find((quest: any) => quest.status === QuestStatus.Completed);
 
+  const realmSelected = useMemo(() => {
+    return isRealmSelected(structureEntityId, structures) ? true : false;
+  }, [structureEntityId, structures]);
+
   const secondaryNavigation = useMemo(() => {
     return [
       {
@@ -53,12 +57,12 @@ export const BottomNavigation = () => {
               active={isPopupOpen(questsWindow)}
               size="lg"
               onClick={() => togglePopup(questsWindow)}
-              notification={isRealmSelected(structureEntityId, structures) ? unclaimedQuestsCount : undefined}
+              notification={realmSelected ? unclaimedQuestsCount : undefined}
               notificationLocation={"topleft"}
-              disabled={!isRealmSelected(structureEntityId, structures)}
+              disabled={!realmSelected}
             />
 
-            {questToClaim && !isMapView && (
+            {questToClaim && !isMapView && realmSelected && (
               <div className="absolute bg-black/90 text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
                 <div className="text-xs">Claim your reward</div>

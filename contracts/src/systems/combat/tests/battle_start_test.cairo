@@ -22,8 +22,8 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    config::get_combat_config, world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems,
-    general::mint
+    config::{get_combat_config, set_storehouse_capacity_config}, world::spawn_eternum,
+    systems::{deploy_realm_systems, deploy_system, deploy_combat_systems}, general::mint
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -98,6 +98,9 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     set_configurations(world);
     let realm_system_dispatcher = deploy_realm_systems(world);
     let combat_system_dispatcher = deploy_combat_systems(world);
+
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    set_storehouse_capacity_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
 
