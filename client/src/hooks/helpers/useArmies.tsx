@@ -26,6 +26,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   offset: Position;
   health: ComponentValue<ClientComponents["Health"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
@@ -120,6 +121,7 @@ const formatArmies = (
         protectee,
         health,
         movable,
+        quantity,
         totalCapacity,
         weight,
         arrivalTime,
@@ -533,4 +535,52 @@ export const getArmyByEntityId = () => {
   };
 
   return { getAliveArmy, getArmy };
+};
+
+export const getArmiesByPosition = () => {
+  const {
+    account: { account },
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        Weight,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+      },
+    },
+  } = useDojo();
+
+  const getArmies = (position: Position) => {
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Position, { x: position.x, y: position.y })]);
+    return formatArmies(
+      Array.from(armiesEntityIds),
+      account.address,
+      Army,
+      Protectee,
+      EntityName,
+      Health,
+      Quantity,
+      Movable,
+      Capacity,
+      Weight,
+      ArrivalTime,
+      Position,
+      EntityOwner,
+      Owner,
+      Realm,
+      Stamina,
+    );
+  };
+
+  return getArmies;
 };

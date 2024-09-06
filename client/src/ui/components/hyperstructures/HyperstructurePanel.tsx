@@ -2,10 +2,12 @@ import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { calculateCompletionPoints } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ProgressWithPercentage, useHyperstructures, useUpdates } from "@/hooks/helpers/useHyperstructures";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   ContractAddress,
   EternumGlobalConfig,
@@ -16,7 +18,6 @@ import {
 import { useMemo, useState } from "react";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
-import useUIStore from "@/hooks/store/useUIStore";
 
 enum Loading {
   None,
@@ -48,6 +49,9 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const updates = useUpdates(entity.entity_id);
 
   const [newContributions, setNewContributions] = useState<Record<number, number>>({});
+
+  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const ownerName = getAddressNameFromEntity(entity.entity_id);
 
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
@@ -102,7 +106,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   return (
     <div className="flex flex-col h-[45vh] justify-between">
       <div className="flex flex-col mb-2 bg-blueish/10 p-3 ">
-        <div className=" align-text-bottom uppercase text-xs">Owner: {`${displayAddress(entity.owner)}`}</div>
+        <div className=" align-text-bottom uppercase text-xs">Owner: {ownerName}</div>
         <div className="flex flex-row justify-between items-baseline">
           {editName ? (
             <div className="flex space-x-2">

@@ -10,13 +10,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  EternumGlobalConfig,
-  ID,
-  STOREHOUSE_CAPACITY,
-} from "@bibliothecadao/eternum";
+import { BASE_POPULATION_CAPACITY, BuildingType, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -93,7 +87,9 @@ export const TopMiddleNavigation = () => {
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 
-    return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
+    return (
+      quantity * EternumGlobalConfig.resources.storehouseCapacityKg + EternumGlobalConfig.resources.storehouseCapacityKg
+    );
   }, []);
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;

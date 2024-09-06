@@ -13,7 +13,9 @@ export enum QuestId {
   Settle,
   BuildFarm,
   BuildResource,
+  PauseProduction,
   CreateTrade,
+  CreateDefenseArmy,
   CreateArmy,
   Travel,
   BuildWorkersHut,
@@ -71,6 +73,17 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     },
   ],
   [
+    QuestId.PauseProduction,
+    {
+      name: "Pause Production",
+      description:
+        "Resource facilities will produce resources automatically. Pause production to stop its consumption.",
+      steps: ["Select a building", "Pause its production"],
+      prizes: [{ id: QuestType.PauseProduction, title: "Pause Production" }],
+      depth: 3,
+    },
+  ],
+  [
     QuestId.CreateTrade,
     {
       name: "Create a Trade",
@@ -78,6 +91,20 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
       steps: [],
       prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
       depth: 3,
+    },
+  ],
+  [
+    QuestId.CreateDefenseArmy,
+    {
+      name: "Create a Defensive Army",
+      description: "Your realm is always at risk. Create a defensive army to protect it",
+      steps: [
+        "Go to the military menu",
+        "Create a defensive army for your realm",
+        "Optionally, assign troops to your army",
+      ],
+      prizes: [{ id: QuestType.CreateDefenseArmy, title: "Create Defensive Army" }],
+      depth: 4,
     },
   ],
   [

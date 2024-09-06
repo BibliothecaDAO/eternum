@@ -19,6 +19,7 @@ export const EternumGlobalConfig = {
       { resourceId: ResourcesIds.Wheat, amount: 1500 },
       { resourceId: ResourcesIds.Fish, amount: 1500 },
     ],
+    storehouseCapacityKg: 10_000_000,
   },
   banks: {
     lordsCost: 1000,
@@ -99,7 +100,6 @@ export const ONE_MONTH = 2628000;
 
 // Buildings
 export const BASE_POPULATION_CAPACITY = 5;
-export const STOREHOUSE_CAPACITY = 10000000;
 
 // Points
 export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 10;

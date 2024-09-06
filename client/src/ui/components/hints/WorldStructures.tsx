@@ -76,11 +76,13 @@ const HyperstructureCreationTable = () => {
         <tbody>
           <tr className="border border-gold/10">
             <td className="p-2">
-              <img className="w-24 h-24 " src={STRUCTURE_IMAGE_PATHS[structureId]} />
+              <div className="flex justify-center">
+                <img className="h-36 min-w-20" src={STRUCTURE_IMAGE_PATHS[structureId]} />
+              </div>
             </td>
             <td className="gap-1 flex flex-col p-2 items-center">
               {creationCost.map((cost, index) => (
-                <div key={index}>
+                <div key={index} className="flex justify-center">
                   <ResourceCost resourceId={cost.resource} amount={cost.amount} size="lg" />
                 </div>
               ))}

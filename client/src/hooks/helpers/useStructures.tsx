@@ -1,7 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
-import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
+import { calculateDistance, currentTickCount, getPosition } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -160,6 +160,7 @@ export const getStructureByEntityId = (entityId: ID) => {
       entityOwner,
       owner,
       name,
+      position: getPosition(structure.entity_id),
       protector,
       isMine: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
       isMercenary: owner.address === 0n,
