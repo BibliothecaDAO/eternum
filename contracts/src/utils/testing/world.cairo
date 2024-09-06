@@ -16,7 +16,8 @@ use eternum::models::config::{
     world_config, speed_config, capacity_config, weight_config, road_config, hyperstructure_resource_config,
     stamina_config, stamina_refill_config, tick_config, map_explore_config, realm_free_mint_config, mercenaries_config,
     leveling_config, production_config, bank_config, building_config, troop_config, battle_config,
-    building_category_pop_config, population_config, has_claimed_starting_resources, hyperstructure_config
+    building_category_pop_config, population_config, has_claimed_starting_resources, hyperstructure_config,
+    storehouse_capacity_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
@@ -125,6 +126,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         tick_config::TEST_CLASS_HASH,
         address_name::TEST_CLASS_HASH,
         entity_name::TEST_CLASS_HASH,
+        storehouse_capacity_config::TEST_CLASS_HASH
     ];
 
     let world = spawn_test_world(["eternum"].span(), models.span());

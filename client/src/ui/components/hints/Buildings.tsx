@@ -59,13 +59,17 @@ export const Buildings = () => {
                 {" "}
                 <h5>{BuildingEnumToString[building.building_category]}</h5>
                 <img
-                  className="w-24 h-24 border m-1 "
+                  className="h-24 min-w-20 border m-1 "
                   src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
                 />
               </td>
               <td className="text text-left">
-                Housing: + {building.building_capacity} <br />
-                Population: +{building.building_population}
+                {building.building_capacity !== 0 && (
+                  <>
+                    Housing: + {building.building_capacity} <br />
+                  </>
+                )}
+                {building.building_population !== 0 && <>Population: +{building.building_population}</>}
               </td>
               <td className="gap-1 flex flex-col  p-2">
                 {building.cost_of_building.map((cost, index) => (

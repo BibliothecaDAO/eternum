@@ -500,3 +500,7 @@ export interface SetMercenariesConfigProps extends SystemSigner {
   troops: Troops;
   rewards: { resource: number; amount: number }[];
 }
+
+export interface SetStorehouseCapacityConfigProps extends SystemSigner {
+  weight_gram: num.BigNumberish;
+}

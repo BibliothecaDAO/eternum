@@ -544,10 +544,9 @@ mod combat_systems {
 
 
         fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops,) {
-            // ensure caller owns from and to armies
+            // ensure caller owns from army
             let mut from_army_owner: EntityOwner = get!(world, from_army_id, EntityOwner);
             from_army_owner.assert_caller_owner(world);
-            get!(world, to_army_id, EntityOwner).assert_caller_owner(world);
 
             // ensure from and to armies are at the same position
             let from_army_position: Position = get!(world, from_army_id, Position);
@@ -1342,7 +1341,9 @@ mod combat_systems {
 
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
-            set!(world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() }));
+            set!(
+                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
+            );
 
             army_id
         }
@@ -1556,10 +1557,6 @@ mod combat_systems {
                             * battle_army.troops.crossbowman_count
                             / battle_army_lifetime.troops.crossbowman_count
                     };
-
-            // note: army quantity would be used inside `withdraw_balance_and_reward`
-            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-            set!(world, (army_quantity));
 
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);

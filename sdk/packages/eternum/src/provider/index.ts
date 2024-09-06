@@ -946,4 +946,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [troops, rewards],
     });
   }
+
+  public async set_storehouse_capacity_config(props: SystemProps.SetStorehouseCapacityConfigProps) {
+    const { weight_gram, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_storehouse_capacity_config",
+      calldata: [weight_gram],
+    });
+  }
 }

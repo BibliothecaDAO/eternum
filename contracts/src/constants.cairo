@@ -27,11 +27,6 @@ const MAX_REALMS_PER_ADDRESS: u8 = 5;
 // resource precision
 const RESOURCE_PRECISION: u128 = 1_000;
 
-// base storehouse capacity
-// TODO: Move to Onchain config
-const BASE_STOREHOUSE_CAPACITY: u128 = 100_000_000;
-
-
 // pillage config
 // TODO: Move to Onchain config
 const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;

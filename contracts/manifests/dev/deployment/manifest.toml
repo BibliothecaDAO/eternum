@@ -5,7 +5,7 @@ original_class_hash = "0xa349b743d361ce4567361475a89b84a386bb383448c6926954e5fe0
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x6918fe8c1ba16bdc83b9790cd9168d730aa98a22c65164578ef99af1c8cbc76"
 transaction_hash = "0x4787c2c1b826c8eb54fdd0883586c40e2d6f38955e1d5358b11010bc542bf05"
-block_number = 48
+block_number = 43
 seed = "eternum"
 manifest_name = "dojo-world"
 
@@ -38,8 +38,8 @@ manifest_name = "eternum-bank_systems-85030190"
 [[contracts]]
 kind = "DojoContract"
 address = "0x7ed18691dfbacf174f2f0c80a92cf0cc6cc0a017f56331712d253d2efda6a0b"
-class_hash = "0x31baadfc8e1a59eda968f836404d258f8bad77df8cbcc013ca7b67fa6c497e3"
-original_class_hash = "0x31baadfc8e1a59eda968f836404d258f8bad77df8cbcc013ca7b67fa6c497e3"
+class_hash = "0x3054aa38a1e7674d3cbf66895d28f3478dbfdddad005f172eebaceeef72e460"
+original_class_hash = "0x3054aa38a1e7674d3cbf66895d28f3478dbfdddad005f172eebaceeef72e460"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-building_systems-4b0f3026.json"
 reads = []
@@ -57,8 +57,8 @@ manifest_name = "eternum-building_systems-4b0f3026"
 [[contracts]]
 kind = "DojoContract"
 address = "0x62015209a524b97052852f42d283fc0f67081bce90d04cdc03a951009f55a64"
-class_hash = "0x3cf45a2f0cdbba4aaaac7bdb9152319807c8e4a3e44ae3607a5f340afa797c4"
-original_class_hash = "0x3cf45a2f0cdbba4aaaac7bdb9152319807c8e4a3e44ae3607a5f340afa797c4"
+class_hash = "0x20031b7aa06cc04c51a6d52d18870056874dd010185fd4184b359fc65d59003"
+original_class_hash = "0x20031b7aa06cc04c51a6d52d18870056874dd010185fd4184b359fc65d59003"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-combat_systems-27f37676.json"
 reads = []
@@ -108,6 +108,7 @@ systems = [
     "set_population_config",
     "set_building_config",
     "set_mercenaries_config",
+    "set_storehouse_capacity_config",
 ]
 manifest_name = "eternum-config_systems-5f8c7cdc"
 
