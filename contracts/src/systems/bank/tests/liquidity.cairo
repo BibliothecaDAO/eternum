@@ -21,7 +21,7 @@ use eternum::systems::bank::contracts::swap::swap_systems;
 use eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_storehouse_capacity_config};
 
 use starknet::contract_address_const;
 
@@ -60,6 +60,8 @@ fn setup() -> (
     let lp_fee_denom: u128 = FEE_DENOM;
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    set_storehouse_capacity_config(config_systems_address);
+
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
     bank_config_dispatcher.set_bank_config(0, lp_fee_num, lp_fee_denom);
 

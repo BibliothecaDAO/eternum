@@ -10,6 +10,8 @@ const LORDS_COST: u128 = 1_000_000;
 const LP_FEES_NUM: u128 = 15;
 const LP_FEE_DENOM: u128 = 100;
 
+const STOREHOUSE_CAPACITY_GRAMS: u128 = 10_000_000;
+
 fn get_resource_weights() -> Span<(u8, u128)> {
     array![
         (ResourceTypes::WOOD.into(), 1_000),

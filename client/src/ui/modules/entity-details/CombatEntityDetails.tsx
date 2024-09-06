@@ -1,10 +1,13 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { getPlayerStructures } from "@/hooks/helpers/useEntities";
+import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
+import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
@@ -19,7 +22,7 @@ export const CombatEntityDetails = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
 
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>();
 
   const getStructures = getPlayerStructures();
   const hexPosition = useMemo(() => new Position({ x: selectedHex.col, y: selectedHex.row }), [selectedHex]);
@@ -49,6 +52,9 @@ export const CombatEntityDetails = () => {
     return ownArmiesAtPosition.find((army) => army.entity_id === selectedArmyEntityId);
   }, [ownArmiesAtPosition, selectedArmyEntityId]);
 
+  const structure = getStructureAtPosition(hexPosition.getContract());
+  const battles = useBattlesByPosition(hexPosition.getContract());
+
   const tabs = useMemo(
     () => [
       {
@@ -67,11 +73,26 @@ export const CombatEntityDetails = () => {
             <div>Battles</div>
           </div>
         ),
-        component: <Battles position={hexPosition} ownArmy={ownArmy} />,
+        component: <Battles ownArmy={ownArmy} battles={battles} />,
       },
+      ...(structure
+        ? [
+            {
+              key: "pillages",
+              label: (
+                <div className="flex relative group flex-col items-center">
+                  <div>Pillage History</div>
+                </div>
+              ),
+              component: <PillageHistory structureId={structure.entity_id} />,
+            },
+          ]
+        : []),
     ],
-    [selectedHex, userArmies, ownArmy?.entity_id, selectedArmyEntityId],
+    [hexPosition, ownArmy, structure, battles],
   );
+
+  const [selectedTab, setSelectedTab] = useState(battles.length > 0 ? 1 : 0);
 
   return (
     hexPosition && (
@@ -85,7 +106,7 @@ export const CombatEntityDetails = () => {
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}
             </Tabs.List>
-            {userArmies.length > 0 && (
+            {selectedTab !== 2 && userArmies.length > 0 && (
               <SelectActiveArmy
                 selectedEntity={selectedArmyEntityId}
                 setOwnArmySelected={setSelectedArmyEntityId}
@@ -135,7 +156,7 @@ const SelectActiveArmy = ({
                 key={index}
                 value={army.entity_id?.toString() || ""}
               >
-                <ArmyChip className={`w-[27rem] bg-green/10`} army={army} />
+                <ArmyChip className={`w-[27rem] bg-green/10`} army={army} showButtons={false} />
               </SelectItem>
             );
           })}

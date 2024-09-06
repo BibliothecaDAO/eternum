@@ -369,18 +369,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_building(props: SystemProps.CreateBuildingProps) {
-    const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
+    const { entity_id, directions, building_category, produce_resource_type, signer } = props;
 
     return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",
-      calldata: CallData.compile([
-        entity_id,
-        building_coord.x,
-        building_coord.y,
-        building_category,
-        produce_resource_type,
-      ]),
+      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
     });
   }
 
@@ -950,6 +944,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_config",
       calldata: [troops, rewards],
+    });
+  }
+
+  public async set_storehouse_capacity_config(props: SystemProps.SetStorehouseCapacityConfigProps) {
+    const { weight_gram, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_storehouse_capacity_config",
+      calldata: [weight_gram],
     });
   }
 }

@@ -320,7 +320,7 @@ trait ICombatContract<TContractState> {
     ///     - Handles the movement of the attacking army back to its owner after a successful
     ///     pillage,
     ///       if continuous pillaging is not possible.
-    ///     - Emits a `PillageEvent` to signify the outcome of the pillage action.
+    ///     - Emits a `BattlePillageData` to signify the outcome of the pillage action.
     ///
     /// # Note:
     ///     - Continous pillaging simply means you are allowed to pillage without being sent back
@@ -423,23 +423,6 @@ mod combat_systems {
     use eternum::utils::math::{min};
     use eternum::utils::random;
     use super::ICombatContract;
-
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
-    #[dojo::model]
-    struct PillageEvent {
-        #[key]
-        structure_id: ID,
-        #[key]
-        attacker_realm_entity_id: ID,
-        #[key]
-        army_id: ID,
-        winner: BattleSide,
-        pillaged_resources: Span<(u8, u128)>,
-        destroyed_building_category: BuildingCategory,
-        timestamp: u64,
-    }
-
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
@@ -544,10 +527,9 @@ mod combat_systems {
 
 
         fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops,) {
-            // ensure caller owns from and to armies
+            // ensure caller owns from army
             let mut from_army_owner: EntityOwner = get!(world, from_army_id, EntityOwner);
             from_army_owner.assert_caller_owner(world);
-            get!(world, to_army_id, EntityOwner).assert_caller_owner(world);
 
             // ensure from and to armies are at the same position
             let from_army_position: Position = get!(world, from_army_id, Position);
@@ -1023,7 +1005,7 @@ mod combat_systems {
                 true
             )[0];
 
-            let mut pillaged_resources: Array<(u8, u128)> = array![];
+            let mut pillaged_resources: Array<(u8, u128)> = array![(0, 0)];
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
@@ -1237,23 +1219,6 @@ mod combat_systems {
 
             // emit pillage event
             let army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
-            emit!(
-                world,
-                (PillageEvent {
-                    structure_id,
-                    attacker_realm_entity_id: army_owner_entity_id,
-                    army_id,
-                    winner: if *attack_successful {
-                        BattleSide::Attack
-                    } else {
-                        BattleSide::Defence
-                    },
-                    pillaged_resources: pillaged_resources.span(),
-                    destroyed_building_category,
-                    timestamp: starknet::get_block_timestamp(),
-                }),
-            );
-
             let structure_owner = get!(world, structure_id, Owner).address;
             emit!(
                 world,
@@ -1262,6 +1227,7 @@ mod combat_systems {
                     event_id: EventType::BattlePillage,
                     pillager: starknet::get_caller_address(),
                     pillager_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    pillager_realm_entity_id: army_owner_entity_id,
                     pillager_army_entity_id: army_id,
                     pillaged_structure_owner: structure_owner,
                     pillaged_structure_entity_id: structure_id,
@@ -1274,6 +1240,7 @@ mod combat_systems {
                     y: structure_position.y,
                     structure_type: structure.category,
                     pillaged_resources: pillaged_resources.span(),
+                    destroyed_building_category,
                     timestamp: starknet::get_block_timestamp(),
                 }
             );
@@ -1342,7 +1309,9 @@ mod combat_systems {
 
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
-            set!(world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() }));
+            set!(
+                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
+            );
 
             army_id
         }
@@ -1556,10 +1525,6 @@ mod combat_systems {
                             * battle_army.troops.crossbowman_count
                             / battle_army_lifetime.troops.crossbowman_count
                     };
-
-            // note: army quantity would be used inside `withdraw_balance_and_reward`
-            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-            set!(world, (army_quantity));
 
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);

@@ -8,15 +8,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
-import { Event } from "../events/graphqlClient";
 import { computeInitialContributionPoints } from "./utils/LeaderboardUtils";
-
-const HYPERSTRUCTURE_ENTITY_ID_INDEX = 0;
-const EVENT_TIMESTAMP_INDEX = 1;
-const CO_OWNERS_LENGTH_INDEX = 2;
-const CO_OWNERS_RAW_START_INDEX = 3;
-
-const CO_OWNERS_CELL_SIZE = 2;
 
 export interface HyperstructureFinishedEvent {
   hyperstructureEntityId: ID;
@@ -87,12 +79,15 @@ export class LeaderboardManager {
   }
 
   public processHyperstructureFinishedEventData(
-    eventData: Event,
+    event: ClientComponents["events"]["HyperstructureFinished"]["schema"],
     getContributions: (
       hyperstructureEntityId: ID,
     ) => (ComponentValue<ClientComponents["Contribution"]["schema"]> | undefined)[],
   ): HyperstructureFinishedEvent {
-    const parsedEvent = this.parseHyperstructureFinishedEvent(eventData);
+    const parsedEvent = {
+      hyperstructureEntityId: event.hyperstructure_entity_id,
+      timestamp: event.timestamp,
+    };
 
     const contributions = getContributions(parsedEvent.hyperstructureEntityId);
 
@@ -118,9 +113,10 @@ export class LeaderboardManager {
     return parsedEvent;
   }
 
-  public processHyperstructureCoOwnersChangeEvent(eventData: Event): HyperstructureCoOwnersChange {
-    const parsedEvent = this.parseCoOwnersChangeEvent(eventData);
-
+  public processHyperstructureCoOwnersChangeEvent(
+    event: ComponentValue<ClientComponents["events"]["HyperstructureCoOwnersChange"]["schema"]>,
+  ) {
+    const parsedEvent = this.parseCoOwnersChangeEvent(event);
     this.eventsCoOwnersChange.push(parsedEvent);
 
     // ascending order
@@ -129,35 +125,29 @@ export class LeaderboardManager {
     return parsedEvent;
   }
 
-  private parseHyperstructureFinishedEvent(eventData: Event): HyperstructureFinishedEvent {
-    const [hyperstructureEntityId, timestamp] = eventData.data;
-
+  private parseHyperstructureFinishedEvent(
+    event: ComponentValue<ClientComponents["events"]["HyperstructureFinished"]["schema"]>,
+  ): HyperstructureFinishedEvent {
     return {
-      hyperstructureEntityId: ID(hyperstructureEntityId),
-      timestamp: Number(timestamp),
+      hyperstructureEntityId: event.hyperstructure_entity_id,
+      timestamp: event.timestamp,
     };
   }
 
-  private parseCoOwnersChangeEvent(eventData: Event): HyperstructureCoOwnersChange {
-    const hyperstructureEntityId = ID(eventData.data[HYPERSTRUCTURE_ENTITY_ID_INDEX]);
-    const timestamp = Number(eventData.data[EVENT_TIMESTAMP_INDEX]);
-
-    const coOwnersLength = Number(eventData.data[CO_OWNERS_LENGTH_INDEX]);
-    const coOwnersRaw = eventData.data.slice(
-      CO_OWNERS_RAW_START_INDEX,
-      CO_OWNERS_RAW_START_INDEX + coOwnersLength * CO_OWNERS_CELL_SIZE,
-    );
-    const coOwners = [];
-    for (let i = 0; i < coOwnersLength * CO_OWNERS_CELL_SIZE; i += CO_OWNERS_CELL_SIZE) {
-      const address = ContractAddress(coOwnersRaw[i]);
-      const percentage = Number(coOwnersRaw[i + 1]);
-      coOwners.push({ address, percentage });
-    }
-
+  private parseCoOwnersChangeEvent(
+    event: ComponentValue<ClientComponents["events"]["HyperstructureCoOwnersChange"]["schema"]>,
+  ): HyperstructureCoOwnersChange {
     return {
-      hyperstructureEntityId,
-      coOwners,
-      timestamp,
+      hyperstructureEntityId: event.hyperstructure_entity_id,
+      timestamp: event.timestamp,
+      coOwners: event.co_owners.map((owner: any) => {
+        const address = owner[0].value;
+        const percentage = owner[1].value;
+        return {
+          address: ContractAddress(address),
+          percentage: percentage,
+        };
+      }),
     };
   }
 

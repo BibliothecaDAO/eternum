@@ -352,7 +352,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
 export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
   const { handleUrlChange, isMapView } = useQuery();
+
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const url = new PositionInterface(position).toMapLocationUrl();
 
@@ -363,10 +365,20 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
         className,
       )}
       onClick={() => {
+        setTooltip(null);
         handleUrlChange(url);
         if (!isMapView) {
           setIsLoadingScreenEnabled(true);
         }
+      }}
+      onMouseEnter={() => {
+        setTooltip({
+          content: "View on Map",
+          position: "top",
+        });
+      }}
+      onMouseLeave={() => {
+        setTooltip(null);
       }}
     />
   );

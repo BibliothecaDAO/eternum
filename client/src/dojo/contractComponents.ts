@@ -1418,6 +1418,7 @@ const eventsComponents = (world: World) => {
             event_id: RecsType.String,
             pillager: RecsType.BigInt,
             pillager_name: RecsType.BigInt,
+            pillager_realm_entity_id: RecsType.Number,
             pillager_army_entity_id: RecsType.Number,
             pillaged_structure_owner: RecsType.BigInt,
             pillaged_structure_entity_id: RecsType.Number,
@@ -1426,6 +1427,7 @@ const eventsComponents = (world: World) => {
             y: RecsType.Number,
             structure_type: RecsType.String,
             pillaged_resources: RecsType.StringArray,
+            destroyed_building_category: RecsType.String,
             timestamp: RecsType.Number,
           },
           {
@@ -1438,6 +1440,7 @@ const eventsComponents = (world: World) => {
                 "ContractAddress",
                 "felt252",
                 "u32",
+                "u32",
                 "ContractAddress",
                 "u32",
                 "BattleSide",
@@ -1445,9 +1448,10 @@ const eventsComponents = (world: World) => {
                 "u32",
                 "StructureCategory",
                 "array",
+                "enum",
                 "u64",
               ],
-              customTypes: [],
+              customTypes: ["BuildingCategory"],
             },
           },
         );
@@ -1538,6 +1542,25 @@ const eventsComponents = (world: World) => {
               namespace: "eternum",
               name: "MapExplored",
               types: ["u32", "u32", "u32", "u32", "u32", "Biome", "array", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      HyperstructureCoOwnersChange: (() => {
+        return defineComponent(
+          world,
+          {
+            hyperstructure_entity_id: RecsType.Number,
+            timestamp: RecsType.Number,
+            co_owners: RecsType.StringArray,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "HyperstructureCoOwnersChange",
+              types: ["u32", "u64", "array"],
               customTypes: [],
             },
           },

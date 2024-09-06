@@ -5,7 +5,7 @@ trait IBuildingContract<TContractState> {
     fn create(
         ref world: IWorldDispatcher,
         entity_id: ID,
-        building_coord: eternum::models::position::Coord,
+        directions: Span<eternum::models::position::Direction>,
         building_category: eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
     );
@@ -19,7 +19,7 @@ mod building_systems {
     use eternum::alias::ID;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
-        position::{Coord, Position, PositionCustomTrait, Direction},
+        position::{Coord, CoordTrait, Position, PositionCustomTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingCustomImpl}, production::{Production, ProductionRateTrait},
         realm::{Realm, RealmCustomImpl}
     };
@@ -29,10 +29,19 @@ mod building_systems {
         fn create(
             ref world: IWorldDispatcher,
             entity_id: ID,
-            building_coord: Coord,
+            mut directions: Span<eternum::models::position::Direction>,
             building_category: BuildingCategory,
             produce_resource_type: Option<u8>,
         ) {
+            assert!(directions.len() <= 4, "cannot build on selected tile");
+            let mut building_coord: Coord = BuildingCustomImpl::center();
+            loop {
+                match directions.pop_front() {
+                    Option::Some(direction) => { building_coord = building_coord.neighbor(*direction); },
+                    Option::None => { break; }
+                }
+            };
+
             let realm: Realm = get!(world, entity_id, Realm);
             assert!(realm.realm_id != 0, "entity is not a realm");
             if produce_resource_type.is_some() {
