@@ -32,10 +32,6 @@ export function currencyIntlFormat(num: number, decimals: number = 2): string {
   }).format(num || 0);
 }
 
-export const numberToHex = (num: number) => {
-  return "0x" + num.toString(16);
-};
-
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
