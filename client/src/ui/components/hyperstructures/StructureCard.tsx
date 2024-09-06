@@ -7,7 +7,7 @@ import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
@@ -40,7 +40,7 @@ export const StructureCard = ({
         {showMergeTroopsPopup && (
           <div className="flex flex-col w-[100%] mt-2">
             {ownArmySelected && (
-              <MergeTroopsPanel
+              <StructureMergeTroopsPanel
                 giverArmy={ownArmySelected}
                 setShowMergeTroopsPopup={setShowMergeTroopsPopup}
                 structureEntityId={structure!.entity_id}
@@ -60,7 +60,7 @@ type MergeTroopsPanelProps = {
   structureEntityId?: ID;
 };
 
-export const MergeTroopsPanel = ({
+export const StructureMergeTroopsPanel = ({
   giverArmy,
   setShowMergeTroopsPopup,
   structureEntityId,
@@ -72,7 +72,7 @@ export const MergeTroopsPanel = ({
         &lt; Back
       </Button>
       <TroopExchange
-        giverArmy={giverArmy}
+        giverArmyName={giverArmy.name}
         takerArmy={takerArmy}
         giverArmyEntityId={giverArmy.entity_id}
         structureEntityId={structureEntityId}
@@ -82,10 +82,11 @@ export const MergeTroopsPanel = ({
 };
 
 type TroopsProps = {
-  giverArmy: ArmyInfo;
+  giverArmyName: string;
   takerArmy?: ArmyInfo;
   giverArmyEntityId: ID;
   structureEntityId?: ID;
+  allowReverse?: boolean;
 };
 
 const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint }) => {
@@ -96,7 +97,13 @@ const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; c
   };
 };
 
-const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerArmy }: TroopsProps) => {
+export const TroopExchange = ({
+  giverArmyName,
+  giverArmyEntityId,
+  structureEntityId,
+  takerArmy,
+  allowReverse,
+}: TroopsProps) => {
   const {
     setup: {
       account: { account },
@@ -189,7 +196,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
       )}
       <div className="flex flex-row justify-around items-center">
         <div className="w-[60%] mr-1 bg-gold/20">
-          <p className="pt-2 pb-1 text-center">{giverArmy.name}</p>
+          <p className="pt-2 pb-1 text-center">{giverArmyName}</p>
           {Object.entries(troopsToFormat(attackerArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
@@ -305,27 +312,30 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerA
           )}
         </div>
       </div>
-      <div className="my-3 w-full flex justify-center">
-        <Button
-          className="self-center m-auto h-[3vh] p-4"
-          size="md"
-          onClick={() => {
-            setTransferDirection(transferDirection === "to" ? "from" : "to");
-            setTroopsGiven({
-              [ResourcesIds.Crossbowman]: 0n,
-              [ResourcesIds.Knight]: 0n,
-              [ResourcesIds.Paladin]: 0n,
-            });
-          }}
-        >
-          <ArrowRight size={24} className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
-        </Button>
-      </div>
+      {allowReverse && allowReverse === true && (
+        <div className="mt-3 w-full flex justify-center">
+          <Button
+            className="self-center m-auto h-[3vh] p-4"
+            size="md"
+            onClick={() => {
+              setTransferDirection(transferDirection === "to" ? "from" : "to");
+              setTroopsGiven({
+                [ResourcesIds.Crossbowman]: 0n,
+                [ResourcesIds.Knight]: 0n,
+                [ResourcesIds.Paladin]: 0n,
+              });
+            }}
+          >
+            <ArrowRight size={24} className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
+          </Button>
+        </div>
+      )}
 
       <Button
         onClick={mergeTroops}
         isLoading={loading}
         variant="primary"
+        className="mt-3"
         disabled={Object.values(troopsGiven).every((amount) => amount === 0n) || (!protector && !takerArmy)}
       >
         Reinforce
