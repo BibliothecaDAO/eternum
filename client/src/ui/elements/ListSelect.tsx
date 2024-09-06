@@ -57,23 +57,9 @@ function ListSelect(props: ListSelectProps) {
               leaveTo="opacity-0"
             >
               <div className="fixed z-50 mt-1 w-min text-xs">
-                {/* <svg
-                  width="25"
-                  height="18"
-                  className="absolute right-1/2 translate-x-1/2 top-0 z-40"
-                  viewBox="0 0 25 18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10.1931 1.56404C11.3927 0.12124 13.6073 0.121242 14.8069 1.56404L23.9998 12.6214C25.6248 14.576 24.2348 17.5393 21.6929 17.5393H3.30708C0.76518 17.5393 -0.624826 14.576 1.00021 12.6214L10.1931 1.56404Z"
-                    fill={props.style === "black" ? "#000" : "#54433A"}
-                  />
-                </svg> */}
-
                 <Listbox.Options
                   className={clsx(
-                    "z-50 mt-3 w-full rounded-md py-1 h-72 overflow-scroll z-100 border border-gold/10",
+                    "z-50 mt-3 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
                     props.style === "black" ? "bg-black" : " bg-black/90",
                   )}
                 >
