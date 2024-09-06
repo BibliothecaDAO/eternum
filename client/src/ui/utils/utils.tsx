@@ -276,3 +276,8 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
     buildingId === BuildingType.Stable
   );
 };
+
+export const currentTickCount = (time: number) => {
+  const tickIntervalInSeconds = EternumGlobalConfig.tick.armiesTickIntervalInSeconds || 1;
+  return Number(time / tickIntervalInSeconds);
+};

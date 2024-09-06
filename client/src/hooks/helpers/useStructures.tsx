@@ -1,7 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
-import { calculateDistance, getPosition } from "@/ui/utils/utils";
+import { calculateDistance, currentTickCount, getPosition } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -211,3 +211,13 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
 
   return { realms };
 }
+
+export const isStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
+  const tickCount = currentTickCount(currentTimestamp);
+  const allowAttackTick = currentTickCount(created_at) + EternumGlobalConfig.battle.graceTickCount;
+
+  if (tickCount < allowAttackTick) {
+    return true;
+  }
+  return false;
+};

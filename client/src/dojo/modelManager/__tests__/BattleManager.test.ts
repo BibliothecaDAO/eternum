@@ -34,6 +34,12 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
       resources: {
         resourceMultiplier: 1,
       },
+      tick: {
+        armiesTickIntervalInSeconds: 1,
+      },
+      battle: {
+        graceTickCount: 2,
+      },
     },
   };
 });
