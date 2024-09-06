@@ -319,3 +319,11 @@ export const setMercenariesConfig = async (account: Account, provider: EternumPr
   });
   console.log(`Configuring mercenaries ${tx.statusReceipt}...`);
 };
+
+export const setStorehouseCapacityConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_storehouse_capacity_config({
+    signer: account,
+    weight_gram: EternumGlobalConfig.resources.storehouseCapacityKg * EternumGlobalConfig.resources.resourcePrecision,
+  });
+  console.log(`Configuring storehouse capacity ${tx.statusReceipt}...`);
+};

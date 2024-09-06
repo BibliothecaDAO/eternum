@@ -414,6 +414,7 @@ export default class HexceptionScene extends HexagonScene {
         row: BUILDINGS_CENTER[1],
         category: BuildingType[structureTypeToBuildingType[structureType]],
         resource: undefined,
+        paused: false,
       });
     }
     this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, biomeHexes);

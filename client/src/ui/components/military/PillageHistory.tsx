@@ -100,7 +100,7 @@ export const PillageHistory = ({
                                 ]
                               }`}
                               alt="Destroyed Building"
-                              className="w-24 h-24 mx-auto"
+                              className="min-w-20 h-24 mx-auto"
                             />
                           )}
                         {/* Placeholder for Building Image */}

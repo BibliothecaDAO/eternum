@@ -1558,10 +1558,6 @@ mod combat_systems {
                             / battle_army_lifetime.troops.crossbowman_count
                     };
 
-            // note: army quantity would be used inside `withdraw_balance_and_reward`
-            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-            set!(world, (army_quantity));
-
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);
 

@@ -108,6 +108,7 @@ systems = [
     "set_population_config",
     "set_building_config",
     "set_mercenaries_config",
+    "set_storehouse_capacity_config",
 ]
 manifest_name = "eternum-config_systems-5f8c7cdc"
 
