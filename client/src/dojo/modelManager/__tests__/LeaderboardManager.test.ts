@@ -1,7 +1,4 @@
-import {
-  HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE
-} from "@bibliothecadao/eternum";
+import { HYPERSTRUCTURE_POINTS_ON_COMPLETION, HYPERSTRUCTURE_POINTS_PER_CYCLE } from "@bibliothecadao/eternum";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LeaderboardManager } from "../LeaderboardManager";
 import {
