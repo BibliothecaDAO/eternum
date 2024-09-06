@@ -544,7 +544,7 @@ mod combat_systems {
 
 
         fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops,) {
-            // ensure caller owns from and to armies
+            // ensure caller owns from army
             let mut from_army_owner: EntityOwner = get!(world, from_army_id, EntityOwner);
             from_army_owner.assert_caller_owner(world);
 
