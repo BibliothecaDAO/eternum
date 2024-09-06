@@ -223,7 +223,7 @@ export class ArmyManager {
 
       const direction = new THREE.Vector3().subVectors(movement.endPos, movement.startPos).normalize();
       const angle = Math.atan2(direction.x, direction.z);
-      this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 2) / 5, 0);
+      this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 3) / 6, 0);
 
       this.armyModel.updateInstance(matrixIndex, position, this.scale);
     });
