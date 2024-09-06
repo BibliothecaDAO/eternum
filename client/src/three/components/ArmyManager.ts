@@ -110,11 +110,9 @@ export class ArmyManager {
     const entityIdMap = clickedObject.userData.entityIdMap;
     if (entityIdMap) {
       const entityId = entityIdMap.get(instanceId);
-      console.log(`Entity ID: ${entityId}`);
 
       // don't return if the army is not mine
       if (entityId && this.armies.get(entityId)?.isMine) {
-        console.log(`Returning entity ID: ${entityId}`);
         return entityId;
       }
     }
