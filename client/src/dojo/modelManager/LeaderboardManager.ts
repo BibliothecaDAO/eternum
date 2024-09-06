@@ -145,7 +145,7 @@ export class LeaderboardManager {
         const percentage = owner[1].value;
         return {
           address: ContractAddress(address),
-          percentage: percentage / 1000,
+          percentage: percentage,
         };
       }),
     };
