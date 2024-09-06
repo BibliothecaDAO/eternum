@@ -148,23 +148,25 @@ export class ArmyManager {
   }
 
   addArmy(entityId: ID, hexCoords: Position, isMine: boolean) {
-    this.armyModel.loadPromise.then(() => {
-      const index = this.armyModel.mesh.count;
-      this.armyModel.mesh.count++;
-      this.armies.set(entityId, { matrixIndex: index, hexCoords, isMine });
-      const position = this.getArmyWorldPosition(entityId, hexCoords);
-      this.armyModel.updateInstance(index, position, this.scale);
-      this.armyModel.updateInstanceMatrix();
-      if (!this.armyModel.mesh.userData.entityIdMap) {
-        this.armyModel.mesh.userData.entityIdMap = new Map();
-      }
-      this.armyModel.mesh.userData.entityIdMap.set(index, entityId);
-      this.armyModel.mesh.frustumCulled = false;
-      this.armyModel.computeBoundingSphere();
-      const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
-      this.labels.set(entityId, label);
-      this.scene.add(label);
-    });
+    if (this.armies.has(entityId)) {
+      return;
+    }
+
+    const index = this.armyModel.mesh.count;
+    this.armyModel.mesh.count++;
+    this.armies.set(entityId, { matrixIndex: index, hexCoords, isMine });
+    const position = this.getArmyWorldPosition(entityId, hexCoords);
+    this.armyModel.updateInstance(index, position, this.scale);
+    this.armyModel.updateInstanceMatrix();
+    if (!this.armyModel.mesh.userData.entityIdMap) {
+      this.armyModel.mesh.userData.entityIdMap = new Map();
+    }
+    this.armyModel.mesh.userData.entityIdMap.set(index, entityId);
+    this.armyModel.mesh.frustumCulled = false;
+    this.armyModel.computeBoundingSphere();
+    const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
+    this.labels.set(entityId, label);
+    this.scene.add(label);
   }
 
   moveArmy(entityId: ID, hexCoords: Position) {
