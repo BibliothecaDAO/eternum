@@ -36,7 +36,6 @@ export enum RaidStatus {
   OwnStructure = "Can't raid your own structure",
   NoArmy = "No army selected",
   ArmyNotInBattle = "Selected army not in this battle",
-  IsImmune = "Structure is immune",
 }
 
 export class BattleManager {

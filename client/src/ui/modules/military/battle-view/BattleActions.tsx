@@ -168,10 +168,7 @@ export const BattleActions = ({
     [battleManager, currentTimestamp, selectedArmy],
   );
 
-  const isAttackable = useMemo(
-    () => battleManager.isAttackable(defenderArmy, currentTimestamp!, structure),
-    [battleManager, defenderArmy],
-  );
+  const isAttackable = useMemo(() => battleManager.isAttackable(defenderArmy), [battleManager, defenderArmy]);
 
   const isLeavable = useMemo(
     () => battleManager.isLeavable(currentTimestamp!, selectedArmy),
