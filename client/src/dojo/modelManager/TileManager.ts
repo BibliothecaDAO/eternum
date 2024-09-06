@@ -1,11 +1,12 @@
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BuildingType, ID, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, Direction, getNeighborHexes, ID, StructureType } from "@bibliothecadao/eternum";
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { SetupResult } from "../setup";
+import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 
 export class TileManager {
   private col: number;
@@ -145,17 +146,20 @@ export class TileManager {
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
     const { col, row } = hexCoords;
 
+    const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
+    const endPosition: [number, number] = [col, row];
+    const directions = getDirectionsArray(startingPosition, endPosition);
+
     // add optimistic rendering
     let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+
+    // const directions = [0, 0];
 
     await this.setup.systemCalls
       .create_building({
         signer: this.setup.network.burnerManager.account!,
         entity_id: entityId,
-        building_coord: {
-          x: col,
-          y: row,
-        },
+        directions: directions,
         building_category: buildingType,
         produce_resource_type:
           buildingType == BuildingType.Resource && resourceType
@@ -232,4 +236,41 @@ export class TileManager {
       });
     }
   };
+}
+
+function getDirectionBetweenAdjacentHexes(
+  from: { col: number; row: number },
+  to: { col: number; row: number },
+): Direction | null {
+  const neighbors = getNeighborHexes(from.col, from.row);
+  return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
+}
+
+function getDirectionsArray(start: [number, number], end: [number, number]): Direction[] {
+  const [startCol, startRow] = start;
+  const [endCol, endRow] = end;
+
+  const queue: { col: number; row: number; path: Direction[] }[] = [{ col: startCol, row: startRow, path: [] }];
+  const visited = new Set<string>();
+
+  while (queue.length > 0) {
+    const { col, row, path } = queue.shift()!;
+
+    if (col === endCol && row === endRow) {
+      return path;
+    }
+
+    const key = `${col},${row}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    for (const { col: neighborCol, row: neighborRow } of getNeighborHexes(col, row)) {
+      const direction = getDirectionBetweenAdjacentHexes({ col, row }, { col: neighborCol, row: neighborRow });
+      if (direction !== null) {
+        queue.push({ col: neighborCol, row: neighborRow, path: [...path, direction] });
+      }
+    }
+  }
+
+  return [];
 }

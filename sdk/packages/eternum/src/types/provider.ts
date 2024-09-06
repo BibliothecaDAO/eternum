@@ -190,10 +190,7 @@ export interface TransferItemsFromMultipleProps extends SystemSigner {
 
 export interface CreateBuildingProps extends SystemSigner {
   entity_id: num.BigNumberish;
-  building_coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
+  directions: num.BigNumberish[];
   building_category: BuildingType;
   produce_resource_type: CairoOption<Number>;
 }

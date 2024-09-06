@@ -1682,16 +1682,42 @@
           "interface_name": "eternum::systems::buildings::contracts::IBuildingContract"
         },
         {
-          "type": "struct",
-          "name": "eternum::models::position::Coord",
-          "members": [
+          "type": "enum",
+          "name": "eternum::models::position::Direction",
+          "variants": [
             {
-              "name": "x",
-              "type": "core::integer::u32"
+              "name": "East",
+              "type": "()"
             },
             {
-              "name": "y",
-              "type": "core::integer::u32"
+              "name": "NorthEast",
+              "type": "()"
+            },
+            {
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<eternum::models::position::Direction>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<eternum::models::position::Direction>"
             }
           ]
         },
@@ -1772,6 +1798,20 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "eternum::models::position::Coord",
+          "members": [
+            {
+              "name": "x",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "eternum::systems::buildings::contracts::IBuildingContract",
           "items": [
@@ -1784,8 +1824,8 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "building_coord",
-                  "type": "eternum::models::position::Coord"
+                  "name": "directions",
+                  "type": "core::array::Span::<eternum::models::position::Direction>"
                 },
                 {
                   "name": "building_category",
