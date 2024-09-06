@@ -183,12 +183,14 @@ export class ArmyManager {
     const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
     const currentPosition = new THREE.Vector3();
 
-    this.armyModel.mesh.getMatrixAt(matrixIndex, this.armyModel.dummy.matrix);
-    currentPosition.setFromMatrixPosition(this.armyModel.dummy.matrix);
+    this.armyModel.mesh.getMatrixAt(matrixIndex, this.armyModel.dummyObject.matrix);
+    currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
 
     const direction = new THREE.Vector3().subVectors(newPosition, currentPosition).normalize();
     const angle = Math.atan2(direction.x, direction.z);
     const rotation = new THREE.Euler(0, angle, 0);
+
+    this.armyModel.setAnimationState(matrixIndex, true); // Set to walking animation
 
     this.movingArmies.set(entityId, {
       startPos: currentPosition,
@@ -216,6 +218,7 @@ export class ArmyManager {
       if (movement.progress >= 1) {
         position = movement.endPos;
         this.movingArmies.delete(entityId);
+        this.armyModel.setAnimationState(matrixIndex, false); // Set back to idle animation
       } else {
         position = new THREE.Vector3().copy(movement.startPos).lerp(movement.endPos, movement.progress);
       }
@@ -240,7 +243,7 @@ export class ArmyManager {
           this.movingLabels.delete(entityId);
           needsBoundingUpdate = true;
         } else {
-          const newPosition = this.armyModel.dummy.position
+          const newPosition = this.armyModel.dummyObject.position
             .copy(movement.startPos)
             .lerp(movement.endPos, movement.progress);
           this.labelManager.updateLabelPosition(label, newPosition);

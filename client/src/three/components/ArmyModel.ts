@@ -6,20 +6,29 @@ const MAX_INSTANCES = 1000;
 
 export class ArmyModel {
   private scene: THREE.Scene;
-  private dummy: any;
+  private armyMesh: any;
+  dummyObject: THREE.Object3D;
   loadPromise: Promise<void>;
   mesh!: THREE.InstancedMesh;
   private mixer: AnimationMixer | null = null;
-  private animationClip: AnimationClip | null = null;
+  private idleAnimation: AnimationClip | null = null;
+  private walkAnimation: AnimationClip | null = null;
+  private animationActions: Map<number, { idle: THREE.AnimationAction; walk: THREE.AnimationAction }> = new Map();
+  animationStates: Float32Array;
   timeOffsets: Float32Array;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.dummy = new THREE.Object3D();
+    this.armyMesh = new THREE.Object3D();
+    this.dummyObject = new THREE.Object3D();
     this.loadPromise = this.loadModel();
     this.timeOffsets = new Float32Array(MAX_INSTANCES);
     for (let i = 0; i < MAX_INSTANCES; i++) {
       this.timeOffsets[i] = Math.random() * 3;
+    }
+    this.animationStates = new Float32Array(MAX_INSTANCES);
+    for (let i = 0; i < MAX_INSTANCES; i++) {
+      this.animationStates[i] = 0; // 0 for idle, 1 for walking
     }
   }
 
@@ -27,11 +36,11 @@ export class ArmyModel {
     const loader = new GLTFLoader();
     return new Promise((resolve, reject) => {
       loader.load(
-        "models/knight3.glb",
+        "models/knight.glb",
         (gltf) => {
-          this.dummy = gltf.scene.children[0];
-          const geometry = (this.dummy as THREE.Mesh).geometry;
-          const material = (this.dummy as THREE.Mesh).material;
+          this.armyMesh = gltf.scene.children[0];
+          const geometry = (this.armyMesh as THREE.Mesh).geometry;
+          const material = (this.armyMesh as THREE.Mesh).material;
 
           this.mesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
           this.mesh.castShadow = true;
@@ -39,13 +48,10 @@ export class ArmyModel {
           this.mesh.instanceMatrix.needsUpdate = true;
           this.scene.add(this.mesh);
 
-          // Set up animation
+          // Set up animations
           this.mixer = new AnimationMixer(gltf.scene);
-          this.animationClip = gltf.animations[0];
-          if (this.animationClip) {
-            const action = this.mixer.clipAction(this.animationClip);
-            action.play();
-          }
+          this.idleAnimation = gltf.animations[0];
+          this.walkAnimation = gltf.animations[1];
 
           resolve();
         },
@@ -56,21 +62,41 @@ export class ArmyModel {
   }
 
   updateInstance(index: number, position: THREE.Vector3, scale: THREE.Vector3, rotation?: THREE.Euler) {
-    this.dummy.position.copy(position);
-    this.dummy.scale.copy(scale);
+    this.dummyObject.position.copy(position);
+    this.dummyObject.scale.copy(scale);
     if (rotation) {
-      this.dummy.rotation.copy(rotation);
+      this.dummyObject.rotation.copy(rotation);
     }
-    this.dummy.updateMatrix();
-    this.mesh.setMatrixAt(index, this.dummy.matrix);
+    this.dummyObject.updateMatrix();
+    this.mesh.setMatrixAt(index, this.dummyObject.matrix);
   }
 
   updateAnimations(deltaTime: number) {
-    if (this.mixer && this.mesh) {
+    if (this.mixer && this.mesh && this.idleAnimation && this.walkAnimation) {
       const time = performance.now() * 0.001;
       for (let i = 0; i < this.mesh.count; i++) {
+        if (!this.animationActions.has(i)) {
+          const idleAction = this.mixer.clipAction(this.idleAnimation);
+          const walkAction = this.mixer.clipAction(this.walkAnimation);
+          this.animationActions.set(i, { idle: idleAction, walk: walkAction });
+        }
+
+        const actions = this.animationActions.get(i)!;
+        const animationState = this.animationStates[i];
+
+        if (animationState === 0) {
+          actions.idle.setEffectiveTimeScale(1);
+          actions.walk.setEffectiveTimeScale(0);
+        } else {
+          actions.idle.setEffectiveTimeScale(0);
+          actions.walk.setEffectiveTimeScale(1);
+        }
+
+        actions.idle.play();
+        actions.walk.play();
+
         this.mixer.setTime(time + this.timeOffsets[i]);
-        this.mesh.setMorphAt(i, this.dummy);
+        this.mesh.setMorphAt(i, this.armyMesh);
       }
       this.mesh.morphTexture!.needsUpdate = true;
     }
@@ -82,5 +108,9 @@ export class ArmyModel {
 
   computeBoundingSphere() {
     this.mesh.computeBoundingSphere();
+  }
+
+  setAnimationState(index: number, isWalking: boolean) {
+    this.animationStates[index] = isWalking ? 1 : 0;
   }
 }
