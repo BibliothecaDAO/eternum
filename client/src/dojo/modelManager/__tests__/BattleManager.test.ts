@@ -696,7 +696,9 @@ describe("isAttackable", () => {
   it("Should return false if the defender is undefined", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
-    const isAttackable = battleManager.isAttackable(undefined);
+    const structure = generateMockStructure(StructureType.FragmentMine, true);
+
+    const isAttackable = battleManager.isAttackable(undefined, CURRENT_TIMESTAMP, structure);
 
     expect(isAttackable).toBe(false);
   });
@@ -709,7 +711,9 @@ describe("isAttackable", () => {
 
     vi.mocked(getComponentValue).mockReturnValue(battle);
 
-    const isAttackable = battleManager.isAttackable(defender);
+    const structure = generateMockStructure(StructureType.FragmentMine, true);
+
+    const isAttackable = battleManager.isAttackable(defender, CURRENT_TIMESTAMP, structure);
 
     expect(isAttackable).toBe(false);
   });
@@ -721,7 +725,9 @@ describe("isAttackable", () => {
 
     vi.mocked(getComponentValue).mockReturnValue(undefined);
 
-    const isAttackable = battleManager.isAttackable(defender);
+    const structure = generateMockStructure(StructureType.FragmentMine, true);
+
+    const isAttackable = battleManager.isAttackable(defender, CURRENT_TIMESTAMP, structure);
 
     expect(isAttackable).toBe(false);
   });
@@ -733,7 +739,9 @@ describe("isAttackable", () => {
 
     vi.mocked(getComponentValue).mockReturnValue(undefined);
 
-    const isAttackable = battleManager.isAttackable(defender);
+    const structure = generateMockStructure(StructureType.FragmentMine, true);
+
+    const isAttackable = battleManager.isAttackable(defender, CURRENT_TIMESTAMP, structure);
 
     expect(isAttackable).toBe(true);
   });
