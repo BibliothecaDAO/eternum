@@ -345,7 +345,10 @@ mod tests_resource_traits {
 
         // make entity a structure
         let entity_id: ID = 1;
-        set!(world, (Structure { entity_id, category: StructureCategory::Realm, }));
+        set!(
+            world,
+            (Structure { entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp() })
+        );
 
         // The entity pays 3 gold for wood production per tick
         let wood_cost_gold_rate: u128 = 3;
@@ -491,7 +494,10 @@ mod owned_resources_tracker_tests {
         let world = spawn_eternum();
         let entity_id = 44;
         // make entity a structure
-        set!(world, (Structure { entity_id, category: StructureCategory::Realm, }));
+        set!(
+            world,
+            (Structure { entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp() })
+        );
         let mut entity_gold_resource = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::GOLD));
         entity_gold_resource.balance += 300;
         entity_gold_resource.save(world);

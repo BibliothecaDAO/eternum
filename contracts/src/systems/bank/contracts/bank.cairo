@@ -50,7 +50,11 @@ mod bank_systems {
             set!(
                 world,
                 (
-                    Structure { entity_id: bank_entity_id, category: StructureCategory::Bank },
+                    Structure {
+                        entity_id: bank_entity_id,
+                        category: StructureCategory::Bank,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord, count: 1 },
                     Bank { entity_id: bank_entity_id, owner_fee_num, owner_fee_denom, exists: true },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },

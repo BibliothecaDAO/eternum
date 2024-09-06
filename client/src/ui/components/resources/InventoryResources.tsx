@@ -84,6 +84,6 @@ export const InventoryResources = ({
       </div>
     </div>
   ) : (
-    <div>No Inventory</div>
+    <div>No resources</div>
   );
 };

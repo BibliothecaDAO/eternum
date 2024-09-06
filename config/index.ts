@@ -3,6 +3,7 @@ import productionManifest from "../contracts/manifests/prod/deployment/manifest.
 
 import {
   EternumProvider,
+  setBattleConfig,
   setBuildingCategoryPopConfig,
   setBuildingConfig,
   setCapacityConfig,
@@ -45,6 +46,7 @@ await setBuildingConfig(account, provider);
 await setResourceBuildingConfig(account, provider);
 await setWeightConfig(account, provider);
 await setCombatConfig(account, provider);
+await setBattleConfig(account, provider);
 await setCapacityConfig(account, provider);
 await setSpeedConfig(account, provider);
 await setupGlobals(account, provider);

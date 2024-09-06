@@ -119,7 +119,11 @@ mod realm_systems {
                 (
                     Owner { entity_id: entity_id.into(), address: caller },
                     EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
-                    Structure { entity_id: entity_id.into(), category: StructureCategory::Realm },
+                    Structure {
+                        entity_id: entity_id.into(),
+                        category: StructureCategory::Realm,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord, count: 1 },
                     Realm {
                         entity_id: entity_id.into(),

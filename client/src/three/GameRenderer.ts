@@ -11,6 +11,7 @@ import { GUIManager } from "./helpers/GUIManager";
 import { LocationManager } from "./helpers/LocationManager";
 import { SceneManager } from "./SceneManager";
 import HexceptionScene from "./scenes/Hexception";
+import HUDScene from "./scenes/HUDScene";
 import WorldmapScene from "./scenes/Worldmap";
 import { SystemManager } from "./systems/SystemManager";
 
@@ -43,6 +44,7 @@ export default class GameRenderer {
   // Scenes
   private worldmapScene!: WorldmapScene;
   private hexceptionScene!: HexceptionScene;
+  private hudScene!: HUDScene;
 
   // private currentScene: "worldmap" | "hexception" = "worldmap";
 
@@ -65,6 +67,7 @@ export default class GameRenderer {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.7;
+    this.renderer.autoClear = false;
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
@@ -118,6 +121,7 @@ export default class GameRenderer {
     this.labelRenderer.domElement.style.position = "absolute";
     this.labelRenderer.domElement.style.top = "0px";
     this.labelRenderer.domElement.style.pointerEvents = "none";
+    this.labelRenderer.domElement.style.zIndex = "10";
     document.body.appendChild(this.labelRenderer.domElement);
   }
 
@@ -182,6 +186,9 @@ export default class GameRenderer {
       },
       true,
     );
+
+    // Create HUD scene
+    this.hudScene = new HUDScene(this.sceneManager, this.controls);
 
     this.renderModels();
 
@@ -249,11 +256,15 @@ export default class GameRenderer {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
+      this.labelRenderer.setSize(width, height);
+      this.hudScene.onWindowResize(width, height);
     } else {
       // Fallback to window size if container not found
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      this.hudScene.onWindowResize(window.innerWidth, window.innerHeight);
     }
   }
 
@@ -267,17 +278,25 @@ export default class GameRenderer {
       this.controls.update();
     }
 
+    // Clear the renderer at the start of each frame
+    this.renderer.clear();
+
+    // Render the current game scene
     if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
       this.worldmapScene.update(deltaTime);
-      // this.hexGrid.updateVisibleChunks();
       this.renderer.render(this.worldmapScene.getScene(), this.camera);
       this.labelRenderer.render(this.worldmapScene.getScene(), this.camera);
     } else {
-      // this.detailedScene.update(deltaTime);
       this.hexceptionScene.update(deltaTime);
       this.renderer.render(this.hexceptionScene.getScene(), this.camera);
       this.labelRenderer.render(this.hexceptionScene.getScene(), this.camera);
     }
+
+    // Render the HUD scene without clearing the buffer
+    this.hudScene.update(deltaTime);
+    this.renderer.clearDepth(); // Clear only the depth buffer
+    this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
+    this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
 
     requestAnimationFrame(() => {
       this.animate();

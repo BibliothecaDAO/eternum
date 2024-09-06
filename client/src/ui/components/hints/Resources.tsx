@@ -23,6 +23,10 @@ export const Resources = () => {
             sufficient balance of these input resources is crucial; if depleted, production will cease. To ensure a
             steady supply, engage in trade with other players or utilize banking services to manage your resource
             equilibrium effectively.
+            <br />
+            <br />
+            Be careful though, if only one of the input resources is depleted, the consumption of the other resources
+            will continue.
           </p>
           <ResourceTable />
         </>
@@ -33,8 +37,8 @@ export const Resources = () => {
       content: (
         <p className="my-5">
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
-          <span className="font-bold"> {STOREHOUSE_CAPACITY / 1000000}M capacity per resource type</span>. Build more
-          storehouses to increase storage.
+          <span className="font-bold"> {STOREHOUSE_CAPACITY / 1000000}M capacity per resource type</span>. Build more of
+          them to increase storage.
         </p>
       ),
     },
@@ -61,6 +65,7 @@ const ResourceTable = () => {
   const resourceTable = useMemo(() => {
     const resources = [];
     for (const resourceId of Object.keys(RESOURCE_INPUTS_SCALED) as unknown as ResourcesIds[]) {
+      if (resourceId == ResourcesIds.Lords) continue;
       const calldata = {
         resource: findResourceById(Number(resourceId)),
         amount: RESOURCE_OUTPUTS_SCALED[resourceId],

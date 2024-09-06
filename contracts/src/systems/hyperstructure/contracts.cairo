@@ -83,7 +83,11 @@ mod hyperstructure_systems {
             set!(
                 world,
                 (
-                    Structure { entity_id: new_uuid, category: StructureCategory::Hyperstructure },
+                    Structure {
+                        entity_id: new_uuid,
+                        category: StructureCategory::Hyperstructure,
+                        created_at: starknet::get_block_timestamp()
+                    },
                     StructureCount { coord, count: 1 },
                     Position { entity_id: new_uuid, x: coord.x, y: coord.y },
                     Owner { entity_id: new_uuid, address: starknet::get_caller_address() },

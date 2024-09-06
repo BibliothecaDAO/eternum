@@ -421,6 +421,10 @@ export interface SetBankConfigProps extends SystemSigner {
   lp_fee_denom: num.BigNumberish;
 }
 
+export interface SetBattleConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  battle_grace_tick_count: num.BigNumberish;
+}
 export interface SetTroopConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
   health: num.BigNumberish;
