@@ -1,124 +1,135 @@
-import { client } from "@/dojo/events/graphqlClient";
+import { world } from "@/dojo/world";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useTrade } from "@/hooks/helpers/useTrade";
+import { Checkbox } from "@/ui/elements/Checkbox";
+import { SelectResource } from "@/ui/elements/SelectResource";
+import { ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useState } from "react";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "./TradeHistoryEvent";
-import { ID } from "@bibliothecadao/eternum";
-import { ACCEPT_ORDER_SELECTOR, CANCEL_ORDER_SELECTOR, CREATE_ORDER_SELECTOR } from "@/constants/events";
 
-const TAKER_INDEX = 1;
-const MAKER_INDEX = 2;
-
-interface MarketTradingHistoryProps {
-  structureEntityId: ID;
-}
+const MAX_TRADES = 100;
 
 export type TradeEvent = {
   type: EventType;
   event: {
     takerId: ID;
     makerId: ID;
-    tradeId: ID;
+    isYours: boolean;
+    resourceGiven: Resource;
+    resourceTaken: Resource;
     eventTime: Date;
   };
 };
 
-export const MarketTradingHistory = ({ structureEntityId }: MarketTradingHistoryProps) => {
+export const MarketTradingHistory = () => {
+  const {
+    account: {
+      account: { address },
+    },
+    setup: { components },
+  } = useDojo();
+
+  const { getTradeResources } = useTrade();
+
   const [tradeEvents, setTradeEvents] = useState<TradeEvent[]>([]);
+  const [showOnlyYourSwaps, setShowOnlyYourSwaps] = useState(false);
 
-  const queryTrades = async () => {
-    const trades: any = await client.request(`
-    query {
-      createdOrders: events(keys: ["${CREATE_ORDER_SELECTOR}", "*"]) {
-        edges {
-          node {
-            id
-            keys
-            data
-          }
-        }
-      }
-      acceptOrders: events(keys: ["${ACCEPT_ORDER_SELECTOR}", "*"]) {
-        edges {
-          node {
-            id
-            keys
-            data
-          }
-        }
-      }
-      cancelOrders: events(keys: ["${CANCEL_ORDER_SELECTOR}", "*"]) {
-        edges {
-          node {
-            id
-            keys
-            data
-          }
-        }
-      }
-    }
-  `);
-    const createdOrders = filterAndReturnTradeEvents(
-      trades.createdOrders.edges,
-      structureEntityId,
-      EventType.ORDER_CREATED,
-      MAKER_INDEX,
-    );
-    const myAcceptedOrders = filterAndReturnTradeEvents(
-      trades.acceptOrders.edges,
-      structureEntityId,
-      EventType.ORDER_ACCEPTED,
-      MAKER_INDEX,
-    );
-    const ordersIAccepted = filterAndReturnTradeEvents(
-      trades.acceptOrders.edges,
-      structureEntityId,
-      EventType.BOUGHT,
-      TAKER_INDEX,
-    );
-    const canceledOrders = filterAndReturnTradeEvents(
-      trades.cancelOrders.edges,
-      structureEntityId,
-      EventType.ORDER_CANCELLED,
-      MAKER_INDEX,
-    );
-
-    setTradeEvents(
-      [...createdOrders, ...myAcceptedOrders, ...ordersIAccepted, ...canceledOrders].sort(
-        (a, b) => b.event.eventTime.getTime() - a.event.eventTime.getTime(),
-      ),
-    );
-  };
+  const events = components.events;
 
   useEffect(() => {
-    queryTrades();
+    defineComponentSystem(world, events.AcceptOrder, (update) => {
+      if (isComponentUpdate(update, events.AcceptOrder)) {
+        const event = getComponentValue(events.AcceptOrder, update.entity);
+        if (!event) return;
+        const trade = getComponentValue(components.Trade, getEntityIdFromKeys([BigInt(event.trade_id)]));
+        if (!trade) return;
+        const takerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.taker_id)]));
+        if (!takerOwner) return;
+
+        const { makerGets, takerGets } = getTradeResources(trade.trade_id);
+
+        setTradeEvents((prevTradeEvents) => {
+          return [
+            ...prevTradeEvents,
+            {
+              type: EventType.ORDERBOOK,
+              event: {
+                takerId: event.taker_id,
+                makerId: event.maker_id,
+                isYours: takerOwner.address === BigInt(address),
+                resourceGiven: makerGets[0],
+                resourceTaken: takerGets[0],
+                eventTime: new Date(event.timestamp * 1000),
+              },
+            },
+          ];
+        });
+      }
+    });
+
+    defineComponentSystem(world, events.SwapEvent, (update) => {
+      if (isComponentUpdate(update, events.SwapEvent)) {
+        const event = getComponentValue(events.SwapEvent, update.entity);
+        if (!event) return;
+        const takerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.entity_id)]));
+        if (!takerOwner) return;
+
+        setTradeEvents((prevTradeEvents) => {
+          return [
+            ...prevTradeEvents,
+            {
+              type: EventType.SWAP,
+              event: {
+                takerId: event.entity_id,
+                makerId: event.bank_entity_id,
+                isYours: takerOwner.address === BigInt(address),
+                resourceGiven: event.buy
+                  ? { resourceId: ResourcesIds.Lords, amount: Number(event.lords_amount) }
+                  : { resourceId: event.resource_type, amount: Number(event.resource_amount) },
+                resourceTaken: event.buy
+                  ? { resourceId: event.resource_type, amount: Number(event.resource_amount) }
+                  : { resourceId: ResourcesIds.Lords, amount: Number(event.lords_amount) },
+                eventTime: new Date(event.timestamp * 1000),
+              },
+            },
+          ];
+        });
+      }
+    });
   }, []);
+
+  const filteredTradeEvents = showOnlyYourSwaps ? tradeEvents.filter((trade) => trade.event.isYours) : tradeEvents;
+
+  const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
 
   return (
     <div className="flex flex-col px-8 mt-8">
+      <div className="flex flex-row items-center justify-between mb-6">
+        <div onClick={() => setShowOnlyYourSwaps((prev) => !prev)} className="flex items-center space-x-2">
+          <Checkbox enabled={showOnlyYourSwaps} />
+          <div className="text-sm text-gray-300 hover:text-white transition-colors duration-200">
+            Show only your swaps
+          </div>
+        </div>
+        <div className="w-1/3">
+          <SelectResource onSelect={(resourceId) => setSelectedResourceId(resourceId)} className="w-full" />
+        </div>
+      </div>
       <TradeHistoryRowHeader />
-      {tradeEvents.map((trade, index) => {
-        return <TradeHistoryEvent key={index} trade={trade} />;
-      })}
+      {filteredTradeEvents
+        .sort((a, b) => b.event.eventTime.getTime() - a.event.eventTime.getTime())
+        .filter((trade) =>
+          selectedResourceId
+            ? trade.event.resourceGiven.resourceId === selectedResourceId ||
+              trade.event.resourceTaken.resourceId === selectedResourceId
+            : true,
+        )
+        .slice(0, MAX_TRADES)
+        .map((trade, index) => {
+          return <TradeHistoryEvent key={index} trade={trade} />;
+        })}
     </div>
   );
-};
-
-const filterAndReturnTradeEvents = (
-  edges: any,
-  realmEntityId: ID,
-  eventType: EventType,
-  indexOfInterest: number,
-): TradeEvent[] => {
-  return edges
-    .filter((edge: any) => parseInt(edge.node.keys[indexOfInterest], 16) === Number(realmEntityId))
-    .map((edge: any) => {
-      return {
-        type: eventType,
-        event: {
-          takerId: edge.node.keys[TAKER_INDEX],
-          makerId: edge.node.keys[MAKER_INDEX],
-          tradeId: edge.node.data[0],
-          eventTime: new Date(parseInt(edge.node.data[1], 16) * 1000),
-        },
-      };
-    });
 };
