@@ -4,7 +4,6 @@ import { trade } from "@/ui/components/navigation/Config";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
-import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";
 import { useMemo, useState } from "react";
 import { BaseContainer } from "../../containers/BaseContainer";
@@ -19,7 +18,6 @@ import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
 
@@ -44,11 +42,14 @@ export const RightNavigationModule = () => {
   const { questClaimStatus } = useQuestClaimStatus();
 
   const { getEntityInfo } = getEntitiesUtils();
-  const structureIsMine = getEntityInfo(structureEntityId).isMine;
+  const structureInfo = getEntityInfo(structureEntityId);
+  const structureIsMine = structureInfo.isMine;
 
   const { getAllArrivalsWithResources } = useArrivalsWithResources();
 
   const { toggleModal } = useModalStore();
+
+  const isRealm = Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm";
 
   const navigation = useMemo(() => {
     return [
@@ -77,7 +78,7 @@ export const RightNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label={"Resource Arrivals"}
@@ -106,7 +107,7 @@ export const RightNavigationModule = () => {
                 selectedQuest?.id === QuestId.CreateTrade &&
                 selectedQuest.status !== QuestStatus.Completed &&
                 isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestId.BuildResource],
+              hidden: !questClaimStatus[QuestId.BuildResource] && isRealm,
             })}
             image={BuildingThumbs.scale}
             tooltipLocation="top"
