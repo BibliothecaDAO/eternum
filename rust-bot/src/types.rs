@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::{num::NonZero, sync::Arc};
 
 use dojo_types::primitive::Primitive::ContractAddress;
+use eyre::OptionExt;
 use serde::Deserialize;
 use serenity::{
     all::{CreateEmbed, CreateEmbedFooter, CreateMessage, Timestamp, UserId},
@@ -153,6 +154,7 @@ pub async fn process_event(
     event: GameEvent,
     database: &PgPool,
     message_sender: &mpsc::Sender<DiscordMessage>,
+    channel_id: NonZero<u64>,
 ) {
     match event {
         GameEvent::BattleStart {
@@ -193,7 +195,7 @@ pub async fn process_event(
                     let message = DiscordMessage::DirectMessage { user_id, content };
 
                     let channel_message = DiscordMessage::ChannelMessage {
-                        channel_id: ChannelId::from(1275439254444441703),
+                        channel_id: ChannelId::from(channel_id),
                         content: CreateMessage::new().content("BATTLE STARTED!").embed(embed),
                     };
 
@@ -548,6 +550,7 @@ impl EventHandler {
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub discord_token: String,
+    pub channel_id: NonZero<u64>,
     pub torii_url: String,
     pub node_url: String,
     pub torii_relay_url: String,
@@ -557,6 +560,13 @@ pub struct Config {
 impl Config {
     pub fn from_secrets(secret_store: SecretStore) -> eyre::Result<Self> {
         let discord_token = secret_store.get("DISCORD_TOKEN").unwrap();
+        let channel_id = NonZero::new(
+            secret_store
+                .get("CHANNEL_ID")
+                .ok_or_eyre("channel id not set")?
+                .parse::<u64>()?,
+        )
+        .ok_or_eyre("Failed to convert string to non zero")?;
         let torii_url = secret_store.get("TORII_URL").unwrap();
         let node_url = secret_store.get("NODE_URL").unwrap();
         let torii_relay_url = secret_store.get("TORII_RELAY_URL").unwrap();
@@ -564,6 +574,7 @@ impl Config {
 
         let config = Config {
             discord_token,
+            channel_id,
             torii_url,
             node_url,
             torii_relay_url,
