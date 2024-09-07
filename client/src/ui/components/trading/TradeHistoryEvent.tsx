@@ -1,122 +1,78 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
-import useUIStore from "@/hooks/store/useUIStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { EternumGlobalConfig, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { Crown } from "lucide-react";
 import { TradeEvent } from "./MarketTradingHistory";
 
 export enum EventType {
-  ORDER_CREATED = "Created order",
-  ORDER_ACCEPTED = "Order accepted",
-  ORDER_CANCELLED = "Order cancelled",
-  ORDER_EXPIRED = "Order expired",
-  BOUGHT = "Took an order",
+  SWAP = "AMM Swap",
+  ORDERBOOK = "Orderbook",
 }
-
-const colors = {
-  [EventType.ORDER_CREATED]: "text-gold",
-  [EventType.ORDER_ACCEPTED]: "text-orange",
-  [EventType.ORDER_CANCELLED]: "text-danger",
-  [EventType.ORDER_EXPIRED]: "text-danger",
-  [EventType.BOUGHT]: "text-green",
-};
 
 export const TradeHistoryRowHeader = () => {
   return (
-    <div className="grid grid-cols-6 gap-1 flex-grow overflow-y-auto mb-4">
+    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow overflow-y-auto mb-4">
       <div className="uppercase text-xs font-bold">Time</div>
-      <div className="uppercase text-xs font-bold">Status</div>
+      <div className="uppercase text-xs font-bold">Type</div>
       <div className="uppercase text-xs font-bold">Taker</div>
       <div className="uppercase text-xs font-bold">Trade</div>
       <div className="uppercase text-xs font-bold">Price</div>
-      <div className="uppercase text-xs font-bold">Expiration</div>
     </div>
   );
 };
 
 export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
-  const {
-    setup: {
-      components: { Trade },
-    },
-  } = useDojo();
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
   const { getAddressNameFromEntity } = getEntitiesUtils();
-  const tradeComponent = getComponentValue(Trade, getEntityIdFromKeys([BigInt(trade.event.tradeId)]));
-  const eventType =
-    trade.type === EventType.ORDER_CREATED && nextBlockTimestamp! > tradeComponent!.expires_at
-      ? EventType.ORDER_EXPIRED
-      : trade.type;
-
-  const taker = eventType !== EventType.BOUGHT ? getAddressNameFromEntity(trade.event.takerId) || "" : `You`;
-
-  const { getResourcesBalance } = getResourceBalance();
-  let resourceGiven;
-  if (trade.type === EventType.BOUGHT) {
-    resourceGiven = getResourcesBalance(tradeComponent!.taker_gives_resources_id);
-  } else if (trade.type === EventType.ORDER_CREATED) {
-    resourceGiven = getResourcesBalance(tradeComponent!.maker_gives_resources_origin_id);
-  } else {
-    resourceGiven = getResourcesBalance(tradeComponent!.maker_gives_resources_id);
-  }
-
-  let resourceTaken;
-  if (trade.type === EventType.BOUGHT) {
-    resourceTaken = getResourcesBalance(tradeComponent!.maker_gives_resources_id);
-  } else if (trade.type === EventType.ORDER_CREATED) {
-    resourceTaken = getResourcesBalance(tradeComponent!.taker_gives_resources_origin_id);
-  } else {
-    resourceTaken = getResourcesBalance(tradeComponent!.taker_gives_resources_id);
-  }
-  const expirationDate =
-    trade.type === EventType.ORDER_CREATED ? new Date(Number(tradeComponent!.expires_at) * 1000) : undefined;
-
-  const price = getPrice(resourceGiven[0], resourceTaken[0]);
+  const price = getLordsPricePerResource(trade.event.resourceGiven, trade.event.resourceTaken);
+  const taker = getAddressNameFromEntity(trade.event.takerId);
 
   return (
-    <div className="grid grid-cols-6 gap-1 flex-grow overflow-y-auto h-14 mb-4 p-1 ">
+    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow overflow-y-auto p-1">
       <div
         className={`text-xs my-auto`}
       >{`${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`}</div>
-      <div className={`text-sm my-auto ${colors[eventType]}`}>{eventType}</div>
-      <div className={`text-sm my-auto ${colors[eventType]}`}>{taker}</div>
-      <div className="text-sm my-auto flex flex-row font-bold">
-        {resourceGiven && <ResourceIcon resource={ResourcesIds[Number(resourceGiven[0]!.resource_type)]} size={"sm"} />}{" "}
+      <div className={`text-sm my-auto`}>{trade.type}</div>
+      <div className={`text-sm my-auto flex flex-row items-center justify-start`}>
+        {taker}
+        {trade.event.isYours && <Crown className="h-4" />}
+      </div>
+      <div className="text-sm my-auto flex flex-row">
+        <div>{"bought"}</div>
+        <ResourceIcon resource={ResourcesIds[Number(trade.event.resourceTaken.resourceId)]} size={"sm"} />
         <div>{`${currencyIntlFormat(
-          Number(resourceGiven[0]!.resource_amount) / EternumGlobalConfig.resources.resourcePrecision,
+          Number(trade.event.resourceTaken.amount) / EternumGlobalConfig.resources.resourcePrecision,
           2,
         )} for ${currencyIntlFormat(
-          Number(resourceTaken[0]!.resource_amount) / EternumGlobalConfig.resources.resourcePrecision,
+          Number(trade.event.resourceGiven.amount) / EternumGlobalConfig.resources.resourcePrecision,
           2,
         )}`}</div>
-        {resourceTaken && <ResourceIcon resource={ResourcesIds[Number(resourceTaken[0]!.resource_type)]} size={"sm"} />}{" "}
+        <ResourceIcon resource={ResourcesIds[Number(trade.event.resourceGiven.resourceId)]} size={"sm"} />
       </div>
-      <div className="text-sm my-auto flex flex-row font-bold">
+      <div className="text-sm my-auto flex flex-row">
         {currencyIntlFormat(Number(price), 2)}
-        <ResourceIcon resource={ResourcesIds[Number(resourceTaken[0]!.resource_type)]} size={"sm"} />
-        per/
-        <ResourceIcon resource={ResourcesIds[Number(resourceGiven[0]!.resource_type)]} size={"sm"} />
-      </div>
-      <div className="text-sm my-auto">
-        {expirationDate && `${expirationDate.toLocaleDateString()} ${expirationDate.toLocaleTimeString()}`}
+        <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size={"sm"} />
+        per
+        <ResourceIcon
+          resource={
+            ResourcesIds[
+              Number(
+                trade.event.resourceTaken.resourceId === ResourcesIds.Lords
+                  ? trade.event.resourceGiven.resourceId
+                  : trade.event.resourceTaken.resourceId,
+              )
+            ]
+          }
+          size={"sm"}
+        />
       </div>
     </div>
   );
 };
 
-const getPrice = (
-  resourceA: ComponentValue<ClientComponents["DetachedResource"]["schema"]> | undefined,
-  resourceB: ComponentValue<ClientComponents["DetachedResource"]["schema"]> | undefined,
-): Number => {
-  if (resourceA!.resource_type === ResourcesIds.Lords) {
-    return Number(resourceA!.resource_amount) / Number(resourceB!.resource_amount);
-  } else {
-    return Number(resourceB!.resource_amount) / Number(resourceA!.resource_amount);
-  }
+const getLordsPricePerResource = (resourceA: Resource, resourceB: Resource): number => {
+  const lordsResource = resourceA.resourceId === ResourcesIds.Lords ? resourceA : resourceB;
+  const otherResource = resourceA.resourceId === ResourcesIds.Lords ? resourceB : resourceA;
+
+  return Number(lordsResource.amount) / Number(otherResource.amount);
 };
