@@ -161,6 +161,7 @@ export const getEntitiesUtils = () => {
       resources,
       entityType: army ? EntityType.TROOP : EntityType.DONKEY,
       structureCategory: structure?.category,
+      structure,
       name,
     };
   };
