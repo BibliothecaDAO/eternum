@@ -67,7 +67,7 @@ async fn setup_torii_client(database: PgPool, config: Config) -> eyre::Result<()
 
         tokio::spawn(async move {
             while let Some(event) = event_receiver.recv().await {
-                process_event(event, &database, &message_sender).await;
+                process_event(event, &database, &message_sender, config.channel_id).await;
             }
         });
 
