@@ -11,10 +11,6 @@ import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "./TradeHist
 
 const MAX_TRADES = 100;
 
-interface MarketTradingHistoryProps {
-  structureEntityId: ID;
-}
-
 export type TradeEvent = {
   type: EventType;
   event: {
@@ -27,7 +23,7 @@ export type TradeEvent = {
   };
 };
 
-export const MarketTradingHistory = ({ structureEntityId }: MarketTradingHistoryProps) => {
+export const MarketTradingHistory = () => {
   const {
     account: {
       account: { address },
