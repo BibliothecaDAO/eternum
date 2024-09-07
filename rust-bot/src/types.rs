@@ -4,7 +4,7 @@ use dojo_types::primitive::Primitive::ContractAddress;
 use eyre::OptionExt;
 use serde::Deserialize;
 use serenity::{
-    all::{CreateEmbed, CreateEmbedFooter, CreateMessage, Timestamp, UserId},
+    all::{CreateMessage, UserId},
     model::id::ChannelId,
 };
 use shuttle_runtime::SecretStore;
@@ -13,81 +13,97 @@ use starknet_crypto::Felt;
 use tokio::sync::mpsc;
 use torii_grpc::types::schema::Entity;
 
+use crate::events::ToDiscordMessage;
+use crate::{
+    check_user_in_database,
+    events::{BattleClaim, BattleJoin, BattleLeave, BattlePillage, BattleStart},
+};
 use starknet::core::utils::parse_cairo_short_string;
 
-use crate::check_user_in_database;
-
-// Event types
-#[allow(dead_code)]
-pub enum GameEvent {
-    BattleStart {
-        id: u32,
-        event_id: u32,
-        battle_entity_id: u32,
-        attacker: String,
-        attacker_name: String,
-        attacker_army_entity_id: u32,
-        defender: String,
-        defender_name: String,
-        defender_army_entity_id: u32,
-        duration_left: u64,
-        x: u32,
-        y: u32,
-        structure_type: String,
-    },
-    BattleJoin {
-        id: u32,
-        event_id: u32,
-        battle_entity_id: u32,
-        joiner: String,
-        joiner_name: String,
-        joiner_army_entity_id: u32,
-        joiner_side: String,
-        duration_left: u64,
-        x: u32,
-        y: u32,
-    },
-    BattleLeave {
-        id: u32,
-        event_id: u32,
-        battle_entity_id: u32,
-        leaver: String,
-        leaver_name: String,
-        leaver_army_entity_id: u32,
-        leaver_side: String,
-        duration_left: u64,
-        x: u32,
-        y: u32,
-    },
-    BattleClaim {
-        id: u32,
-        event_id: u32,
-        structure_entity_id: u32,
-        claimer: String,
-        claimer_name: String,
-        claimer_army_entity_id: u32,
-        previous_owner: String,
-        x: u32,
-        y: u32,
-        structure_type: String,
-    },
-    BattlePillage {
-        id: u32,
-        event_id: u32,
-        pillager: String,
-        pillager_name: String,
-        pillager_army_entity_id: u32,
-        pillaged_structure_owner: String,
-        pillaged_structure_entity_id: u32,
-        winner: String,
-        x: u32,
-        y: u32,
-        structure_type: String,
-        pillaged_resources: Vec<(u8, u128)>,
-    },
+pub struct EventProcessor<'a, 'b> {
+    database: &'a PgPool,
+    message_sender: &'b mpsc::Sender<DiscordMessage>,
+    channel_id: NonZero<u64>,
 }
 
-// Message types
+impl<'a, 'b> EventProcessor<'a, 'b> {
+    pub fn new(
+        database: &'a PgPool,
+        message_sender: &'b mpsc::Sender<DiscordMessage>,
+        channel_id: NonZero<u64>,
+    ) -> Self {
+        Self {
+            database,
+            message_sender,
+            channel_id,
+        }
+    }
+    async fn send_messages_for_user(&self, address: &str, event: &impl ToDiscordMessage) {
+        if let Ok(Some(Some(discord_id))) = check_user_in_database(self.database, address).await {
+            tracing::info!("User found in the database: {}", discord_id);
+            if let Ok(user_id) = discord_id.parse::<u64>() {
+                let channel_message = event.to_discord_message(
+                    DiscordMessageType::ChannelMessage(self.channel_id),
+                    user_id,
+                );
+                self.message_sender.send(channel_message).await.unwrap();
+
+                let direct_message =
+                    event.to_discord_message(DiscordMessageType::DirectMessage, user_id);
+                self.message_sender.send(direct_message).await.unwrap();
+            }
+        }
+    }
+
+    pub async fn process_event(&self, event: GameEventData) {
+        match event {
+            GameEventData::BattleStart(event) => {
+                self.send_messages_for_user(&event.defender, &event).await;
+            }
+            GameEventData::BattleJoin(event) => {
+                self.send_messages_for_user(&event.joiner, &event).await;
+            }
+            GameEventData::BattleLeave(event) => {
+                self.send_messages_for_user(&event.leaver, &event).await;
+            }
+            GameEventData::BattleClaim(event) => {
+                self.send_messages_for_user(&event.previous_owner, &event)
+                    .await;
+            }
+            GameEventData::BattlePillage(event) => {
+                self.send_messages_for_user(&event.pillaged_structure_owner, &event)
+                    .await;
+            }
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub enum GameEventData {
+    BattleStart(BattleStart),
+    BattleJoin(BattleJoin),
+    BattleLeave(BattleLeave),
+    BattleClaim(BattleClaim),
+    BattlePillage(BattlePillage),
+}
+
+impl ToDiscordMessage for GameEventData {
+    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+        match self {
+            GameEventData::BattleStart(event) => event.to_discord_message(msg_type, user_id),
+            GameEventData::BattleJoin(event) => event.to_discord_message(msg_type, user_id),
+            GameEventData::BattleLeave(event) => event.to_discord_message(msg_type, user_id),
+            GameEventData::BattleClaim(event) => event.to_discord_message(msg_type, user_id),
+            GameEventData::BattlePillage(event) => event.to_discord_message(msg_type, user_id),
+        }
+    }
+}
+
+pub enum DiscordMessageType {
+    DirectMessage,
+    ChannelMessage(NonZero<u64>),
+}
+
 pub enum DiscordMessage {
     DirectMessage {
         user_id: u64,
@@ -105,7 +121,7 @@ pub struct MessageDispatcher {
 }
 
 pub struct EventHandler {
-    pub event_sender: mpsc::Sender<GameEvent>,
+    pub event_sender: mpsc::Sender<GameEventData>,
 }
 
 impl MessageDispatcher {
@@ -150,185 +166,6 @@ impl MessageDispatcher {
     }
 }
 
-pub async fn process_event(
-    event: GameEvent,
-    database: &PgPool,
-    message_sender: &mpsc::Sender<DiscordMessage>,
-    channel_id: NonZero<u64>,
-) {
-    match event {
-        GameEvent::BattleStart {
-            id: _,
-            event_id: _,
-            battle_entity_id: _,
-            attacker: _,
-            attacker_name,
-            attacker_army_entity_id: _,
-            defender,
-            defender_name,
-            defender_army_entity_id: _,
-            duration_left,
-            x,
-            y,
-            structure_type: _,
-        } => {
-            tracing::info!("BattleStart event: {:?}", defender);
-            if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &defender).await {
-                tracing::info!("User found in the database: {}", discord_id);
-                if let Ok(user_id) = discord_id.parse::<u64>() {
-                    let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
-                    let embed = CreateEmbed::new()
-                        .title(format!(
-                            "{} has attacked {} at ({}, {})",
-                            attacker_name, defender_name, x, y
-                        ))
-                        .description(format!("Battle will end in {} seconds", duration_left))
-                        .image("attachment://ferris_eyes.png")
-                        .footer(footer)
-                        .color(poise::serenity_prelude::Color::RED)
-                        .timestamp(Timestamp::now());
-
-                    let content = CreateMessage::new()
-                        .content(format!("<@{}> BATTLE STARTED!", user_id))
-                        .embed(embed.clone());
-
-                    let message = DiscordMessage::DirectMessage { user_id, content };
-
-                    let channel_message = DiscordMessage::ChannelMessage {
-                        channel_id: ChannelId::from(channel_id),
-                        content: CreateMessage::new().content("BATTLE STARTED!").embed(embed),
-                    };
-
-                    message_sender.send(message).await.unwrap();
-
-                    message_sender.send(channel_message).await.unwrap();
-                }
-            }
-        }
-        GameEvent::BattleLeave {
-            id: _,
-            event_id: _,
-            battle_entity_id: _,
-            leaver,
-            leaver_name,
-            leaver_army_entity_id: _,
-            leaver_side: _,
-            duration_left,
-            x,
-            y,
-        } => {
-            tracing::info!("BattleLeave event: {:?}", leaver);
-            if let Ok(Some(Some(discord_id))) = check_user_in_database(database, &leaver).await {
-                tracing::info!("User found in the database: {}", discord_id);
-                if let Ok(user_id) = discord_id.parse::<u64>() {
-                    let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
-                    let embed = CreateEmbed::new()
-                        .title(format!(
-                            "{} has left the battle at ({}, {})",
-                            leaver_name, x, y
-                        ))
-                        .description(format!("Battle will end in {} seconds", duration_left))
-                        .footer(footer)
-                        .timestamp(Timestamp::now());
-
-                    let content = CreateMessage::new()
-                        .content("BATTLE LEFT!")
-                        .embed(embed.clone());
-
-                    let message = DiscordMessage::DirectMessage { user_id, content };
-
-                    let channel_message = DiscordMessage::ChannelMessage {
-                        channel_id: ChannelId::from(1275439254444441703),
-                        content: CreateMessage::new().content("BATTLE LEFT!").embed(embed),
-                    };
-
-                    message_sender.send(message).await.unwrap();
-
-                    message_sender.send(channel_message).await.unwrap();
-                }
-            }
-        }
-        GameEvent::BattlePillage {
-            id: _,
-            event_id: _,
-            pillager: _,
-            pillager_name,
-            pillager_army_entity_id: _,
-            pillaged_structure_owner,
-            pillaged_structure_entity_id: _,
-            winner: _,
-            x,
-            y,
-            structure_type,
-            pillaged_resources,
-        } => {
-            tracing::info!("BattlePillage event: {:?}", pillaged_structure_owner);
-            if let Ok(Some(Some(discord_id))) =
-                check_user_in_database(database, &pillaged_structure_owner).await
-            {
-                if let Ok(user_id) = discord_id.parse::<u64>() {
-                    let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
-                    let embed = CreateEmbed::new()
-                        .title(format!(
-                            "{} has pillaged a structure at ({}, {})",
-                            pillager_name, x, y
-                        ))
-                        .description(format!(
-                            "Pillaged resources: {:?}\nStructure type: {}",
-                            pillaged_resources, structure_type
-                        ))
-                        .footer(footer)
-                        .color(poise::serenity_prelude::Color::RED)
-                        .timestamp(Timestamp::now());
-
-                    let content = CreateMessage::new()
-                        .content("STRUCTURE PILLAGED!")
-                        .embed(embed.clone());
-
-                    let message = DiscordMessage::DirectMessage { user_id, content };
-
-                    let channel_message = DiscordMessage::ChannelMessage {
-                        channel_id: ChannelId::from(1275439254444441703),
-                        content: CreateMessage::new()
-                            .content("STRUCTURE PILLAGED!")
-                            .embed(embed),
-                    };
-
-                    message_sender.send(message).await.unwrap();
-
-                    message_sender.send(channel_message).await.unwrap();
-                }
-            }
-        }
-        GameEvent::BattleJoin {
-            id: _,
-            event_id: _,
-            battle_entity_id: _,
-            joiner: _,
-            joiner_name: _,
-            joiner_army_entity_id: _,
-            joiner_side: _,
-            duration_left: _,
-            x: _,
-            y: _,
-        } => {
-            // ... Process BattleJoin event
-        }
-        GameEvent::BattleClaim {
-            id: _,
-            event_id: _,
-            structure_entity_id: _,
-            claimer: _,
-            claimer_name: _,
-            claimer_army_entity_id: _,
-            previous_owner: _,
-            x: _,
-            y: _,
-            structure_type: _,
-        } => {}
-    }
-}
-
 impl EventHandler {
     pub async fn handle_event(&self, entity: Entity) {
         if let Some(event) = self.parse_event(entity) {
@@ -336,7 +173,7 @@ impl EventHandler {
         }
     }
 
-    pub fn parse_event(&self, entity: Entity) -> Option<GameEvent> {
+    pub fn parse_event(&self, entity: Entity) -> Option<GameEventData> {
         entity
             .models
             .iter()
@@ -353,7 +190,7 @@ impl EventHandler {
             })
     }
 
-    fn parse_battle_start(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
+    fn parse_battle_start(&self, model: &dojo_types::schema::Struct) -> Option<GameEventData> {
         // ... Parse BattleStart event
         let id = self.extract_u32(&model.children[0]);
         let event_id = self.extract_u32(&model.children[1]);
@@ -369,7 +206,7 @@ impl EventHandler {
         let y = self.extract_u32(&model.children[11]);
         let structure_type = self.extract_string(&model.children[12]);
 
-        Some(GameEvent::BattleStart {
+        Some(GameEventData::BattleStart(BattleStart {
             id,
             event_id,
             battle_entity_id,
@@ -383,10 +220,10 @@ impl EventHandler {
             x,
             y,
             structure_type,
-        })
+        }))
     }
 
-    fn parse_battle_join(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
+    fn parse_battle_join(&self, model: &dojo_types::schema::Struct) -> Option<GameEventData> {
         // ... Parse BattleJoin event
         let id = self.extract_u32(&model.children[0]);
         let event_id = self.extract_u32(&model.children[1]);
@@ -400,7 +237,7 @@ impl EventHandler {
         let x = self.extract_u32(&model.children[8]);
         let y = self.extract_u32(&model.children[9]);
 
-        Some(GameEvent::BattleJoin {
+        Some(GameEventData::BattleJoin(BattleJoin {
             id,
             event_id,
             battle_entity_id,
@@ -411,10 +248,10 @@ impl EventHandler {
             duration_left,
             x,
             y,
-        })
+        }))
     }
 
-    fn parse_battle_leave(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
+    fn parse_battle_leave(&self, model: &dojo_types::schema::Struct) -> Option<GameEventData> {
         // ... Parse BattleLeave event
         let id = self.extract_u32(&model.children[0]);
         let event_id = self.extract_u32(&model.children[1]);
@@ -427,7 +264,7 @@ impl EventHandler {
         let duration_left = self.extract_u64(&model.children[7]);
         let x = self.extract_u32(&model.children[8]);
         let y = self.extract_u32(&model.children[9]);
-        Some(GameEvent::BattleLeave {
+        Some(GameEventData::BattleLeave(BattleLeave {
             id,
             event_id,
             battle_entity_id,
@@ -438,10 +275,10 @@ impl EventHandler {
             duration_left,
             x,
             y,
-        })
+        }))
     }
 
-    fn parse_battle_claim(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
+    fn parse_battle_claim(&self, model: &dojo_types::schema::Struct) -> Option<GameEventData> {
         // ... Parse BattleClaim event
         let id = self.extract_u32(&model.children[0]);
         let event_id = self.extract_u32(&model.children[1]);
@@ -453,7 +290,7 @@ impl EventHandler {
         let x = self.extract_u32(&model.children[7]);
         let y = self.extract_u32(&model.children[8]);
         let structure_type = self.extract_string(&model.children[9]);
-        Some(GameEvent::BattleClaim {
+        Some(GameEventData::BattleClaim(BattleClaim {
             id,
             event_id,
             structure_entity_id,
@@ -464,10 +301,10 @@ impl EventHandler {
             x,
             y,
             structure_type,
-        })
+        }))
     }
 
-    fn parse_battle_pillage(&self, model: &dojo_types::schema::Struct) -> Option<GameEvent> {
+    fn parse_battle_pillage(&self, model: &dojo_types::schema::Struct) -> Option<GameEventData> {
         tracing::info!("Model: {:?}", model);
         // ... Parse BattlePillage event
         let id = self.extract_u32(&model.children[0]);
@@ -492,7 +329,7 @@ impl EventHandler {
             })
             .collect::<Vec<(u8, u128)>>();
 
-        Some(GameEvent::BattlePillage {
+        Some(GameEventData::BattlePillage(BattlePillage {
             id,
             event_id,
             pillager,
@@ -505,7 +342,7 @@ impl EventHandler {
             y,
             structure_type,
             pillaged_resources,
-        })
+        }))
     }
 
     fn extract_address(&self, member: &dojo_types::schema::Member) -> Option<String> {
