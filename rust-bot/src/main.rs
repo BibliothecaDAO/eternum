@@ -1,7 +1,9 @@
 mod commands;
+mod constants;
+mod events;
 mod types;
-use ::serenity::Client;
 use anyhow::Context as _;
+use serenity::Client;
 use serenity::{
     all::{GatewayIntents, Http},
     futures::StreamExt,
@@ -10,6 +12,7 @@ use shuttle_runtime::SecretStore;
 use sqlx::{Executor, PgPool};
 use std::sync::Arc;
 use tokio::sync::mpsc;
+use types::EventProcessor;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -19,7 +22,7 @@ use torii_client::client::Client as ToriiClient;
 
 use torii_grpc::types::{EntityKeysClause, KeysClause};
 
-use crate::types::{process_event, Config, EventHandler, MessageDispatcher};
+use crate::types::{Config, EventHandler, MessageDispatcher};
 
 struct Data {
     database: PgPool,
@@ -66,8 +69,9 @@ async fn setup_torii_client(database: PgPool, config: Config) -> eyre::Result<()
         };
 
         tokio::spawn(async move {
+            let processor = EventProcessor::new(&database, &message_sender, config.channel_id);
             while let Some(event) = event_receiver.recv().await {
-                process_event(event, &database, &message_sender, config.channel_id).await;
+                processor.process_event(event).await;
             }
         });
 
