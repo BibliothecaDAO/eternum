@@ -2,10 +2,12 @@ import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getStructureAtPosition, isStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
+import clsx from "clsx";
 import React, { useCallback, useMemo } from "react";
 
 export const EnemyArmies = ({
@@ -23,21 +25,48 @@ export const EnemyArmies = ({
 
   const setBattleView = useUIStore((state) => state.setBattleView);
 
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
   const structureAtPosition = getStructureAtPosition(position.getContract());
+
+  const { getEntityInfo } = getEntitiesUtils();
+
+  const ownArmystructure = ownArmySelected
+    ? getEntityInfo(ownArmySelected.entityOwner.entity_owner_id).structure
+    : undefined;
+  const ownArmyIsImmune = ownArmystructure
+    ? isStructureImmune(Number(ownArmystructure?.created_at), nextBlockTimestamp!)
+    : false;
 
   const getArmyChip = useCallback(
     (army: ArmyInfo, index: number) => {
+      const structure = getEntityInfo(army.entityOwner.entity_owner_id).structure;
+      const isImmune = isStructureImmune(Number(structure?.created_at), nextBlockTimestamp!) || ownArmyIsImmune;
+
       const button = ownArmySelected && (
         <Swords
-          className={`fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125`}
-          onClick={() =>
-            setBattleView({
-              engage: true,
-              battleEntityId: undefined,
-              ownArmyEntityId: ownArmySelected.entity_id,
-              targetArmy: army.entity_id,
-            })
-          }
+          className={clsx(`fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125`, {
+            "opacity-50": isImmune,
+          })}
+          onClick={() => {
+            if (!isImmune) {
+              setBattleView({
+                engage: true,
+                battleEntityId: undefined,
+                ownArmyEntityId: ownArmySelected.entity_id,
+                targetArmy: army.entity_id,
+              });
+            }
+          }}
+          onMouseEnter={() => {
+            if (isImmune) {
+              setTooltip({
+                content: `Can't attack while immune.`,
+                position: "top",
+              });
+            }
+          }}
+          onMouseLeave={() => setTooltip(null)}
         />
       );
       const armyClone = army.protectee ? structuredClone(army) : army;

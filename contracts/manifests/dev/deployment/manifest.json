@@ -1231,7 +1231,7 @@
     ],
     "address": "0x6918fe8c1ba16bdc83b9790cd9168d730aa98a22c65164578ef99af1c8cbc76",
     "transaction_hash": "0x4787c2c1b826c8eb54fdd0883586c40e2d6f38955e1d5358b11010bc542bf05",
-    "block_number": 43,
+    "block_number": 47,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -1251,8 +1251,8 @@
     {
       "kind": "DojoContract",
       "address": "0x23d9fda8b1ef4f322356e076fcfcd1ed5586e114730d073852cb2fb50ad73d0",
-      "class_hash": "0x60dae7cc0a002420056d39f14778f85c325b4542275f66e51a4d2d2981625ae",
-      "original_class_hash": "0x60dae7cc0a002420056d39f14778f85c325b4542275f66e51a4d2d2981625ae",
+      "class_hash": "0x57baea9dcee3c73fcdd8e8142ac19a455838a50803a311f4d55a8fedffef08",
+      "original_class_hash": "0x57baea9dcee3c73fcdd8e8142ac19a455838a50803a311f4d55a8fedffef08",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -1545,8 +1545,8 @@
     {
       "kind": "DojoContract",
       "address": "0x7ed18691dfbacf174f2f0c80a92cf0cc6cc0a017f56331712d253d2efda6a0b",
-      "class_hash": "0x3054aa38a1e7674d3cbf66895d28f3478dbfdddad005f172eebaceeef72e460",
-      "original_class_hash": "0x3054aa38a1e7674d3cbf66895d28f3478dbfdddad005f172eebaceeef72e460",
+      "class_hash": "0x13b5a37bf98601831c97d202d5c889285350235653d5ede6f4de0a5ca71086c",
+      "original_class_hash": "0x13b5a37bf98601831c97d202d5c889285350235653d5ede6f4de0a5ca71086c",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -1982,8 +1982,8 @@
     {
       "kind": "DojoContract",
       "address": "0x62015209a524b97052852f42d283fc0f67081bce90d04cdc03a951009f55a64",
-      "class_hash": "0x20031b7aa06cc04c51a6d52d18870056874dd010185fd4184b359fc65d59003",
-      "original_class_hash": "0x20031b7aa06cc04c51a6d52d18870056874dd010185fd4184b359fc65d59003",
+      "class_hash": "0x31c2f76a1d4c43ac75aba588765d228a8ab5a6a5e2b99d2b5f77dc8eae9f85a",
+      "original_class_hash": "0x31c2f76a1d4c43ac75aba588765d228a8ab5a6a5e2b99d2b5f77dc8eae9f85a",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -2430,8 +2430,8 @@
     {
       "kind": "DojoContract",
       "address": "0x7a586a591ea4b5a3264e696076c5b801ea1d857f12455f1002f522e3b5a29b0",
-      "class_hash": "0x218be84ad94dbf5498645ea7efb2242c92b5292823ac1999f21e09abe9de567",
-      "original_class_hash": "0x218be84ad94dbf5498645ea7efb2242c92b5292823ac1999f21e09abe9de567",
+      "class_hash": "0xfeef77e0f94d2431ef4af1172a972d4f2f74c3578a47529db1fb3c8b09da81",
+      "original_class_hash": "0xfeef77e0f94d2431ef4af1172a972d4f2f74c3578a47529db1fb3c8b09da81",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -3697,8 +3697,8 @@
     {
       "kind": "DojoContract",
       "address": "0x2fa49f8ffee6ad0a66a783af6bb747ee860862b7579a40102e23ee82359c019",
-      "class_hash": "0x5801f3819b75e3f248114aeeae069fb37caf0808cd17518f86793089d8d7025",
-      "original_class_hash": "0x5801f3819b75e3f248114aeeae069fb37caf0808cd17518f86793089d8d7025",
+      "class_hash": "0x3f1b8b1470f743a5eb1a47ffb3fc29b4330d9862bd69075ed487c0f869c2c89",
+      "original_class_hash": "0x3f1b8b1470f743a5eb1a47ffb3fc29b4330d9862bd69075ed487c0f869c2c89",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -4524,8 +4524,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3689fe179d2b3f245f177214a9a9e745087936fcc80a2add8b17a3a411c6078",
-      "class_hash": "0x7188d25d8c2ad285fb39f094b8244fde23baf89a20ae0b6c9f500b4e9512292",
-      "original_class_hash": "0x7188d25d8c2ad285fb39f094b8244fde23baf89a20ae0b6c9f500b4e9512292",
+      "class_hash": "0x7cacb256e6b46a850e9eab92245b02ab104bae4def05cb4fb0cc4c60810d35f",
+      "original_class_hash": "0x7cacb256e6b46a850e9eab92245b02ab104bae4def05cb4fb0cc4c60810d35f",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -4847,8 +4847,8 @@
     {
       "kind": "DojoContract",
       "address": "0x33880f09a32670cb3de1502dab021c1c8f7c3368fa5a4f29fea7ef9c3fd64a8",
-      "class_hash": "0x478723e4b0188c8a24d9050a97eb952f8047823bb5629c077326bd16474f54e",
-      "original_class_hash": "0x478723e4b0188c8a24d9050a97eb952f8047823bb5629c077326bd16474f54e",
+      "class_hash": "0xfbc4287d5c268386905d4889c4c889ef5255e4e8db07b851d52833c17e997",
+      "original_class_hash": "0xfbc4287d5c268386905d4889c4c889ef5255e4e8db07b851d52833c17e997",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -5091,8 +5091,8 @@
     {
       "kind": "DojoContract",
       "address": "0x1bb5522c954f263822875b3be43a36540a37e597196284b5f0160722ccac40f",
-      "class_hash": "0x3aa80741865b11b00ed837263e440720a8434b75f3f8ae591662e92c9c885bb",
-      "original_class_hash": "0x3aa80741865b11b00ed837263e440720a8434b75f3f8ae591662e92c9c885bb",
+      "class_hash": "0x7219bfa89b09bbe2ccdec3199e8b143ba40609a23ee6a4ba727e9f65bb56fc1",
+      "original_class_hash": "0x7219bfa89b09bbe2ccdec3199e8b143ba40609a23ee6a4ba727e9f65bb56fc1",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -5407,8 +5407,8 @@
     {
       "kind": "DojoContract",
       "address": "0x15c0cb2e324e4c5cd88c66f259bfc339cfd28eea9c2d9275fa83ef63d771bee",
-      "class_hash": "0x1051a897d97d5f68cf82ff09d1b414806af749ed2d69776e5adba8ab2c70941",
-      "original_class_hash": "0x1051a897d97d5f68cf82ff09d1b414806af749ed2d69776e5adba8ab2c70941",
+      "class_hash": "0x57b65d685359b934760012e48670e5ec57b2d51e56cdb411be9c2740de6de2b",
+      "original_class_hash": "0x57b65d685359b934760012e48670e5ec57b2d51e56cdb411be9c2740de6de2b",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -5946,8 +5946,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3eab010b114ef9167679721f082578bedc8e03afa98c3659bfdd141f20530a4",
-      "class_hash": "0x5e1326b7ce35c3cab9eb6047c01bcf02b94cf3562eeaf191c89f4f829638067",
-      "original_class_hash": "0x5e1326b7ce35c3cab9eb6047c01bcf02b94cf3562eeaf191c89f4f829638067",
+      "class_hash": "0x50df594ad328d06a48bf41eb646d420621d251a7107b4475ddbf0e33daf25a1",
+      "original_class_hash": "0x50df594ad328d06a48bf41eb646d420621d251a7107b4475ddbf0e33daf25a1",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -6266,8 +6266,8 @@
     {
       "kind": "DojoContract",
       "address": "0x58e07e699e1e07684e84c3f792b02dbcade89e2f69546d5eb4b4c35f5ad934d",
-      "class_hash": "0x22864964e979d08f226de376cc42749384e55f61f556908daab301545a8379b",
-      "original_class_hash": "0x22864964e979d08f226de376cc42749384e55f61f556908daab301545a8379b",
+      "class_hash": "0x1b8c9118490dc6fb228e40072923c86f26936ba0ef67237c20ecb33d53ce3ea",
+      "original_class_hash": "0x1b8c9118490dc6fb228e40072923c86f26936ba0ef67237c20ecb33d53ce3ea",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -6570,8 +6570,8 @@
     {
       "kind": "DojoContract",
       "address": "0x4c0fc2d5f71557c87906c5115e286da197f281122f03d6b958554ff369472c5",
-      "class_hash": "0x37a299f3f177de54ae960af3b2f7553bb07334c15db8173095f47750ce9d230",
-      "original_class_hash": "0x37a299f3f177de54ae960af3b2f7553bb07334c15db8173095f47750ce9d230",
+      "class_hash": "0x165bb5690fde19001a287723299eb2832c728174d0e1968162551a133eef4ea",
+      "original_class_hash": "0x165bb5690fde19001a287723299eb2832c728174d0e1968162551a133eef4ea",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -6840,8 +6840,8 @@
     {
       "kind": "DojoContract",
       "address": "0x7648901aed56a98105f6085a0e80c75a4cce6786233b58066c9782fbd58470d",
-      "class_hash": "0x3f5d31026f24af483f6a5ef80b6498397140c793f33a234107f95595d3dc2de",
-      "original_class_hash": "0x3f5d31026f24af483f6a5ef80b6498397140c793f33a234107f95595d3dc2de",
+      "class_hash": "0x84e352317f2ce38482355971ac6946204d4902746363b3251dedc0bbd72fb1",
+      "original_class_hash": "0x84e352317f2ce38482355971ac6946204d4902746363b3251dedc0bbd72fb1",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -7126,8 +7126,8 @@
     {
       "kind": "DojoContract",
       "address": "0x5dca037560ad6652aca06a4f284d5e5fdc79990aad8beb9be5d520c6ced885b",
-      "class_hash": "0x15f46e79ca105495a693f7d9c9f7cfc43d1e3d4f365dd8f35ebb44396a92a06",
-      "original_class_hash": "0x15f46e79ca105495a693f7d9c9f7cfc43d1e3d4f365dd8f35ebb44396a92a06",
+      "class_hash": "0x1306a4bc4d4cd9acc1f36afba111f8b8c0a5dbc31278c1e78ade566588a37d1",
+      "original_class_hash": "0x1306a4bc4d4cd9acc1f36afba111f8b8c0a5dbc31278c1e78ade566588a37d1",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -13635,6 +13635,11 @@
           "key": false
         },
         {
+          "name": "pillager_realm_entity_id",
+          "type": "ID",
+          "key": false
+        },
+        {
           "name": "pillager_army_entity_id",
           "type": "ID",
           "key": false
@@ -13675,13 +13680,18 @@
           "key": false
         },
         {
+          "name": "destroyed_building_category",
+          "type": "BuildingCategory",
+          "key": false
+        },
+        {
           "name": "timestamp",
           "type": "u64",
           "key": false
         }
       ],
-      "class_hash": "0x112d45f9edb11e7325f9bcf0d40a198c332378e2893fd2af8d772390bfa73",
-      "original_class_hash": "0x112d45f9edb11e7325f9bcf0d40a198c332378e2893fd2af8d772390bfa73",
+      "class_hash": "0x1a5dfd36b8fc22cbed77fcdb15feabeeee3f8bc244dc00762135f2f53621901",
+      "original_class_hash": "0x1a5dfd36b8fc22cbed77fcdb15feabeeee3f8bc244dc00762135f2f53621901",
       "abi": [
         {
           "type": "impl",
@@ -14131,6 +14141,68 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "eternum::models::buildings::BuildingCategory",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "Castle",
+              "type": "()"
+            },
+            {
+              "name": "Resource",
+              "type": "()"
+            },
+            {
+              "name": "Farm",
+              "type": "()"
+            },
+            {
+              "name": "FishingVillage",
+              "type": "()"
+            },
+            {
+              "name": "Barracks",
+              "type": "()"
+            },
+            {
+              "name": "Market",
+              "type": "()"
+            },
+            {
+              "name": "ArcheryRange",
+              "type": "()"
+            },
+            {
+              "name": "Stable",
+              "type": "()"
+            },
+            {
+              "name": "TradingPost",
+              "type": "()"
+            },
+            {
+              "name": "WorkersHut",
+              "type": "()"
+            },
+            {
+              "name": "WatchTower",
+              "type": "()"
+            },
+            {
+              "name": "Walls",
+              "type": "()"
+            },
+            {
+              "name": "Storehouse",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "struct",
           "name": "eternum::models::event::BattlePillageData",
           "members": [
@@ -14149,6 +14221,10 @@
             {
               "name": "pillager_name",
               "type": "core::felt252"
+            },
+            {
+              "name": "pillager_realm_entity_id",
+              "type": "core::integer::u32"
             },
             {
               "name": "pillager_army_entity_id",
@@ -14181,6 +14257,10 @@
             {
               "name": "pillaged_resources",
               "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+            },
+            {
+              "name": "destroyed_building_category",
+              "type": "eternum::models::buildings::BuildingCategory"
             },
             {
               "name": "timestamp",
@@ -32255,568 +32335,6 @@
       "kind": "DojoModel",
       "members": [
         {
-          "name": "structure_id",
-          "type": "ID",
-          "key": true
-        },
-        {
-          "name": "attacker_realm_entity_id",
-          "type": "ID",
-          "key": true
-        },
-        {
-          "name": "army_id",
-          "type": "ID",
-          "key": true
-        },
-        {
-          "name": "winner",
-          "type": "BattleSide",
-          "key": false
-        },
-        {
-          "name": "pillaged_resources",
-          "type": "Span<(u8, u128)>",
-          "key": false
-        },
-        {
-          "name": "destroyed_building_category",
-          "type": "BuildingCategory",
-          "key": false
-        },
-        {
-          "name": "timestamp",
-          "type": "u64",
-          "key": false
-        }
-      ],
-      "class_hash": "0x7d67c5a868dea1fcac114916ed3df490630727565277e418a1758ba5e86f710",
-      "original_class_hash": "0x7d67c5a868dea1fcac114916ed3df490630727565277e418a1758ba5e86f710",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::model::IModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::option::Option::<core::integer::u32>",
-          "variants": [
-            {
-              "name": "Some",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "None",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::model::layout::FieldLayout",
-          "members": [
-            {
-              "name": "selector",
-              "type": "core::felt252"
-            },
-            {
-              "name": "layout",
-              "type": "dojo::model::layout::Layout"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::model::layout::FieldLayout>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::model::layout::FieldLayout>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::model::layout::Layout>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::model::layout::Layout>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::model::layout::Layout",
-          "variants": [
-            {
-              "name": "Fixed",
-              "type": "core::array::Span::<core::integer::u8>"
-            },
-            {
-              "name": "Struct",
-              "type": "core::array::Span::<dojo::model::layout::FieldLayout>"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<dojo::model::layout::Layout>"
-            },
-            {
-              "name": "Array",
-              "type": "core::array::Span::<dojo::model::layout::Layout>"
-            },
-            {
-              "name": "ByteArray",
-              "type": "()"
-            },
-            {
-              "name": "Enum",
-              "type": "core::array::Span::<dojo::model::layout::FieldLayout>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::model::introspect::Member",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "ty",
-              "type": "dojo::model::introspect::Ty"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::model::introspect::Member>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::model::introspect::Member>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::model::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<dojo::model::introspect::Member>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, dojo::model::introspect::Ty)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, dojo::model::introspect::Ty)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::model::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, dojo::model::introspect::Ty)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::model::introspect::Ty>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::model::introspect::Ty>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::model::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::model::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::model::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<dojo::model::introspect::Ty>"
-            },
-            {
-              "name": "Array",
-              "type": "core::array::Span::<dojo::model::introspect::Ty>"
-            },
-            {
-              "name": "ByteArray",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::model::IModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "namespace",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "tag",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "version",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u8"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "selector",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "name_hash",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "namespace_hash",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::option::Option::<core::integer::u32>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::option::Option::<core::integer::u32>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::model::layout::Layout"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::model::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "pillage_eventImpl",
-          "interface_name": "eternum::systems::combat::contracts::combat_systems::Ipillage_event"
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::combat::BattleSide",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Attack",
-              "type": "()"
-            },
-            {
-              "name": "Defence",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::buildings::BuildingCategory",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Castle",
-              "type": "()"
-            },
-            {
-              "name": "Resource",
-              "type": "()"
-            },
-            {
-              "name": "Farm",
-              "type": "()"
-            },
-            {
-              "name": "FishingVillage",
-              "type": "()"
-            },
-            {
-              "name": "Barracks",
-              "type": "()"
-            },
-            {
-              "name": "Market",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange",
-              "type": "()"
-            },
-            {
-              "name": "Stable",
-              "type": "()"
-            },
-            {
-              "name": "TradingPost",
-              "type": "()"
-            },
-            {
-              "name": "WorkersHut",
-              "type": "()"
-            },
-            {
-              "name": "WatchTower",
-              "type": "()"
-            },
-            {
-              "name": "Walls",
-              "type": "()"
-            },
-            {
-              "name": "Storehouse",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::combat::contracts::combat_systems::PillageEvent",
-          "members": [
-            {
-              "name": "structure_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "attacker_realm_entity_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "army_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "winner",
-              "type": "eternum::models::combat::BattleSide"
-            },
-            {
-              "name": "pillaged_resources",
-              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-            },
-            {
-              "name": "destroyed_building_category",
-              "type": "eternum::models::buildings::BuildingCategory"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::systems::combat::contracts::combat_systems::Ipillage_event",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::systems::combat::contracts::combat_systems::PillageEvent"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::combat::contracts::combat_systems::pillage_event::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "tag": "eternum-PillageEvent",
-      "qualified_path": "eternum::systems::combat::contracts::combat_systems::pillage_event",
-      "manifest_name": "eternum-PillageEvent-2194a43d"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
           "name": "entity_id",
           "type": "ID",
           "key": true
@@ -44236,6 +43754,7 @@
         }
       ],
       "tag": "eternum-StorehouseCapacityConfig",
+      "qualified_path": "eternum::models::config::storehouse_capacity_config",
       "manifest_name": "eternum-StorehouseCapacityConfig-3a722892"
     },
     {

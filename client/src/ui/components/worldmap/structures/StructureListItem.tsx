@@ -8,13 +8,13 @@ import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { isStructureImmune, Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import { formatTime } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { TroopMenuRow } from "../../military/TroopChip";
 import { InventoryResources } from "../../resources/InventoryResources";
-import clsx from "clsx";
-import { formatTime } from "@/ui/utils/utils";
 
 type StructureListItemProps = {
   structure: Structure;
@@ -26,6 +26,8 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const dojo = useDojo();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [showInventory, setShowInventory] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
@@ -89,15 +91,26 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
       <Sword
         key={"sword-2"}
         className={clsx("fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125", {
-          "pointer-events-none opacity-50": isImmune,
+          "opacity-50": isImmune,
         })}
-        onClick={() =>
-          setBattleView({
-            battleEntityId: updatedBattle?.entity_id,
-            targetArmy: structure.protector?.entity_id,
-            ownArmyEntityId: ownArmySelected?.entity_id,
-          })
-        }
+        onClick={() => {
+          if (!isImmune) {
+            setBattleView({
+              battleEntityId: updatedBattle?.entity_id,
+              targetArmy: structure.protector?.entity_id,
+              ownArmyEntityId: ownArmySelected?.entity_id,
+            });
+          }
+        }}
+        onMouseEnter={() => {
+          if (isImmune) {
+            setTooltip({
+              content: "This structure is currently immune to attacks.",
+              position: "top",
+            });
+          }
+        }}
+        onMouseLeave={() => setTooltip(null)}
       />
     );
     if (!ownArmySelected && !isBattleOngoing) {
@@ -119,16 +132,27 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         <Sword
           key={"sword-2"}
           className={clsx("fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125", {
-            "pointer-events-none opacity-50": isImmune,
+            "opacity-50": isImmune,
           })}
-          onClick={() =>
-            setBattleView({
-              engage: true,
-              battleEntityId: undefined,
-              ownArmyEntityId: ownArmySelected?.entity_id,
-              targetArmy: structure.protector?.entity_id,
-            })
-          }
+          onClick={() => {
+            if (!isImmune) {
+              setBattleView({
+                engage: true,
+                battleEntityId: undefined,
+                ownArmyEntityId: ownArmySelected?.entity_id,
+                targetArmy: structure.protector?.entity_id,
+              });
+            }
+          }}
+          onMouseEnter={() => {
+            if (isImmune) {
+              setTooltip({
+                content: `This structure is currently immune to attacks.`,
+                position: "top",
+              });
+            }
+          }}
+          onMouseLeave={() => setTooltip(null)}
         />,
       ];
     }
