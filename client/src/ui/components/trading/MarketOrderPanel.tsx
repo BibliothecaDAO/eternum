@@ -134,7 +134,7 @@ const MarketOrders = ({
       </div>
 
       <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
-        <OrderRowHeader resourceId={resourceId} />
+        <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
         <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96">
           {offers.map((offer, index) => (
@@ -148,7 +148,7 @@ const MarketOrders = ({
   );
 };
 
-const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
+const OrderRowHeader = ({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
   return (
     <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs font-bold ">
       <div>qty.</div>
@@ -163,7 +163,7 @@ const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
           </>
         )}
       </div>
-      <div className="flex">cost</div>
+      <div className="flex">{isBuy ? "gain" : "cost"}</div>
       <div className="ml-auto">Action</div>
     </div>
   );
@@ -269,8 +269,6 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return getRealmAddressName(offer.makerId);
   }, [offer.originName]);
 
-  console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
-
   const calculatedResourceAmount = useMemo(() => {
     return inputValue * EternumGlobalConfig.resources.resourcePrecision;
   }, [inputValue, getsDisplay, getTotalLords]);
@@ -278,8 +276,6 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   const calculatedLords = useMemo(() => {
     return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
   }, [inputValue, getsDisplay, getTotalLords]);
-
-  console.log("calculatedLords", calculatedLords);
 
   const onAccept = async () => {
     try {
@@ -531,7 +527,7 @@ const OrderCreation = ({
         </div>
         <div className="w-1/3 gap-1 flex flex-col">
           <div className="uppercase text-sm flex gap-2 font-bold">
-            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Cost
+            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> {isBuy ? "Cost" : "Gain"}
           </div>
           <NumberInput
             value={lords}
