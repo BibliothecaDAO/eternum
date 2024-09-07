@@ -11,13 +11,15 @@ export enum EventType {
 }
 
 export const TradeHistoryRowHeader = () => {
+  const headers = ["Time", "Type", "Taker", "Trade", "Price"];
+
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow overflow-y-auto mb-4">
-      <div className="uppercase text-xs font-bold">Time</div>
-      <div className="uppercase text-xs font-bold">Type</div>
-      <div className="uppercase text-xs font-bold">Taker</div>
-      <div className="uppercase text-xs font-bold">Trade</div>
-      <div className="uppercase text-xs font-bold">Price</div>
+      {headers.map((header, index) => (
+        <div key={index} className="uppercase text-xs font-bold">
+          {header}
+        </div>
+      ))}
     </div>
   );
 };
