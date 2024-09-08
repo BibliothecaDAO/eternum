@@ -46,11 +46,18 @@ impl<'a, 'b> EventProcessor<'a, 'b> {
                     DiscordMessageType::ChannelMessage(self.channel_id),
                     user_id,
                 );
-                self.message_sender.send(channel_message).await.unwrap();
-
+                self.message_sender
+                    .send(channel_message.clone())
+                    .await
+                    .unwrap();
+                tracing::info!("Sent channel message to user {:?}", channel_message);
                 let direct_message =
                     event.to_discord_message(DiscordMessageType::DirectMessage, user_id);
-                self.message_sender.send(direct_message).await.unwrap();
+                self.message_sender
+                    .send(direct_message.clone())
+                    .await
+                    .unwrap();
+                tracing::info!("Sent direct message to user {:?}", direct_message);
             }
         }
     }
@@ -58,19 +65,24 @@ impl<'a, 'b> EventProcessor<'a, 'b> {
     pub async fn process_event(&self, event: GameEventData) {
         match event {
             GameEventData::BattleStart(event) => {
+                tracing::info!("Processing BattleStart event");
                 self.send_messages_for_user(&event.defender, &event).await;
             }
             GameEventData::BattleJoin(event) => {
+                tracing::info!("Processing BattleJoin event");
                 self.send_messages_for_user(&event.joiner, &event).await;
             }
             GameEventData::BattleLeave(event) => {
+                tracing::info!("Processing BattleLeave event");
                 self.send_messages_for_user(&event.leaver, &event).await;
             }
             GameEventData::BattleClaim(event) => {
+                tracing::info!("Processing BattleClaim event");
                 self.send_messages_for_user(&event.previous_owner, &event)
                     .await;
             }
             GameEventData::BattlePillage(event) => {
+                tracing::info!("Processing BattlePillage event");
                 self.send_messages_for_user(&event.pillaged_structure_owner, &event)
                     .await;
             }
@@ -104,6 +116,7 @@ pub enum DiscordMessageType {
     ChannelMessage(NonZero<u64>),
 }
 
+#[derive(Debug, Clone)]
 pub enum DiscordMessage {
     DirectMessage {
         user_id: u64,
@@ -127,6 +140,7 @@ pub struct EventHandler {
 impl MessageDispatcher {
     pub async fn run(&mut self) {
         while let Some(message) = self.message_receiver.recv().await {
+            tracing::info!("Received message through channel");
             if let Err(e) = self.send_message(message).await {
                 tracing::warn!("Failed to send message: {:?}", e);
             }
@@ -141,11 +155,8 @@ impl MessageDispatcher {
                     Ok(channel) => {
                         tracing::info!("DM channel created for user {}", user_id);
 
-                        if let Err(e) = channel.send_message(&self.http, content).await {
-                            tracing::error!("Failed to send DM: {:?}", e);
-                        }
+                        channel.send_message(&self.http, content).await?;
 
-                        // channel.say(&self.http, content).await?;
                         tracing::info!("DM sent to user {}", user_id);
                     }
                     Err(e) => {

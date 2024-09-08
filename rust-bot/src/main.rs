@@ -94,6 +94,7 @@ async fn main(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
 ) -> shuttle_serenity::ShuttleSerenity {
+	tracing::error!("Launching Eternum's Discord bot");
     let config = Config::from_secrets(secret_store).expect("Failed to get config");
 
     let config_clone = config.clone();
