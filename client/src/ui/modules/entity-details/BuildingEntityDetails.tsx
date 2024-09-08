@@ -7,9 +7,10 @@ import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectP
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "../navigation/LeftNavigationModule";
-import { useComponentValue } from "@dojoengine/react";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
@@ -25,11 +26,14 @@ export const BuildingEntityDetails = () => {
     ownerEntityId: undefined,
   });
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isOwnedByPlayer, setIsOwnedByPlayer] = useState<boolean>(false);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
   const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
   const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
+
+  const { playerStructures } = useEntities();
 
   const building = useComponentValue(
     dojo.setup.components.Building,
@@ -37,6 +41,7 @@ export const BuildingEntityDetails = () => {
   );
 
   useEffect(() => {
+    const structures = playerStructures();
     if (building) {
       setBuildingState({
         buildingType: BuildingType[building.category as keyof typeof BuildingType],
@@ -44,14 +49,16 @@ export const BuildingEntityDetails = () => {
         ownerEntityId: building.outer_entity_id,
       });
       setIsPaused(building.paused);
+      setIsOwnedByPlayer(structures.some((structure) => structure.entity_id === building.outer_entity_id));
     } else {
       setBuildingState({
         buildingType: undefined,
         resource: undefined,
         ownerEntityId: undefined,
       });
+      setIsOwnedByPlayer(false);
     }
-  }, [selectedBuildingHex, building]);
+  }, [selectedBuildingHex, building, dojo.account.account.address]);
 
   const handlePauseResumeProduction = useCallback(() => {
     setIsLoading(true);
@@ -82,10 +89,9 @@ export const BuildingEntityDetails = () => {
     }
     setLeftNavigationView(View.None);
   }, [selectedBuildingHex, buildingState]);
-
   return (
-    <div>
-      <div className="flex flex-col p-1 w-full space-y-1 text-sm">
+    <div className="flex flex-col h-full">
+      <div className="flex-grow w-full space-y-1 text-sm">
         {buildingState.buildingType === BuildingType.Resource && buildingState.resource !== undefined && (
           <ResourceInfo
             isPaused={isPaused}
@@ -101,23 +107,17 @@ export const BuildingEntityDetails = () => {
             hintModal
           />
         )}
-        {buildingState.buildingType !== undefined && selectedBuildingHex && (
-          <div className="flex justify-center space-x-3">
-            <Button
-              onClick={handlePauseResumeProduction}
-              isLoading={isLoading}
-              variant="outline"
-              className="mt-3"
-              withoutSound
-            >
-              {isPaused ? "Resume" : "Pause"}
-            </Button>
-            <Button onClick={handleDestroyBuilding} variant="danger" className="mt-3" withoutSound>
-              Destroy
-            </Button>
-          </div>
-        )}
       </div>
+      {buildingState.buildingType !== undefined && selectedBuildingHex && isOwnedByPlayer && (
+        <div className="flex justify-center space-x-3 mb-4">
+          <Button onClick={handlePauseResumeProduction} isLoading={isLoading} variant="outline" withoutSound>
+            {isPaused ? "Resume" : "Pause"}
+          </Button>
+          <Button onClick={handleDestroyBuilding} variant="danger" withoutSound>
+            Destroy
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
