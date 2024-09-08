@@ -82,13 +82,13 @@ impl ToDiscordMessage for BattleJoin {
     fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
-        let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
+        let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has joined the battle at ({}, {})",
                 self.joiner_name, self.x, self.y
             ))
-            .description(duration_string)
+            .description(format!("Battle will end in {} seconds", duration_string))
             .footer(footer)
             .timestamp(Timestamp::now());
 
@@ -127,13 +127,13 @@ impl ToDiscordMessage for BattleLeave {
     fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
-        let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
+        let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has left the battle at ({}, {})",
                 self.leaver_name, self.x, self.y
             ))
-            .description(duration_string)
+            .description(format!("Battle will end in {} seconds", duration_string))
             .footer(footer)
             .timestamp(Timestamp::now());
 
@@ -170,7 +170,7 @@ pub(crate) struct BattleClaim {
 
 impl ToDiscordMessage for BattleClaim {
     fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
-        let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
+        let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has claimed a structure at ({}, {})",
@@ -215,7 +215,7 @@ pub(crate) struct BattlePillage {
 
 impl ToDiscordMessage for BattlePillage {
     fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
-        let footer = CreateEmbedFooter::new("https://alpha-eternum.realms.world/");
+        let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has pillaged a structure at ({}, {})",
