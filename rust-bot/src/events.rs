@@ -58,7 +58,7 @@ impl ToDiscordMessage for BattleStart {
             },
             DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
                 user_id: user_id,
-                content: CreateMessage::new().content("BATTLE STARTED!").embed(embed),
+                content: content,
             },
         }
     }
