@@ -124,7 +124,7 @@ export const getStructureByEntityId = (entityId: ID) => {
   const {
     account: { account },
     setup: {
-      components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm },
+      components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm, Position },
     },
   } = useDojo();
 
@@ -155,12 +155,14 @@ export const getStructureByEntityId = (entityId: ID) => {
               .replace(/([A-Z])/g, " $1")
               .trim()} ${structure?.entity_id}`;
 
+    const position = getComponentValue(Position, structureEntityId);
+
     return {
       ...structure,
       entityOwner,
       owner,
       name,
-      position: getPosition(structure.entity_id),
+      position,
       protector,
       isMine: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
       isMercenary: owner.address === 0n,
