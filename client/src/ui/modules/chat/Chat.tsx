@@ -233,8 +233,8 @@ export const Chat = () => {
         </SelectTrigger>
         <SelectContent>
           {players &&
-            players.map((player) => (
-              <SelectItem className="flex justify-between" key={player.address} value={player.addressName || "  "}>
+            players.map((player, index) => (
+              <SelectItem className="flex justify-between" key={index} value={player.addressName || "  "}>
                 {player.addressName}
               </SelectItem>
             ))}
