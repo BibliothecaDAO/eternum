@@ -81,6 +81,7 @@ export const BattleActions = ({
       setRaidWarning(true);
       return;
     }
+
     setLoading(Loading.Raid);
     setRaidWarning(false);
 
@@ -245,13 +246,13 @@ const ArmySelector = ({
   return (
     userArmiesInBattle &&
     userArmiesInBattle.length > 0 && (
-      <div className="self-center w-full flex flex-col justify-between bg-transparent size-xs col-span-2 text-gold text-center border border-gold rounded h-10">
+      <div className="self-center w-full flex flex-col justify-between bg-transparent size-xs col-span-2 text-gold text-center border border-gold rounded h-10 font-bold text-xl">
         <Select
           onValueChange={(a: string) => {
             setLocalSelectedUnit(Number(a));
           }}
         >
-          <SelectTrigger className="text-gold h-10">
+          <SelectTrigger className="text-gold h-10 text-lg">
             <SelectValue
               placeholder={
                 userArmiesInBattle.find((army) => localSelectedUnit === army?.entity_id || 0n)?.name || "Select army"
@@ -261,7 +262,7 @@ const ArmySelector = ({
           <SelectContent className="text-gold w-full">
             {userArmiesInBattle.map((army, index) => (
               <SelectItem
-                className="flex justify-center self-center text-sm pl-0 w-full"
+                className="flex justify-center self-center text-sm pl-0 w-full text-center"
                 key={index}
                 value={army?.entity_id?.toString() || ""}
               >
