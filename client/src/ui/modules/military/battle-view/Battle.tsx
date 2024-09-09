@@ -64,7 +64,7 @@ export const Battle = ({
         <div className="flex justify-center mb-2">
           {battleAdjusted && (
             <Button variant="primary" onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
-              !showBattleDetails ? "Battle Details" : "Overview"
+              !showBattleDetails ? "Details" : "Overview"
             }`}</Button>
           )}
           <HintModalButton className={`relative ${battleAdjusted ? "left-3" : ""}`} section={HintSection.Combat} />
@@ -92,8 +92,8 @@ export const Battle = ({
             />
             {showBattleDetails && battleAdjusted ? (
               <LockedResources
-                attackersResourcesEscrowEntityId={battleAdjusted!.attackers_resources_escrow_id}
-                defendersResourcesEscrowEntityId={battleAdjusted!.defenders_resources_escrow_id}
+                attackersResourcesEscrowEntityId={battleAdjusted?.attackers_resources_escrow_id}
+                defendersResourcesEscrowEntityId={battleAdjusted?.defenders_resources_escrow_id}
               />
             ) : (
               <BattleActions

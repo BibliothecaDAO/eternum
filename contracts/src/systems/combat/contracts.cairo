@@ -833,6 +833,8 @@ mod combat_systems {
             assert!(caller_army.battle_id == battle_id, "wrong battle id");
             assert!(caller_army.battle_side != BattleSide::None, "choose correct battle side");
 
+            let caller_army_side = caller_army.battle_side;
+
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
             battle.update_state();
@@ -874,7 +876,7 @@ mod combat_systems {
                     leaver: starknet::get_caller_address(),
                     leaver_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     leaver_army_entity_id: army_id,
-                    leaver_side: caller_army.battle_side,
+                    leaver_side: caller_army_side,
                     duration_left: battle.duration_left,
                     x: battle_position.x,
                     y: battle_position.y,
