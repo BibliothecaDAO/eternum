@@ -73,7 +73,7 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
               <div className="italic text-xs col-span-1 align-middle self-center">
                 {event.event_id !== EventType.BattleStart ? `${formatElapsedTime(elapsedTime)} since start` : ""}
               </div>
-              <div className="col-span-3 align-middle self-center" key={event.id}>
+              <div className="col-span-3 align-top self-start" key={event.id}>
                 {emoji} {shortString.decodeShortString(doerName.toString())} {action} with{" "}
                 {currencyFormat(getTotalTroops(doerArmy), 0)} troops
               </div>
