@@ -31,17 +31,16 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
 
   const events = useMemo(() => {
     return [...(battleSide === BattleSide.Attack ? battleStartData : []), ...battleJoinData, ...battleLeaveData].sort(
-      (a, b) => a.timestamp - b.timestamp,
+      (a, b) => (a?.timestamp || 0) - (b?.timestamp || 0),
     );
   }, [battleStartData, battleJoinData, battleLeaveData]);
 
-  const battleStartTime = battleStartData?.[0]?.timestamp;
+  const battleStartTime = battleStartData?.[0]?.timestamp || 0;
 
   return (
-    <div
-      className={`px-4 pt-4 col-span-2 p-2 w-full overflow-y-auto max-h-[35vh] h-full no-scrollbar text-left`}
-    >
+    <div className={`px-4 pt-4 col-span-2 p-2 w-full overflow-y-auto max-h-[35vh] h-full no-scrollbar text-left`}>
       {events.map((event) => {
+        if (!event) return null;
         let doerName;
         let doerArmyEntityId: ID;
         if (event.event_id === EventType.BattleLeave) {
