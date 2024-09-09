@@ -7,7 +7,7 @@ type ButtonProps = {
   className?: string;
   isPulsing?: boolean;
   disabled?: boolean;
-  variant?: "primary" | "secondary" | "success" | "red" | "danger" | "default" | "outline";
+  variant?: "primary" | "secondary" | "success" | "red" | "danger" | "default" | "outline" | "opaque";
   isLoading?: boolean;
   withoutSound?: boolean;
   size?: "xs" | "md";
@@ -26,6 +26,8 @@ const STYLES = {
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
   danger: "bg-red border-red !text-gold bg-transparent hover:bg-red/90 ",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
+  opaque:
+    "px-6 py-2 bg-black font-semibold text-lg uppercase tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:bg-black/90 bg-black/40",
   loadingStyle: "relative",
 };
 

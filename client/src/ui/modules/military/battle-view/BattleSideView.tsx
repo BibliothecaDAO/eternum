@@ -1,13 +1,13 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { Structure } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
-import { getRealmNameById } from "@/ui/utils/realms";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useState } from "react";
-import { BattleDetails } from "./BattleDetails";
+import { BattleHistory } from "./BattleHistory";
 import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
 
@@ -38,6 +38,7 @@ export const BattleSideView = ({
     },
   } = useDojo();
 
+  const { getAddressNameFromEntity } = getEntitiesUtils();
   const [loading, setLoading] = useState<boolean>(false);
 
   const ownArmy = useArmyByArmyEntityId(ownArmyEntityId || 0);
@@ -57,11 +58,11 @@ export const BattleSideView = ({
 
   return (
     <div
-      className={`flex col-span-5 -bottom-y px-4 bg-[#1b1a1a] bg-hex-bg ${
-        battleSide === BattleSide.Attack ? "flex-row" : "flex-row-reverse"
+      className={`flex col-span-5 -bottom-y bg-[#1b1a1a] mx-4 bg-hex-bg ${
+        battleSide === BattleSide.Attack ? "flex-row " : "flex-row-reverse "
       }`}
     >
-      <div className="flex flex-col bg-gold/10 border-x px-2 border-gold/20">
+      <div className="flex flex-col bg-gold/10 border-x px-2 border-gold/20 mx-4">
         <EntityAvatar
           address={battleSide === BattleSide.Attack ? account.address : battleEntityId?.toString()}
           structure={structure}
@@ -71,9 +72,10 @@ export const BattleSideView = ({
           {React.Children.toArray(
             ownSideArmies.map((army) => {
               if (!army) return;
+              const addressName = getAddressNameFromEntity(army.entity_id);
               return (
                 <div className="flex justify-around px-2 py-1 rounded bg-black/70 text-xs flex gap-2 border-gold/10 border">
-                  <span className="self-center align-middle">{getRealmNameById(army?.realm?.entity_id || 0)}</span>
+                  <span className="self-center align-middle">{addressName}</span>
                   <span className="self-center align-middle">{army?.name}</span>
                   {army?.isMine && (
                     <div className="h-6 border px-1 rounded self-center">
@@ -100,7 +102,7 @@ export const BattleSideView = ({
         )}
       </div>
       {showBattleDetails && battleEntityId ? (
-        <BattleDetails armies={ownSideArmies} />
+        <BattleHistory battleSide={battleSide} battleId={battleEntityId} />
       ) : (
         <TroopRow troops={ownSideTroopsUpdated} />
       )}
