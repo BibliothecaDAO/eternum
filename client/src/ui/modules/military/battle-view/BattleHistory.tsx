@@ -39,7 +39,7 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
 
   return (
     <div
-      className={`px-4 pt-4 col-span-2 p-2 border-l-4 border-r-4 border-gold/20 w-full overflow-y-auto max-h-[35vh] h-full no-scrollbar text-left`}
+      className={`px-4 pt-4 col-span-2 p-2 w-full overflow-y-auto max-h-[35vh] h-full no-scrollbar text-left`}
     >
       {events.map((event) => {
         let doerName;

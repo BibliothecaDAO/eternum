@@ -58,11 +58,11 @@ export const BattleSideView = ({
 
   return (
     <div
-      className={`flex col-span-5 -bottom-y bg-[#1b1a1a] bg-hex-bg ${
+      className={`flex col-span-5 -bottom-y bg-[#1b1a1a] mx-4 bg-hex-bg ${
         battleSide === BattleSide.Attack ? "flex-row " : "flex-row-reverse "
       }`}
     >
-      <div className="flex flex-col bg-gold/10 border-x px-2 border-gold/20">
+      <div className="flex flex-col bg-gold/10 border-x px-2 border-gold/20 mx-4">
         <EntityAvatar
           address={battleSide === BattleSide.Attack ? account.address : battleEntityId?.toString()}
           structure={structure}
