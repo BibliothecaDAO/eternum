@@ -63,7 +63,7 @@ export const Battle = ({
       >
         <div className="flex justify-center mb-2">
           {battleAdjusted && (
-            <Button variant="primary" onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
+            <Button variant="opaque" onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
               !showBattleDetails ? "Details" : "Overview"
             }`}</Button>
           )}
