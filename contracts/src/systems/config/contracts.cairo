@@ -16,12 +16,6 @@ trait IWorldConfig {
 
 
 #[dojo::interface]
-trait IRealmFreeMintConfig {
-    fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>);
-}
-
-
-#[dojo::interface]
 trait IWeightConfig {
     fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
 }
@@ -185,51 +179,6 @@ mod config_systems {
             set!(world, (WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract }));
         }
     }
-
-    #[abi(embed_v0)]
-    impl RealmFreeMintConfigCustomImpl of super::IRealmFreeMintConfig<ContractState> {
-        fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>) {
-            assert_caller_is_admin(world);
-
-            let detached_resource_id = world.uuid();
-            let detached_resource_count = resources.len();
-            let mut resources = resources;
-            let mut index = 0;
-            loop {
-                match resources.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                        assert(resource_amount > 0, 'amount must not be 0');
-
-                        set!(
-                            world,
-                            (
-                                DetachedResource {
-                                    entity_id: detached_resource_id,
-                                    index,
-                                    resource_type,
-                                    resource_amount: resource_amount
-                                },
-                            )
-                        );
-
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                };
-            };
-
-            // we define the config indexes so we can have more than 1
-            let config_index = REALM_FREE_MINT_CONFIG_ID + config_id.into();
-
-            set!(
-                world, (RealmFreeMintConfig { config_id: config_index, detached_resource_id, detached_resource_count })
-            );
-        }
-    }
-
 
     #[abi(embed_v0)]
     impl MapConfigCustomImpl of super::IMapConfig<ContractState> {

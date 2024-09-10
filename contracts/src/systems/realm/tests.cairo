@@ -10,9 +10,7 @@ use eternum::models::position::{Position, Coord};
 use eternum::models::realm::Realm;
 use eternum::models::resources::Resource;
 
-use eternum::systems::config::contracts::{
-    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait
-};
+use eternum::systems::config::contracts::{config_systems};
 
 use eternum::systems::realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
 
@@ -46,18 +44,6 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     set_storehouse_capacity_config(config_systems_address);
-
-    // set initially minted resources
-    let initial_resources = array![
-        (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
-    ];
-
-    let realm_free_mint_config_dispatcher = IRealmFreeMintConfigDispatcher { contract_address: config_systems_address };
-
-    let REALM_FREE_MINT_CONFIG_ID = 0;
-
-    realm_free_mint_config_dispatcher
-        .set_mint_config(config_id: REALM_FREE_MINT_CONFIG_ID, resources: initial_resources.span());
 
     (world, realm_systems_dispatcher)
 }
@@ -96,17 +82,6 @@ fn test_realm_create() {
             order,
             position.clone(),
         );
-
-    // let realm_initial_resource_1 = get!(
-    //     world, (realm_entity_id, INITIAL_RESOURCE_1_TYPE), Resource
-    // );
-
-    // assert(realm_initial_resource_1.balance == INITIAL_RESOURCE_1_AMOUNT, 'wrong mint 1 amount');
-
-    // let realm_initial_resource_2 = get!(
-    //     world, (realm_entity_id, INITIAL_RESOURCE_2_TYPE), Resource
-    // );
-    // assert(realm_initial_resource_2.balance == INITIAL_RESOURCE_2_AMOUNT, 'wrong mint 2 amount');
 
     let realm_owner = get!(world, realm_entity_id, Owner);
     assert(realm_owner.address == contract_address_const::<'caller'>(), 'wrong realm owner');

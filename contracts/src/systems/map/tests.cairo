@@ -23,7 +23,7 @@ use eternum::models::weight::Weight;
 use eternum::systems::combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait};
 
 use eternum::systems::config::contracts::{
-    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait, IMapConfigDispatcher,
+    config_systems, IMapConfigDispatcher,
     IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IStaminaConfigDispatcher,
     IStaminaConfigDispatcherTrait, IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
 };
