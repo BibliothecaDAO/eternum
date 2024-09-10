@@ -175,7 +175,7 @@ export class ArmyManager {
     this.currentChunkKey = chunkKey;
     if (this.cachedChunks.has(chunkKey)) {
       console.debug(`Chunk key ${chunkKey} found in cache. Applying cached chunk.`);
-      this.applyCachedChunk(chunkKey);
+      this.computeAndCacheChunk(chunkKey);
     } else {
       console.debug(`Chunk key ${chunkKey} not found in cache. Computing and caching chunk.`);
       this.computeAndCacheChunk(chunkKey);
@@ -203,30 +203,31 @@ export class ArmyManager {
     console.debug(`Parsed chunkKey into startRow: ${startRow}, startCol: ${startCol}`);
     const visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
     console.debug(`Found ${visibleArmies.length} visible armies for chunk`);
-
-    const matrices = new THREE.InstancedBufferAttribute(new Float32Array(1000 * 16), 16);
     let count = 0;
-
+    if (!this.armyModel.mesh.userData.entityIdMap) {
+      this.armyModel.mesh.userData.entityIdMap = new Map();
+    }
     visibleArmies.forEach((army, index) => {
       console.debug(`Processing army with entityId: ${army.entityId} at index: ${index}`);
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       this.armyModel.dummyObject.position.copy(position);
       this.armyModel.dummyObject.scale.copy(this.scale);
+      console.debug(
+        `Position: ${position.x}, ${position.y}, ${position.z}, Scale: ${this.armyModel.dummyObject.scale.x}, ${this.armyModel.dummyObject.scale.y}, ${this.armyModel.dummyObject.scale.z}`,
+      );
       this.armyModel.dummyObject.updateMatrix();
-      matrices.set(this.armyModel.dummyObject.matrix.elements, index * 16);
+      this.armyModel.mesh.setMatrixAt(index, this.armyModel.dummyObject.matrix);
       count++;
-      if (!this.armyModel.mesh.userData.entityIdMap) {
-        this.armyModel.mesh.userData.entityIdMap = new Map();
-      }
-      this.armyModel.mesh.userData.entityIdMap.set(this.armies.size, army.entityId);
+      this.armyModel.mesh.userData.entityIdMap.set(index, army.entityId);
       this.armies.set(army.entityId, { ...army, matrixIndex: index });
     });
 
     console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count}`);
-    this.cachedChunks.set(chunkKey, { matrices, count });
-    this.armyModel.mesh.instanceMatrix.copy(matrices);
+    this.cachedChunks.set(chunkKey, { matrices: this.armyModel.mesh.instanceMatrix.clone() as any, count });
     this.armyModel.mesh.count = count;
+    console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count} and matrices:`);
     this.armyModel.mesh.instanceMatrix.needsUpdate = true;
+    this.armyModel.mesh.computeBoundingSphere();
     this.updateLabelsForChunk(chunkKey);
   }
 
@@ -279,6 +280,7 @@ export class ArmyManager {
   }
 
   public moveArmy(entityId: ID, hexCoords: Position) {
+    // @ts-ignore
     console.debug(`moveArmy called with entityId: ${entityId}, hexCoords: (${hexCoords.x}, ${hexCoords.y})`);
     const armyData = this.armies.get(entityId);
     if (!armyData) {
