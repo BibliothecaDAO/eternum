@@ -125,30 +125,42 @@ export class ArmyManager {
   }
 
   async onUpdate(update: ArmySystemUpdate) {
+    console.debug("onUpdate called with update:", update);
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, isMine, battleId, currentHealth } = update;
 
     if (currentHealth <= 0) {
+      console.debug(`Army with entityId ${entityId} has currentHealth <= 0`);
       if (this.armies.has(entityId)) {
+        console.debug(`Removing army with entityId ${entityId}`);
         this.removeArmy(entityId);
         return;
       } else {
+        console.debug(`Army with entityId ${entityId} not found`);
         return;
       }
     }
 
     if (battleId !== 0) {
+      console.debug(`Army with entityId ${entityId} is in battle with battleId ${battleId}`);
       if (this.armies.has(entityId)) {
+        console.debug(`Removing army with entityId ${entityId} due to battle`);
         this.removeArmy(entityId);
         return;
-      } else return;
+      } else {
+        console.debug(`Army with entityId ${entityId} not found`);
+        return;
+      }
     }
 
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    console.debug(`Computed position for army with entityId ${entityId}:`, position);
 
     if (this.armies.has(entityId)) {
+      console.debug(`Moving army with entityId ${entityId} to new position`);
       this.moveArmy(entityId, position);
     } else {
+      console.debug(`Adding new army with entityId ${entityId} at position`, position);
       this.addArmy(entityId, position, isMine);
     }
   }
@@ -207,6 +219,7 @@ export class ArmyManager {
         this.armyModel.mesh.userData.entityIdMap = new Map();
       }
       this.armyModel.mesh.userData.entityIdMap.set(this.armies.size, army.entityId);
+      this.armies.set(army.entityId, { ...army, matrixIndex: index });
     });
 
     console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count}`);
@@ -260,38 +273,54 @@ export class ArmyManager {
   public addArmy(entityId: ID, hexCoords: Position, isMine: boolean) {
     if (this.armies.has(entityId)) return;
 
-    this.armies.set(entityId, { entityId, matrixIndex: this.armies.size, hexCoords, isMine });
+    this.armies.set(entityId, { entityId, matrixIndex: this.armies.size - 1, hexCoords, isMine });
     this.invalidateCache();
     this.computeAndCacheChunk(this.currentChunkKey!);
   }
 
   public moveArmy(entityId: ID, hexCoords: Position) {
+    console.debug(`moveArmy called with entityId: ${entityId}, hexCoords: (${hexCoords.x}, ${hexCoords.y})`);
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) {
+      console.debug(`No army found with entityId: ${entityId}`);
+      return;
+    }
 
     const { x, y } = hexCoords.getNormalized();
     const { x: armyDataX, y: armyDataY } = armyData.hexCoords.getNormalized();
-    if (armyDataX === x && armyDataY === y) return;
+    if (armyDataX === x && armyDataY === y) {
+      console.debug(`Army with entityId: ${entityId} is already at the target position: (${x}, ${y})`);
+      return;
+    }
 
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.invalidateCache();
+    console.debug(
+      `Army with entityId: ${entityId} moved to new hexCoords: (${x}, ${y}), matrixIndex: ${armyData.matrixIndex}`,
+    );
 
     const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
     const currentPosition = new THREE.Vector3();
     this.armyModel.mesh.getMatrixAt(armyData.matrixIndex, this.armyModel.dummyObject.matrix);
     currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
-
+    this.armyModel.setAnimationState(armyData.matrixIndex, true);
     this.movingArmies.set(entityId, {
       startPos: currentPosition,
       endPos: newPosition,
       progress: 0,
     });
+    console.debug(
+      `Army with entityId: ${entityId} movement started from (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.z}) to (${newPosition.x}, ${newPosition.y}, ${newPosition.z})`,
+    );
 
     this.movingLabels.set(entityId, {
       startPos: currentPosition,
       endPos: newPosition,
       progress: 0,
     });
+    console.debug(
+      `Label for army with entityId: ${entityId} movement started from (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.z}) to (${newPosition.x}, ${newPosition.y}, ${newPosition.z})`,
+    );
   }
 
   public removeArmy(entityId: ID) {
