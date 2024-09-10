@@ -143,7 +143,7 @@ const MarketOrders = ({
         </div>
       </div>
 
-      <OrderCreation initialBid={lowestPrice} resourceId={resourceId} entityId={entityId} isBuy={isBuy} />
+      <OrderCreation resourceId={resourceId} entityId={entityId} isBuy={isBuy} />
     </div>
   );
 };
@@ -174,7 +174,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   const {
     account: { account },
     setup: {
-      systemCalls: { cancel_order, accept_partial_order, accept_order },
+      systemCalls: { cancel_order, accept_partial_order },
     },
   } = useDojo();
 
@@ -188,17 +188,14 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
 
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
-  // TODO Distance
   const travelTime = useMemo(
     () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
     [entityId, offer],
   );
 
   const returnResources = useMemo(() => {
-    return isBuy
-      ? [ResourcesIds.Lords, offer.takerGets[0].amount]
-      : [offer.takerGets[0].resourceId, offer.takerGets[0].amount];
-  }, []);
+    return [offer.takerGets[0].resourceId, offer.takerGets[0].amount];
+  }, [offer]);
 
   const [loading, setLoading] = useState(false);
 
@@ -223,15 +220,6 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
-  const productionManager = useProductionManager(entityId, offer.makerGets[0].resourceId);
-
-  const production = useMemo(() => {
-    return productionManager.getProduction();
-  }, [entityId, offer.makerId, offer.tradeId]);
-
-  const balance = useMemo(() => {
-    return productionManager.balance(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId]);
 
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
@@ -261,9 +249,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return donkeyBalance > donkeysNeeded;
   }, [donkeyBalance, donkeysNeeded]);
 
-  const canAccept = useMemo(() => {
-    return enoughDonkeys;
-  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId, enoughDonkeys]);
+  const canAccept = enoughDonkeys;
 
   const accountName = useMemo(() => {
     return getRealmAddressName(offer.makerId);
@@ -397,12 +383,10 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
 };
 
 const OrderCreation = ({
-  initialBid,
   entityId,
   resourceId,
   isBuy = false,
 }: {
-  initialBid: number;
   entityId: ID;
   resourceId: ResourcesIds;
   isBuy?: boolean;
@@ -476,7 +460,7 @@ const OrderCreation = ({
 
   const resourceBalance = useMemo(() => {
     return resourceProductionManager.balance(currentDefaultTick);
-  }, [resourceProduction, resourceProduction, currentDefaultTick, resourceId]);
+  }, [resourceProduction, currentDefaultTick, resourceId]);
 
   const lordsProductionManager = useProductionManager(entityId, ResourcesIds.Lords);
 
