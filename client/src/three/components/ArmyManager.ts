@@ -14,7 +14,7 @@ const RADIUS_OFFSET = 0.09;
 export class ArmyManager {
   private scene: THREE.Scene;
   private armyModel: ArmyModel;
-  private armies: Map<ID, { matrixIndex: number; hexCoords: Position; isMine: boolean }> = new Map();
+  private armies: Map<ID, { entityId: ID; matrixIndex: number; hexCoords: Position; isMine: boolean }> = new Map();
   private scale: THREE.Vector3;
   private movingArmies: Map<ID, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
@@ -203,6 +203,10 @@ export class ArmyManager {
       this.armyModel.dummyObject.updateMatrix();
       matrices.set(this.armyModel.dummyObject.matrix.elements, index * 16);
       count++;
+      if (!this.armyModel.mesh.userData.entityIdMap) {
+        this.armyModel.mesh.userData.entityIdMap = new Map();
+      }
+      this.armyModel.mesh.userData.entityIdMap.set(this.armies.size, army.entityId);
     });
 
     console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count}`);
@@ -222,13 +226,14 @@ export class ArmyManager {
       .filter(([_, army]) => {
         const { x, y } = army.hexCoords.getNormalized();
         const isVisible =
-          x >= startCol &&
-          x < startCol + this.renderChunkSize.width &&
-          y >= startRow &&
-          y < startRow + this.renderChunkSize.height;
-        console.debug(
-          `Army with entityId: ${army.entityId} at hexCoords: (${x}, ${y}) is ${isVisible ? "visible" : "not visible"}`,
-        );
+          x >= startCol - this.renderChunkSize.width / 2 &&
+          x <= startCol + this.renderChunkSize.width / 2 &&
+          y >= startRow - this.renderChunkSize.height / 2 &&
+          y <= startRow + this.renderChunkSize.height / 2;
+        if (isVisible) {
+          console.debug(`Army with entityId: ${army.entityId} at hexCoords: (${x}, ${y}) is visible`);
+        }
+
         return isVisible;
       })
       .map(([entityId, army]) => ({ entityId, hexCoords: army.hexCoords, isMine: army.isMine }));
@@ -255,7 +260,7 @@ export class ArmyManager {
   public addArmy(entityId: ID, hexCoords: Position, isMine: boolean) {
     if (this.armies.has(entityId)) return;
 
-    this.armies.set(entityId, { matrixIndex: this.armies.size, hexCoords, isMine });
+    this.armies.set(entityId, { entityId, matrixIndex: this.armies.size, hexCoords, isMine });
     this.invalidateCache();
     this.computeAndCacheChunk(this.currentChunkKey!);
   }
