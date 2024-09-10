@@ -8,12 +8,7 @@ export class MarketManager {
   player: ContractAddress;
   resourceId: ResourcesIds;
 
-  constructor(
-    private setup: SetupResult,
-    bankEntityId: ID,
-    player: ContractAddress,
-    resourceId: ResourcesIds,
-  ) {
+  constructor(private setup: SetupResult, bankEntityId: ID, player: ContractAddress, resourceId: ResourcesIds) {
     this.bankEntityId = bankEntityId;
     this.resourceId = resourceId;
     this.player = player;
@@ -143,14 +138,15 @@ export class MarketManager {
     return Number(inputPrice);
   };
 
-  // price difference between swapping 1 resource and swapping N resources
-  public slippage = (inputAmount: number, isSellingResource: boolean) => {
+  public slippage = (inputAmount: number, isBuyResource: boolean) => {
     const marketPrice = this.getMarketPrice();
 
-    const outputAmount = isSellingResource ? this.sellResource(inputAmount, 0) : this.buyResource(inputAmount, 0);
+    const outputAmount = isBuyResource ? this.buyResource(inputAmount, 0) : this.sellResource(inputAmount, 0);
 
-    const executionPrice = outputAmount / inputAmount;
-    const slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
+    const marketPriceAmount = isBuyResource ? inputAmount / marketPrice : inputAmount * marketPrice;
+
+    // Calculate the slippage percentage
+    const slippagePercentage = ((marketPriceAmount - outputAmount) / marketPriceAmount) * 100;
 
     return slippagePercentage;
   };
