@@ -32,17 +32,39 @@ export enum BattleStatus {
 export enum RaidStatus {
   isRaidable = "Raid!",
   NoStamina = "Not enough stamina",
-  NoStructure = "No structure to raid",
+  NoStructureToClaim = "No structure to raid",
   OwnStructure = "Can't raid your own structure",
   NoArmy = "No army selected",
   ArmyNotInBattle = "Selected army not in this battle",
+}
+
+export enum LeaveStatus {
+  Leave = "Leave",
+  NoBattleToLeave = "No battle to leave",
+  DefenderCantLeave = "Defender can't leave ongoing battle",
+  NoArmyInBattle = "Your armies aren't in this battle",
+}
+
+export enum BattleStartStatus {
+  BattleStart = "Start battle",
+  NothingToAttack = "Nothing to attack",
+  CantStart = "Can't start a battle now.",
+}
+
+export enum ClaimStatus {
+  Claimable = "Claim",
+  NoSelectedArmy = "No selected army",
+  BattleOngoing = "Battle ongoing",
+  NoStructureToClaim = "No structure to claim",
+  StructureIsMine = "Can't claim your own structure",
+  SelectedArmyIsDead = "Selected army is dead",
 }
 
 export class BattleManager {
   battleEntityId: ID;
   dojo: DojoResult;
   battleType: BattleType | undefined;
-  private battleIsClaimable: boolean | undefined;
+  private battleIsClaimable: ClaimStatus | undefined;
 
   constructor(battleEntityId: ID, dojo: DojoResult) {
     this.battleEntityId = battleEntityId;
@@ -190,50 +212,50 @@ export class BattleManager {
     selectedArmy: ArmyInfo | undefined,
     structure: Structure | undefined,
     defender: ArmyInfo | undefined,
-  ): boolean {
-    if (!selectedArmy) return false;
+  ): ClaimStatus {
+    if (!selectedArmy) return ClaimStatus.NoSelectedArmy;
     if (this.battleIsClaimable) return this.battleIsClaimable;
 
     if (this.isBattleOngoing(currentTimestamp)) {
-      return false;
+      return ClaimStatus.BattleOngoing;
     }
 
     if (!structure) {
-      this.battleIsClaimable = false;
-      return false;
+      this.battleIsClaimable = ClaimStatus.NoStructureToClaim;
+      return ClaimStatus.NoStructureToClaim;
     }
 
     if (this.getBattleType(structure) !== BattleType.Structure) {
-      this.battleIsClaimable = false;
-      return false;
+      this.battleIsClaimable = ClaimStatus.NoStructureToClaim;
+      return ClaimStatus.NoStructureToClaim;
     }
 
     if (defender === undefined) {
-      this.battleIsClaimable = true;
-      return true;
+      this.battleIsClaimable = ClaimStatus.Claimable;
+      return ClaimStatus.Claimable;
     }
 
     const updatedBattle = this.getUpdatedBattle(currentTimestamp);
     if (updatedBattle && updatedBattle.defence_army_health.current > 0n) {
-      this.battleIsClaimable = false;
-      return false;
+      this.battleIsClaimable = ClaimStatus.BattleOngoing;
+      return ClaimStatus.BattleOngoing;
     }
 
     if (defender.health.current > 0n) {
-      this.battleIsClaimable = false;
-      return false;
+      this.battleIsClaimable = ClaimStatus.BattleOngoing;
+      return ClaimStatus.BattleOngoing;
     }
 
     if (structure.isMine) {
-      return false;
+      return ClaimStatus.StructureIsMine;
     }
 
     if (selectedArmy.health.current <= 0n) {
-      return false;
+      return ClaimStatus.SelectedArmyIsDead;
     }
 
-    this.battleIsClaimable = true;
-    return true;
+    this.battleIsClaimable = ClaimStatus.Claimable;
+    return ClaimStatus.Claimable;
   }
 
   public isRaidable(
@@ -244,14 +266,14 @@ export class BattleManager {
   ): RaidStatus {
     if (!selectedArmy) return RaidStatus.NoArmy;
 
-    if (!structure) return RaidStatus.NoStructure;
+    if (!structure) return RaidStatus.NoStructureToClaim;
 
     if (this.isBattleOngoing(currentTimestamp) && selectedArmy.battle_id !== this.battleEntityId) {
       return RaidStatus.ArmyNotInBattle;
     }
 
     if (this.getBattleType(structure) === BattleType.Hex) {
-      return RaidStatus.NoStructure;
+      return RaidStatus.NoStructureToClaim;
     }
 
     if (structure.isMine) return RaidStatus.OwnStructure;
@@ -262,22 +284,22 @@ export class BattleManager {
     return RaidStatus.isRaidable;
   }
 
-  public isAttackable(defender: ArmyInfo | undefined): boolean {
-    if (!defender) return false;
+  public isAttackable(defender: ArmyInfo | undefined): BattleStartStatus {
+    if (!defender) return BattleStartStatus.NothingToAttack;
 
-    if (!this.isBattle() && defender.health.current > 0n) return true;
+    if (!this.isBattle() && defender.health.current > 0n) return BattleStartStatus.BattleStart;
 
-    return false;
+    return BattleStartStatus.CantStart;
   }
 
-  public isLeavable(currentTimestamp: number, selectedArmy: ArmyInfo | undefined): boolean {
-    if (!this.isBattle()) return false;
+  public isLeavable(currentTimestamp: number, selectedArmy: ArmyInfo | undefined): LeaveStatus {
+    if (!this.isBattle()) return LeaveStatus.NoBattleToLeave;
 
-    if (!selectedArmy) return false;
+    if (!selectedArmy) return LeaveStatus.NoArmyInBattle;
 
-    if (selectedArmy.protectee && this.isBattleOngoing(currentTimestamp)) return false;
+    if (selectedArmy.protectee && this.isBattleOngoing(currentTimestamp)) return LeaveStatus.NoBattleToLeave;
 
-    return true;
+    return LeaveStatus.Leave;
   }
 
   public isEmpty(): boolean {
