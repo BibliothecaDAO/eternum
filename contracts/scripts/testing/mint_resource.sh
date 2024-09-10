@@ -46,12 +46,12 @@ read -p "Do you want to mint all resources? (y/n): " mint_all
 
 if [[ $mint_all == "y" || $mint_all == "Y" ]]; then
     read -p "Enter amount for all resources: " all_amount
-    mint_all_resources "$entity_id" "$all_amount"
+    mint_all_resources "$entity_id" "$((all_amount * 1000))"
 else
 	read -p "Enter resource type: " resource_type
 	read -p "Enter amount: " amount
     commands+=(
-        "sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$amount $DEV_RESOURCE_SYSTEMS mint"
+        "sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$((amount * 1000)) $DEV_RESOURCE_SYSTEMS mint"
     )
 fi
 

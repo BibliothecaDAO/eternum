@@ -12,7 +12,6 @@ import {
   findResourceById,
   ID,
   RESOURCE_BUILDING_COSTS_SCALED,
-  RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
@@ -80,7 +79,7 @@ export const SelectPreviewBuildingMenu = () => {
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(structureEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
+      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
     });
 
   const [selectedTab, setSelectedTab] = useState(1);
@@ -106,6 +105,7 @@ export const SelectPreviewBuildingMenu = () => {
               const resource = findResourceById(resourceId)!;
 
               const cost = [...RESOURCE_BUILDING_COSTS_SCALED[resourceId], ...RESOURCE_INPUTS_SCALED[resourceId]];
+
               const hasBalance = checkBalance(cost);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
@@ -114,6 +114,7 @@ export const SelectPreviewBuildingMenu = () => {
               );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+
               return (
                 <BuildingCard
                   className={clsx({
@@ -381,7 +382,7 @@ export const ResourceInfo = ({
   entityId: ID | undefined;
   isPaused?: boolean;
 }) => {
-  const cost = RESOURCE_INPUTS[resourceId];
+  const cost = RESOURCE_INPUTS_SCALED[resourceId];
 
   const buildingCost = RESOURCE_BUILDING_COSTS_SCALED[resourceId];
 
@@ -495,7 +496,7 @@ export const BuildingInfo = ({
   const population = BUILDING_POPULATION[buildingId] || 0;
   const capacity = BUILDING_CAPACITY[buildingId] || 0;
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS[resourceProduced] || 0;
+  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
 
   const perTick = RESOURCE_OUTPUTS[resourceProduced] || 0;
 
@@ -610,7 +611,7 @@ export const BuildingInfo = ({
 };
 
 const getConsumedBy = (resourceProduced: ResourcesIds) => {
-  return Object.entries(RESOURCE_INPUTS)
+  return Object.entries(RESOURCE_INPUTS_SCALED)
     .map(([resourceId, inputs]) => {
       const resource = inputs.find(
         (input: { resource: number; amount: number }) => input.resource === resourceProduced,
