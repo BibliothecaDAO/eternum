@@ -1498,25 +1498,6 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      HyperstructureFinished: (() => {
-        return defineComponent(
-          world,
-          {
-            hyperstructure_entity_id: RecsType.Number,
-            id: RecsType.Number,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "eternum",
-              name: "HyperstructureFinished",
-              types: ["u32", "u32", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
       AcceptOrder: (() => {
         return defineComponent(
           world,
@@ -1562,19 +1543,61 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
+      HyperstructureFinished: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            contributor_entity_id: RecsType.Number,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "HyperstructureFinished",
+              types: ["u32", "u32", "u32", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
       HyperstructureCoOwnersChange: (() => {
         return defineComponent(
           world,
           {
+            id: RecsType.Number,
             hyperstructure_entity_id: RecsType.Number,
-            timestamp: RecsType.Number,
             co_owners: RecsType.StringArray,
+            timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "eternum",
               name: "HyperstructureCoOwnersChange",
-              types: ["u32", "u64", "array"],
+              types: ["u32", "u32", "array", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      HyperstructureContribution: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            contributor_entity_id: RecsType.Number,
+            contributions: RecsType.StringArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "HyperstructureContribution",
+              types: ["u32", "u32", "u32", "array", "u64"],
               customTypes: [],
             },
           },
