@@ -41,7 +41,6 @@ export enum RaidStatus {
 export enum LeaveStatus {
   Leave = "Leave",
   NoBattleToLeave = "No battle to leave",
-  DefenderCantLeave = "Defender can't leave ongoing battle",
   NoArmyInBattle = "Your armies aren't in this battle",
 }
 
