@@ -35,7 +35,7 @@ export const setProductionConfig = async (account: Account, provider: EternumPro
       cost: RESOURCE_INPUTS_SCALED[resourceId].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount,
+          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
         };
       }),
     };
