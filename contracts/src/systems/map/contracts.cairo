@@ -74,6 +74,9 @@ mod map_systems {
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
             unit_entity_owner.assert_caller_owner(world);
 
+            let unit_quantity = get!(world, unit_id, Quantity);
+            assert(unit_quantity.value.is_non_zero(), 'unit quantity is zero');
+
             // ensure unit can move
             get!(world, unit_id, Movable).assert_moveable();
 
@@ -84,7 +87,7 @@ mod map_systems {
 
             // explore coordinate, pay food and mint reward
             let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
-                world, unit_entity_owner.entity_owner_id
+                world, unit_entity_owner, unit_quantity
             );
 
             InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward, 0, false, false);
@@ -132,11 +135,14 @@ mod map_systems {
             tile
         }
 
-        fn pay_food_and_get_explore_reward(world: IWorldDispatcher, realm_entity_id: ID) -> Span<(u8, u128)> {
+        fn pay_food_and_get_explore_reward(
+            world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity
+        ) -> Span<(u8, u128)> {
+            let unit_owner_id = unit_entity_owner.entity_owner_id;
             let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
-            let mut wheat_pay_amount = explore_config.wheat_burn_amount;
-            let mut fish_pay_amount = explore_config.fish_burn_amount;
-            ResourceFoodImpl::pay(world, realm_entity_id, wheat_pay_amount, fish_pay_amount);
+            let mut wheat_pay_amount = explore_config.wheat_burn_amount * unit_quantity.value;
+            let mut fish_pay_amount = explore_config.fish_burn_amount * unit_quantity.value;
+            ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
 
             let (resource_types, resources_probs) = split_resources_and_probs();
             let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true)
