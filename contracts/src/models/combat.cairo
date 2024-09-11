@@ -734,11 +734,14 @@ mod tests {
     use dojo::world::IWorldDispatcherTrait;
     use eternum::constants::ID;
     use eternum::constants::ResourceTypes;
+    use eternum::models::capacity::{CapacityCategory};
     use eternum::models::combat::BattleCustomTrait;
     use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::combat::BattleHealthCustomTrait;
     use eternum::models::combat::TroopsTrait;
+    use eternum::models::config::CapacityConfigCategory;
     use eternum::models::resources::ResourceCustomTrait;
+
     use eternum::models::resources::ResourceTransferLockCustomTrait;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::world::spawn_eternum;
@@ -1152,6 +1155,8 @@ mod tests {
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
         };
+        // set defence army capacity category
+        set!(world, (CapacityCategory { entity_id: defence_army.entity_id, category: CapacityConfigCategory::Army }));
 
         // give defence army stone
         let mut defence_army_stone_resource: Resource = Resource {
@@ -1172,6 +1177,10 @@ mod tests {
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
         };
+
+        // set attack army capacity category
+
+        set!(world, (CapacityCategory { entity_id: attack_army.entity_id, category: CapacityConfigCategory::Army }));
 
         // give the army wheat and coal
         let mut attack_army_wheat_resource: Resource = Resource {
