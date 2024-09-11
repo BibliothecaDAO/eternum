@@ -60,11 +60,20 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
       } catch (error: any) {
         let errorMessage = error.message;
 
-        // Check for the specific error structure
         if (error.message.includes("Failure reason:")) {
           const match = error.message.match(/Failure reason: \\"(.*?)"/);
           if (match && match[1]) {
             errorMessage = match[1].slice(0, -1);
+          } else {
+            const matchOther = error.message.match(/Failure reason: "(.*?)"/);
+            if (matchOther && matchOther[1]) {
+              errorMessage = matchOther[1].slice(0, -1);
+            } else {
+              const matchHex = error.message.match(/Failure reason: (0x[0-9a-f]+) \('(.*)'\)/);
+              if (matchHex && matchHex[2]) {
+                errorMessage = matchHex[2];
+              }
+            }
           }
         }
         toast(errorMessage);

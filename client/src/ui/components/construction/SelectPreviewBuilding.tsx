@@ -12,7 +12,6 @@ import {
   findResourceById,
   ID,
   RESOURCE_BUILDING_COSTS_SCALED,
-  RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
@@ -80,7 +79,7 @@ export const SelectPreviewBuildingMenu = () => {
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(structureEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
+      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
     });
 
   const [selectedTab, setSelectedTab] = useState(1);
@@ -106,6 +105,7 @@ export const SelectPreviewBuildingMenu = () => {
               const resource = findResourceById(resourceId)!;
 
               const cost = [...RESOURCE_BUILDING_COSTS_SCALED[resourceId], ...RESOURCE_INPUTS_SCALED[resourceId]];
+
               const hasBalance = checkBalance(cost);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
@@ -114,6 +114,7 @@ export const SelectPreviewBuildingMenu = () => {
               );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+
               return (
                 <BuildingCard
                   className={clsx({
@@ -381,7 +382,7 @@ export const ResourceInfo = ({
   entityId: ID | undefined;
   isPaused?: boolean;
 }) => {
-  const cost = RESOURCE_INPUTS[resourceId];
+  const cost = RESOURCE_INPUTS_SCALED[resourceId];
 
   const buildingCost = RESOURCE_BUILDING_COSTS_SCALED[resourceId];
 
@@ -391,8 +392,8 @@ export const ResourceInfo = ({
 
   const { getBalance } = getResourceBalance();
 
-  const usedIn = useMemo(() => {
-    return getUsedIn(resourceId);
+  const consumedBy = useMemo(() => {
+    return getConsumedBy(resourceId);
   }, [resourceId]);
 
   return (
@@ -401,32 +402,36 @@ export const ResourceInfo = ({
 
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
-      {population !== 0 && (
-        <div className="font-bold uppercase">
-          <span className="font-bold">Population </span> <br />+{population}{" "}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          {population !== 0 && (
+            <div className="font-bold uppercase">
+              <span className="font-bold">Population </span> <br />+{population}{" "}
+            </div>
+          )}
+
+          {capacity !== 0 && (
+            <div className="pt-3 uppercase">
+              <span className="font-bold">Capacity </span>
+              <br /> +{capacity}
+            </div>
+          )}
         </div>
-      )}
 
-      {capacity !== 0 && (
-        <div className=" pt-3  uppercase">
-          <span className="font-bold">Capacity </span>
-          <br /> +{capacity}
-        </div>
-      )}
+        {findResourceById(resourceId)?.trait && (
+          <div className="uppercase">
+            <div className="w-full font-bold">Produces</div>
 
-      {findResourceById(resourceId)?.trait && (
-        <div className=" pt-3 uppercase">
-          <div className="w-full font-bold ">Produces</div>
-
-          <div className="flex gap-2">
-            + {EternumGlobalConfig.resources.resourceAmountPerTick}
-            <ResourceIcon className="self-center" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-            {findResourceById(resourceId)?.trait || ""} every cycle
+            <div className="flex gap-2">
+              + {EternumGlobalConfig.resources.resourceAmountPerTick}
+              <ResourceIcon className="self-center" resource={findResourceById(resourceId)?.trait || ""} size="md" />
+              {findResourceById(resourceId)?.trait || ""} per/s
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      <div className="pt-3 font-bold uppercase">consumed per/s</div>
+      <div className="font-bold uppercase">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
           const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
@@ -442,7 +447,7 @@ export const ResourceInfo = ({
         })}
       </div>
 
-      <div className="pt-3 font-bold uppercase">One Time Cost</div>
+      <div className="pt-2 font-bold uppercase">One Time Cost</div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
@@ -457,19 +462,14 @@ export const ResourceInfo = ({
           );
         })}
       </div>
-      {usedIn.length > 0 && (
+      {consumedBy.length > 0 && (
         <>
-          <div className="mb-4 font-bold uppercase">Used in</div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="pt-1 font-bold uppercase ">Consumed by</div>
+          <div className="flex flex-row">
             {React.Children.toArray(
-              usedIn.map((resourceId, index) => {
-                return (
-                  <>
-                    {findResourceById(resourceId || 0)?.trait}
-                    <ResourceIcon key={index} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
-                  </>
-                );
-              }),
+              consumedBy.map((resourceId) => (
+                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+              )),
             )}
           </div>
         </>
@@ -496,14 +496,14 @@ export const BuildingInfo = ({
   const population = BUILDING_POPULATION[buildingId] || 0;
   const capacity = BUILDING_CAPACITY[buildingId] || 0;
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS[resourceProduced] || 0;
+  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
 
   const perTick = RESOURCE_OUTPUTS[resourceProduced] || 0;
 
   const { getBalance } = getResourceBalance();
 
   const usedIn = useMemo(() => {
-    return getUsedIn(resourceProduced);
+    return getConsumedBy(resourceProduced);
   }, [resourceProduced]);
 
   return (
@@ -517,47 +517,48 @@ export const BuildingInfo = ({
 
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
-      {resourceProduced !== 0 && (
-        <div className=" flex flex-wrap mt-2">
-          <div className="font-bold uppercase w-full">Produces </div>
-          <div className="flex justify-between">
-            +{perTick}
-            <ResourceIcon
-              className="self-center mx-1"
-              resource={findResourceById(resourceProduced)?.trait || ""}
-              size="md"
-            />
-            {findResourceById(resourceProduced)?.trait || ""}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          {population !== 0 && (
+            <div className="font-bold uppercase">
+              <span className="font-bold">Population </span> <br />+{population}{" "}
+            </div>
+          )}
+
+          {capacity !== 0 && (
+            <div className="pt-3 uppercase">
+              <span className="font-bold">Capacity </span>
+              <br /> +{capacity}
+            </div>
+          )}
+        </div>
+
+        {resourceProduced !== 0 && (
+          <div className="uppercase">
+            <div className="w-full font-bold">Produces</div>
+
+            <div className="flex gap-2">
+              +{perTick}
+              <ResourceIcon
+                className="self-center"
+                resource={findResourceById(resourceProduced)?.trait || ""}
+                size="md"
+              />
+              {findResourceById(resourceProduced)?.trait || ""}
+            </div>
           </div>
-        </div>
-      )}
-
-      {population !== 0 ? (
-        <div className="font-bold pt-3 ">
-          <span className="uppercase">Population</span>
-          <br /> +{population}
-        </div>
-      ) : (
-        ""
-      )}
-
-      {capacity !== 0 ? (
-        <div className="font-bold pt-3 ">
-          <span className="uppercase">Capacity</span>
-          <br /> +{capacity}
-        </div>
-      ) : (
-        ""
-      )}
+        )}
+      </div>
 
       {ongoingCost && ongoingCost.length ? (
         <>
-          <div className="mb-4 font-bold">Cost per cycle</div>
+          <div className="font-bold uppercase">consumed per/s</div>
           <div className="grid grid-cols-2 gap-2">
             {resourceProduced !== 0 &&
               ongoingCost &&
               Object.keys(ongoingCost).map((resourceId, index) => {
                 const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
+
                 return (
                   <ResourceCost
                     key={`ongoing-cost-${index}`}
@@ -576,8 +577,8 @@ export const BuildingInfo = ({
 
       {cost.length != 0 && (
         <>
-          <div className="pt-3 font-bold uppercase mb-1"> One time cost</div>
-          <div className="grid grid-cols-1 gap-2 text-sm">
+          <div className="pt-2 font-bold uppercase">One Time Cost</div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
             {Object.keys(cost).map((resourceId, index) => {
               const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
               return (
@@ -595,17 +596,12 @@ export const BuildingInfo = ({
       )}
       {usedIn.length > 0 && (
         <>
-          <div className="pt-3 font-bold uppercase">Used in</div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="pt-3 pb-1 font-bold uppercase ">Consumed by</div>
+          <div className="flex flex-row">
             {React.Children.toArray(
-              usedIn.map((resourceId, index) => {
-                return (
-                  <>
-                    {findResourceById(resourceId || 0)?.trait}
-                    <ResourceIcon key={index} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
-                  </>
-                );
-              }),
+              usedIn.map((resourceId) => (
+                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+              )),
             )}
           </div>
         </>
@@ -614,8 +610,8 @@ export const BuildingInfo = ({
   );
 };
 
-const getUsedIn = (resourceProduced: ResourcesIds) => {
-  return Object.entries(RESOURCE_INPUTS)
+const getConsumedBy = (resourceProduced: ResourcesIds) => {
+  return Object.entries(RESOURCE_INPUTS_SCALED)
     .map(([resourceId, inputs]) => {
       const resource = inputs.find(
         (input: { resource: number; amount: number }) => input.resource === resourceProduced,

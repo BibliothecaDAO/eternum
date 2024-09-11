@@ -49,7 +49,10 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
       >
         <div className="flex flex-row items-center">
           <div className="bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 border border-y w-16">
-            <div className={`${capacityColor} h-1 rounded-full`} style={{ width: `${weightPercentage}%` }}></div>
+            <div
+              className={`${capacityColor} h-1 rounded-full`}
+              style={{ width: `${Math.min(Number(weightPercentage), 100)}%` }} // Cap width at 100%
+            ></div>
           </div>
 
           <Weight className="fill-gold w-3 ml-1" />

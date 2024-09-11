@@ -20,6 +20,7 @@ export const generateMockHyperstructureFinishedEvent = (
 ): ComponentValue<ClientComponents["events"]["HyperstructureFinished"]["schema"]> => {
   return {
     hyperstructure_entity_id: hyperstructureEntityId,
+    contributor_entity_id: 1,
     timestamp: TIMESTAMP,
     id: 1,
   };
@@ -37,6 +38,7 @@ export const generateMockCoOwnersChangeEvent = (
       ]
     : CO_OWNERS.map((value) => value);
   return {
+    id: 1,
     hyperstructure_entity_id: hyperstructureEntityId,
     timestamp: timestamp || TIMESTAMP,
     co_owners: coOwners as any,

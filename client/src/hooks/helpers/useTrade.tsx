@@ -19,7 +19,7 @@ type TradeResources = {
   makerGets: Resource[];
 };
 
-function useTrade() {
+export function useTrade() {
   const {
     setup: {
       components: { Resource, Trade, Realm, DetachedResource, EntityName },

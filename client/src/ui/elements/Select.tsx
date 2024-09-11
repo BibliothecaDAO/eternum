@@ -127,17 +127,4 @@ const SelectSeparator = React.forwardRef<
 ));
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 
-export {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-
-  //// Raises knip issues, if needed uncomment
-  // SelectGroup,
-  // SelectLabel,
-  // SelectScrollDownButton,
-  // SelectScrollUpButton,
-  // SelectSeparator,
-};
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue };

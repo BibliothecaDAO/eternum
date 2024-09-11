@@ -78,7 +78,7 @@ export const MarketModal = () => {
             <div>History</div>
           </div>
         ),
-        component: <MarketTradingHistory structureEntityId={structureEntityId} />,
+        component: <MarketTradingHistory />,
       },
       {
         key: "all",

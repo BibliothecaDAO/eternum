@@ -2,7 +2,7 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { BattleSide, StructureType } from "@bibliothecadao/eternum";
 import { Entity, getComponentValue, runQuery } from "@dojoengine/recs";
 import { describe, expect, it, vi } from "vitest";
-import { BattleManager, BattleType } from "../BattleManager";
+import { BattleManager, BattleStartStatus, BattleType, ClaimStatus } from "../BattleManager";
 import {
   ARMY_TROOP_COUNT,
   BATTLE_ENTITY_ID,
@@ -554,7 +554,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, undefined, structure, defender);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.NoSelectedArmy);
   });
 
   it("should return false if battle is ongoing", () => {
@@ -569,18 +569,19 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.BattleOngoing);
   });
 
   it("should return false if structure is undefined", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+    vi.mocked(getComponentValue).mockReturnValue(undefined);
 
     const army = generateMockArmyInfo(true);
     const defender = generateMockArmyInfo(true);
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, undefined, defender);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.NoStructureToClaim);
   });
 
   it("should return true if defender is undefined", () => {
@@ -594,15 +595,16 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, undefined);
 
-    expect(isClaimable).toBe(true);
+    expect(isClaimable).toBe(ClaimStatus.Claimable);
   });
 
   it("should return false if structure, selectedArmy and defender are undefined", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
-    const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, undefined, undefined, undefined);
+    const army = generateMockArmyInfo(true);
+    const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, undefined, undefined);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.NoStructureToClaim);
   });
 
   it("should return true if it's a structure battle and there's no protector", () => {
@@ -617,7 +619,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, undefined);
 
-    expect(isClaimable).toBe(true);
+    expect(isClaimable).toBe(ClaimStatus.Claimable);
   });
 
   it("should return false if battle defence army has health", () => {
@@ -632,7 +634,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.BattleOngoing);
   });
 
   it("should return false if structure protector has health", () => {
@@ -647,7 +649,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.BattleOngoing);
   });
 
   it("should return false if the structure is mine", () => {
@@ -656,13 +658,13 @@ describe("isClaimable", () => {
     const army = generateMockArmyInfo(false);
     const structure = generateMockStructure(StructureType.FragmentMine, true);
     const battle = generateMockBatle(false, undefined, BattleSide.Defence);
-    const defender = generateMockArmyInfo(true);
+    const defender = generateMockArmyInfo(false);
 
     vi.mocked(getComponentValue).mockReturnValue(battle);
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.StructureIsMine);
   });
 
   it("should return false if the selected army has no health", () => {
@@ -671,13 +673,13 @@ describe("isClaimable", () => {
     const army = generateMockArmyInfo(false);
     const structure = generateMockStructure(StructureType.FragmentMine);
     const battle = generateMockBatle(false, undefined, BattleSide.Defence);
-    const defender = generateMockArmyInfo(true);
+    const defender = generateMockArmyInfo(false);
 
     vi.mocked(getComponentValue).mockReturnValue(battle);
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(false);
+    expect(isClaimable).toBe(ClaimStatus.SelectedArmyIsDead);
   });
 
   it("should return true for a normal case", () => {
@@ -692,7 +694,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, selectedArmy, structure, protector);
 
-    expect(isClaimable).toBe(true);
+    expect(isClaimable).toBe(ClaimStatus.Claimable);
   });
 });
 
@@ -704,7 +706,7 @@ describe("isAttackable", () => {
 
     const isAttackable = battleManager.isAttackable(undefined);
 
-    expect(isAttackable).toBe(false);
+    expect(isAttackable).toBe(BattleStartStatus.NothingToAttack);
   });
 
   it("Should return false if the battle manager returns a valid battle", () => {
@@ -717,7 +719,7 @@ describe("isAttackable", () => {
 
     const isAttackable = battleManager.isAttackable(defender);
 
-    expect(isAttackable).toBe(false);
+    expect(isAttackable).toBe(BattleStartStatus.CantStart);
   });
 
   it("Should return false if the battle manager returns an undefined battle and the defender is dead", () => {
@@ -729,7 +731,7 @@ describe("isAttackable", () => {
 
     const isAttackable = battleManager.isAttackable(defender);
 
-    expect(isAttackable).toBe(false);
+    expect(isAttackable).toBe(BattleStartStatus.CantStart);
   });
 
   it("Should return true if the battle manager returns an undefined battle and the defender is alive", () => {
@@ -741,6 +743,6 @@ describe("isAttackable", () => {
 
     const isAttackable = battleManager.isAttackable(defender);
 
-    expect(isAttackable).toBe(true);
+    expect(isAttackable).toBe(BattleStartStatus.BattleStart);
   });
 });

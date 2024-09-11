@@ -586,17 +586,26 @@ mod combat_systems {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
-            get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
+            let attacking_army_entity_owner = get!(world, attacking_army_id, EntityOwner);
+            attacking_army_entity_owner.assert_caller_owner(world);
 
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
             let battle_config = BattleConfigCustomImpl::get(world);
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
             let defending_army_owner_entity_id = get!(world, defending_army_id, EntityOwner).entity_owner_id;
+
             let defending_army_owner_structure = get!(world, defending_army_owner_entity_id, Structure);
             if defending_army_owner_structure.category != StructureCategory::None {
                 defending_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
             }
+
+            let attacking_army_owner_entity_id = attacking_army_entity_owner.entity_owner_id;
+            let attacking_army_owner_structure = get!(world, attacking_army_owner_entity_id, Structure);
+            if attacking_army_owner_structure.category != StructureCategory::None {
+                attacking_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
+            }
+
             if defending_army.battle_id.is_non_zero() {
                 // defending army appears to be in battle
                 // so we want to update the defending army's battle status
@@ -824,6 +833,8 @@ mod combat_systems {
             assert!(caller_army.battle_id == battle_id, "wrong battle id");
             assert!(caller_army.battle_side != BattleSide::None, "choose correct battle side");
 
+            let caller_army_side = caller_army.battle_side;
+
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
             battle.update_state();
@@ -865,7 +876,7 @@ mod combat_systems {
                     leaver: starknet::get_caller_address(),
                     leaver_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     leaver_army_entity_id: army_id,
-                    leaver_side: caller_army.battle_side,
+                    leaver_side: caller_army_side,
                     duration_left: battle.duration_left,
                     x: battle_position.x,
                     y: battle_position.y,

@@ -138,7 +138,7 @@ const MarketOrders = ({
       </div>
 
       <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
-        <OrderRowHeader resourceId={resourceId} />
+        <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
         <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative">
           {offers.map((offer, index) => (
@@ -152,12 +152,12 @@ const MarketOrders = ({
         </div>
       </div>
 
-      <OrderCreation initialBid={lowestPrice} resourceId={resourceId} entityId={entityId} isBuy={isBuy} />
+      <OrderCreation resourceId={resourceId} entityId={entityId} isBuy={isBuy} />
     </div>
   );
 };
 
-const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
+const OrderRowHeader = ({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
   return (
     <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs font-bold ">
       <div>qty.</div>
@@ -172,7 +172,7 @@ const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
           </>
         )}
       </div>
-      <div className="flex">cost</div>
+      <div className="flex">{isBuy ? "gain" : "cost"}</div>
       <div className="ml-auto">Action</div>
     </div>
   );
@@ -207,17 +207,14 @@ const OrderRow = ({
 
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
-  // TODO Distance
   const travelTime = useMemo(
     () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
     [entityId, offer],
   );
 
   const returnResources = useMemo(() => {
-    return isBuy
-      ? [ResourcesIds.Lords, offer.takerGets[0].amount]
-      : [offer.takerGets[0].resourceId, offer.takerGets[0].amount];
-  }, []);
+    return [offer.takerGets[0].resourceId, offer.takerGets[0].amount];
+  }, [offer]);
 
   const [loading, setLoading] = useState(false);
 
@@ -398,12 +395,10 @@ const OrderRow = ({
 };
 
 const OrderCreation = ({
-  initialBid,
   entityId,
   resourceId,
   isBuy = false,
 }: {
-  initialBid: number;
   entityId: ID;
   resourceId: ResourcesIds;
   isBuy?: boolean;
@@ -477,7 +472,7 @@ const OrderCreation = ({
 
   const resourceBalance = useMemo(() => {
     return resourceProductionManager.balance(currentDefaultTick);
-  }, [resourceProduction, resourceProduction, currentDefaultTick, resourceId]);
+  }, [resourceProduction, currentDefaultTick, resourceId]);
 
   const lordsProductionManager = useProductionManager(entityId, ResourcesIds.Lords);
 
@@ -528,7 +523,7 @@ const OrderCreation = ({
         </div>
         <div className="w-1/3 gap-1 flex flex-col">
           <div className="uppercase text-sm flex gap-2 font-bold">
-            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Cost
+            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> {isBuy ? "Cost" : "Gain"}
           </div>
           <NumberInput
             value={lords}

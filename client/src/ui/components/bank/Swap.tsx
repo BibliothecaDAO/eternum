@@ -197,6 +197,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
                   <tr>
                     <td>Slippage</td>
                     <td className="text-left text-danger px-8">
+                      -
                       {(
                         marketManager.slippage(
                           isBuyResource
