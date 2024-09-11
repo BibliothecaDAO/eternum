@@ -15,7 +15,7 @@ export interface Quest {
   id: QuestId;
   name: string;
   description: string;
-  steps: string[];
+  steps: (string | React.ReactNode)[];
   prizes: Prize[];
   depth: number;
   status: QuestStatus;

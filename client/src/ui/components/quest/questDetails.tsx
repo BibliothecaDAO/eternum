@@ -7,7 +7,7 @@ import clsx from "clsx";
 interface StaticQuestInfo {
   name: string;
   description: string;
-  steps: string[] | React.ReactNode;
+  steps: (string | React.ReactNode)[];
   prizes: Prize[];
   depth: number;
 }
