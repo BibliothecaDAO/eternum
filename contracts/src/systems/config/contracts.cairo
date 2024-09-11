@@ -366,6 +366,12 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             let mut resource_production_config: ProductionConfig = get!(world, resource_type, ProductionConfig);
+            assert!(
+                resource_production_config.amount.is_zero(),
+                "Production config already set for {} resource",
+                resource_type
+            );
+
             resource_production_config.amount = amount;
 
             loop {
