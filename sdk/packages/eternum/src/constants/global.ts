@@ -48,13 +48,6 @@ export const EternumGlobalConfig = {
     [CapacityConfigCategory.Army]: 10_000,
     [CapacityConfigCategory.Storehouse]: 10_000_000_000,
   },
-  carryCapacityKg: {
-    [CapacityConfigCategory.None]: 0,
-    [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
-    [CapacityConfigCategory.Donkey]: 100,
-    [CapacityConfigCategory.Army]: 10,
-    [CapacityConfigCategory.Storehouse]: 10_000_000,
-  },
   speed: {
     donkey: 6,
     army: 1,

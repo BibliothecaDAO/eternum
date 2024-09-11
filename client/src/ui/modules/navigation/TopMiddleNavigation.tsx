@@ -10,6 +10,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { gramToKg } from "@/ui/utils/utils";
 import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
@@ -94,8 +95,8 @@ export const TopMiddleNavigation = () => {
       )?.value || 0;
 
     return (
-      quantity * EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse] +
-      EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse]
+      quantity * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
+      gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])
     );
   }, [structureEntityId]);
 

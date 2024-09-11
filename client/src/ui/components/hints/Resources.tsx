@@ -1,14 +1,14 @@
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, gramToKg } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
   EternumGlobalConfig,
+  findResourceById,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
-  findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
@@ -40,7 +40,7 @@ export const Resources = () => {
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
           <span className="font-bold">
             {` ${
-              EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse] /
+              gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) /
               (EternumGlobalConfig.resources.resourceMultiplier * EternumGlobalConfig.resources.resourcePrecision)
             }M capacity per resource type`}
           </span>

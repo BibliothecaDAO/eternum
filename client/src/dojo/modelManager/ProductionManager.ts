@@ -1,4 +1,4 @@
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
 import {
   BuildingType,
   CapacityConfigCategory,
@@ -88,8 +88,8 @@ export class ProductionManager {
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
-      (Number(quantity) * EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse] +
-        EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse]) *
+      (Number(quantity) * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
+        gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) *
       EternumGlobalConfig.resources.resourcePrecision
     );
   }
