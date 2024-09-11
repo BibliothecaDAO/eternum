@@ -1,8 +1,10 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuestClaimStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
+import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
 import clsx from "clsx";
@@ -14,8 +16,6 @@ import { Assistant } from "../assistant/Assistant";
 import { Guilds } from "../guilds/Guilds";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
-import { BuildingThumbs } from "./LeftNavigationModule";
-import { useQuery } from "@/hooks/helpers/useQuery";
 
 export enum MenuEnum {
   military = "military",

@@ -6,6 +6,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
+import { BuildingThumbs } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import clsx from "clsx";
 import { motion } from "framer-motion";
@@ -17,23 +18,6 @@ import { EntityDetails } from "../entity-details/EntityDetails";
 import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
-
-export const BuildingThumbs = {
-  hex: "/images/buildings/thumb/question.png",
-  military: "/images/buildings/thumb/sword.png",
-  construction: "/images/buildings/thumb/crane.png",
-  trade: "/images/buildings/thumb/trade.png",
-  resources: "/images/buildings/thumb/resources.png",
-  banks: "/images/buildings/thumb/banks.png",
-  worldStructures: "/images/buildings/thumb/world-map.png",
-  leaderboard: "/images/buildings/thumb/leaderboard.png",
-  worldMap: "/images/buildings/thumb/world-map.png",
-  squire: "/images/buildings/thumb/squire.png",
-  question: "/images/buildings/thumb/question-wood.png",
-  scale: "/images/buildings/thumb/scale.png",
-  settings: "/images/buildings/thumb/settings.png",
-  guild: "/images/buildings/thumb/guilds.png",
-};
 
 export enum View {
   None,
