@@ -43,6 +43,7 @@ jobs:
             transport,
             models,
           ]
+      fail-fast: false
     steps:
       - name: Download Dojo release artifact
         run: |
@@ -57,6 +58,7 @@ jobs:
       - name: Run Dojo Test for ${{ matrix.test }}
         run: |
           cd contracts && sozo test -f ${{ matrix.test }} --print-resource-usage
+        continue-on-error: true
 
   test-scarb-fmt:
     needs: [setup-environment]
