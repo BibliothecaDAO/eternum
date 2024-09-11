@@ -23,8 +23,8 @@ mod hyperstructure_systems {
     use eternum::{
         alias::ID, constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards},
         models::{
-            config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig},
-            hyperstructure::{Progress, Contribution, HyperstructureUpdate},
+            config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig, CapacityConfigCategory},
+            capacity::{CapacityCategory}, hyperstructure::{Progress, Contribution, HyperstructureUpdate},
             owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceCustomImpl, ResourceCost},
@@ -88,6 +88,7 @@ mod hyperstructure_systems {
                         category: StructureCategory::Hyperstructure,
                         created_at: starknet::get_block_timestamp()
                     },
+                    CapacityCategory { entity_id: new_uuid, category: CapacityConfigCategory::Structure },
                     StructureCount { coord, count: 1 },
                     Position { entity_id: new_uuid, x: coord.x, y: coord.y },
                     Owner { entity_id: new_uuid, address: starknet::get_caller_address() },

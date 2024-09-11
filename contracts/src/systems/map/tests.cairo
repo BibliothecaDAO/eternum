@@ -5,7 +5,6 @@ use eternum::alias::ID;
 
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
-use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Battle};
 use eternum::models::combat::{Health, Troops};
 use eternum::models::config::{TickConfig, TickImpl, StaminaConfig};
@@ -23,9 +22,9 @@ use eternum::models::weight::Weight;
 use eternum::systems::combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait};
 
 use eternum::systems::config::contracts::{
-    config_systems, IMapConfigDispatcher,
-    IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IStaminaConfigDispatcher,
-    IStaminaConfigDispatcherTrait, IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
+    config_systems, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
+    IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait, IMercenariesConfigDispatcher,
+    IMercenariesConfigDispatcherTrait,
 };
 
 use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
@@ -46,7 +45,7 @@ use eternum::utils::testing::{
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
         set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
-        set_tick_config, set_exploration_config, set_weight_config, set_storehouse_capacity_config
+        set_tick_config, set_exploration_config, set_weight_config
     },
     constants::{MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT}
 };
@@ -154,7 +153,6 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_tick_config(config_systems_address);
     set_exploration_config(config_systems_address);
     set_weight_config(config_systems_address);
-    set_storehouse_capacity_config(config_systems_address);
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());

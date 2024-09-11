@@ -35,19 +35,16 @@ mod trade_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
-    use eternum::models::capacity::{Capacity, CapacityCustomTrait};
-    use eternum::models::config::RoadConfig;
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-    use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
+    use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigCustomImpl};
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, PositionCustomTrait, Coord, TravelTrait};
-    use eternum::models::quantity::{Quantity, QuantityCustomTrait, QuantityTracker};
+    use eternum::models::quantity::{Quantity, QuantityTracker};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{DetachedResource};
 
     use eternum::models::resources::{Resource, ResourceCustomImpl};
-    use eternum::models::road::{Road, RoadCustomTrait, RoadCustomImpl};
     use eternum::models::trade::{Trade, Status, TradeStatus};
     use eternum::models::weight::{Weight, WeightCustomTrait};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl as internal_resources,};
@@ -161,7 +158,8 @@ mod trade_systems {
 
             // deduct weight from maker
             let mut maker_weight: Weight = get!(world, maker_id, Weight);
-            let mut maker_capacity: Capacity = get!(world, maker_id, Capacity);
+            let mut maker_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(world, maker_id);
+
             maker_weight.deduct(maker_capacity, maker_gives_resources_weight);
             set!(world, (maker_weight));
 

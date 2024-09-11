@@ -2,9 +2,8 @@ use core::array::SpanTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
-use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig};
+use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
@@ -39,12 +38,7 @@ fn set_configurations(world: IWorldDispatcher) {
         (
             get_combat_config(),
             TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
-            CapacityConfig {
-                config_id: WORLD_CONFIG_ID,
-                carry_capacity_config_id: ARMY_ENTITY_TYPE,
-                entity_type: ARMY_ENTITY_TYPE,
-                weight_gram: 300000,
-            }
+            CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300000, }
         )
     )
 }
@@ -101,9 +95,6 @@ fn test_army_create___attacking_army() {
     let army_movable: Movable = get!(world, army_id, Movable);
     assert_eq!(army_movable.start_coord_x, REALM_COORD_X);
     assert_eq!(army_movable.start_coord_y, REALM_COORD_Y);
-
-    let army_capacity: Capacity = get!(world, army_id, Capacity);
-    assert_ne!(army_capacity.weight_gram, 0);
 }
 
 #[test]
@@ -151,9 +142,6 @@ fn test_army_create___defending_army() {
     let army_movable: Movable = get!(world, army_id, Movable);
     assert_eq!(army_movable.start_coord_x, 0);
     assert_eq!(army_movable.start_coord_y, 0);
-
-    let army_capacity: Capacity = get!(world, army_id, Capacity);
-    assert_eq!(army_capacity.weight_gram, 0);
 
     let army_protectee: Protectee = get!(world, army_id, Protectee);
     assert_eq!(army_protectee.protectee_id, realm_id);

@@ -1,14 +1,16 @@
-import * as SystemProps from "@bibliothecadao/eternum";
+import type * as SystemProps from "@bibliothecadao/eternum";
 import { toast } from "react-toastify";
-import { SetupNetworkResult } from "./setupNetwork";
+import { type SetupNetworkResult } from "./setupNetwork";
 
 class PromiseQueue {
-  private queue: (() => Promise<any>)[] = [];
+  private readonly queue: Array<() => Promise<any>> = [];
   private processing = false;
 
-  enqueue(task: () => Promise<any>) {
-    return new Promise((resolve, reject) => {
-      this.queue.push(() => task().then(resolve).catch(reject));
+  async enqueue(task: () => Promise<any>) {
+    return await new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        await task().then(resolve).catch(reject);
+      });
       this.processQueue();
     });
   }
@@ -50,7 +52,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   const promiseQueue = new PromiseQueue();
 
   const withQueueing = (fn: (...args: any[]) => Promise<any>) => {
-    return (...args: any[]) => promiseQueue.enqueue(() => fn(...args));
+    return async (...args: any[]) => await promiseQueue.enqueue(async () => await fn(...args));
   };
 
   const withErrorHandling = (fn: (...args: any[]) => Promise<any>) => {
@@ -62,15 +64,15 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
         if (error.message.includes("Failure reason:")) {
           const match = error.message.match(/Failure reason: \\"(.*?)"/);
-          if (match && match[1]) {
+          if (match?.[1]) {
             errorMessage = match[1].slice(0, -1);
           } else {
             const matchOther = error.message.match(/Failure reason: "(.*?)"/);
-            if (matchOther && matchOther[1]) {
+            if (matchOther?.[1]) {
               errorMessage = matchOther[1].slice(0, -1);
             } else {
               const matchHex = error.message.match(/Failure reason: (0x[0-9a-f]+) \('(.*)'\)/);
-              if (matchHex && matchHex[2]) {
+              if (matchHex?.[2]) {
                 errorMessage = matchHex[2];
               }
             }
@@ -83,7 +85,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const uuid = async () => {
-    return provider.uuid();
+    return await provider.uuid();
   };
 
   const create_order = async (props: SystemProps.CreateOrderProps) => {
@@ -108,10 +110,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     await provider.create_multiple_realms(props);
-  };
-
-  const create_road = async (props: SystemProps.CreateRoadProps) => {
-    await provider.create_road(props);
   };
 
   const send_resources = async (props: SystemProps.SendResourcesProps) => {
@@ -320,7 +318,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
     create_realm: withQueueing(withErrorHandling(create_realm)),
     create_multiple_realms: withQueueing(withErrorHandling(create_multiple_realms)),
-    create_road: withQueueing(withErrorHandling(create_road)),
     transfer_resources: withQueueing(withErrorHandling(transfer_resources)),
     travel: withQueueing(withErrorHandling(travel)),
     travel_hex: withQueueing(withErrorHandling(travel_hex)),

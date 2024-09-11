@@ -16,7 +16,6 @@ import {
   setSpeedConfig,
   setStaminaConfig,
   setStaminaRefillConfig,
-  setStorehouseCapacityConfig,
   setupGlobals,
   setWeightConfig,
 } from "@bibliothecadao/eternum";
@@ -51,7 +50,6 @@ if (!isDev) {
 const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
-await setProductionConfig(account, provider);
 await setBuildingCategoryPopConfig(account, provider);
 await setPopulationConfig(account, provider);
 await setBuildingConfig(account, provider);
@@ -66,4 +64,4 @@ await setHyperstructureConfig(account, provider);
 await setStaminaConfig(account, provider);
 await setStaminaRefillConfig(account, provider);
 await setMercenariesConfig(account, provider);
-await setStorehouseCapacityConfig(account, provider);
+await setProductionConfig(account, provider);

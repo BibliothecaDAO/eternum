@@ -3,6 +3,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
+  CapacityConfigCategory,
   EternumGlobalConfig,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
@@ -39,7 +40,7 @@ export const Resources = () => {
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
           <span className="font-bold">
             {` ${
-              EternumGlobalConfig.resources.storehouseCapacityKg /
+              EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse] /
               (EternumGlobalConfig.resources.resourceMultiplier * EternumGlobalConfig.resources.resourcePrecision)
             }M capacity per resource type`}
           </span>

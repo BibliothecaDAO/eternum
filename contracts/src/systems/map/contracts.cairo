@@ -13,13 +13,12 @@ mod map_systems {
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
-    use eternum::models::capacity::Capacity;
+    use eternum::models::capacity::{CapacityCategory};
     use eternum::models::combat::{
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigCustomImpl, CapacityConfig,
-        CapacityConfigCustomImpl
+        CapacityConfigCategory, MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigCustomImpl
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
@@ -186,6 +185,7 @@ mod map_systems {
                         created_at: starknet::get_block_timestamp()
                     },
                     StructureCount { coord: coord, count: 1 },
+                    CapacityCategory { entity_id: entity_id, category: CapacityConfigCategory::Structure },
                     Position { entity_id: entity_id, x: coord.x, y: coord.y },
                 )
             );

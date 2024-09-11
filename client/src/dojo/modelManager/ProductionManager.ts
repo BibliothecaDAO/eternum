@@ -1,14 +1,21 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BuildingType, EternumGlobalConfig, ID, RESOURCE_INPUTS_SCALED, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  CapacityConfigCategory,
+  EternumGlobalConfig,
+  type ID,
+  RESOURCE_INPUTS_SCALED,
+  type ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { SetupResult } from "../setup";
+import { type SetupResult } from "../setup";
 
 export class ProductionManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
   constructor(
-    private setup: SetupResult,
+    private readonly setup: SetupResult,
     entityId: ID,
     resourceId: ResourcesIds,
   ) {
@@ -81,8 +88,8 @@ export class ProductionManager {
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
-      (Number(quantity) * EternumGlobalConfig.resources.storehouseCapacityKg +
-        EternumGlobalConfig.resources.storehouseCapacityKg) *
+      (Number(quantity) * EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse] +
+        EternumGlobalConfig.carryCapacityKg[CapacityConfigCategory.Storehouse]) *
       EternumGlobalConfig.resources.resourcePrecision
     );
   }
@@ -105,7 +112,7 @@ export class ProductionManager {
         return Math.min(balance, this.getStoreCapacity());
       } else {
         // Negative net rate, decrease balance but not below zero
-        let balance = Number(resource?.balance || 0n) - -this._depletionDuration(currentTick, resourceId) * rate;
+        const balance = Number(resource?.balance || 0n) - -this._depletionDuration(currentTick, resourceId) * rate;
         if (balance < 0) {
           return 0;
         } else {

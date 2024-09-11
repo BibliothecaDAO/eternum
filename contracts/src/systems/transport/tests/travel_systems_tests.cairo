@@ -5,11 +5,11 @@ use core::traits::Into;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::LevelIndex;
-use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
+use eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 
 use eternum::constants::{ResourceTypes, TickIds};
 use eternum::models::combat::{Army, BattleSide, Troops};
-use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
+use eternum::models::config::{TickConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -19,7 +19,6 @@ use eternum::models::position::CoordTrait;
 use eternum::models::position::{Coord, Position, Direction};
 use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceCost};
-use eternum::models::road::{Road, RoadCustomImpl};
 
 use eternum::systems::config::contracts::{config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait};
 
@@ -261,64 +260,6 @@ fn test_travel_with_realm_and_order_bonus() {
 
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
-}
-
-
-#[test]
-#[available_gas(30000000000000)]
-fn test_travel_with_road() {
-    let (
-        world,
-        _realm_entity_id,
-        travelling_entity_id,
-        travelling_entity_position,
-        destination_coord,
-        travel_systems_dispatcher
-    ) =
-        setup();
-
-    set!(
-        world,
-        (
-            ResourceCost { entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10, },
-            RoadConfig { config_id: ROAD_CONFIG_ID, resource_cost_id: 1, resource_cost_count: 1, speed_up_by: 2 },
-            Road {
-                start_coord_x: travelling_entity_position.x,
-                start_coord_y: travelling_entity_position.y,
-                end_coord_x: destination_coord.x,
-                end_coord_y: destination_coord.y,
-                usage_count: 2
-            },
-            Movable {
-                entity_id: travelling_entity_id.into(),
-                sec_per_km: 10,
-                blocked: false,
-                round_trip: false,
-                start_coord_x: 0,
-                start_coord_y: 0,
-                intermediate_coord_x: 0,
-                intermediate_coord_y: 0
-            }
-        )
-    );
-
-    // travelling entity travels
-    starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
-
-    // verify arrival time and position of travelling_entity
-    let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
-    let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
-
-    assert(travelling_entity_arrival_time.arrives_at == 8500000_u64 / 2, 'arrival time not correct');
-
-    assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
-    assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
-
-    // verify road usage count
-    let road = RoadCustomImpl::get(world, travelling_entity_position.into(), destination_coord);
-    assert(road.usage_count == 1, 'road usage count not correct');
 }
 
 

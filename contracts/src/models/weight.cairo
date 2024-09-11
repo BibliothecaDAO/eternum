@@ -1,5 +1,5 @@
 use eternum::alias::ID;
-use eternum::models::capacity::{Capacity, CapacityCustomTrait};
+use eternum::models::config::{CapacityConfig, CapacityConfigCustomTrait};
 use eternum::models::quantity::{Quantity};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -12,12 +12,12 @@ pub struct Weight {
 
 #[generate_trait]
 impl WeightCustomImpl of WeightCustomTrait {
-    fn deduct(ref self: Weight, capacity: Capacity, amount: u128) {
+    fn deduct(ref self: Weight, capacity: CapacityConfig, amount: u128) {
         if self.entity_id == 0 {
             return;
         };
         if capacity.is_capped() {
-            assert(self.value >= amount, 'weight deducted>entity s weight');
+            assert!(self.value >= amount, "weight deducted > entity {}'s weight", self.entity_id);
             if amount > self.value {
                 self.value = 0;
             } else {
@@ -26,7 +26,7 @@ impl WeightCustomImpl of WeightCustomTrait {
         }
     }
 
-    fn add(ref self: Weight, capacity: Capacity, quantity: Quantity, amount: u128) {
+    fn add(ref self: Weight, capacity: CapacityConfig, quantity: Quantity, amount: u128) {
         if self.entity_id == 0 {
             return;
         };

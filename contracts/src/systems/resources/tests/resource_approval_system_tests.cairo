@@ -8,7 +8,6 @@ mod resource_approval_system_tests {
 
     use eternum::constants::ResourceTypes;
     use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::models::capacity::Capacity;
     use eternum::models::config::WeightConfig;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;

@@ -173,6 +173,22 @@ export function getProducedResource(name: BuildingType): number {
   }
 }
 
+export enum CapacityConfigCategory {
+  None = 0,
+  Structure = 1,
+  Donkey = 2,
+  Army = 3,
+  Storehouse = 4,
+}
+
+export const CapacityConfigCategoryStringMap: { [key: string]: number } = {
+  None: 0,
+  Structure: 1,
+  Donkey: 2,
+  Army: 3,
+  Storehouse: 4,
+};
+
 export enum EntityState {
   Traveling,
   WaitingForDeparture,
