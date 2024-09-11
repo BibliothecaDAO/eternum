@@ -226,7 +226,7 @@ fn test_caller_not_taker() {
 #[available_gas(3000000000000)]
 #[should_panic(
     expected: (
-        "not enough resources, Resource (entity id: 4, resource type: DONKEY, balance: 0). deduction: 1000",
+        "not enough resources, Resource (entity id: 3, resource type: DONKEY, balance: 0). deduction: 1000",
         'ENTRYPOINT_FAILED'
     )
 )]
