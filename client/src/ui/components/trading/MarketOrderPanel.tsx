@@ -1,6 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
+import { isStructureInBattle } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -16,6 +17,7 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { ConfirmationPopup } from "../bank/ConfirmationPopup";
 
@@ -116,6 +118,8 @@ const MarketOrders = ({
     return price === Infinity ? 0 : price;
   }, [offers]);
 
+  const isOwnStructureInBattle = isStructureInBattle(entityId);
+
   return (
     <div className=" h-full flex flex-col gap-4">
       {/* Market Price */}
@@ -136,10 +140,15 @@ const MarketOrders = ({
       <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
         <OrderRowHeader resourceId={resourceId} />
 
-        <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96">
+        <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative">
           {offers.map((offer, index) => (
-            <OrderRow key={index} offer={offer} entityId={entityId} isBuy={isBuy} />
+            <OrderRow key={index} offer={offer} entityId={entityId} isBuy={isBuy} disabled={isOwnStructureInBattle} />
           ))}
+          {isOwnStructureInBattle && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
+              Resources locked in battle
+            </div>
+          )}
         </div>
       </div>
 
@@ -169,12 +178,22 @@ const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
   );
 };
 
-const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: ID; isBuy: boolean }) => {
+const OrderRow = ({
+  offer,
+  entityId,
+  isBuy,
+  disabled,
+}: {
+  offer: MarketInterface;
+  entityId: ID;
+  isBuy: boolean;
+  disabled: boolean;
+}) => {
   const { computeTravelTime } = useTravel();
   const {
     account: { account },
     setup: {
-      systemCalls: { cancel_order, accept_partial_order, accept_order },
+      systemCalls: { cancel_order, accept_partial_order },
     },
   } = useDojo();
 
@@ -223,25 +242,24 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
-  const productionManager = useProductionManager(entityId, offer.makerGets[0].resourceId);
 
-  const production = useMemo(() => {
-    return productionManager.getProduction();
-  }, [entityId, offer.makerId, offer.tradeId]);
+  const calculatedResourceAmount = useMemo(() => {
+    return inputValue * EternumGlobalConfig.resources.resourcePrecision;
+  }, [inputValue, getsDisplay, getTotalLords]);
 
-  const balance = useMemo(() => {
-    return productionManager.balance(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId]);
+  const calculatedLords = useMemo(() => {
+    return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
+  }, [inputValue, getsDisplay, getTotalLords]);
 
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
       {
-        resourceId: isBuy ? offer.takerGets[0].resourceId : offer.makerGets[0].resourceId,
-        amount: isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount,
+        resourceId: offer.takerGets[0].resourceId,
+        amount: isBuy ? calculatedLords : calculatedResourceAmount,
       },
     ]);
-    return multiplyByPrecision(totalWeight);
-  }, [entityId, offer.makerId, offer.tradeId]);
+    return totalWeight;
+  }, [entityId, calculatedResourceAmount, calculatedLords]);
 
   const donkeysNeeded = useMemo(() => {
     return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
@@ -257,29 +275,9 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     return divideByPrecision(donkeyProductionManager.balance(currentDefaultTick));
   }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
 
-  const enoughDonkeys = useMemo(() => {
-    return donkeyBalance > donkeysNeeded;
-  }, [donkeyBalance, donkeysNeeded]);
-
-  const canAccept = useMemo(() => {
-    return enoughDonkeys;
-  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId, enoughDonkeys]);
-
   const accountName = useMemo(() => {
     return getRealmAddressName(offer.makerId);
   }, [offer.originName]);
-
-  console.log(inputValue, getsDisplay, getTotalLords, EternumGlobalConfig.resources.resourcePrecision);
-
-  const calculatedResourceAmount = useMemo(() => {
-    return inputValue * EternumGlobalConfig.resources.resourcePrecision;
-  }, [inputValue, getsDisplay, getTotalLords]);
-
-  const calculatedLords = useMemo(() => {
-    return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
-  }, [inputValue, getsDisplay, getTotalLords]);
-
-  console.log("calculatedLords", calculatedLords);
 
   const onAccept = async () => {
     try {
@@ -300,20 +298,23 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
       setLoading(false);
     }
   };
+
+  const isMakerInBattle = isStructureInBattle(offer.makerId);
+
   return (
     <div
       key={offer.tradeId}
-      className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
+      className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border text-xs relative ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
-      }`}
+      } ${isMakerInBattle ? "opacity-50" : ""}`}
     >
+      {isMakerInBattle && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
+          Resources locked in battle
+        </div>
+      )}
       <div className="grid grid-cols-5 gap-1">
         <div className={`flex gap-1 font-bold ${isBuy ? "text-red" : "text-green"} `}>
-          {!enoughDonkeys && (
-            <div className="bg-red rounded-full animate-pulse">
-              <ResourceIcon withTooltip={false} size="xs" resource={"Donkeys"} />
-            </div>
-          )}
           <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
           {getsDisplay}
         </div>
@@ -328,18 +329,14 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
           {currencyFormat(getTotalLords, 0)}
         </div>
         {!isSelf ? (
-          canAccept ? (
-            <Button
-              isLoading={loading}
-              onClick={() => setConfirmOrderModal(true)}
-              size="xs"
-              className="self-center flex flex-grow"
-            >
-              {!isBuy ? "Buy" : "Sell"}
-            </Button>
-          ) : (
-            <div className="text-xs text-center">no funds</div>
-          )
+          <Button
+            isLoading={loading}
+            onClick={() => setConfirmOrderModal(true)}
+            size="xs"
+            className={`self-center flex flex-grow ${isMakerInBattle || disabled ? "pointer-events-none" : ""}`}
+          >
+            {!isBuy ? "Buy" : "Sell"}
+          </Button>
         ) : (
           <Button
             onClick={async () => {
@@ -353,7 +350,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
             }}
             variant="danger"
             size="xs"
-            className="self-center"
+            className={clsx("self-center", { disable: disabled })}
           >
             {loading ? "cancelling" : "cancel"}
           </Button>
@@ -454,11 +451,11 @@ const OrderCreation = ({
     const totalWeight = getTotalResourceWeight([
       { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: isBuy ? resource : lords },
     ]);
-    return multiplyByPrecision(totalWeight);
+    return totalWeight;
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
+    return Math.ceil(orderWeight / EternumGlobalConfig.carryCapacityGram.donkey);
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
