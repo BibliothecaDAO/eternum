@@ -10,8 +10,9 @@ use eternum::models::position::{Position, Coord};
 use eternum::models::realm::Realm;
 use eternum::models::resources::Resource;
 
-use eternum::systems::config::contracts::{config_systems};
-
+use eternum::systems::config::contracts::{
+    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait
+};
 use eternum::systems::realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
 
 use eternum::utils::map::biomes::Biome;
@@ -42,6 +43,18 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     let realm_systems_dispatcher = deploy_realm_systems(world);
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+
+    // set initially minted resources
+    let initial_resources = array![
+        (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
+    ];
+
+    let realm_free_mint_config_dispatcher = IRealmFreeMintConfigDispatcher { contract_address: config_systems_address };
+
+    let REALM_FREE_MINT_CONFIG_ID = 0;
+
+    realm_free_mint_config_dispatcher
+        .set_mint_config(config_id: REALM_FREE_MINT_CONFIG_ID, resources: initial_resources.span());
 
     set_capacity_config(config_systems_address);
 

@@ -677,6 +677,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_mint_config(props: SystemProps.SetMintConfigProps) {
+    const { config_id, resources, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_mint_config",
+      calldata: [config_id, resources.length, ...resources.flatMap(({ resource, amount }) => [resource, amount])],
+    });
+  }
+
   public async set_exploration_config(props: SystemProps.SetExplorationConfigProps) {
     const { wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability, signer } = props;
 
