@@ -8,7 +8,12 @@ export class MarketManager {
   player: ContractAddress;
   resourceId: ResourcesIds;
 
-  constructor(private setup: SetupResult, bankEntityId: ID, player: ContractAddress, resourceId: ResourcesIds) {
+  constructor(
+    private setup: SetupResult,
+    bankEntityId: ID,
+    player: ContractAddress,
+    resourceId: ResourcesIds,
+  ) {
     this.bankEntityId = bankEntityId;
     this.resourceId = resourceId;
     this.player = player;
