@@ -7,7 +7,7 @@ use eternum::constants::{
 
 use eternum::models::{
     config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory,
-    config::MapExploreConfig
+    config::MapConfig
 };
 
 use eternum::systems::config::contracts::{
@@ -31,7 +31,7 @@ use starknet::{ContractAddress};
 fn setup_globals(config_systems_address: ContractAddress) {
     set_bank_config(config_systems_address);
     set_tick_config(config_systems_address);
-    set_exploration_config(config_systems_address);
+    set_map_config(config_systems_address);
 }
 
 fn set_bank_config(config_systems_address: ContractAddress) {
@@ -44,8 +44,8 @@ fn set_tick_config(config_systems_address: ContractAddress) {
     ITickConfigDispatcher { contract_address: config_systems_address }.set_tick_config(TickIds::ARMIES, 7200);
 }
 
-fn set_exploration_config(config_systems_address: ContractAddress) {
-    let map_explore_config = MapExploreConfig {
+fn set_map_config(config_systems_address: ContractAddress) {
+    let map_config = MapConfig {
         config_id: WORLD_CONFIG_ID,
         explore_wheat_burn_amount: MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT,
         explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
@@ -55,7 +55,7 @@ fn set_exploration_config(config_systems_address: ContractAddress) {
         shards_mines_fail_probability: SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
     };
 
-    IMapConfigDispatcher { contract_address: config_systems_address }.set_exploration_config(map_explore_config);
+    IMapConfigDispatcher { contract_address: config_systems_address }.set_map_config(map_config);
 }
 
 fn get_combat_config() -> TroopConfig {

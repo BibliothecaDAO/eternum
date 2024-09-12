@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, MapExploreConfig, BattleConfig, MercenariesConfig, CapacityConfig};
+use eternum::models::config::{TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -86,7 +86,7 @@ trait IBankConfig {
 
 #[dojo::interface]
 trait IMapConfig {
-    fn set_exploration_config(ref world: IWorldDispatcher, map_explore_config: MapExploreConfig);
+    fn set_map_config(ref world: IWorldDispatcher, map_config: MapConfig);
 }
 
 
@@ -141,7 +141,7 @@ mod config_systems {
     use eternum::models::combat::{Troops};
 
     use eternum::models::config::{
-        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapExploreConfig,
+        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         MercenariesConfig, BattleConfig,
@@ -215,11 +215,11 @@ mod config_systems {
     }
     #[abi(embed_v0)]
     impl MapConfigCustomImpl of super::IMapConfig<ContractState> {
-        fn set_exploration_config(ref world: IWorldDispatcher, mut map_explore_config: MapExploreConfig) {
+        fn set_map_config(ref world: IWorldDispatcher, mut map_config: MapConfig) {
             assert_caller_is_admin(world);
 
-            map_explore_config.config_id = WORLD_CONFIG_ID;
-            set!(world, (map_explore_config));
+            map_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (map_config));
         }
     }
 

@@ -548,7 +548,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    MapExploreConfig: (() => {
+    MapConfig: (() => {
       return defineComponent(
         world,
         {
@@ -563,7 +563,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "eternum",
-            name: "MapExploreConfig",
+            name: "MapConfig",
             types: ["u32", "u128", "u128", "u128", "u128", "u128", "u128"],
             customTypes: [],
           },

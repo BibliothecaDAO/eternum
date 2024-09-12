@@ -14,7 +14,7 @@ use eternum::models::combat::protectee;
 use eternum::models::combat::protector;
 use eternum::models::config::{
     world_config, speed_config, capacity_config, weight_config, hyperstructure_resource_config, stamina_config,
-    stamina_refill_config, tick_config, map_explore_config, realm_free_mint_config, mercenaries_config, leveling_config,
+    stamina_refill_config, tick_config, map_config, realm_free_mint_config, mercenaries_config, leveling_config,
     production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
     population_config, has_claimed_starting_resources, hyperstructure_config,
 };
@@ -83,7 +83,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         market::TEST_CLASS_HASH,
         guild_member::TEST_CLASS_HASH,
         guild_whitelist::TEST_CLASS_HASH,
-        map_explore_config::TEST_CLASS_HASH,
+        map_config::TEST_CLASS_HASH,
         realm_free_mint_config::TEST_CLASS_HASH,
         mercenaries_config::TEST_CLASS_HASH,
         leveling_config::TEST_CLASS_HASH,

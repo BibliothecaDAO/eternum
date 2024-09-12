@@ -10,7 +10,7 @@ use eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 use eternum::constants::{ResourceTypes, TickIds};
 use eternum::models::combat::{Army, BattleSide, Troops};
 use eternum::models::config::{
-    TickConfig, MapExploreConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl
+    TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl
 };
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
@@ -375,7 +375,7 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
 
     set!(
         world,
-        (MapExploreConfig {
+        (MapConfig {
             config_id: WORLD_CONFIG_ID,
             explore_wheat_burn_amount: 100,
             explore_fish_burn_amount: 100,

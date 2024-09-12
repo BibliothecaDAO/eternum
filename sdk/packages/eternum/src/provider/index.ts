@@ -687,7 +687,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_exploration_config(props: SystemProps.SetExplorationConfigProps) {
+  public async set_map_config(props: SystemProps.SetMapConfigProps) {
     const {
       explore_wheat_burn_amount,
       explore_fish_burn_amount,
@@ -700,7 +700,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_exploration_config",
+      entrypoint: "set_map_config",
       calldata: [
         explore_wheat_burn_amount,
         explore_fish_burn_amount,

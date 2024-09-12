@@ -17,7 +17,7 @@ mod travel_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
-    use eternum::models::config::{LevelingConfig, MapExploreConfigImpl};
+    use eternum::models::config::{LevelingConfig, MapConfigImpl};
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
@@ -104,7 +104,7 @@ mod travel_systems {
 
             let transport_owner_entity = get!(world, travelling_entity_id, EntityOwner);
             let transport_quantity = get!(world, travelling_entity_id, Quantity);
-            MapExploreConfigImpl::pay_travel_cost(world, transport_owner_entity, transport_quantity);
+            MapConfigImpl::pay_travel_cost(world, transport_owner_entity, transport_quantity);
 
             InternalTravelSystemsImpl::travel_hex(world, travelling_entity_id, travelling_entity_coord, directions);
         }

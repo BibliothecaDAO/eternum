@@ -367,7 +367,7 @@ export interface SetMintConfigProps extends SystemSigner {
   resources: ResourceCosts[];
 }
 
-export interface SetExplorationConfigProps extends SystemSigner {
+export interface SetMapConfigProps extends SystemSigner {
   explore_wheat_burn_amount: num.BigNumberish;
   explore_fish_burn_amount: num.BigNumberish;
   travel_wheat_burn_amount: num.BigNumberish;

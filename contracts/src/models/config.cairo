@@ -141,7 +141,7 @@ pub struct SpeedConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct MapExploreConfig {
+pub struct MapConfig {
     #[key]
     config_id: ID,
     explore_wheat_burn_amount: u128,
@@ -157,12 +157,12 @@ pub struct MapExploreConfig {
 }
 
 #[generate_trait]
-impl MapExploreConfigImpl of MapExploreConfigTrait {
+impl MapConfigImpl of MapConfigTrait {
     fn random_reward(world: IWorldDispatcher) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
         let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);
 
-        let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
     }
@@ -172,7 +172,7 @@ impl MapExploreConfigImpl of MapExploreConfigTrait {
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
         let quantity_value = max(unit_quantity.value, 1);
 
-        let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
         let mut wheat_pay_amount = explore_config.explore_wheat_burn_amount * quantity_value;
         let mut fish_pay_amount = explore_config.explore_fish_burn_amount * quantity_value;
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
@@ -183,7 +183,7 @@ impl MapExploreConfigImpl of MapExploreConfigTrait {
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
         let quantity_value = max(unit_quantity.value, 1);
 
-        let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
         let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount * quantity_value;
         let mut fish_pay_amount = explore_config.travel_fish_burn_amount * quantity_value;
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);

@@ -18,7 +18,7 @@ mod map_systems {
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        ProductionConfig, CapacityConfigCategory, MapExploreConfig, MapExploreConfigImpl, LevelingConfig,
+        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig,
         MercenariesConfig, TroopConfigCustomImpl, TickImpl, TickTrait,
     };
     use eternum::models::level::{Level, LevelCustomTrait};
@@ -100,8 +100,8 @@ mod map_systems {
             StaminaCustomImpl::handle_stamina_costs(unit_id, TravelTypes::Explore, world);
 
             // explore coordinate, pay food and mint reward
-            MapExploreConfigImpl::pay_exploration_cost(world, unit_entity_owner, unit_quantity);
-            let exploration_reward = MapExploreConfigImpl::random_reward(world);
+            MapConfigImpl::pay_exploration_cost(world, unit_entity_owner, unit_quantity);
+            let exploration_reward = MapConfigImpl::random_reward(world);
 
             InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward, 0, false, false);
 
@@ -149,7 +149,7 @@ mod map_systems {
         }
 
         fn discover_shards_mine(world: IWorldDispatcher, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
-            let exploration_config = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+            let exploration_config = get!(world, WORLD_CONFIG_ID, MapConfig);
 
             let is_shards_mine: bool = *random::choices(
                 array![true, false].span(),

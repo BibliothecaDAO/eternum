@@ -217,7 +217,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   console.log(`Configuring tick config ${txArmiesTick.statusReceipt}...`);
 
-  const txExplore = await provider.set_exploration_config({
+  const txMap = await provider.set_map_config({
     signer: account,
     explore_wheat_burn_amount:
       EternumGlobalConfig.exploration.exploreWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
@@ -231,7 +231,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
 
-  console.log(`Configuring exploration config ${txExplore.statusReceipt}...`);
+  console.log(`Configuring exploration config ${txMap.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {
