@@ -1,13 +1,12 @@
 import TextInput from "@/ui/elements/TextInput";
 import { copyPlayerAddressToClipboard, displayAddress, sortItems } from "@/ui/utils/utils";
+import { ID } from "@bibliothecadao/eternum";
 import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { GuildWhitelistAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
 import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-
-import { GuildWhitelistAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
-import { ID } from "@bibliothecadao/eternum";
 
 interface WhitelistProps {
   guildEntityId: ID | undefined;
@@ -31,10 +30,11 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isWhitelisting, setIsWhitelisting] = useState(false);
-  const [playerAddress, setPlayerAddress] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { getGuildWhitelist } = useGuilds();
-  const { whitelist } = getGuildWhitelist(guildEntityId!);
+  const { getGuildWhitelist, getPlayerList } = useGuilds();
+  const players = getPlayerList(guildEntityId!);
+  const whitelist = getGuildWhitelist(guildEntityId!);
 
   const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
     return [
@@ -48,10 +48,10 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
     sort: "none",
   });
 
-  const whitelistPlayer = () => {
+  const whitelistPlayer = (address: string) => {
     setIsLoading(true);
     whitelist_player({
-      player_address_to_whitelist: playerAddress,
+      player_address_to_whitelist: address,
       guild_entity_id: guildEntityId!,
       signer: account,
     }).finally(() => setIsLoading(false));
@@ -70,19 +70,6 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
     <div className="flex flex-col">
       {isOwner && (
         <div className="flex justify-end px-3 items-baseline">
-          {isWhitelisting && (
-            <>
-              <TextInput
-                placeholder="Player address"
-                className="border border-gold  !w-1/2 !flex-grow-0 !text-light-pink text-xs mx-5"
-                value={playerAddress}
-                onChange={(playerAddress) => setPlayerAddress(playerAddress)}
-              />
-              <Button size="xs" onClick={whitelistPlayer} disabled={playerAddress == ""}>
-                Confirm
-              </Button>
-            </>
-          )}
           <div className="flex my-3 px-4 justify-end">
             <Button size="xs" isLoading={isLoading} onClick={() => setIsWhitelisting(!isWhitelisting)}>
               Invite player
@@ -91,53 +78,109 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
         </div>
       )}
 
-      <div className="flex flex-col">
-        <SortPanel className="px-3 py-2 grid grid-cols-3 gap-4">
-          {sortingParams.map(({ label, sortKey, className }) => (
-            <SortButton
-              className={className}
-              key={sortKey}
-              label={label}
-              sortKey={sortKey}
-              activeSort={activeSort}
-              onChange={(_sortKey, _sort) => {
-                setActiveSort({
-                  sortKey: _sortKey,
-                  sort: _sort,
-                });
-              }}
-            />
-          ))}
-        </SortPanel>
-        <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
-          {sortItems(whitelist, activeSort)?.map((guildWhitelist: GuildWhitelistAndName) => {
-            return (
-              <div key={guildWhitelist.guildWhitelist.address} className="grid grid-cols-3 gap-4 text-xs">
-                <p className="col-span-1 hover:text-white truncate">{guildWhitelist.name}</p>
-                <p
-                  className="col-span-1 hover:text-white"
-                  onClick={() =>
-                    copyPlayerAddressToClipboard(guildWhitelist.guildWhitelist.address, guildWhitelist.name)
-                  }
-                >
-                  {displayAddress(guildWhitelist.playerAddress)}
-                </p>
-                {isOwner && (
-                  <div className="col-span-1">
+      {isWhitelisting ? (
+        <div className="flex flex-col">
+          <TextInput
+            placeholder="Search by name or address"
+            className="border border-gold !text-light-pink text-xs my-2 w-1/4!"
+            value={searchQuery}
+            onChange={(query) => setSearchQuery(query)}
+          />
+          <SortPanel className="px-3 py-2 grid grid-cols-3 gap-4">
+            {sortingParams.map(({ label, sortKey, className }) => (
+              <SortButton
+                className={className}
+                key={sortKey}
+                label={label}
+                sortKey={sortKey}
+                activeSort={activeSort}
+                onChange={(_sortKey, _sort) => {
+                  setActiveSort({
+                    sortKey: _sortKey,
+                    sort: _sort,
+                  });
+                }}
+              />
+            ))}
+          </SortPanel>
+
+          <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
+            {players
+              .filter(
+                (player) =>
+                  player.name.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
+                  player.address.toLowerCase().startsWith(searchQuery.toLowerCase()),
+              )
+              .map((player) => (
+                <div key={player.address} className="grid grid-cols-3 gap-4 text-xs">
+                  <p className="col-span-1 truncate">{player.name}</p>
+                  <p className="col-span-1">{displayAddress(player.address)}</p>
+
+                  <p className="col-span-1">
                     <Button
                       size="xs"
                       isLoading={isLoading}
-                      onClick={() => removePlayerFromWhitelist(guildWhitelist.playerAddress)}
+                      onClick={() =>
+                        player.isInvited ? removePlayerFromWhitelist(player.address) : whitelistPlayer(player.address)
+                      }
                     >
-                      Uninvite
+                      {player.isInvited ? "Revoke" : "Invite"}
                     </Button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  </p>
+                </div>
+              ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col">
+          <SortPanel className="px-3 py-2 grid grid-cols-3 gap-4">
+            {sortingParams.map(({ label, sortKey, className }) => (
+              <SortButton
+                className={className}
+                key={sortKey}
+                label={label}
+                sortKey={sortKey}
+                activeSort={activeSort}
+                onChange={(_sortKey, _sort) => {
+                  setActiveSort({
+                    sortKey: _sortKey,
+                    sort: _sort,
+                  });
+                }}
+              />
+            ))}
+          </SortPanel>
+
+          <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
+            {sortItems(whitelist, activeSort)?.map((guildWhitelist: GuildWhitelistAndName) => {
+              return (
+                <div key={guildWhitelist.guildWhitelist.address} className="grid grid-cols-3 gap-4 text-xs">
+                  <p className="col-span-1 hover:text-white truncate">{guildWhitelist.name}</p>
+                  <p
+                    className="col-span-1 hover:text-white"
+                    onClick={() =>
+                      copyPlayerAddressToClipboard(guildWhitelist.guildWhitelist.address, guildWhitelist.name)
+                    }
+                  >
+                    {displayAddress(guildWhitelist.playerAddress)}
+                  </p>
+                  {isOwner && (
+                    <div className="col-span-1">
+                      <Button
+                        size="xs"
+                        isLoading={isLoading}
+                        onClick={() => removePlayerFromWhitelist(guildWhitelist.playerAddress)}
+                      >
+                        Revoke
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
