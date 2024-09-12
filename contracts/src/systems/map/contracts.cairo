@@ -61,6 +61,18 @@ mod map_systems {
         timestamp: u64,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    #[dojo::model]
+    struct FragmentMineDiscovered {
+        #[key]
+        entity_owner_id: ID,
+        #[key]
+        mine_entity_id: ID,
+        #[key]
+        production_deadline_tick: u64,
+        discovered_at: u64
+    }
 
     // @DEV TODO: We can generalise this more...
     #[abi(embed_v0)]
@@ -94,7 +106,7 @@ mod map_systems {
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);
             InternalMapSystemsImpl::explore(world, unit_id, next_coord, exploration_reward);
-            InternalMapSystemsImpl::discover_shards_mine(world, next_coord);
+            InternalMapSystemsImpl::discover_shards_mine(world, unit_entity_owner, next_coord);
 
             // travel to explored tile location
             InternalTravelSystemsImpl::travel_hex(world, unit_id, current_coord, array![direction].span());
@@ -147,7 +159,7 @@ mod map_systems {
             array![(reward_resource_id, reward_resource_amount)].span()
         }
 
-        fn discover_shards_mine(world: IWorldDispatcher, coord: Coord) -> bool {
+        fn discover_shards_mine(world: IWorldDispatcher, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
             let exploration_config = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
 
             let is_shards_mine: bool = *random::choices(
@@ -162,7 +174,7 @@ mod map_systems {
                 let mine_structure_entity_id = Self::create_shard_mine_structure(world, coord);
 
                 Self::add_mercenaries_to_shard_mine(world, mine_structure_entity_id, coord);
-                Self::add_production_deadline(world, mine_structure_entity_id);
+                let deadline = Self::add_production_deadline(world, mine_structure_entity_id);
 
                 // create shards production building
                 BuildingCustomImpl::create(
@@ -171,6 +183,16 @@ mod map_systems {
                     BuildingCategory::Resource,
                     Option::Some(ResourceTypes::EARTHEN_SHARD),
                     BuildingCustomImpl::center(),
+                );
+
+                emit!(
+                    world,
+                    FragmentMineDiscovered {
+                        entity_owner_id: unit_entity_owner.entity_owner_id,
+                        mine_entity_id: mine_structure_entity_id,
+                        production_deadline_tick: deadline,
+                        discovered_at: starknet::get_block_timestamp(),
+                    }
                 );
             }
             is_shards_mine
@@ -194,7 +216,7 @@ mod map_systems {
             );
             entity_id
         }
-        fn add_production_deadline(world: IWorldDispatcher, mine_entity_id: ID) {
+        fn add_production_deadline(world: IWorldDispatcher, mine_entity_id: ID) -> u64 {
             let earthen_shard_production_config: ProductionConfig = get!(
                 world, ResourceTypes::EARTHEN_SHARD, ProductionConfig
             );
@@ -214,14 +236,12 @@ mod map_systems {
                 .try_into()
                 .unwrap();
             let tick = TickImpl::get_default_tick_config(world);
+            let deadline_tick = tick.current() + num_ticks_to_full_production;
 
-            set!(
-                world,
-                (ProductionDeadline {
-                    entity_id: mine_entity_id, deadline_tick: tick.current() + num_ticks_to_full_production
-                })
-            );
+            set!(world, (ProductionDeadline { entity_id: mine_entity_id, deadline_tick }));
+            deadline_tick
         }
+
         fn add_mercenaries_to_shard_mine(world: IWorldDispatcher, mine_entity_id: ID, mine_coords: Coord) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
