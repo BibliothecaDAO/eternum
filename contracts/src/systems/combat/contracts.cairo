@@ -841,7 +841,7 @@ mod combat_systems {
             let mut battle: Battle = get!(world, battle_id, Battle);
             let battle_config = BattleConfigCustomImpl::get(world);
             battle.update_state(@battle_config);
-            let battle_was_active = !battle.has_ended();
+            let battle_was_active = (battle.has_started(@battle_config) && !battle.has_ended());
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army, @battle_config);
 
             // slash army if battle was not concluded before they left

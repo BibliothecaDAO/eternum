@@ -552,9 +552,11 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // it's possible for the battle be a draw and both sides die in the process.
         // if this edge case occurs, we assume they both lost for the purpose of this
         // function. They both forfeit their balances.
+        let battle_config = BattleConfigCustomImpl::get(world);
         let to_army_lost = to_army_dead || (winner_side != to_army.battle_side && winner_side != BattleSide::None);
         let to_army_won = (winner_side == to_army.battle_side && winner_side != BattleSide::None);
-        let to_army_lost_or_battle_not_ended = !self.has_ended() || (self.has_ended() && to_army_lost);
+        let to_army_lost_or_battle_not_ended = (self.has_started(@battle_config) && !self.has_ended())
+            || (self.has_ended() && to_army_lost);
         let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
         let mut all_resources = all_resource_ids();
         let mut subtracted_resources_weight = 0;
@@ -685,7 +687,7 @@ impl BattleCustomImpl of BattleCustomTrait {
         min(defence_num_seconds_to_death, attack_num_seconds_to_death).try_into().unwrap()
     }
 
-    fn start_time(ref self: Battle, battle_config: @BattleConfig) -> u64 {
+    fn start_time(self: Battle, battle_config: @BattleConfig) -> u64 {
         self.created_at + *battle_config.battle_delay_seconds
     }
 
@@ -694,6 +696,7 @@ impl BattleCustomImpl of BattleCustomTrait {
         let now = starknet::get_block_timestamp();
         let start_time = self.start_time(battle_config);
         if now <= start_time {
+            self.last_updated = now;
             return 0;
         }
 
@@ -714,6 +717,11 @@ impl BattleCustomImpl of BattleCustomTrait {
 
             duration
         }
+    }
+    fn has_started(self: Battle, battle_config: @BattleConfig) -> bool {
+        let now = starknet::get_block_timestamp();
+        let start_time = self.start_time(battle_config);
+        return now > start_time;
     }
 
     fn has_ended(self: Battle) -> bool {
@@ -753,9 +761,9 @@ mod tests {
     use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::combat::BattleHealthCustomTrait;
     use eternum::models::combat::TroopsTrait;
-    use eternum::models::config::CapacityConfigCategory;
-    use eternum::models::config::BattleConfigCustomTrait;
     use eternum::models::config::BattleConfig;
+    use eternum::models::config::BattleConfigCustomTrait;
+    use eternum::models::config::CapacityConfigCategory;
     use eternum::models::resources::ResourceCustomTrait;
 
     use eternum::models::resources::ResourceTransferLockCustomTrait;
@@ -782,11 +790,7 @@ mod tests {
     }
 
     fn mock_battle_config() -> BattleConfig {
-        BattleConfig {
-            config_id: 0,
-            battle_grace_tick_count: 0,
-            battle_delay_seconds: 0,
-        }
+        BattleConfig { config_id: 0, battle_grace_tick_count: 0, battle_delay_seconds: 0, }
     }
 
     fn mock_troops(a: u64, b: u64, c: u64) -> Troops {
