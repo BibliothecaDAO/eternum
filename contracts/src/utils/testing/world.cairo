@@ -34,7 +34,7 @@ use eternum::models::owner::entity_owner;
 use eternum::models::owner::{owner, Owner};
 use eternum::models::population::population;
 use eternum::models::position::{position};
-use eternum::models::production::{production, production_input, production_output};
+use eternum::models::production::{production, production_input, production_output, production_deadline};
 use eternum::models::quantity::{quantity, Quantity, quantity_tracker, QuantityTracker};
 use eternum::models::realm::{realm, Realm};
 use eternum::models::resources::detached_resource;
@@ -122,6 +122,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         address_name::TEST_CLASS_HASH,
         entity_name::TEST_CLASS_HASH,
         capacity_category::TEST_CLASS_HASH,
+        production_deadline::TEST_CLASS_HASH,
     ];
 
     let world = spawn_test_world(["eternum"].span(), models.span());

@@ -12,7 +12,7 @@ use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{EntityOwner, Owner};
 use eternum::models::position::{Position, Coord, CoordTrait, Direction};
-use eternum::models::production::Production;
+use eternum::models::production::{Production, ProductionDeadline};
 use eternum::models::quantity::Quantity;
 
 use eternum::models::realm::Realm;
@@ -155,12 +155,10 @@ fn test_map_explore__mine_production_deadline() {
 
     let army_position = get!(world, realm_army_unit_id, Position).into();
     let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(world, army_position);
-    let mine_earthen_shard_production: Production = get!(
-        world, (mine_entity_id, ResourceTypes::EARTHEN_SHARD), Production
-    );
-    assert_ge!(mine_earthen_shard_production.input_finish_tick, (100_000 * RESOURCE_PRECISION).try_into().unwrap());
+    let mine_earthen_shard_production_config: ProductionDeadline = get!(world, mine_entity_id, ProductionDeadline);
+    assert_ge!(mine_earthen_shard_production_config.deadline_tick, (100_000 * RESOURCE_PRECISION).try_into().unwrap());
     assert_le!(
-        mine_earthen_shard_production.input_finish_tick, (10 * 100_000 * RESOURCE_PRECISION).try_into().unwrap()
+        mine_earthen_shard_production_config.deadline_tick, (10 * 100_000 * RESOURCE_PRECISION).try_into().unwrap()
     );
 }
 
