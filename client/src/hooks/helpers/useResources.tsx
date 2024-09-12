@@ -1,7 +1,17 @@
 import { ContractAddress, ID, Position, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, Not, NotValue, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Has,
+  HasValue,
+  Not,
+  NotValue,
+  defineQuery,
+  getComponentValue,
+  isComponentUpdate,
+  runQuery,
+  type Entity,
+} from "@dojoengine/recs";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
@@ -72,55 +82,110 @@ export function getResourcesUtils() {
   };
 }
 
-export const useArrivalsWithResources = () => {
+type ArrivalInfo = {
+  entityId: ID;
+  position: Position;
+  arrivesAt: bigint;
+  isOwner: boolean;
+};
+
+export const usePlayerArrivals = () => {
   const {
     account: { account },
     setup: {
-      components: { Position, Owner, EntityOwner, ArrivalTime, OwnedResourcesTracker, Weight },
+      components: { Position, Owner, EntityOwner, ArrivalTime, OwnedResourcesTracker, Weight, Structure },
     },
   } = useDojo();
 
-  const atPositionWithInventory = useEntityQuery([
-    Has(EntityOwner),
-    NotValue(OwnedResourcesTracker, { resource_types: 0n }),
-    Has(Weight),
-    Has(ArrivalTime),
+  // needed to query without playerStructures() from useEntities because of circular dependency
+  const playerStructures = useEntityQuery([
+    Has(Structure),
+    HasValue(Owner, { address: ContractAddress(account.address) }),
   ]);
 
-  // Get all owned entities with resources
-  const getAllArrivalsWithResources = useMemo(() => {
-    const currentTime = Date.now();
+  useEffect(() => {
+    const positions = playerStructures.map((entityId) => {
+      const position = getComponentValue(Position, entityId);
+      return { x: position?.x ?? 0, y: position?.y ?? 0 };
+    });
+    setPlayerStructurePositions(positions);
+  }, [playerStructures, Position]);
 
-    type ArrivalInfo = {
-      id: Entity;
-      entityId: ID;
-      arrivesAt: bigint;
-      isOwner: boolean;
-    };
+  const [playerStructurePositions, setPlayerStructurePositions] = useState<Position[]>([]);
 
-    return atPositionWithInventory
-      .map((id) => {
-        const entityOwner = getComponentValue(EntityOwner, id);
-        const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
-        const arrivalTime = getComponentValue(ArrivalTime, id);
-        const position = getComponentValue(Position, id);
-        return {
-          id,
-          entityId: position?.entity_id || 0,
-          arrivesAt: arrivalTime?.arrives_at || 0n,
-          isOwner: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
-        };
-      })
-      .filter((val: ArrivalInfo | undefined): val is ArrivalInfo => val !== undefined)
-      .filter(({ isOwner, arrivesAt }) => isOwner && arrivesAt <= currentTime)
-      .sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt))
-      .map(({ entityId }) => entityId)
-      .filter((entityId) => entityId !== 0);
-  }, [atPositionWithInventory, account.address]);
+  const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
 
-  return {
-    getAllArrivalsWithResources,
-  };
+  const fragments = [NotValue(OwnedResourcesTracker, { resource_types: 0n }), Has(Weight), Has(ArrivalTime)];
+
+  const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
+    return positions.flatMap((position) => {
+      return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...fragments]));
+    });
+  }, []);
+
+  const createArrivalInfo = useCallback(
+    (id: Entity): ArrivalInfo | undefined => {
+      const arrivalTime = getComponentValue(ArrivalTime, id);
+      const entityOwner = getComponentValue(EntityOwner, id);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
+      const position = getComponentValue(Position, id);
+
+      if (!arrivalTime || !position || owner?.address !== ContractAddress(account.address)) {
+        return undefined;
+      }
+
+      return {
+        entityId: position.entity_id,
+        arrivesAt: arrivalTime.arrives_at,
+        isOwner: true,
+        position: { x: position.x, y: position.y },
+      };
+    },
+    [account],
+  );
+
+  useEffect(() => {
+    const arrivals = getArrivalsWithResourceOnPosition(playerStructurePositions)
+      .map(createArrivalInfo)
+      .filter((arrival: any): arrival is ArrivalInfo => arrival !== undefined);
+
+    setEntitiesWithInventory(arrivals);
+  }, [playerStructurePositions]);
+
+  useEffect(() => {
+    const query = defineQuery([Has(Position), ...fragments], { runOnInit: false });
+
+    const sub = query.update$.subscribe((update) => {
+      if (isComponentUpdate(update, Position)) {
+        const newArrival = createArrivalInfo(update.entity);
+        if (newArrival) {
+          setEntitiesWithInventory((arrivals) => {
+            const index = arrivals.findIndex((arrival) => arrival.entityId === newArrival.entityId);
+            if (index !== -1) {
+              return [...arrivals.slice(0, index), newArrival, ...arrivals.slice(index + 1)];
+            } else {
+              return [...arrivals, newArrival];
+            }
+          });
+        }
+      }
+    });
+
+    return () => sub.unsubscribe();
+  }, [account]);
+
+  const structurePositions = useMemo(
+    () => new Set(playerStructurePositions.map((position) => `${position.x},${position.y}`)),
+    [playerStructurePositions],
+  );
+
+  return useMemo(
+    () =>
+      entitiesWithInventory
+        .sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt))
+        .filter((arrival) => structurePositions.has(`${arrival.position.x},${arrival.position.y}`)),
+    [entitiesWithInventory, structurePositions],
+  );
 };
 
 export function getResourceBalance() {
@@ -226,7 +291,7 @@ export function useOwnedEntitiesOnPosition() {
   const getOwnedEntityOnPosition = (entityId: ID) => {
     const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
     const depositEntityIds = position
-      ? getOwnedEntitiesOnPosition(BigInt(account.address), { x: Number(position.x), y: Number(position.y) })
+      ? getOwnedEntitiesOnPosition(ContractAddress(account.address), { x: Number(position.x), y: Number(position.y) })
       : [];
     return depositEntityIds[0];
   };
