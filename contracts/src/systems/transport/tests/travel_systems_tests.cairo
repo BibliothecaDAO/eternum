@@ -405,8 +405,8 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
     set!(
         world,
         (
-            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: 1 },
-            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: 1 }
+            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: 3 },
+            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: 3 }
         )
     );
 
@@ -479,10 +479,11 @@ fn test_travel_hex() {
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
 
-    let travelling_entity_wheat = get!(world, (travelling_entity_id, ResourceTypes::WHEAT), Resource);
-    assert_eq!(travelling_entity_wheat.balance, 0);
-    let travelling_entity_fish = get!(world, (travelling_entity_id, ResourceTypes::FISH), Resource);
-    assert_eq!(travelling_entity_fish.balance, 0);
+    let travelling_entity_owner_id = get!(world, travelling_entity_id, EntityOwner).entity_owner_id;
+    let travelling_entity_wheat = get!(world, (travelling_entity_owner_id, ResourceTypes::WHEAT), Resource);
+    assert_eq!(travelling_entity_wheat.balance, 2);
+    let travelling_entity_fish = get!(world, (travelling_entity_owner_id, ResourceTypes::FISH), Resource);
+    assert_eq!(travelling_entity_fish.balance, 2);
 }
 
 
