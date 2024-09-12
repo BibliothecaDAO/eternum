@@ -220,7 +220,8 @@
     "Protector",
     "Protectee",
     "QuantityTracker",
-    "ResourceTransferLock"
+    "ResourceTransferLock",
+    "ProductionDeadline"
   ],
   "COMBAT_SYSTEMS": [
     "Health",

@@ -11,10 +11,10 @@ import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPr
 import {
   CapacityConfigCategory,
   EternumGlobalConfig,
-  ID,
-  MarketInterface,
+  type ID,
+  type MarketInterface,
   ONE_MONTH,
-  Resources,
+  type Resources,
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
@@ -333,7 +333,9 @@ const OrderRow = ({
         {!isSelf ? (
           <Button
             isLoading={loading}
-            onClick={() => setConfirmOrderModal(true)}
+            onClick={() => {
+              setConfirmOrderModal(true);
+            }}
             size="xs"
             className={`self-center flex flex-grow ${isMakerInBattle || disabled ? "pointer-events-none" : ""}`}
           >
