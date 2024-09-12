@@ -6,8 +6,7 @@ use eternum::constants::{
 };
 
 use eternum::models::{
-    config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory,
-    config::MapConfig
+    config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory, config::MapConfig
 };
 
 use eternum::systems::config::contracts::{

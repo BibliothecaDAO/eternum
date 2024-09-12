@@ -18,8 +18,8 @@ mod map_systems {
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig,
-        MercenariesConfig, TroopConfigCustomImpl, TickImpl, TickTrait,
+        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig, MercenariesConfig,
+        TroopConfigCustomImpl, TickImpl, TickTrait,
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;

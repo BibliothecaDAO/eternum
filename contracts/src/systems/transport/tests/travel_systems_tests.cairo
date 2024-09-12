@@ -9,9 +9,7 @@ use eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 
 use eternum::constants::{ResourceTypes, TickIds};
 use eternum::models::combat::{Army, BattleSide, Troops};
-use eternum::models::config::{
-    TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl
-};
+use eternum::models::config::{TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
