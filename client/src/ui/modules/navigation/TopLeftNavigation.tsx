@@ -1,9 +1,9 @@
-import CircleButton from "@/ui/elements/CircleButton";
-import { BuildingThumbs } from "./LeftNavigationModule";
 import { useModalStore } from "@/hooks/store/useModalStore";
-import { HintModal } from "@/ui/components/hints/HintModal";
 import useUIStore from "@/hooks/store/useUIStore";
+import { HintModal } from "@/ui/components/hints/HintModal";
 import { settings } from "@/ui/components/navigation/Config";
+import { BuildingThumbs } from "@/ui/config";
+import CircleButton from "@/ui/elements/CircleButton";
 import { SettingsWindow } from "../settings/Settings";
 
 export const TopLeftNavigation = () => {

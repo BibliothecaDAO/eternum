@@ -19,7 +19,7 @@ use eternum::systems::realm::contracts::{IRealmSystemsDispatcher};
 
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm, get_default_realm_pos},
-    config::set_storehouse_capacity_config
+    config::set_capacity_config
 };
 
 use starknet::contract_address_const;
@@ -30,7 +30,7 @@ fn setup() -> (IWorldDispatcher, ID, ILevelingSystemsDispatcher) {
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let level_config_dispatcher = ILevelingConfigDispatcher { contract_address: config_systems_address };
 
-    set_storehouse_capacity_config(config_systems_address);
+    set_capacity_config(config_systems_address);
 
     // set labor auction
     let decay_scaled: u128 = 1844674407370955161;

@@ -1,12 +1,18 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
+import { type ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
-import { ContractAddress, EntityType, ID, StructureType } from "@bibliothecadao/eternum";
+import {
+  CapacityConfigCategoryStringMap,
+  ContractAddress,
+  EntityType,
+  type ID,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
-  Component,
-  ComponentValue,
-  Entity,
+  type Component,
+  type ComponentValue,
+  type Entity,
   Has,
   HasValue,
   NotValue,
@@ -62,7 +68,7 @@ export const useEntities = () => {
           const realm = getComponentValue(Realm, id);
           const position = getComponentValue(Position, id);
 
-          const structureName = getEntityName(structure!.entity_id);
+          const structureName = getEntityName(structure.entity_id);
 
           const name = realm
             ? getRealmNameById(realm.realm_id)
@@ -75,7 +81,7 @@ export const useEntities = () => {
         .sort((a, b) => {
           if (a.category === StructureType[StructureType.Realm]) return -1;
           if (b.category === StructureType[StructureType.Realm]) return 1;
-          return a.category!.localeCompare(b.category!);
+          return a.category.localeCompare(b.category);
         });
     },
   };
@@ -106,7 +112,8 @@ export const getEntitiesUtils = () => {
         ArrivalTime,
         EntityOwner,
         Movable,
-        Capacity,
+        CapacityCategory,
+        CapacityConfig,
         Position,
         Army,
         AddressName,
@@ -123,7 +130,11 @@ export const getEntitiesUtils = () => {
     const entityIdBigInt = BigInt(entityId);
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityIdBigInt]));
     const movable = getComponentValue(Movable, getEntityIdFromKeys([entityIdBigInt]));
-    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([entityIdBigInt]));
+
+    const entityCapacityCategory = getComponentValue(CapacityCategory, getEntityIdFromKeys([entityIdBigInt]))
+      ?.category as unknown as string;
+    const capacityCategoryId = CapacityConfigCategoryStringMap[entityCapacityCategory] || 0n;
+    const capacity = getComponentValue(CapacityConfig, getEntityIdFromKeys([BigInt(capacityCategoryId)]));
 
     const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityIdBigInt]));
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
@@ -213,7 +224,7 @@ export const useGetAllPlayers = () => {
 };
 
 export const getAddressNameFromEntityIds = (
-  entityId: Array<Entity>,
+  entityId: Entity[],
   Owner: Component<ClientComponents["Owner"]["schema"]>,
   getAddressNameFromEntity: (entityId: ID) => string | undefined,
 ) => {
@@ -246,7 +257,7 @@ const formatStructures = (
       const realm = getComponentValue(Realm, id);
       const position = getComponentValue(Position, id);
 
-      const structureName = getEntityName(structure!.entity_id);
+      const structureName = getEntityName(structure.entity_id);
 
       const name = realm
         ? getRealmNameById(realm.realm_id)

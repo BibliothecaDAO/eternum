@@ -26,8 +26,6 @@ export RESOURCE_SYSTEMS=$(get_contract_address "eternum-resource_systems")
 
 export DONKEY_SYSTEMS=$(get_contract_address "eternum-donkey_systems")
 
-export ROAD_SYSTEMS=$(get_contract_address "eternum-road_systems")
-
 export TRAVEL_SYSTEMS=$(get_contract_address "eternum-travel_systems")
 
 export REALM_SYSTEMS=$(get_contract_address "eternum-realm_systems")
@@ -62,7 +60,6 @@ echo world : $DOJO_WORLD_ADDRESS
 echo config : $CONFIG_SYSTEMS
 echo trade : $TRADE_SYSTEMS
 echo resource : $RESOURCE_SYSTEMS
-echo road : $ROAD_SYSTEMS
 echo donkey : $DONKEY_SYSTEMS
 echo travel : $TRAVEL_SYSTEMS
 echo realm : $REALM_SYSTEMS

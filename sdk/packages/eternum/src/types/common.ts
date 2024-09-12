@@ -112,15 +112,6 @@ export interface Resource {
 
 /// TRAVEL
 
-export interface RoadInterface {
-  startRealmName: string;
-  startRealmOrder: number | undefined;
-  destinationEntityId: ID;
-  destinationRealmName: string;
-  destinationRealmOrder: number | undefined;
-  usageLeft: number;
-}
-
 export interface EntityInterface {
   entityId: ID;
   blocked: boolean | undefined;

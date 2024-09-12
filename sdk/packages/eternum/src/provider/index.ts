@@ -253,24 +253,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, calldata);
   };
 
-  public async create_road(props: SystemProps.CreateRoadProps) {
-    const { creator_id, start_coord, end_coord, usage_count, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-road_systems`),
-      entrypoint: "create",
-      calldata: [
-        this.getWorldAddress(),
-        creator_id,
-        start_coord.x,
-        start_coord.y,
-        end_coord.x,
-        end_coord.y,
-        usage_count,
-      ],
-    });
-  }
-
   public async transfer_resources(props: SystemProps.TransferResourcesProps) {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
 
@@ -716,12 +698,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
-    const { entity_type, weight_gram, signer } = props;
+    const { category, weight_gram, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_capacity_config",
-      calldata: [entity_type, weight_gram],
+      calldata: [category, weight_gram],
     });
   }
 
@@ -944,15 +926,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_config",
       calldata: [troops, rewards],
-    });
-  }
-
-  public async set_storehouse_capacity_config(props: SystemProps.SetStorehouseCapacityConfigProps) {
-    const { weight_gram, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_storehouse_capacity_config",
-      calldata: [weight_gram],
     });
   }
 }

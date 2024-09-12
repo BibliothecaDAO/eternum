@@ -25,3 +25,20 @@ export const BUILDING_IMAGES_PATH = {
   [ResourceMiningTypes.LumberMill]: BUILD_IMAGES_PREFIX + "lumber_mill.png",
   [ResourceMiningTypes.Dragonhide]: BUILD_IMAGES_PREFIX + "dragonhide.png",
 };
+
+export const BuildingThumbs = {
+  hex: "/images/buildings/thumb/question.png",
+  military: "/images/buildings/thumb/sword.png",
+  construction: "/images/buildings/thumb/crane.png",
+  trade: "/images/buildings/thumb/trade.png",
+  resources: "/images/buildings/thumb/resources.png",
+  banks: "/images/buildings/thumb/banks.png",
+  worldStructures: "/images/buildings/thumb/world-map.png",
+  leaderboard: "/images/buildings/thumb/leaderboard.png",
+  worldMap: "/images/buildings/thumb/world-map.png",
+  squire: "/images/buildings/thumb/squire.png",
+  question: "/images/buildings/thumb/question-wood.png",
+  scale: "/images/buildings/thumb/scale.png",
+  settings: "/images/buildings/thumb/settings.png",
+  guild: "/images/buildings/thumb/guilds.png",
+};

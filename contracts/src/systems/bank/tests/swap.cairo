@@ -7,7 +7,7 @@ use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
 use eternum::models::bank::liquidity::{Liquidity};
 use eternum::models::bank::market::{Market};
 
-use eternum::models::config::{CapacityConfig};
+use eternum::models::config::{CapacityConfig, CapacityConfigCategory};
 use eternum::models::position::{Coord};
 use eternum::models::resources::{Resource, ResourceCustomImpl};
 use eternum::systems::bank::contracts::bank::bank_systems;
@@ -19,7 +19,7 @@ use eternum::systems::bank::contracts::swap::swap_systems;
 use eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_storehouse_capacity_config};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
 
 use starknet::contract_address_const;
 
@@ -55,7 +55,7 @@ fn setup(
 
     bank_config_dispatcher.set_bank_config(0, lp_fee_num, lp_fee_denom);
 
-    set_storehouse_capacity_config(config_systems_address);
+    set_capacity_config(config_systems_address);
 
     let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
@@ -70,15 +70,7 @@ fn setup(
     let swap_systems_dispatcher = ISwapSystemsDispatcher { contract_address: swap_systems_address };
 
     // donkeys capcaity
-    set!(
-        world,
-        (CapacityConfig {
-            config_id: WORLD_CONFIG_ID,
-            carry_capacity_config_id: DONKEY_ENTITY_TYPE,
-            entity_type: DONKEY_ENTITY_TYPE,
-            weight_gram: DONKEY_CAPACITY,
-        })
-    );
+    set!(world, (CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: DONKEY_CAPACITY, }));
 
     // add some resources in the player balance
     // wood, lords, donkeys

@@ -11,20 +11,6 @@ pub struct Quantity {
     value: u128,
 }
 
-
-#[generate_trait]
-impl QuantityCustomImpl of QuantityCustomTrait {
-    /// Get quantity value
-    ///
-    /// This should be used rather than accessing the value directly
-    fn get_value(self: Quantity) -> u128 {
-        if self.value > 0 {
-            return self.value;
-        }
-        return 1;
-    }
-}
-
 // attach it to an entity + entity_type to count the quantity of an entity type
 // a way to track how many of a certain entity type there are.
 // e.g. for free transport units, we only allow realms to have a maximum of them

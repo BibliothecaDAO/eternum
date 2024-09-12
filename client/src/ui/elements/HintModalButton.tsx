@@ -1,7 +1,7 @@
 import { useModalStore } from "@/hooks/store/useModalStore";
-import CircleButton from "./CircleButton";
 import { HintModal } from "../components/hints/HintModal";
-import { BuildingThumbs } from "../modules/navigation/LeftNavigationModule";
+import { BuildingThumbs } from "../config";
+import CircleButton from "./CircleButton";
 
 type HintModalButtonProps = {
   section?: string;

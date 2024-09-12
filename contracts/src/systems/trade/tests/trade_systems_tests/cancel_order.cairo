@@ -6,11 +6,12 @@ use eternum::alias::ID;
 use eternum::constants::DONKEY_ENTITY_TYPE;
 
 use eternum::constants::ResourceTypes;
+use eternum::models::config::CapacityConfig;
+use eternum::models::config::CapacityConfigCategory;
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::owner::Owner;
 use eternum::models::position::{Position};
 use eternum::models::resources::Resource;
-
 use eternum::models::trade::{Trade, Status, TradeStatus};
 use eternum::models::weight::Weight;
 
@@ -25,7 +26,7 @@ use eternum::systems::trade::contracts::trade_systems::{
 
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
-    config::set_storehouse_capacity_config
+    config::set_capacity_config
 };
 use starknet::contract_address_const;
 
@@ -36,7 +37,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-    set_storehouse_capacity_config(config_systems_address);
+    set_capacity_config(config_systems_address);
 
     // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -60,7 +61,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
 
     // set donkey capacity weight_gram
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(DONKEY_ENTITY_TYPE, 1_000_000);
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000, });
 
     // maker and taker are at the same location
     // so they can trade without transport

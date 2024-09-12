@@ -382,11 +382,11 @@ mod combat_systems {
     };
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
-    use eternum::models::capacity::Capacity;
+    use eternum::models::capacity::{CapacityCategory};
     use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl
+        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCategory
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::event::{
@@ -400,7 +400,7 @@ mod combat_systems {
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
     use eternum::models::position::CoordTrait;
     use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTracker, QuantityCustomTrait};
+    use eternum::models::quantity::{Quantity, QuantityTracker};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
     use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
@@ -1040,8 +1040,10 @@ mod combat_systems {
 
                             if pillaged_resource_from_structure.balance > 0 {
                                 // find out the max resource amount carriable given entity's weight
-                                let army_capacity: Capacity = get!(world, army_id, Capacity);
-                                let army_total_capacity = army_capacity.weight_gram
+                                let army_capacity_config: CapacityConfig = get!(
+                                    world, CapacityConfigCategory::Army, CapacityConfig
+                                );
+                                let army_total_capacity = army_capacity_config.weight_gram
                                     * attacking_army.troops.count().into();
                                 let army_weight: Weight = get!(world, army_id, Weight);
                                 let max_carriable = (army_total_capacity - army_weight.value)
@@ -1298,7 +1300,6 @@ mod combat_systems {
 
             // set the army's speed and capacity
             let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig).sec_per_km;
-            let army_carry_capacity: CapacityConfig = CapacityConfigCustomImpl::get(world, ARMY_ENTITY_TYPE);
             let army_owner_position: Position = get!(world, army_owner_id, Position);
 
             set!(
@@ -1314,7 +1315,7 @@ mod combat_systems {
                         intermediate_coord_x: 0,
                         intermediate_coord_y: 0,
                     },
-                    Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram }
+                    CapacityCategory { entity_id: army_id, category: CapacityConfigCategory::Army },
                 )
             );
 
@@ -1409,7 +1410,7 @@ mod combat_systems {
             let (owner, position, quantity, health, stamina, resource_transfer_lock, movable, capacity) = get!(
                 world,
                 army.entity_id,
-                (Owner, Position, Quantity, Health, Stamina, ResourceTransferLock, Movable, Capacity)
+                (Owner, Position, Quantity, Health, Stamina, ResourceTransferLock, Movable, CapacityCategory)
             );
             delete!(
                 world,

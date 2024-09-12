@@ -9,6 +9,7 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
+  CapacityConfigCategory,
   EternumGlobalConfig,
   ID,
   MarketInterface,
@@ -51,7 +52,9 @@ export const MarketResource = ({
 
   return (
     <div
-      onClick={() => onClick(resource.id)}
+      onClick={() => {
+        onClick(resource.id);
+      }}
       className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
         active ? "bg-gold/10" : ""
       }`}
@@ -259,7 +262,9 @@ const OrderRow = ({
   }, [entityId, calculatedResourceAmount, calculatedLords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram.donkey);
+    return Math.ceil(
+      divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey],
+    );
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -360,7 +365,13 @@ const OrderRow = ({
         </div>
       </div>
       {confirmOrderModal && (
-        <ConfirmationPopup title="Confirm Trade" onConfirm={onAccept} onCancel={() => setConfirmOrderModal(false)}>
+        <ConfirmationPopup
+          title="Confirm Trade"
+          onConfirm={onAccept}
+          onCancel={() => {
+            setConfirmOrderModal(false);
+          }}
+        >
           <div className=" p-8 rounded">
             <div className="text-center text-lg">
               <div className="flex gap-3">
@@ -371,7 +382,9 @@ const OrderRow = ({
                   max={getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision}
                 />
                 <Button
-                  onClick={() => setInputValue(getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision)}
+                  onClick={() => {
+                    setInputValue(getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision);
+                  }}
                 >
                   Max
                 </Button>
@@ -450,7 +463,9 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(orderWeight / EternumGlobalConfig.carryCapacityGram.donkey);
+    return Math.ceil(
+      divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey],
+    );
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
@@ -504,7 +519,9 @@ const OrderCreation = ({
           <NumberInput
             value={resource}
             className="w-full col-span-3"
-            onChange={(value) => setResource(Number(value))}
+            onChange={(value) => {
+              setResource(Number(value));
+            }}
             max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
           />
 
@@ -528,7 +545,9 @@ const OrderCreation = ({
           <NumberInput
             value={lords}
             className="w-full col-span-3"
-            onChange={(value) => setLords(Number(value))}
+            onChange={(value) => {
+              setLords(Number(value));
+            }}
             max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
           />
 
@@ -565,7 +584,7 @@ const OrderCreation = ({
           size="md"
           variant="primary"
         >
-          Create {isBuy ? "Buy " : `Sell `} Order of {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
+          Create {isBuy ? "Buy " : "Sell "} Order of {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
         </Button>
       </div>
     </div>

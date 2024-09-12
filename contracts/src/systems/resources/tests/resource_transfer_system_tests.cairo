@@ -9,9 +9,9 @@ mod resource_transfer_system_tests {
 
     use eternum::constants::ResourceTypes;
     use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::models::capacity::Capacity;
+    use eternum::models::capacity::CapacityCategory;
     use eternum::models::config::WeightConfig;
-    use eternum::models::config::{CapacityConfig};
+    use eternum::models::config::{CapacityConfig, CapacityConfigCategory};
     use eternum::models::metadata::ForeignKey;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
@@ -24,7 +24,7 @@ mod resource_transfer_system_tests {
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
 
-    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
     use starknet::contract_address_const;
 
 
@@ -32,6 +32,8 @@ mod resource_transfer_system_tests {
         let world = spawn_eternum();
 
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+
+        set_capacity_config(config_systems_address);
 
         // set weight configuration for stone
         IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -42,15 +44,7 @@ mod resource_transfer_system_tests {
             .set_weight_config(ResourceTypes::WOOD.into(), 200);
 
         // set donkey config
-        set!(
-            world,
-            (CapacityConfig {
-                config_id: WORLD_CONFIG_ID,
-                carry_capacity_config_id: DONKEY_ENTITY_TYPE,
-                entity_type: DONKEY_ENTITY_TYPE,
-                weight_gram: 1_000_000
-            })
-        );
+        set!(world, (CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000 }));
 
         let resource_systems_address = deploy_system(world, resource_systems::TEST_CLASS_HASH);
 
@@ -73,6 +67,7 @@ mod resource_transfer_system_tests {
                 Resource {
                     entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000
                 },
+                CapacityCategory { entity_id: sender_entity_id.into(), category: CapacityConfigCategory::Structure },
                 Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
             )
         );
@@ -82,6 +77,7 @@ mod resource_transfer_system_tests {
         set!(
             world,
             (
+                CapacityCategory { entity_id: receiver_entity_id.into(), category: CapacityConfigCategory::Structure },
                 Resource {
                     entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000
                 },
@@ -128,7 +124,7 @@ mod resource_transfer_system_tests {
     #[available_gas(30000000000000)]
     #[should_panic(
         expected: (
-            "not enough resources, Resource (entity id: 11, resource type: DONKEY, balance: 0). deduction: 1000",
+            "not enough resources, Resource (entity id: 11, resource type: DONKEY, balance: 1). deduction: 1000",
             'ENTRYPOINT_FAILED'
         )
     )]
@@ -139,16 +135,15 @@ mod resource_transfer_system_tests {
         let receiver_entity_id = 12;
         make_owner_and_receiver(world, sender_entity_id, receiver_entity_id);
 
-        // set sender's donkey balance to 0
+        // set sender's donkey balance to 1
         set!(
-            world, (Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 0 },)
+            world, (Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1 },)
         );
 
         // set receiving entity capacity, and weight config
         set!(
             world,
             (
-                Capacity { entity_id: receiver_entity_id.into(), weight_gram: 10_000 },
                 WeightConfig {
                     config_id: WORLD_CONFIG_ID,
                     weight_config_id: ResourceTypes::STONE.into(),
@@ -161,20 +156,14 @@ mod resource_transfer_system_tests {
                     entity_type: ResourceTypes::WOOD.into(),
                     weight_gram: 10
                 },
-                CapacityConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    carry_capacity_config_id: DONKEY_ENTITY_TYPE,
-                    entity_type: DONKEY_ENTITY_TYPE,
-                    weight_gram: 1_000_000
-                }
+                CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 11_000 }
             )
         );
 
         // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
-        // should fail because total capacity
-        // is 10,000 and total weight is 11,000
+        // should fail because sender does not have enough donkey
         resource_systems_dispatcher
             .send(
                 sender_entity_id.into(),

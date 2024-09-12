@@ -12,7 +12,8 @@ mod dev_bank_systems {
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
     use eternum::models::bank::bank::{Bank};
-    use eternum::models::config::{BankConfig};
+    use eternum::models::capacity::{CapacityCategory};
+    use eternum::models::config::{BankConfig, CapacityConfigCategory};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl};
@@ -46,6 +47,7 @@ mod dev_bank_systems {
                         created_at: starknet::get_block_timestamp()
                     },
                     StructureCount { coord, count: 1 },
+                    CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure },
                     Bank { entity_id: ADMIN_BANK_ENTITY_ID, owner_fee_num, owner_fee_denom, exists: true },
                     Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },
                     Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin }

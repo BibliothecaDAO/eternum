@@ -19,20 +19,20 @@ mod resource_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{WORLD_CONFIG_ID};
-    use eternum::models::capacity::{Capacity, CapacityCustomTrait};
-    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use eternum::models::config::{
+        WeightConfig, WeightConfigCustomImpl, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory
+    };
     use eternum::models::metadata::ForeignKey;
     use eternum::models::movable::{ArrivalTime, ArrivalTimeCustomTrait};
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Position, Coord};
-    use eternum::models::quantity::{Quantity, QuantityCustomTrait};
+    use eternum::models::quantity::{Quantity,};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{
         Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceAllowance, ResourceTransferLock,
         ResourceTransferLockCustomTrait
     };
     use eternum::models::resources::{DetachedResource};
-    use eternum::models::road::RoadCustomImpl;
     use eternum::models::weight::Weight;
     use eternum::models::weight::WeightCustomTrait;
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
@@ -239,15 +239,24 @@ mod resource_systems {
 
             // increase recipient weight
             let mut recipient_weight: Weight = get!(world, actual_recipient_id, Weight);
-            let recipient_capacity: Capacity = get!(world, actual_recipient_id, Capacity);
-            let recipient_quantity: Quantity = get!(world, actual_recipient_id, Quantity);
-            recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
-            set!(world, (recipient_weight));
+            let recipient_capacity: CapacityConfig = if !transport_is_needed {
+                CapacityConfigCustomImpl::get_from_entity(world, actual_recipient_id)
+            } else {
+                get!(world, CapacityConfigCategory::Donkey, CapacityConfig)
+            };
+            if !transport_is_needed {
+                let recipient_quantity: Quantity = get!(world, actual_recipient_id, Quantity);
+                recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
+                set!(world, (recipient_weight));
+            } else {
+                recipient_weight.value = total_resources_weight;
+                set!(world, (recipient_weight));
+            }
 
             if enforce_owner_payment {
                 // decrease sender weight
                 let mut owner_weight: Weight = get!(world, owner_id, Weight);
-                let owner_capacity: Capacity = get!(world, owner_id, Capacity);
+                let owner_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(world, owner_id);
                 owner_weight.deduct(owner_capacity, total_resources_weight);
                 set!(world, (owner_weight));
             }
@@ -283,7 +292,7 @@ mod resource_systems {
             let mut total_resources_weight = 0;
             total_resources_weight += WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
             let mut recipient_weight: Weight = get!(world, recipient_id, Weight);
-            let recipient_capacity: Capacity = get!(world, recipient_id, Capacity);
+            let recipient_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(world, recipient_id);
             let recipient_quantity: Quantity = get!(world, recipient_id, Quantity);
 
             recipient_weight.value += total_resources_weight;
