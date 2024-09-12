@@ -219,8 +219,14 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   const txExplore = await provider.set_exploration_config({
     signer: account,
-    wheat_burn_amount: EternumGlobalConfig.exploration.wheatBurn * EternumGlobalConfig.resources.resourcePrecision,
-    fish_burn_amount: EternumGlobalConfig.exploration.fishBurn * EternumGlobalConfig.resources.resourcePrecision,
+    explore_wheat_burn_amount:
+      EternumGlobalConfig.exploration.exploreWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
+    explore_fish_burn_amount:
+      EternumGlobalConfig.exploration.exploreFishBurn * EternumGlobalConfig.resources.resourcePrecision,
+    travel_wheat_burn_amount:
+      EternumGlobalConfig.exploration.travelWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
+    travel_fish_burn_amount:
+      EternumGlobalConfig.exploration.travelFishBurn * EternumGlobalConfig.resources.resourcePrecision,
     reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision,
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });

@@ -11,14 +11,15 @@ mod map_systems {
     use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
-    use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
+    use eternum::constants::{WORLD_CONFIG_ID, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::combat::{
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        CapacityConfigCategory, MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigCustomImpl
+        CapacityConfigCategory, MapExploreConfig, MapExploreConfigImpl, LevelingConfig, MercenariesConfig,
+        TroopConfigCustomImpl
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
@@ -27,9 +28,7 @@ mod map_systems {
     use eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use eternum::models::quantity::Quantity;
     use eternum::models::realm::{Realm};
-    use eternum::models::resources::{
-        Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock
-    };
+    use eternum::models::resources::{Resource, ResourceCost, ResourceCustomTrait, ResourceTransferLock};
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
@@ -86,9 +85,8 @@ mod map_systems {
             StaminaCustomImpl::handle_stamina_costs(unit_id, TravelTypes::Explore, world);
 
             // explore coordinate, pay food and mint reward
-            let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
-                world, unit_entity_owner, unit_quantity
-            );
+            MapExploreConfigImpl::pay_exploration_cost(world, unit_entity_owner, unit_quantity);
+            let exploration_reward = MapExploreConfigImpl::random_reward(world);
 
             InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward, 0, false, false);
 
@@ -133,22 +131,6 @@ mod map_systems {
             );
 
             tile
-        }
-
-        fn pay_food_and_get_explore_reward(
-            world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity
-        ) -> Span<(u8, u128)> {
-            let unit_owner_id = unit_entity_owner.entity_owner_id;
-            let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
-            let mut wheat_pay_amount = explore_config.wheat_burn_amount * unit_quantity.value;
-            let mut fish_pay_amount = explore_config.fish_burn_amount * unit_quantity.value;
-            ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
-
-            let (resource_types, resources_probs) = split_resources_and_probs();
-            let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true)
-                .at(0);
-            let reward_resource_amount: u128 = explore_config.reward_resource_amount;
-            array![(reward_resource_id, reward_resource_amount)].span()
         }
 
         fn discover_shards_mine(world: IWorldDispatcher, coord: Coord) -> bool {

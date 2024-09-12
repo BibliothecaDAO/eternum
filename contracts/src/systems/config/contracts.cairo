@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, BattleConfig, MercenariesConfig, CapacityConfig};
+use eternum::models::config::{TroopConfig, MapExploreConfig, BattleConfig, MercenariesConfig, CapacityConfig};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -86,13 +86,7 @@ trait IBankConfig {
 
 #[dojo::interface]
 trait IMapConfig {
-    fn set_exploration_config(
-        ref world: IWorldDispatcher,
-        wheat_burn_amount: u128,
-        fish_burn_amount: u128,
-        reward_resource_amount: u128,
-        shards_mines_fail_probability: u128
-    );
+    fn set_exploration_config(ref world: IWorldDispatcher, map_explore_config: MapExploreConfig);
 }
 
 
@@ -221,29 +215,11 @@ mod config_systems {
     }
     #[abi(embed_v0)]
     impl MapConfigCustomImpl of super::IMapConfig<ContractState> {
-        fn set_exploration_config(
-            ref world: IWorldDispatcher,
-            wheat_burn_amount: u128,
-            fish_burn_amount: u128,
-            reward_resource_amount: u128,
-            // weight of fail
-            // the higher, the less likely to find a mine
-            // weight of sucess = 1000
-            // ex: if set to 5000
-            shards_mines_fail_probability: u128,
-        ) {
+        fn set_exploration_config(ref world: IWorldDispatcher, mut map_explore_config: MapExploreConfig) {
             assert_caller_is_admin(world);
 
-            set!(
-                world,
-                (MapExploreConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    wheat_burn_amount,
-                    fish_burn_amount,
-                    reward_resource_amount,
-                    shards_mines_fail_probability
-                })
-            );
+            map_explore_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (map_explore_config));
         }
     }
 

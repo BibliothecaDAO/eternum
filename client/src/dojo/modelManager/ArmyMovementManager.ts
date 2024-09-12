@@ -96,10 +96,10 @@ export class ArmyMovementManager {
     }
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < EternumGlobalConfig.exploration.fishBurn) {
+    if (fish < EternumGlobalConfig.exploration.exploreFishBurn) {
       return false;
     }
-    if (wheat < EternumGlobalConfig.exploration.wheatBurn) {
+    if (wheat < EternumGlobalConfig.exploration.exploreWheatBurn) {
       return false;
     }
 

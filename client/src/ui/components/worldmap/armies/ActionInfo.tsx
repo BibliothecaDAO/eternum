@@ -37,12 +37,12 @@ export const ActionInfo = () => {
           {!isExplored && (
             <div>
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.wheatBurn}
+                amount={-EternumGlobalConfig.exploration.exploreWheatBurn}
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.fishBurn}
+                amount={-EternumGlobalConfig.exploration.exploreFishBurn}
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
