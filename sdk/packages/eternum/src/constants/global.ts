@@ -32,6 +32,8 @@ export const EternumGlobalConfig = {
     workerHuts: 5,
   },
   exploration: {
+    // todo: update with new values
+    // food burn amount per unit
     exploreWheatBurn: 100,
     exploreFishBurn: 100,
     travelWheatBurn: 100,
