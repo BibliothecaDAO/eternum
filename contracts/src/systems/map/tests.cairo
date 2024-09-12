@@ -49,7 +49,7 @@ use eternum::utils::testing::{
         set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
         set_tick_config, set_exploration_config, set_weight_config, set_mine_production_config
     },
-    constants::{MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT}
+    constants::{MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK}
 };
 
 use starknet::contract_address_const;
@@ -155,13 +155,17 @@ fn test_map_explore__mine_production_deadline() {
 
     let army_position = get!(world, realm_army_unit_id, Position).into();
     let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(world, army_position);
-    let mine_earthen_shard_production_config: ProductionDeadline = get!(world, mine_entity_id, ProductionDeadline);
-    assert_ge!(mine_earthen_shard_production_config.deadline_tick, (100_000 * RESOURCE_PRECISION).try_into().unwrap());
-    assert_le!(
-        mine_earthen_shard_production_config.deadline_tick, (10 * 100_000 * RESOURCE_PRECISION).try_into().unwrap()
-    );
-}
+    InternalMapSystemsImpl::add_production_deadline(world, mine_entity_id);
+    let mine_earthen_shard_production_deadline: ProductionDeadline = get!(world, mine_entity_id, ProductionDeadline);
 
+    let current_ts = starknet::get_block_timestamp();
+    let min_deadline = current_ts
+        + (100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK).try_into().unwrap();
+    let max_deadline = current_ts
+        + (10 * 100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK).try_into().unwrap();
+    assert_ge!(mine_earthen_shard_production_deadline.deadline_tick, cumin_deadline);
+    assert_le!(mine_earthen_shard_production_deadline.deadline_tick, max_deadline);
+}
 fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractDispatcher) {
     let world = spawn_eternum();
 

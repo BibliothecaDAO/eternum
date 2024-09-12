@@ -18,7 +18,8 @@ use eternum::systems::config::contracts::{
 
 use eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS
+    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
+    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
 };
 
 use starknet::{ContractAddress};
@@ -74,7 +75,7 @@ fn set_combat_config(config_systems_address: ContractAddress) {
 
 fn set_mine_production_config(config_systems_address: ContractAddress) {
     IProductionConfigDispatcher { contract_address: config_systems_address }
-        .set_production_config(ResourceTypes::EARTHEN_SHARD, 100 * RESOURCE_PRECISION, array![].span());
+        .set_production_config(ResourceTypes::EARTHEN_SHARD, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, array![].span());
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {
