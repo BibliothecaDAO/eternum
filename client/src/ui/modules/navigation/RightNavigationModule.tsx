@@ -10,7 +10,6 @@ import { BaseContainer } from "../../containers/BaseContainer";
 
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { useArrivalsWithResources } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -45,9 +44,9 @@ export const RightNavigationModule = () => {
   const structureInfo = getEntityInfo(structureEntityId);
   const structureIsMine = structureInfo.isMine;
 
-  const { getAllArrivalsWithResources } = useArrivalsWithResources();
-
   const { toggleModal } = useModalStore();
+
+  const [notificationLength, setNotificationLength] = useState(0);
 
   const isRealm = Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm";
 
@@ -92,7 +91,7 @@ export const RightNavigationModule = () => {
                 setView(View.ResourceArrivals);
               }
             }}
-            notification={getAllArrivalsWithResources.length}
+            notification={notificationLength}
             notificationLocation="topleft"
           />
         ),
@@ -125,7 +124,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ];
-  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources, structureEntityId]);
+  }, [location, view, questClaimStatus, notificationLength, openedPopups, selectedQuest, structureEntityId]);
 
   const slideRight = {
     hidden: { x: "100%" },
@@ -167,7 +166,7 @@ export const RightNavigationModule = () => {
               <EntityResourceTable entityId={structureEntityId} />
             </div>
           ) : (
-            <AllResourceArrivals entityIds={getAllArrivalsWithResources} />
+            <AllResourceArrivals setNotificationLength={setNotificationLength} />
           )}
         </BaseContainer>
       </div>
