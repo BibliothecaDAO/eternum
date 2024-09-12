@@ -11,8 +11,9 @@ import {
   neighborOffsetsEven,
   neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
-import { type Entity, getComponentValue } from "@dojoengine/recs";
+import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
+import { type ClientComponents } from "../createClientComponents";
 import { type SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
 import { StaminaManager } from "./StaminaManager";
@@ -74,6 +75,7 @@ export class ArmyMovementManager {
   private readonly fishManager: ProductionManager;
   private readonly wheatManager: ProductionManager;
   private readonly staminaManager: StaminaManager;
+  private readonly entityQuantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
 
   constructor(
     private readonly setup: SetupResult,
@@ -83,6 +85,7 @@ export class ArmyMovementManager {
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
     const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
+    this.entityQuantity = getComponentValue(this.setup.components.Quantity, this.entity);
     this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
     this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.setup, entityId);
@@ -96,10 +99,19 @@ export class ArmyMovementManager {
     }
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < EternumGlobalConfig.exploration.exploreFishBurn) {
+    const wheatPayAmount =
+      EternumGlobalConfig.exploration.exploreWheatBurn *
+      EternumGlobalConfig.resources.resourcePrecision *
+      Number(this.entityQuantity.value);
+    const fishPayAmount =
+      EternumGlobalConfig.exploration.exploreFishBurn *
+      EternumGlobalConfig.resources.resourcePrecision *
+      Number(this.entityQuantity.value);
+
+    if (fish < fishPayAmount) {
       return false;
     }
-    if (wheat < EternumGlobalConfig.exploration.exploreWheatBurn) {
+    if (wheat < wheatPayAmount) {
       return false;
     }
 
@@ -110,9 +122,23 @@ export class ArmyMovementManager {
     return true;
   }
 
-  private readonly _calculateMaxTravelPossible = (currentArmiesTick: number) => {
+  private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    return Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+    const maxStaminaSteps = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+
+    const travelWheatPayAmountPerStep =
+      EternumGlobalConfig.exploration.travelWheatBurn *
+      EternumGlobalConfig.resources.resourcePrecision *
+      Number(this.entityQuantity.value);
+    const travelFishPayAmountPerStep =
+      EternumGlobalConfig.exploration.travelFishBurn *
+      EternumGlobalConfig.resources.resourcePrecision *
+      Number(this.entityQuantity.value);
+    const { wheat, fish } = this.getFood(currentDefaultTick);
+    const maxTravelWheatSteps = Math.floor(wheat / travelWheatPayAmountPerStep);
+    const maxTravelFishSteps = Math.floor(fish / travelFishPayAmountPerStep);
+    const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
+    return Math.min(maxStaminaSteps, maxTravelSteps);
   };
 
   private readonly _getCurrentPosition = () => {
@@ -136,7 +162,7 @@ export class ArmyMovementManager {
     currentArmiesTick: number,
   ): TravelPaths {
     const startPos = this._getCurrentPosition();
-    const maxHex = this._calculateMaxTravelPossible(currentArmiesTick);
+    const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
     const priorityQueue: Array<{ position: HexPosition; distance: number; path: HexPosition[] }> = [
