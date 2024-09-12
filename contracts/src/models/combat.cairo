@@ -462,7 +462,8 @@ pub struct Battle {
     attack_delta: u64,
     defence_delta: u64,
     last_updated: u64,
-    duration_left: u64
+    duration_left: u64,
+    created_at: u64
 }
 
 
@@ -642,8 +643,8 @@ impl BattleCustomImpl of BattleCustomTrait {
     /// Update state should be called before reading
     /// battle model values so that the correct values
     /// are gotten
-    fn update_state(ref self: Battle) {
-        let battle_duration_passed = self.duration_passed();
+    fn update_state(ref self: Battle, battle_config: @BattleConfig) {
+        let battle_duration_passed = self.duration_passed(battle_config);
         self.attack_army_health.decrease_current_by((self.defence_delta.into() * battle_duration_passed.into()));
         self.defence_army_health.decrease_current_by((self.attack_delta.into() * battle_duration_passed.into()));
     }
@@ -684,9 +685,22 @@ impl BattleCustomImpl of BattleCustomTrait {
         min(defence_num_seconds_to_death, attack_num_seconds_to_death).try_into().unwrap()
     }
 
+    fn start_time(ref self: Battle, battle_config: @BattleConfig) -> u64 {
+        self.created_at + *battle_config.battle_delay_seconds
+    }
 
-    fn duration_passed(ref self: Battle) -> u64 {
+
+    fn duration_passed(ref self: Battle, battle_config: @BattleConfig) -> u64 {
         let now = starknet::get_block_timestamp();
+        let start_time = self.start_time(battle_config);
+        if now <= start_time {
+            return 0;
+        }
+
+        if self.last_updated < start_time {
+            self.last_updated = start_time;
+        }
+
         let duration_since_last_update = now - self.last_updated;
         if self.duration_left >= duration_since_last_update {
             self.duration_left -= duration_since_last_update;
@@ -740,6 +754,8 @@ mod tests {
     use eternum::models::combat::BattleHealthCustomTrait;
     use eternum::models::combat::TroopsTrait;
     use eternum::models::config::CapacityConfigCategory;
+    use eternum::models::config::BattleConfigCustomTrait;
+    use eternum::models::config::BattleConfig;
     use eternum::models::resources::ResourceCustomTrait;
 
     use eternum::models::resources::ResourceTransferLockCustomTrait;
@@ -762,6 +778,14 @@ mod tests {
             army_extra_per_building: 100,
             battle_leave_slash_num: 25,
             battle_leave_slash_denom: 100
+        }
+    }
+
+    fn mock_battle_config() -> BattleConfig {
+        BattleConfig {
+            config_id: 0,
+            battle_grace_tick_count: 0,
+            battle_delay_seconds: 0,
         }
     }
 
@@ -790,6 +814,7 @@ mod tests {
             attack_delta: 0,
             defence_delta: 0,
             last_updated: starknet::get_block_timestamp(),
+            created_at: starknet::get_block_timestamp(),
             duration_left: 0,
             defence_army_lifetime: BattleArmy {
                 troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence
@@ -840,9 +865,11 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
+        let battle_config = mock_battle_config();
+
         // move time up but before battle ends
         starknet::testing::set_block_timestamp(battle.duration_left - 1);
-        battle.update_state();
+        battle.update_state(@battle_config);
         assert!(battle.has_ended() == false, "battle should not have ended");
     }
 
@@ -856,7 +883,8 @@ mod tests {
 
         // move time up to battle duration
         starknet::testing::set_block_timestamp(battle.duration_left);
-        battle.update_state();
+        let battle_config = mock_battle_config();
+        battle.update_state(@battle_config);
         assert!(battle.has_ended() == true, "battle should have ended");
     }
 
@@ -1021,7 +1049,8 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let battle_config = mock_battle_config();
+        battle.update_state(@battle_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Defence, "unexpected side won");
 
@@ -1103,7 +1132,8 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let battle_config = mock_battle_config();
+        battle.update_state(@battle_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::None, "unexpected side won");
 
@@ -1200,7 +1230,8 @@ mod tests {
 
         // attacker wins battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let battle_config = mock_battle_config();
+        battle.update_state(@battle_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Attack, "unexpected side won");
 

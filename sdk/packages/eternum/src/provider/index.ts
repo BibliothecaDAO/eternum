@@ -812,12 +812,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_battle_config(props: SystemProps.SetBattleConfigProps) {
-    const { signer, config_id, battle_grace_tick_count } = props;
+    const { signer, config_id, battle_grace_tick_count, battle_delay_seconds } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_battle_config",
-      calldata: [config_id, battle_grace_tick_count],
+      calldata: [config_id, battle_grace_tick_count, battle_delay_seconds],
     });
   }
 
