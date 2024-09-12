@@ -689,6 +689,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
     const {
+      config_id,
       explore_wheat_burn_amount,
       explore_fish_burn_amount,
       travel_wheat_burn_amount,
@@ -702,6 +703,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
       calldata: [
+        config_id,
         explore_wheat_burn_amount,
         explore_fish_burn_amount,
         travel_wheat_burn_amount,

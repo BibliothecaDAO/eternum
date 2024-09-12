@@ -219,6 +219,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   const txMap = await provider.set_map_config({
     signer: account,
+    config_id: 0,
     explore_wheat_burn_amount:
       EternumGlobalConfig.exploration.exploreWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
     explore_fish_burn_amount:

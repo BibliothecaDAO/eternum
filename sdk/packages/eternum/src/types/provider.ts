@@ -368,6 +368,7 @@ export interface SetMintConfigProps extends SystemSigner {
 }
 
 export interface SetMapConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
   explore_wheat_burn_amount: num.BigNumberish;
   explore_fish_burn_amount: num.BigNumberish;
   travel_wheat_burn_amount: num.BigNumberish;

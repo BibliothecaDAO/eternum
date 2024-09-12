@@ -34,10 +34,10 @@ export const EternumGlobalConfig = {
   exploration: {
     // todo: update with new values
     // food burn amount per unit
-    exploreWheatBurn: 100,
-    exploreFishBurn: 100,
-    travelWheatBurn: 100,
-    travelFishBurn: 100,
+    exploreWheatBurn: 0.001,
+    exploreFishBurn: 0.001,
+    travelWheatBurn: 0.001,
+    travelFishBurn: 0.001,
     reward: 750,
     shardsMinesFailProbability: 99000,
   },
