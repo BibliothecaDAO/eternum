@@ -163,7 +163,7 @@ fn test_map_explore__mine_production_deadline() {
         + (100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK).try_into().unwrap();
     let max_deadline = current_ts
         + (10 * 100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK).try_into().unwrap();
-    assert_ge!(mine_earthen_shard_production_deadline.deadline_tick, cumin_deadline);
+    assert_ge!(mine_earthen_shard_production_deadline.deadline_tick, min_deadline);
     assert_le!(mine_earthen_shard_production_deadline.deadline_tick, max_deadline);
 }
 fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractDispatcher) {
