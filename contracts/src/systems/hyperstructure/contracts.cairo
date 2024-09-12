@@ -39,9 +39,10 @@ mod hyperstructure_systems {
     #[dojo::model]
     struct HyperstructureFinished {
         #[key]
-        hyperstructure_entity_id: ID,
-        #[key]
         id: ID,
+        #[key]
+        hyperstructure_entity_id: ID,
+        contributor_entity_id: ID,
         timestamp: u64,
     }
 
@@ -50,11 +51,25 @@ mod hyperstructure_systems {
     #[dojo::model]
     struct HyperstructureCoOwnersChange {
         #[key]
+        id: ID,
+        #[key]
         hyperstructure_entity_id: ID,
-        timestamp: u64,
         co_owners: Span<(ContractAddress, u16)>,
+        timestamp: u64,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    #[dojo::model]
+    struct HyperstructureContribution {
+        #[key]
+        id: ID,
+        #[key]
+        hyperstructure_entity_id: ID,
+        contributor_entity_id: ID,
+        contributions: Span<(u8, u128)>,
+        timestamp: u64,
+    }
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
@@ -121,6 +136,15 @@ mod hyperstructure_systems {
             let structure = get!(world, hyperstructure_entity_id, Structure);
             assert(structure.category == StructureCategory::Hyperstructure, 'not a hyperstructure');
 
+            let timestamp = starknet::get_block_timestamp();
+
+            emit!(
+                world,
+                (HyperstructureContribution {
+                    hyperstructure_entity_id, contributor_entity_id, contributions, timestamp, id: world.uuid()
+                }),
+            );
+
             let mut i = 0;
             let mut resource_was_completed = false;
             while (i < contributions.len()) {
@@ -135,8 +159,12 @@ mod hyperstructure_systems {
 
             if (resource_was_completed
                 && InternalHyperstructureSystemsImpl::check_if_construction_done(world, hyperstructure_entity_id)) {
-                let timestamp = starknet::get_block_timestamp();
-                emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp, id: world.uuid() }),);
+                emit!(
+                    world,
+                    (HyperstructureFinished {
+                        hyperstructure_entity_id, contributor_entity_id, timestamp, id: world.uuid()
+                    }),
+                );
             }
         }
 
@@ -177,7 +205,10 @@ mod hyperstructure_systems {
                 i += 1;
             };
             assert!(total == 10000, "total percentage must be 10000");
-            emit!(world, (HyperstructureCoOwnersChange { hyperstructure_entity_id, timestamp, co_owners }));
+            emit!(
+                world,
+                (HyperstructureCoOwnersChange { id: world.uuid(), hyperstructure_entity_id, timestamp, co_owners })
+            );
         }
     }
 
