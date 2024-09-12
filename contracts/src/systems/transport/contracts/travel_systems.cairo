@@ -102,6 +102,10 @@ mod travel_systems {
             let num_moves = directions.len().try_into().unwrap();
             StaminaCustomImpl::handle_stamina_costs(travelling_entity_id, TravelTypes::Travel(num_moves), world);
 
+            let transport_owner_entity = get!(world, travelling_entity_id, EntityOwner);
+            let transport_quantity = get!(world, travelling_entity_id, Quantity);
+            MapExploreConfigImpl::pay_travel_cost(world, transport_owner_entity, transport_quantity);
+
             InternalTravelSystemsImpl::travel_hex(world, travelling_entity_id, travelling_entity_coord, directions);
         }
     }
@@ -158,10 +162,6 @@ mod travel_systems {
 
                 index += 1;
             };
-
-            let transport_owner_entity = get!(world, transport_id, EntityOwner);
-            let transport_quantity = get!(world, transport_id, Quantity);
-            MapExploreConfigImpl::pay_travel_cost(world, transport_owner_entity, transport_quantity);
 
             let mut transport_movable: Movable = get!(world, transport_id, Movable);
             transport_movable.blocked = false;
