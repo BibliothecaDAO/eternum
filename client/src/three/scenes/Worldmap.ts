@@ -94,7 +94,7 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     this.armyManager = new ArmyManager(this.scene, this.chunkSize, this.renderChunkSize);
-    this.structureManager = new StructureManager(this.scene);
+    this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
     this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();

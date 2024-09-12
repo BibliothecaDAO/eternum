@@ -23,9 +23,11 @@ export class StructureManager {
   structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
   private currentChunk: string = "";
+  private renderChunkSize: { width: number; height: number };
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
+    this.renderChunkSize = renderChunkSize;
     this.loadModels();
   }
 
@@ -143,14 +145,12 @@ export class StructureManager {
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
     const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
-    const chunkSize = 10; // Assuming chunk size is 10, adjust if different
-    const renderChunkSize = { width: 40, height: 30 }; // Adjust if different
 
     return (
-      hexCoords.col >= chunkCol - renderChunkSize.width / 2 &&
-      hexCoords.col < chunkCol + renderChunkSize.width / 2 &&
-      hexCoords.row >= chunkRow - renderChunkSize.height / 2 &&
-      hexCoords.row < chunkRow + renderChunkSize.height / 2
+      hexCoords.col >= chunkCol - this.renderChunkSize.width / 2 &&
+      hexCoords.col < chunkCol + this.renderChunkSize.width / 2 &&
+      hexCoords.row >= chunkRow - this.renderChunkSize.height / 2 &&
+      hexCoords.row < chunkRow + this.renderChunkSize.height / 2
     );
   }
 }
