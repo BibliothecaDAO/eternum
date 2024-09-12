@@ -97,6 +97,7 @@ export const usePlayerArrivals = () => {
     },
   } = useDojo();
 
+  // needed to query without playerStructures() from useEntities because of circular dependency
   const playerStructures = useEntityQuery([Has(Structure), HasValue(Owner, { address: BigInt(account.address) })]);
 
   useEffect(() => {
