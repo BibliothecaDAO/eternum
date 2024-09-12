@@ -1,12 +1,12 @@
+import { FELT_CENTER } from "@/ui/config";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
+import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
+import { StructureSystemUpdate } from "../systems/types";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { StructureSystemUpdate } from "../systems/types";
-import { FELT_CENTER } from "@/ui/config";
-import { ID, StructureType } from "@bibliothecadao/eternum";
-import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -22,9 +22,12 @@ export class StructureManager {
   structures: Structures = new Structures();
   structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
+  private currentChunk: string = "";
+  private renderChunkSize: { width: number; height: number };
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
+    this.renderChunkSize = renderChunkSize;
     this.loadModels();
   }
 
@@ -94,45 +97,80 @@ export class StructureManager {
 
     const key = StructureType[structureType] as unknown as StructureType;
 
-    // Ensure the structure is added and get its index
-    const index = this.structures.addStructure(entityId, key);
+    // Add the structure to the structures map
+    this.structures.addStructure(entityId, key, normalizedCoord, stage);
 
-    if (this.structureModels) {
-      const models = this.structureModels.get(key);
+    // Update the visible structures if this structure is in the current chunk
+    if (this.isInCurrentChunk(normalizedCoord)) {
+      this.updateVisibleStructures();
+    }
+  }
+
+  updateChunk(chunkKey: string) {
+    if (this.currentChunk !== chunkKey) {
+      this.currentChunk = chunkKey;
+      this.updateVisibleStructures();
+    }
+  }
+
+  private updateVisibleStructures() {
+    for (const [structureType, structures] of this.structures.getStructures()) {
+      const visibleStructures = this.getVisibleStructures(structures);
+      const models = this.structureModels.get(structureType);
+
       if (models && models.length > 0) {
-        const modelType = models[stage];
+        // Reset all models for this structure type
+        models.forEach((model) => model.setCount(0));
 
-        modelType.setMatrixAt(index, this.dummy.matrix);
-        modelType.setCount(this.structures.getCountForType(key));
+        visibleStructures.forEach((structure) => {
+          const position = getWorldPositionForHex(structure.hexCoords);
+          this.dummy.position.copy(position);
+          this.dummy.updateMatrix();
 
-        // Add label on top of the structure with appropriate color
-        const labelColor = isMine ? myColor : neutralColor;
-        const label = this.labelManagers.get(key)?.createLabel(position as any, labelColor);
-        this.scene.add(label!);
+          const modelType = models[structure.stage];
+          const currentCount = modelType.getCount();
+          modelType.setMatrixAt(currentCount, this.dummy.matrix);
+          modelType.setCount(currentCount + 1);
+        });
+
+        // Update all models
+        models.forEach((model) => model.needsUpdate());
       }
     }
   }
+
+  private getVisibleStructures(structures: Map<ID, StructureInfo>): StructureInfo[] {
+    return Array.from(structures.values()).filter((structure) => this.isInCurrentChunk(structure.hexCoords));
+  }
+
+  private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
+    const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
+
+    return (
+      hexCoords.col >= chunkCol - this.renderChunkSize.width / 2 &&
+      hexCoords.col < chunkCol + this.renderChunkSize.width / 2 &&
+      hexCoords.row >= chunkRow - this.renderChunkSize.height / 2 &&
+      hexCoords.row < chunkRow + this.renderChunkSize.height / 2
+    );
+  }
+}
+
+interface StructureInfo {
+  hexCoords: { col: number; row: number };
+  stage: number;
 }
 
 class Structures {
-  private structures: Map<ID, { index: number; structureType: StructureType }> = new Map();
-  private counters: Map<StructureType, number> = new Map();
+  private structures: Map<StructureType, Map<ID, StructureInfo>> = new Map();
 
-  addStructure(entityId: ID, structureType: StructureType): number {
-    const index = this.counters.get(structureType) || 0;
-
-    if (!this.structures.has(entityId)) {
-      this.structures.set(entityId, { index, structureType });
-      this.counters.set(structureType, index + 1);
+  addStructure(entityId: ID, structureType: StructureType, hexCoords: { col: number; row: number }, stage: number = 0) {
+    if (!this.structures.has(structureType)) {
+      this.structures.set(structureType, new Map());
     }
-    return this.structures.get(entityId)!.index;
+    this.structures.get(structureType)!.set(entityId, { hexCoords, stage });
   }
 
-  getStructureIndex(entityId: ID) {
-    return this.structures.get(entityId)?.index;
-  }
-
-  getCountForType(structureType: StructureType): number {
-    return this.counters.get(structureType) || 0;
+  getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
+    return this.structures;
   }
 }
