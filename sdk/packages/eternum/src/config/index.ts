@@ -229,21 +229,15 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {
-  const txDonkey = await provider.set_capacity_config({
-    signer: account,
-    entity_type: DONKEY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacityGram.donkey,
-  });
+  for (const [category, weight_gram] of Object.entries(EternumGlobalConfig.carryCapacityGram)) {
+    const tx = await provider.set_capacity_config({
+      signer: account,
+      category,
+      weight_gram,
+    });
 
-  console.log(`Configuring capacity Donkey config ${txDonkey.statusReceipt}...`);
-
-  const txArmy = await provider.set_capacity_config({
-    signer: account,
-    entity_type: ARMY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacityGram.army,
-  });
-
-  console.log(`Configuring capacity Army config ${txArmy.statusReceipt}...`);
+    console.log(`Configuring capacity ${category} config ${tx.statusReceipt} max capacity: ${weight_gram}...`);
+  }
 };
 
 export const setSpeedConfig = async (account: Account, provider: EternumProvider) => {
@@ -318,12 +312,4 @@ export const setMercenariesConfig = async (account: Account, provider: EternumPr
     })),
   });
   console.log(`Configuring mercenaries ${tx.statusReceipt}...`);
-};
-
-export const setStorehouseCapacityConfig = async (account: Account, provider: EternumProvider) => {
-  const tx = await provider.set_storehouse_capacity_config({
-    signer: account,
-    weight_gram: EternumGlobalConfig.resources.storehouseCapacityKg * EternumGlobalConfig.resources.resourcePrecision,
-  });
-  console.log(`Configuring storehouse capacity ${tx.statusReceipt}...`);
 };

@@ -10,7 +10,14 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { BASE_POPULATION_CAPACITY, BuildingType, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { gramToKg } from "@/ui/utils/utils";
+import {
+  BASE_POPULATION_CAPACITY,
+  BuildingType,
+  CapacityConfigCategory,
+  EternumGlobalConfig,
+  ID,
+} from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -88,11 +95,12 @@ export const TopMiddleNavigation = () => {
       )?.value || 0;
 
     return (
-      quantity * EternumGlobalConfig.resources.storehouseCapacityKg + EternumGlobalConfig.resources.storehouseCapacityKg
+      quantity * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
+      gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])
     );
-  }, []);
+  }, [structureEntityId]);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
@@ -119,7 +127,9 @@ export const TopMiddleNavigation = () => {
                   ),
                 });
               }}
-              onMouseLeave={() => setTooltip(null)}
+              onMouseLeave={() => {
+                setTooltip(null);
+              }}
               className="px-3 flex gap-2 self-center text-xs"
             >
               <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
@@ -142,7 +152,9 @@ export const TopMiddleNavigation = () => {
                   ),
                 });
               }}
-              onMouseLeave={() => setTooltip(null)}
+              onMouseLeave={() => {
+                setTooltip(null);
+              }}
               className=" px-3 flex gap-2 self-center"
             >
               <ResourceIcon withTooltip={false} resource="House" size="sm" />
@@ -173,7 +185,7 @@ export const TopMiddleNavigation = () => {
                       value={structure.entity_id?.toString() || ""}
                     >
                       <h5 className="self-center flex gap-4">
-                        {structureIcons[structure!.category!]}
+                        {structureIcons[structure.category]}
                         {structure.name}
                       </h5>
                     </SelectItem>
@@ -183,7 +195,7 @@ export const TopMiddleNavigation = () => {
             ) : (
               <div>
                 <div className="self-center flex gap-4">
-                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons["None"]}
+                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
                   {structure.owner ? structure.name : "Unsettled"}
                 </div>
               </div>
@@ -227,7 +239,7 @@ export const TopMiddleNavigation = () => {
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp) as number;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
   const progress = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
@@ -246,7 +258,9 @@ const TickProgress = () => {
           ),
         });
       }}
-      onMouseLeave={() => setTooltip(null)}
+      onMouseLeave={() => {
+        setTooltip(null);
+      }}
       className="self-center text-center px-1 py-1 flex gap-1"
     >
       <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" />

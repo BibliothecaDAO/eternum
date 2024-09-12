@@ -1,8 +1,9 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
+use core::integer::BoundedU128;
 use core::ops::index::IndexView;
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
 
-use eternum::models::{config::TroopConfig, combat::Troops};
+use eternum::models::{config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory};
 
 use eternum::systems::config::contracts::{
     ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
@@ -10,8 +11,7 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IStorehouseCapacityConfigDispatcher,
-    IStorehouseCapacityConfigDispatcherTrait
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -82,9 +82,20 @@ fn set_stamina_config(config_systems_address: ContractAddress) {
 
 fn set_capacity_config(config_systems_address: ContractAddress) {
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(DONKEY_ENTITY_TYPE, 100_000);
+        .set_capacity_config(
+            CapacityConfig { category: CapacityConfigCategory::Structure, weight_gram: BoundedU128::max(), }
+        );
+
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(ARMY_ENTITY_TYPE, 10_000);
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 100_000, });
+
+    ICapacityConfigDispatcher { contract_address: config_systems_address }
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300_000, });
+
+    ICapacityConfigDispatcher { contract_address: config_systems_address }
+        .set_capacity_config(
+            CapacityConfig { category: CapacityConfigCategory::Storehouse, weight_gram: STOREHOUSE_CAPACITY_GRAMS, }
+        );
 }
 
 fn set_speed_config(config_systems_address: ContractAddress) {
@@ -112,7 +123,3 @@ fn set_weight_config(config_systems_address: ContractAddress) {
     }
 }
 
-fn set_storehouse_capacity_config(config_systems_address: ContractAddress) {
-    IStorehouseCapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_storehouse_capacity_config(STOREHOUSE_CAPACITY_GRAMS);
-}

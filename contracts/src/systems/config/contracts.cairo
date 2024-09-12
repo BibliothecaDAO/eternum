@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, BattleConfig, MercenariesConfig};
+use eternum::models::config::{TroopConfig, BattleConfig, MercenariesConfig, CapacityConfig};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -14,12 +14,10 @@ trait IWorldConfig {
     );
 }
 
-
 #[dojo::interface]
 trait IRealmFreeMintConfig {
     fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>);
 }
-
 
 #[dojo::interface]
 trait IWeightConfig {
@@ -33,7 +31,7 @@ trait IBattleConfig {
 
 #[dojo::interface]
 trait ICapacityConfig {
-    fn set_capacity_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
+    fn set_capacity_config(ref world: IWorldDispatcher, capacity_config: CapacityConfig);
 }
 
 #[dojo::interface]
@@ -52,7 +50,6 @@ trait IStaminaRefillConfig {
 
 #[dojo::interface]
 trait ITransportConfig {
-    fn set_road_config(ref world: IWorldDispatcher, resource_costs: Span<(u8, u128)>, speed_up_by: u64);
     fn set_speed_config(ref world: IWorldDispatcher, entity_type: ID, sec_per_km: u16);
 }
 
@@ -136,30 +133,24 @@ trait IMercenariesConfig {
     fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>);
 }
 
-#[dojo::interface]
-trait IStorehouseCapacityConfig {
-    fn set_storehouse_capacity_config(ref world: IWorldDispatcher, weight_gram: u128);
-}
-
 
 #[dojo::contract]
 mod config_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
-        HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-        POPULATION_CONFIG_ID
+        WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID,
+        REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
     use eternum::models::combat::{Troops};
 
     use eternum::models::config::{
-        CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig,
-        MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig,
-        BuildingCategoryPopConfig, PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig,
-        StaminaRefillConfig, MercenariesConfig, BattleConfig, StorehouseCapacityConfig
+        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapExploreConfig,
+        TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
+        PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
+        MercenariesConfig, BattleConfig,
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -185,7 +176,6 @@ mod config_systems {
             set!(world, (WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract }));
         }
     }
-
     #[abi(embed_v0)]
     impl RealmFreeMintConfigCustomImpl of super::IRealmFreeMintConfig<ContractState> {
         fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>) {
@@ -229,8 +219,6 @@ mod config_systems {
             );
         }
     }
-
-
     #[abi(embed_v0)]
     impl MapConfigCustomImpl of super::IMapConfig<ContractState> {
         fn set_exploration_config(
@@ -262,15 +250,10 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl CapacityConfigCustomImpl of super::ICapacityConfig<ContractState> {
-        fn set_capacity_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128) {
+        fn set_capacity_config(ref world: IWorldDispatcher, capacity_config: CapacityConfig) {
             assert_caller_is_admin(world);
 
-            set!(
-                world,
-                (CapacityConfig {
-                    config_id: WORLD_CONFIG_ID, carry_capacity_config_id: entity_type, entity_type, weight_gram,
-                })
-            );
+            set!(world, (capacity_config));
         }
     }
 
@@ -279,6 +262,8 @@ mod config_systems {
         fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128) {
             assert_caller_is_admin(world);
 
+            //note: if you change the weight of a resource e.g wood,
+            //      it wont change the preexisting entities' weights
             set!(
                 world,
                 (WeightConfig { config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram, })
@@ -417,6 +402,12 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             let mut resource_production_config: ProductionConfig = get!(world, resource_type, ProductionConfig);
+            assert!(
+                resource_production_config.amount.is_zero(),
+                "Production config already set for {} resource",
+                resource_type
+            );
+
             resource_production_config.amount = amount;
 
             loop {
@@ -465,32 +456,6 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl TransportConfigCustomImpl of super::ITransportConfig<ContractState> {
-        fn set_road_config(ref world: IWorldDispatcher, resource_costs: Span<(u8, u128)>, speed_up_by: u64) {
-            assert_caller_is_admin(world);
-
-            let resource_cost_id = world.uuid();
-            let mut index = 0;
-            loop {
-                if index == resource_costs.len() {
-                    break;
-                }
-                let (resource_type, resource_amount) = *resource_costs.at(index);
-                set!(
-                    world, (ResourceCost { entity_id: resource_cost_id, index, resource_type, amount: resource_amount })
-                );
-
-                index += 1;
-            };
-
-            set!(
-                world,
-                (RoadConfig {
-                    config_id: ROAD_CONFIG_ID, resource_cost_id, resource_cost_count: resource_costs.len(), speed_up_by
-                })
-            );
-        }
-
-
         fn set_speed_config(ref world: IWorldDispatcher, entity_type: ID, sec_per_km: u16) {
             assert_caller_is_admin(world);
 
@@ -613,15 +578,6 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (MercenariesConfig { config_id: WORLD_CONFIG_ID, troops, rewards }));
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl IStorehouseCapacityConfig of super::IStorehouseCapacityConfig<ContractState> {
-        fn set_storehouse_capacity_config(ref world: IWorldDispatcher, weight_gram: u128) {
-            assert_caller_is_admin(world);
-
-            set!(world, (StorehouseCapacityConfig { config_id: WORLD_CONFIG_ID, weight_gram }));
         }
     }
 }

@@ -1,11 +1,11 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
+import { type ClientComponents } from "@/dojo/createClientComponents";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { type ComponentValue } from "@dojoengine/recs";
 
 export const getRemainingCapacity = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
-  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>,
+  capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
   armyWeight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined,
 ) => {
   return getArmyTotalCapacity(army, capacity) - getArmyWeight(armyWeight);
@@ -13,7 +13,7 @@ export const getRemainingCapacity = (
 
 export const getArmyTotalCapacity = (
   army: ComponentValue<ClientComponents["Army"]["schema"]>,
-  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>,
+  capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
 ) => {
   return (capacity.weight_gram / BigInt(GRAMS_PER_KG)) * getArmyNumberOfTroops(army);
 };

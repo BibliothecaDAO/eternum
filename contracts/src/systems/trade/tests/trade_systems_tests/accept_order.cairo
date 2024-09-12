@@ -6,7 +6,7 @@ use eternum::alias::ID;
 
 use eternum::constants::ResourceTypes;
 use eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
-use eternum::models::config::{LevelingConfig};
+use eternum::models::config::{LevelingConfig, CapacityConfig, CapacityConfigCategory};
 use eternum::models::level::{Level};
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -15,7 +15,6 @@ use eternum::models::owner::Owner;
 use eternum::models::position::{Position, Coord};
 use eternum::models::realm::Realm;
 use eternum::models::resources::Resource;
-use eternum::models::road::Road;
 
 use eternum::models::trade::{Trade, Status, TradeStatus};
 use eternum::models::weight::Weight;
@@ -31,7 +30,7 @@ use eternum::systems::trade::contracts::trade_systems::{
 };
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
-    config::set_storehouse_capacity_config
+    config::set_capacity_config
 };
 
 use starknet::contract_address_const;
@@ -42,20 +41,15 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-    set_storehouse_capacity_config(config_systems_address);
+    set_capacity_config(config_systems_address);
 
     // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
         .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
-    // set road config
-    ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_road_config(array![ // pay for each soldier with the following
-        (ResourceTypes::STONE, 9000),].span(), 2);
-
     // set donkey capacity weight_gram
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(DONKEY_ENTITY_TYPE, 1_000_000);
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000, });
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -232,7 +226,7 @@ fn test_caller_not_taker() {
 #[available_gas(3000000000000)]
 #[should_panic(
     expected: (
-        "not enough resources, Resource (entity id: 4, resource type: DONKEY, balance: 0). deduction: 1000",
+        "not enough resources, Resource (entity id: 3, resource type: DONKEY, balance: 0). deduction: 1000",
         'ENTRYPOINT_FAILED'
     )
 )]

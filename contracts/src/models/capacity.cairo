@@ -1,34 +1,24 @@
-use eternum::{
-    alias::ID, models::quantity::{Quantity, QuantityCustomTrait}, models::weight::{Weight},
-    constants::RESOURCE_PRECISION
-};
+use dojo::world::IWorldDispatcher;
+use eternum::{alias::ID, models::config::{CapacityConfig, CapacityConfigCategory}, constants::RESOURCE_PRECISION};
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct Capacity {
+pub struct CapacityCategory {
     #[key]
     entity_id: ID,
-    weight_gram: u128,
+    category: CapacityConfigCategory,
 }
 
 
 #[generate_trait]
-impl CapacityCustomImpl of CapacityCustomTrait {
-    fn assert_can_carry(self: Capacity, quantity: Quantity, weight: Weight) {
-        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", self.entity_id);
-    }
-
-    fn can_carry(self: Capacity, quantity: Quantity, weight: Weight) -> bool {
-        if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram * (quantity.get_value() / RESOURCE_PRECISION);
-            if entity_total_weight_capacity < weight.value {
-                return false;
-            };
-        };
-        return true;
-    }
-
-    fn is_capped(self: Capacity) -> bool {
-        self.weight_gram != 0
+impl CapacityCategoryCustomImpl of CapacityCategoryCustomTrait {
+    fn assert_exists_and_get(world: IWorldDispatcher, entity_id: ID) -> CapacityCategory {
+        let capacity_category = get!(world, entity_id, CapacityCategory);
+        assert!(
+            capacity_category.category != CapacityConfigCategory::None,
+            "capacity category does not exist for entity {}",
+            entity_id
+        );
+        return capacity_category;
     }
 }

@@ -6,18 +6,17 @@ use eternum::models::bank::liquidity::liquidity;
 use eternum::models::bank::market::market;
 use eternum::models::buildings::building_quantityv_2;
 use eternum::models::buildings::{building, Building};
-use eternum::models::capacity::{capacity, Capacity};
+use eternum::models::capacity::{capacity_category, CapacityCategory};
 use eternum::models::combat::army;
 use eternum::models::combat::battle;
 use eternum::models::combat::health;
 use eternum::models::combat::protectee;
 use eternum::models::combat::protector;
 use eternum::models::config::{
-    world_config, speed_config, capacity_config, weight_config, road_config, hyperstructure_resource_config,
-    stamina_config, stamina_refill_config, tick_config, map_explore_config, realm_free_mint_config, mercenaries_config,
-    leveling_config, production_config, bank_config, building_config, troop_config, battle_config,
-    building_category_pop_config, population_config, has_claimed_starting_resources, hyperstructure_config,
-    storehouse_capacity_config
+    world_config, speed_config, capacity_config, weight_config, hyperstructure_resource_config, stamina_config,
+    stamina_refill_config, tick_config, map_explore_config, realm_free_mint_config, mercenaries_config, leveling_config,
+    production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
+    population_config, has_claimed_starting_resources, hyperstructure_config,
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
@@ -44,7 +43,6 @@ use eternum::models::resources::resource_allowance;
 use eternum::models::resources::resource_transfer_lock;
 use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
-use eternum::models::road::{road, Road};
 use eternum::models::stamina::stamina;
 use eternum::models::structure::structure;
 use eternum::models::structure::structure_count;
@@ -107,7 +105,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         entity_metadata::TEST_CLASS_HASH,
         quantity_tracker::TEST_CLASS_HASH,
         position::TEST_CLASS_HASH,
-        capacity::TEST_CLASS_HASH,
         arrival_time::TEST_CLASS_HASH,
         foreign_key::TEST_CLASS_HASH,
         trade::TEST_CLASS_HASH,
@@ -115,8 +112,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         resource_cost::TEST_CLASS_HASH,
         status::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
-        road::TEST_CLASS_HASH,
-        road_config::TEST_CLASS_HASH,
         progress::TEST_CLASS_HASH,
         contribution::TEST_CLASS_HASH,
         hyperstructure_resource_config::TEST_CLASS_HASH,
@@ -126,7 +121,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         tick_config::TEST_CLASS_HASH,
         address_name::TEST_CLASS_HASH,
         entity_name::TEST_CLASS_HASH,
-        storehouse_capacity_config::TEST_CLASS_HASH
+        capacity_category::TEST_CLASS_HASH,
     ];
 
     let world = spawn_test_world(["eternum"].span(), models.span());

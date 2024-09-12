@@ -7,11 +7,13 @@ use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
-use eternum::models::capacity::{Capacity, CapacityCustomTrait};
-use eternum::models::config::{BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait};
+use eternum::models::config::{
+    BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCategory,
+    CapacityConfigCustomImpl, CapacityConfigCustomTrait
+};
 use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
 use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType, QuantityCustomTrait};
+use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType};
 use eternum::models::resources::OwnedResourcesTrackerCustomTrait;
 use eternum::models::resources::ResourceCustomTrait;
 use eternum::models::resources::ResourceTransferLockCustomTrait;
@@ -617,7 +619,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
         // update weight after balance update
         let mut to_army_protectee_weight: Weight = get!(world, to_army_protectee_id, Weight);
-        let to_army_protectee_capacity: Capacity = get!(world, to_army_protectee_id, Capacity);
+        let to_army_protectee_capacity: CapacityConfig = get!(world, CapacityConfigCategory::Army, CapacityConfig);
         // decrease protectee weight if necessary
         if subtracted_resources_weight.is_non_zero() {
             to_army_protectee_weight.deduct(to_army_protectee_capacity, subtracted_resources_weight);
@@ -732,11 +734,14 @@ mod tests {
     use dojo::world::IWorldDispatcherTrait;
     use eternum::constants::ID;
     use eternum::constants::ResourceTypes;
+    use eternum::models::capacity::{CapacityCategory};
     use eternum::models::combat::BattleCustomTrait;
     use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::combat::BattleHealthCustomTrait;
     use eternum::models::combat::TroopsTrait;
+    use eternum::models::config::CapacityConfigCategory;
     use eternum::models::resources::ResourceCustomTrait;
+
     use eternum::models::resources::ResourceTransferLockCustomTrait;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::world::spawn_eternum;
@@ -1150,6 +1155,8 @@ mod tests {
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
         };
+        // set defence army capacity category
+        set!(world, (CapacityCategory { entity_id: defence_army.entity_id, category: CapacityConfigCategory::Army }));
 
         // give defence army stone
         let mut defence_army_stone_resource: Resource = Resource {
@@ -1170,6 +1177,10 @@ mod tests {
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
         };
+
+        // set attack army capacity category
+
+        set!(world, (CapacityCategory { entity_id: attack_army.entity_id, category: CapacityConfigCategory::Army }));
 
         // give the army wheat and coal
         let mut attack_army_wheat_resource: Resource = Resource {

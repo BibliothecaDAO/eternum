@@ -1,11 +1,17 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
+import { type ClientComponents } from "@/dojo/createClientComponents";
 import { getArmyTotalCapacity } from "@/dojo/modelManager/utils/ArmyMovementUtils";
-import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
+import {
+  CapacityConfigCategory,
+  ContractAddress,
+  EternumGlobalConfig,
+  type ID,
+  type Position,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
-  Component,
-  ComponentValue,
-  Entity,
+  type Component,
+  type ComponentValue,
+  type Entity,
   Has,
   HasValue,
   Not,
@@ -17,7 +23,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { PlayerStructure } from "./useEntities";
+import { type PlayerStructure } from "./useEntities";
 
 export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;
@@ -48,7 +54,7 @@ const formatArmies = (
   Health: Component<ClientComponents["Health"]["schema"]>,
   Quantity: Component<ClientComponents["Quantity"]["schema"]>,
   Movable: Component<ClientComponents["Movable"]["schema"]>,
-  Capacity: Component<ClientComponents["Capacity"]["schema"]>,
+  CapacityConfig: Component<ClientComponents["CapacityConfig"]["schema"]>,
   Weight: Component<ClientComponents["Weight"]["schema"]>,
   ArrivalTime: Component<ClientComponents["ArrivalTime"]["schema"]>,
   Position: Component<ClientComponents["Position"]["schema"]>,
@@ -99,7 +105,8 @@ const formatArmies = (
 
       const movable = getComponentValue(Movable, armyEntityId);
 
-      const capacity = getComponentValue(Capacity, armyEntityId);
+      const armyCapacityConfigEntityId = getEntityIdFromKeys([BigInt(CapacityConfigCategory.Army)]);
+      const capacity = getComponentValue(CapacityConfig, armyCapacityConfigEntityId);
       const totalCapacity = capacity ? getArmyTotalCapacity(army, capacity) : 0n;
 
       const weightComponentValue = getComponentValue(Weight, armyEntityId);
@@ -151,7 +158,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Realm,
@@ -176,7 +183,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
       Health,
       Quantity,
       Movable,
-      Capacity,
+      CapacityConfig,
       Weight,
       ArrivalTime,
       Position,
@@ -202,7 +209,7 @@ export const getArmiesByBattleId = () => {
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Realm,
@@ -226,7 +233,7 @@ export const getArmiesByBattleId = () => {
       Health,
       Quantity,
       Movable,
-      Capacity,
+      CapacityConfig,
       Weight,
       ArrivalTime,
       Position,
@@ -249,7 +256,7 @@ export const useArmyByArmyEntityId = (entityId: ID) => {
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Realm,
@@ -272,7 +279,7 @@ export const useArmyByArmyEntityId = (entityId: ID) => {
     Health,
     Quantity,
     Movable,
-    Capacity,
+    CapacityConfig,
     Weight,
     ArrivalTime,
     Position,
@@ -294,7 +301,7 @@ export const getUserArmyInBattle = (battle_id: ID) => {
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Realm,
@@ -323,7 +330,7 @@ export const getUserArmyInBattle = (battle_id: ID) => {
       Health,
       Quantity,
       Movable,
-      Capacity,
+      CapacityConfig,
       Weight,
       ArrivalTime,
       Position,
@@ -357,7 +364,7 @@ export const useOwnArmiesByPosition = ({
           Health,
           Quantity,
           Movable,
-          Capacity,
+          CapacityConfig,
           Weight,
           ArrivalTime,
           Realm,
@@ -386,7 +393,7 @@ export const useOwnArmiesByPosition = ({
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Position,
@@ -421,7 +428,7 @@ export const useEnemyArmiesByPosition = ({
           Health,
           Quantity,
           Movable,
-          Capacity,
+          CapacityConfig,
           Weight,
           ArrivalTime,
           Realm,
@@ -449,7 +456,7 @@ export const useEnemyArmiesByPosition = ({
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Position,
@@ -476,7 +483,7 @@ export const getArmyByEntityId = () => {
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Realm,
@@ -490,7 +497,7 @@ export const getArmyByEntityId = () => {
   } = useDojo();
 
   const getAliveArmy = (entity_id: ID): ArmyInfo | undefined => {
-    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id })]);
     return formatArmies(
       Array.from(armiesEntityIds),
       account.address,
@@ -500,7 +507,7 @@ export const getArmyByEntityId = () => {
       Health,
       Quantity,
       Movable,
-      Capacity,
+      CapacityConfig,
       Weight,
       ArrivalTime,
       Position,
@@ -512,7 +519,7 @@ export const getArmyByEntityId = () => {
   };
 
   const getArmy = (entity_id: ID): ArmyInfo | undefined => {
-    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id })]);
 
     return formatArmies(
       Array.from(armiesEntityIds),
@@ -523,7 +530,7 @@ export const getArmyByEntityId = () => {
       Health,
       Quantity,
       Movable,
-      Capacity,
+      CapacityConfig,
       Weight,
       ArrivalTime,
       Position,
@@ -548,7 +555,7 @@ export const getArmiesByPosition = () => {
         Health,
         Quantity,
         Movable,
-        Capacity,
+        CapacityConfig,
         Weight,
         ArrivalTime,
         Realm,
@@ -571,7 +578,7 @@ export const getArmiesByPosition = () => {
       Health,
       Quantity,
       Movable,
-      Capacity,
+      CapacityConfig,
       Weight,
       ArrivalTime,
       Position,
