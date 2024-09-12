@@ -70,6 +70,7 @@ export const generateMockBatle = (
     defence_delta: 2n,
     duration_left: isOngoing ? DURATION_LEFT_IF_ONGOING : 0n,
     last_updated: BigInt(lastUpdated ?? LAST_UPDATED),
+    created_at: BigInt(lastUpdated ?? LAST_UPDATED),
   };
 };
 
