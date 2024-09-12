@@ -98,7 +98,10 @@ export const usePlayerArrivals = () => {
   } = useDojo();
 
   // needed to query without playerStructures() from useEntities because of circular dependency
-  const playerStructures = useEntityQuery([Has(Structure), HasValue(Owner, { address: BigInt(account.address) })]);
+  const playerStructures = useEntityQuery([
+    Has(Structure),
+    HasValue(Owner, { address: ContractAddress(account.address) }),
+  ]);
 
   useEffect(() => {
     const positions = playerStructures.map((entityId) => {
@@ -114,14 +117,11 @@ export const usePlayerArrivals = () => {
 
   const fragments = [NotValue(OwnedResourcesTracker, { resource_types: 0n }), Has(Weight), Has(ArrivalTime)];
 
-  const getArrivalsWithResourceOnPosition = useCallback(
-    (positions: Position[]) => {
-      return positions.flatMap((position) => {
-        return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...fragments]));
-      });
-    },
-    [fragments],
-  );
+  const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
+    return positions.flatMap((position) => {
+      return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...fragments]));
+    });
+  }, []);
 
   const createArrivalInfo = useCallback(
     (id: Entity): ArrivalInfo | undefined => {
@@ -130,7 +130,7 @@ export const usePlayerArrivals = () => {
       const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
       const position = getComponentValue(Position, id);
 
-      if (!arrivalTime || !position || owner?.address !== BigInt(account.address)) {
+      if (!arrivalTime || !position || owner?.address !== ContractAddress(account.address)) {
         return undefined;
       }
 
@@ -291,7 +291,7 @@ export function useOwnedEntitiesOnPosition() {
   const getOwnedEntityOnPosition = (entityId: ID) => {
     const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
     const depositEntityIds = position
-      ? getOwnedEntitiesOnPosition(BigInt(account.address), { x: Number(position.x), y: Number(position.y) })
+      ? getOwnedEntitiesOnPosition(ContractAddress(account.address), { x: Number(position.x), y: Number(position.y) })
       : [];
     return depositEntityIds[0];
   };
