@@ -10,16 +10,19 @@ import { shortString } from "starknet";
 type BattleLeaveData = ComponentValue<ClientComponents["events"]["BattleLeaveData"]["schema"]>;
 type BattleJoinData = ComponentValue<ClientComponents["events"]["BattleJoinData"]["schema"]>;
 type BattleStartData = ComponentValue<ClientComponents["events"]["BattleStartData"]["schema"]>;
+
 enum EventType {
   BattleLeave = "BattleLeave",
   BattleJoin = "BattleJoin",
   BattleStart = "BattleStart",
+  BattleAttacked = "BattleAttacked",
 }
 
 const EVENT_CONFIG = {
-  [EventType.BattleLeave]: { action: "left the battle", emoji: "🏃", className: "" },
-  [EventType.BattleJoin]: { action: "joined the battle", emoji: "⚔️", className: "" },
-  [EventType.BattleStart]: { action: "started the battle", emoji: "⚔️", className: "font-bold" },
+  [EventType.BattleLeave]: { action: "left the battle with", emoji: "🏃", className: "" },
+  [EventType.BattleJoin]: { action: "joined the battle with", emoji: "⚔️", className: "" },
+  [EventType.BattleStart]: { action: "started the battle with", emoji: "⚔️", className: "font-bold" },
+  [EventType.BattleAttacked]: { action: "was attacked and had", emoji: "⚔️", className: "font-bold" },
 };
 
 export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSide: BattleSide }) => {
@@ -30,7 +33,7 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
   const { getArmy } = getArmyByEntityId();
 
   const events = useMemo(() => {
-    return [...(battleSide === BattleSide.Attack ? battleStartData : []), ...battleJoinData, ...battleLeaveData].sort(
+    return [...battleStartData, ...battleJoinData, ...battleLeaveData].sort(
       (a, b) => (a?.timestamp || 0) - (b?.timestamp || 0),
     );
   }, [battleStartData, battleJoinData, battleLeaveData]);
@@ -53,8 +56,14 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
           doerArmyEntityId = battleJoinData.joiner_army_entity_id;
         } else if (event.event_id === EventType.BattleStart) {
           const battleStartData = event as BattleStartData;
-          doerName = battleStartData.attacker_name;
-          doerArmyEntityId = battleStartData.attacker_army_entity_id;
+          if (battleSide === BattleSide.Attack) {
+            doerName = battleStartData.attacker_name;
+            doerArmyEntityId = battleStartData.attacker_army_entity_id;
+          } else {
+            event.event_id = EventType.BattleAttacked;
+            doerName = battleStartData.defender_name;
+            doerArmyEntityId = battleStartData.defender_army_entity_id;
+          }
         } else {
           doerName = "";
           doerArmyEntityId = 0;
@@ -70,10 +79,12 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
           <div className={`flex flex-col mb-4 ${className}`}>
             <div className={`grid grid-cols-4 gap-4`}>
               <div className="italic text-xs col-span-1 align-middle self-center">
-                {event.event_id !== EventType.BattleStart ? `${formatElapsedTime(elapsedTime)} since start` : ""}
+                {event.event_id !== EventType.BattleStart && event.event_id !== EventType.BattleAttacked
+                  ? `${formatElapsedTime(elapsedTime)} since start`
+                  : ""}
               </div>
               <div className="col-span-3 align-top self-start" key={event.id}>
-                {emoji} {shortString.decodeShortString(doerName.toString())} {action} with{" "}
+                {emoji} {shortString.decodeShortString(doerName.toString())} {action}{" "}
                 {currencyFormat(getTotalTroops(doerArmy), 0)} troops
               </div>
             </div>

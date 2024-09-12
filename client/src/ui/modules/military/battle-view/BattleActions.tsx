@@ -1,5 +1,11 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { BattleManager, RaidStatus } from "@/dojo/modelManager/BattleManager";
+import {
+  BattleManager,
+  BattleStartStatus,
+  ClaimStatus,
+  LeaveStatus,
+  RaidStatus,
+} from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
@@ -12,7 +18,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
 
 enum Loading {
@@ -49,6 +55,8 @@ export const BattleActions = ({
       systemCalls: { battle_leave, battle_start, battle_claim, battle_leave_and_claim },
     },
   } = dojo;
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
@@ -158,7 +166,7 @@ export const BattleActions = ({
     });
   };
 
-  const isClaimable = useMemo(
+  const claimStatus = useMemo(
     () => battleManager.isClaimable(currentTimestamp!, selectedArmy, structure, defenderArmy),
     [battleManager, currentTimestamp, selectedArmy],
   );
@@ -168,60 +176,112 @@ export const BattleActions = ({
     [battleManager, currentTimestamp, selectedArmy],
   );
 
-  const isAttackable = useMemo(() => battleManager.isAttackable(defenderArmy), [battleManager, defenderArmy]);
+  const battleStartStatus = useMemo(() => battleManager.isAttackable(defenderArmy), [battleManager, defenderArmy]);
 
-  const isLeavable = useMemo(
+  const leaveStatus = useMemo(
     () => battleManager.isLeavable(currentTimestamp!, selectedArmy),
     [battleManager, selectedArmy],
   );
 
+  const mouseEnterRaid = useCallback(() => {
+    if (raidStatus !== RaidStatus.isRaidable) {
+      setTooltip({ content: <div>{raidStatus}</div>, position: "top" });
+    } else if (selectedArmy?.battle_id !== 0) {
+      setTooltip({
+        content: <div>Raiding will make you leave and lose 25% of your army</div>,
+        position: "top",
+      });
+    }
+  }, [raidStatus, selectedArmy]);
+
+  const mouseEnterLeave = useCallback(() => {
+    if (leaveStatus !== LeaveStatus.Leave) {
+      setTooltip({ content: <div>{leaveStatus}</div>, position: "top" });
+    }
+  }, [leaveStatus]);
+
+  const mouseEnterBattle = useCallback(() => {
+    if (battleStartStatus !== BattleStartStatus.BattleStart) {
+      setTooltip({ content: <div>{battleStartStatus}</div>, position: "top" });
+    }
+  }, [battleStartStatus]);
+
+  const mouseEnterClaim = useCallback(() => {
+    if (claimStatus !== ClaimStatus.Claimable) {
+      setTooltip({ content: <div>{claimStatus}</div>, position: "top" });
+    }
+  }, [claimStatus]);
+
   return (
     <div className="col-span-2 flex justify-center flex-wrap -bottom-y p-2 bg-[#1b1a1a] bg-hex-bg">
       <div className="grid grid-cols-2 gap-1 w-full">
-        <Button
-          variant="outline"
-          className="flex flex-col gap-2"
-          isLoading={loading === Loading.Raid}
-          onClick={handleRaid}
-          disabled={loading !== Loading.None || raidStatus !== RaidStatus.isRaidable}
+        <div
+          className="flex flex-col gap-2 h-full w-full"
+          onMouseEnter={mouseEnterRaid}
+          onMouseLeave={() => setTooltip(null)}
         >
-          <img className="w-10" src="/images/icons/raid.png" alt="coin" />
-          <div className={`text-wrap ${raidWarning ? "text-danger" : ""}`}>
-            {raidWarning ? "Leave battle & Raid ?" : "Raid"}
-          </div>
-        </Button>
-        <Button
-          variant="outline"
-          className="flex flex-col gap-2"
-          isLoading={loading === Loading.Claim}
-          onClick={handleBattleClaim}
-          disabled={loading !== Loading.None || !isClaimable}
+          <Button
+            variant="outline"
+            className="flex flex-col gap-2 h-full"
+            isLoading={loading === Loading.Raid}
+            onClick={handleRaid}
+            disabled={loading !== Loading.None || raidStatus !== RaidStatus.isRaidable}
+          >
+            <img className="w-10" src="/images/icons/raid.png" alt="coin" />
+            <div className={`text-wrap h-2 ${raidWarning ? "text-danger" : ""}`}>
+              {raidWarning ? "Leave & Raid ?" : "Raid"}
+            </div>
+          </Button>
+        </div>
+        <div
+          className="flex flex-col gap-2 h-full w-full"
+          onMouseEnter={mouseEnterClaim}
+          onMouseLeave={() => setTooltip(null)}
         >
-          <img className="w-10" src="/images/icons/claim.png" alt="coin" />
-          Claim
-        </Button>
+          <Button
+            variant="outline"
+            className="flex flex-col gap-2 h-full"
+            isLoading={loading === Loading.Claim}
+            onClick={handleBattleClaim}
+            disabled={loading !== Loading.None || claimStatus !== ClaimStatus.Claimable}
+          >
+            <img className="w-10" src="/images/icons/claim.png" alt="coin" />
+            Claim
+          </Button>
+        </div>
+        <div
+          className="flex flex-col gap-2 h-full w-full"
+          onMouseEnter={mouseEnterLeave}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <Button
+            variant="outline"
+            className="flex flex-col gap-2 h-full"
+            isLoading={loading === Loading.Leave}
+            onClick={handleLeaveBattle}
+            disabled={loading !== Loading.None || leaveStatus !== LeaveStatus.Leave}
+          >
+            <img className="w-10" src="/images/icons/leave-battle.png" alt="coin" />
+            Leave
+          </Button>
+        </div>
+        <div
+          className="flex flex-col gap-2 h-full w-full"
+          onMouseEnter={mouseEnterBattle}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <Button
+            variant="outline"
+            className="flex flex-col gap-2 h-full"
+            isLoading={loading === Loading.Start}
+            onClick={handleBattleStart}
+            disabled={loading !== Loading.None || battleStartStatus !== BattleStartStatus.BattleStart}
+          >
+            <img className="w-10" src="/images/icons/attack.png" alt="coin" />
+            Battle
+          </Button>
+        </div>
 
-        <Button
-          variant="outline"
-          className="flex flex-col gap-2"
-          isLoading={loading === Loading.Leave}
-          onClick={handleLeaveBattle}
-          disabled={loading !== Loading.None || !isLeavable}
-        >
-          <img className="w-10" src="/images/icons/leave-battle.png" alt="coin" />
-          Leave
-        </Button>
-
-        <Button
-          variant="outline"
-          className="flex flex-col gap-2"
-          isLoading={loading === Loading.Start}
-          onClick={handleBattleStart}
-          disabled={!isAttackable}
-        >
-          <img className="w-10" src="/images/icons/attack.png" alt="coin" />
-          Battle
-        </Button>
         {battleAdjusted && (
           <ArmySelector
             localSelectedUnit={selectedArmy?.entity_id}
