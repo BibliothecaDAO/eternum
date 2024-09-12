@@ -30,7 +30,6 @@ use eternum::utils::number::NumberTrait;
 
 const STRENGTH_PRECISION: u256 = 10_000;
 
-
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Health {
@@ -116,23 +115,12 @@ impl TroopsImpl of TroopsTrait {
         self.knight_count += other.knight_count;
         self.paladin_count += other.paladin_count;
         self.crossbowman_count += other.crossbowman_count;
-        self.normalize_counts();
     }
 
     fn deduct(ref self: Troops, other: Troops) {
         self.knight_count -= other.knight_count;
         self.paladin_count -= other.paladin_count;
         self.crossbowman_count -= other.crossbowman_count;
-        self.normalize_counts();
-    }
-
-    // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
-    // so that troop units only exists as whole and not decimals
-    fn normalize_counts(ref self: Troops) {
-        let resource_precision_u64: u64 = RESOURCE_PRECISION.try_into().unwrap();
-        self.knight_count -= self.knight_count % resource_precision_u64;
-        self.paladin_count -= self.paladin_count % resource_precision_u64;
-        self.crossbowman_count -= self.crossbowman_count % resource_precision_u64;
     }
 
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
@@ -294,6 +282,18 @@ impl TroopsImpl of TroopsTrait {
             + self.actual_type_count(TroopType::Crossbowman, health))
             .try_into()
             .unwrap()
+    }
+
+    fn reduce_if_under_precision(mut self: Troops) {
+        if self.knight_count < RESOURCE_PRECISION.try_into().unwrap() {
+            self.knight_count = 0;
+        }
+        if self.paladin_count < RESOURCE_PRECISION.try_into().unwrap() {
+            self.paladin_count = 0;
+        }
+        if self.crossbowman_count < RESOURCE_PRECISION.try_into().unwrap() {
+            self.crossbowman_count = 0;
+        }
     }
 }
 

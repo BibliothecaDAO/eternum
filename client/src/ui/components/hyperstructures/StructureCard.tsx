@@ -1,11 +1,12 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -109,8 +110,11 @@ export const TroopExchange = ({
       account: { account },
       components: { Army, Protector },
       systemCalls: { army_merge_troops, create_army },
+      network: { world },
     },
   } = useDojo();
+
+  const { getArmy } = getArmyByEntityId();
 
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -161,16 +165,28 @@ export const TroopExchange = ({
 
   const mergeTroops = async () => {
     setLoading(true);
+
+    const fromArmy = transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id);
+    const toArmy = transferDirection === "to" ? takerArmy || getArmy(protector!.army_id) : getArmy(giverArmyEntityId);
+    const transferedTroops = {
+      knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+      paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+      crossbowman_count:
+        troopsGiven[ResourcesIds.Crossbowman] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+    };
     await army_merge_troops({
       signer: account,
-      from_army_id: transferDirection === "to" ? giverArmyEntityId : takerArmy?.entity_id || protector!.army_id,
-      to_army_id: transferDirection === "to" ? takerArmy?.entity_id || protector!.army_id : giverArmyEntityId,
-      troops: {
-        knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-        paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-        crossbowman_count:
-          troopsGiven[ResourcesIds.Crossbowman] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-      },
+      from_army_id: fromArmy?.entity_id,
+      to_army_id: toArmy?.entity_id,
+      troops: transferedTroops,
+    }).then(() => {
+      if (
+        fromArmy &&
+        !Boolean(fromArmy?.protectee) &&
+        getTotalTroops(fromArmy.troops) - getTotalTroops(transferedTroops) === 0
+      ) {
+        world.deleteEntity(getEntityIdFromKeys([BigInt(fromArmy?.entity_id || 0)]));
+      }
     });
     setLoading(false);
     setTroopsGiven({

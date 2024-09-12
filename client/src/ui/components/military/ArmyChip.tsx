@@ -161,11 +161,9 @@ export const ArmyChip = ({
 const ArmyMergeTroopsPanel = ({
   giverArmy,
   setShowMergeTroopsPopup,
-  structureEntityId,
 }: {
   giverArmy: ArmyInfo;
   setShowMergeTroopsPopup: Dispatch<SetStateAction<boolean>>;
-  structureEntityId: ID;
 }) => {
   const [selectedReceiverArmy, setSelectedReceiverArmy] = useState<ArmyInfo | null>(null);
 

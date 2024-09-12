@@ -378,7 +378,8 @@ mod combat_systems {
     use core::traits::TryInto;
     use eternum::alias::ID;
     use eternum::constants::{
-        ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
+        ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs,
+        RESOURCE_PRECISION
     };
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
@@ -548,6 +549,8 @@ mod combat_systems {
             from_army.troops.deduct(troops);
             set!(world, (from_army));
 
+            from_army.troops.reduce_if_under_precision();
+
             // decrease from army health
             let mut from_army_health: Health = get!(world, from_army_id, Health);
             let troop_full_health = troops.full_health(troop_config);
@@ -558,7 +561,7 @@ mod combat_systems {
             from_army_health.lifetime -= (troop_full_health);
             set!(world, (from_army_health));
 
-            // decrease from army  quantity
+            // decrease from army quantity
             let mut from_army_quantity: Quantity = get!(world, from_army_id, Quantity);
             from_army_quantity.value -= troops.count().into();
             set!(world, (from_army_quantity));
@@ -837,9 +840,11 @@ mod combat_systems {
 
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
+
+            InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
+
             battle.update_state();
             let battle_was_active = !battle.has_ended();
-            InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
 
             // slash army if battle was not concluded before they left
             if battle_was_active {
@@ -1211,10 +1216,18 @@ mod combat_systems {
                     );
 
                 attacking_army.troops.reset_count_and_health(ref attacking_army_health, troop_config);
-                let attacking_army_quantity = Quantity {
-                    entity_id: attacking_army.entity_id, value: attacking_army.troops.count().into()
-                };
-                set!(world, (attacking_army, attacking_army_health, attacking_army_quantity));
+
+                attacking_army.troops.reduce_if_under_precision();
+
+                if (attacking_army.troops.count().is_zero()) {
+                    let mut entity_owner: EntityOwner = get!(world, attacking_army, EntityOwner);
+                    InternalCombatImpl::delete_army(world, ref entity_owner, ref attacking_army);
+                } else {
+                    let attacking_army_quantity = Quantity {
+                        entity_id: attacking_army.entity_id, value: attacking_army.troops.count().into()
+                    };
+                    set!(world, (attacking_army, attacking_army_health, attacking_army_quantity));
+                }
 
                 // reset structure army health and troop count
                 structure_army_health
@@ -1491,6 +1504,8 @@ mod combat_systems {
                     .try_into()
                     .unwrap();
 
+                battle_army.troops.reduce_if_under_precision();
+
                 battle_army_health.current = battle_army.troops.full_health(troop_config);
                 battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
                 if unmodified_army.battle_side == BattleSide::Defence {
@@ -1538,24 +1553,31 @@ mod combat_systems {
                             / battle_army_lifetime.troops.crossbowman_count
                     };
 
+            army.troops.reduce_if_under_precision();
+
+            let army_health = Health {
+                entity_id: army_id,
+                current: army.troops.full_health(troop_config),
+                lifetime: army.troops.full_health(troop_config)
+            };
+            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+            set!(world, (army_health, army_quantity));
+
             // withdraw battle deposit and reward
             battle.withdraw_balance_and_reward(world, army, army_protectee);
 
             // remove army from battle
             army.battle_id = 0;
             army.battle_side = BattleSide::None;
+            set!(world, (army));
 
             // update battle army count and health
-            battle_army.troops.knight_count -= army.troops.knight_count;
-            battle_army.troops.paladin_count -= army.troops.paladin_count;
-            battle_army.troops.crossbowman_count -= army.troops.crossbowman_count;
+            battle_army.troops.deduct(army.troops);
             battle_army_health.current = battle_army.troops.full_health(troop_config);
             battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
 
             // reduce battle army lifetime count by the original army count
-            battle_army_lifetime.troops.knight_count -= unmodified_army.troops.knight_count;
-            battle_army_lifetime.troops.paladin_count -= unmodified_army.troops.paladin_count;
-            battle_army_lifetime.troops.crossbowman_count -= unmodified_army.troops.crossbowman_count;
+            battle_army_lifetime.troops.deduct(unmodified_army.troops);
 
             if unmodified_army.battle_side == BattleSide::Defence {
                 battle.defence_army = battle_army;
@@ -1566,20 +1588,6 @@ mod combat_systems {
                 battle.attack_army_lifetime = battle_army_lifetime;
                 battle.attack_army_health = battle_army_health;
             }
-
-            // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
-            army.troops.normalize_counts();
-
-            let army_health = Health {
-                entity_id: army_id,
-                current: army.troops.full_health(troop_config),
-                lifetime: army.troops.full_health(troop_config)
-            };
-
-            // note: army quantity would be used inside `withdraw_balance_and_reward`
-            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-            set!(world, (army_health, army_quantity));
-            set!(world, (army));
 
             if (battle.attack_army_lifetime.troops.count().is_zero()
                 && battle.defence_army_lifetime.troops.count().is_zero()) {
