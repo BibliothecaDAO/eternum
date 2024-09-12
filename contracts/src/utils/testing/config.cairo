@@ -1,7 +1,9 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::integer::BoundedU128;
 use core::ops::index::IndexView;
-use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
+use eternum::constants::{
+    ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds
+};
 
 use eternum::models::{
     config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory,
@@ -14,13 +16,14 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher, IProductionConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
     MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS
+    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
+    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
 };
 
 use starknet::{ContractAddress};
@@ -76,6 +79,11 @@ fn get_combat_config() -> TroopConfig {
 fn set_combat_config(config_systems_address: ContractAddress) {
     let troop_config = get_combat_config();
     ITroopConfigDispatcher { contract_address: config_systems_address }.set_troop_config(troop_config);
+}
+
+fn set_mine_production_config(config_systems_address: ContractAddress) {
+    IProductionConfigDispatcher { contract_address: config_systems_address }
+        .set_production_config(ResourceTypes::EARTHEN_SHARD, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, array![].span());
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {

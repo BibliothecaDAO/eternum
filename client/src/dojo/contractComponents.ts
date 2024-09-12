@@ -734,6 +734,20 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    ProductionDeadline: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.Number, deadline_tick: RecsType.BigInt },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "ProductionDeadline",
+            types: ["u32", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Production: (() => {
       return defineComponent(
         world,
