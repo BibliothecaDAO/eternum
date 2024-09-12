@@ -402,14 +402,19 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
             battle_side: BattleSide::None
         })
     );
+    set!(
+        world,
+        (
+            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: 1 },
+            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: 1 }
+        )
+    );
 
     set!(
         world,
         (
             Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: owner_entity_id.into() },
             EntityOwner { entity_id: travelling_entity_id, entity_owner_id: owner_entity_id },
-            Resource { entity_id: travelling_entity_id, resource_type: ResourceTypes::WHEAT, balance: 1 },
-            Resource { entity_id: travelling_entity_id, resource_type: ResourceTypes::FISH, balance: 1 }
         )
     );
 
