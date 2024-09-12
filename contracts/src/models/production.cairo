@@ -149,6 +149,27 @@ impl ProductionRateImpl of ProductionRateTrait {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct ProductionDeadline {
+    #[key]
+    entity_id: ID,
+    deadline_tick: u64,
+}
+
+
+#[generate_trait]
+impl ProductionDeadlineImpl of ProductionDeadlineTrait {
+    fn deadline(self: @Production, world: IWorldDispatcher, tick: @TickConfig) -> u64 {
+        let production_deadline = get!(world, *self.entity_id, ProductionDeadline);
+        if production_deadline.deadline_tick.is_zero() {
+            return (*tick).at(Bounded::MAX);
+        }
+        return production_deadline.deadline_tick;
+    }
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct ProductionInput {
     #[key]
     output_resource_type: u8,
@@ -167,7 +188,7 @@ impl ProductionInputCustomImpl of ProductionInputCustomTrait {
         let production_config = get!(world, *production.resource_type, ProductionConfig);
         let tick_config = TickImpl::get_default_tick_config(world);
 
-        let mut least_tick: u64 = Bounded::MAX;
+        let mut least_tick: u64 = tick_config.at(Bounded::MAX);
         let mut count = 0;
 
         loop {
@@ -190,6 +211,11 @@ impl ProductionInputCustomImpl of ProductionInputCustomTrait {
 
             count += 1;
         };
+
+        let deadline = production.deadline(world, @tick_config);
+        if deadline < least_tick {
+            return deadline;
+        }
 
         return least_tick;
     }

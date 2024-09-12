@@ -12,9 +12,11 @@ use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{EntityOwner, Owner};
 use eternum::models::position::{Position, Coord, CoordTrait, Direction};
+use eternum::models::production::Production;
 use eternum::models::quantity::Quantity;
+
 use eternum::models::realm::Realm;
-use eternum::models::resources::{Resource, ResourceFoodImpl};
+use eternum::models::resources::{Resource, RESOURCE_PRECISION, ResourceFoodImpl};
 use eternum::models::stamina::Stamina;
 use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
 use eternum::models::weight::Weight;
@@ -45,7 +47,7 @@ use eternum::utils::testing::{
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
         set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
-        set_tick_config, set_exploration_config, set_weight_config
+        set_tick_config, set_exploration_config, set_weight_config, set_mine_production_config
     },
     constants::{MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT}
 };
@@ -99,7 +101,7 @@ fn test_map_explore() {
 }
 
 #[test]
-fn test_mercenaries_protector() {
+fn test_map_explore__mine_mercenaries_protector() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
@@ -138,6 +140,30 @@ fn test_mercenaries_protector() {
     assert_eq!(mine_owner_address, realm_owner_address, "wrong final owner");
 }
 
+#[test]
+fn test_map_explore__mine_production_deadline() {
+    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _combat_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
+
+    let (initial_realm_wheat, initial_realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
+    assert_eq!(initial_realm_wheat.balance, INITIAL_WHEAT_BALANCE, "wrong initial wheat balance");
+    assert_eq!(initial_realm_fish.balance, INITIAL_FISH_BALANCE, "wrong initial wheat balance");
+
+    let explore_tile_direction: Direction = Direction::West;
+    map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
+
+    let army_position = get!(world, realm_army_unit_id, Position).into();
+    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(world, army_position);
+    let mine_earthen_shard_production: Production = get!(
+        world, (mine_entity_id, ResourceTypes::EARTHEN_SHARD), Production
+    );
+    assert_ge!(mine_earthen_shard_production.input_finish_tick, (100_000 * RESOURCE_PRECISION).try_into().unwrap());
+    assert_le!(
+        mine_earthen_shard_production.input_finish_tick, (10 * 100_000 * RESOURCE_PRECISION).try_into().unwrap()
+    );
+}
+
 fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractDispatcher) {
     let world = spawn_eternum();
 
@@ -153,6 +179,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_tick_config(config_systems_address);
     set_exploration_config(config_systems_address);
     set_weight_config(config_systems_address);
+    set_mine_production_config(config_systems_address);
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());

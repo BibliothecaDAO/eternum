@@ -1,7 +1,9 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::integer::BoundedU128;
 use core::ops::index::IndexView;
-use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
+use eternum::constants::{
+    ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds
+};
 
 use eternum::models::{config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory};
 
@@ -11,7 +13,7 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher, IProductionConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -68,6 +70,11 @@ fn get_combat_config() -> TroopConfig {
 fn set_combat_config(config_systems_address: ContractAddress) {
     let troop_config = get_combat_config();
     ITroopConfigDispatcher { contract_address: config_systems_address }.set_troop_config(troop_config);
+}
+
+fn set_mine_production_config(config_systems_address: ContractAddress) {
+    IProductionConfigDispatcher { contract_address: config_systems_address }
+        .set_production_config(ResourceTypes::EARTHEN_SHARD, 100 * RESOURCE_PRECISION, array![].span());
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {

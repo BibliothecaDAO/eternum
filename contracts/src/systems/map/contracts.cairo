@@ -18,17 +18,19 @@ mod map_systems {
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        CapacityConfigCategory, MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigCustomImpl
+        ProductionConfig, CapacityConfigCategory, MapExploreConfig, LevelingConfig, MercenariesConfig,
+        TroopConfigCustomImpl, TickImpl, TickTrait
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, CoordTrait, Direction, Position};
+    use eternum::models::production::ProductionDeadline;
     use eternum::models::quantity::Quantity;
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{
-        Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock
+        Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
@@ -160,6 +162,7 @@ mod map_systems {
                 let mine_structure_entity_id = Self::create_shard_mine_structure(world, coord);
 
                 Self::add_mercenaries_to_shard_mine(world, mine_structure_entity_id, coord);
+                Self::add_production_deadline(world, mine_structure_entity_id);
 
                 // create shards production building
                 BuildingCustomImpl::create(
@@ -191,7 +194,34 @@ mod map_systems {
             );
             entity_id
         }
+        fn add_production_deadline(world: IWorldDispatcher, mine_entity_id: ID) {
+            let earthen_shard_production_config: ProductionConfig = get!(
+                world, ResourceTypes::EARTHEN_SHARD, ProductionConfig
+            );
+            let earthen_shard_production_amount_per_tick: u128 = earthen_shard_production_config.amount;
 
+            let random_multiplier: u128 = *random::choices(
+                array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
+                array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
+                array![].span(),
+                1,
+                true
+            )[0];
+            let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
+            let actual_production_amount: u128 = min_production_amount * random_multiplier;
+            let num_ticks_to_full_production: u64 = (actual_production_amount
+                / earthen_shard_production_amount_per_tick)
+                .try_into()
+                .unwrap();
+            let tick = TickImpl::get_default_tick_config(world);
+
+            set!(
+                world,
+                (ProductionDeadline {
+                    entity_id: mine_entity_id, deadline_tick: tick.current() + num_ticks_to_full_production
+                })
+            );
+        }
         fn add_mercenaries_to_shard_mine(world: IWorldDispatcher, mine_entity_id: ID, mine_coords: Coord) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
