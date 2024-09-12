@@ -138,7 +138,7 @@ export function defineContractComponents(world: World) {
           defence_delta: RecsType.BigInt,
           last_updated: RecsType.BigInt,
           duration_left: RecsType.BigInt,
-          created_at: RecsType.BigInt,
+          start_at: RecsType.BigInt,
         },
         {
           metadata: {

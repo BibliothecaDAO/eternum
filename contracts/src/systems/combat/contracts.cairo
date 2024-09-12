@@ -666,6 +666,7 @@ mod combat_systems {
             }
 
             // create battle
+            let now = starknet::get_block_timestamp();
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
@@ -676,8 +677,12 @@ mod combat_systems {
             battle.defenders_resources_escrow_id = world.uuid();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
-            battle.created_at = starknet::get_block_timestamp();
-            battle.last_updated = starknet::get_block_timestamp();
+            battle.last_updated = now;
+            battle.start_at = now;
+            if defending_army_protectee.is_other() {
+                // add delay when a structure is being attacked
+                battle.start_at = now + battle_config.battle_delay_seconds;
+            }
 
             // deposit resources protected by armies into battle escrow pots/boxes
             battle.deposit_balance(world, attacking_army, attacking_army_protectee);
@@ -733,8 +738,7 @@ mod combat_systems {
 
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let battle_config = BattleConfigCustomImpl::get(world);
-            battle.update_state(@battle_config);
+            battle.update_state();
 
             // ensure battle has not ended
             assert!(!battle.has_ended(), "Battle has ended");
@@ -839,10 +843,9 @@ mod combat_systems {
 
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let battle_config = BattleConfigCustomImpl::get(world);
-            battle.update_state(@battle_config);
-            let battle_was_active = (battle.has_started(@battle_config) && !battle.has_ended());
-            InternalCombatImpl::leave_battle(world, ref battle, ref caller_army, @battle_config);
+            battle.update_state();
+            let battle_was_active = (battle.has_started() && !battle.has_ended());
+            InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
 
             // slash army if battle was not concluded before they left
             if battle_was_active {
@@ -1203,7 +1206,7 @@ mod combat_systems {
                     defence_delta: 0,
                     last_updated: starknet::get_block_timestamp(),
                     duration_left: 0,
-                    created_at: starknet::get_block_timestamp()
+                    start_at: starknet::get_block_timestamp()
                 };
                 mock_battle.reset_delta(troop_config);
 
@@ -1437,20 +1440,19 @@ mod combat_systems {
         ///
         fn update_battle_and_army(world: IWorldDispatcher, ref battle: Battle, ref army: Army) {
             assert!(battle.entity_id == army.battle_id, "army must be in same battle");
-            let battle_config = BattleConfigCustomImpl::get(world);
-            battle.update_state(@battle_config);
+            battle.update_state();
             if battle.has_ended() {
                 // leave battle to update structure army's health
-                Self::leave_battle(world, ref battle, ref army, @battle_config);
+                Self::leave_battle(world, ref battle, ref army);
             }
         }
 
 
         /// Make army leave battle
-        fn leave_battle(world: IWorldDispatcher, ref battle: Battle, ref army: Army, battle_config: @BattleConfig) {
+        fn leave_battle(world: IWorldDispatcher, ref battle: Battle, ref army: Army) {
             let unmodified_army = army;
 
-            battle.update_state(battle_config);
+            battle.update_state();
 
             // make caller army mobile again
             let army_id = army.entity_id;

@@ -463,7 +463,7 @@ pub struct Battle {
     defence_delta: u64,
     last_updated: u64,
     duration_left: u64,
-    created_at: u64
+    start_at: u64,
 }
 
 
@@ -552,10 +552,9 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // it's possible for the battle be a draw and both sides die in the process.
         // if this edge case occurs, we assume they both lost for the purpose of this
         // function. They both forfeit their balances.
-        let battle_config = BattleConfigCustomImpl::get(world);
         let to_army_lost = to_army_dead || (winner_side != to_army.battle_side && winner_side != BattleSide::None);
         let to_army_won = (winner_side == to_army.battle_side && winner_side != BattleSide::None);
-        let to_army_lost_or_battle_not_ended = (self.has_started(@battle_config) && !self.has_ended())
+        let to_army_lost_or_battle_not_ended = (self.has_started() && !self.has_ended())
             || (self.has_ended() && to_army_lost);
         let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
         let mut all_resources = all_resource_ids();
@@ -645,8 +644,8 @@ impl BattleCustomImpl of BattleCustomTrait {
     /// Update state should be called before reading
     /// battle model values so that the correct values
     /// are gotten
-    fn update_state(ref self: Battle, battle_config: @BattleConfig) {
-        let battle_duration_passed = self.duration_passed(battle_config);
+    fn update_state(ref self: Battle) {
+        let battle_duration_passed = self.duration_passed();
         self.attack_army_health.decrease_current_by((self.defence_delta.into() * battle_duration_passed.into()));
         self.defence_army_health.decrease_current_by((self.attack_delta.into() * battle_duration_passed.into()));
     }
@@ -687,21 +686,16 @@ impl BattleCustomImpl of BattleCustomTrait {
         min(defence_num_seconds_to_death, attack_num_seconds_to_death).try_into().unwrap()
     }
 
-    fn start_time(self: Battle, battle_config: @BattleConfig) -> u64 {
-        self.created_at + *battle_config.battle_delay_seconds
-    }
 
-
-    fn duration_passed(ref self: Battle, battle_config: @BattleConfig) -> u64 {
+    fn duration_passed(ref self: Battle) -> u64 {
         let now = starknet::get_block_timestamp();
-        let start_time = self.start_time(battle_config);
-        if now <= start_time {
+        if now <= self.start_at {
             self.last_updated = now;
             return 0;
         }
 
-        if self.last_updated < start_time {
-            self.last_updated = start_time;
+        if self.last_updated < self.start_at {
+            self.last_updated = self.start_at;
         }
 
         let duration_since_last_update = now - self.last_updated;
@@ -718,10 +712,10 @@ impl BattleCustomImpl of BattleCustomTrait {
             duration
         }
     }
-    fn has_started(self: Battle, battle_config: @BattleConfig) -> bool {
+    fn has_started(self: Battle) -> bool {
         let now = starknet::get_block_timestamp();
-        let start_time = self.start_time(battle_config);
-        return now > start_time;
+        let start_at = self.start_at;
+        return now > start_at;
     }
 
     fn has_ended(self: Battle) -> bool {
@@ -818,7 +812,7 @@ mod tests {
             attack_delta: 0,
             defence_delta: 0,
             last_updated: starknet::get_block_timestamp(),
-            created_at: starknet::get_block_timestamp(),
+            start_at: starknet::get_block_timestamp(),
             duration_left: 0,
             defence_army_lifetime: BattleArmy {
                 troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence
@@ -869,11 +863,9 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
-        let battle_config = mock_battle_config();
-
         // move time up but before battle ends
         starknet::testing::set_block_timestamp(battle.duration_left - 1);
-        battle.update_state(@battle_config);
+        battle.update_state();
         assert!(battle.has_ended() == false, "battle should not have ended");
     }
 
@@ -887,8 +879,7 @@ mod tests {
 
         // move time up to battle duration
         starknet::testing::set_block_timestamp(battle.duration_left);
-        let battle_config = mock_battle_config();
-        battle.update_state(@battle_config);
+        battle.update_state();
         assert!(battle.has_ended() == true, "battle should have ended");
     }
 
@@ -1053,8 +1044,7 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        let battle_config = mock_battle_config();
-        battle.update_state(@battle_config);
+        battle.update_state();
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Defence, "unexpected side won");
 
@@ -1136,8 +1126,7 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        let battle_config = mock_battle_config();
-        battle.update_state(@battle_config);
+        battle.update_state();
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::None, "unexpected side won");
 
@@ -1234,8 +1223,7 @@ mod tests {
 
         // attacker wins battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        let battle_config = mock_battle_config();
-        battle.update_state(@battle_config);
+        battle.update_state();
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Attack, "unexpected side won");
 
