@@ -85,7 +85,7 @@ export class ArmyMovementManager {
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
     const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
-    this.entityQuantity = getComponentValue(this.setup.components.Quantity, this.entity);
+    this.entityQuantity = getComponentValue(this.setup.components.Quantity, this.entity) ?? { entity_id: 0, value: 0n };
     this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
     this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.setup, entityId);
