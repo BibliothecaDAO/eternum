@@ -16,6 +16,7 @@ enum EventType {
   BattlePillage = "BattlePillageData",
   Swap = "SwapEvent",
   HyperstructureFinished = "HyperstructureFinished",
+  HyperstructureContribution = "HyperstructureContribution",
   AcceptOrder = "AcceptOrder",
 }
 
@@ -27,6 +28,7 @@ const EVENT_CONFIG = {
   [EventType.BattlePillage]: { action: "pillaged a structure", emoji: "💰", color: "#CE93D8" },
   [EventType.Swap]: { action: "made a swap", emoji: "🔄", color: "#80DEEA" },
   [EventType.HyperstructureFinished]: { action: "finished a hyperstructure", emoji: "⭐", color: "#FFF59D" },
+  [EventType.HyperstructureContribution]: { action: "contributed to a hyperstructure", emoji: "🏗️", color: "#FFD54F" },
   [EventType.AcceptOrder]: { action: "accepted an order", emoji: "✅", color: "#C5E1A5" },
 };
 
@@ -52,7 +54,12 @@ export const EventStream = () => {
       componentValue?.pillager_army_entity_id ||
       0;
     const entityOwner = getComponentValue(components.EntityOwner, getEntityIdFromKeys([BigInt(armyEntityId)]));
-    const entityId = componentValue?.entity_owner_id || componentValue?.entity_id || componentValue?.taker_id || 0;
+    const entityId =
+      componentValue?.entity_owner_id ||
+      componentValue?.entity_id ||
+      componentValue?.taker_id ||
+      componentValue?.contributor_entity_id ||
+      0;
     const name = entityOwner
       ? getAddressNameFromEntity(entityOwner?.entity_owner_id)
       : getAddressNameFromEntity(entityId);

@@ -43,6 +43,7 @@ export class ArmyModel {
           const material = (this.armyMesh as THREE.Mesh).material;
 
           this.mesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
+          this.mesh.frustumCulled = true;
           this.mesh.castShadow = true;
           this.mesh.instanceMatrix.needsUpdate = true;
           this.scene.add(this.mesh);
