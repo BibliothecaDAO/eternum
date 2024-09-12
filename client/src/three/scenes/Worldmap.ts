@@ -512,6 +512,7 @@ export default class WorldmapScene extends HexagonScene {
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
       console.debug(`Updating chunk with key: ${chunkKey}`);
       this.armyManager.updateChunk(chunkKey);
+      this.structureManager.updateChunk(chunkKey);
     }
   }
 
