@@ -7,7 +7,7 @@ use eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
 
 use eternum::models::{
     movable::{Movable, ArrivalTime}, owner::Owner, position::Position, resources::{Resource, ResourceCustomImpl},
-    trade::{Trade, Status, TradeStatus}, weight::Weight
+    trade::{Trade, Status, TradeStatus}, weight::Weight, config::CapacityConfig, config::CapacityConfigCategory
 };
 
 use eternum::systems::config::contracts::{
@@ -24,7 +24,7 @@ use eternum::systems::trade::contracts::trade_systems::{
 
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
-    general::{spawn_realm, get_default_realm_pos}, config::set_storehouse_capacity_config
+    general::{spawn_realm, get_default_realm_pos}, config::set_capacity_config
 };
 use starknet::contract_address_const;
 
@@ -36,7 +36,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
     let dev_resource_systems = deploy_dev_resource_systems(world);
     let realm_systems_dispatcher = deploy_realm_systems(world);
 
-    set_storehouse_capacity_config(config_systems_address);
+    set_capacity_config(config_systems_address);
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -48,7 +48,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
 
     // set donkey capacity weight_gram
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(DONKEY_ENTITY_TYPE, 1_000_000);
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000, });
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 

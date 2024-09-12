@@ -93,8 +93,8 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.armyManager = new ArmyManager(this.scene);
-    this.structureManager = new StructureManager(this.scene);
+    this.armyManager = new ArmyManager(this.scene, this.chunkSize, this.renderChunkSize);
+    this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
     this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();
@@ -505,10 +505,14 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize;
     const startRow = chunkZ * this.chunkSize;
     const chunkKey = `${startRow},${startCol}`;
+    //console.log("chunkKey", chunkKey);
     if (this.currentChunk !== chunkKey) {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+      console.debug(`Updating chunk with key: ${chunkKey}`);
+      this.armyManager.updateChunk(chunkKey);
+      this.structureManager.updateChunk(chunkKey);
     }
   }
 

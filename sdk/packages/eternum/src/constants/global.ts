@@ -1,4 +1,5 @@
 import { ResourcesIds } from "./resources";
+import { CapacityConfigCategory } from "./structures";
 
 export const EternumGlobalConfig = {
   stamina: {
@@ -19,7 +20,6 @@ export const EternumGlobalConfig = {
       { resourceId: ResourcesIds.Wheat, amount: 1500 },
       { resourceId: ResourcesIds.Fish, amount: 1500 },
     ],
-    storehouseCapacityKg: 10_000_000,
   },
   banks: {
     lordsCost: 1000,
@@ -42,8 +42,11 @@ export const EternumGlobalConfig = {
     armiesTickIntervalInSeconds: 1800, // 30mins
   },
   carryCapacityGram: {
-    donkey: 100_000,
-    army: 10_000,
+    [CapacityConfigCategory.None]: 0,
+    [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
+    [CapacityConfigCategory.Donkey]: 100_000,
+    [CapacityConfigCategory.Army]: 10_000,
+    [CapacityConfigCategory.Storehouse]: 10_000_000_000,
   },
   speed: {
     donkey: 6,

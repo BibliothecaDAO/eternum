@@ -16,18 +16,16 @@ trait ITravelSystems {
 mod travel_systems {
     use eternum::alias::ID;
 
-    use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
-    use eternum::models::capacity::{Capacity, CapacityCustomTrait};
-    use eternum::models::config::{RoadConfig, LevelingConfig};
+    use eternum::constants::{REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
+    use eternum::models::config::{LevelingConfig};
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::order::{Orders, OrdersCustomTrait};
     use eternum::models::owner::{Owner, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityCustomTrait};
+    use eternum::models::quantity::{Quantity,};
     use eternum::models::realm::Realm;
-    use eternum::models::road::RoadCustomImpl;
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
 
@@ -209,9 +207,6 @@ mod travel_systems {
                 travel_time = Self::use_travel_bonus(world, @realm, @entity_owner, travel_time);
             }
 
-            // reduce travel time if there is a road
-            let travel_time = RoadCustomImpl::use_road(world, travel_time, from_coord, to_coord);
-
             let current_position = get!(world, transport_id, Position);
 
             set!(
@@ -272,32 +267,6 @@ mod travel_systems {
             assert(
                 transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(), 'transport has not arrived'
             );
-        }
-
-
-        fn get_travel_time(
-            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
-        ) -> (u64, u64) {
-            let (transport_movable, transport_position) = get!(world, transport_id, (Movable, Position));
-            let mut one_way_trip_time = from_pos.calculate_travel_time(to_pos, transport_movable.sec_per_km);
-
-            // check if entity owner is a realm and apply bonuses if it is
-            let entity_owner = get!(world, (transport_id), EntityOwner);
-            let realm = get!(world, entity_owner.entity_owner_id, Realm);
-
-            if realm.cities > 0 {
-                one_way_trip_time = Self::use_travel_bonus(world, @realm, @entity_owner, one_way_trip_time);
-            }
-
-            let round_trip_time: u64 = 2 * one_way_trip_time;
-            // reduce round trip time if there is a road
-            let round_trip_time = RoadCustomImpl::use_road(
-                world, round_trip_time, transport_position.into(), to_pos.into()
-            );
-            // update one way trip time incase round_trip_time was reduced
-            one_way_trip_time = round_trip_time / 2;
-
-            (round_trip_time, one_way_trip_time)
         }
     }
 }

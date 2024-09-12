@@ -2,9 +2,8 @@ use core::array::SpanTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
-use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig};
+use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
@@ -17,7 +16,7 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    config::{get_combat_config, set_storehouse_capacity_config}, world::spawn_eternum,
+    config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
     systems::{deploy_realm_systems, deploy_combat_systems, deploy_system}, general::mint
 };
 
@@ -40,13 +39,7 @@ fn set_configurations(world: IWorldDispatcher) {
         world,
         (
             get_combat_config(),
-            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
-            CapacityConfig {
-                config_id: WORLD_CONFIG_ID,
-                carry_capacity_config_id: ARMY_ENTITY_TYPE,
-                entity_type: ARMY_ENTITY_TYPE,
-                weight_gram: 300000,
-            }
+            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
         )
     )
 }
@@ -58,7 +51,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     let combat_system_dispatcher = deploy_combat_systems(world);
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-    set_storehouse_capacity_config(config_systems_address);
+    set_capacity_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());

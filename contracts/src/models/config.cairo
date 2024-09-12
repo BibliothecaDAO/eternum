@@ -1,4 +1,5 @@
 use core::debug::PrintTrait;
+use core::integer::BoundedU128;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
@@ -6,7 +7,10 @@ use eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
 use eternum::models::buildings::BuildingCategory;
+use eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
 use eternum::models::combat::{Troops};
+use eternum::models::quantity::Quantity;
+use eternum::models::weight::Weight;
 use starknet::ContractAddress;
 
 //
@@ -31,17 +35,6 @@ pub struct RealmFreeMintConfig {
     detached_resource_count: u32
 }
 
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct RoadConfig {
-    #[key]
-    config_id: ID,
-    resource_cost_id: ID,
-    resource_cost_count: u32,
-    speed_up_by: u64
-}
-
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct HyperstructureResourceConfig {
@@ -61,25 +54,68 @@ struct HyperstructureConfig {
 }
 
 // capacity
-// TODO: should rename into something that shows
-// that it's a config for one specific entity type?
-// and not the same as world config
-// e.g. EntityTypeCapacityConfig?
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(PartialEq, Copy, Drop, Serde, Introspect)]
+enum CapacityConfigCategory {
+    None,
+    Structure,
+    Donkey,
+    Army,
+    Storehouse,
+}
+
+impl CapacityConfigCategoryIntoFelt252 of Into<CapacityConfigCategory, felt252> {
+    fn into(self: CapacityConfigCategory) -> felt252 {
+        match self {
+            CapacityConfigCategory::None => 0,
+            CapacityConfigCategory::Structure => 1,
+            CapacityConfigCategory::Donkey => 2,
+            CapacityConfigCategory::Army => 3,
+            CapacityConfigCategory::Storehouse => 4,
+        }
+    }
+}
+
+#[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct CapacityConfig {
     #[key]
-    config_id: ID,
-    #[key]
-    carry_capacity_config_id: ID,
-    entity_type: ID,
+    category: CapacityConfigCategory,
     weight_gram: u128,
 }
 
+
 #[generate_trait]
 impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
-    fn get(world: IWorldDispatcher, entity_type: ID) -> CapacityConfig {
-        get!(world, (WORLD_CONFIG_ID, entity_type), CapacityConfig)
+    fn get(world: IWorldDispatcher, category: CapacityConfigCategory) -> CapacityConfig {
+        get!(world, category, CapacityConfig)
+    }
+
+    fn get_from_entity(world: IWorldDispatcher, entity_id: ID) -> CapacityConfig {
+        let capacity_category = CapacityCategoryCustomImpl::assert_exists_and_get(world, entity_id);
+        return get!(world, capacity_category.category, CapacityConfig);
+    }
+
+    fn assert_can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) {
+        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id);
+    }
+
+    fn can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) -> bool {
+        let quantity_value = if quantity.value == 0 {
+            1
+        } else {
+            quantity.value
+        };
+        if self.is_capped() {
+            let entity_total_weight_capacity = self.weight_gram * (quantity_value / RESOURCE_PRECISION);
+            if entity_total_weight_capacity < weight.value {
+                return false;
+            };
+        };
+        return true;
+    }
+
+    fn is_capped(self: CapacityConfig) -> bool {
+        self.weight_gram != BoundedU128::max()
     }
 }
 
@@ -378,12 +414,4 @@ pub struct HasClaimedStartingResources {
     #[key]
     config_id: ID,
     claimed: bool,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct StorehouseCapacityConfig {
-    #[key]
-    config_id: ID,
-    weight_gram: u128,
 }

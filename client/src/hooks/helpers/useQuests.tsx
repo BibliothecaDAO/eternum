@@ -15,7 +15,7 @@ export interface Quest {
   id: QuestId;
   name: string;
   description: string;
-  steps: string[];
+  steps: (string | React.ReactNode)[];
   prizes: Prize[];
   depth: number;
   status: QuestStatus;
@@ -334,18 +334,17 @@ const useBuildingQuantities = (structureEntityId: ID | undefined) => {
 };
 
 export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
-  return (
-    entityArmies &&
-    entityArmies[0] &&
-    (Number(entityArmies[0].troops.knight_count) != 0 ||
-      Number(entityArmies[0].troops.crossbowman_count) != 0 ||
-      Number(entityArmies[0].troops.paladin_count) != 0)
+  return entityArmies.some(
+    (army) =>
+      army &&
+      (Number(army.troops.knight_count) !== 0 ||
+        Number(army.troops.crossbowman_count) !== 0 ||
+        Number(army.troops.paladin_count) !== 0),
   );
 };
 
 const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
-  if (entityArmies && entityArmies[0] && realmPosition) {
-    return entityArmies[0].position.x != realmPosition.x || entityArmies[0].position.y != realmPosition.y;
-  }
-  return false;
+  return entityArmies.some(
+    (army) => army && realmPosition && (army.position.x !== realmPosition.x || army.position.y !== realmPosition.y),
+  );
 };

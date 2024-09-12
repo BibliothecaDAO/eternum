@@ -139,19 +139,6 @@ export interface MintResourcesAndClaimProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-export interface CreateRoadProps extends SystemSigner {
-  creator_id: num.BigNumberish;
-  start_coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
-  end_coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
-  usage_count: num.BigNumberish;
-}
-
 interface Realm {
   realm_id: num.BigNumberish;
   resource_types_packed: num.BigNumberish;
@@ -388,7 +375,7 @@ export interface SetExplorationConfigProps extends SystemSigner {
 }
 
 export interface SetCapacityConfigProps extends SystemSigner {
-  entity_type: num.BigNumberish;
+  category: num.BigNumberish;
   weight_gram: num.BigNumberish;
 }
 
@@ -499,8 +486,4 @@ export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 export interface SetMercenariesConfigProps extends SystemSigner {
   troops: Troops;
   rewards: { resource: number; amount: number }[];
-}
-
-export interface SetStorehouseCapacityConfigProps extends SystemSigner {
-  weight_gram: num.BigNumberish;
 }

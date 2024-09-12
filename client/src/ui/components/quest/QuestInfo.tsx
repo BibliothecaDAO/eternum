@@ -1,13 +1,14 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
-import { useState } from "react";
-import { Check, ShieldQuestion } from "lucide-react";
-import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
+import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
+import clsx from "clsx";
+import { Check, ShieldQuestion } from "lucide-react";
+import { useState } from "react";
 
 export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) => {
   const {
@@ -44,17 +45,15 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
 
   return (
     <>
-      <Button className={"w-6"} size={"xs"} variant={"default"} onClick={() => setSelectedQuest(null)}>
-        Back
+      <Button
+        className={clsx("w-6", { "animate-pulse": quest.status === QuestStatus.Claimed })}
+        variant="outline"
+        onClick={() => setSelectedQuest(null)}
+      >
+        ⬅
       </Button>
 
-      <div
-        className={` p-4  text-gold   ${
-          quest.status === QuestStatus.Completed || quest.status === QuestStatus.Claimed
-            ? "bg-green/5"
-            : " bg-green/30 "
-        }`}
-      >
+      <div className="p-4 text-gold">
         <div className="flex justify-between">
           <h5 className="mb-3 font-bold">{quest.name}</h5>
           {quest.status !== QuestStatus.InProgress ? <Check /> : <ShieldQuestion />}
@@ -63,8 +62,8 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
         <p className="text-xl mb-4">{quest.description}</p>
 
         {quest.steps?.map((step: any, index: any) => (
-          <div className="flex" key={index}>
-            <div className="text-md mb-4 mr-4">- {step}</div>
+          <div className="flex flex-col text-md" key={index}>
+            <div className="text-md mb-4">{step}</div>
           </div>
         ))}
 
@@ -94,7 +93,7 @@ const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
     <div className="w-full">
       <div className="flex flex-row items-baseline mb-1 ">
         <div className="font-bold mr-5">Quest Rewards</div>
-        <Button size="xs" onClick={() => setShowRewards(!showRewards)}>
+        <Button variant="outline" onClick={() => setShowRewards(!showRewards)}>
           {showRewards ? "Hide" : "Show"}
         </Button>
       </div>

@@ -223,3 +223,11 @@ export const isStructureImmune = (created_at: number, currentTimestamp: number):
   }
   return false;
 };
+
+export const isStructureInBattle = (entity_id: ID): boolean => {
+  const structure = getStructureByEntityId(entity_id);
+  if (!structure || !structure?.protector) return false;
+
+  if (structure?.protector?.battle_id !== 0) return true;
+  return false;
+};

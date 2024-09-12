@@ -2,7 +2,6 @@
   "CONFIG_SYSTEMS": [
     "ProductionInput",
     "CapacityConfig",
-    "RoadConfig",
     "SpeedConfig",
     "WeightConfig",
     "WorldConfig",
@@ -21,7 +20,6 @@
     "StaminaConfig",
     "StaminaRefillConfig",
     "MercenariesConfig",
-    "StorehouseCapacityConfig",
     "BattleConfig",
     "Position",
     "ProductionOutput",
@@ -29,14 +27,14 @@
     "ResourceCost"
   ],
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
-  "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount"],
+  "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount", "CapacityCategory"],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",
     "Position",
     "EntityMetadata",
     "EntityOwner",
-    "Capacity",
+    "CapacityCategory",
     "Movable",
     "QuantityTracker",
     "Resource",
@@ -50,6 +48,7 @@
   "DONKEY_SYSTEMS": [],
   "TRADE_SYSTEMS": [
     "Movable",
+    "CapacityCategory",
     "Trade",
     "Resource",
     "OwnedResourcesTracker",
@@ -57,14 +56,12 @@
     "ArrivalTime",
     "Position",
     "EntityOwner",
-    "Road",
     "ForeignKey",
     "DetachedResource",
     "Weight",
     "Owner",
     "Production",
-    "Owner",
-    "Capacity"
+    "Owner"
   ],
   "RESOURCE_SYSTEMS": [
     "Resource",
@@ -76,19 +73,17 @@
     "ForeignKey",
     "Production",
     "Movable",
-    "Capacity",
+    "CapacityCategory",
     "Position",
     "EntityOwner",
     "EntityMetadata",
     "Quantity",
     "ArrivalTime",
-    "QuantityTracker",
-    "Road"
+    "QuantityTracker"
   ],
   "TRAVEL_SYSTEMS": [
     "ArrivalTime",
     "Position",
-    "Road",
     "Movable",
     "Stamina",
     "QuantityTracker",
@@ -100,7 +95,6 @@
     "Production",
     "OwnedResourcesTracker",
     "Owner",
-    "Capacity",
     "Quantity",
     "Protector",
     "Protectee",
@@ -121,6 +115,7 @@
     "OwnedResourcesTracker",
     "Structure",
     "StructureCount",
+    "CapacityCategory",
     "Tile"
   ],
   "SWAP_SYSTEMS": [
@@ -132,14 +127,14 @@
     "ArrivalTime",
     "Position",
     "EntityOwner",
-    "Road",
     "ResourceAllowance",
     "Owner",
     "Weight",
     "DetachedResource",
     "ForeignKey",
     "Quantity",
-    "QuantityTracker"
+    "QuantityTracker",
+    "CapacityCategory"
   ],
   "LIQUIDITY_SYSTEMS": [
     "Market",
@@ -150,14 +145,14 @@
     "ArrivalTime",
     "Position",
     "EntityOwner",
-    "Road",
     "ResourceAllowance",
     "Owner",
     "Weight",
     "DetachedResource",
     "ForeignKey",
     "Quantity",
-    "QuantityTracker"
+    "QuantityTracker",
+    "CapacityCategory"
   ],
   "HYPERSTRUCTURE_SYSTEMS": [
     "Structure",
@@ -175,14 +170,13 @@
     "ForeignKey",
     "Production",
     "Movable",
-    "Capacity",
+    "CapacityCategory",
     "Position",
     "EntityOwner",
     "EntityMetadata",
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",
-    "Road",
     "HyperstructureUpdate"
   ],
   "BUILDINGS_SYSTEMS": [
@@ -216,7 +210,7 @@
     "Army",
     "Battle",
     "EntityOwner",
-    "Capacity",
+    "CapacityCategory",
     "Structure",
     "StructureCount",
     "Building",
@@ -226,7 +220,8 @@
     "Protector",
     "Protectee",
     "QuantityTracker",
-    "ResourceTransferLock"
+    "ResourceTransferLock",
+    "ProductionDeadline"
   ],
   "COMBAT_SYSTEMS": [
     "Health",
@@ -240,7 +235,7 @@
     "QuantityTracker",
     "OwnedResourcesTracker",
     "Owner",
-    "Capacity",
+    "CapacityCategory",
     "Quantity",
     "Protector",
     "Protectee",

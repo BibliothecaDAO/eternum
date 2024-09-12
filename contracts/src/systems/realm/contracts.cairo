@@ -28,8 +28,9 @@ mod realm_systems {
 
     use eternum::constants::REALM_ENTITY_TYPE;
     use eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, MAX_REALMS_PER_ADDRESS};
-    use eternum::models::capacity::Capacity;
-    use eternum::models::config::{CapacityConfig, RealmFreeMintConfig, HasClaimedStartingResources};
+    use eternum::models::capacity::{CapacityCategory};
+    use eternum::models::config::{CapacityConfigCategory};
+    use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources};
     use eternum::models::map::Tile;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::Movable;
@@ -125,6 +126,7 @@ mod realm_systems {
                         created_at: starknet::get_block_timestamp()
                     },
                     StructureCount { coord, count: 1 },
+                    CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure },
                     Realm {
                         entity_id: entity_id.into(),
                         realm_id,

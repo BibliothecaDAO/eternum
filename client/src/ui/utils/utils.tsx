@@ -1,19 +1,19 @@
 import { HEX_SIZE } from "@/three/scenes/constants";
-import { HexPosition, ResourceMiningTypes } from "@/types";
+import { type HexPosition, ResourceMiningTypes } from "@/types";
 import {
   BuildingType,
   ContractAddress,
   EternumGlobalConfig,
-  ID,
-  Position,
-  Resource,
+  type ID,
+  type Position,
+  type Resource,
   ResourcesIds,
   WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
-import { SortInterface } from "../elements/SortButton";
+import { type SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -46,8 +46,8 @@ export function divideByPrecision(value: number): number {
 }
 
 export function getPosition(realm_id: ID): { x: number; y: number } {
-  let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
-  let position = realmPositions[Number(realm_id)][0];
+  const realmPositions = realmsHexPositions as Record<number, Array<{ col: number; row: number }>>;
+  const position = realmPositions[Number(realm_id)][0];
   return { x: position.col, y: position.row };
 }
 
@@ -156,7 +156,7 @@ export const calculateOffset = (index: number, total: number, radius: number) =>
 };
 
 const pseudoRandom = (x: number, y: number) => {
-  let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+  const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
 
@@ -243,7 +243,7 @@ export const isRealmSelected = (structureEntityId: ID, structures: any) => {
   return selectedStructure?.category === "Realm";
 };
 
-export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
+export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
   return resources.reduce(
     (total, resource) => total + (resource ? resource.amount * WEIGHTS_GRAM[resource.resourceId] || 0 : 0),
     0,
@@ -295,4 +295,8 @@ export function formatElapsedTime(seconds: number): string {
   if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
 
   return parts.join(" ");
+}
+
+export function gramToKg(grams: number): number {
+  return Number(grams) / 1000;
 }

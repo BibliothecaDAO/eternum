@@ -1,24 +1,23 @@
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { trade } from "@/ui/components/navigation/Config";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
+import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
-import { useMemo, useState } from "react";
-import { BaseContainer } from "../../containers/BaseContainer";
-
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
 import { quests as questsPopup } from "../../components/navigation/Config";
-import { BuildingThumbs } from "./LeftNavigationModule";
+import { BaseContainer } from "../../containers/BaseContainer";
 
 export enum View {
   None,

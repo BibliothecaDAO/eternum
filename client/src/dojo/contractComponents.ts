@@ -288,16 +288,16 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Capacity: (() => {
+    CapacityCategory: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, weight_gram: RecsType.BigInt },
+        { entity_id: RecsType.Number, category: RecsType.String },
         {
           metadata: {
             namespace: "eternum",
-            name: "Capacity",
-            types: ["u32", "u128"],
-            customTypes: [],
+            name: "CapacityCategory",
+            types: ["u32", "enum"],
+            customTypes: ["CapacityConfigCategory"],
           },
         },
       );
@@ -306,17 +306,15 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          config_id: RecsType.Number,
-          carry_capacity_config_id: RecsType.Number,
-          entity_type: RecsType.Number,
+          category: RecsType.String,
           weight_gram: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "CapacityConfig",
-            types: ["u32", "u32", "u32", "u128"],
-            customTypes: [],
+            types: ["enum", "u128"],
+            customTypes: ["CapacityConfigCategory"],
           },
         },
       );
@@ -734,6 +732,20 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    ProductionDeadline: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.Number, deadline_tick: RecsType.BigInt },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "ProductionDeadline",
+            types: ["u32", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Production: (() => {
       return defineComponent(
         world,
@@ -973,45 +985,6 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "ResourceTransferLock",
             types: ["u32", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Road: (() => {
-      return defineComponent(
-        world,
-        {
-          start_coord_x: RecsType.Number,
-          start_coord_y: RecsType.Number,
-          end_coord_x: RecsType.Number,
-          end_coord_y: RecsType.Number,
-          usage_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "Road",
-            types: ["u32", "u32", "u32", "u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    RoadConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          resource_cost_id: RecsType.Number,
-          resource_cost_count: RecsType.Number,
-          speed_up_by: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "RoadConfig",
-            types: ["u32", "u32", "u32", "u64"],
             customTypes: [],
           },
         },
