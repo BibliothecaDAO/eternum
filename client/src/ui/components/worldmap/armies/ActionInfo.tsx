@@ -44,6 +44,10 @@ export const ActionInfo = () => {
 
   const isExplored = travelPath?.isExplored || false;
 
+  if (!travelPath) return;
+
+  console.log({ travelPath });
+
   return (
     <>
       {showTooltip && (
@@ -53,12 +57,20 @@ export const ActionInfo = () => {
           {isExplored ? (
             <div>
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.travelWheatBurn * selectedEntityQuantity}
+                amount={
+                  -EternumGlobalConfig.exploration.travelWheatBurn *
+                  selectedEntityQuantity *
+                  (travelPath.path.length - 1)
+                }
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.travelFishBurn * selectedEntityQuantity}
+                amount={
+                  -EternumGlobalConfig.exploration.travelFishBurn *
+                  selectedEntityQuantity *
+                  (travelPath.path.length - 1)
+                }
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
