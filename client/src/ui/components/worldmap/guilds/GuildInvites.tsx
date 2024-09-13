@@ -1,15 +1,13 @@
+import { sortItems } from "@/ui/utils/utils";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { AddressWhitelistAndName, GuildWhitelistAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
 import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-
-import { sortItems } from "@/ui/utils/utils";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
-import { AddressWhitelistAndName, GuildWhitelistAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
 import { GuildMembers } from "./GuildMembers";
 import { SelectedGuildInterface } from "./Guilds";
-import { hasGuild } from "./utils";
 
 type GuildWhitelistAndNameKeys = keyof GuildWhitelistAndName;
 interface SortingParamGuildWhitelistAndName {
@@ -29,9 +27,9 @@ export const GuildInvites = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0, name: "" });
 
-  const { getAddressWhitelist, getGuildFromPlayerAddress } = useGuilds();
+  const { useAddressWhitelist, getGuildFromPlayerAddress } = useGuilds();
 
-  const addressWhitelist = getAddressWhitelist(ContractAddress(account.address));
+  const addressWhitelist = useAddressWhitelist(ContractAddress(account.address));
   const guild = getGuildFromPlayerAddress(ContractAddress(account.address));
 
   const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {

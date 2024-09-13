@@ -32,9 +32,9 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
   const [isWhitelisting, setIsWhitelisting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { getGuildWhitelist, getPlayerList } = useGuilds();
+  const { useGuildWhitelist, getPlayerList } = useGuilds();
   const players = getPlayerList(guildEntityId!);
-  const whitelist = getGuildWhitelist(guildEntityId!);
+  const whitelist = useGuildWhitelist(guildEntityId!);
 
   const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
     return [
