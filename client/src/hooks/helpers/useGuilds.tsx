@@ -12,7 +12,8 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
+import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getEntitiesUtils } from "./useEntities";
 import { useRealm } from "./useRealm";
@@ -49,14 +50,36 @@ export type GuildFromPlayerAddress = {
 export const useGuilds = () => {
   const {
     setup: {
-      components: { Guild, GuildMember, GuildWhitelist, Owner },
+      components: { Guild, GuildMember, GuildWhitelist, Owner, AddressName },
     },
   } = useDojo();
 
   const { getEntityName } = getEntitiesUtils();
   const { getAddressName } = useRealm();
 
-  const getGuildMembers = useCallback((guildEntityId: ID) => {
+  const getPlayerList = (guild_entity_id: ID) => {
+    const players = Array.from(runQuery([Has(AddressName)])).map((playerEntity) => {
+      const player = getComponentValue(AddressName, playerEntity);
+
+      const name = shortString.decodeShortString(player!.name.toString());
+      const address = "0x" + player?.address.toString(16);
+
+      const isInvited = getComponentValue(
+        GuildWhitelist,
+        getEntityIdFromKeys([player!.address, BigInt(guild_entity_id)]),
+      )?.is_whitelisted;
+
+      return {
+        name,
+        address,
+        isInvited: isInvited ? true : false,
+      };
+    });
+
+    return players;
+  };
+
+  const useGuildMembers = useCallback((guildEntityId: ID) => {
     const guildMembers = useEntityQuery([HasValue(GuildMember, { guild_entity_id: guildEntityId })]);
     return {
       guildMembers: formatGuildMembers(guildMembers, GuildMember, getAddressName),
@@ -70,57 +93,33 @@ export const useGuilds = () => {
     };
   }, []);
 
-  const getGuildWhitelist = useMemo(
-    () => (guildEntityId: ID) => {
-      const whitelist = useEntityQuery([
-        HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: true }),
-      ]);
-      return {
-        whitelist: formatGuildWhitelist(whitelist, GuildWhitelist, getAddressName),
-      };
-    },
-    [],
-  );
+  const useGuildWhitelist = (guildEntityId: ID) => {
+    const whitelist = useEntityQuery([
+      HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: true }),
+    ]);
+    return formatGuildWhitelist(whitelist, GuildWhitelist, getAddressName);
+  };
 
-  const getAddressWhitelist = useMemo(
-    () => (address: ContractAddress) => {
-      const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address, is_whitelisted: true })]);
-      return {
-        addressWhitelist: formatAddressWhitelist(addressWhitelist, GuildWhitelist, getEntityName),
-      };
-    },
-    [],
-  );
+  const useAddressWhitelist = (address: ContractAddress) => {
+    const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address, is_whitelisted: true })]);
+    return formatAddressWhitelist(addressWhitelist, GuildWhitelist, getEntityName);
+  };
 
-  const getGuildOwner = useMemo(
-    () => (guildEntityId: ID) => {
-      const owner = Array.from(runQuery([HasValue(Owner, { entity_id: guildEntityId })])).map((id) =>
-        getComponentValue(Owner, id),
-      )[0];
-      return owner;
-    },
-    [],
-  );
+  const getGuildOwner = (guildEntityId: ID) => {
+    return getComponentValue(Owner, getEntityIdFromKeys([BigInt(guildEntityId)]));
+  };
 
   const getGuildFromPlayerAddress = useCallback(
     (accountAddress: ContractAddress): GuildFromPlayerAddress | undefined => {
-      const guildEntityId = Array.from(runQuery([HasValue(GuildMember, { address: accountAddress })])).map((id) =>
-        getComponentValue(GuildMember, id),
-      )[0]?.guild_entity_id;
+      const guildEntityId = getComponentValue(GuildMember, getEntityIdFromKeys([accountAddress]))?.guild_entity_id;
 
       if (!guildEntityId) return;
 
       const guildName = guildEntityId ? getEntityName(guildEntityId) : undefined;
 
-      const owner = Array.from(
-        runQuery([HasValue(Owner, { address: BigInt(accountAddress), entity_id: guildEntityId })]),
-      ).map((id) => getComponentValue(Owner, id))[0];
+      const isOwner = getGuildOwner(guildEntityId)?.address === ContractAddress(accountAddress) ? true : false;
 
-      const isOwner = owner ? (owner.address === ContractAddress(accountAddress) ? true : false) : false;
-
-      const memberCount = Array.from(runQuery([HasValue(Guild, { entity_id: guildEntityId })])).map((id) =>
-        getComponentValue(Guild, id),
-      )[0]?.member_count;
+      const memberCount = getComponentValue(Guild, getEntityIdFromKeys([BigInt(guildEntityId)]))?.member_count;
 
       return {
         guildEntityId,
@@ -136,22 +135,20 @@ export const useGuilds = () => {
     const guild = formatGuilds([getEntityIdFromKeys([BigInt(entityId)])], Guild, getEntityName)[0];
     if (!guild) return;
 
-    const owner = Array.from(
-      runQuery([HasValue(Owner, { address: BigInt(accountAddress), entity_id: guild.guild.entity_id })]),
-    ).map((id) => getComponentValue(Owner, id))[0];
+    const isOwner = getGuildOwner(guild.guild.entity_id)?.address === ContractAddress(accountAddress) ? true : false;
 
-    const isOwner = owner ? (owner.address === ContractAddress(accountAddress) ? true : false) : false;
     return { guild, isOwner, name: guild.name };
   }, []);
 
   return {
     useGuildQuery,
-    getGuildMembers,
-    getGuildWhitelist,
-    getAddressWhitelist,
+    useGuildMembers,
+    useGuildWhitelist,
+    useAddressWhitelist,
     getGuildFromPlayerAddress,
     getGuildOwner,
     getGuildFromEntityId,
+    getPlayerList,
   };
 };
 
