@@ -1,6 +1,8 @@
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { currencyFormat } from "../../../utils/utils";
 
+import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
@@ -8,6 +10,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
@@ -40,12 +43,20 @@ interface ArmyInfoLabelProps {
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
+  const { setup } = useDojo();
   const { getRealmAddressName } = useRealm();
-  const { realm, entity_id, entityOwner, troops, arrivalTime } = army;
+  const { realm, entity_id, entityOwner, troops } = army;
 
   const realmId = realm?.realm_id || 0;
 
   const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
+
+  const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
+
+  const stamina = useMemo(() => {
+    const staminaManager = new StaminaManager(setup, army.entity_id);
+    return staminaManager.getStamina(useUIStore.getState().currentArmiesTick);
+  }, [army]);
 
   const originRealmName = getRealmNameById(realmId);
 
@@ -62,6 +73,21 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <Headline className="text-center text-lg">
               <div>{attackerAddressName}</div>
             </Headline>
+          </div>
+
+          <div>
+            {stamina.amount < EternumGlobalConfig.stamina.travelCost ? (
+              <div className="text-xxs font-semibold items-center text-center">
+                ⚠️ Not enough stamina to explore or travel
+              </div>
+            ) : (
+              stamina.amount < EternumGlobalConfig.stamina.exploreCost && (
+                <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough stamina to explore</div>
+              )
+            )}
+            {remainingCapacity < EternumGlobalConfig.exploration.reward && (
+              <div className="text-xxs font-semibold items-center text-center">⚠️ Too heavy to explore</div>
+            )}
           </div>
 
           <div id="army-info-label-content" className="self-center flex justify-between w-full">
