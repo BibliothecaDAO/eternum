@@ -133,7 +133,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
       steps: [
         navigationStep(BuildingThumbs.military),
         "2. Create a defensive army for your realm",
-        "3. Remember to assign troops to it, or else your enemies can claim your realm for free!",
+        "3. Assign troops to it, or else your enemies can claim your realm for free!",
       ],
       prizes: [{ id: QuestType.CreateDefenseArmy, title: "Create Defensive Army" }],
       depth: 4,
