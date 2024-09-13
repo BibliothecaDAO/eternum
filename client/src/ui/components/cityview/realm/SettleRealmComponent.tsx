@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Button from "../../../elements/Button";
 
-import { useDojo } from "../../../../hooks/context/DojoContext";
+import { MAX_REALMS } from "@/ui/constants";
+import { getPosition } from "@/ui/utils/utils";
 import { getOrderName, orders } from "@bibliothecadao/eternum";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { getRealm } from "../../../utils/realms";
-import { OrderIcon } from "../../../elements/OrderIcon";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { order_statments } from "../../../../data/orders";
-import { getPosition } from "@/ui/utils/utils";
-import { MAX_REALMS } from "@/ui/constants";
+import { useDojo } from "../../../../hooks/context/DojoContext";
+import { useRealm } from "../../../../hooks/helpers/useRealm";
+import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { OrderIcon } from "../../../elements/OrderIcon";
+import { getRealm } from "../../../utils/realms";
 
 const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +45,7 @@ const SettleRealmComponent = () => {
       const position = getPosition(new_realm_id);
 
       calldata.push({
+        realm_name: realm.name,
         realm_id: Number(realm.realmId),
         order: realm.order,
         wonder: realm.wonder,

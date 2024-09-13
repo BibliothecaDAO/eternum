@@ -140,6 +140,7 @@ export interface MintResourcesAndClaimProps extends SystemSigner {
 }
 
 interface Realm {
+  realm_name: string;
   realm_id: num.BigNumberish;
   resource_types_packed: num.BigNumberish;
   resource_types_count: num.BigNumberish;

@@ -4,6 +4,7 @@ use eternum::alias::ID;
 trait IRealmSystems {
     fn create(
         ref world: IWorldDispatcher,
+        realm_name: felt252,
         realm_id: ID,
         resource_types_packed: u128,
         resource_types_count: u8,
@@ -38,8 +39,14 @@ mod realm_systems {
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
     use eternum::models::realm::{Realm, RealmCustomTrait};
-    use eternum::models::resources::{DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait};
-    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use eternum::models::resources::{
+        DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait
+    };
+    use eternum::models::structure::{
+        Structure, StructureCategory, StructureCount, StructureCountCustomTrait
+    };
+    use eternum::models::event::{SettleRealmData, EventType};
+    use eternum::models::name::{AddressName};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 
@@ -48,10 +55,14 @@ mod realm_systems {
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
-        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
+        fn mint_starting_resources(
+            ref world: IWorldDispatcher, config_id: ID, entity_id: ID
+        ) -> ID {
             get!(world, (entity_id), Realm).assert_is_set();
 
-            let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
+            let mut claimed_resources = get!(
+                world, (entity_id, config_id), HasClaimedStartingResources
+            );
 
             assert(!claimed_resources.claimed, 'already claimed');
 
@@ -86,6 +97,7 @@ mod realm_systems {
 
         fn create(
             ref world: IWorldDispatcher,
+            realm_name: felt252,
             realm_id: ID,
             resource_types_packed: u128,
             resource_types_count: u8,
@@ -109,8 +121,13 @@ mod realm_systems {
 
             let caller_realm_quantity_arr = array![caller.into(), REALM_ENTITY_TYPE.into()];
             let caller_realm_quantity_key = poseidon_hash_span(caller_realm_quantity_arr.span());
-            let mut caller_realms_quantity = get!(world, caller_realm_quantity_key, QuantityTracker);
-            assert(caller_realms_quantity.count < MAX_REALMS_PER_ADDRESS.into(), 'max num of realms settled');
+            let mut caller_realms_quantity = get!(
+                world, caller_realm_quantity_key, QuantityTracker
+            );
+            assert(
+                caller_realms_quantity.count < MAX_REALMS_PER_ADDRESS.into(),
+                'max num of realms settled'
+            );
 
             caller_realms_quantity.count += 1;
             set!(world, (caller_realms_quantity));
@@ -126,7 +143,9 @@ mod realm_systems {
                         created_at: starknet::get_block_timestamp()
                     },
                     StructureCount { coord, count: 1 },
-                    CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure },
+                    CapacityCategory {
+                        entity_id: entity_id.into(), category: CapacityConfigCategory::Structure
+                    },
                     Realm {
                         entity_id: entity_id.into(),
                         realm_id,
@@ -147,8 +166,31 @@ mod realm_systems {
             let mut tile: Tile = get!(world, (position.x, position.y), Tile);
             if tile.explored_at == 0 {
                 // set realm's position tile to explored
-                InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![(1, 0)].span());
+                InternalMapSystemsImpl::explore(
+                    world, entity_id.into(), position.into(), array![(1, 0)].span()
+                );
             }
+
+            emit!(
+                world,
+                (SettleRealmData {
+                    id: world.uuid(),
+                    event_id: EventType::SettleRealm,
+                    owner_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    realm_name: realm_id.into(),
+                    resource_types_packed,
+                    resource_types_count,
+                    cities,
+                    harbors,
+                    rivers,
+                    regions,
+                    wonder,
+                    order,
+                    x: position.x,
+                    y: position.y,
+                    timestamp: starknet::get_block_timestamp(),
+                }),
+            );
 
             entity_id.into()
         }
