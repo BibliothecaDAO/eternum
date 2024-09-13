@@ -1,6 +1,7 @@
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { currencyFormat } from "../../../utils/utils";
+import { currencyFormat, multiplyByPrecision } from "../../../utils/utils";
 
+import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
 import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
@@ -50,8 +51,27 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   const realmId = realm?.realm_id || 0;
 
   const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
-
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
+  const armyManager = useMemo(() => {
+    return new ArmyMovementManager(setup, army.entity_id);
+  }, [army]);
+
+  const food = armyManager.getFood(useUIStore.getState().currentDefaultTick);
+
+  const foodCost = useMemo(() => {
+    return {
+      wheat:
+        multiplyByPrecision(EternumGlobalConfig.exploration.travelWheatBurn) *
+        Number(army.quantity.value) *
+        EternumGlobalConfig.resources.resourceMultiplier,
+      fish:
+        multiplyByPrecision(EternumGlobalConfig.exploration.travelFishBurn) *
+        Number(army.quantity.value) *
+        EternumGlobalConfig.resources.resourceMultiplier,
+    };
+  }, [army]);
+
+  const notEnoughFood = food.wheat < foodCost.wheat || food.fish < foodCost.fish;
 
   const stamina = useMemo(() => {
     const staminaManager = new StaminaManager(setup, army.entity_id);
@@ -87,6 +107,9 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             )}
             {remainingCapacity < EternumGlobalConfig.exploration.reward && (
               <div className="text-xxs font-semibold items-center text-center">⚠️ Too heavy to explore</div>
+            )}
+            {notEnoughFood && (
+              <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough food to move</div>
             )}
           </div>
 
