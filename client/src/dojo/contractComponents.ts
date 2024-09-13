@@ -138,6 +138,7 @@ export function defineContractComponents(world: World) {
           defence_delta: RecsType.BigInt,
           last_updated: RecsType.BigInt,
           duration_left: RecsType.BigInt,
+          start_at: RecsType.BigInt,
         },
         {
           metadata: {
@@ -175,6 +176,7 @@ export function defineContractComponents(world: World) {
               "u64",
               "u64",
               "u64",
+              "u64",
             ],
             customTypes: [
               "BattleArmy",
@@ -199,12 +201,12 @@ export function defineContractComponents(world: World) {
     BattleConfig: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, battle_grace_tick_count: RecsType.Number },
+        { entity_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.BigInt },
         {
           metadata: {
             namespace: "eternum",
             name: "BattleConfig",
-            types: ["u32", "u8"],
+            types: ["u32", "u8", "u64"],
             customTypes: [],
           },
         },

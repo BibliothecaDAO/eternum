@@ -363,6 +363,7 @@ pub struct BattleConfig {
     #[key]
     config_id: ID,
     battle_grace_tick_count: u8,
+    battle_delay_seconds: u64,
 }
 
 #[generate_trait]

@@ -462,7 +462,8 @@ pub struct Battle {
     attack_delta: u64,
     defence_delta: u64,
     last_updated: u64,
-    duration_left: u64
+    duration_left: u64,
+    start_at: u64,
 }
 
 
@@ -553,7 +554,8 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // function. They both forfeit their balances.
         let to_army_lost = to_army_dead || (winner_side != to_army.battle_side && winner_side != BattleSide::None);
         let to_army_won = (winner_side == to_army.battle_side && winner_side != BattleSide::None);
-        let to_army_lost_or_battle_not_ended = !self.has_ended() || (self.has_ended() && to_army_lost);
+        let to_army_lost_or_battle_not_ended = (self.has_started() && !self.has_ended())
+            || (self.has_ended() && to_army_lost);
         let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
         let mut all_resources = all_resource_ids();
         let mut subtracted_resources_weight = 0;
@@ -687,6 +689,15 @@ impl BattleCustomImpl of BattleCustomTrait {
 
     fn duration_passed(ref self: Battle) -> u64 {
         let now = starknet::get_block_timestamp();
+        if now <= self.start_at {
+            self.last_updated = now;
+            return 0;
+        }
+
+        if self.last_updated < self.start_at {
+            self.last_updated = self.start_at;
+        }
+
         let duration_since_last_update = now - self.last_updated;
         if self.duration_left >= duration_since_last_update {
             self.duration_left -= duration_since_last_update;
@@ -700,6 +711,11 @@ impl BattleCustomImpl of BattleCustomTrait {
 
             duration
         }
+    }
+    fn has_started(self: Battle) -> bool {
+        let now = starknet::get_block_timestamp();
+        let start_at = self.start_at;
+        return now > start_at;
     }
 
     fn has_ended(self: Battle) -> bool {
@@ -739,6 +755,8 @@ mod tests {
     use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::combat::BattleHealthCustomTrait;
     use eternum::models::combat::TroopsTrait;
+    use eternum::models::config::BattleConfig;
+    use eternum::models::config::BattleConfigCustomTrait;
     use eternum::models::config::CapacityConfigCategory;
     use eternum::models::resources::ResourceCustomTrait;
 
@@ -763,6 +781,10 @@ mod tests {
             battle_leave_slash_num: 25,
             battle_leave_slash_denom: 100
         }
+    }
+
+    fn mock_battle_config() -> BattleConfig {
+        BattleConfig { config_id: 0, battle_grace_tick_count: 0, battle_delay_seconds: 0, }
     }
 
     fn mock_troops(a: u64, b: u64, c: u64) -> Troops {
@@ -790,6 +812,7 @@ mod tests {
             attack_delta: 0,
             defence_delta: 0,
             last_updated: starknet::get_block_timestamp(),
+            start_at: starknet::get_block_timestamp(),
             duration_left: 0,
             defence_army_lifetime: BattleArmy {
                 troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence
