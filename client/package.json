@@ -22,7 +22,7 @@
     "@dojoengine/react": "1.0.0-alpha.12",
     "@dojoengine/recs": "^2.0.13",
     "@dojoengine/state": "1.0.0-alpha.12",
-    "@dojoengine/torii-client": "1.0.0-alpha.12",
+    "@dojoengine/torii-client": "file:/Users/timothyedison/Documents/code/dojo.js/packages/torii-client",
     "@dojoengine/utils": "1.0.0-alpha.12",
     "@headlessui/react": "^1.7.18",
     "@latticexyz/utils": "^2.0.0-next.12",
