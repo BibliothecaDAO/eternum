@@ -10,7 +10,6 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { ID } from "@bibliothecadao/eternum";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { TroopExchange } from "../hyperstructures/StructureCard";
 import { InventoryResources } from "../resources/InventoryResources";
@@ -58,11 +57,7 @@ export const ArmyChip = ({
           <ArmyManagementCard army={updatedArmy!} owner_entity={updatedArmy!.entityOwner.entity_owner_id} />
         </>
       ) : showTroopSwap ? (
-        <ArmyMergeTroopsPanel
-          giverArmy={updatedArmy!}
-          setShowMergeTroopsPopup={setShowTroopSwap}
-          structureEntityId={updatedArmy!.entity_id}
-        />
+        <ArmyMergeTroopsPanel giverArmy={updatedArmy!} setShowMergeTroopsPopup={setShowTroopSwap} />
       ) : (
         <>
           <div className="flex w-full h-full justify-between">
@@ -159,11 +154,9 @@ export const ArmyChip = ({
 const ArmyMergeTroopsPanel = ({
   giverArmy,
   setShowMergeTroopsPopup,
-  structureEntityId,
 }: {
   giverArmy: ArmyInfo;
   setShowMergeTroopsPopup: Dispatch<SetStateAction<boolean>>;
-  structureEntityId: ID;
 }) => {
   const [selectedReceiverArmy, setSelectedReceiverArmy] = useState<ArmyInfo | null>(null);
 
