@@ -1,12 +1,22 @@
 import { Prize } from "@/hooks/helpers/useQuests";
 import { BUILDING_IMAGES_PATH, BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
-import { BuildingType, QuestType } from "@bibliothecadao/eternum";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { multiplyByPrecision } from "@/ui/utils/utils";
+import {
+  BASE_POPULATION_CAPACITY,
+  BuildingType,
+  CapacityConfigCategory,
+  EternumGlobalConfig,
+  QuestType,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import { ResourceWeight } from "../resources/ResourceWeight";
 
 interface StaticQuestInfo {
   name: string;
-  description: string;
+  description: string | React.ReactNode;
   steps: (string | React.ReactNode)[];
   prizes: Prize[];
   depth: number;
@@ -94,7 +104,15 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildResource,
     {
       name: "Build a Resource Facility",
-      description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently",
+      description: (
+        <div className="space-y-2">
+          <div>Eternum thrives on resources. Construct resource facilities to harvest them efficiently.</div>
+          <div>
+            For each farm next to your resource facility you gain a{" "}
+            <span className="font-bold text-order-brilliance">10%</span> boost in production.
+          </div>
+        </div>
+      ),
       steps: [
         navigationStep(BuildingThumbs.construction),
         "2. Select one of the Resource Buildings in the 'Resources' tab",
@@ -156,9 +174,85 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
   [
     QuestId.Travel,
     {
-      name: "Travel with your Army",
-      description: "Travel with your army",
-      steps: ["1. Go to world view", "2. Right click on your army", "3. Explore with your army"],
+      name: "Move with your Army",
+      description: (
+        <div className="space-y-4 text-base">
+          <p>
+            Move your army across the world map using two methods: <strong>travel</strong> and <strong>explore</strong>.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-800 rounded-lg p-4 shadow-md">
+              <h4 className="text-xl font-bold mb-3 text-gold">Travel</h4>
+              <ul className="space-y-2">
+                <li className="flex items-center">
+                  <span className="mr-2">🏃‍♂️</span>
+                  Costs{" "}
+                  <span className="font-semibold text-brilliance mx-1">
+                    {EternumGlobalConfig.stamina.travelCost}
+                  </span>{" "}
+                  stamina per hex
+                </li>
+                <li>
+                  <span className="mr-2">🍖</span>
+                  Consumes per hex:
+                  <ul className="ml-6 mt-2 space-y-2">
+                    <li className="flex items-center">
+                      <span className="font-semibold text-brilliance mr-2">
+                        {multiplyByPrecision(EternumGlobalConfig.exploration.travelFishBurn)}
+                      </span>
+                      <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                      <span>per troop</span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="font-semibold text-brilliance mr-2">
+                        {multiplyByPrecision(EternumGlobalConfig.exploration.travelWheatBurn)}
+                      </span>
+                      <ResourceIcon className="mr-1" size="md" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                      <span>per troop</span>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-800 rounded-lg p-4 shadow-md">
+              <h4 className="text-xl font-bold mb-3 text-gold">Explore</h4>
+              <ul className="space-y-2">
+                <li className="flex items-center">
+                  <span className="mr-2">🌎</span>
+                  Costs{" "}
+                  <span className="font-semibold text-brilliance mx-1">
+                    {EternumGlobalConfig.stamina.exploreCost}
+                  </span>{" "}
+                  stamina per hex
+                </li>
+                <li>
+                  <span className="mr-2">🍖</span>
+                  Consumes per hex:
+                  <ul className="ml-6 mt-2 space-y-2">
+                    <li className="flex items-center">
+                      <span className="font-semibold text-brilliance mr-2">
+                        {multiplyByPrecision(EternumGlobalConfig.exploration.exploreFishBurn)}
+                      </span>
+                      <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                      <span>per troop</span>
+                    </li>
+                    <li className="flex items-center">
+                      <span className="font-semibold text-brilliance mr-2">
+                        {multiplyByPrecision(EternumGlobalConfig.exploration.exploreWheatBurn)}
+                      </span>
+                      <ResourceIcon className="mr-1" size="md" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                      <span>per troop</span>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      ),
+      steps: ["1. Go to world view", "2. Right click on your army", "3. Explore or travel with your army"],
       prizes: [{ id: QuestType.Travel, title: "Travel" }],
       depth: 5,
     },
@@ -167,7 +261,8 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildWorkersHut,
     {
       name: "Build a workers hut",
-      description: "Build worker huts to extend your population capacity",
+      description: `Each building takes up population in your realm. You realm starts with a population of ${BASE_POPULATION_CAPACITY}. 
+      Build worker huts to extend your population capacity by ${EternumGlobalConfig.populationCapacity.workerHuts}.`,
       steps: [],
       prizes: [{ id: QuestType.Population, title: "Population" }],
       depth: 6,
@@ -177,7 +272,20 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Market,
     {
       name: "Build a market",
-      description: "Build a market to produce donkeys. Donkeys are a resource used to transport goods",
+      description: (
+        <div>
+          <div className="mt-2">Build a market to produce donkeys. Donkeys are a resource used to transport goods.</div>{" "}
+          <div className="flex flex-row mt-2">
+            <ResourceIcon size="sm" resource={"Donkeys"} />
+            <div>
+              {" "}
+              Donkeys can transport {EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey] /
+                1000} kg{" "}
+            </div>
+          </div>
+          <ResourceWeight className="mt-2" />
+        </div>
+      ),
       steps: [],
       prizes: [{ id: QuestType.Market, title: "Market" }],
       depth: 6,
@@ -187,7 +295,8 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Pillage,
     {
       name: "Pillage a structure",
-      description: "Pillage a realm, hyperstructure or earthenshard mine",
+      description:
+        "Pillage a realm, hyperstructure or earthenshard mine. To pillage a structure, travel with your army to your target first, then pillage it.",
       steps: [],
       prizes: [{ id: QuestType.Pillage, title: "Pillage" }],
       depth: 6,
