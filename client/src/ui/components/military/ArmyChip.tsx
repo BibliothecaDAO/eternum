@@ -68,16 +68,14 @@ export const ArmyChip = ({
           <div className="flex w-full h-full justify-between">
             <div className="flex w-full justify-between py-2">
               <div className="flex flex-col w-[45%]">
-                <div className="h4 text-xl mb-2 flex flex-row">
-                  <div className="mr-2">{updatedArmy!.name}</div>
+                <div className="h4 items-center justify-between text-xl mb-2 flex flex-row">
+                  <div className="mr-2 text-base">{updatedArmy!.name}</div>
                   {showButtons !== undefined && showButtons === true && (
-                    <div className="flex flex-row gap-1 grid grid-cols-4">
+                    <div className="flex flex-row mt-1 h-6 gap-1 mr-2">
                       {updatedArmy?.isMine && (
                         <React.Fragment>
                           <Pen
-                            className={
-                              "my-auto w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
-                            }
+                            className="w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                             onClick={() => {
                               setTooltip(null);
                               setEditMode(!editMode);
@@ -93,11 +91,11 @@ export const ArmyChip = ({
                             }}
                           />
                           <ViewOnMapIcon
-                            className={"my-auto hover:scale-125  hover:grow"}
+                            className="w-5 h-5 hover:scale-110 transition-all duration-300"
                             position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
                           />
                           <Swap
-                            className="my-auto w-5 ml-1 mx-auto my-auto align-middle hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                            className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                             onClick={() => {
                               setTooltip(null);
                               setShowTroopSwap(!showTroopSwap);
@@ -115,7 +113,7 @@ export const ArmyChip = ({
                         </React.Fragment>
                       )}
                       <Inventory
-                        className="my-auto w-4 ml-1 mx-auto hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse hover:grow duration-300 transition-all"
+                        className="w-4 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                         onClick={() => {
                           setTooltip(null);
                           setShowInventory(!showInventory);
@@ -134,7 +132,7 @@ export const ArmyChip = ({
                   )}
                 </div>
                 {!army.protectee && armyHasTroops([updatedArmy]) && (
-                  <div className="font-bold text-xs">
+                  <div className="flex flex-col font-bold items-end text-xs mr-2">
                     <StaminaResource entityId={updatedArmy!.entity_id} />
                     <ArmyCapacity army={updatedArmy} />
                   </div>

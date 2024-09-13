@@ -818,9 +818,9 @@ export const RESOURCE_INFORMATION: {
 export const EXPLORATION_COSTS: Resource[] = [
   {
     resourceId: ResourcesIds.Wheat,
-    amount: EternumGlobalConfig.exploration.wheatBurn,
+    amount: EternumGlobalConfig.exploration.exploreWheatBurn,
   },
-  { resourceId: ResourcesIds.Fish, amount: EternumGlobalConfig.exploration.fishBurn },
+  { resourceId: ResourcesIds.Fish, amount: EternumGlobalConfig.exploration.exploreFishBurn },
 ];
 
 export enum QuestType {

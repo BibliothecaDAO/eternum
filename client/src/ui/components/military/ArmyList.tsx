@@ -6,7 +6,6 @@ import { PlayerStructure } from "@/hooks/helpers/useEntities";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -142,7 +141,6 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         panel={({ entity, setSelectedEntity }) => (
           <>
             <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
-            <ArmyCapacity army={entity} className="inline-flex" />
           </>
         )}
         questing={selectedQuest?.id === QuestId.CreateArmy}

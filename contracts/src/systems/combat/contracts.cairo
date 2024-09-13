@@ -669,6 +669,7 @@ mod combat_systems {
             }
 
             // create battle
+            let now = starknet::get_block_timestamp();
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
@@ -679,7 +680,12 @@ mod combat_systems {
             battle.defenders_resources_escrow_id = world.uuid();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
-            battle.last_updated = starknet::get_block_timestamp();
+            battle.last_updated = now;
+            battle.start_at = now;
+            if defending_army_protectee.is_other() {
+                // add delay when a structure is being attacked
+                battle.start_at = now + battle_config.battle_delay_seconds;
+            }
 
             // deposit resources protected by armies into battle escrow pots/boxes
             battle.deposit_balance(world, attacking_army, attacking_army_protectee);
@@ -844,7 +850,8 @@ mod combat_systems {
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
 
             battle.update_state();
-            let battle_was_active = !battle.has_ended();
+            let battle_was_active = (battle.has_started() && !battle.has_ended());
+            InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
 
             // slash army if battle was not concluded before they left
             if battle_was_active {
@@ -1204,7 +1211,8 @@ mod combat_systems {
                     attack_delta: 0,
                     defence_delta: 0,
                     last_updated: starknet::get_block_timestamp(),
-                    duration_left: 0
+                    duration_left: 0,
+                    start_at: starknet::get_block_timestamp()
                 };
                 mock_battle.reset_delta(troop_config);
 

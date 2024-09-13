@@ -144,12 +144,13 @@ export const setWeightConfig = async (account: Account, provider: EternumProvide
 };
 
 export const setBattleConfig = async (account: Account, provider: EternumProvider) => {
-  const { graceTickCount: battle_grace_tick_count } = EternumGlobalConfig.battle;
+  const { graceTickCount: battle_grace_tick_count, delaySeconds: battle_delay_seconds } = EternumGlobalConfig.battle;
 
   const tx = await provider.set_battle_config({
     signer: account,
     config_id: 0,
     battle_grace_tick_count,
+    battle_delay_seconds,
   });
 
   console.log(`Configuring battle config ${tx.statusReceipt}...`);
@@ -217,15 +218,22 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   console.log(`Configuring tick config ${txArmiesTick.statusReceipt}...`);
 
-  const txExplore = await provider.set_exploration_config({
+  const txMap = await provider.set_map_config({
     signer: account,
-    wheat_burn_amount: EternumGlobalConfig.exploration.wheatBurn * EternumGlobalConfig.resources.resourcePrecision,
-    fish_burn_amount: EternumGlobalConfig.exploration.fishBurn * EternumGlobalConfig.resources.resourcePrecision,
+    config_id: 0,
+    explore_wheat_burn_amount:
+      EternumGlobalConfig.exploration.exploreWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
+    explore_fish_burn_amount:
+      EternumGlobalConfig.exploration.exploreFishBurn * EternumGlobalConfig.resources.resourcePrecision,
+    travel_wheat_burn_amount:
+      EternumGlobalConfig.exploration.travelWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
+    travel_fish_burn_amount:
+      EternumGlobalConfig.exploration.travelFishBurn * EternumGlobalConfig.resources.resourcePrecision,
     reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision,
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
 
-  console.log(`Configuring exploration config ${txExplore.statusReceipt}...`);
+  console.log(`Configuring map config ${txMap.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {

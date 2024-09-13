@@ -367,13 +367,15 @@ export interface SetMintConfigProps extends SystemSigner {
   resources: ResourceCosts[];
 }
 
-export interface SetExplorationConfigProps extends SystemSigner {
-  wheat_burn_amount: num.BigNumberish;
-  fish_burn_amount: num.BigNumberish;
+export interface SetMapConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  explore_wheat_burn_amount: num.BigNumberish;
+  explore_fish_burn_amount: num.BigNumberish;
+  travel_wheat_burn_amount: num.BigNumberish;
+  travel_fish_burn_amount: num.BigNumberish;
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
 }
-
 export interface SetCapacityConfigProps extends SystemSigner {
   category: num.BigNumberish;
   weight_gram: num.BigNumberish;
@@ -408,6 +410,7 @@ export interface SetBankConfigProps extends SystemSigner {
 export interface SetBattleConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
   battle_grace_tick_count: num.BigNumberish;
+  battle_delay_seconds: num.BigNumberish;
 }
 export interface SetTroopConfigProps extends SystemSigner {
   config_id: num.BigNumberish;

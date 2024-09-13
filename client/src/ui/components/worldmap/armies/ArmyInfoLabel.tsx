@@ -1,6 +1,8 @@
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { currencyFormat } from "../../../utils/utils";
 
+import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
@@ -8,7 +10,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { formatSecondsLeftInDaysHoursMinutes } from "@/ui/utils/utils";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
@@ -41,23 +43,22 @@ interface ArmyInfoLabelProps {
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
+  const { setup } = useDojo();
   const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
-  const { realm, entity_id, entityOwner, troops, arrivalTime } = army;
-
-  const isPassiveTravel = useMemo(
-    () =>
-      arrivalTime && arrivalTime.arrives_at && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false,
-    [arrivalTime?.arrives_at, nextBlockTimestamp],
-  );
+  const { realm, entity_id, entityOwner, troops } = army;
 
   const realmId = realm?.realm_id || 0;
 
   const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
 
-  const originRealmName = getRealmNameById(realmId);
+  const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
 
-  const isTraveling = isPassiveTravel;
+  const stamina = useMemo(() => {
+    const staminaManager = new StaminaManager(setup, army.entity_id);
+    return staminaManager.getStamina(useUIStore.getState().currentArmiesTick);
+  }, [army]);
+
+  const originRealmName = getRealmNameById(realmId);
 
   return (
     <div
@@ -69,24 +70,35 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
       <div className="flex items-center w-full mt-1 justify-between text-xs">
         <div className="flex flex-col gap-1 w-full">
           <div className="flex items-center text-gold gap-2">
-            {/* <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="md" /> */}
-
             <Headline className="text-center text-lg">
-              <div>{army.name}</div>
+              <div>{attackerAddressName}</div>
             </Headline>
           </div>
 
-          <div className="self-center flex justify-between w-full">
-            {!isTraveling && <div className="flex   italic text-gold self-center">Idle</div>}
-            {arrivalTime && arrivalTime.arrives_at !== undefined && isTraveling && nextBlockTimestamp && (
-              <div className="flex italic text-light-pink">
-                {isPassiveTravel
-                  ? formatSecondsLeftInDaysHoursMinutes(Number(arrivalTime.arrives_at) - nextBlockTimestamp)
-                  : "Arrives Next Tick"}
-                {army.battle_id ? `In Battle` : ""}
+          <div>
+            {stamina.amount < EternumGlobalConfig.stamina.travelCost ? (
+              <div className="text-xxs font-semibold items-center text-center">
+                ⚠️ Not enough stamina to explore or travel
               </div>
+            ) : (
+              stamina.amount < EternumGlobalConfig.stamina.exploreCost && (
+                <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough stamina to explore</div>
+              )
             )}
-            <StaminaResource entityId={entity_id} />
+            {remainingCapacity < EternumGlobalConfig.exploration.reward && (
+              <div className="text-xxs font-semibold items-center text-center">⚠️ Too heavy to explore</div>
+            )}
+          </div>
+
+          <div id="army-info-label-content" className="self-center flex justify-between w-full">
+            <div className="flex flex-col items-start">
+              <div>{army.name}</div>
+              <div className="mt-1">{originRealmName}</div>
+            </div>
+            <div className="flex flex-col items-end">
+              <StaminaResource entityId={entity_id} />
+              <ArmyCapacity army={army} className="mt-1" />
+            </div>
           </div>
         </div>
       </div>
@@ -105,14 +117,9 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <div className="text-green text-xs self-center">{currencyFormat(Number(troops.paladin_count), 0)}</div>
           </div>
         </div>
-        <ArmyCapacity army={army} />
         <div className="flex flex-row justify-between">
-          <InventoryResources max={2} entityIds={[entity_id]} />
+          <InventoryResources max={6} entityIds={[entity_id]} resourcesIconSize="xs" textSize="xxs" />
         </div>
-      </div>
-
-      <div className="text-xs text-center py-1">
-        <span>{attackerAddressName}</span> ({originRealmName})
       </div>
     </div>
   );

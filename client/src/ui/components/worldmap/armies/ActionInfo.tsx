@@ -1,3 +1,4 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
@@ -6,6 +7,8 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 export const ActionInfo = () => {
@@ -13,12 +16,26 @@ export const ActionInfo = () => {
   const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const { getBalance } = getResourceBalance();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const {
+    setup: {
+      components: { Quantity },
+    },
+  } = useDojo();
+
+  const selectedEntityQuantity = useMemo(() => {
+    if (selectedEntityId) {
+      const quantity = getComponentValue(Quantity, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+      return Number(quantity?.value);
+    }
+    return 0;
+  }, [selectedEntityId]);
 
   const travelPath = useMemo(() => {
-    if (hoveredHex)
+    if (hoveredHex) {
       return useUIStore
         .getState()
         .armyActions.travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
+    }
   }, [hoveredHex, useUIStore.getState().armyActions.travelPaths]);
 
   const showTooltip = useMemo(() => {
@@ -33,15 +50,28 @@ export const ActionInfo = () => {
         <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
           <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
 
-          {!isExplored && (
+          {isExplored ? (
             <div>
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.wheatBurn}
+                amount={-EternumGlobalConfig.exploration.travelWheatBurn * selectedEntityQuantity}
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.fishBurn}
+                amount={-EternumGlobalConfig.exploration.travelFishBurn * selectedEntityQuantity}
+                resourceId={ResourcesIds.Fish}
+                balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
+              />
+            </div>
+          ) : (
+            <div>
+              <ResourceCost
+                amount={-EternumGlobalConfig.exploration.exploreWheatBurn * selectedEntityQuantity}
+                resourceId={ResourcesIds.Wheat}
+                balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
+              />
+              <ResourceCost
+                amount={-EternumGlobalConfig.exploration.exploreFishBurn * selectedEntityQuantity}
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />

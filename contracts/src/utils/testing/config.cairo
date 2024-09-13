@@ -5,7 +5,9 @@ use eternum::constants::{
     ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds
 };
 
-use eternum::models::{config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory};
+use eternum::models::{
+    config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory, config::MapConfig
+};
 
 use eternum::systems::config::contracts::{
     ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
@@ -17,7 +19,8 @@ use eternum::systems::config::contracts::{
 };
 
 use eternum::utils::testing::constants::{
-    get_resource_weights, MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
+    get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
+    MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
     SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
     EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
 };
@@ -27,7 +30,7 @@ use starknet::{ContractAddress};
 fn setup_globals(config_systems_address: ContractAddress) {
     set_bank_config(config_systems_address);
     set_tick_config(config_systems_address);
-    set_exploration_config(config_systems_address);
+    set_map_config(config_systems_address);
 }
 
 fn set_bank_config(config_systems_address: ContractAddress) {
@@ -40,14 +43,18 @@ fn set_tick_config(config_systems_address: ContractAddress) {
     ITickConfigDispatcher { contract_address: config_systems_address }.set_tick_config(TickIds::ARMIES, 7200);
 }
 
-fn set_exploration_config(config_systems_address: ContractAddress) {
-    IMapConfigDispatcher { contract_address: config_systems_address }
-        .set_exploration_config(
-            MAP_EXPLORE_WHEAT_BURN_AMOUNT,
-            MAP_EXPLORE_FISH_BURN_AMOUNT,
-            MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-            SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
-        );
+fn set_map_config(config_systems_address: ContractAddress) {
+    let map_config = MapConfig {
+        config_id: WORLD_CONFIG_ID,
+        explore_wheat_burn_amount: MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT,
+        explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
+        travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
+        travel_fish_burn_amount: MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT,
+        reward_resource_amount: MAP_EXPLORE_RANDOM_MINT_AMOUNT,
+        shards_mines_fail_probability: SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
+    };
+
+    IMapConfigDispatcher { contract_address: config_systems_address }.set_map_config(map_config);
 }
 
 fn get_combat_config() -> TroopConfig {

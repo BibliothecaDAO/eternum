@@ -47,16 +47,19 @@ use eternum::utils::testing::{
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
         set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
-        set_tick_config, set_exploration_config, set_weight_config, set_mine_production_config
+        set_tick_config, set_map_config, set_weight_config, set_mine_production_config
     },
-    constants::{MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK}
+    constants::{
+        MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
+        EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
+    }
 };
 
 use starknet::contract_address_const;
 
 const INITIAL_WHEAT_BALANCE: u128 = 1_000_000;
 const INITIAL_FISH_BALANCE: u128 = 1_000_000;
-const INITIAL_KNIGHT_BALANCE: u128 = 10_000_000;
+const INITIAL_KNIGHT_BALANCE: u128 = 10_000;
 
 const TIMESTAMP: u64 = 10_000;
 
@@ -90,8 +93,10 @@ fn test_map_explore() {
     assert_eq!(explored_tile.explored_at, TIMESTAMP + TICK_INTERVAL_IN_SECONDS, "wrong exploration time");
 
     // ensure that the right amount of food was burnt
-    let expected_wheat_balance = INITIAL_WHEAT_BALANCE - MAP_EXPLORE_WHEAT_BURN_AMOUNT;
-    let expected_fish_balance = INITIAL_FISH_BALANCE - MAP_EXPLORE_FISH_BURN_AMOUNT;
+    let expected_wheat_balance = INITIAL_WHEAT_BALANCE
+        - (MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT * INITIAL_KNIGHT_BALANCE);
+    let expected_fish_balance = INITIAL_FISH_BALANCE
+        - (MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT * INITIAL_KNIGHT_BALANCE);
     let (realm_wheat, realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
     assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
@@ -179,7 +184,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_speed_config(config_systems_address);
     set_mercenaries_config(config_systems_address);
     set_tick_config(config_systems_address);
-    set_exploration_config(config_systems_address);
+    set_map_config(config_systems_address);
     set_weight_config(config_systems_address);
     set_mine_production_config(config_systems_address);
 
