@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Download Dojo release artifact
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.0.0-alpha.11/dojo_v1.0.0-alpha.11_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.0.0-alpha.9/dojo_v1.0.0-alpha.11_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
       - name: Checkout repository
