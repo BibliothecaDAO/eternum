@@ -687,13 +687,30 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_exploration_config(props: SystemProps.SetExplorationConfigProps) {
-    const { wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability, signer } = props;
+  public async set_map_config(props: SystemProps.SetMapConfigProps) {
+    const {
+      config_id,
+      explore_wheat_burn_amount,
+      explore_fish_burn_amount,
+      travel_wheat_burn_amount,
+      travel_fish_burn_amount,
+      reward_amount,
+      shards_mines_fail_probability,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_exploration_config",
-      calldata: [wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability],
+      entrypoint: "set_map_config",
+      calldata: [
+        config_id,
+        explore_wheat_burn_amount,
+        explore_fish_burn_amount,
+        travel_wheat_burn_amount,
+        travel_fish_burn_amount,
+        reward_amount,
+        shards_mines_fail_probability,
+      ],
     });
   }
 

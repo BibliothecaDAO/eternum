@@ -11,15 +11,15 @@ mod map_systems {
     use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
-    use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
+    use eternum::constants::{WORLD_CONFIG_ID, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::combat::{
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        ProductionConfig, CapacityConfigCategory, MapExploreConfig, LevelingConfig, MercenariesConfig,
-        TroopConfigCustomImpl, TickImpl, TickTrait
+        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig, MercenariesConfig,
+        TroopConfigCustomImpl, TickImpl, TickTrait,
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
@@ -88,6 +88,9 @@ mod map_systems {
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
             unit_entity_owner.assert_caller_owner(world);
 
+            let unit_quantity = get!(world, unit_id, Quantity);
+            assert(unit_quantity.value.is_non_zero(), 'unit quantity is zero');
+
             // ensure unit can move
             get!(world, unit_id, Movable).assert_moveable();
 
@@ -97,9 +100,8 @@ mod map_systems {
             StaminaCustomImpl::handle_stamina_costs(unit_id, TravelTypes::Explore, world);
 
             // explore coordinate, pay food and mint reward
-            let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
-                world, unit_entity_owner.entity_owner_id
-            );
+            MapConfigImpl::pay_exploration_cost(world, unit_entity_owner, unit_quantity);
+            let exploration_reward = MapConfigImpl::random_reward(world);
 
             InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward, 0, false, false);
 
@@ -146,21 +148,8 @@ mod map_systems {
             tile
         }
 
-        fn pay_food_and_get_explore_reward(world: IWorldDispatcher, realm_entity_id: ID) -> Span<(u8, u128)> {
-            let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
-            let mut wheat_pay_amount = explore_config.wheat_burn_amount;
-            let mut fish_pay_amount = explore_config.fish_burn_amount;
-            ResourceFoodImpl::pay(world, realm_entity_id, wheat_pay_amount, fish_pay_amount);
-
-            let (resource_types, resources_probs) = split_resources_and_probs();
-            let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true)
-                .at(0);
-            let reward_resource_amount: u128 = explore_config.reward_resource_amount;
-            array![(reward_resource_id, reward_resource_amount)].span()
-        }
-
         fn discover_shards_mine(world: IWorldDispatcher, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
-            let exploration_config = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+            let exploration_config = get!(world, WORLD_CONFIG_ID, MapConfig);
 
             let is_shards_mine: bool = *random::choices(
                 array![true, false].span(),

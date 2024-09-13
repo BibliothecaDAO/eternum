@@ -9,7 +9,7 @@ use eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 
 use eternum::constants::{ResourceTypes, TickIds};
 use eternum::models::combat::{Army, BattleSide, Troops};
-use eternum::models::config::{TickConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
+use eternum::models::config::{TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -371,6 +371,18 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
         (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::PALADIN, max_stamina: MAX_STAMINA, })
     );
 
+    set!(
+        world,
+        (MapConfig {
+            config_id: WORLD_CONFIG_ID,
+            explore_wheat_burn_amount: 100,
+            explore_fish_burn_amount: 100,
+            travel_wheat_burn_amount: 1,
+            travel_fish_burn_amount: 1,
+            reward_resource_amount: 100,
+            shards_mines_fail_probability: 0
+        })
+    );
     // change time such that we will be in the third tick
     starknet::testing::set_block_timestamp(tick_config.next_tick_timestamp());
 
@@ -388,12 +400,19 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
             battle_side: BattleSide::None
         })
     );
+    set!(
+        world,
+        (
+            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: 3 },
+            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: 3 }
+        )
+    );
 
     set!(
         world,
         (
             Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: owner_entity_id.into() },
-            EntityOwner { entity_id: travelling_entity_id, entity_owner_id: owner_entity_id }
+            EntityOwner { entity_id: travelling_entity_id, entity_owner_id: owner_entity_id },
         )
     );
 
@@ -457,6 +476,12 @@ fn test_travel_hex() {
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
+
+    let travelling_entity_owner_id = get!(world, travelling_entity_id, EntityOwner).entity_owner_id;
+    let travelling_entity_wheat = get!(world, (travelling_entity_owner_id, ResourceTypes::WHEAT), Resource);
+    assert_eq!(travelling_entity_wheat.balance, 2);
+    let travelling_entity_fish = get!(world, (travelling_entity_owner_id, ResourceTypes::FISH), Resource);
+    assert_eq!(travelling_entity_fish.balance, 2);
 }
 
 
