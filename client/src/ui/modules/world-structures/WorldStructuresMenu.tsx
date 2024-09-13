@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { currencyIntlFormat } from "@/ui/utils/utils";
+import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 
@@ -170,7 +170,7 @@ const ShardMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entit
       {Intl.NumberFormat("en-US", {
         notation: "compact",
         maximumFractionDigits: 1,
-      }).format(dynamicResources.balance || 0)}{" "}
+      }).format(divideByPrecision(dynamicResources.balance || 0))}{" "}
     </div>
   );
 };
