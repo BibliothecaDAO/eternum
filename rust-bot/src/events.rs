@@ -267,7 +267,7 @@ impl ToDiscordMessage for SettleRealm {
             .timestamp(Timestamp::now());
 
         let content = CreateMessage::new()
-            .content("STRUCTURE PILLAGED!")
+            .content("A new Realm has been settled!")
             .embed(embed.clone());
 
         match msg_type {
@@ -278,15 +278,6 @@ impl ToDiscordMessage for SettleRealm {
             DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
         }
     }
-
-	fn store_user_in_db(user_id: u64) {
-		let user = User {
-			id: user_id,
-			username: "".to_string(),
-			discriminator: "".to_string(),
-			avatar: "".to_string(),
-		};
-	}
 }
 
 fn duration_to_string(duration: u64) -> String {
