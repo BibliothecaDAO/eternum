@@ -2,6 +2,8 @@ mod commands;
 mod constants;
 mod events;
 mod types;
+mod utils;
+
 use anyhow::Context as _;
 use serenity::Client;
 use serenity::{
@@ -94,7 +96,7 @@ async fn main(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
 ) -> shuttle_serenity::ShuttleSerenity {
-	tracing::error!("Launching Eternum's Discord bot");
+    tracing::error!("Launching Eternum's Discord bot");
     let config = Config::from_secrets(secret_store).expect("Failed to get config");
 
     let config_clone = config.clone();
