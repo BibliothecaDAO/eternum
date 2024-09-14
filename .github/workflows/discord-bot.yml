@@ -48,5 +48,8 @@ jobs:
           toolchain: stable
           components: clippy
 
+      - name: Install protobuf-compiler
+        run: sudo apt-get install protobuf-compiler
+
       - name: Run clippy
         run: cd discord-bot && cargo clippy -- -D warnings
