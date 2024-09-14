@@ -14,41 +14,32 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@dojoengine/core':
-        specifier: 1.0.0-alpha.12
-        version: 1.0.0-alpha.12(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.13
+        version: 1.0.0-alpha.13(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@dojoengine/create-burner':
-        specifier: 1.0.0-alpha.12
-        version: 1.0.0-alpha.12(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+        specifier: 1.0.0-alpha.13
+        version: 1.0.0-alpha.13(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@dojoengine/react':
-        specifier: 1.0.0-alpha.12
-        version: 1.0.0-alpha.12(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.13
+        version: 1.0.0-alpha.13(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/recs':
         specifier: ^2.0.13
         version: 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/state':
-        specifier: 1.0.0-alpha.12
-        version: 1.0.0-alpha.12(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.13
+        version: 1.0.0-alpha.13(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@dojoengine/torii-client':
         specifier: file:/Users/timothyedison/Documents/code/dojo.js/packages/torii-client
         version: file:../dojo.js/packages/torii-client
       '@dojoengine/utils':
-        specifier: 1.0.0-alpha.12
-        version: 1.0.0-alpha.12(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+        specifier: 1.0.0-alpha.13
+        version: 1.0.0-alpha.13(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@headlessui/react':
         specifier: ^1.7.18
         version: 1.7.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@latticexyz/utils':
         specifier: ^2.0.0-next.12
         version: 2.0.12
-      '@multiformats/multiaddr':
-        specifier: ^12.3.1
-        version: 12.3.1
-      '@multiformats/multiaddr-to-uri':
-        specifier: ^10.1.0
-        version: 10.1.0
-      '@multiformats/uri-to-multiaddr':
-        specifier: ^8.0.0
-        version: 8.0.0
       '@radix-ui/react-select':
         specifier: ^2.0.0
         version: 2.1.1(@types/react-dom@18.3.0)(@types/react@18.2.74)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -929,12 +920,6 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
-  '@chainsafe/is-ip@2.0.2':
-    resolution: {integrity: sha512-ndGqEMG1W5WkGagaqOZHpPU172AGdxr+LD15sv3WIUvT5oCFUrG1Y0CW/v2Egwj4JXEvSibaIIIqImsm98y1nA==}
-
-  '@chainsafe/netmask@2.0.0':
-    resolution: {integrity: sha512-I3Z+6SWUoaljh3TBzCnCxjlUyN8tA+NAk5L6m9IxvCf1BENQTePzPMis97CoN/iMW1St3WN+AWCCRp+TTBRiDg==}
-
   '@clack/core@0.3.4':
     resolution: {integrity: sha512-H4hxZDXgHtWTwV3RAVenqcC4VbJZNegbBjlPvzOzCouXtS2y3sDvlO3IsbrPNWuLWPPlYVYPghQdSF64683Ldw==}
 
@@ -949,15 +934,21 @@ packages:
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/create-burner@1.0.0-alpha.12':
-    resolution: {integrity: sha512-+kXiu1iwif/P9RlG/+jmZDFiS3Xz0wLINZx3+pv7jKcG2Vuxxxdiq4YfHlgAnHXQVvGbeVf/PLD7MCgdMbCiPA==}
+  '@dojoengine/core@1.0.0-alpha.13':
+    resolution: {integrity: sha512-kFPT59P8symJ5jLxIABgImL7OkPbeERMWVMO5bAvqHkAuCH20O495Wmjeg3dUJ8cGWhkPBoDEWbxAmcYtkBewA==}
+    hasBin: true
+    peerDependencies:
+      starknet: 6.11.0
+
+  '@dojoengine/create-burner@1.0.0-alpha.13':
+    resolution: {integrity: sha512-HMOYmQmAmJJfn74iQg1DZ/UGnW848viTmYeBcerNkZgH4bFWKZqf0W8N3IN2W677t/0Vuw+Dr1OGAm153BeNXA==}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
       starknet: 6.11.0
 
-  '@dojoengine/react@1.0.0-alpha.12':
-    resolution: {integrity: sha512-F98t/QFGsksqWysCf4TZksOoZiC3+dhnc9j9f++JGp3I5VKcvQ9EKDbdXLXNoSRtCYr106hwjZsXpH36/gJMfQ==}
+  '@dojoengine/react@1.0.0-alpha.13':
+    resolution: {integrity: sha512-rNrmw9cM/7YxlT2AdSZNpi6AcE6ui4ti3X87MDnuVQv+z1Lls6gOJIQdSJhSIM2nv+Wq6xWYNaKjerwKZERFjg==}
     peerDependencies:
       react: ^18.2.0
       starknet: 6.11.0
@@ -966,25 +957,25 @@ packages:
   '@dojoengine/recs@2.0.13':
     resolution: {integrity: sha512-Cgz4Unlnk2FSDoFTYKrJexX/KiSYPMFMxftxQkC+9LUKS5yNGkgFQM7xu4/L1HvpDAenL7NjUmH6ynRAS7Iifw==}
 
-  '@dojoengine/state@1.0.0-alpha.12':
-    resolution: {integrity: sha512-6tXncIQqmtDoGVkwf/MV32Hrju9I7DHkwo+XGnCtGdk3pue1Q83247DmXqTqRHorvENpEWd9psY5gbK1ekQ90Q==}
+  '@dojoengine/state@1.0.0-alpha.13':
+    resolution: {integrity: sha512-fKaDcnRDVMceBoem+bdyTzKp5CoWZZcKF+qC4GHFYh/9wkA/evVvIsMGqx1kBoIn7TM5VzDXEWCOwmV9Fx0dDg==}
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/torii-client@1.0.0-alpha.12':
-    resolution: {integrity: sha512-6tDgHq9F7S7VvztV9YyB53Ntj2n7C0VuaRCQF70kFP+M8yigIEzJVFR0grojq9vGlKSfg1OQVhqWCYtk4lfypA==}
+  '@dojoengine/torii-client@1.0.0-alpha.13':
+    resolution: {integrity: sha512-ZFZjrMKLAwRIQ8hCxokaLmx/bcPXMmqNbqeS46/ooK199spFMTjVdzA6V4cLUF9n7HjWfxWHWlYd0HT3Kt2hsQ==}
 
   '@dojoengine/torii-client@file:../dojo.js/packages/torii-client':
     resolution: {directory: ../dojo.js/packages/torii-client, type: directory}
 
-  '@dojoengine/torii-wasm@1.0.0-alpha.12':
-    resolution: {integrity: sha512-GiPlaJkSqjpCzN42xv6F0zv1UJLUcIthiwU8LQYU82DCVqKkODvd/ad0YH00PQ2pB/ILEiMvoJQUQXP108yFqQ==}
+  '@dojoengine/torii-wasm@1.0.0-alpha.13':
+    resolution: {integrity: sha512-6lbU1DVEBGuSwcevLWyzgdHfXRPpMGb2SfHv/nROSbO4NGPSvLnBD+G3EvgfernxLpM6iBu/iJuvUow5G/G0XQ==}
 
   '@dojoengine/torii-wasm@file:../dojo.js/packages/torii-wasm':
     resolution: {directory: ../dojo.js/packages/torii-wasm, type: directory}
 
-  '@dojoengine/utils@1.0.0-alpha.12':
-    resolution: {integrity: sha512-l2+mFzDYZwTZsCqkmmu07ImN25qzTjQ7rTOz5UzCrrPkb1tQMBvK8137Ufict5ABBIvZyOExS6QVYKe++Bu5YQ==}
+  '@dojoengine/utils@1.0.0-alpha.13':
+    resolution: {integrity: sha512-f/s+eungz3PyqN0jxxzKjH19yls57QmP9EkQiitVMQhOdekBOwNJSw9rl+sbfyNH5fXY7Eb0AEw7boQYxjN9Rg==}
     peerDependencies:
       starknet: 6.11.0
 
@@ -1510,9 +1501,6 @@ packages:
   '@latticexyz/utils@2.0.12':
     resolution: {integrity: sha512-AwniovUlWY7YL92Mjz/3R0V9g8c5wYg5t3agRmMZ9wgktUB6BYZC65n+sKp88wUuN3DrMLb51UFZOycGh0JD2w==}
 
-  '@leichtgewicht/ip-codec@2.0.5':
-    resolution: {integrity: sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==}
-
   '@mdx-js/mdx@3.0.1':
     resolution: {integrity: sha512-eIQ4QTrOWyL3LWEe/bu6Taqzq2HQvHcyTMaOrI95P2/LmJE7AsfPfgJGuFLPVqBUE1BC1rik3VIhU+s9u72arA==}
 
@@ -1540,18 +1528,6 @@ packages:
     resolution: {integrity: sha512-53sCTG4FaJBaAq/tcufARtVYDMDGqyBT9i7F453pWGhZ5LqubDHDWtYoHo9VhQqMcHTEexdJqSsR58y+9HVmQA==}
     peerDependencies:
       three: '>= 0.159.0'
-
-  '@multiformats/dns@1.0.6':
-    resolution: {integrity: sha512-nt/5UqjMPtyvkG9BQYdJ4GfLK3nMqGpFZOzf4hAmIa0sJh2LlS9YKXZ4FgwBDsaHvzZqR/rUFIywIc7pkHNNuw==}
-
-  '@multiformats/multiaddr-to-uri@10.1.0':
-    resolution: {integrity: sha512-ZNwSAx3ssBWwd4y0LKrOsq9xG7LBHboQxnUdSduNc2fTh/NS1UjA2slgUy6KHxH5k9S2DSus0iU2CoyJyN0/pg==}
-
-  '@multiformats/multiaddr@12.3.1':
-    resolution: {integrity: sha512-yoGODQY4nIj41ENJClucS8FtBoe8w682bzbKldEQr9lSlfdHqAsRC+vpJAOBpiMwPps1tHua4kxrDmvprdhoDQ==}
-
-  '@multiformats/uri-to-multiaddr@8.0.0':
-    resolution: {integrity: sha512-86O+gY6JTnCv0O/IxTKV+1+GACoEBTr5Cfyh+FdzStWneviz2AZwLK8Hsys5dbfMgT//Vs7FolMiEHURlCel8w==}
 
   '@noble/curves@1.0.0':
     resolution: {integrity: sha512-2upgEu0iLiDVDZkNLeFV2+ht0BAVgQnEmCk6JsOch9Rp8xfkMCbvbAZlA2pBHQc73dbl+vFOXfqkf4uemdn0bw==}
@@ -2401,9 +2377,6 @@ packages:
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
 
-  '@types/dns-packet@5.6.5':
-    resolution: {integrity: sha512-qXOC7XLOEe43ehtWJCMnQXvgcIpv6rPmQ1jXT98Ad8A3TB1Ue50jsCbSSSyuazScEuZ/Q026vHbrOTVkmwA+7Q==}
-
   '@types/draco3d@1.4.10':
     resolution: {integrity: sha512-AX22jp8Y7wwaBgAixaSvkoG4M/+PlAcm3Qs4OW8yT9DM4xUpWKeFhLueTAyZF39pviAdcDdeJoACapiAceqNcw==}
 
@@ -2980,10 +2953,6 @@ packages:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
 
-  clone-regexp@3.0.0:
-    resolution: {integrity: sha512-ujdnoq2Kxb8s3ItNBtnYeXdm07FcU0u8ARAT1lQ2YdMwQC+cdiXX8KoqMVuglztILivceTtp4ivqGSmEmhBUJw==}
-    engines: {node: '>=12'}
-
   clsx@1.2.1:
     resolution: {integrity: sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==}
     engines: {node: '>=6'}
@@ -3046,10 +3015,6 @@ packages:
   consola@3.2.3:
     resolution: {integrity: sha512-I5qxpzLv+sJhTVEoLYNcTW+bThDCPsit0vLNKShZx6rLtpilNpmmeTPaeqJb9ZE9dV3DGaeby6Vuhrw38WjeyQ==}
     engines: {node: ^14.18.0 || >=16.10.0}
-
-  convert-hrtime@5.0.0:
-    resolution: {integrity: sha512-lOETlkIeYSJWcbbcvjRKGxVMXJR+8+OQb/mTPbA4ObPMytYIsUbuOE0Jzy60hjARYszq1id0j8KgVhC+WGZVTg==}
-    engines: {node: '>=12'}
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
@@ -3246,10 +3211,6 @@ packages:
 
   dlv@1.1.3:
     resolution: {integrity: sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==}
-
-  dns-packet@5.6.1:
-    resolution: {integrity: sha512-l4gcSouhcgIKRvyy99RNVOgxXiicE+2jZoNmaNmZ6JXiGajBOJAesk1OBlJuM5k2c+eudGdLxDqXuPCKIj6kpw==}
-    engines: {node: '>=6'}
 
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
@@ -3674,10 +3635,6 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  function-timeout@0.1.1:
-    resolution: {integrity: sha512-0NVVC0TaP7dSTvn1yMiy6d6Q8gifzbvQafO46RtLG/kHJUBNd+pVRGOBoK44wNBvtSPUJRfdVvkFdD3p0xvyZg==}
-    engines: {node: '>=14.16'}
-
   function.prototype.name@1.1.6:
     resolution: {integrity: sha512-Z5kx79swU5P27WEayXM1tBi5Ze/lbIyiNgU3qyXUOf9b2rgXYyF9Dy9Cx+IQv/Lc8WCG6L82zwUPpSS9hGehIg==}
     engines: {node: '>= 0.4'}
@@ -3812,9 +3769,6 @@ packages:
     resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
     engines: {node: '>= 0.4'}
 
-  hashlru@2.3.0:
-    resolution: {integrity: sha512-0cMsjjIC8I+D3M44pOQdsy0OHXGLVz6Z0beRuufhKa0KfaD2wGwAev6jILzXsd3/vpnNQJmWyZtIILqM1N+n5A==}
-
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
@@ -3934,10 +3888,6 @@ packages:
   invariant@2.2.4:
     resolution: {integrity: sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==}
 
-  ip-regex@5.0.0:
-    resolution: {integrity: sha512-fOCG6lhoKKakwv+C6KdsOnGvgXnmgfmp0myi3bcNwj3qfwPAxRKWEuFhvEFF7ceYIz6+1jRZ+yguLFAmUNPEfw==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
   is-alphabetical@2.0.1:
     resolution: {integrity: sha512-FWyyY60MeTNyeSRpkM2Iry0G9hpr7/9kD40mD/cGQEuilcZYS4okz8SN2Q6rLCJ8gbCt6fN+rC+6tMGS99LaxQ==}
 
@@ -4023,10 +3973,6 @@ packages:
     resolution: {integrity: sha512-qP1vozQRI+BMOPcjFzrjXuQvdak2pHNUMZoeG2eRbiSqyvbEf/wQtEOTOX1guk6E3t36RkaqiSt8A/6YElNxLQ==}
     engines: {node: '>=12'}
 
-  is-ip@5.0.1:
-    resolution: {integrity: sha512-FCsGHdlrOnZQcp0+XT5a+pYowf33itBalCl+7ovNXC/7o5BhIpG14M3OrpPPdBSIQJCm+0M5+9mO7S9VVTTCFw==}
-    engines: {node: '>=14.16'}
-
   is-map@2.0.3:
     resolution: {integrity: sha512-1Qed0/Hr2m+YqxnM09CjA2d/i6YZNfF6R2oRAOj36eUdS6qIV/huPJNSEpKbupewFs+ZsJlxsjjPbc0/afW6Lw==}
     engines: {node: '>= 0.4'}
@@ -4067,10 +4013,6 @@ packages:
   is-regex@1.1.4:
     resolution: {integrity: sha512-kvRdxDsxZjhzUX07ZnLydzS1TU/TJlTUHHY4YLL87e37oUA49DfkLqgy+VjFocowy29cKvcSiu+kIv728jTTVg==}
     engines: {node: '>= 0.4'}
-
-  is-regexp@3.1.0:
-    resolution: {integrity: sha512-rbku49cWloU5bSMI+zaRaXdQHXnthP6DZ/vLnfdSKyL4zUzuWnomtOEiZZOd+ioQ+avFo/qau3KPTc7Fjy1uPA==}
-    engines: {node: '>=12'}
 
   is-set@2.0.3:
     resolution: {integrity: sha512-iPAjerrse27/ygGLxw+EBR9agv9Y6uLeYVJMu+QNCoouJ1/1ri0mGrcWpfCqFZuzzx3WjtwxG098X+n4OuRkPg==}
@@ -4643,9 +4585,6 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  multiformats@13.2.3:
-    resolution: {integrity: sha512-TXwZIhK1GYOM6zO4H8tRYgXi9wRrRl+MSa3PY5DZaD7YdUMLYLXRbRTJwtCrqeDW8dLhzO9ehlC7A8vi6dMJyA==}
-
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
@@ -4784,14 +4723,6 @@ packages:
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
-
-  p-queue@8.0.1:
-    resolution: {integrity: sha512-NXzu9aQJTAzbBqOt2hwsR63ea7yvxJc0PwN/zobNAudYfb1B7R08SzB4TsLeSbUCuG467NhnoT0oO6w1qRO+BA==}
-    engines: {node: '>=18'}
-
-  p-timeout@6.1.2:
-    resolution: {integrity: sha512-UbD77BuZ9Bc9aABo74gfXhNvzC9Tx7SxtHSh1fxvx3jTLLYvmVhiQZZrJzqqU0jKbN32kb5VOKiLEQI/3bIjgQ==}
-    engines: {node: '>=14.16'}
 
   package-json-from-dist@1.0.0:
     resolution: {integrity: sha512-dATvCeZN/8wQsGywez1mzHtTlP22H8OEfPrVMLNr4/eGa+ijtLn/6M5f0dY8UKNrC2O9UCU6SSoG3qRKnt7STw==}
@@ -4957,9 +4888,6 @@ packages:
   pretty-format@29.7.0:
     resolution: {integrity: sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
-
-  progress-events@1.0.1:
-    resolution: {integrity: sha512-MOzLIwhpt64KIVN64h1MwdKWiyKFNc/S6BoYKPIVUHFg0/eIEyBulhWCgn678v/4c0ri3FdGuzXymNCv02MUIw==}
 
   promise-worker-transferable@1.0.4:
     resolution: {integrity: sha512-bN+0ehEnrXfxV2ZQvU2PetO0n4gqBD4ulq3MI1WOPLgr7/Mg9yRQkX5+0v1vagr74ZTsl7XtzlaYDo2EuCeYJw==}
@@ -5504,10 +5432,6 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
 
-  super-regex@0.2.0:
-    resolution: {integrity: sha512-WZzIx3rC1CvbMDloLsVw0lkZVKJWbrkJ0k1ghKFmcnPrW1+jWbgTkTEWVtD9lMdmI4jZEz40+naBxl1dCUhXXw==}
-    engines: {node: '>=14.16'}
-
   supports-color@5.5.0:
     resolution: {integrity: sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==}
     engines: {node: '>=4'}
@@ -5586,10 +5510,6 @@ packages:
 
   three@0.166.1:
     resolution: {integrity: sha512-LtuafkKHHzm61AQA1be2MAYIw1IjmhOUxhBa0prrLpEMWbV7ijvxCRHjSgHPGp2493wLBzwKV46tA9nivLEgKg==}
-
-  time-span@5.1.0:
-    resolution: {integrity: sha512-75voc/9G4rDIJleOo4jPvN4/YC4GRZrY8yy1uU4lwrB3XEQbWve8zXoO5No4eFrGcTAMYyoY67p8jRQdtA1HbA==}
-    engines: {node: '>=12'}
 
   tiny-emitter@2.1.0:
     resolution: {integrity: sha512-NB6Dk1A9xgQPMoGqC5CVXn123gWyte215ONT5Pp5a0yt4nlEoO1ZWeCwpncaekPHXO60i47ihFnZPiRPjRMq4Q==}
@@ -5780,15 +5700,6 @@ packages:
 
   ufo@1.5.4:
     resolution: {integrity: sha512-UsUk3byDzKd04EyoZ7U4DOlxQaD14JUKQl6/P7wiX4FNvUfm3XL246n9W5AmqwW5RSFJ27NAuM0iLscAOYUiGQ==}
-
-  uint8-varint@2.0.4:
-    resolution: {integrity: sha512-FwpTa7ZGA/f/EssWAb5/YV6pHgVF1fViKdW8cWaEarjB8t7NyofSWBdOTyFPaGuUG4gx3v1O3PQ8etsiOs3lcw==}
-
-  uint8arraylist@2.4.8:
-    resolution: {integrity: sha512-vc1PlGOzglLF0eae1M8mLRTBivsvrGsdmJ5RbK3e+QRvRLOZfZhQROTwH/OfyF3+ZVUg9/8hE8bmKP2CvP9quQ==}
-
-  uint8arrays@5.1.0:
-    resolution: {integrity: sha512-vA6nFepEmlSKkMBnLBaUMVvAC4G3CTmO58C12y4sq6WPDOR7mOFYOi7GlrQ4djeSbP6JG9Pv9tJDM97PedRSww==}
 
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
@@ -7094,12 +7005,6 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@chainsafe/is-ip@2.0.2': {}
-
-  '@chainsafe/netmask@2.0.0':
-    dependencies:
-      '@chainsafe/is-ip': 2.0.2
-
   '@clack/core@0.3.4':
     dependencies:
       picocolors: 1.0.1
@@ -7121,9 +7026,19 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/create-burner@1.0.0-alpha.12(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
+  '@dojoengine/core@1.0.0-alpha.13(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
     dependencies:
-      '@dojoengine/core': 1.0.0-alpha.12(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+      '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
+      starknet: 6.7.0(encoding@0.1.13)
+      zod: 3.23.8
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
+
+  '@dojoengine/create-burner@1.0.0-alpha.13(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)':
+    dependencies:
+      '@dojoengine/core': 1.0.0-alpha.13(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
       '@scure/bip32': 1.4.0
       '@starknet-react/core': 2.3.0(get-starknet-core@3.3.2(starknet@6.7.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))
       encoding: 0.1.13
@@ -7137,12 +7052,12 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/react@1.0.0-alpha.12(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/react@1.0.0-alpha.13(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.4.4)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/state': 1.0.0-alpha.12(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/torii-client': 1.0.0-alpha.12
-      '@dojoengine/utils': 1.0.0-alpha.12(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/state': 1.0.0-alpha.13(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/torii-client': 1.0.0-alpha.13
+      '@dojoengine/utils': 1.0.0-alpha.13(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@latticexyz/utils': 2.0.12
       encoding: 0.1.13
       fast-deep-equal: 3.1.3
@@ -7186,10 +7101,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.0.0-alpha.12(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/state@1.0.0-alpha.13(@types/node@20.14.13)(@types/react@18.2.74)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
-      '@dojoengine/torii-client': 1.0.0-alpha.12
+      '@dojoengine/torii-client': 1.0.0-alpha.13
       '@latticexyz/utils': 2.0.12
       starknet: 6.7.0(encoding@0.1.13)
       vitest: 1.6.0(@types/node@20.14.13)(@vitest/ui@2.0.2(vitest@2.0.5))(jsdom@24.1.0)
@@ -7216,9 +7131,9 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/torii-client@1.0.0-alpha.12':
+  '@dojoengine/torii-client@1.0.0-alpha.13':
     dependencies:
-      '@dojoengine/torii-wasm': 1.0.0-alpha.12
+      '@dojoengine/torii-wasm': 1.0.0-alpha.13
       typescript: 5.5.4
 
   '@dojoengine/torii-client@file:../dojo.js/packages/torii-client':
@@ -7226,11 +7141,11 @@ snapshots:
       '@dojoengine/torii-wasm': file:../dojo.js/packages/torii-wasm
       typescript: 5.5.4
 
-  '@dojoengine/torii-wasm@1.0.0-alpha.12': {}
+  '@dojoengine/torii-wasm@1.0.0-alpha.13': {}
 
   '@dojoengine/torii-wasm@file:../dojo.js/packages/torii-wasm': {}
 
-  '@dojoengine/utils@1.0.0-alpha.12(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
+  '@dojoengine/utils@1.0.0-alpha.13(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.4.4)(zod@3.23.8)
       '@latticexyz/utils': 2.0.12
@@ -7572,8 +7487,6 @@ snapshots:
       proxy-deep: 3.1.1
       rxjs: 7.5.5
 
-  '@leichtgewicht/ip-codec@2.0.5': {}
-
   '@mdx-js/mdx@3.0.1':
     dependencies:
       '@types/estree': 1.0.5
@@ -7630,34 +7543,6 @@ snapshots:
     dependencies:
       promise-worker-transferable: 1.0.4
       three: 0.166.1
-
-  '@multiformats/dns@1.0.6':
-    dependencies:
-      '@types/dns-packet': 5.6.5
-      buffer: 6.0.3
-      dns-packet: 5.6.1
-      hashlru: 2.3.0
-      p-queue: 8.0.1
-      progress-events: 1.0.1
-      uint8arrays: 5.1.0
-
-  '@multiformats/multiaddr-to-uri@10.1.0':
-    dependencies:
-      '@multiformats/multiaddr': 12.3.1
-
-  '@multiformats/multiaddr@12.3.1':
-    dependencies:
-      '@chainsafe/is-ip': 2.0.2
-      '@chainsafe/netmask': 2.0.0
-      '@multiformats/dns': 1.0.6
-      multiformats: 13.2.3
-      uint8-varint: 2.0.4
-      uint8arrays: 5.1.0
-
-  '@multiformats/uri-to-multiaddr@8.0.0':
-    dependencies:
-      '@multiformats/multiaddr': 12.3.1
-      is-ip: 5.0.1
 
   '@noble/curves@1.0.0':
     dependencies:
@@ -8525,10 +8410,6 @@ snapshots:
     dependencies:
       '@types/ms': 0.7.34
 
-  '@types/dns-packet@5.6.5':
-    dependencies:
-      '@types/node': 20.14.13
-
   '@types/draco3d@1.4.10': {}
 
   '@types/estree-jsx@1.0.5':
@@ -9274,10 +9155,6 @@ snapshots:
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
 
-  clone-regexp@3.0.0:
-    dependencies:
-      is-regexp: 3.1.0
-
   clsx@1.2.1: {}
 
   clsx@2.1.1: {}
@@ -9331,8 +9208,6 @@ snapshots:
   confbox@0.1.7: {}
 
   consola@3.2.3: {}
-
-  convert-hrtime@5.0.0: {}
 
   convert-source-map@2.0.0: {}
 
@@ -9505,10 +9380,6 @@ snapshots:
   direction@2.0.1: {}
 
   dlv@1.1.3: {}
-
-  dns-packet@5.6.1:
-    dependencies:
-      '@leichtgewicht/ip-codec': 2.0.5
 
   doctrine@2.1.0:
     dependencies:
@@ -10127,8 +9998,6 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  function-timeout@0.1.1: {}
-
   function.prototype.name@1.1.6:
     dependencies:
       call-bind: 1.0.7
@@ -10262,8 +10131,6 @@ snapshots:
   has-tostringtag@1.0.2:
     dependencies:
       has-symbols: 1.0.3
-
-  hashlru@2.3.0: {}
 
   hasown@2.0.2:
     dependencies:
@@ -10444,8 +10311,6 @@ snapshots:
     dependencies:
       loose-envify: 1.4.0
 
-  ip-regex@5.0.0: {}
-
   is-alphabetical@2.0.1: {}
 
   is-alphanumerical@2.0.1:
@@ -10521,11 +10386,6 @@ snapshots:
 
   is-interactive@2.0.0: {}
 
-  is-ip@5.0.1:
-    dependencies:
-      ip-regex: 5.0.0
-      super-regex: 0.2.0
-
   is-map@2.0.3: {}
 
   is-negative-zero@2.0.3: {}
@@ -10556,8 +10416,6 @@ snapshots:
     dependencies:
       call-bind: 1.0.7
       has-tostringtag: 1.0.2
-
-  is-regexp@3.1.0: {}
 
   is-set@2.0.3: {}
 
@@ -11436,8 +11294,6 @@ snapshots:
 
   ms@2.1.3: {}
 
-  multiformats@13.2.3: {}
-
   mz@2.7.0:
     dependencies:
       any-promise: 1.3.0
@@ -11581,13 +11437,6 @@ snapshots:
     dependencies:
       p-limit: 3.1.0
 
-  p-queue@8.0.1:
-    dependencies:
-      eventemitter3: 5.0.1
-      p-timeout: 6.1.2
-
-  p-timeout@6.1.2: {}
-
   package-json-from-dist@1.0.0: {}
 
   pako@2.1.0: {}
@@ -11729,8 +11578,6 @@ snapshots:
       '@jest/schemas': 29.6.3
       ansi-styles: 5.2.0
       react-is: 18.3.1
-
-  progress-events@1.0.1: {}
 
   promise-worker-transferable@1.0.4:
     dependencies:
@@ -12405,12 +12252,6 @@ snapshots:
       pirates: 4.0.6
       ts-interface-checker: 0.1.13
 
-  super-regex@0.2.0:
-    dependencies:
-      clone-regexp: 3.0.0
-      function-timeout: 0.1.1
-      time-span: 5.1.0
-
   supports-color@5.5.0:
     dependencies:
       has-flag: 3.0.0
@@ -12510,10 +12351,6 @@ snapshots:
       three: 0.166.1
 
   three@0.166.1: {}
-
-  time-span@5.1.0:
-    dependencies:
-      convert-hrtime: 5.0.0
 
   tiny-emitter@2.1.0: {}
 
@@ -12702,19 +12539,6 @@ snapshots:
   ua-parser-js@1.0.38: {}
 
   ufo@1.5.4: {}
-
-  uint8-varint@2.0.4:
-    dependencies:
-      uint8arraylist: 2.4.8
-      uint8arrays: 5.1.0
-
-  uint8arraylist@2.4.8:
-    dependencies:
-      uint8arrays: 5.1.0
-
-  uint8arrays@5.1.0:
-    dependencies:
-      multiformats: 13.2.3
 
   unbox-primitive@1.0.2:
     dependencies:
