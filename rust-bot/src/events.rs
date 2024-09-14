@@ -11,7 +11,8 @@ use crate::{
 };
 
 pub trait ToDiscordMessage {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage;
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage;
+    fn should_send_in_channel_if_no_user_found(&self) -> bool;
 }
 
 #[allow(dead_code)]
@@ -32,7 +33,7 @@ pub(crate) struct BattleStart {
 }
 
 impl ToDiscordMessage for BattleStart {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
@@ -47,17 +48,27 @@ impl ToDiscordMessage for BattleStart {
             .color(poise::serenity_prelude::Color::RED)
             .timestamp(Timestamp::now());
 
-        let content = CreateMessage::new()
-            .content(format!("<@{}> BATTLE STARTED!", user_id))
-            .embed(embed.clone());
-
         match msg_type {
-            DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
-                channel_id: ChannelId::from(channel_id),
-                content,
-            },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
+            DiscordMessageType::ChannelMessage(channel_id) => {
+                let content = CreateMessage::new()
+                    .content("BATTLE STARTED!")
+                    .embed(embed.clone());
+                DiscordMessage::ChannelMessage {
+                    channel_id: ChannelId::from(channel_id),
+                    content,
+                }
+            }
+            DiscordMessageType::DirectMessage(user_id) => {
+                let content = CreateMessage::new()
+                    .content(format!("<@{}> BATTLE STARTED!", user_id))
+                    .embed(embed.clone());
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
     }
 }
 
@@ -76,7 +87,7 @@ pub(crate) struct BattleJoin {
 }
 
 impl ToDiscordMessage for BattleJoin {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
@@ -99,8 +110,14 @@ impl ToDiscordMessage for BattleJoin {
                 channel_id: ChannelId::from(channel_id),
                 content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        false
     }
 }
 
@@ -119,7 +136,7 @@ pub(crate) struct BattleLeave {
 }
 
 impl ToDiscordMessage for BattleLeave {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
@@ -142,8 +159,14 @@ impl ToDiscordMessage for BattleLeave {
                 channel_id: ChannelId::from(channel_id),
                 content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        false
     }
 }
 
@@ -162,7 +185,7 @@ pub(crate) struct BattleClaim {
 }
 
 impl ToDiscordMessage for BattleClaim {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let embed = CreateEmbed::new()
             .title(format!(
@@ -183,8 +206,14 @@ impl ToDiscordMessage for BattleClaim {
                 channel_id: ChannelId::from(channel_id),
                 content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
     }
 }
 
@@ -205,7 +234,7 @@ pub(crate) struct BattlePillage {
 }
 
 impl ToDiscordMessage for BattlePillage {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let embed = CreateEmbed::new()
             .title(format!(
@@ -229,8 +258,14 @@ impl ToDiscordMessage for BattlePillage {
                 channel_id: ChannelId::from(channel_id),
                 content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
     }
 }
 
@@ -254,7 +289,7 @@ pub(crate) struct SettleRealm {
 }
 
 impl ToDiscordMessage for SettleRealm {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let embed = CreateEmbed::new()
             .title(format!(
@@ -275,8 +310,14 @@ impl ToDiscordMessage for SettleRealm {
                 channel_id: ChannelId::from(channel_id),
                 content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
     }
 }
 
