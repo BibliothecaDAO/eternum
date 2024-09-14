@@ -21,6 +21,8 @@ import { LucideArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { shortString } from "starknet";
 
+const ACCOUNT_CHANGE_EVENT = "addressChanged";
+
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
