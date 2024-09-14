@@ -227,6 +227,7 @@ pub(crate) struct BattlePillage {
     pub event_id: u32,
     pub pillager: String,
     pub pillager_name: String,
+    pub pillager_realm_entity_id: u32,
     pub pillager_army_entity_id: u32,
     pub pillaged_structure_owner: String,
     pub pillaged_structure_entity_id: u32,
@@ -277,6 +278,7 @@ impl ToDiscordMessage for BattlePillage {
 pub(crate) struct SettleRealm {
     pub id: u32,
     pub event_id: u32,
+    pub entity_id: u32,
     pub owner_name: String,
     pub realm_name: String,
     pub resource_types_packed: u128,
