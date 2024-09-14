@@ -140,6 +140,7 @@ export interface MintResourcesAndClaimProps extends SystemSigner {
 }
 
 interface Realm {
+  realm_name: string;
   realm_id: num.BigNumberish;
   resource_types_packed: num.BigNumberish;
   resource_types_count: num.BigNumberish;
@@ -294,6 +295,11 @@ export interface ArmyMergeTroopsProps extends SystemSigner {
 
 export interface BattleStartProps extends SystemSigner {
   attacking_army_id: num.BigNumberish;
+  defending_army_id: num.BigNumberish;
+}
+
+export interface BattleForceStartProps extends SystemSigner {
+  battle_id: num.BigNumberish;
   defending_army_id: num.BigNumberish;
 }
 

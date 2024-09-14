@@ -1,12 +1,13 @@
+import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
+import useUIStore from "@/hooks/store/useUIStore";
 import { SelectBox } from "@/ui/elements/SelectBox";
 import TextInput from "@/ui/elements/TextInput";
 import { ContractAddress, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { useGuilds } from "../../../../hooks/helpers/useGuilds";
 import Button from "../../../elements/Button";
 import { Tabs } from "../../../elements/tab";
-
-import { useGuilds } from "../../../../hooks/helpers/useGuilds";
 import { GuildMembers } from "./GuildMembers";
 import { hasGuild } from "./utils";
 import { Whitelist } from "./Whitelist";
@@ -19,6 +20,8 @@ export const MyGuild = () => {
     network: { provider },
     account: { account },
   } = useDojo();
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
@@ -33,7 +36,7 @@ export const MyGuild = () => {
 
   const guild = getGuildFromPlayerAddress(ContractAddress(account.address));
 
-  const [editName, setEditName] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [naming, setNaming] = useState("");
 
   const tabs = useMemo(
@@ -93,71 +96,87 @@ export const MyGuild = () => {
     <div className="flex flex-col">
       {guild && hasGuild(guild.guildEntityId) ? (
         <>
-          <div className="relative flex flex-row justify-center">
-            {editName ? (
-              <div className="flex space-x-2 items-baseline mr-20">
-                <TextInput
-                  placeholder="Type Name"
-                  className="h-full ml-10 mx-5"
-                  value={naming}
-                  onChange={(name) => setNaming(name)}
-                  maxLength={MAX_NAME_LENGTH}
-                />
-                <Button
-                  variant="default"
-                  size="xs"
-                  isLoading={isLoading}
-                  disabled={naming == ""}
-                  onClick={async () => {
-                    setIsLoading(true);
+          <div className="flex flex-col mx-5">
+            <div className="flex flex-row">
+              {editMode ? (
+                <div className="flex flex-col items-baseline">
+                  <TextInput
+                    placeholder="Type Name"
+                    className=""
+                    value={naming}
+                    onChange={(name) => setNaming(name)}
+                    maxLength={MAX_NAME_LENGTH}
+                  />
 
-                    try {
-                      await provider.set_entity_name({
-                        signer: account,
-                        entity_id: guild!.guildEntityId!,
-                        name: naming,
-                      });
-                    } catch (e) {
-                      console.error(e);
-                    }
+                  <Button
+                    variant="default"
+                    size="xs"
+                    isLoading={isLoading}
+                    disabled={naming == ""}
+                    onClick={async () => {
+                      setIsLoading(true);
 
-                    setIsLoading(false);
-                    setEditName(false);
+                      try {
+                        await provider.set_entity_name({
+                          signer: account,
+                          entity_id: guild!.guildEntityId!,
+                          name: naming,
+                        });
+                      } catch (e) {
+                        console.error(e);
+                      }
+
+                      setIsLoading(false);
+                      setEditMode(false);
+                    }}
+                  >
+                    Confirm
+                  </Button>
+                </div>
+              ) : (
+                <p className="py-2 text-xl">{guild.guildName}</p>
+              )}
+
+              {guild.isOwner && (
+                <Pen
+                  className={
+                    "my-auto ml-2 w-5 fill-gold hover:fill-gold/50 hover:scale-125 hover:animate-pulse duration-300 transition-all"
+                  }
+                  onClick={() => {
+                    setTooltip(null);
+                    setEditMode(!editMode);
                   }}
-                >
-                  Change Name
-                </Button>
-              </div>
-            ) : (
-              <p className="py-2 text-xl">{guild.guildName}</p>
-            )}
+                  onMouseEnter={() => {
+                    setTooltip({
+                      content: "Edit",
+                      position: "top",
+                    });
+                  }}
+                  onMouseLeave={() => {
+                    setTooltip(null);
+                  }}
+                />
+              )}
+            </div>
 
-            {guild.isOwner && (
-              <div className="absolute right-0 pr-5 flex h-full items-center">
-                <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
-                  edit name
-                </Button>
-              </div>
-            )}
+            <Tabs
+              selectedIndex={selectedTab}
+              onChange={(index: number) => setSelectedTab(index)}
+              variant="default"
+              className="h-full"
+            >
+              <Tabs.List>
+                {tabs.map((tab, index) => (
+                  <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+                ))}
+              </Tabs.List>
+              <Tabs.Panels className="overflow-hidden">
+                {tabs.map((tab, index) => (
+                  <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+                ))}
+              </Tabs.Panels>
+            </Tabs>
           </div>
-
-          <Tabs
-            selectedIndex={selectedTab}
-            onChange={(index: number) => setSelectedTab(index)}
-            variant="default"
-            className="h-full"
-          >
-            <Tabs.List>
-              {tabs.map((tab, index) => (
-                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-              ))}
-            </Tabs.List>
-            <Tabs.Panels className="overflow-hidden">
-              {tabs.map((tab, index) => (
-                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-              ))}
-            </Tabs.Panels>
-          </Tabs>
 
           <div className="flex justify-end">
             <div className="px-4 my-3">

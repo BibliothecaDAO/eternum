@@ -108,11 +108,15 @@ export class ProductionManager {
     if (rate !== 0) {
       if (sign) {
         // Positive net rate, increase balance
-        const balance = Number(resource?.balance || 0n) + this._productionDuration(currentTick, resourceId) * rate;
-        return Math.min(balance, this.getStoreCapacity());
+        const productionDuration = this._productionDuration(currentTick, resourceId);
+        const balance = Number(resource?.balance || 0n) + productionDuration * rate;
+        const storeCapacity = this.getStoreCapacity();
+        const result = Math.min(balance, storeCapacity);
+        return result;
       } else {
         // Negative net rate, decrease balance but not below zero
-        const balance = Number(resource?.balance || 0n) - -this._depletionDuration(currentTick, resourceId) * rate;
+        const depletionDuration = this._depletionDuration(currentTick, resourceId);
+        const balance = Number(resource?.balance || 0n) - -depletionDuration * rate;
         if (balance < 0) {
           return 0;
         } else {
@@ -121,23 +125,35 @@ export class ProductionManager {
       }
     } else {
       // No net rate change, return current balance
-      return Number(resource?.balance || 0n);
+      const currentBalance = Number(resource?.balance || 0n);
+      return currentBalance;
+    }
+  }
+
+  private _finish_tick(): number {
+    const productionDeadline = this._getProductionDeadline(this.entityId);
+    const production = this._getProduction(this.resourceId);
+    if (!productionDeadline || !production) {
+      return Number(production?.input_finish_tick || 0);
+    } else {
+      return Math.min(Number(productionDeadline.deadline_tick), Number(production.input_finish_tick));
     }
   }
 
   private _productionDuration(currentTick: number, resourceId: ResourcesIds): number {
     const production = this._getProduction(resourceId);
+    const input_finish_tick = this._finish_tick();
 
     if (!production) return 0;
 
-    if (production.last_updated_tick >= production.input_finish_tick && production.input_finish_tick !== BigInt(0)) {
+    if (production.last_updated_tick >= input_finish_tick && input_finish_tick !== 0) {
       return 0;
     }
 
-    if (production.input_finish_tick === BigInt(0) || production.input_finish_tick > currentTick) {
+    if (input_finish_tick === 0 || input_finish_tick > currentTick) {
       return Number(currentTick) - Number(production.last_updated_tick);
     } else {
-      return Number(production.input_finish_tick) - Number(production.last_updated_tick);
+      return Number(input_finish_tick) - Number(production.last_updated_tick);
     }
   }
 
@@ -202,6 +218,10 @@ export class ProductionManager {
       this.setup.components.Production,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
+  }
+
+  private _getProductionDeadline(entityId: ID) {
+    return getComponentValue(this.setup.components.ProductionDeadline, getEntityIdFromKeys([BigInt(entityId)]));
   }
 
   private _getResource(resourceId: ResourcesIds) {

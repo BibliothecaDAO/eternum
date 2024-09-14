@@ -27,7 +27,7 @@ const STYLES = {
   danger: "bg-red border-red !text-gold bg-transparent hover:bg-red/90 ",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   opaque:
-    "px-6 py-2 bg-black font-semibold text-lg uppercase tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:bg-black/90 bg-black/40",
+    "px-6 py-2 bg-black font-semibold text-lg uppercase tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:bg-black/90 bg-black/40 hover:text-black/90",
   loadingStyle: "relative",
 };
 

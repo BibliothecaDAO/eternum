@@ -97,7 +97,6 @@ export class ArmyManager {
 
     const intersects = raycaster.intersectObject(this.armyModel.mesh);
     if (intersects.length === 0) {
-      console.log("No intersections found.");
       return;
     }
 

@@ -59,7 +59,7 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
           {quest.status !== QuestStatus.InProgress ? <Check /> : <ShieldQuestion />}
         </div>
 
-        <p className="text-xl mb-4">{quest.description}</p>
+        <div className="text-lg mb-4">{quest.description}</div>
 
         {quest.steps?.map((step: any, index: any) => (
           <div className="flex flex-col text-md" key={index}>

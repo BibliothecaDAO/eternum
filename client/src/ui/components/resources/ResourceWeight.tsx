@@ -79,11 +79,17 @@ export const TravelInfo = ({
           </tr>
         </tbody>
       </table>
-      <div className="flex text-xs mt-4 justify-center w-full gap-4 font-bold ">
-        <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords] / GRAMS_PER_KG} kg/unit`}</div>
-        <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat] / GRAMS_PER_KG} kg/unit`}</div>
-        <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood] / GRAMS_PER_KG} kg/unit`}</div>
-      </div>
+      <ResourceWeight className="mt-4 text-xs" />
     </>
+  );
+};
+
+export const ResourceWeight = ({ className }: { className?: string }) => {
+  return (
+    <div className={`flex justify-center w-full gap-4 font-bold ${className}`}>
+      <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords] / GRAMS_PER_KG} kg/unit`}</div>
+      <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat] / GRAMS_PER_KG} kg/unit`}</div>
+      <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood] / GRAMS_PER_KG} kg/unit`}</div>
+    </div>
   );
 };

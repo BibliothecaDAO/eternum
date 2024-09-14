@@ -11,29 +11,17 @@ export const GuildsPanel = () => {
     () => [
       {
         key: "Guilds",
-        label: (
-          <div className="flex group relative flex-col items-center">
-            <div>All Guilds</div>
-          </div>
-        ),
+        label: <div>All Guilds</div>,
         component: <Guilds />,
       },
       {
         key: "MyGuild",
-        label: (
-          <div className="flex group relative flex-col items-center">
-            <div>My Guild</div>
-          </div>
-        ),
+        label: <div>My Guild</div>,
         component: <MyGuild />,
       },
       {
         key: "Invites",
-        label: (
-          <div className="flex group relative flex-col items-center">
-            <div>Invites</div>
-          </div>
-        ),
+        label: <div>Invites</div>,
         component: <GuildInvites />,
       },
     ],

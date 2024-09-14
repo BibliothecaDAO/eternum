@@ -1,5 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/useBattleEvents";
 import { currencyFormat, formatElapsedTime } from "@/ui/utils/utils";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
@@ -44,23 +44,24 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
     <div className={`px-4 pt-4 col-span-2 p-2 w-full overflow-y-auto max-h-[35vh] h-full no-scrollbar text-left`}>
       {events.map((event) => {
         if (!event) return null;
+        const eventClone = structuredClone(event);
         let doerName;
         let doerArmyEntityId: ID;
-        if (event.event_id === EventType.BattleLeave) {
-          const battleLeaveData = event as BattleLeaveData;
+        if (eventClone.event_id === EventType.BattleLeave) {
+          const battleLeaveData = eventClone as BattleLeaveData;
           doerName = battleLeaveData.leaver_name;
           doerArmyEntityId = battleLeaveData.leaver_army_entity_id;
-        } else if (event.event_id === EventType.BattleJoin) {
-          const battleJoinData = event as BattleJoinData;
+        } else if (eventClone.event_id === EventType.BattleJoin) {
+          const battleJoinData = eventClone as BattleJoinData;
           doerName = battleJoinData.joiner_name;
           doerArmyEntityId = battleJoinData.joiner_army_entity_id;
-        } else if (event.event_id === EventType.BattleStart) {
-          const battleStartData = event as BattleStartData;
+        } else if (eventClone.event_id === EventType.BattleStart) {
+          const battleStartData = eventClone as BattleStartData;
           if (battleSide === BattleSide.Attack) {
             doerName = battleStartData.attacker_name;
             doerArmyEntityId = battleStartData.attacker_army_entity_id;
           } else {
-            event.event_id = EventType.BattleAttacked;
+            eventClone.event_id = EventType.BattleAttacked;
             doerName = battleStartData.defender_name;
             doerArmyEntityId = battleStartData.defender_army_entity_id;
           }
@@ -69,23 +70,22 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
           doerArmyEntityId = 0;
         }
 
-        const { emoji, action, className } = EVENT_CONFIG[event.event_id as keyof typeof EVENT_CONFIG];
-
         const doerArmy = getArmy(doerArmyEntityId);
 
-        const elapsedTime = event.timestamp - battleStartTime;
+        const elapsedTime = eventClone.timestamp - battleStartTime;
 
+        const { emoji, action, className } = EVENT_CONFIG[eventClone.event_id as keyof typeof EVENT_CONFIG];
         return React.Children.toArray(
           <div className={`flex flex-col mb-4 ${className}`}>
             <div className={`grid grid-cols-4 gap-4`}>
               <div className="italic text-xs col-span-1 align-middle self-center">
-                {event.event_id !== EventType.BattleStart && event.event_id !== EventType.BattleAttacked
+                {eventClone.event_id !== EventType.BattleStart && eventClone.event_id !== EventType.BattleAttacked
                   ? `${formatElapsedTime(elapsedTime)} since start`
                   : ""}
               </div>
-              <div className="col-span-3 align-top self-start" key={event.id}>
+              <div className="col-span-3 align-top self-start" key={eventClone.id}>
                 {emoji} {shortString.decodeShortString(doerName.toString())} {action}{" "}
-                {currencyFormat(getTotalTroops(doerArmy), 0)} troops
+                {currencyFormat(getTotalTroops(doerArmy?.troops), 0)} troops
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -99,8 +99,10 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
   );
 };
 
-const getTotalTroops = (army: ArmyInfo | undefined): number => {
-  if (!army) return 0;
-  const { knight_count, paladin_count, crossbowman_count } = army.troops;
+export const getTotalTroops = (
+  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
+): number => {
+  if (!troops) return 0;
+  const { knight_count, paladin_count, crossbowman_count } = troops;
   return Number(knight_count + paladin_count + crossbowman_count);
 };

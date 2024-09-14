@@ -14,7 +14,7 @@ import { useGetMyOffers } from "./useTrade";
 export interface Quest {
   id: QuestId;
   name: string;
-  description: string;
+  description: string | React.ReactNode;
   steps: (string | React.ReactNode)[];
   prizes: Prize[];
   depth: number;
@@ -97,7 +97,7 @@ const useQuestDependencies = () => {
 
   const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
   const hasDefensiveArmy = useMemo(
-    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId),
+    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId && army.quantity.value > 0),
     [entityArmies],
   );
 
