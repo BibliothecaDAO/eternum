@@ -520,6 +520,15 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async battle_force_start(props: SystemProps.BattleForceStartProps) {
+    const { battle_id, defending_army_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      entrypoint: "battle_force_start",
+      calldata: [battle_id, defending_army_id],
+    });
+  }
   public async battle_join(props: SystemProps.BattleJoinProps) {
     const { battle_id, battle_side, army_id, signer } = props;
 

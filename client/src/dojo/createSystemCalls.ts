@@ -264,6 +264,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_start(props);
   };
 
+  const battle_force_start = async (props: SystemProps.BattleForceStartProps) => {
+    await provider.battle_force_start(props);
+  };
+
   const battle_leave = async (props: SystemProps.BattleLeaveProps) => {
     await provider.battle_leave(props);
   };
@@ -348,6 +352,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     remove_player_from_whitelist: withQueueing(withErrorHandling(remove_player_from_whitelist)),
 
     battle_start: withQueueing(withErrorHandling(battle_start)),
+    battle_force_start: withQueueing(withErrorHandling(battle_force_start)),
     battle_leave: withQueueing(withErrorHandling(battle_leave)),
     battle_join: withQueueing(withErrorHandling(battle_join)),
     battle_claim: withQueueing(withErrorHandling(battle_claim)),
