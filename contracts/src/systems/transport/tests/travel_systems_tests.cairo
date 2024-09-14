@@ -26,7 +26,10 @@ use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use eternum::utils::testing::{
+    world::spawn_eternum, systems::deploy_system,
+    constants::{MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT}
+};
 use starknet::contract_address_const;
 
 fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
@@ -344,6 +347,8 @@ fn test_in_transit() {
 
 const TICK_INTERVAL_IN_SECONDS: u64 = 200;
 const MAX_STAMINA: u16 = 30;
+const ORIGINAL_WHEAT_BALANCE: u128 = 1000;
+const ORIGINAL_FISH_BALANCE: u128 = 1000;
 
 fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
@@ -403,8 +408,10 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
     set!(
         world,
         (
-            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: 3 },
-            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: 3 }
+            Resource {
+                entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: ORIGINAL_WHEAT_BALANCE
+            },
+            Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: ORIGINAL_FISH_BALANCE }
         )
     );
 
@@ -479,9 +486,15 @@ fn test_travel_hex() {
 
     let travelling_entity_owner_id = get!(world, travelling_entity_id, EntityOwner).entity_owner_id;
     let travelling_entity_wheat = get!(world, (travelling_entity_owner_id, ResourceTypes::WHEAT), Resource);
-    assert_eq!(travelling_entity_wheat.balance, 2);
+    assert_eq!(
+        travelling_entity_wheat.balance,
+        ORIGINAL_WHEAT_BALANCE - (MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT * travel_directions.len().into())
+    );
     let travelling_entity_fish = get!(world, (travelling_entity_owner_id, ResourceTypes::FISH), Resource);
-    assert_eq!(travelling_entity_fish.balance, 2);
+    assert_eq!(
+        travelling_entity_fish.balance,
+        ORIGINAL_FISH_BALANCE - (MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT * travel_directions.len().into())
+    );
 }
 
 
