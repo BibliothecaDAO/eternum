@@ -9,7 +9,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { BuildingType, EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
@@ -27,6 +27,8 @@ enum Loading {
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
   const dojo = useDojo();
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
   const tileManager = new TileManager(dojo.setup, { col: structure.position.x, row: structure.position.y });
   const existingBuildings = tileManager.existingBuildings();
 
@@ -71,6 +73,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     [numberDefensiveArmies],
   );
 
+  const isRealm = structure.category === StructureType[StructureType.Realm];
+
   const handleCreateArmy = (is_defensive_army: boolean) => {
     if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
     setLoading(is_defensive_army ? Loading.CreateDefensive : Loading.CreateAttacking);
@@ -114,17 +118,29 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
               </div>
             </div>
             <div className="w-full flex justify-between my-4">
-              <Button
-                isLoading={loading === Loading.CreateAttacking}
-                variant="primary"
-                onClick={() => handleCreateArmy(false)}
-                disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies}
-                className={clsx({
-                  "animate-pulse": selectedQuest?.id === QuestId.CreateArmy,
-                })}
+              <div
+                onMouseEnter={() => {
+                  if (!isRealm) {
+                    setTooltip({
+                      content: "Can only create attacking armies on realms",
+                      position: "top",
+                    });
+                  }
+                }}
+                onMouseLeave={() => setTooltip(null)}
               >
-                Create Army
-              </Button>
+                <Button
+                  isLoading={loading === Loading.CreateAttacking}
+                  variant="primary"
+                  onClick={() => handleCreateArmy(false)}
+                  disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
+                  className={clsx({
+                    "animate-pulse": selectedQuest?.id === QuestId.CreateArmy,
+                  })}
+                >
+                  Create Army
+                </Button>
+              </div>
 
               <Button
                 isLoading={loading === Loading.CreateDefensive}
