@@ -1,11 +1,11 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useCallback, useEffect, useState } from "react";
+import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import TextInput from "@/ui/elements/TextInput";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
-import { shortString, TypedData } from "starknet";
-import TextInput from "@/ui/elements/TextInput";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import { useCallback, useEffect, useState } from "react";
+import { shortString, TypedData } from "starknet";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 
@@ -20,18 +20,14 @@ function generateMessageTypedData(identity: string, channel: string, content: st
         { name: "chainId", type: "shortstring" },
         { name: "revision", type: "shortstring" },
       ],
-      OffchainMessage: [
-        { name: "model", type: "shortstring" },
-        { name: "eternum-Message", type: "Model" },
-      ],
-      Model: [
+      "eternum-Message": [
         { name: "identity", type: "ContractAddress" },
         { name: "channel", type: "shortstring" },
         { name: "content", type: "string" },
         { name: "salt", type: "felt" },
       ],
     },
-    primaryType: "OffchainMessage",
+    primaryType: "eternum-Message",
     domain: {
       name: "Eternum",
       version: "1",
@@ -39,13 +35,10 @@ function generateMessageTypedData(identity: string, channel: string, content: st
       revision: "1",
     },
     message: {
-      model: "eternum-Message",
-      "eternum-Message": {
-        identity,
-        channel,
-        content,
-        salt,
-      },
+      identity,
+      channel,
+      content,
+      salt,
     },
   };
 }
@@ -126,6 +119,7 @@ export const Chat = () => {
   };
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
+
   const selfMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
   const receivedMessageEntities = useEntityQuery([
     Has(Message),
@@ -184,7 +178,8 @@ export const Chat = () => {
       const channel = !!recipientAddress ? `0x${recipientAddress.toString(16)}` : GLOBAL_CHANNEL;
       const data = generateMessageTypedData(account.address, channel, message, `0x${salt?.toString(16)}`);
       const signature: any = await account.signMessage(data as TypedData);
-      toriiClient.publishMessage(JSON.stringify(data), [
+
+      await toriiClient.publishMessage(JSON.stringify(data), [
         `0x${signature.r.toString(16)}`,
         `0x${signature.s.toString(16)}`,
       ]);
