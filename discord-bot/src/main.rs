@@ -39,7 +39,7 @@ async fn check_user_in_database(
         .fetch_optional(pool)
         .await
 }
-			
+
 async fn setup_torii_client(database: PgPool, config: Config) -> eyre::Result<()> {
     tokio::spawn(async move {
         tracing::info!("Setting up Torii client");
