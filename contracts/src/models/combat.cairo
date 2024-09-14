@@ -68,22 +68,33 @@ impl HealthCustomImpl of HealthCustomTrait {
         assert!(self.is_alive(), "{} is dead", entity_name);
     }
 
-    fn steps_to_die(self: @Health, mut deduction: u128) -> u128 {
+    fn steps_to_die(self: @Health, mut deduction: u128, troop_config: TroopConfig) -> u128 {
         if *self.current == 0 || deduction == 0 {
             return 0;
         };
 
-        let mut num_steps = *self.current / deduction;
-        if (num_steps % deduction) > 0 {
+        // 0 < self.current <= deduction
+        if *self.current <= deduction {
+            return 1;
+        }
+
+        // 0 < self.current <= single_troop_health
+        let single_troop_health = troop_config.health.into();
+        if *self.current <= single_troop_health {
+            return 1;
+        }
+
+        // we know
+        // self.current > 0 && self.current > single_troop_health
+        // and deduction < self.current
+        let troop_modulo = *self.current % single_troop_health;
+        let current_w_no_modulo = *self.current - troop_modulo;
+        let mut num_steps = current_w_no_modulo / deduction;
+        if (num_steps % deduction) > 0 || troop_modulo > 0 {
             num_steps += 1;
         }
 
-        // this condition is here in case
-        // self.current < deduction which would make
-        // num_steps = 0 but that would cause the
-        // "inaccurate winner invariant" error so we make it
-        // at least 1.
-        max(num_steps, 1)
+        num_steps
     }
 
     fn percentage_left(self: Health) -> u128 {
@@ -193,19 +204,10 @@ impl TroopsImpl of TroopsTrait {
         self: @Troops, self_health: @Health, enemy_troops: @Troops, enemy_health: @Health, troop_config: TroopConfig
     ) -> (u64, u64) {
         let self_delta: i128 = self.strength_against(self_health, enemy_troops, enemy_health, troop_config);
-        let mut self_delta_abs: u64 = Into::<i128, felt252>::into(self_delta.abs()).try_into().unwrap();
+        let self_delta_abs: u64 = Into::<i128, felt252>::into(self_delta.abs()).try_into().unwrap();
 
         let enemy_delta: i128 = enemy_troops.strength_against(enemy_health, self, self_health, troop_config);
-        let mut enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs()).try_into().unwrap();
-
-        let nmf: u64 = (*self).normalization_factor();
-        if self_delta_abs < nmf {
-            self_delta_abs = nmf;
-        }
-
-        if enemy_delta_abs < nmf {
-            enemy_delta_abs = nmf;
-        }
+        let enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs()).try_into().unwrap();
 
         return (enemy_delta_abs, self_delta_abs);
     }
@@ -399,8 +401,8 @@ impl BattleHealthCustomImpl of BattleHealthCustomTrait {
         Into::<BattleHealth, Health>::into(self).assert_alive("Army")
     }
 
-    fn steps_to_die(self: @BattleHealth, deduction: u128) -> u128 {
-        Into::<BattleHealth, Health>::into(*self).steps_to_die(deduction)
+    fn steps_to_die(self: @BattleHealth, deduction: u128, troop_config: TroopConfig) -> u128 {
+        Into::<BattleHealth, Health>::into(*self).steps_to_die(deduction, troop_config)
     }
 
     fn percentage_left(self: BattleHealth) -> u128 {
@@ -704,14 +706,18 @@ impl BattleCustomImpl of BattleCustomTrait {
         self.defence_delta = defence_delta;
 
         // get duration with latest delta
-        self.duration_left = self.duration();
+        self.duration_left = self.duration(troop_config);
     }
 
 
-    fn duration(self: Battle) -> u64 {
-        let mut attack_num_seconds_to_death = self.attack_army_health.steps_to_die(self.defence_delta.into());
+    fn duration(self: Battle, troop_config: TroopConfig) -> u64 {
+        let mut attack_num_seconds_to_death = self
+            .attack_army_health
+            .steps_to_die(self.defence_delta.into(), troop_config);
 
-        let mut defence_num_seconds_to_death = self.defence_army_health.steps_to_die(self.attack_delta.into());
+        let mut defence_num_seconds_to_death = self
+            .defence_army_health
+            .steps_to_die(self.attack_delta.into(), troop_config);
 
         min(defence_num_seconds_to_death, attack_num_seconds_to_death).try_into().unwrap()
     }
