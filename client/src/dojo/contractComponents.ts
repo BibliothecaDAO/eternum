@@ -1580,6 +1580,55 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+
+      SettleRealmData: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            event_id: RecsType.String,
+            entity_id: RecsType.Number,
+            owner_name: RecsType.BigInt,
+            realm_name: RecsType.BigInt,
+            resource_types_packed: RecsType.BigInt,
+            resource_types_count: RecsType.Number,
+            cities: RecsType.Number,
+            harbors: RecsType.Number,
+            rivers: RecsType.Number,
+            regions: RecsType.Number,
+            wonder: RecsType.Number,
+            order: RecsType.Number,
+            x: RecsType.Number,
+            y: RecsType.Number,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "SettleRealmData",
+              types: [
+                "u32",
+                "EventType",
+                "u32",
+                "felt252",
+                "felt252",
+                "u128",
+                "u8",
+                "u8",
+                "u8",
+                "u8",
+                "u8",
+                "u8",
+                "u8",
+                "u32",
+                "u32",
+                "u64",
+              ],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
     },
   };
 };

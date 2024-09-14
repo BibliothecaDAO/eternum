@@ -159,6 +159,7 @@ mod realm_systems {
                 (SettleRealmData {
                     id: world.uuid(),
                     event_id: EventType::SettleRealm,
+                    entity_id,
                     owner_name: get!(world, starknet::get_caller_address(), AddressName).name,
                     realm_name,
                     resource_types_packed,
