@@ -4,6 +4,7 @@ use eternum::alias::ID;
 trait IRealmSystems {
     fn create(
         ref world: IWorldDispatcher,
+        realm_name: felt252,
         realm_id: ID,
         resource_types_packed: u128,
         resource_types_count: u8,
@@ -31,9 +32,11 @@ mod realm_systems {
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::config::{CapacityConfigCategory};
     use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources};
+    use eternum::models::event::{SettleRealmData, EventType};
     use eternum::models::map::Tile;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::Movable;
+    use eternum::models::name::{AddressName};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
@@ -86,6 +89,7 @@ mod realm_systems {
 
         fn create(
             ref world: IWorldDispatcher,
+            realm_name: felt252,
             realm_id: ID,
             resource_types_packed: u128,
             resource_types_count: u8,
@@ -149,6 +153,27 @@ mod realm_systems {
                 // set realm's position tile to explored
                 InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![(1, 0)].span());
             }
+
+            emit!(
+                world,
+                (SettleRealmData {
+                    id: world.uuid(),
+                    event_id: EventType::SettleRealm,
+                    owner_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    realm_name,
+                    resource_types_packed,
+                    resource_types_count,
+                    cities,
+                    harbors,
+                    rivers,
+                    regions,
+                    wonder,
+                    order,
+                    x: position.x,
+                    y: position.y,
+                    timestamp: starknet::get_block_timestamp(),
+                }),
+            );
 
             entity_id.into()
         }

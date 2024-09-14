@@ -169,6 +169,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async create_realm(props: SystemProps.CreateRealmProps) {
     const {
+      realm_name,
       realm_id,
       resource_types_packed,
       resource_types_count,
@@ -189,6 +190,7 @@ export class EternumProvider extends EnhancedDojoProvider {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
           entrypoint: "create",
           calldata: [
+            realm_name,
             realm_id,
             resource_types_packed,
             resource_types_count,
@@ -214,6 +216,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     let calldata = realms.flatMap((realm) => {
       const {
+        realm_name,
         realm_id,
         resource_types_packed,
         resource_types_count,
@@ -231,6 +234,7 @@ export class EternumProvider extends EnhancedDojoProvider {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
           entrypoint: "create",
           calldata: [
+            realm_name,
             realm_id,
             resource_types_packed,
             resource_types_count,
