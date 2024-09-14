@@ -13,10 +13,13 @@ use starknet_crypto::Felt;
 use tokio::sync::mpsc;
 use torii_grpc::types::schema::Entity;
 
-use crate::events::{SettleRealm, ToDiscordMessage};
 use crate::{
     check_user_in_database,
     events::{BattleClaim, BattleJoin, BattleLeave, BattlePillage, BattleStart},
+};
+use crate::{
+    events::{SettleRealm, ToDiscordMessage},
+    utils::Position,
 };
 use starknet::core::utils::parse_cairo_short_string;
 
@@ -253,8 +256,7 @@ impl EventHandler {
             defender_name,
             defender_army_entity_id,
             duration_left,
-            x,
-            y,
+            position: Position::new(x, y),
             structure_type,
         }))
     }
@@ -282,8 +284,7 @@ impl EventHandler {
             joiner_army_entity_id,
             joiner_side,
             duration_left,
-            x,
-            y,
+            position: Position::new(x, y),
         }))
     }
 
@@ -309,8 +310,7 @@ impl EventHandler {
             leaver_army_entity_id,
             leaver_side,
             duration_left,
-            x,
-            y,
+            position: Position::new(x, y),
         }))
     }
 
@@ -334,8 +334,7 @@ impl EventHandler {
             claimer_name,
             claimer_army_entity_id,
             previous_owner,
-            x,
-            y,
+            position: Position::new(x, y),
             structure_type,
         }))
     }
@@ -374,8 +373,7 @@ impl EventHandler {
             pillaged_structure_owner,
             pillaged_structure_entity_id,
             winner,
-            x,
-            y,
+            position: Position::new(x, y),
             structure_type,
             pillaged_resources,
         }))
@@ -413,8 +411,7 @@ impl EventHandler {
             regions,
             wonder,
             order,
-            x,
-            y,
+            position: Position::new(x, y),
             timestamp,
         }))
     }
