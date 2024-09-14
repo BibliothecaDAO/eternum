@@ -30,6 +30,7 @@ use eternum::utils::number::NumberTrait;
 
 const STRENGTH_PRECISION: u256 = 10_000;
 
+
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Health {
@@ -123,6 +124,37 @@ impl TroopsImpl of TroopsTrait {
         self.crossbowman_count -= other.crossbowman_count;
     }
 
+    // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+    // so that troop units only exists as whole and not decimals
+    fn normalize_counts(ref self: Troops) {
+        self.knight_count -= self.knight_count % self.normalization_factor();
+        self.paladin_count -= self.paladin_count % self.normalization_factor();
+        self.crossbowman_count -= self.crossbowman_count % self.normalization_factor();
+    }
+
+    fn normalization_factor(self: Troops) -> u64 {
+        let resource_precision_u64: u64 = RESOURCE_PRECISION.try_into().unwrap();
+        return resource_precision_u64;
+    }
+
+    fn assert_normalized(self: Troops) {
+        assert!(
+            self.knight_count % self.normalization_factor() == 0,
+            "Knight count is not a multiple of {}",
+            self.normalization_factor()
+        );
+        assert!(
+            self.paladin_count % self.normalization_factor() == 0,
+            "Paladin count is not a multiple of {}",
+            self.normalization_factor()
+        );
+        assert!(
+            self.crossbowman_count % self.normalization_factor() == 0,
+            "Crossbowman count is not a multiple of {}",
+            self.normalization_factor()
+        );
+    }
+
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
         let h: u128 = troop_config.health.into();
         let total_knight_health: u128 = h * self.knight_count.into();
@@ -161,10 +193,19 @@ impl TroopsImpl of TroopsTrait {
         self: @Troops, self_health: @Health, enemy_troops: @Troops, enemy_health: @Health, troop_config: TroopConfig
     ) -> (u64, u64) {
         let self_delta: i128 = self.strength_against(self_health, enemy_troops, enemy_health, troop_config);
-        let self_delta_abs: u64 = Into::<i128, felt252>::into(self_delta.abs()).try_into().unwrap();
+        let mut self_delta_abs: u64 = Into::<i128, felt252>::into(self_delta.abs()).try_into().unwrap();
 
         let enemy_delta: i128 = enemy_troops.strength_against(enemy_health, self, self_health, troop_config);
-        let enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs()).try_into().unwrap();
+        let mut enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs()).try_into().unwrap();
+
+        let nmf: u64 = (*self).normalization_factor();
+        if self_delta_abs < nmf {
+            self_delta_abs = nmf;
+        }
+
+        if enemy_delta_abs < nmf {
+            enemy_delta_abs = nmf;
+        }
 
         return (enemy_delta_abs, self_delta_abs);
     }
@@ -239,6 +280,7 @@ impl TroopsImpl of TroopsTrait {
         self.knight_count = self.actual_type_count(TroopType::Knight, @health);
         self.paladin_count = self.actual_type_count(TroopType::Paladin, @health);
         self.crossbowman_count = self.actual_type_count(TroopType::Crossbowman, @health);
+        self.normalize_counts();
 
         // make the new health be the full health of updated troops
         health.clear();
@@ -282,18 +324,6 @@ impl TroopsImpl of TroopsTrait {
             + self.actual_type_count(TroopType::Crossbowman, health))
             .try_into()
             .unwrap()
-    }
-
-    fn reduce_if_under_precision(mut self: Troops) {
-        if self.knight_count < RESOURCE_PRECISION.try_into().unwrap() {
-            self.knight_count = 0;
-        }
-        if self.paladin_count < RESOURCE_PRECISION.try_into().unwrap() {
-            self.paladin_count = 0;
-        }
-        if self.crossbowman_count < RESOURCE_PRECISION.try_into().unwrap() {
-            self.crossbowman_count = 0;
-        }
     }
 }
 
@@ -741,6 +771,122 @@ impl BattleCustomImpl of BattleCustomTrait {
         }
         // it's possible that both killed each other or battle has not ended
         return BattleSide::None;
+    }
+
+    // update battle troops and their health to actual values after battle
+    fn update_troops_and_health(ref self: Battle, side: BattleSide, troop_config: TroopConfig) {
+        let (mut battle_army, mut battle_army_health) = if side == BattleSide::Defence {
+            (self.defence_army, self.defence_army_health)
+        } else {
+            (self.attack_army, self.attack_army_health)
+        };
+
+        if battle_army_health.lifetime.is_non_zero() {
+            battle_army
+                .troops
+                .knight_count =
+                    ((battle_army_health.current * battle_army.troops.knight_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army
+                .troops
+                .paladin_count =
+                    ((battle_army_health.current * battle_army.troops.paladin_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army
+                .troops
+                .crossbowman_count =
+                    ((battle_army_health.current * battle_army.troops.crossbowman_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army.troops.normalize_counts();
+            battle_army_health.current = battle_army.troops.full_health(troop_config);
+            battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
+            if side == BattleSide::Defence {
+                self.defence_army = battle_army;
+                self.defence_army_health = battle_army_health;
+            } else {
+                self.attack_army = battle_army;
+                self.attack_army_health = battle_army_health;
+            }
+        }
+    }
+
+    fn get_troops_share_left(ref self: Battle, mut army: Army) -> Army {
+        let (battle_army, battle_army_lifetime) = if army.battle_side == BattleSide::Defence {
+            (self.defence_army, self.defence_army_lifetime)
+        } else {
+            (self.attack_army, self.attack_army_lifetime)
+        };
+        army
+            .troops
+            .knight_count =
+                if army.troops.knight_count == 0 {
+                    0
+                } else {
+                    army.troops.knight_count
+                        * battle_army.troops.knight_count
+                        / battle_army_lifetime.troops.knight_count
+                };
+
+        army
+            .troops
+            .paladin_count =
+                if army.troops.paladin_count == 0 {
+                    0
+                } else {
+                    army.troops.paladin_count
+                        * battle_army.troops.paladin_count
+                        / battle_army_lifetime.troops.paladin_count
+                };
+
+        army
+            .troops
+            .crossbowman_count =
+                if army.troops.crossbowman_count == 0 {
+                    0
+                } else {
+                    army.troops.crossbowman_count
+                        * battle_army.troops.crossbowman_count
+                        / battle_army_lifetime.troops.crossbowman_count
+                };
+
+        // normalize troop count
+        army.troops.normalize_counts();
+
+        return army;
+    }
+
+    fn reduce_battle_army_troops_and_health_by(
+        ref self: Battle, army_before_normalization: Army, troop_config: TroopConfig
+    ) {
+        // update battle army count and health
+        if army_before_normalization.battle_side == BattleSide::Defence {
+            self.defence_army.troops.deduct(army_before_normalization.troops);
+            self.defence_army_health.current = self.defence_army.troops.full_health(troop_config);
+            self.defence_army_health.lifetime = self.defence_army.troops.full_health(troop_config);
+        } else {
+            self.attack_army.troops.deduct(army_before_normalization.troops);
+            self.attack_army_health.current = self.attack_army.troops.full_health(troop_config);
+            self.attack_army_health.lifetime = self.attack_army.troops.full_health(troop_config);
+        }
+    }
+
+    // reduce battle army lifetime count by the original army count
+    fn reduce_battle_army_lifetime_by(ref self: Battle, army_before_any_modification: Army) {
+        if army_before_any_modification.battle_side == BattleSide::Defence {
+            self.defence_army_lifetime.troops.deduct(army_before_any_modification.troops);
+        } else {
+            self.attack_army_lifetime.troops.deduct(army_before_any_modification.troops);
+        }
+    }
+
+    fn is_empty(self: Battle) -> bool {
+        self.attack_army_lifetime.troops.count().is_zero() && self.defence_army_lifetime.troops.count().is_zero()
     }
 }
 
