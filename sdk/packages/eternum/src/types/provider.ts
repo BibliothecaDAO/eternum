@@ -297,6 +297,11 @@ export interface BattleStartProps extends SystemSigner {
   defending_army_id: num.BigNumberish;
 }
 
+export interface BattleForceStartProps extends SystemSigner {
+  battle_id: num.BigNumberish;
+  defending_army_id: num.BigNumberish;
+}
+
 export interface BattleJoinProps extends SystemSigner {
   battle_id: num.BigNumberish;
   battle_side: num.BigNumberish;

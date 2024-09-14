@@ -170,6 +170,20 @@ trait ICombatContract<TContractState> {
     /// * None
     fn battle_start(ref world: IWorldDispatcher, attacking_army_id: ID, defending_army_id: ID) -> ID;
 
+    /// Force start a battle between two armies
+    ///
+    /// # Preconditions:
+    /// - The caller must own the `defending_army_id`.
+    /// - the army must be on the defensive side
+    /// - The battle must not have already started
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `battle_id` - The id of the battle to force start.
+    /// * `defending_army_id` - The id of the defending army.
+    ///
+    fn battle_force_start(ref world: IWorldDispatcher, battle_id: ID, defending_army_id: ID);
+
     /// Join an existing battle with the specified army, assigning it to a specific side in the
     /// battle.
     ///
@@ -732,6 +746,21 @@ mod combat_systems {
             battle_id
         }
 
+        fn battle_force_start(ref world: IWorldDispatcher, battle_id: ID, defending_army_id: ID) {
+            get!(world, defending_army_id, EntityOwner).assert_caller_owner(world);
+
+            let mut defending_army: Army = get!(world, defending_army_id, Army);
+            assert!(defending_army.battle_id == battle_id, "army is not in battle");
+            assert!(defending_army.battle_side == BattleSide::Defence, "army is not on defensive");
+
+            let now = starknet::get_block_timestamp();
+            let mut battle: Battle = get!(world, battle_id, Battle);
+            assert!(now < battle.start_at, "Battle already started");
+
+            // update battle
+            battle.start_at = now;
+            set!(world, (battle));
+        }
 
         fn battle_join(ref world: IWorldDispatcher, battle_id: ID, battle_side: BattleSide, army_id: ID) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
