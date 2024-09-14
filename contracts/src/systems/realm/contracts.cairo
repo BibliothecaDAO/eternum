@@ -160,7 +160,7 @@ mod realm_systems {
                     id: world.uuid(),
                     event_id: EventType::SettleRealm,
                     owner_name: get!(world, starknet::get_caller_address(), AddressName).name,
-                    realm_name: realm_id.into(),
+                    realm_name,
                     resource_types_packed,
                     resource_types_count,
                     cities,

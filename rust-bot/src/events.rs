@@ -54,12 +54,9 @@ impl ToDiscordMessage for BattleStart {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
         }
     }
 }
@@ -90,6 +87,7 @@ impl ToDiscordMessage for BattleJoin {
             ))
             .description(format!("Battle will end in {} seconds", duration_string))
             .footer(footer)
+            .color(poise::serenity_prelude::Color::RED)
             .timestamp(Timestamp::now());
 
         let content = CreateMessage::new()
@@ -99,12 +97,9 @@ impl ToDiscordMessage for BattleJoin {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
         }
     }
 }
@@ -135,6 +130,7 @@ impl ToDiscordMessage for BattleLeave {
             ))
             .description(format!("Battle will end in {} seconds", duration_string))
             .footer(footer)
+            .color(poise::serenity_prelude::Color::RED)
             .timestamp(Timestamp::now());
 
         let content = CreateMessage::new()
@@ -144,12 +140,9 @@ impl ToDiscordMessage for BattleLeave {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
         }
     }
 }
@@ -177,6 +170,7 @@ impl ToDiscordMessage for BattleClaim {
                 self.claimer_name, self.x, self.y
             ))
             .description(format!("Structure type: {}", self.structure_type))
+            .color(poise::serenity_prelude::Color::RED)
             .footer(footer)
             .timestamp(Timestamp::now());
 
@@ -187,12 +181,9 @@ impl ToDiscordMessage for BattleClaim {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
         }
     }
 }
@@ -236,14 +227,66 @@ impl ToDiscordMessage for BattlePillage {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
         }
     }
+}
+
+#[allow(dead_code)]
+pub(crate) struct SettleRealm {
+    pub id: u32,
+    pub event_id: u32,
+    pub owner_name: String,
+    pub realm_name: String,
+    pub resource_types_packed: u128,
+    pub resource_types_count: u8,
+    pub cities: u8,
+    pub harbors: u8,
+    pub rivers: u8,
+    pub regions: u8,
+    pub wonder: u8,
+    pub order: u8,
+    pub x: u32,
+    pub y: u32,
+    pub timestamp: u64,
+}
+
+impl ToDiscordMessage for SettleRealm {
+    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+        let footer = CreateEmbedFooter::new(ETERNUM_URL);
+        let embed = CreateEmbed::new()
+            .title(format!(
+                "{} has settled a realm at ({}, {})",
+                self.owner_name, self.x, self.y
+            ))
+            .description("GLHF")
+            .footer(footer)
+            .color(poise::serenity_prelude::Color::BLURPLE)
+            .timestamp(Timestamp::now());
+
+        let content = CreateMessage::new()
+            .content("STRUCTURE PILLAGED!")
+            .embed(embed.clone());
+
+        match msg_type {
+            DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
+                channel_id: ChannelId::from(channel_id),
+                content,
+            },
+            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage { user_id, content },
+        }
+    }
+
+	fn store_user_in_db(user_id: u64) {
+		let user = User {
+			id: user_id,
+			username: "".to_string(),
+			discriminator: "".to_string(),
+			avatar: "".to_string(),
+		};
+	}
 }
 
 fn duration_to_string(duration: u64) -> String {

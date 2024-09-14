@@ -11,6 +11,7 @@ import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { getRealm } from "../../../utils/realms";
+import { shortString } from "starknet";
 
 const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,9 +44,8 @@ const SettleRealmComponent = () => {
       if (!realm) return;
 
       const position = getPosition(new_realm_id);
-
       calldata.push({
-        realm_name: realm.name,
+        realm_name: shortString.encodeShortString(realm.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")),
         realm_id: Number(realm.realmId),
         order: realm.order,
         wonder: realm.wonder,

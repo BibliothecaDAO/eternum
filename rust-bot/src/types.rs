@@ -13,7 +13,7 @@ use starknet_crypto::Felt;
 use tokio::sync::mpsc;
 use torii_grpc::types::schema::Entity;
 
-use crate::events::ToDiscordMessage;
+use crate::events::{SettleRealm, ToDiscordMessage};
 use crate::{
     check_user_in_database,
     events::{BattleClaim, BattleJoin, BattleLeave, BattlePillage, BattleStart},
@@ -64,6 +64,10 @@ impl<'a, 'b> EventProcessor<'a, 'b> {
 
     pub async fn process_event(&self, event: GameEventData) {
         match event {
+            GameEventData::SettleRealm(event) => {
+                tracing::info!("Processing SettleRealm event");
+                self.send_messages_for_user(&event.owner_name, &event).await;
+            }
             GameEventData::BattleStart(event) => {
                 tracing::info!("Processing BattleStart event");
                 self.send_messages_for_user(&event.defender, &event).await;
@@ -97,6 +101,7 @@ pub enum GameEventData {
     BattleLeave(BattleLeave),
     BattleClaim(BattleClaim),
     BattlePillage(BattlePillage),
+    SettleRealm(SettleRealm),
 }
 
 impl ToDiscordMessage for GameEventData {
@@ -107,6 +112,7 @@ impl ToDiscordMessage for GameEventData {
             GameEventData::BattleLeave(event) => event.to_discord_message(msg_type, user_id),
             GameEventData::BattleClaim(event) => event.to_discord_message(msg_type, user_id),
             GameEventData::BattlePillage(event) => event.to_discord_message(msg_type, user_id),
+            GameEventData::SettleRealm(event) => event.to_discord_message(msg_type, user_id),
         }
     }
 }
@@ -194,6 +200,7 @@ impl EventHandler {
                 "eternum-BattleLeaveData" => self.parse_battle_leave(model),
                 "eternum-BattleClaimData" => self.parse_battle_claim(model),
                 "eternum-BattlePillageData" => self.parse_battle_pillage(model),
+                "eternum-SettleRealmData" => self.parse_settle_realm(model),
                 _ => {
                     tracing::warn!("Unknown model name: {}", model.name); // Add this line for debugging
                     None
@@ -356,12 +363,58 @@ impl EventHandler {
         }))
     }
 
+    fn parse_settle_realm(&self, model: &dojo_types::schema::Struct) -> Option<GameEventData> {
+        tracing::info!("Model: {:?}", model);
+        // ... Parse SettleRealm event
+        let id = self.extract_u32(&model.children[0]);
+        let event_id = self.extract_u32(&model.children[1]);
+        let owner_name: String = self.extract_string(&model.children[2]);
+        let realm_name: String = self.extract_string(&model.children[3]);
+        let resource_types_packed = self.extract_u128(&model.children[4]);
+        let resource_types_count = self.extract_u8(&model.children[5]);
+        let cities = self.extract_u8(&model.children[6]);
+        let harbors = self.extract_u8(&model.children[7]);
+        let rivers = self.extract_u8(&model.children[8]);
+        let regions = self.extract_u8(&model.children[9]);
+        let wonder = self.extract_u8(&model.children[10]);
+        let order = self.extract_u8(&model.children[11]);
+        let x = self.extract_u32(&model.children[12]);
+        let y = self.extract_u32(&model.children[13]);
+        let timestamp = self.extract_u64(&model.children[14]);
+
+        Some(GameEventData::SettleRealm(SettleRealm {
+            id,
+            event_id,
+            owner_name,
+            realm_name,
+            resource_types_packed,
+            resource_types_count,
+            cities,
+            harbors,
+            rivers,
+            regions,
+            wonder,
+            order,
+            x,
+            y,
+            timestamp,
+        }))
+    }
+
     fn extract_address(&self, member: &dojo_types::schema::Member) -> Option<String> {
         if let dojo_types::schema::Ty::Primitive(ContractAddress(Some(address))) = &member.ty {
             Some(format!("0x{:x}", address))
         } else {
             None
         }
+    }
+
+    fn extract_u8(&self, member: &dojo_types::schema::Member) -> u8 {
+        member
+            .ty
+            .as_primitive()
+            .and_then(|p| p.as_u8())
+            .unwrap_or(0)
     }
 
     fn extract_u32(&self, member: &dojo_types::schema::Member) -> u32 {
@@ -377,6 +430,14 @@ impl EventHandler {
             .ty
             .as_primitive()
             .and_then(|p| p.as_u64())
+            .unwrap_or(0)
+    }
+
+    fn extract_u128(&self, member: &dojo_types::schema::Member) -> u128 {
+        member
+            .ty
+            .as_primitive()
+            .and_then(|p| p.as_u128())
             .unwrap_or(0)
     }
 
