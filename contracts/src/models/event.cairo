@@ -143,6 +143,7 @@ pub struct SettleRealmData {
     id: ID,
     #[key]
     event_id: EventType,
+    entity_id: ID,
     owner_name: felt252,
     realm_name: felt252,
     resource_types_packed: u128,

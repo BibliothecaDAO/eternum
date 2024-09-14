@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 const EVENT_STREAM_SIZE = 8;
 
 enum EventType {
+  SettleRealm = "SettleRealmData",
   MapExplored = "MapExplored",
   BattleStart = "BattleStartData",
   BattleJoin = "BattleJoinData",
@@ -21,6 +22,7 @@ enum EventType {
 }
 
 const EVENT_CONFIG = {
+  [EventType.SettleRealm]: { action: "settled a realm", emoji: "🏰", color: "#FFAB91" },
   [EventType.MapExplored]: { action: "explored a tile", emoji: "🌎", color: "#A5D6A7" },
   [EventType.BattleJoin]: { action: "joined a battle", emoji: "⚔️", color: "#EF9A9A" },
   [EventType.BattleLeave]: { action: "left a battle", emoji: "🏃", color: "#90CAF9" },
