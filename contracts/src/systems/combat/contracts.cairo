@@ -544,6 +544,7 @@ mod combat_systems {
             }
             from_army.assert_not_in_battle();
             from_army.troops.deduct(troops);
+            from_army.troops.assert_normalized();
             set!(world, (from_army));
 
             // decrease from army health
@@ -850,6 +851,7 @@ mod combat_systems {
                         / troop_config.battle_leave_slash_denom.into(),
                 };
                 army.troops.deduct(troops_deducted);
+                army.troops.normalize_counts();
 
                 let army_health = Health {
                     entity_id: army_id,
