@@ -929,8 +929,8 @@ mod tests {
     use eternum::models::config::BattleConfig;
     use eternum::models::config::BattleConfigCustomTrait;
     use eternum::models::config::CapacityConfigCategory;
+    use eternum::models::quantity::{Quantity};
     use eternum::models::resources::ResourceCustomTrait;
-
     use eternum::models::resources::ResourceTransferLockCustomTrait;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::world::spawn_eternum;
@@ -1163,7 +1163,7 @@ mod tests {
         starknet::testing::set_block_timestamp(1);
 
         // use small army
-        let attack_troop_each = 500;
+        let attack_troop_each = 1_000;
         let defence_troop_each = 10_000;
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
@@ -1223,6 +1223,11 @@ mod tests {
         assert!(battle.winner() == BattleSide::Defence, "unexpected side won");
 
         // withdraw back from escrow
+        let attack_army_left = battle.get_troops_share_left(attack_army);
+        let attack_army_left_quantity = Quantity {
+            entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
+        };
+        set!(world, (attack_army_left_quantity));
         battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
 
         // ensure transfer lock was reenabled
@@ -1306,7 +1311,12 @@ mod tests {
         assert!(battle.winner() == BattleSide::None, "unexpected side won");
 
         // withdraw back from escrow
-        battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
+        let attack_army_left = battle.get_troops_share_left(attack_army);
+        let attack_army_left_quantity = Quantity {
+            entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
+        };
+        set!(world, (attack_army_left_quantity));
+        battle.withdraw_balance_and_reward(world, attack_army_left, attack_army_protectee);
 
         // ensure transfer lock was reenabled
         let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
@@ -1316,13 +1326,8 @@ mod tests {
         let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
         let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
 
-        assert!(
-            attack_army_wheat.balance == attack_army_wheat_resource.balance,
-            "attacking army wheat balance should be > 0"
-        );
-        assert!(
-            attack_army_coal.balance == attack_army_coal_resource.balance, "attacking army coal balance should be > 0"
-        );
+        assert_eq!(attack_army_wheat.balance, 0);
+        assert_eq!(attack_army_coal.balance, 0);
 
         // ensure attacker got no reward
         let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
@@ -1404,7 +1409,12 @@ mod tests {
         assert!(battle.winner() == BattleSide::Attack, "unexpected side won");
 
         // attacker withdraw back from escrow
-        battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
+        let attack_army_left = battle.get_troops_share_left(attack_army);
+        let attack_army_left_quantity = Quantity {
+            entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
+        };
+        set!(world, (attack_army_left_quantity));
+        battle.withdraw_balance_and_reward(world, attack_army_left, attack_army_protectee);
 
         // ensure transfer lock was reenabled
         let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
