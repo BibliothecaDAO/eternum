@@ -444,9 +444,15 @@ mod combat_systems {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
+            // ensure owner is a structure
+            let structure: Structure = get!(world, army_owner_id, Structure);
+            structure.assert_is_structure();
+
             let army_id = if is_defensive_army {
                 InternalCombatImpl::create_defensive_army(world, army_owner_id, starknet::get_caller_address())
             } else {
+                // ensure only realms can have attacking armies
+                assert!(structure.category == StructureCategory::Realm, "only realms can have attacking armies");
                 InternalCombatImpl::create_attacking_army(world, army_owner_id, starknet::get_caller_address())
             };
 
