@@ -875,9 +875,6 @@ mod combat_systems {
 
             // leave battle
             let mut battle: Battle = get!(world, battle_id, Battle);
-
-            InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
-
             battle.update_state();
             let battle_was_active = (battle.has_started() && !battle.has_ended());
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
