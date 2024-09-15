@@ -678,8 +678,9 @@ mod combat_systems {
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = now;
             battle.start_at = now;
+            // add battle start time delay when a structure is being attacked.
+            // if the structure is the attacker, the battle starts immediately
             if defending_army_protectee.is_other() {
-                // add delay when a structure is being attacked
                 battle.start_at = now + battle_config.battle_delay_seconds;
             }
 
@@ -735,12 +736,17 @@ mod combat_systems {
             assert!(defending_army.battle_id == battle_id, "army is not in battle");
             assert!(defending_army.battle_side == BattleSide::Defence, "army is not on defensive");
 
+            let mut defending_army_protectee: Protectee = get!(world, defending_army_id, Protectee);
+            // this condition should not be possible unless there is a bug in `battle_start`
+            assert!(defending_army_protectee.is_other(), "only structures can force start");
+
             let now = starknet::get_block_timestamp();
             let mut battle = BattleCustomImpl::get(world, battle_id);
             assert!(now < battle.start_at, "Battle already started");
 
             // update battle
             battle.start_at = now;
+            battle.deposit_lock_immediately(world, defending_army_protectee);
             set!(world, (battle));
         }
 
@@ -1344,7 +1350,12 @@ mod combat_systems {
             set!(world, (structure_protector, Protectee { army_id, protectee_id: army_owner_id }));
 
             // stop the army from sending or receiving resources
-            set!(world, (ResourceTransferLock { entity_id: army_id, release_at: Bounded::MAX }));
+            set!(
+                world,
+                (ResourceTransferLock {
+                    entity_id: army_id, start_at: starknet::get_block_timestamp(), release_at: Bounded::MAX
+                })
+            );
             army_id
         }
 

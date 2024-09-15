@@ -983,12 +983,12 @@ export function defineContractComponents(world: World) {
     ResourceTransferLock: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, release_at: RecsType.BigInt },
+        { entity_id: RecsType.Number, start_at: RecsType.BigInt, release_at: RecsType.BigInt },
         {
           metadata: {
             namespace: "eternum",
             name: "ResourceTransferLock",
-            types: ["u32", "u64"],
+            types: ["u32", "u64", "u64"],
             customTypes: [],
           },
         },

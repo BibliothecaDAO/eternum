@@ -466,7 +466,7 @@ impl ProtecteeCustomImpl of ProtecteeCustomTrait {
         self.protectee_id != 0
     }
 
-    fn protected_resources_holder(self: Protectee) -> ID {
+    fn protected_entity(self: Protectee) -> ID {
         if self.is_other() {
             self.protectee_id
         } else {
@@ -522,9 +522,30 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
 
 #[generate_trait]
 impl BattleEscrowImpl of BattleEscrowTrait {
+    fn deposit_lock_immediately(ref self: Battle, world: IWorldDispatcher, army_protectee: Protectee) {
+        let army_protectee_id = army_protectee.protected_entity();
+        let mut army_resource_lock: ResourceTransferLock = get!(world, army_protectee_id, ResourceTransferLock);
+        army_resource_lock.assert_not_locked();
+
+        let now = starknet::get_block_timestamp();
+        assert!(army_resource_lock.start_at > now, "wrong lock invariant (1)");
+        assert!(army_resource_lock.release_at > now, "wrong lock invariant (2)");
+
+        army_resource_lock.start_at = now;
+        set!(world, (army_resource_lock));
+    }
+
+
     fn deposit_balance(ref self: Battle, world: IWorldDispatcher, from_army: Army, from_army_protectee: Protectee) {
-        let from_army_protectee_id = from_army_protectee.protected_resources_holder();
+        let from_army_protectee_id = from_army_protectee.protected_entity();
         let from_army_protectee_is_self: bool = !get!(world, from_army_protectee_id, Structure).is_structure();
+
+        // ensure resources were not previously locked
+        let mut from_army_resource_lock: ResourceTransferLock = get!(
+            world, from_army_protectee_id, ResourceTransferLock
+        );
+        from_army_resource_lock.assert_not_locked();
+
         if from_army_protectee_is_self {
             // detail items locked in box
             let escrow_id = match from_army.battle_side {
@@ -552,15 +573,18 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                     Option::None => { break; }
                 }
             };
-        }
 
-        // lock the resources protected by the army
-        let mut from_army_resource_lock: ResourceTransferLock = get!(
-            world, from_army_protectee_id, ResourceTransferLock
-        );
-        from_army_resource_lock.assert_not_locked();
-        from_army_resource_lock.release_at = Bounded::MAX;
-        set!(world, (from_army_resource_lock));
+            // lock the resources protected by the army immediately
+            from_army_resource_lock.start_at = starknet::get_block_timestamp();
+            from_army_resource_lock.release_at = Bounded::MAX;
+            set!(world, (from_army_resource_lock));
+        } else {
+            // lock resources of the entity being protected starting from
+            // when the  battle starts to account for battle.start_at delay
+            from_army_resource_lock.start_at = self.start_at;
+            from_army_resource_lock.release_at = Bounded::MAX;
+            set!(world, (from_army_resource_lock));
+        }
     }
 
     fn withdraw_balance_and_reward(
@@ -572,7 +596,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
             BattleSide::Defence => { (self.defenders_resources_escrow_id, self.attackers_resources_escrow_id) }
         };
 
-        let to_army_protectee_id = to_army_protectee.protected_resources_holder();
+        let to_army_protectee_id = to_army_protectee.protected_entity();
         let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure).is_structure();
 
         let winner_side: BattleSide = self.winner();
@@ -660,6 +684,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // release lock on resource
         let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
         to_army_resource_lock.assert_locked();
+        to_army_resource_lock.start_at = starknet::get_block_timestamp();
         to_army_resource_lock.release_at = starknet::get_block_timestamp();
         set!(world, (to_army_resource_lock));
     }
