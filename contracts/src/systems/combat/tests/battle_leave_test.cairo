@@ -259,8 +259,8 @@ fn test_battle_leave_by_winner() {
 
     assert_eq!(battle.defence_army_health.current, 0);
 
-    assert_ne!(battle.defence_army.troops.count(), 0);
-    assert_ne!(battle.defence_army_lifetime.troops.count(), 0);
+    assert_eq!(battle.defence_army.troops.count(), 0);
+    assert_eq!(battle.defence_army_lifetime.troops.count(), 0);
 }
 
 
