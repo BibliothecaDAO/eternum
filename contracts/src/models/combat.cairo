@@ -78,19 +78,17 @@ impl HealthCustomImpl of HealthCustomTrait {
             return 1;
         }
 
-        // 0 < self.current <= single_troop_health
-        let single_troop_health = troop_config.health.into();
-        if *self.current <= single_troop_health {
-            return 1;
-        }
+        // check health is a multiple of normalization factor
+        let single_troop_health = troop_config.health.into() * TroopsImpl::normalization_factor().into();
+        assert!(single_troop_health > 0, "single_troop_health is 0");
+        assert!(
+            *self.current % single_troop_health == 0,
+            "health of entity {} is not a multiple of normalization factor",
+            self.entity_id
+        );
 
-        // we know
-        // self.current > 0 && self.current > single_troop_health
-        // and deduction < self.current
-        let troop_modulo = *self.current % single_troop_health;
-        let current_w_no_modulo = *self.current - troop_modulo;
-        let mut num_steps = current_w_no_modulo / deduction;
-        if (num_steps % deduction) > 0 || troop_modulo > 0 {
+        let mut num_steps = *self.current / deduction;
+        if (num_steps % deduction) > 0 {
             num_steps += 1;
         }
 
@@ -138,31 +136,31 @@ impl TroopsImpl of TroopsTrait {
     // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
     // so that troop units only exists as whole and not decimals
     fn normalize_counts(ref self: Troops) {
-        self.knight_count -= self.knight_count % self.normalization_factor();
-        self.paladin_count -= self.paladin_count % self.normalization_factor();
-        self.crossbowman_count -= self.crossbowman_count % self.normalization_factor();
+        self.knight_count -= self.knight_count % Self::normalization_factor();
+        self.paladin_count -= self.paladin_count % Self::normalization_factor();
+        self.crossbowman_count -= self.crossbowman_count % Self::normalization_factor();
     }
 
-    fn normalization_factor(self: Troops) -> u64 {
+    fn normalization_factor() -> u64 {
         let resource_precision_u64: u64 = RESOURCE_PRECISION.try_into().unwrap();
         return resource_precision_u64;
     }
 
     fn assert_normalized(self: Troops) {
         assert!(
-            self.knight_count % self.normalization_factor() == 0,
+            self.knight_count % Self::normalization_factor() == 0,
             "Knight count is not a multiple of {}",
-            self.normalization_factor()
+            Self::normalization_factor()
         );
         assert!(
-            self.paladin_count % self.normalization_factor() == 0,
+            self.paladin_count % Self::normalization_factor() == 0,
             "Paladin count is not a multiple of {}",
-            self.normalization_factor()
+            Self::normalization_factor()
         );
         assert!(
-            self.crossbowman_count % self.normalization_factor() == 0,
+            self.crossbowman_count % Self::normalization_factor() == 0,
             "Crossbowman count is not a multiple of {}",
-            self.normalization_factor()
+            Self::normalization_factor()
         );
     }
 
@@ -670,16 +668,25 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
 #[generate_trait]
 impl BattleCustomImpl of BattleCustomTrait {
+    fn get(world: IWorldDispatcher, battle_id: ID) -> Battle {
+        let mut battle = get!(world, battle_id, Battle);
+        let troop_config = TroopConfigCustomImpl::get(world);
+        battle.update_state(troop_config);
+        return battle;
+    }
+
     /// This function updated the armies health and duration
     /// of battle according to the set delta and battle duration
     ///
     /// Update state should be called before reading
     /// battle model values so that the correct values
     /// are gotten
-    fn update_state(ref self: Battle) {
+    fn update_state(ref self: Battle, troop_config: TroopConfig) {
         let battle_duration_passed = self.duration_passed();
         self.attack_army_health.decrease_current_by((self.defence_delta.into() * battle_duration_passed.into()));
         self.defence_army_health.decrease_current_by((self.attack_delta.into() * battle_duration_passed.into()));
+        self.update_troops_and_health(BattleSide::Attack, troop_config);
+        self.update_troops_and_health(BattleSide::Defence, troop_config);
     }
     /// This function calculates the delta (rate at which health goes down per second)
     /// and therefore, the duration of tha battle.
@@ -777,6 +784,18 @@ impl BattleCustomImpl of BattleCustomTrait {
         }
         // it's possible that both killed each other or battle has not ended
         return BattleSide::None;
+    }
+
+    fn join(ref self: Battle, side: BattleSide, troops: Troops, health: u128) {
+        if side == BattleSide::Defence {
+            self.defence_army.troops.add(troops);
+            self.defence_army_lifetime.troops.add(troops);
+            self.defence_army_health.increase_by(health);
+        } else {
+            self.attack_army.troops.add(troops);
+            self.attack_army_lifetime.troops.add(troops);
+            self.attack_army_health.increase_by(health);
+        }
     }
 
     // update battle troops and their health to actual values after battle
@@ -1017,7 +1036,8 @@ mod tests {
 
         // move time up but before battle ends
         starknet::testing::set_block_timestamp(battle.duration_left - 1);
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended() == false, "battle should not have ended");
     }
 
@@ -1031,7 +1051,8 @@ mod tests {
 
         // move time up to battle duration
         starknet::testing::set_block_timestamp(battle.duration_left);
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended() == true, "battle should have ended");
     }
 
@@ -1196,7 +1217,8 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Defence, "unexpected side won");
 
@@ -1278,7 +1300,8 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::None, "unexpected side won");
 
@@ -1375,7 +1398,8 @@ mod tests {
 
         // attacker wins battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Attack, "unexpected side won");
 
