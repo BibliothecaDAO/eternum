@@ -57,9 +57,9 @@ use eternum::utils::testing::{
 
 use starknet::contract_address_const;
 
-const INITIAL_WHEAT_BALANCE: u128 = 1_000_000;
-const INITIAL_FISH_BALANCE: u128 = 1_000_000;
-const INITIAL_KNIGHT_BALANCE: u128 = 10_000;
+const INITIAL_WHEAT_BALANCE: u128 = 10_000_000;
+const INITIAL_FISH_BALANCE: u128 = 10_000_000;
+const INITIAL_KNIGHT_BALANCE: u128 = 10_000_000;
 
 const TIMESTAMP: u64 = 10_000;
 
