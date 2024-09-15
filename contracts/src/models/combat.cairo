@@ -949,6 +949,7 @@ mod tests {
             pillage_health_divisor: 8,
             army_free_per_structure: 100,
             army_extra_per_building: 100,
+            army_max_per_structure: 200,
             battle_leave_slash_num: 25,
             battle_leave_slash_denom: 100
         }
