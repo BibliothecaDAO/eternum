@@ -68,7 +68,7 @@ export class LeaderboardManager {
     return Array.from(pointsPerPlayer).sort(([_A, playerA], [_B, playerB]) => playerB - playerA);
   }
 
-  public getShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
+  public getAddressShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
     const lastChangeEvent = this.eventsCoOwnersChange.findLast(
       (event) => event.hyperstructureEntityId === hyperstructureEntityId,
     );
