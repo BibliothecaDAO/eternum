@@ -300,3 +300,12 @@ export function formatElapsedTime(seconds: number): string {
 export function gramToKg(grams: number): number {
   return Number(grams) / 1000;
 }
+
+export const formatResources = (resources: any[]): Resource[] => {
+  return resources
+    .map((resource) => ({
+      resourceId: Number(resource[0].value),
+      amount: Number(resource[1].value),
+    }))
+    .filter((resource) => resource.amount > 0);
+};

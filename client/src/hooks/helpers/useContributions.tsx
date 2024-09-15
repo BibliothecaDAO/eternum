@@ -1,8 +1,9 @@
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { getTotalPointsPercentage } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { ContractAddress, ID, Resource } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { ClientComponents } from "@/dojo/createClientComponents";
 
 export const useContributions = () => {
   const {
@@ -16,10 +17,10 @@ export const useContributions = () => {
       runQuery([HasValue(Contribution, { hyperstructure_entity_id: hyperstructureEntityId })]),
     ).map((id) => getComponentValue(Contribution, id));
 
-    return contributionsToHyperstructure;
+    return contributionsToHyperstructure as ComponentValue<ClientComponents["Contribution"]["schema"]>[];
   };
 
-  const getContributionsByPlayerAddress = (playerAddress: ContractAddress, hyperstructureEntityId: ID) => {
+  const useContributionsByPlayerAddress = (playerAddress: ContractAddress, hyperstructureEntityId: ID) => {
     const contributionsToHyperstructure = useEntityQuery([
       HasValue(Contribution, { hyperstructure_entity_id: hyperstructureEntityId, player_address: playerAddress }),
     ])
@@ -29,8 +30,15 @@ export const useContributions = () => {
     return contributionsToHyperstructure;
   };
 
+  const getContributionsTotalPercentage = (contributions: Resource[]) => {
+    return contributions.reduce((acc, { resourceId, amount }) => {
+      return acc + getTotalPointsPercentage(resourceId, BigInt(amount));
+    }, 0);
+  };
+
   return {
     getContributions,
-    getContributionsByPlayerAddress,
+    useContributionsByPlayerAddress,
+    getContributionsTotalPercentage,
   };
 };
