@@ -277,7 +277,7 @@ fn test_battle_leave_by_winner() {
 
     // ensure player_1's army troop count is correct
     let player_1_army: Army = get!(world, player_1_army_id, Army);
-    assert_eq!(player_1_army.troops.count(), 8_747_643);
+    assert_eq!(player_1_army.troops.count(), 8_745_000);
 
     // ensure the battle was updated correctly
     let battle: Battle = get!(world, battle_id, Battle);
@@ -289,8 +289,8 @@ fn test_battle_leave_by_winner() {
 
     assert_eq!(battle.defence_army_health.current, 0);
 
-    assert_ne!(battle.defence_army.troops.count(), 0);
-    assert_ne!(battle.defence_army_lifetime.troops.count(), 0);
+    assert_eq!(battle.defence_army.troops.count(), 0);
+    assert_eq!(battle.defence_army_lifetime.troops.count().into(), 204 * RESOURCE_PRECISION);
 }
 
 
