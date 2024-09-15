@@ -13,10 +13,13 @@ use starknet_crypto::Felt;
 use tokio::sync::mpsc;
 use torii_grpc::types::schema::Entity;
 
-use crate::events::ToDiscordMessage;
 use crate::{
     check_user_in_database,
     events::{BattleClaim, BattleJoin, BattleLeave, BattlePillage, BattleStart},
+};
+use crate::{
+    events::{SettleRealm, ToDiscordMessage},
+    utils::Position,
 };
 use starknet::core::utils::parse_cairo_short_string;
 
@@ -38,32 +41,43 @@ impl<'a, 'b> EventProcessor<'a, 'b> {
             channel_id,
         }
     }
+
     async fn send_messages_for_user(&self, address: &str, event: &impl ToDiscordMessage) {
         if let Ok(Some(Some(discord_id))) = check_user_in_database(self.database, address).await {
             tracing::info!("User found in the database: {}", discord_id);
             if let Ok(user_id) = discord_id.parse::<u64>() {
-                let channel_message = event.to_discord_message(
-                    DiscordMessageType::ChannelMessage(self.channel_id),
-                    user_id,
-                );
+                let channel_message =
+                    event.to_discord_message(DiscordMessageType::ChannelMessage(self.channel_id));
                 self.message_sender
                     .send(channel_message.clone())
                     .await
                     .unwrap();
-                tracing::info!("Sent channel message to user {:?}", channel_message);
+                tracing::info!("Sent channel message for user {:?}", channel_message);
+
                 let direct_message =
-                    event.to_discord_message(DiscordMessageType::DirectMessage, user_id);
+                    event.to_discord_message(DiscordMessageType::DirectMessage(user_id));
                 self.message_sender
                     .send(direct_message.clone())
                     .await
                     .unwrap();
                 tracing::info!("Sent direct message to user {:?}", direct_message);
             }
+        } else if event.should_send_in_channel_if_no_user_found() {
+            let channel_message =
+                event.to_discord_message(DiscordMessageType::ChannelMessage(self.channel_id));
+            self.message_sender
+                .send(channel_message.clone())
+                .await
+                .unwrap();
         }
     }
 
     pub async fn process_event(&self, event: GameEventData) {
         match event {
+            GameEventData::SettleRealm(event) => {
+                tracing::info!("Processing SettleRealm event");
+                self.send_messages_for_user(&event.owner_name, &event).await;
+            }
             GameEventData::BattleStart(event) => {
                 tracing::info!("Processing BattleStart event");
                 self.send_messages_for_user(&event.defender, &event).await;
@@ -97,22 +111,35 @@ pub enum GameEventData {
     BattleLeave(BattleLeave),
     BattleClaim(BattleClaim),
     BattlePillage(BattlePillage),
+    SettleRealm(SettleRealm),
 }
 
 impl ToDiscordMessage for GameEventData {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         match self {
-            GameEventData::BattleStart(event) => event.to_discord_message(msg_type, user_id),
-            GameEventData::BattleJoin(event) => event.to_discord_message(msg_type, user_id),
-            GameEventData::BattleLeave(event) => event.to_discord_message(msg_type, user_id),
-            GameEventData::BattleClaim(event) => event.to_discord_message(msg_type, user_id),
-            GameEventData::BattlePillage(event) => event.to_discord_message(msg_type, user_id),
+            GameEventData::BattleStart(event) => event.to_discord_message(msg_type),
+            GameEventData::BattleJoin(event) => event.to_discord_message(msg_type),
+            GameEventData::BattleLeave(event) => event.to_discord_message(msg_type),
+            GameEventData::BattleClaim(event) => event.to_discord_message(msg_type),
+            GameEventData::BattlePillage(event) => event.to_discord_message(msg_type),
+            GameEventData::SettleRealm(event) => event.to_discord_message(msg_type),
+        }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        match self {
+            GameEventData::BattleStart(e) => e.should_send_in_channel_if_no_user_found(),
+            GameEventData::BattleJoin(e) => e.should_send_in_channel_if_no_user_found(),
+            GameEventData::BattleLeave(e) => e.should_send_in_channel_if_no_user_found(),
+            GameEventData::BattleClaim(e) => e.should_send_in_channel_if_no_user_found(),
+            GameEventData::BattlePillage(e) => e.should_send_in_channel_if_no_user_found(),
+            GameEventData::SettleRealm(e) => e.should_send_in_channel_if_no_user_found(),
         }
     }
 }
 
 pub enum DiscordMessageType {
-    DirectMessage,
+    DirectMessage(u64),
     ChannelMessage(NonZero<u64>),
 }
 
@@ -194,6 +221,7 @@ impl EventHandler {
                 "eternum-BattleLeaveData" => self.parse_battle_leave(model),
                 "eternum-BattleClaimData" => self.parse_battle_claim(model),
                 "eternum-BattlePillageData" => self.parse_battle_pillage(model),
+                "eternum-SettleRealmData" => self.parse_settle_realm(model),
                 _ => {
                     tracing::warn!("Unknown model name: {}", model.name); // Add this line for debugging
                     None
@@ -228,8 +256,7 @@ impl EventHandler {
             defender_name,
             defender_army_entity_id,
             duration_left,
-            x,
-            y,
+            position: Position::new(x, y),
             structure_type,
         }))
     }
@@ -257,8 +284,7 @@ impl EventHandler {
             joiner_army_entity_id,
             joiner_side,
             duration_left,
-            x,
-            y,
+            position: Position::new(x, y),
         }))
     }
 
@@ -284,8 +310,7 @@ impl EventHandler {
             leaver_army_entity_id,
             leaver_side,
             duration_left,
-            x,
-            y,
+            position: Position::new(x, y),
         }))
     }
 
@@ -309,8 +334,7 @@ impl EventHandler {
             claimer_name,
             claimer_army_entity_id,
             previous_owner,
-            x,
-            y,
+            position: Position::new(x, y),
             structure_type,
         }))
     }
@@ -322,20 +346,22 @@ impl EventHandler {
         let event_id = self.extract_u32(&model.children[1]);
         let pillager = self.extract_address(&model.children[2]).unwrap();
         let pillager_name: String = self.extract_string(&model.children[3]);
-        let pillager_army_entity_id = self.extract_u32(&model.children[3]);
-        let pillaged_structure_owner = self.extract_address(&model.children[4])?;
-        let pillaged_structure_entity_id = self.extract_u32(&model.children[5]);
-        let winner = self.extract_address(&model.children[6]).unwrap();
-        let x = self.extract_u32(&model.children[7]);
-        let y = self.extract_u32(&model.children[8]);
-        let structure_type = self.extract_string(&model.children[9]);
+        let pillager_realm_entity_id = self.extract_u32(&model.children[4]);
+        let pillager_army_entity_id = self.extract_u32(&model.children[5]);
+        let pillaged_structure_owner = self.extract_address(&model.children[6])?;
+        let pillaged_structure_entity_id = self.extract_u32(&model.children[7]);
+        let winner = self.extract_address(&model.children[8]).unwrap();
+        let x = self.extract_u32(&model.children[9]);
+        let y = self.extract_u32(&model.children[10]);
+        let structure_type = self.extract_string(&model.children[11]);
+
         let pillaged_resources = model
             .children
             .iter()
             .skip(8)
             .map(|member| {
-                let resource_id = self.extract_u32(&member);
-                let amount = self.extract_u64(&member) as u128;
+                let resource_id = self.extract_u32(member);
+                let amount = self.extract_u64(member) as u128;
                 (resource_id as u8, amount)
             })
             .collect::<Vec<(u8, u128)>>();
@@ -345,14 +371,53 @@ impl EventHandler {
             event_id,
             pillager,
             pillager_name,
+            pillager_realm_entity_id,
             pillager_army_entity_id,
             pillaged_structure_owner,
             pillaged_structure_entity_id,
             winner,
-            x,
-            y,
+            position: Position::new(x, y),
             structure_type,
             pillaged_resources,
+        }))
+    }
+
+    fn parse_settle_realm(&self, model: &dojo_types::schema::Struct) -> Option<GameEventData> {
+        tracing::info!("Model: {:?}", model);
+        // ... Parse SettleRealm event
+        let id = self.extract_u32(&model.children[0]);
+        let event_id = self.extract_u32(&model.children[1]);
+        let entity_id = self.extract_u32(&model.children[2]);
+        let owner_name: String = self.extract_string(&model.children[3]);
+        let realm_name: String = self.extract_string(&model.children[4]);
+        let resource_types_packed = self.extract_u128(&model.children[5]);
+        let resource_types_count = self.extract_u8(&model.children[6]);
+        let cities = self.extract_u8(&model.children[7]);
+        let harbors = self.extract_u8(&model.children[8]);
+        let rivers = self.extract_u8(&model.children[9]);
+        let regions = self.extract_u8(&model.children[10]);
+        let wonder = self.extract_u8(&model.children[11]);
+        let order = self.extract_u8(&model.children[12]);
+        let x = self.extract_u32(&model.children[13]);
+        let y = self.extract_u32(&model.children[14]);
+        let timestamp = self.extract_u64(&model.children[15]);
+
+        Some(GameEventData::SettleRealm(SettleRealm {
+            id,
+            event_id,
+            entity_id,
+            owner_name,
+            realm_name,
+            resource_types_packed,
+            resource_types_count,
+            cities,
+            harbors,
+            rivers,
+            regions,
+            wonder,
+            order,
+            position: Position::new(x, y),
+            timestamp,
         }))
     }
 
@@ -362,6 +427,14 @@ impl EventHandler {
         } else {
             None
         }
+    }
+
+    fn extract_u8(&self, member: &dojo_types::schema::Member) -> u8 {
+        member
+            .ty
+            .as_primitive()
+            .and_then(|p| p.as_u8())
+            .unwrap_or(0)
     }
 
     fn extract_u32(&self, member: &dojo_types::schema::Member) -> u32 {
@@ -377,6 +450,14 @@ impl EventHandler {
             .ty
             .as_primitive()
             .and_then(|p| p.as_u64())
+            .unwrap_or(0)
+    }
+
+    fn extract_u128(&self, member: &dojo_types::schema::Member) -> u128 {
+        member
+            .ty
+            .as_primitive()
+            .and_then(|p| p.as_u128())
             .unwrap_or(0)
     }
 

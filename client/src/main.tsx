@@ -9,7 +9,6 @@ import { DojoProvider } from "./hooks/context/DojoContext";
 import "./index.css";
 import GameRenderer from "./three/GameRenderer";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
-import { ACCOUNT_CHANGE_EVENT } from "./ui/modules/onboarding/Steps";
 
 declare global {
   interface Window {

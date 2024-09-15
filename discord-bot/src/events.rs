@@ -8,10 +8,12 @@ use serenity::{
 use crate::{
     constants::ETERNUM_URL,
     types::{DiscordMessage, DiscordMessageType},
+    utils::Position,
 };
 
 pub trait ToDiscordMessage {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage;
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage;
+    fn should_send_in_channel_if_no_user_found(&self) -> bool;
 }
 
 #[allow(dead_code)]
@@ -26,20 +28,23 @@ pub(crate) struct BattleStart {
     pub defender_name: String,
     pub defender_army_entity_id: u32,
     pub duration_left: u64,
-    pub x: u32,
-    pub y: u32,
+    pub position: Position,
     pub structure_type: String,
 }
 
 impl ToDiscordMessage for BattleStart {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
+        let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has attacked {} at ({}, {})",
-                self.attacker_name, self.defender_name, self.x, self.y
+                self.attacker_name,
+                self.defender_name,
+                normalized_position.0,
+                normalized_position.1
             ))
             .description(format!("Battle will end in {} seconds", duration_string))
             .image("attachment://ferris_eyes.png")
@@ -47,20 +52,27 @@ impl ToDiscordMessage for BattleStart {
             .color(poise::serenity_prelude::Color::RED)
             .timestamp(Timestamp::now());
 
-        let content = CreateMessage::new()
-            .content(format!("<@{}> BATTLE STARTED!", user_id))
-            .embed(embed.clone());
-
         match msg_type {
-            DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
-                channel_id: ChannelId::from(channel_id),
-                content: content,
-            },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::ChannelMessage(channel_id) => {
+                let content = CreateMessage::new()
+                    .content("BATTLE STARTED!")
+                    .embed(embed.clone());
+                DiscordMessage::ChannelMessage {
+                    channel_id: ChannelId::from(channel_id),
+                    content,
+                }
+            }
+            DiscordMessageType::DirectMessage(user_id) => {
+                let content = CreateMessage::new()
+                    .content(format!("<@{}> BATTLE STARTED!", user_id))
+                    .embed(embed.clone());
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
     }
 }
 
@@ -74,22 +86,23 @@ pub(crate) struct BattleJoin {
     pub joiner_army_entity_id: u32,
     pub joiner_side: String,
     pub duration_left: u64,
-    pub x: u32,
-    pub y: u32,
+    pub position: Position,
 }
 
 impl ToDiscordMessage for BattleJoin {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
+        let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has joined the battle at ({}, {})",
-                self.joiner_name, self.x, self.y
+                self.joiner_name, normalized_position.0, normalized_position.1
             ))
             .description(format!("Battle will end in {} seconds", duration_string))
             .footer(footer)
+            .color(poise::serenity_prelude::Color::RED)
             .timestamp(Timestamp::now());
 
         let content = CreateMessage::new()
@@ -99,13 +112,16 @@ impl ToDiscordMessage for BattleJoin {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        false
     }
 }
 
@@ -119,22 +135,23 @@ pub(crate) struct BattleLeave {
     pub leaver_army_entity_id: u32,
     pub leaver_side: String,
     pub duration_left: u64,
-    pub x: u32,
-    pub y: u32,
+    pub position: Position,
 }
 
 impl ToDiscordMessage for BattleLeave {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let duration_string = duration_to_string(self.duration_left);
 
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
+        let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has left the battle at ({}, {})",
-                self.leaver_name, self.x, self.y
+                self.leaver_name, normalized_position.0, normalized_position.1
             ))
             .description(format!("Battle will end in {} seconds", duration_string))
             .footer(footer)
+            .color(poise::serenity_prelude::Color::RED)
             .timestamp(Timestamp::now());
 
         let content = CreateMessage::new()
@@ -144,13 +161,16 @@ impl ToDiscordMessage for BattleLeave {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        false
     }
 }
 
@@ -163,20 +183,21 @@ pub(crate) struct BattleClaim {
     pub claimer_name: String,
     pub claimer_army_entity_id: u32,
     pub previous_owner: String,
-    pub x: u32,
-    pub y: u32,
+    pub position: Position,
     pub structure_type: String,
 }
 
 impl ToDiscordMessage for BattleClaim {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
+        let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has claimed a structure at ({}, {})",
-                self.claimer_name, self.x, self.y
+                self.claimer_name, normalized_position.0, normalized_position.1
             ))
             .description(format!("Structure type: {}", self.structure_type))
+            .color(poise::serenity_prelude::Color::RED)
             .footer(footer)
             .timestamp(Timestamp::now());
 
@@ -187,13 +208,16 @@ impl ToDiscordMessage for BattleClaim {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
     }
 }
 
@@ -203,23 +227,24 @@ pub(crate) struct BattlePillage {
     pub event_id: u32,
     pub pillager: String,
     pub pillager_name: String,
+    pub pillager_realm_entity_id: u32,
     pub pillager_army_entity_id: u32,
     pub pillaged_structure_owner: String,
     pub pillaged_structure_entity_id: u32,
     pub winner: String,
-    pub x: u32,
-    pub y: u32,
+    pub position: Position,
     pub structure_type: String,
     pub pillaged_resources: Vec<(u8, u128)>,
 }
 
 impl ToDiscordMessage for BattlePillage {
-    fn to_discord_message(&self, msg_type: DiscordMessageType, user_id: u64) -> DiscordMessage {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
+        let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
                 "{} has pillaged a structure at ({}, {})",
-                self.pillager_name, self.x, self.y
+                self.pillager_name, normalized_position.0, normalized_position.1
             ))
             .description(format!(
                 "Pillaged resources: {:?}\nStructure type: {}",
@@ -236,13 +261,69 @@ impl ToDiscordMessage for BattlePillage {
         match msg_type {
             DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
                 channel_id: ChannelId::from(channel_id),
-                content: content,
+                content,
             },
-            DiscordMessageType::DirectMessage => DiscordMessage::DirectMessage {
-                user_id: user_id,
-                content: content,
-            },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
         }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) struct SettleRealm {
+    pub id: u32,
+    pub event_id: u32,
+    pub entity_id: u32,
+    pub owner_name: String,
+    pub realm_name: String,
+    pub resource_types_packed: u128,
+    pub resource_types_count: u8,
+    pub cities: u8,
+    pub harbors: u8,
+    pub rivers: u8,
+    pub regions: u8,
+    pub wonder: u8,
+    pub order: u8,
+    pub position: Position,
+    pub timestamp: u64,
+}
+
+impl ToDiscordMessage for SettleRealm {
+    fn to_discord_message(&self, msg_type: DiscordMessageType) -> DiscordMessage {
+        let footer = CreateEmbedFooter::new(ETERNUM_URL);
+        let normalized_position = self.position.get_normalized();
+        let embed = CreateEmbed::new()
+            .title(format!(
+                "{} has settled a realm at ({}, {})",
+                self.owner_name, normalized_position.0, normalized_position.1
+            ))
+            .description("GLHF")
+            .footer(footer)
+            .color(poise::serenity_prelude::Color::BLURPLE)
+            .timestamp(Timestamp::now());
+
+        let content = CreateMessage::new()
+            .content("A new Realm has been settled!")
+            .embed(embed.clone());
+
+        match msg_type {
+            DiscordMessageType::ChannelMessage(channel_id) => DiscordMessage::ChannelMessage {
+                channel_id: ChannelId::from(channel_id),
+                content,
+            },
+            DiscordMessageType::DirectMessage(user_id) => {
+                DiscordMessage::DirectMessage { user_id, content }
+            }
+        }
+    }
+
+    fn should_send_in_channel_if_no_user_found(&self) -> bool {
+        true
     }
 }
 

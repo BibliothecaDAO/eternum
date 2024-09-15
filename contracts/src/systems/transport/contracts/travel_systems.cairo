@@ -104,7 +104,7 @@ mod travel_systems {
 
             let transport_owner_entity = get!(world, travelling_entity_id, EntityOwner);
             let transport_quantity = get!(world, travelling_entity_id, Quantity);
-            MapConfigImpl::pay_travel_cost(world, transport_owner_entity, transport_quantity);
+            MapConfigImpl::pay_travel_cost(world, transport_owner_entity, transport_quantity, directions.len());
 
             InternalTravelSystemsImpl::travel_hex(world, travelling_entity_id, travelling_entity_coord, directions);
         }

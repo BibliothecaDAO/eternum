@@ -21,6 +21,7 @@ pub enum EventType {
     BattleLeave,
     BattleClaim,
     BattlePillage,
+    SettleRealm,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -131,5 +132,29 @@ pub struct BattlePillageData {
     structure_type: StructureCategory,
     pillaged_resources: Span<(u8, u128)>,
     destroyed_building_category: BuildingCategory,
+    timestamp: u64,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
+pub struct SettleRealmData {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
+    entity_id: ID,
+    owner_name: felt252,
+    realm_name: felt252,
+    resource_types_packed: u128,
+    resource_types_count: u8,
+    cities: u8,
+    harbors: u8,
+    rivers: u8,
+    regions: u8,
+    wonder: u8,
+    order: u8,
+    x: u32,
+    y: u32,
     timestamp: u64,
 }

@@ -1,0 +1,55 @@
+name: discord-bot
+
+on:
+  pull_request:
+    paths-ignore:
+      - "contracts/**"
+      - "**/manifest.json"
+      - ".github/**"
+      - "pnpm-lock.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: discord-bot
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+
+      - name: Run rustfmt
+        run: cd discord-bot && cargo fmt -- --check
+
+  clippy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: discord-bot
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+
+      - name: Install protobuf-compiler
+        run: sudo apt-get install protobuf-compiler
+
+      - name: Run clippy
+        run: cd discord-bot && cargo clippy -- -D warnings

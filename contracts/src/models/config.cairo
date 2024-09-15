@@ -178,14 +178,14 @@ impl MapConfigImpl of MapConfigTrait {
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 
-    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity) {
+    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity, steps: usize) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
         let quantity_value = max(unit_quantity.value, 1);
 
         let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
-        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount * quantity_value;
-        let mut fish_pay_amount = explore_config.travel_fish_burn_amount * quantity_value;
+        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount * quantity_value * steps.into();
+        let mut fish_pay_amount = explore_config.travel_fish_burn_amount * quantity_value * steps.into();
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 }
