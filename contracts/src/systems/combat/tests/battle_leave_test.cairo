@@ -99,7 +99,17 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     let player_1_realm_id = realm_system_dispatcher
         .create(
-            1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: PLAYER_1_REALM_COORD_X, y: PLAYER_1_REALM_COORD_Y }
+            'Mysticora',
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            Position { entity_id: 0, x: PLAYER_1_REALM_COORD_X, y: PLAYER_1_REALM_COORD_Y }
         );
     mint(
         world,
@@ -129,7 +139,17 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     let player_2_realm_id = realm_system_dispatcher
         .create(
-            1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: PLAYER_2_REALM_COORD_X, y: PLAYER_2_REALM_COORD_Y }
+            'Mysticora',
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            Position { entity_id: 0, x: PLAYER_2_REALM_COORD_X, y: PLAYER_2_REALM_COORD_Y }
         );
     mint(
         world,
@@ -159,7 +179,17 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     let player_3_realm_id = realm_system_dispatcher
         .create(
-            1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: PLAYER_3_REALM_COORD_X, y: PLAYER_3_REALM_COORD_Y }
+            'Mysticora',
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            Position { entity_id: 0, x: PLAYER_3_REALM_COORD_X, y: PLAYER_3_REALM_COORD_Y }
         );
     mint(
         world,

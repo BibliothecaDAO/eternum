@@ -16,6 +16,7 @@ use eternum::utils::map::biomes::Biome;
 fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position) -> ID {
     let realm_entity_id = realm_systems_dispatcher
         .create(
+            'Mysticora',
             1, // realm id
             0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
             3, // resource_types_count

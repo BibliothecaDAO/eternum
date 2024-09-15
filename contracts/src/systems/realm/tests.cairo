@@ -84,6 +84,7 @@ fn test_realm_create() {
 
     let realm_entity_id = realm_systems_dispatcher
         .create(
+            'Mysticora',
             realm_id,
             resource_types_packed,
             resource_types_count,
