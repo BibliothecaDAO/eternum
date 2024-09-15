@@ -229,21 +229,23 @@ describe("processHyperstructureCoOwnersChangeEvent", () => {
 
 describe("getShares", () => {
   it("should return undefined if no change co owner event occured", () => {
-    expect(leaderboardManager.getShares(OWNER_1_ADDRESS, HYPERSTRUCTURE_ENTITY_ID)).toBeUndefined();
+    expect(leaderboardManager.getAddressShares(OWNER_1_ADDRESS, HYPERSTRUCTURE_ENTITY_ID)).toBeUndefined();
   });
 
   it("should return undefined if an event occured but not for the right entity id", () => {
     const event = generateMockCoOwnersChangeEvent(HYPERSTRUCTURE_ENTITY_ID);
     leaderboardManager.processHyperstructureCoOwnersChangeEvent(event);
 
-    expect(leaderboardManager.getShares(OWNER_1_ADDRESS, HYPERSTRUCTURE_ENTITY_ID + 1)).toBeUndefined();
+    expect(leaderboardManager.getAddressShares(OWNER_1_ADDRESS, HYPERSTRUCTURE_ENTITY_ID + 1)).toBeUndefined();
   });
 
   it("should return the correct amount of shares", () => {
     const event = generateMockCoOwnersChangeEvent(HYPERSTRUCTURE_ENTITY_ID);
     leaderboardManager.processHyperstructureCoOwnersChangeEvent(event);
 
-    expect(leaderboardManager.getShares(OWNER_1_ADDRESS, HYPERSTRUCTURE_ENTITY_ID)).toBe(OWNER_1_SHARES / 10_000);
+    expect(leaderboardManager.getAddressShares(OWNER_1_ADDRESS, HYPERSTRUCTURE_ENTITY_ID)).toBe(
+      OWNER_1_SHARES / 10_000,
+    );
   });
 });
 
