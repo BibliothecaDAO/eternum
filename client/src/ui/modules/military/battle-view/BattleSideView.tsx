@@ -1,17 +1,20 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { Structure } from "@/hooks/helpers/useStructures";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { BattleHistory } from "./BattleHistory";
 import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
 
 export const BattleSideView = ({
+  battleManager,
   battleSide,
   battleEntityId,
   showBattleDetails,
@@ -19,8 +22,8 @@ export const BattleSideView = ({
   ownSideTroopsUpdated,
   ownArmyEntityId,
   structure,
-  isActive,
 }: {
+  battleManager: BattleManager;
   battleSide: BattleSide;
   battleEntityId: ID | undefined;
   showBattleDetails: boolean;
@@ -28,7 +31,6 @@ export const BattleSideView = ({
   ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
   ownArmyEntityId: ID | undefined;
   structure: Structure | undefined;
-  isActive: boolean;
 }) => {
   const {
     account: { account },
@@ -37,6 +39,10 @@ export const BattleSideView = ({
       systemCalls: { battle_join },
     },
   } = useDojo();
+
+  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
   const [loading, setLoading] = useState<boolean>(false);

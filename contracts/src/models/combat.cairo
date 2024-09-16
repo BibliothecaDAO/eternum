@@ -449,7 +449,7 @@ impl ArmyCustomImpl of ArmyCustomTrait {
     }
 
     fn assert_not_in_battle(self: Army) {
-        assert!(self.battle_id.is_zero(), "army in battle")
+        assert!(self.battle_id.is_zero(), "army {} in battle", self.entity_id);
     }
 }
 

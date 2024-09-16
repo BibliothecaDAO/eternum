@@ -1,4 +1,4 @@
-import { BattleManager, BattleStatus } from "@/dojo/modelManager/BattleManager";
+import { BattleManager, BattleStatus, BattleType } from "@/dojo/modelManager/BattleManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -34,6 +34,7 @@ export const BattleProgressBar = ({
 
   const durationLeft = useMemo(() => {
     if (!battleManager) return undefined;
+    if (battleManager.isSiege(currentTimestamp!)) return battleManager.getSiegeTimeLeft(currentTimestamp!);
     return battleManager!.getTimeLeft(currentTimestamp!);
   }, [attackingHealth, currentTimestamp, defendingHealth]);
 
@@ -45,8 +46,8 @@ export const BattleProgressBar = ({
       ? "Bandits"
       : `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
-      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
-      : "Empty";
+    ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0n) + (defendingHealth?.current || 0n),
@@ -90,6 +91,10 @@ export const BattleProgressBar = ({
   const battleStatus = useMemo(() => {
     if (battleManager) return battleManager.getWinner(currentTimestamp!, ownArmySide);
   }, [time, battleManager, currentTimestamp, ownArmySide]);
+
+  const battleType = useMemo(() => {
+    return battleManager?.getBattleType(structure);
+  }, [battleManager, structure]);
 
   useEffect(() => {
     if (battleStatus === BattleStatus.BattleStart) {
@@ -143,14 +148,22 @@ export const BattleProgressBar = ({
           </div>
         </div>
       )}
-      <div className="mx-auto w-2/3 grid grid-cols-3  text-2xl text-gold bg-[#1b1a1a] bg-hex-bg px-4 py-2  -top-y">
+      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold bg-[#1b1a1a] bg-hex-bg px-4 py-2 -top-y">
         <div className="text-left">
           <p>
             {attackerName} {}
           </p>
         </div>
         <div className="font-bold text-center">
-          {time ? `${time.toISOString().substring(11, 19)} left` : battleStatus}
+          {time
+            ? `${
+                battleManager?.isSiege(currentTimestamp!) && battleType === BattleType.Structure
+                  ? `Structure Siege ongoing: ${time.toISOString().substring(11, 19)} left`
+                  : battleManager?.isSiege(currentTimestamp!)
+                  ? "Loading..."
+                  : `${time.toISOString().substring(11, 19)} left`
+              }`
+            : battleStatus}
         </div>
         <div className="text-right">
           <p>{defenderName}</p>

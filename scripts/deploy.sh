@@ -17,7 +17,7 @@ echo "Migrating world..."
 sozo --profile prod migrate apply
 
 echo "Setting up remote indexer on slot..."
-slot deployments create eternum-chat torii --version v1.0.0-alpha.9 --world 0x6918fe8c1ba16bdc83b9790cd9168d730aa98a22c65164578ef99af1c8cbc76 --rpc https://api.cartridge.gg/x/eternum-chat/katana --start-block 0  --index-pending true --allowed-origins "*"
+slot deployments create eternum-chat torii --version v1.0.0-alpha.9 --world 0x6918fe8c1ba16bdc83b9790cd9168d730aa98a22c65164578ef99af1c8cbc76 --rpc https://api.cartridge.gg/x/eternum-chat/katana --start-block 0  --index-pending true
 
 echo "Setting up config..."
 ./scripts/set_writer.sh --interval 1  --mode prod 

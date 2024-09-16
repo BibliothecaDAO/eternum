@@ -78,10 +78,10 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
         return React.Children.toArray(
           <div className={`flex flex-col mb-4 ${className}`}>
             <div className={`grid grid-cols-4 gap-4`}>
-              <div className="italic text-xs col-span-1 align-middle self-center">
+              <div className="h-full italic text-xs col-span-1 align-top self-start mt-1.5">
                 {eventClone.event_id !== EventType.BattleStart && eventClone.event_id !== EventType.BattleAttacked
                   ? `${formatElapsedTime(elapsedTime)} since start`
-                  : ""}
+                  : "Battle started"}
               </div>
               <div className="col-span-3 align-top self-start" key={eventClone.id}>
                 {emoji} {shortString.decodeShortString(doerName.toString())} {action}{" "}
