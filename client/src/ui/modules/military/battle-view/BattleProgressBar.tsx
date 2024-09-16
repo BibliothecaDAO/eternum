@@ -158,7 +158,7 @@ export const BattleProgressBar = ({
           {time
             ? `${
                 battleManager?.isSiege(currentTimestamp!) && battleType === BattleType.Structure
-                  ? `Structure Siege ongoing: ${time.toISOString().substring(11, 19)} left`
+                  ? `Siege ongoing: ${time.toISOString().substring(11, 19)} left`
                   : battleManager?.isSiege(currentTimestamp!)
                     ? "Loading..."
                     : `${time.toISOString().substring(11, 19)} left`
