@@ -704,7 +704,7 @@ describe("isAttackable", () => {
   it("Should return false if the defender is undefined", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
-    const isAttackable = battleManager.isAttackable(undefined);
+    const isAttackable = battleManager.isAttackable(undefined, undefined, CURRENT_TIMESTAMP);
 
     expect(isAttackable).toBe(BattleStartStatus.NothingToAttack);
   });
@@ -717,7 +717,7 @@ describe("isAttackable", () => {
 
     vi.mocked(getComponentValue).mockReturnValue(battle);
 
-    const isAttackable = battleManager.isAttackable(defender);
+    const isAttackable = battleManager.isAttackable(undefined, defender, CURRENT_TIMESTAMP);
 
     expect(isAttackable).toBe(BattleStartStatus.CantStart);
   });
@@ -729,7 +729,7 @@ describe("isAttackable", () => {
 
     vi.mocked(getComponentValue).mockReturnValue(undefined);
 
-    const isAttackable = battleManager.isAttackable(defender);
+    const isAttackable = battleManager.isAttackable(undefined, defender, CURRENT_TIMESTAMP);
 
     expect(isAttackable).toBe(BattleStartStatus.CantStart);
   });
@@ -741,7 +741,7 @@ describe("isAttackable", () => {
 
     vi.mocked(getComponentValue).mockReturnValue(undefined);
 
-    const isAttackable = battleManager.isAttackable(defender);
+    const isAttackable = battleManager.isAttackable(undefined, defender, CURRENT_TIMESTAMP);
 
     expect(isAttackable).toBe(BattleStartStatus.BattleStart);
   });
