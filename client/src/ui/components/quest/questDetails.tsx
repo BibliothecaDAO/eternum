@@ -87,7 +87,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
           ></div>
           <p>building</p>
         </div>,
-        <p>3. Left click on a hex to build it, or right click to cancel</p>,
+        <p>
+          3. Left click on a hex to build it, or right click to cancel. You can also press{" "}
+          <strong>
+            <span className="border border-gold px-1">Esc</span>
+          </strong>{" "}
+          to cancel the action.
+        </p>,
       ],
       prizes: [
         { id: QuestType.CommonResources, title: "Common Resources" },
@@ -252,7 +258,17 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
           </div>
         </div>
       ),
-      steps: ["1. Go to world view", "2. Right click on your army", "3. Explore or travel with your army"],
+      steps: [
+        "1. Go to world view",
+        <p>
+          2. Left click on your army or the tile under it. You can push the{" "}
+          <strong>
+            <span className="border border-gold px-1">Esc</span>
+          </strong>{" "}
+          key to cancel the action.{" "}
+        </p>,
+        "3. Explore or travel with your army.",
+      ],
       prizes: [{ id: QuestType.Travel, title: "Travel" }],
       depth: 5,
     },
