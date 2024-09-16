@@ -160,6 +160,10 @@ export class BattleManager {
   public isBattleOngoing(currentTimestamp: number): boolean {
     const battle = this.getBattle();
 
+    if (this.isSiege(currentTimestamp)) {
+      return false;
+    }
+
     const timeSinceLastUpdate = this.getElapsedTime(currentTimestamp);
 
     return battle ? timeSinceLastUpdate < battle.duration_left : false;
