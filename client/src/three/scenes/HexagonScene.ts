@@ -112,7 +112,7 @@ export abstract class HexagonScene {
 
   private handleMouseMove(raycaster: THREE.Raycaster): void {
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
-    hoveredHex && this.onHexagonMouseMove(hoveredHex);
+    hoveredHex ? this.onHexagonMouseMove(hoveredHex) : this.onHexagonMouseMove(null);
   }
 
   private handleDoubleClick(raycaster: THREE.Raycaster): void {
@@ -394,13 +394,12 @@ export abstract class HexagonScene {
   }
 
   // Abstract methods
-  protected abstract onHexagonMouseMove({
-    hexCoords,
-    position,
-  }: {
-    hexCoords: HexPosition;
-    position: THREE.Vector3;
-  }): void;
+  protected abstract onHexagonMouseMove(
+    hex: {
+      hexCoords: HexPosition;
+      position: THREE.Vector3;
+    } | null,
+  ): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition): void;
   protected abstract onHexagonRightClick(hexCoords: HexPosition): void;

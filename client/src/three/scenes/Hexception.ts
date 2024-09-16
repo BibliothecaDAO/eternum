@@ -228,7 +228,9 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
   }
-  protected onHexagonMouseMove({ position, hexCoords }: { position: THREE.Vector3; hexCoords: HexPosition }): void {
+  protected onHexagonMouseMove(hex: { position: THREE.Vector3; hexCoords: HexPosition } | null): void {
+    if (hex === null) return;
+    const { position, hexCoords } = hex;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
 

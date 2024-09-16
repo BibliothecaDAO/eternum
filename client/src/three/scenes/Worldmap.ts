@@ -165,7 +165,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // methods needed to add worldmap specific behavior to the click events
-  protected onHexagonMouseMove({ hexCoords }: { hexCoords: HexPosition }) {
+  protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: THREE.Vector3 } | null): void {
+    if (hex === null) {
+      this.state.updateHoveredHex(null);
+      return;
+    }
+    const { hexCoords } = hex;
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
       this.state.updateHoveredHex(hexCoords);
@@ -505,7 +510,6 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize;
     const startRow = chunkZ * this.chunkSize;
     const chunkKey = `${startRow},${startCol}`;
-    //console.log("chunkKey", chunkKey);
     if (this.currentChunk !== chunkKey) {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
