@@ -86,14 +86,12 @@ export const mintResources = async () => {
   console.log(`Minting lords ${lordsTx.statusReceipt}...`);
 
   // mint all other resources
-  const resources = ammResourceIds
-    .filter((a) => a !== ResourcesIds.Earthenshard)
-    .flatMap((resourceId) => {
-      if (resourceId === ResourcesIds.Lords) {
-        return [];
-      }
-      return [resourceId, AMMStartingLiquidity[resourceId as keyof typeof AMMStartingLiquidity]! * RESOURCE_PRECISION];
-    });
+  const resources = ammResourceIds.flatMap((resourceId) => {
+    if (resourceId === ResourcesIds.Lords) {
+      return [];
+    }
+    return [resourceId, AMMStartingLiquidity[resourceId as keyof typeof AMMStartingLiquidity]! * RESOURCE_PRECISION];
+  });
 
   const resourcesTx = await provider.mint_resources({
     signer: account,

@@ -234,7 +234,6 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
     reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision,
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
-
   console.log(`Configuring map config ${txMap.statusReceipt}...`);
 
   const txExploreStaminaCost = await provider.set_travel_stamina_cost_config({
