@@ -110,6 +110,17 @@ export default class HexceptionScene extends HexagonScene {
 
     this.state = useUIStore.getState();
 
+    // Add event listener for Escape key
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && this.sceneManager.getCurrentScene() === SceneName.Hexception) {
+        if (this.isNavigationViewOpen()) {
+          this.closeNavigationViews();
+        } else {
+          this.clearBuildingMode();
+        }
+      }
+    });
+
     useUIStore.subscribe(
       (state) => state.previewBuilding,
       (building) => {
@@ -204,7 +215,8 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToURLLocation();
   }
 
-  protected onHexagonClick(hexCoords: HexPosition): void {
+  protected onHexagonClick(hexCoords: HexPosition | null): void {
+    if (hexCoords === null) return;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
     if (buildingType) {
@@ -228,7 +240,9 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
   }
-  protected onHexagonMouseMove({ position, hexCoords }: { position: THREE.Vector3; hexCoords: HexPosition }): void {
+  protected onHexagonMouseMove(hex: { position: THREE.Vector3; hexCoords: HexPosition } | null): void {
+    if (hex === null) return;
+    const { position, hexCoords } = hex;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
 

@@ -131,7 +131,7 @@ export default class WorldmapScene extends HexagonScene {
     );
     this.inputManager.addListener("click", (raycaster) => {
       const selectedEntityId = this.armyManager.onRightClick(raycaster);
-      this.onArmyRightClick(selectedEntityId);
+      selectedEntityId && this.onArmySelection(selectedEntityId);
     });
 
     // add particles
@@ -142,10 +142,21 @@ export default class WorldmapScene extends HexagonScene {
       (state) => state.armyActions.selectedEntityId,
       (selectedEntityId) => {
         if (selectedEntityId) {
-          this.onArmyRightClick(selectedEntityId);
+          this.onArmySelection(selectedEntityId);
         }
       },
     );
+
+    // Add event listener for Escape key
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
+        if (this.isNavigationViewOpen()) {
+          this.closeNavigationViews();
+        } else {
+          this.clearEntitySelection();
+        }
+      }
+    });
   }
 
   public moveCameraToURLLocation() {
@@ -165,7 +176,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // methods needed to add worldmap specific behavior to the click events
-  protected onHexagonMouseMove({ hexCoords }: { hexCoords: HexPosition }) {
+  protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: THREE.Vector3 } | null): void {
+    if (hex === null) {
+      this.state.updateHoveredHex(null);
+      return;
+    }
+    const { hexCoords } = hex;
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
       this.state.updateHoveredHex(hexCoords);
@@ -199,7 +215,10 @@ export default class WorldmapScene extends HexagonScene {
     LocationManager.updateUrl(url);
   }
 
-  protected onHexagonClick(hexCoords: HexPosition) {
+  protected onHexagonClick(hexCoords: HexPosition | null) {
+    if (!hexCoords) {
+      return;
+    }
     const { selectedEntityId, travelPaths } = this.state.armyActions;
 
     const buildingType = this.structurePreview?.getPreviewStructure();
@@ -231,7 +250,7 @@ export default class WorldmapScene extends HexagonScene {
   }
   protected onHexagonRightClick(): void {}
 
-  private onArmyRightClick(selectedEntityId: ID | undefined) {
+  private onArmySelection(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {
       this.clearEntitySelection();
       return;
@@ -505,12 +524,10 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize;
     const startRow = chunkZ * this.chunkSize;
     const chunkKey = `${startRow},${startCol}`;
-    //console.log("chunkKey", chunkKey);
     if (this.currentChunk !== chunkKey) {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-      console.debug(`Updating chunk with key: ${chunkKey}`);
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
     }

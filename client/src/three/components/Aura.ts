@@ -36,6 +36,10 @@ export class Aura {
     this.mesh.position.set(x, y, z);
   }
 
+  resetPosition() {
+    this.mesh.position.set(0, 0, 0);
+  }
+
   rotate() {
     this.mesh.rotation.z += AURA_ROTATION_SPEED;
   }

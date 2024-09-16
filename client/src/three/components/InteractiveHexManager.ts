@@ -1,7 +1,7 @@
-import * as THREE from "three";
-import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { interactiveHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { getHexagonCoordinates, getWorldPositionForHex } from "@/ui/utils/utils";
+import * as THREE from "three";
+import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { HEX_SIZE } from "../scenes/constants";
 import { Aura } from "./Aura";
 
@@ -46,6 +46,7 @@ export class InteractiveHexManager {
       if (this.hoverAura.isInScene(this.scene)) {
         this.hoverAura.removeFromScene(this.scene);
       }
+      return null;
     }
   }
 

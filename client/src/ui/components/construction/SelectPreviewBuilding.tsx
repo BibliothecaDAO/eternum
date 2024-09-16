@@ -344,7 +344,7 @@ const BuildingCard = ({
       )}
     >
       {(!hasFunds || !hasPopulation) && (
-        <div className="absolute w-full h-full bg-black/90 text-white/60 p-4 text-xs flex justify-center">
+        <div className="absolute w-full h-full bg-black/70 text-white/60 p-4 text-xs flex justify-center">
           <div className="self-center flex items-center space-x-2">
             {!hasFunds && <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />}
             {!hasPopulation && <ResourceIcon tooltipText="Need More Housing" resource="House" size="lg" />}
