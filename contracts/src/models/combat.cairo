@@ -87,8 +87,29 @@ impl HealthCustomImpl of HealthCustomTrait {
             self.entity_id
         );
 
-        let mut num_steps = *self.current / deduction;
-        if (num_steps % deduction) > 0 {
+        /// Ensure that if the deduction makes the health less than one troop,
+        /// the troop dies immediately
+        /// e.g if single troop health = 7 * 1000(normalization), then a troop with 3 soldiers will have
+        /// health a total health of 7_000 * 3 =  21_000.
+        /// if deduction is 80 per second, we want it such that deduction happens
+        /// at the rate of 80 per second till it takes 7_000 * (3 -1) =14_000 health,
+        /// then after that, the next step depletes the health completely. i.e to 0
+
+        // note: at this point, we know that
+        // self.current > 0 and self.current > deduction
+        // also self.current
+        let mut num_steps = 0;
+        if deduction >= single_troop_health {
+            num_steps = *self.current / deduction;
+            if (*self.current % deduction) > 0 {
+                num_steps += 1;
+            }
+        } else {
+            // note: we know self.current is at least == single troop health
+            let current_less_one_troop = *self.current - single_troop_health;
+            num_steps = current_less_one_troop / deduction;
+            // add one step to account for the troop deducted
+            // or if current_less_one_troop % deduction == 0
             num_steps += 1;
         }
 
@@ -937,6 +958,85 @@ impl BattleCustomImpl of BattleCustomTrait {
 
     fn is_empty(self: Battle) -> bool {
         self.attack_army_lifetime.troops.count().is_zero() && self.defence_army_lifetime.troops.count().is_zero()
+    }
+}
+
+#[cfg(test)]
+mod health_model_tests {
+    use eternum::models::combat::{Health, HealthCustomTrait, TroopsImpl};
+    use eternum::models::config::{TroopConfig};
+
+    fn mock_troop_config() -> TroopConfig {
+        TroopConfig {
+            config_id: 0,
+            health: 7,
+            knight_strength: 0,
+            paladin_strength: 0,
+            crossbowman_strength: 0,
+            advantage_percent: 0,
+            disadvantage_percent: 0,
+            max_troop_count: 0,
+            pillage_health_divisor: 0,
+            army_free_per_structure: 0,
+            army_extra_per_building: 0,
+            army_max_per_structure: 0,
+            battle_leave_slash_num: 0,
+            battle_leave_slash_denom: 0
+        }
+    }
+
+    fn ONE_TROOP_HEALTH() -> u128 {
+        return mock_troop_config().health.into() * TroopsImpl::normalization_factor().try_into().unwrap();
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_equal_single_troop() {
+        let troop_config = mock_troop_config();
+        let troop_count = 4;
+        let current = ONE_TROOP_HEALTH() * troop_count;
+        let deduction = ONE_TROOP_HEALTH();
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, troop_count);
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_has_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 3;
+        let deduction = ONE_TROOP_HEALTH() * 2; // 21_000 / 14_000 = 1.xx i.e has no remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, 2);
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_no_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 4;
+        let deduction = ONE_TROOP_HEALTH() * 2; // 28_000 / 14_000 = 2 i.e has no remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, 2);
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_has_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 3;
+        let deduction = 81; // 14_000 / 81 = 172.xx i.e has remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, ((current - ONE_TROOP_HEALTH()) / deduction) + 1);
+    }
+    #[test]
+    fn test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_no_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 3;
+        let deduction = 80; // 14_000 / 80 = 175 i.e has no remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, ((current - ONE_TROOP_HEALTH()) / deduction) + 1);
     }
 }
 
