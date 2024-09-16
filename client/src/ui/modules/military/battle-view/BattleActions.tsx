@@ -32,7 +32,6 @@ enum Loading {
 export const BattleActions = ({
   battleManager,
   userArmiesInBattle,
-  isActive,
   ownArmyEntityId,
   attackerArmies,
   defenderArmies,
@@ -46,13 +45,12 @@ export const BattleActions = ({
   defenderArmies: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
-  isActive: boolean;
 }) => {
   const dojo = useDojo();
   const {
     account: { account },
     setup: {
-      systemCalls: { battle_leave, battle_start, battle_claim, battle_leave_and_claim },
+      systemCalls: { battle_leave, battle_start, battle_claim, battle_leave_and_claim, battle_force_start },
     },
   } = dojo;
 
@@ -73,6 +71,8 @@ export const BattleActions = ({
   const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(
     userArmiesInBattle?.[0]?.entity_id || ownArmyEntityId || 0,
   );
+
+  const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
   const selectedArmy = useMemo(() => {
     return getAliveArmy(localSelectedUnit || 0);
@@ -107,11 +107,20 @@ export const BattleActions = ({
 
   const handleBattleStart = async () => {
     setLoading(Loading.Start);
-    await battle_start({
-      signer: account,
-      attacking_army_id: selectedArmy!.entity_id,
-      defending_army_id: defenderArmy!.entity_id,
-    });
+
+    if (battleStartStatus === BattleStartStatus.ForceStart) {
+      await battle_force_start({
+        signer: account,
+        battle_id: battleManager?.battleEntityId || 0,
+        defending_army_id: defenderArmy!.entity_id,
+      });
+    } else {
+      await battle_start({
+        signer: account,
+        attacking_army_id: selectedArmy!.entity_id,
+        defending_army_id: defenderArmy!.entity_id,
+      });
+    }
     setBattleView({
       engage: false,
       battleEntityId: undefined,
@@ -176,7 +185,10 @@ export const BattleActions = ({
     [battleManager, currentTimestamp, selectedArmy],
   );
 
-  const battleStartStatus = useMemo(() => battleManager.isAttackable(defenderArmy), [battleManager, defenderArmy]);
+  const battleStartStatus = useMemo(
+    () => battleManager.isAttackable(selectedArmy, defenderArmy, currentTimestamp!),
+    [battleManager, defenderArmy, currentTimestamp],
+  );
 
   const leaveStatus = useMemo(
     () => battleManager.isLeavable(currentTimestamp!, selectedArmy),
@@ -201,7 +213,7 @@ export const BattleActions = ({
   }, [leaveStatus]);
 
   const mouseEnterBattle = useCallback(() => {
-    if (battleStartStatus !== BattleStartStatus.BattleStart) {
+    if (battleStartStatus !== BattleStartStatus.BattleStart && battleStartStatus !== BattleStartStatus.ForceStart) {
       setTooltip({ content: <div>{battleStartStatus}</div>, position: "top" });
     }
   }, [battleStartStatus]);
@@ -275,7 +287,11 @@ export const BattleActions = ({
             className="flex flex-col gap-2 h-full"
             isLoading={loading === Loading.Start}
             onClick={handleBattleStart}
-            disabled={loading !== Loading.None || battleStartStatus !== BattleStartStatus.BattleStart}
+            disabled={
+              loading !== Loading.None ||
+              (battleStartStatus !== BattleStartStatus.BattleStart &&
+                battleStartStatus !== BattleStartStatus.ForceStart)
+            }
           >
             <img className="w-10" src="/images/icons/attack.png" alt="coin" />
             Battle

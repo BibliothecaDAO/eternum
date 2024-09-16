@@ -1,7 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleJoin, useBattleLeave, useBattleStart } from "@/hooks/helpers/useBattleEvents";
-import { currencyFormat, formatElapsedTime } from "@/ui/utils/utils";
+import { currencyFormat, formatTime } from "@/ui/utils/utils";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo } from "react";
@@ -78,10 +78,10 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
         return React.Children.toArray(
           <div className={`flex flex-col mb-4 ${className}`}>
             <div className={`grid grid-cols-4 gap-4`}>
-              <div className="italic text-xs col-span-1 align-middle self-center">
+              <div className="h-full italic text-xs col-span-1 align-top self-start mt-1.5">
                 {eventClone.event_id !== EventType.BattleStart && eventClone.event_id !== EventType.BattleAttacked
-                  ? `${formatElapsedTime(elapsedTime)} since start`
-                  : ""}
+                  ? `${formatTime(elapsedTime)} since start`
+                  : "Battle started"}
               </div>
               <div className="col-span-3 align-top self-start" key={eventClone.id}>
                 {emoji} {shortString.decodeShortString(doerName.toString())} {action}{" "}

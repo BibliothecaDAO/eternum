@@ -167,18 +167,18 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
       >
         <div className="flex w-full justify-between">
           <div className="flex flex-col w-[45%]">
-            <div className="h4 text-xl flex flex-row">
-              <div className="mr-2">{structure.name}</div>
+            <div className="h4 text-xl flex flex-row justify-between ">
+              <div className="mr-2 text-base">{structure.name}</div>
+              <Inventory
+                className="my-auto w-4 hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all mr-2"
+                onClick={() => setShowInventory(!showInventory)}
+              />
             </div>
             {structure.category === StructureType[StructureType.Hyperstructure] && (
               <div className="text-xs">Progress: {progress?.percentage ?? 0}%</div>
             )}
             <div className="flex flex-row font-bold text-xs">
               <div className="font-bold">Owner: {addressName === "" ? "Bandits" : addressName}</div>
-              <Inventory
-                className="my-auto w-4 mx-auto hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all"
-                onClick={() => setShowInventory(!showInventory)}
-              />
             </div>
             {isImmune && <div>Immune for: {formatTime(timer)}</div>}
           </div>

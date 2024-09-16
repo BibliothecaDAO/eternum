@@ -96,8 +96,6 @@ export const BattleView = () => {
       ? getStructure({ x: battlePosition.x, y: battlePosition.y })
       : getStructureByEntityId(defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0);
 
-  const isActive = battleManager?.isBattleOngoing(currentTimestamp!);
-
   return (
     <Battle
       battleManager={battleManager}
@@ -112,7 +110,6 @@ export const BattleView = () => {
       defenderTroops={defenderTroops}
       userArmiesInBattle={armies.userArmiesInBattle}
       structure={structure}
-      isActive={isActive}
     />
   );
 };
