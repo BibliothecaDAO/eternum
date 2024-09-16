@@ -46,8 +46,37 @@ export const createAdminBank = async () => {
   console.log(`Creating admin bank ${tx.statusReceipt}...`);
 };
 
+export const AMMStartingLiquidity: { [key in ResourcesIds]?: number } = {
+  [ResourcesIds.Fish]: 10000000,
+  [ResourcesIds.Wheat]: 10000000,
+  [ResourcesIds.Wood]: 500000,
+  [ResourcesIds.Stone]: 500000,
+  [ResourcesIds.Coal]: 500000,
+  [ResourcesIds.Copper]: 500000,
+  [ResourcesIds.Obsidian]: 500000,
+  [ResourcesIds.Silver]: 500000,
+  [ResourcesIds.Ironwood]: 400000,
+  [ResourcesIds.ColdIron]: 400000,
+  [ResourcesIds.Gold]: 400000,
+  [ResourcesIds.Hartwood]: 300000,
+  [ResourcesIds.Diamonds]: 200000,
+  [ResourcesIds.Sapphire]: 200000,
+  [ResourcesIds.Ruby]: 200000,
+  [ResourcesIds.DeepCrystal]: 200000,
+  [ResourcesIds.Ignium]: 200000,
+  [ResourcesIds.EtherealSilica]: 200000,
+  [ResourcesIds.TrueIce]: 200000,
+  [ResourcesIds.TwilightQuartz]: 100000,
+  [ResourcesIds.AlchemicalSilver]: 100000,
+  [ResourcesIds.Adamantine]: 100000,
+  [ResourcesIds.Mithral]: 100000,
+  [ResourcesIds.Dragonhide]: 100000,
+};
+
+const ammResourceIds = Object.keys(AMMStartingLiquidity).map(Number);
+
 export const mintResources = async () => {
-  const totalResourceCount = resourceIds.length - 1;
+  const totalResourceCount = ammResourceIds.length;
   // mint lords
   const lordsTx = await provider.mint_resources({
     signer: account,
@@ -57,12 +86,14 @@ export const mintResources = async () => {
   console.log(`Minting lords ${lordsTx.statusReceipt}...`);
 
   // mint all other resources
-  const resources = resourceIds.flatMap((resourceId) => {
-    if (resourceId === ResourcesIds.Lords) {
-      return [];
-    }
-    return [resourceId, RESOURCE_LIQUIDITY * RESOURCE_PRECISION];
-  });
+  const resources = ammResourceIds
+    .filter((a) => a !== ResourcesIds.Earthenshard)
+    .flatMap((resourceId) => {
+      if (resourceId === ResourcesIds.Lords) {
+        return [];
+      }
+      return [resourceId, AMMStartingLiquidity[resourceId as keyof typeof AMMStartingLiquidity]! * RESOURCE_PRECISION];
+    });
 
   const resourcesTx = await provider.mint_resources({
     signer: account,

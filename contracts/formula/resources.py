@@ -100,7 +100,17 @@ buildings = {
         'Wood': 100000,
         'Ironwood': 70000,
         'Hartwood': 40000
-    }
+    },
+    'WorkersHut': {
+        'Wood': 100000,
+        'Coal': 30000,
+        'Copper': 30000
+    },
+    'Storehouse': {
+        'Wood': 100000,
+        'Stone': 50000,
+        'Coal': 50000
+    },
 }
 
 # Adjusted average number of buildings constructed per game
@@ -111,7 +121,9 @@ average_buildings_constructed = {
     'Barracks': 3,
     'Market': 3,
     'ArcheryRange': 3,
-    'Stable': 3
+    'Stable': 3,
+    'WorkersHut': 3,
+    'Storehouse': 3,
 }
 
 # Troops and their resource costs
@@ -152,7 +164,7 @@ donkey_costs = {
 }
 
 # Average number of donkeys used per game
-average_donkeys = 500  # Adjust as needed
+average_donkeys = 3000  # Adjust as needed
 
 # Hyperstructure resource costs (consumes every resource except Wheat)
 hyperstructure_costs = {resource: 1000000 for resource in resource_distribution.keys() if resource != 'Wheat'}
