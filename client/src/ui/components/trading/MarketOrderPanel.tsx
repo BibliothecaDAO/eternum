@@ -227,7 +227,7 @@ const OrderRow = ({
 
   const getsDisplay = useMemo(() => {
     return isBuy ? currencyFormat(offer.makerGets[0].amount, 2) : currencyFormat(offer.takerGets[0].amount, 2);
-  }, [entityId, offer.makerId, offer.tradeId]);
+  }, [entityId, offer.makerId, offer.tradeId, offer]);
 
   const getsDisplayNumber = useMemo(() => {
     return isBuy ? offer.makerGets[0].amount : offer.takerGets[0].amount;
@@ -239,7 +239,7 @@ const OrderRow = ({
 
   const getTotalLords = useMemo(() => {
     return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
-  }, [entityId, offer.makerId, offer.tradeId]);
+  }, [entityId, offer.makerId, offer.tradeId, offer]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
 

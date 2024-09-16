@@ -10,7 +10,9 @@ import { useEffect, useMemo, useState } from "react";
 import { areAllQuestsClaimed, groupQuestsByDepth } from "./utils";
 
 export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID | undefined }) => {
-  const [showCompletedQuests, setShowCompletedQuests] = useState(true);
+  const showCompletedQuests = useQuestStore((state) => state.showCompletedQuests);
+  const setShowCompletedQuests = useQuestStore((state) => state.setShowCompletedQuests);
+
   const [skipTutorial, setSkipTutorial] = useState(false);
   const [maxDepthToShow, setMaxDepthToShow] = useState(0);
 
@@ -94,7 +96,11 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
 
       <div className="my-4">
         <Button variant="primary" onClick={() => setSelectedQuest(quest)}>
-          {quest.status === QuestStatus.Claimed ? "Claimed" : "Claim"}
+          {quest.status === QuestStatus.Claimed
+            ? "Claimed"
+            : quest.status === QuestStatus.Completed
+              ? "Claim"
+              : "Start"}
         </Button>
       </div>
     </div>

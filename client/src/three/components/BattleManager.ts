@@ -58,6 +58,7 @@ export class BattleManager {
             this.addBattle(
               createBattleParams.entityId,
               new Position({ x: createBattleParams.col, y: createBattleParams.row }),
+              false,
             );
           },
         },
@@ -85,7 +86,7 @@ export class BattleManager {
   async onUpdate(update: BattleSystemUpdate) {
     await this.loadPromise;
 
-    const { entityId, hexCoords, isEmpty, deleted } = update;
+    const { entityId, hexCoords, isEmpty, deleted, isSiege } = update;
 
     if (deleted) {
       this.removeBattle(entityId);
@@ -100,11 +101,11 @@ export class BattleManager {
         return;
       }
     } else {
-      this.addBattle(entityId, hexCoords);
+      this.addBattle(entityId, hexCoords, isSiege);
     }
   }
 
-  addBattle(entityId: ID, hexCoords: Position) {
+  addBattle(entityId: ID, hexCoords: Position, isSiege: boolean) {
     if (!this.instancedModel) throw new Error("Instanced model not loaded");
 
     const normalizedCoord = hexCoords.getNormalized();
@@ -118,7 +119,10 @@ export class BattleManager {
     this.instancedModel.setMatrixAt(index, this.dummy.matrix);
     this.instancedModel.setCount(this.battles.counter);
 
-    const label = this.labelManager.createLabel(position as any, new THREE.Color("red"));
+    const label = this.labelManager.createLabel(
+      position as any,
+      isSiege ? new THREE.Color("orange") : new THREE.Color("red"),
+    );
 
     this.labels.set(entityId, label);
     this.scene.add(label);

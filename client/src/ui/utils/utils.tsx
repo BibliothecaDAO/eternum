@@ -186,13 +186,18 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
 };
 
 export const formatTime = (seconds: number): string => {
-  if (seconds >= 3600) {
-    const hours = (seconds / 3600).toFixed(2);
-    return `${hours} hrs`;
-  } else {
-    const minutes = (seconds / 60).toFixed(2);
-    return `${minutes} mins`;
-  }
+  const days = Math.floor(seconds / (3600 * 24));
+  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+
+  const parts = [];
+  if (days > 0) parts.push(`${days} days`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
+
+  return parts.join(" ");
 };
 
 // Add override
@@ -281,21 +286,6 @@ export const currentTickCount = (time: number) => {
   const tickIntervalInSeconds = EternumGlobalConfig.tick.armiesTickIntervalInSeconds || 1;
   return Number(time / tickIntervalInSeconds);
 };
-
-export function formatElapsedTime(seconds: number): string {
-  const days = Math.floor(seconds / (3600 * 24));
-  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-
-  const parts = [];
-  if (days > 0) parts.push(`${days} days`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
-
-  return parts.join(" ");
-}
 
 export function gramToKg(grams: number): number {
   return Number(grams) / 1000;

@@ -2,8 +2,8 @@
 default = "eternum"
 
 [env]
-account_address = "0x8da9668c371967fed1218e0682ba9c7a84fbac8ed5ddcd6e7f7ac020644acd"
-private_key = "0x62d981a8e5f9e51e0e189b8385c6312fe9ac07f7ce421ffed70aa2240a7159"
+account_address = "0x4d12f1a31b64273247134a153dbf19d63d91f8b881e15883ceb366a6e63665"
+private_key = "0x1f067a05316b413b3b97eb5eed9cef95436fa50bebe44c26fad92a8c0011501"
 rpc_url = "https://api.cartridge.gg/x/eternum-chat/katana"
 
 [world]

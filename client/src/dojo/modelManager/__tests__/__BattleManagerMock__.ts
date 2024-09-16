@@ -74,11 +74,16 @@ export const generateMockBatle = (
   };
 };
 
-export const generateMockArmyInfo = (alive?: boolean, isMine?: boolean, battleEntityId?: ID): ArmyInfo => {
+export const generateMockArmyInfo = (
+  alive?: boolean,
+  isMine?: boolean,
+  battleEntityId?: ID,
+  battleSide?: BattleSide,
+): ArmyInfo => {
   return {
     entity_id: ARMY_ENTITY_ID,
     battle_id: battleEntityId ?? BATTLE_ENTITY_ID,
-    battle_side: BattleSide[BattleSide.Attack],
+    battle_side: BattleSide[battleSide ?? BattleSide.Attack] ?? BattleSide[BattleSide.Attack],
     troops: {
       knight_count: alive ? ARMY_TROOP_COUNT : 0n,
       paladin_count: alive ? ARMY_TROOP_COUNT : 0n,

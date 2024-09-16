@@ -47,8 +47,11 @@ if (!isDev) {
   }
 }
 
+console.log("Setting up config...");
 const provider = new EternumProvider(manifest, nodeUrl);
+console.log("Provider set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
+console.log("Account set up");
 
 await setBuildingCategoryPopConfig(account, provider);
 await setPopulationConfig(account, provider);

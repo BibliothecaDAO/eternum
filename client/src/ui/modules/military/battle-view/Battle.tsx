@@ -29,7 +29,6 @@ export const Battle = ({
   defenderTroops,
   userArmiesInBattle,
   structure,
-  isActive,
 }: {
   battleManager: BattleManager;
   ownArmySide: string;
@@ -43,7 +42,6 @@ export const Battle = ({
   defenderTroops: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
   userArmiesInBattle: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
-  isActive: boolean;
 }) => {
   const [showBattleDetails, setShowBattleDetails] = useState<boolean>(false);
 
@@ -81,6 +79,7 @@ export const Battle = ({
         <div className="w-screen bg-[#1b1a1a] -top bg-hex-bg h-[35vh]">
           <div className="grid grid-cols-12 justify-between gap-4 h-full">
             <BattleSideView
+              battleManager={battleManager}
               battleSide={BattleSide.Attack}
               battleEntityId={battleManager?.battleEntityId}
               showBattleDetails={showBattleDetails}
@@ -88,7 +87,6 @@ export const Battle = ({
               ownSideTroopsUpdated={attackerTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={undefined}
-              isActive={isActive}
             />
             {showBattleDetails && battleAdjusted ? (
               <LockedResources
@@ -104,10 +102,10 @@ export const Battle = ({
                 defenderArmies={defenderArmies}
                 structure={structure}
                 battleAdjusted={battleAdjusted}
-                isActive={isActive}
               />
             )}
             <BattleSideView
+              battleManager={battleManager}
               battleSide={BattleSide.Defence}
               battleEntityId={battleManager?.battleEntityId}
               showBattleDetails={showBattleDetails}
@@ -115,7 +113,6 @@ export const Battle = ({
               ownSideTroopsUpdated={defenderTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={structure}
-              isActive={isActive}
             />
           </div>
         </div>

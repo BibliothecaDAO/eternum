@@ -30,6 +30,7 @@ export type BattleSystemUpdate = {
   hexCoords: Position;
   isEmpty: boolean;
   deleted: boolean;
+  isSiege: boolean;
 };
 
 export type BuildingSystemUpdate = {
