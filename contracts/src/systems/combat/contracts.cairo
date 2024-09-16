@@ -1501,18 +1501,18 @@ mod combat_systems {
             }
 
             // update army
-            let mut army_left = army_left;
-            army_left.battle_id = 0;
-            army_left.battle_side = BattleSide::None;
-            set!(world, (army_left));
+            original_army = army_left;
+            original_army.battle_id = 0;
+            original_army.battle_side = BattleSide::None;
+            set!(world, (original_army));
 
             // update army health
-            let army_left_health = Health {
+            let army_health = Health {
                 entity_id: army_id,
-                current: army_left.troops.full_health(troop_config),
-                lifetime: army_left.troops.full_health(troop_config)
+                current: original_army.troops.full_health(troop_config),
+                lifetime: original_army.troops.full_health(troop_config)
             };
-            set!(world, (army_left_health));
+            set!(world, (army_health));
         }
     }
 }
