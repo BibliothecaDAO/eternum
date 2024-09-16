@@ -61,15 +61,19 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
 
         <div className="text-lg mb-4">{quest.description}</div>
 
-        <hr />
-        <h5 className="my-4">Steps</h5>
-        {quest.steps?.map((step: any, index: any) => (
-          <div className="flex flex-col text-md" key={index}>
-            <div className="text-md mb-4">{step}</div>
+        {quest.steps.length > 0 && (
+          <div className="mb-4">
+            <hr />
+            <h5 className="my-4">Steps</h5>
+            {quest.steps.map((step: any, index: number) => (
+              <div className="flex flex-col text-md" key={index}>
+                <div className="text-md mb-4">{step}</div>
+              </div>
+            ))}
+            <hr />
           </div>
-        ))}
+        )}
 
-        <hr />
         <QuestRewards prizes={quest?.prizes} />
 
         <div className="my-2 grid grid-cols-3 gap-2">
@@ -94,9 +98,9 @@ const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
 
   return (
     <div className="w-full">
-      <div className="flex flex-row items-baseline mb-1 ">
+      <div className="flex flex-row items-baseline m-1 ">
         <div className="font-bold mr-5">Quest Rewards</div>
-        <Button variant="outline" onClick={() => setShowRewards(!showRewards)}>
+        <Button className="h-6" size="md" variant="outline" onClick={() => setShowRewards(!showRewards)}>
           {showRewards ? "Hide" : "Show"}
         </Button>
       </div>
