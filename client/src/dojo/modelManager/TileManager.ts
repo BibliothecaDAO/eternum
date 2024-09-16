@@ -1,12 +1,12 @@
+import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BuildingType, Direction, getNeighborHexes, ID, StructureType } from "@bibliothecadao/eternum";
-import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { SetupResult } from "../setup";
-import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 
 export class TileManager {
   private col: number;
@@ -151,26 +151,18 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
 
-    // const directions = [0, 0];
-
-    await this.setup.systemCalls
-      .create_building({
-        signer: this.setup.network.burnerManager.account!,
-        entity_id: entityId,
-        directions: directions,
-        building_category: buildingType,
-        produce_resource_type:
-          buildingType == BuildingType.Resource && resourceType
-            ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
-            : new CairoOption<Number>(CairoOptionVariant.None, 0),
-      })
-      .finally(() => {
-        setTimeout(() => {
-          this.setup.components.Building.removeOverride(overrideId);
-        }, 2000);
-      });
+    await this.setup.systemCalls.create_building({
+      signer: this.setup.network.burnerManager.account!,
+      entity_id: entityId,
+      directions: directions,
+      building_category: buildingType,
+      produce_resource_type:
+        buildingType == BuildingType.Resource && resourceType
+          ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
+          : new CairoOption<Number>(CairoOptionVariant.None, 0),
+    });
   };
 
   destroyBuilding = async (col: number, row: number) => {
@@ -178,22 +170,16 @@ export class TileManager {
 
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
     // add optimistic rendering
-    let overrideId = this._optimisticDestroy(entityId, col, row);
+    this._optimisticDestroy(entityId, col, row);
 
-    await this.setup.systemCalls
-      .destroy_building({
-        signer: this.setup.network.burnerManager.account!,
-        entity_id: entityId,
-        building_coord: {
-          x: col,
-          y: row,
-        },
-      })
-      .finally(() => {
-        setTimeout(() => {
-          this.setup.components.Building.removeOverride(overrideId);
-        }, 2000);
-      });
+    await this.setup.systemCalls.destroy_building({
+      signer: this.setup.network.burnerManager.account!,
+      entity_id: entityId,
+      building_coord: {
+        x: col,
+        y: row,
+      },
+    });
   };
 
   pauseProduction = async (col: number, row: number) => {
