@@ -64,9 +64,9 @@ export const EternumGlobalConfig = {
     disadvantagePercent: 1000,
     maxTroopCount: 500_000,
     baseArmyNumberForStructure: 3,
-    armyExtraPerMilitaryBuilding: 2,
+    armyExtraPerMilitaryBuilding: 1,
     // max attacking armies per structure = 6 + 1 defensive army
-    maxArmiesPerStructure: 7, // 3 + (2 * 5) = 13 // so they get benefits from at most 5 military buildings
+    maxArmiesPerStructure: 7, // 3 + (3 * 1) = 7 // so they get benefits from at most 3 military buildings
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
     //
