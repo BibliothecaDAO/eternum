@@ -1,12 +1,12 @@
 import gsap from "gsap";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { SceneManager } from "../SceneManager";
 import { HighlightHexManager } from "../components/HighlightHexManager";
 import { InputManager } from "../components/InputManager";
 import { InteractiveHexManager } from "../components/InteractiveHexManager";
 import { GUIManager } from "../helpers/GUIManager";
 import { LocationManager } from "../helpers/LocationManager";
-import { SceneManager } from "../SceneManager";
 
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
@@ -17,7 +17,7 @@ import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import { BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
-import { biomeModelPaths, HEX_SIZE } from "./constants";
+import { HEX_SIZE, biomeModelPaths } from "./constants";
 
 export abstract class HexagonScene {
   protected scene!: THREE.Scene;
@@ -100,7 +100,7 @@ export abstract class HexagonScene {
 
   private setupLightHelper(): void {
     this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-    if (import.meta.env.DEV) this.scene.add(this.lightHelper);
+    if (import.meta.env.VITE_PUBLIC_DEV == "true") this.scene.add(this.lightHelper);
   }
 
   private setupInputHandlers(): void {

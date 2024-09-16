@@ -298,9 +298,9 @@ export const resources: Array<Resources> = [
     value: 29,
     colour: "#ec4899",
     id: 29,
-    description: "Earthenshard is a rare and powerful resource that can be used to create powerful items.",
+    description: "Ancient Fragment is a rare and powerful resource that can be used to create powerful items.",
     img: "",
-    ticker: "$SHARDS",
+    ticker: "$FRAGMENT",
   },
 ];
 

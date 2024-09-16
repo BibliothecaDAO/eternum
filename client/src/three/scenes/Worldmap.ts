@@ -129,7 +129,7 @@ export default class WorldmapScene extends HexagonScene {
         this.onArmyMouseMove(entityId);
       }, 10),
     );
-    this.inputManager.addListener("contextmenu", (raycaster) => {
+    this.inputManager.addListener("click", (raycaster) => {
       const selectedEntityId = this.armyManager.onRightClick(raycaster);
       this.onArmyRightClick(selectedEntityId);
     });
