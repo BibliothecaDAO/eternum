@@ -88,7 +88,7 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
   );
 };
 
-export const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
+const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
   const [showRewards, setShowRewards] = useState(false);
   const { getQuestResources } = useRealm();
 
