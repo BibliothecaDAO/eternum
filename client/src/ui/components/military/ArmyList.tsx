@@ -98,7 +98,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       </Headline>
 
       <EntityList
-        list={structureArmies}
+        list={structureArmies.sort((a, _) => (a.protectee ? -1 : 1))}
         headerPanel={
           <>
             {" "}
