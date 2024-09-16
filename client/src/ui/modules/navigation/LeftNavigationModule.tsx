@@ -10,7 +10,6 @@ import { BuildingThumbs } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { debounce } from "lodash";
 import { useMemo, useState } from "react";
 import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
@@ -177,13 +176,6 @@ export const LeftNavigationModule = () => {
         );
   }, [location, view, openedPopups, selectedQuest, questClaimStatus, structureEntityId]);
 
-  // Open & close panel automatically when building
-  const debouncedSetIsOffscreen = debounce(() => {
-    if (previewBuilding != null) {
-      setView(View.None);
-    }
-  }, 500);
-
   const slideLeft = {
     hidden: { x: "-100%" },
     visible: { x: "0%", transition: { duration: 0.5 } },
@@ -195,17 +187,6 @@ export const LeftNavigationModule = () => {
         className={`max-h-full transition-all duration-200 space-x-1 gap-1 flex z-0 w-[600px] text-gold left-10 self-center pointer-events-none ${
           isOffscreen(view) ? "-translate-x-[88%]" : ""
         }`}
-        onPointerEnter={() => {
-          debouncedSetIsOffscreen.cancel();
-          if (view === View.None && lastView === View.None && previewBuilding != null) {
-            const newView = View.ConstructionView;
-            setView(newView);
-            setLastView(newView);
-          } else if (view === View.None && previewBuilding != null) {
-            setView(lastView);
-          }
-        }}
-        onPointerLeave={debouncedSetIsOffscreen}
       >
         <BaseContainer
           className={`w-full pointer-events-auto overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}

@@ -31,23 +31,6 @@ const RESOURCE_PRECISION: u128 = 1_000;
 // TODO: Move to Onchain config
 const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
 
-// stamina config
-#[derive(Drop)]
-enum TravelTypes {
-    Explore,
-    Travel: u8,
-}
-
-#[generate_trait]
-impl TravelTypesImpl of TravelTypesTrait {
-    fn get_stamina_costs(self: TravelTypes) -> u16 {
-        match self {
-            TravelTypes::Travel(moves) => moves.into() * 5,
-            TravelTypes::Explore => 15,
-        }
-    }
-}
-
 // Note: Please update this list whenever ResourceTypes are updated
 fn all_resource_ids() -> Array<u8> {
     array![
@@ -313,4 +296,9 @@ mod ErrorMessages {
 mod TickIds {
     const DEFAULT: u8 = 0;
     const ARMIES: u8 = 1;
+}
+
+mod TravelTypes {
+    const EXPLORE: u8 = 0;
+    const TRAVEL: u8 = 1;
 }

@@ -382,6 +382,11 @@ export interface SetMapConfigProps extends SystemSigner {
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
 }
+
+export interface SetTravelStaminaCostConfigProps extends SystemSigner {
+  travel_type: num.BigNumberish;
+  cost: num.BigNumberish;
+}
 export interface SetCapacityConfigProps extends SystemSigner {
   category: num.BigNumberish;
   weight_gram: num.BigNumberish;

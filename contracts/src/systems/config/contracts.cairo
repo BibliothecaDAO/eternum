@@ -96,6 +96,11 @@ trait IProductionConfig {
 }
 
 #[dojo::interface]
+trait ITravelStaminaCostConfig {
+    fn set_travel_stamina_cost_config(ref world: IWorldDispatcher, travel_type: u8, cost: u16);
+}
+
+#[dojo::interface]
 trait ITroopConfig {
     fn set_troop_config(ref world: IWorldDispatcher, troop_config: TroopConfig);
 }
@@ -144,7 +149,7 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig,
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -230,6 +235,15 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (capacity_config));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl TravelStaminaCostConfigImpl of super::ITravelStaminaCostConfig<ContractState> {
+        fn set_travel_stamina_cost_config(ref world: IWorldDispatcher, travel_type: u8, cost: u16) {
+            assert_caller_is_admin(world);
+
+            set!(world, (TravelStaminaCostConfig { config_id: WORLD_CONFIG_ID, travel_type, cost }));
         }
     }
 

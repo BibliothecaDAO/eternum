@@ -19,6 +19,11 @@ export class SelectedHexManager {
     this.particles.setPosition(x, 0.1, z);
   }
 
+  resetPosition() {
+    this.aura.resetPosition();
+    this.particles.resetPosition();
+  }
+
   update(deltaTime: number) {
     this.aura.rotate();
     this.particles.update(deltaTime);

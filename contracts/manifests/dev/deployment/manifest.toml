@@ -5,7 +5,7 @@ original_class_hash = "0xa349b743d361ce4567361475a89b84a386bb383448c6926954e5fe0
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x6918fe8c1ba16bdc83b9790cd9168d730aa98a22c65164578ef99af1c8cbc76"
 transaction_hash = "0x4787c2c1b826c8eb54fdd0883586c40e2d6f38955e1d5358b11010bc542bf05"
-block_number = 68
+block_number = 46
 seed = "eternum"
 manifest_name = "dojo-world"
 
@@ -57,8 +57,8 @@ manifest_name = "eternum-building_systems-4b0f3026"
 [[contracts]]
 kind = "DojoContract"
 address = "0x62015209a524b97052852f42d283fc0f67081bce90d04cdc03a951009f55a64"
-class_hash = "0x1cc9125f78eaf79617dd611d6c09b8c5e83b90ce016fb2ddf9f4cf14cc426b4"
-original_class_hash = "0x1cc9125f78eaf79617dd611d6c09b8c5e83b90ce016fb2ddf9f4cf14cc426b4"
+class_hash = "0x35f588db739310c1dd4b83ee1175699e8d408b80170e6532230a6ebf7334fae"
+original_class_hash = "0x35f588db739310c1dd4b83ee1175699e8d408b80170e6532230a6ebf7334fae"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-combat_systems-27f37676.json"
 reads = []
@@ -80,8 +80,8 @@ manifest_name = "eternum-combat_systems-27f37676"
 [[contracts]]
 kind = "DojoContract"
 address = "0x7a586a591ea4b5a3264e696076c5b801ea1d857f12455f1002f522e3b5a29b0"
-class_hash = "0x5c9a7ddbd3f51775350592f8d4bec9c1a977435483d9076d3bc4bcb6a40275c"
-original_class_hash = "0x5c9a7ddbd3f51775350592f8d4bec9c1a977435483d9076d3bc4bcb6a40275c"
+class_hash = "0x27dc4049f4d1f03626704ab29b52afd3d618829cf3cd44d49d80334a69358b9"
+original_class_hash = "0x27dc4049f4d1f03626704ab29b52afd3d618829cf3cd44d49d80334a69358b9"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-config_systems-5f8c7cdc.json"
 reads = []
@@ -93,6 +93,7 @@ systems = [
     "set_mint_config",
     "set_map_config",
     "set_capacity_config",
+    "set_travel_stamina_cost_config",
     "set_weight_config",
     "set_battle_config",
     "set_tick_config",
@@ -222,8 +223,8 @@ manifest_name = "eternum-liquidity_systems-337d668f"
 [[contracts]]
 kind = "DojoContract"
 address = "0x15c0cb2e324e4c5cd88c66f259bfc339cfd28eea9c2d9275fa83ef63d771bee"
-class_hash = "0x5efc59ad6001d2cac58aa2e3656fc02c0dfc667f9cca021cb7f52ee4698ded5"
-original_class_hash = "0x5efc59ad6001d2cac58aa2e3656fc02c0dfc667f9cca021cb7f52ee4698ded5"
+class_hash = "0x66d4929f609b3436045ff570c9b1975b3aa88ceede3c5ff2687919e344fce44"
+original_class_hash = "0x66d4929f609b3436045ff570c9b1975b3aa88ceede3c5ff2687919e344fce44"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-map_systems-5431b122.json"
 reads = []
@@ -317,8 +318,8 @@ manifest_name = "eternum-trade_systems-7f6765dd"
 [[contracts]]
 kind = "DojoContract"
 address = "0x70327cdb9650f8b24ed7fc7f77a7412186afa78077421cb41b3bf6fbad67494"
-class_hash = "0x1657bb62ebf3911de6b2d8fd84ebdb48853f7aae18a80aa41d1b4c642e11fea"
-original_class_hash = "0x1657bb62ebf3911de6b2d8fd84ebdb48853f7aae18a80aa41d1b4c642e11fea"
+class_hash = "0x54ee2d1b8ccb8f74c200d1d43656a27906cc1488d7a762b61d94baa09a473cf"
+original_class_hash = "0x54ee2d1b8ccb8f74c200d1d43656a27906cc1488d7a762b61d94baa09a473cf"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-travel_systems-4ec72d4c.json"
 reads = []
@@ -3157,6 +3158,30 @@ key = false
 [[models.members]]
 name = "timestamp"
 type = "u64"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x140edfbf70a998c4b6cefc9a637deeabefee1b2dfe581767a57a1bc7de564e7"
+original_class_hash = "0x140edfbf70a998c4b6cefc9a637deeabefee1b2dfe581767a57a1bc7de564e7"
+abi = "manifests/dev/deployment/abis/models/eternum-TravelStaminaCostConfig-3e06f929.json"
+tag = "eternum-TravelStaminaCostConfig"
+qualified_path = "eternum::models::config::travel_stamina_cost_config"
+manifest_name = "eternum-TravelStaminaCostConfig-3e06f929"
+
+[[models.members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "travel_type"
+type = "u8"
+key = true
+
+[[models.members]]
+name = "cost"
+type = "u16"
 key = false
 
 [[models]]

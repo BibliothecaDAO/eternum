@@ -57,7 +57,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
           building.category === BuildingType[BuildingType.Stable],
       ).length *
         EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding;
-    const hardMax = EternumGlobalConfig.troop.maxArmiesPerStructure;
+    // remove 1 to force to create defensive army first
+    const hardMax = EternumGlobalConfig.troop.maxArmiesPerStructure - 1;
     return Math.min(maxWithBuildings, hardMax);
   }, [existingBuildings]);
 
@@ -97,7 +98,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       </Headline>
 
       <EntityList
-        list={structureArmies}
+        list={structureArmies.sort((a, _) => (a.protectee ? -1 : 1))}
         headerPanel={
           <>
             {" "}
