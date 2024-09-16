@@ -61,12 +61,15 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
 
         <div className="text-lg mb-4">{quest.description}</div>
 
+        <hr />
+        <h5 className="my-4">Steps</h5>
         {quest.steps?.map((step: any, index: any) => (
           <div className="flex flex-col text-md" key={index}>
             <div className="text-md mb-4">{step}</div>
           </div>
         ))}
 
+        <hr />
         <QuestRewards prizes={quest?.prizes} />
 
         <div className="my-2 grid grid-cols-3 gap-2">
@@ -85,7 +88,7 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
   );
 };
 
-const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
+export const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
   const [showRewards, setShowRewards] = useState(false);
   const { getQuestResources } = useRealm();
 
