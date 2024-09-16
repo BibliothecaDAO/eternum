@@ -1,21 +1,25 @@
 use core::debug::PrintTrait;
 use core::integer::BoundedU128;
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{
-    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
-    split_resources_and_probs
+    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION,
+    HYPERSTRUCTURE_CONFIG_ID, TickIds, split_resources_and_probs
 };
 use eternum::models::buildings::BuildingCategory;
-use eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
+use eternum::models::capacity::{
+    CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait
+};
+use eternum::models::position::{Coord};
 use eternum::models::combat::{Troops};
 use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
 use eternum::models::quantity::Quantity;
 
 use eternum::models::resources::{ResourceFoodImpl};
 use eternum::models::weight::Weight;
-use eternum::utils::math::{max};
+use eternum::utils::math::{max, min};
 use eternum::utils::random;
 
 use starknet::ContractAddress;
@@ -103,7 +107,9 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
     }
 
     fn assert_can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) {
-        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id);
+        assert!(
+            self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id
+        );
     }
 
     fn can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) -> bool {
@@ -113,7 +119,8 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
             quantity.value
         };
         if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram * (quantity_value / RESOURCE_PRECISION);
+            let entity_total_weight_capacity = self.weight_gram
+                * (quantity_value / RESOURCE_PRECISION);
             if entity_total_weight_capacity < weight.value {
                 return false;
             };
@@ -156,18 +163,73 @@ pub struct MapConfig {
     shards_mines_fail_probability: u128,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct SettlementConfig {
+    #[key]
+    config_id: ID,
+    // starting value radius
+    radius: u32,
+    // starting value angle
+    angle: u32,
+    map_size: u32,
+    min_distance: u8,
+    max_distance: u8,
+    // always positive
+    min_scaling_factor_scaled: u128,
+    settlement_order: u16,
+}
+
+#[generate_trait]
+impl SettlementConfigImpl of SettlementConfigTrait {
+    fn get_next_settlement_coord(ref self: SettlementConfig) -> Coord {
+        let max_radius_fixed = FixedTrait::new_unscaled((self.map_size / 2).into(), false);
+        let radius_fixed = FixedTrait::new_unscaled(self.radius.into(), false);
+        let scaling_factor = (max_radius_fixed - radius_fixed) / max_radius_fixed;
+
+        Coord { x: 0, y: 0 }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SettlementConfig, SettlementConfigImpl};
+
+    fn test_get_next_settlement_coord() {
+        // starting values
+        let settlement_config = SettlementConfig {
+            config_id: 0,
+            radius: 50,
+            angle: 0,
+            map_size: 40000,
+            min_distance: 1,
+            max_distance: 5,
+            min_scaling_factor_scaled: 18446744073709551616,
+            settlement_order: 1,
+        };
+        let coord = SettlementConfigImpl::get_next_settlement_coord(settlement_config);
+        assert_eq!(coord.x, 0);
+        assert_eq!(coord.y, 0);
+    }
+}
+
 #[generate_trait]
 impl MapConfigImpl of MapConfigTrait {
     fn random_reward(world: IWorldDispatcher) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);
+        let reward_resource_id: u8 = *random::choices(
+            resource_types, resources_probs, array![].span(), 1, true
+        )
+            .at(0);
 
         let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
     }
 
-    fn pay_exploration_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity) {
+    fn pay_exploration_cost(
+        world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity
+    ) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
         let quantity_value = max(unit_quantity.value, 1);
@@ -178,14 +240,23 @@ impl MapConfigImpl of MapConfigTrait {
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 
-    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity, steps: usize) {
+    fn pay_travel_cost(
+        world: IWorldDispatcher,
+        unit_entity_owner: EntityOwner,
+        unit_quantity: Quantity,
+        steps: usize
+    ) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
         let quantity_value = max(unit_quantity.value, 1);
 
         let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
-        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount * quantity_value * steps.into();
-        let mut fish_pay_amount = explore_config.travel_fish_burn_amount * quantity_value * steps.into();
+        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount
+            * quantity_value
+            * steps.into();
+        let mut fish_pay_amount = explore_config.travel_fish_burn_amount
+            * quantity_value
+            * steps.into();
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 }
@@ -349,7 +420,9 @@ pub struct BuildingConfig {
 
 #[generate_trait]
 impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
-    fn get(world: IWorldDispatcher, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
+    fn get(
+        world: IWorldDispatcher, category: BuildingCategory, resource_type: u8
+    ) -> BuildingConfig {
         return get!(
             world,
             (
@@ -442,7 +515,9 @@ pub struct PopulationConfig {
 #[generate_trait]
 impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCustomTrait {
     fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        get!(world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig)
+        get!(
+            world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig
+        )
     }
 }
 
