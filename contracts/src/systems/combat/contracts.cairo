@@ -1298,6 +1298,12 @@ mod combat_systems {
                     owner_armies_quantity.count < total_allowed_armies.into(),
                     "not enough military buildings to support new army"
                 );
+
+                // ensure army quantity is less than hard maximum
+                assert!(
+                    owner_armies_quantity.count < troop_config.army_max_per_structure.into(),
+                    "reached hard limit of armies per structure"
+                );
             }
             // increment army count
             owner_armies_quantity.count += 1;

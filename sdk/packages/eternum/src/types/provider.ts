@@ -430,6 +430,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   pillage_health_divisor: num.BigNumberish;
   army_free_per_structure: num.BigNumberish;
   army_extra_per_military_building: num.BigNumberish;
+  army_max_per_structure: num.BigNumberish;
   battle_leave_slash_num: num.BigNumberish;
   battle_leave_slash_denom: num.BigNumberish;
 }
