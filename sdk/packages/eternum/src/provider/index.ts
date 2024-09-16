@@ -736,7 +736,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [travel_type, cost],
     });
   }
-  
+
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { category, weight_gram, signer } = props;
 
