@@ -320,8 +320,9 @@ export class BattleManager {
 
     if (
       this.isSiege(currentTimestamp) &&
+      selectedArmy?.isMine &&
       selectedArmy?.battle_side === BattleSide[BattleSide.Defence] &&
-      selectedArmy.protectee
+      selectedArmy?.protectee
     ) {
       return BattleStartStatus.ForceStart;
     }

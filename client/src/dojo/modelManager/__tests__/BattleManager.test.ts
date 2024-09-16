@@ -698,6 +698,101 @@ describe("isClaimable", () => {
   });
 });
 
+describe("isSiege", () => {
+  it("Should return false if the battle is undefined", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+
+    vi.mocked(getComponentValue).mockReturnValue(undefined);
+
+    const isSiege = battleManager.isSiege(CURRENT_TIMESTAMP);
+
+    expect(isSiege).toBe(false);
+  });
+
+  it("Should return true if the battle starts after the current timestamp", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+
+    const battle = generateMockBatle(false, 10);
+
+    vi.mocked(getComponentValue).mockReturnValue(battle);
+
+    const isSiege = battleManager.isSiege(CURRENT_TIMESTAMP);
+
+    expect(isSiege).toBe(true);
+  });
+
+  it("Should return false if the battle starts before the current timestamp", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+
+    const battle = generateMockBatle(false, 0);
+
+    vi.mocked(getComponentValue).mockReturnValue(battle);
+
+    const isSiege = battleManager.isSiege(CURRENT_TIMESTAMP);
+
+    expect(isSiege).toBe(false);
+  });
+});
+
+describe("getSiegeTimeLeft", () => {
+  it("Should return 0 if the battle is undefined", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+
+    vi.mocked(getComponentValue).mockReturnValue(undefined);
+
+    const siegeTimeLeft = battleManager.getSiegeTimeLeft(CURRENT_TIMESTAMP);
+
+    expect(siegeTimeLeft.getMilliseconds()).toBe(0);
+  });
+
+  it("Should return the correct time left if the battle starts after the current timestamp", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+    const futureTimestamp = CURRENT_TIMESTAMP + 100;
+    const battle = generateMockBatle(false, futureTimestamp);
+
+    vi.mocked(getComponentValue).mockReturnValue(battle);
+
+    const siegeTimeLeft = battleManager.getSiegeTimeLeft(CURRENT_TIMESTAMP);
+
+    expect(siegeTimeLeft.getTime() / 1000).toBe(100);
+  });
+
+  it("Should return 0 if the battle start time is equal to the current timestamp", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+    const battle = generateMockBatle(false, CURRENT_TIMESTAMP);
+
+    vi.mocked(getComponentValue).mockReturnValue(battle);
+
+    const siegeTimeLeft = battleManager.getSiegeTimeLeft(CURRENT_TIMESTAMP);
+
+    expect(siegeTimeLeft.getTime() / 1000).toBe(0);
+  });
+
+  it("Should return 0 if the battle start time is before the current timestamp", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+    const pastTimestamp = CURRENT_TIMESTAMP - 100;
+    const battle = generateMockBatle(false, pastTimestamp);
+
+    vi.mocked(getComponentValue).mockReturnValue(battle);
+
+    const siegeTimeLeft = battleManager.getSiegeTimeLeft(CURRENT_TIMESTAMP);
+
+    expect(siegeTimeLeft.getTime() / 1000).toBe(0);
+  });
+
+  it("Should handle large time differences correctly", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+    const farFutureTimestamp = CURRENT_TIMESTAMP + 1000000; // One million seconds in the future
+    const battle = generateMockBatle(false, farFutureTimestamp);
+
+    vi.mocked(getComponentValue).mockReturnValue(battle);
+
+    const siegeTimeLeft = battleManager.getSiegeTimeLeft(CURRENT_TIMESTAMP);
+
+    expect(siegeTimeLeft.getTime() / 1000).toBe(1000000);
+  });
+});
+
 // TODO: test is raidable
 
 describe("isAttackable", () => {
@@ -744,5 +839,21 @@ describe("isAttackable", () => {
     const isAttackable = battleManager.isAttackable(undefined, defender, CURRENT_TIMESTAMP);
 
     expect(isAttackable).toBe(BattleStartStatus.BattleStart);
+  });
+
+  it("Should return true if the defender is alive and it's under siege", () => {
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+
+    const battle = generateMockBatle(false, 10, BattleSide.Defence);
+
+    const defender = generateMockArmyInfo(true);
+
+    const selectedArmy = generateMockArmyInfo(true, true, undefined, BattleSide.Defence);
+
+    vi.mocked(getComponentValue).mockReturnValue(battle);
+
+    const isAttackable = battleManager.isAttackable(selectedArmy, defender, CURRENT_TIMESTAMP);
+
+    expect(isAttackable).toBe(BattleStartStatus.ForceStart);
   });
 });
