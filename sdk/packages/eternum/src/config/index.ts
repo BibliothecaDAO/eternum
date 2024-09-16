@@ -15,7 +15,7 @@ import {
 } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
-import { TickIds } from "../types";
+import { TickIds, TravelTypes } from "../types";
 import {
   BUILDING_COSTS_SCALED,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
@@ -236,6 +236,21 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
   });
 
   console.log(`Configuring map config ${txMap.statusReceipt}...`);
+
+  const txExploreStaminaCost = await provider.set_travel_stamina_cost_config({
+    signer: account,
+    travel_type: TravelTypes.Explore,
+    cost: EternumGlobalConfig.stamina.exploreCost,
+  });
+  console.log(`Configuring exploreStaminaCost config ${txExploreStaminaCost.statusReceipt}...`);
+
+  const txTravelStaminaCost = await provider.set_travel_stamina_cost_config({
+    signer: account,
+    travel_type: TravelTypes.Travel,
+    cost: EternumGlobalConfig.stamina.travelCost,
+  });
+
+  console.log(`Configuring travel stamina cost config ${txTravelStaminaCost.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {
