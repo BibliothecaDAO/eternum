@@ -29,6 +29,11 @@ export enum BattleSide {
   Defence,
 }
 
+export enum TravelTypes {
+  Explore,
+  Travel,
+}
+
 export interface CombatResultInterface {
   attackerRealmEntityId: ID;
   targetRealmEntityId: ID;

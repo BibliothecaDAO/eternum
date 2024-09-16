@@ -3,7 +3,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{
     models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
-    constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
+    constants::{ResourceTypes, TravelTypes, WORLD_CONFIG_ID}
 };
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -17,12 +17,11 @@ pub struct Stamina {
 
 #[generate_trait]
 impl StaminaCustomImpl of StaminaCustomTrait {
-    fn handle_stamina_costs(army_entity_id: ID, travel: TravelTypes, world: IWorldDispatcher) {
+    fn handle_stamina_costs(army_entity_id: ID, stamina_cost: u16, world: IWorldDispatcher) {
         let mut stamina = get!(world, (army_entity_id), Stamina);
         stamina.refill_if_next_tick(world);
-        let costs = travel.get_stamina_costs();
-        stamina.assert_enough_stamina(costs);
-        stamina.substract_costs(costs, world);
+        stamina.assert_enough_stamina(stamina_cost);
+        stamina.substract_costs(stamina_cost, world);
     }
 
     fn refill_if_next_tick(ref self: Stamina, world: IWorldDispatcher) {

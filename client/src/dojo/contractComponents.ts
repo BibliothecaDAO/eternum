@@ -1158,6 +1158,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    TravelStaminaCostConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          travel_type: RecsType.Number,
+          cost: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "eternum-TravelStaminaCostConfig",
+            types: ["u32", "u8", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     TroopConfig: (() => {
       return defineComponent(
         world,
