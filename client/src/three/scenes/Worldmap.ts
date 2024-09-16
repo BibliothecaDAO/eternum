@@ -131,7 +131,7 @@ export default class WorldmapScene extends HexagonScene {
     );
     this.inputManager.addListener("click", (raycaster) => {
       const selectedEntityId = this.armyManager.onRightClick(raycaster);
-      this.onArmyRightClick(selectedEntityId);
+      selectedEntityId && this.onArmySelection(selectedEntityId);
     });
 
     // add particles
@@ -142,10 +142,21 @@ export default class WorldmapScene extends HexagonScene {
       (state) => state.armyActions.selectedEntityId,
       (selectedEntityId) => {
         if (selectedEntityId) {
-          this.onArmyRightClick(selectedEntityId);
+          this.onArmySelection(selectedEntityId);
         }
       },
     );
+
+    // Add event listener for Escape key
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
+        if (this.isNavigationViewOpen()) {
+          this.closeNavigationViews();
+        } else {
+          this.clearEntitySelection();
+        }
+      }
+    });
   }
 
   public moveCameraToURLLocation() {
@@ -204,7 +215,10 @@ export default class WorldmapScene extends HexagonScene {
     LocationManager.updateUrl(url);
   }
 
-  protected onHexagonClick(hexCoords: HexPosition) {
+  protected onHexagonClick(hexCoords: HexPosition | null) {
+    if (!hexCoords) {
+      return;
+    }
     const { selectedEntityId, travelPaths } = this.state.armyActions;
 
     const buildingType = this.structurePreview?.getPreviewStructure();
@@ -236,7 +250,7 @@ export default class WorldmapScene extends HexagonScene {
   }
   protected onHexagonRightClick(): void {}
 
-  private onArmyRightClick(selectedEntityId: ID | undefined) {
+  private onArmySelection(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {
       this.clearEntitySelection();
       return;
@@ -514,7 +528,6 @@ export default class WorldmapScene extends HexagonScene {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-      console.debug(`Updating chunk with key: ${chunkKey}`);
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
     }

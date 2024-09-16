@@ -11,6 +11,8 @@ import { LocationManager } from "../helpers/LocationManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
+import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import _, { throttle } from "lodash";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
@@ -64,6 +66,18 @@ export abstract class HexagonScene {
     this.state = useUIStore.getState();
     this.fog = new THREE.Fog(0xffffff, 21, 30);
     this.scene.fog = this.fog;
+
+    // subscribe to state changes
+    useUIStore.subscribe(
+      (state) => ({
+        leftNavigationView: state.leftNavigationView,
+        rightNavigationView: state.rightNavigationView,
+      }),
+      ({ leftNavigationView, rightNavigationView }) => {
+        this.state.leftNavigationView = leftNavigationView;
+        this.state.rightNavigationView = rightNavigationView;
+      },
+    );
   }
 
   private setupLighting(): void {
@@ -122,7 +136,7 @@ export abstract class HexagonScene {
 
   private handleClick(raycaster: THREE.Raycaster): void {
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
-    clickedHex && this.onHexagonClick(clickedHex.hexCoords);
+    clickedHex ? this.onHexagonClick(clickedHex.hexCoords) : this.onHexagonClick(null);
   }
 
   private handleRightClick(raycaster: THREE.Raycaster): void {
@@ -182,6 +196,15 @@ export abstract class HexagonScene {
 
   public getCamera() {
     return this.camera;
+  }
+
+  public closeNavigationViews() {
+    this.state.setLeftNavigationView(LeftView.None);
+    this.state.setRightNavigationView(RightView.None);
+  }
+
+  public isNavigationViewOpen() {
+    return this.state.leftNavigationView !== LeftView.None || this.state.rightNavigationView !== RightView.None;
   }
 
   protected hashCoordinates(x: number, y: number): number {
@@ -401,7 +424,7 @@ export abstract class HexagonScene {
     } | null,
   ): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
-  protected abstract onHexagonClick(hexCoords: HexPosition): void;
+  protected abstract onHexagonClick(hexCoords: HexPosition | null): void;
   protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
   public abstract setup(): void;
   public abstract moveCameraToURLLocation(): void;
