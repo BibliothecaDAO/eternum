@@ -618,12 +618,13 @@ export function defineContractComponents(world: World) {
           channel: RecsType.BigInt,
           content: RecsType.String,
           salt: RecsType.BigInt,
+          timestamp: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Message",
-            types: ["felt252", "felt252", "BytesArray", "felt252"],
+            types: ["felt252", "felt252", "BytesArray", "felt252", "u64"],
             customTypes: [],
           },
         },
