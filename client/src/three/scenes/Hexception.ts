@@ -10,7 +10,7 @@ import { getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Biome, BiomeType } from "../components/Biome";
+import { Biome, BIOME_COLORS, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
@@ -175,7 +175,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => { });
+    Promise.all(this.modelLoadPromises).then(() => {});
   }
 
   setup() {
@@ -257,8 +257,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
   }
-  protected onHexagonRightClick(): void { }
-  protected onHexagonDoubleClick(): void { }
+  protected onHexagonRightClick(): void {}
+  protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -343,6 +343,7 @@ export default class HexceptionScene extends HexagonScene {
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
           this.pillars!.setMatrixAt(index + i, matrix);
+          tmpCol.set(BIOME_COLORS[biome as BiomeType]);
           this.pillars!.setColorAt(index + i, tmpCol);
         });
         this.pillars!.count = i + matrices.length;
