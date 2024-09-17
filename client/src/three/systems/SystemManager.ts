@@ -86,7 +86,10 @@ export class SystemManager {
             const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
             if (!entityOwner) return;
 
-            const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]);
+            const realm = getComponentValue(
+              this.setup.components.Realm,
+              getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+            );
             if (!realm) return;
 
             const owner = getComponentValue(

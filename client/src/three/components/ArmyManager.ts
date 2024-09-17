@@ -1,6 +1,6 @@
 import { Position } from "@/types/Position";
 import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
-import { ID } from "@bibliothecadao/eternum";
+import { ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GUIManager } from "../helpers/GUIManager";
 import { ArmySystemUpdate } from "../systems/types";
@@ -14,7 +14,8 @@ const RADIUS_OFFSET = 0.09;
 export class ArmyManager {
   private scene: THREE.Scene;
   private armyModel: ArmyModel;
-  private armies: Map<ID, { entityId: ID; matrixIndex: number; hexCoords: Position; isMine: boolean }> = new Map();
+  private armies: Map<ID, { entityId: ID; matrixIndex: number; hexCoords: Position; isMine: boolean; color: string }> =
+    new Map();
   private scale: THREE.Vector3;
   private movingArmies: Map<ID, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
@@ -51,6 +52,7 @@ export class ArmyManager {
               createArmyParams.entityId,
               new Position({ x: createArmyParams.col, y: createArmyParams.row }),
               createArmyParams.isMine,
+              1,
             );
           },
         },
@@ -126,7 +128,7 @@ export class ArmyManager {
   async onUpdate(update: ArmySystemUpdate) {
     console.debug("onUpdate called with update:", update);
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, isMine, battleId, currentHealth } = update;
+    const { entityId, hexCoords, isMine, battleId, currentHealth, order } = update;
 
     if (currentHealth <= 0) {
       console.debug(`Army with entityId ${entityId} has currentHealth <= 0`);
@@ -216,6 +218,7 @@ export class ArmyManager {
       );
       this.armyModel.dummyObject.updateMatrix();
       this.armyModel.mesh.setMatrixAt(index, this.armyModel.dummyObject.matrix);
+      this.armyModel.mesh.setColorAt(index, new THREE.Color(army.color));
       count++;
       this.armyModel.mesh.userData.entityIdMap.set(index, army.entityId);
       this.armies.set(army.entityId, { ...army, matrixIndex: index });
@@ -226,6 +229,7 @@ export class ArmyManager {
     this.armyModel.mesh.count = count;
     console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count} and matrices:`);
     this.armyModel.mesh.instanceMatrix.needsUpdate = true;
+    this.armyModel.mesh.instanceColor!.needsUpdate = true;
     this.armyModel.mesh.computeBoundingSphere();
     this.updateLabelsForChunk(chunkKey);
   }
@@ -233,7 +237,7 @@ export class ArmyManager {
   private getVisibleArmiesForChunk(
     startRow: number,
     startCol: number,
-  ): Array<{ entityId: ID; hexCoords: Position; isMine: boolean }> {
+  ): Array<{ entityId: ID; hexCoords: Position; isMine: boolean; color: string }> {
     console.debug(`getVisibleArmiesForChunk called with startRow: ${startRow}, startCol: ${startCol}`);
     const visibleArmies = Array.from(this.armies.entries())
       .filter(([_, army]) => {
@@ -249,7 +253,7 @@ export class ArmyManager {
 
         return isVisible;
       })
-      .map(([entityId, army]) => ({ entityId, hexCoords: army.hexCoords, isMine: army.isMine }));
+      .map(([entityId, army]) => ({ entityId, hexCoords: army.hexCoords, isMine: army.isMine, color: army.color }));
     console.debug(`Found ${visibleArmies.length} visible armies for chunk`);
     return visibleArmies;
   }
@@ -272,8 +276,8 @@ export class ArmyManager {
 
   public addArmy(entityId: ID, hexCoords: Position, isMine: boolean, order: number) {
     if (this.armies.has(entityId)) return;
-
-    this.armies.set(entityId, { entityId, matrixIndex: this.armies.size - 1, hexCoords, isMine });
+    const orderColor = orders.find((_order) => _order.orderId === order)?.color || "#000000";
+    this.armies.set(entityId, { entityId, matrixIndex: this.armies.size - 1, hexCoords, isMine, color: orderColor });
     this.invalidateCache();
     this.computeAndCacheChunk(this.currentChunkKey!);
   }
