@@ -704,7 +704,6 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
         // release lock on resource
         let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
-        to_army_resource_lock.assert_locked();
         to_army_resource_lock.start_at = starknet::get_block_timestamp();
         to_army_resource_lock.release_at = starknet::get_block_timestamp();
         set!(world, (to_army_resource_lock));
