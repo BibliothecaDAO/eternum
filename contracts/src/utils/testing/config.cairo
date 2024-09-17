@@ -2,7 +2,7 @@ use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::integer::BoundedU128;
 use core::ops::index::IndexView;
 use eternum::constants::{
-    ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds
+    ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds, TravelTypes
 };
 
 use eternum::models::{
@@ -15,7 +15,8 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher, IProductionConfigDispatcherTrait
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher,
+    IProductionConfigDispatcherTrait, ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -70,6 +71,7 @@ fn get_combat_config() -> TroopConfig {
         pillage_health_divisor: 8,
         army_free_per_structure: 100,
         army_extra_per_building: 100,
+        army_max_per_structure: 200,
         battle_leave_slash_num: 25,
         battle_leave_slash_denom: 100
     };
@@ -94,6 +96,13 @@ fn set_stamina_config(config_systems_address: ContractAddress) {
         .set_stamina_config(ResourceTypes::CROSSBOWMAN, 80);
 }
 
+fn set_travel_and_explore_stamina_cost_config(config_systems_address: ContractAddress) {
+    let travel_stamina_cost_dispatcher = ITravelStaminaCostConfigDispatcher {
+        contract_address: config_systems_address
+    };
+    travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::TRAVEL, 10);
+    travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::EXPLORE, 20);
+}
 
 fn set_capacity_config(config_systems_address: ContractAddress) {
     ICapacityConfigDispatcher { contract_address: config_systems_address }

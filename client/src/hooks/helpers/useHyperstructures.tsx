@@ -1,7 +1,12 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
-import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  HyperstructureResourceMultipliers,
+  ID,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";

@@ -618,12 +618,13 @@ export function defineContractComponents(world: World) {
           channel: RecsType.BigInt,
           content: RecsType.String,
           salt: RecsType.BigInt,
+          timestamp: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Message",
-            types: ["felt252", "felt252", "BytesArray", "felt252"],
+            types: ["felt252", "felt252", "BytesArray", "felt252", "u64"],
             customTypes: [],
           },
         },
@@ -983,12 +984,12 @@ export function defineContractComponents(world: World) {
     ResourceTransferLock: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, release_at: RecsType.BigInt },
+        { entity_id: RecsType.Number, start_at: RecsType.BigInt, release_at: RecsType.BigInt },
         {
           metadata: {
             namespace: "eternum",
             name: "ResourceTransferLock",
-            types: ["u32", "u64"],
+            types: ["u32", "u64", "u64"],
             customTypes: [],
           },
         },
@@ -1158,6 +1159,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    TravelStaminaCostConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          travel_type: RecsType.Number,
+          cost: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "eternum-TravelStaminaCostConfig",
+            types: ["u32", "u8", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     TroopConfig: (() => {
       return defineComponent(
         world,
@@ -1172,6 +1190,7 @@ export function defineContractComponents(world: World) {
           pillage_health_divisor: RecsType.Number,
           army_free_per_structure: RecsType.Number,
           army_extra_per_building: RecsType.Number,
+          army_max_per_structure: RecsType.Number,
           battle_leave_slash_num: RecsType.Number,
           battle_leave_slash_denom: RecsType.Number,
         },
@@ -1179,7 +1198,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8", "u8"],
             customTypes: [],
           },
         },

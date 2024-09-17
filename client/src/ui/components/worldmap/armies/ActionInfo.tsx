@@ -46,8 +46,6 @@ export const ActionInfo = () => {
 
   if (!travelPath) return;
 
-  console.log({ travelPath });
-
   return (
     <>
       {showTooltip && (

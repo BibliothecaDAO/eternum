@@ -41,11 +41,13 @@ export enum RaidStatus {
 export enum LeaveStatus {
   Leave = "Leave",
   NoBattleToLeave = "No battle to leave",
+  DefenderCantLeaveOngoing = "A defender can't leave an ongoing battle",
   NoArmyInBattle = "Your armies aren't in this battle",
 }
 
 export enum BattleStartStatus {
   BattleStart = "Start battle",
+  ForceStart = "Force start",
   NothingToAttack = "Nothing to attack",
   CantStart = "Can't start a battle now.",
 }
@@ -75,6 +77,10 @@ export class BattleManager {
     if (!battle) return;
 
     const battleClone = structuredClone(battle);
+
+    if (this.isSiege(currentTimestamp)) {
+      return battleClone;
+    }
 
     this.updateHealth(battleClone, currentTimestamp);
 
@@ -125,6 +131,26 @@ export class BattleManager {
     }
   }
 
+  public isSiege(currentTimestamp: number): boolean {
+    const battle = this.getBattle();
+    if (!battle) {
+      return false;
+    }
+    return battle?.start_at > currentTimestamp;
+  }
+
+  public getSiegeTimeLeft(currentTimestamp: number): Date {
+    const battle = this.getBattle();
+
+    const date = new Date(0);
+
+    if (battle) {
+      const secondsLeft = Math.max(Number(battle.start_at) - currentTimestamp, 0);
+      date.setSeconds(secondsLeft);
+    }
+    return date;
+  }
+
   public deleteBattle() {
     removeComponent(this.dojo.setup.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
     this.dojo.network.world.deleteEntity(getEntityIdFromKeys([BigInt(this.battleEntityId)]));
@@ -133,6 +159,10 @@ export class BattleManager {
 
   public isBattleOngoing(currentTimestamp: number): boolean {
     const battle = this.getBattle();
+
+    if (this.isSiege(currentTimestamp)) {
+      return false;
+    }
 
     const timeSinceLastUpdate = this.getElapsedTime(currentTimestamp);
 
@@ -283,10 +313,23 @@ export class BattleManager {
     return RaidStatus.isRaidable;
   }
 
-  public isAttackable(defender: ArmyInfo | undefined): BattleStartStatus {
+  public isAttackable(
+    selectedArmy: ArmyInfo | undefined,
+    defender: ArmyInfo | undefined,
+    currentTimestamp: number,
+  ): BattleStartStatus {
     if (!defender) return BattleStartStatus.NothingToAttack;
 
     if (!this.isBattle() && defender.health.current > 0n) return BattleStartStatus.BattleStart;
+
+    if (
+      this.isSiege(currentTimestamp) &&
+      selectedArmy?.isMine &&
+      selectedArmy?.battle_side === BattleSide[BattleSide.Defence] &&
+      selectedArmy?.protectee
+    ) {
+      return BattleStartStatus.ForceStart;
+    }
 
     return BattleStartStatus.CantStart;
   }
@@ -296,7 +339,7 @@ export class BattleManager {
 
     if (!selectedArmy) return LeaveStatus.NoArmyInBattle;
 
-    if (selectedArmy.protectee && this.isBattleOngoing(currentTimestamp)) return LeaveStatus.NoBattleToLeave;
+    if (selectedArmy.protectee && this.isBattleOngoing(currentTimestamp)) return LeaveStatus.DefenderCantLeaveOngoing;
 
     return LeaveStatus.Leave;
   }

@@ -133,6 +133,16 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
     }
 }
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+struct TravelStaminaCostConfig {
+    #[key]
+    config_id: ID,
+    #[key]
+    travel_type: u8,
+    cost: u16,
+}
+
 // speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -461,6 +471,8 @@ pub struct TroopConfig {
     // the number of additional  armies that can be create with
     // each new military building
     army_extra_per_building: u8,
+    // hard limit of armies per structure
+    army_max_per_structure: u8,
     // percentage to slash army by if they leave early
     // e.g num = 25, denom = 100 // represents 25%
     battle_leave_slash_num: u8,

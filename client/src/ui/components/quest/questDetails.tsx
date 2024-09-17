@@ -87,7 +87,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
           ></div>
           <p>building</p>
         </div>,
-        <p>3. Left click on a hex to build it, or right click to cancel</p>,
+        <p>
+          3. Left click on a hex to build it, or right click to cancel. You can also press{" "}
+          <strong>
+            <span className="border border-gold px-1">Esc</span>
+          </strong>{" "}
+          to cancel the action.
+        </p>,
       ],
       prizes: [
         { id: QuestType.CommonResources, title: "Common Resources" },
@@ -252,7 +258,17 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
           </div>
         </div>
       ),
-      steps: ["1. Go to world view", "2. Right click on your army", "3. Explore or travel with your army"],
+      steps: [
+        "1. Go to world view",
+        <p>
+          2. Left click on your army or the tile under it. You can push the{" "}
+          <strong>
+            <span className="border border-gold px-1">Esc</span>
+          </strong>{" "}
+          key to cancel the action.{" "}
+        </p>,
+        "3. Explore or travel with your army.",
+      ],
       prizes: [{ id: QuestType.Travel, title: "Travel" }],
       depth: 5,
     },
@@ -263,7 +279,11 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
       name: "Build a workers hut",
       description: `Each building takes up population in your realm. You realm starts with a population of ${BASE_POPULATION_CAPACITY}. 
       Build worker huts to extend your population capacity by ${EternumGlobalConfig.populationCapacity.workerHuts}.`,
-      steps: [],
+      steps: [
+        navigationStep(BuildingThumbs.construction),
+        "2. Select the worker hut building",
+        "3. Left click on a hex to build it, or right click to cancel",
+      ],
       prizes: [{ id: QuestType.Population, title: "Population" }],
       depth: 6,
     },
@@ -286,7 +306,11 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
           <ResourceWeight className="mt-2" />
         </div>
       ),
-      steps: [],
+      steps: [
+        navigationStep(BuildingThumbs.construction),
+        "2. Select the market building",
+        "3. Left click on a hex to build it, or right click to cancel",
+      ],
       prizes: [{ id: QuestType.Market, title: "Market" }],
       depth: 6,
     },
@@ -297,7 +321,12 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
       name: "Pillage a structure",
       description:
         "Pillage a realm, hyperstructure or earthenshard mine. To pillage a structure, travel with your army to your target first, then pillage it.",
-      steps: [],
+      steps: [
+        "1. Go to world view",
+        "2. Right click on your army",
+        "3. Travel with your army to your target",
+        "4. Pillage the structure",
+      ],
       prizes: [{ id: QuestType.Pillage, title: "Pillage" }],
       depth: 6,
     },
@@ -305,9 +334,9 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
   [
     QuestId.Mine,
     {
-      name: "Discover an earthenshard mine",
-      description: "Explore the world, find earthenshard mines",
-      steps: [],
+      name: "Discover an Fragment mine",
+      description: "Explore the world, find Fragment mines",
+      steps: ["1. Go to world view", "2. Right click on your army", "3. Explore with your army to find Fragment mines"],
       prizes: [{ id: QuestType.Mine, title: "Mine" }],
       depth: 6,
     },
@@ -317,7 +346,12 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     {
       name: "Contribute to a hyperstructure",
       description: "Contribute to a Hyperstructure",
-      steps: [],
+      steps: [
+        "1. Go to world view",
+        "2. Right click on your army",
+        "3. Travel with your army to a Hyperstructure",
+        "4. Contribute to the Hyperstructure",
+      ],
       prizes: [{ id: QuestType.Contribution, title: "Contribution" }],
       depth: 6,
     },
@@ -327,7 +361,11 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     {
       name: "Build a hyperstructure",
       description: "Build a Hyperstructure",
-      steps: [],
+      steps: [
+        navigationStep(BuildingThumbs.construction),
+        "2. Select the Hyperstructure building",
+        "3. Left click on a hex to build it, or right click to cancel",
+      ],
       prizes: [{ id: QuestType.Hyperstructure, title: "Hyperstructure" }],
       depth: 6,
     },

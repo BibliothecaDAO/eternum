@@ -160,6 +160,7 @@ export class MarketManager {
     const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
     const my_shares = this.getSharesUnscaled();
     const total_shares = this.getTotalSharesUnScaled();
+    if (total_shares == 0) return [0, 0];
     let lords_amount = Number((my_shares * BigInt(reserveLordsAmount)) / BigInt(total_shares));
     let resource_amount = Number((my_shares * BigInt(reserveResourceAmount)) / BigInt(total_shares));
 

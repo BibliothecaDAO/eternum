@@ -16,6 +16,7 @@ type Props = {
   label?: boolean;
   withTooltip?: boolean;
   containerClassName?: string;
+  tooltipText?: string; // Added custom tooltip text as optional
 };
 
 type Resource = {
@@ -82,7 +83,7 @@ const STYLES = {
   },
 } as const;
 
-export const ResourceIcon = ({ isLabor = false, withTooltip = true, ...props }: Props) => {
+export const ResourceIcon = ({ isLabor = false, withTooltip = true, tooltipText, ...props }: Props) => {
   const Icon = (
     <div className={`flex paper relative group rounded-xl justify-center ${props.className}`}>
       <div className={`relative ${clsx(STYLES.size[props.size], props.className)} `}>
@@ -96,9 +97,9 @@ export const ResourceIcon = ({ isLabor = false, withTooltip = true, ...props }: 
         </span>
       )}
       {withTooltip && (
-        <div className="absolute flex -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-black rounded-lg w-max group-hover:flex">
+        <div className="absolute -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-black rounded-lg w-max group-hover:flex">
           <span className="relative z-10 p-2 text-xs leading-none  whitespace-no-wrap rounded shadow-lg bg-gray-1000">
-            {props.resource}
+            {tooltipText || Components[props.resource.replace(" ", "").replace("'", "")]?.name}
           </span>
           <div className="z-[100] w-3 h-3 bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 absolute rotate-45 bg-black"></div>
         </div>

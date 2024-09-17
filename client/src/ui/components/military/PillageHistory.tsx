@@ -2,21 +2,12 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision, formatSecondsLeftInDaysHoursMinutes } from "@/ui/utils/utils";
+import { divideByPrecision, formatResources, formatSecondsLeftInDaysHoursMinutes } from "@/ui/utils/utils";
 import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 
 type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData"]["schema"]>;
-
-const formatResources = (resources: any[]): Resource[] => {
-  return resources
-    .map((resource) => ({
-      resourceId: Number(resource[0].value),
-      amount: Number(resource[1].value),
-    }))
-    .filter((resource) => resource.amount > 0);
-};
 
 const PillageHistoryItem = ({ addressName, history }: { addressName: string; history: PillageEvent }) => {
   const isSuccess = history.winner === BattleSide[BattleSide.Attack];

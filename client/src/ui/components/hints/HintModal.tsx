@@ -1,17 +1,17 @@
 import { Headline } from "@/ui/elements/Headline";
-import { ModalContainer } from "../ModalContainer";
-import { TheWorld } from "./TheWorld";
-import { GettingStarted } from "./GettingStarted";
-import { Resources } from "./Resources";
-import { Buildings } from "./Buildings";
 import { useState } from "react";
-import { Trading } from "./Trading";
+import { ModalContainer } from "../ModalContainer";
+import { Buildings } from "./Buildings";
 import { Combat } from "./Combat";
-import { Points } from "./Points";
-import { WorldStructures } from "./WorldStructures";
-import { TheMap } from "./TheMap";
+import { GettingStarted } from "./GettingStarted";
 import { Guilds } from "./Guilds";
+import { Points } from "./Points";
+import { Resources } from "./Resources";
+import { TheMap } from "./TheMap";
+import { TheWorld } from "./TheWorld";
+import { Trading } from "./Trading";
 import { Transfers } from "./Transfers";
+import { WorldStructures } from "./WorldStructures";
 
 export enum HintSection {
   TheWorld = "The World",
@@ -91,7 +91,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
           <h3>The Lordpedia</h3>
         </div>
 
-        <div className="col-span-3 border p-3 space-y-1  border-gold/10">
+        <div className=" border p-3 space-y-1  border-gold/10 col-span-2">
           {sections.map((section) => (
             <div
               className={`p-2 px-4 hover:bg-gold/20  border border-gold/10 shadow-xl duration-300  ${
@@ -104,7 +104,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
             </div>
           ))}
         </div>
-        <div className="col-span-8 border  border-gold/10 p-4 prose prose-pink overflow-auto max-h-[calc(80vh)]">
+        <div className="col-span-10 border  border-gold/10 p-4 prose prose-pink overflow-auto max-h-[calc(80vh)]">
           {activeSection.content}
         </div>
       </div>

@@ -16,6 +16,7 @@ import {
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
+import { ContributionSummary } from "./ContributionSummary";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 
@@ -41,10 +42,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { useProgress } = useHyperstructures();
-  const { getContributionsByPlayerAddress } = useContributions();
+  const { useContributionsByPlayerAddress } = useContributions();
 
   const progresses = useProgress(entity.entity_id);
-  const contributions = getContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
+  const myContributions = useContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
 
   const updates = useUpdates(entity.entity_id);
 
@@ -93,26 +94,29 @@ export const HyperstructurePanel = ({ entity }: any) => {
         />
       );
     });
-  }, [progresses, contributions]);
+  }, [progresses, myContributions]);
 
   const initialPoints = useMemo(() => {
-    return calculateCompletionPoints(contributions);
-  }, [contributions, updates]);
+    return calculateCompletionPoints(myContributions);
+  }, [myContributions, updates]);
 
-  const shares = useMemo(() => {
-    return LeaderboardManager.instance().getShares(ContractAddress(account.address), entity.entity_id);
-  }, [contributions, updates]);
+  const myShares = useMemo(() => {
+    return LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), entity.entity_id);
+  }, [myContributions, updates]);
 
   return (
-    <div className="flex flex-col h-[45vh] justify-between">
-      <div className="flex flex-col mb-2 bg-blueish/10 p-3 ">
-        <div className=" align-text-bottom uppercase text-xs">Owner: {ownerName}</div>
-        <div className="flex flex-row justify-between items-baseline">
+    <div className="flex flex-col justify-between h-full">
+      <div className="grid grid-cols-5 text-xxs bg-blueish/10 p-1">
+        <div className="flex flex-col">
+          <div className="">Owner:</div>
+          <div>{ownerName}</div>
+        </div>
+        <div className="col-span-4">
           {editName ? (
             <div className="flex space-x-2">
               <TextInput
                 placeholder="Type Name"
-                className="h-full"
+                className="h-full flex-grow"
                 value={naming}
                 onChange={(name) => setNaming(name)}
                 maxLength={MAX_NAME_LENGTH}
@@ -138,48 +142,48 @@ export const HyperstructurePanel = ({ entity }: any) => {
               </Button>
             </div>
           ) : (
-            <h3 className="truncate pr-5">{entity.name}</h3>
-          )}
-
-          {account.address === entity.owner && (
-            <>
-              <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
-                edit name
-              </Button>
-            </>
+            <div className="flex justify-between items-center">
+              <h5 className="truncate pr-5">{entity.name}</h5>
+              {account.address === entity.owner && (
+                <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
+                  edit name
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
 
-      <div className="w-[100%] grid justify-between  m-auto mb-2  gap-2 grid-cols-4">
-        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center h-full">
-            <div className="uppercase text-xs">Initial points received</div>
-            <div className="font-bold text-xl">{currencyIntlFormat(initialPoints)}</div>
+      <div className="w-[100%] grid justify-between m-auto mb-1 gap-1 grid-cols-4">
+        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center">
+            <div className="uppercase text-[10px]">Initial points</div>
+            <div className="font-bold text-sm">{currencyIntlFormat(initialPoints)}</div>
           </div>
         </div>
-        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center h-full">
-            <div className="uppercase text-xs">Progress</div>
-            <div className="font-bold text-xl">{currencyIntlFormat(progresses.percentage)}%</div>
+        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center">
+            <div className="uppercase text-[10px]">Progress</div>
+            <div className="font-bold text-sm">{currencyIntlFormat(progresses.percentage)}%</div>
           </div>
         </div>
-        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center h-full">
-            <div className="uppercase text-xs">Shares</div>
-            <div className="font-bold text-xl">{currencyIntlFormat((shares || 0) * 100)}%</div>
+        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center">
+            <div className="uppercase text-[10px]">Shares</div>
+            <div className="font-bold text-sm">{currencyIntlFormat((myShares || 0) * 100)}%</div>
           </div>
         </div>
-        <div className="p-3 bg-gold/10  gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="flex flex-col justify-center items-center text-center h-full">
-            <div className="uppercase text-xs">Points/cycle</div>
-            <div className="font-bold text-xl ">
-              {currencyIntlFormat((shares || 0) * HYPERSTRUCTURE_POINTS_PER_CYCLE)}
+        <div className="p-1 bg-gold/10 gap-0.5 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="flex flex-col justify-center items-center text-center">
+            <div className="uppercase text-[10px]">Points/cycle</div>
+            <div className="font-bold text-sm">
+              {currencyIntlFormat((myShares || 0) * HYPERSTRUCTURE_POINTS_PER_CYCLE)}
             </div>
           </div>
         </div>
       </div>
       <div className="overflow-y-scroll no-scrollbar h-[40vh] bg-gold/10  p-2">
+        <ContributionSummary hyperstructureEntityId={entity.entity_id} className="mb-1" />
         {progresses.percentage === 100 ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (

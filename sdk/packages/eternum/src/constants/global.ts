@@ -3,23 +3,14 @@ import { CapacityConfigCategory } from "./structures";
 
 export const EternumGlobalConfig = {
   stamina: {
-    travelCost: 5,
-    exploreCost: 15,
+    travelCost: 10,
+    exploreCost: 20,
   },
   resources: {
     resourcePrecision: 1000,
     resourceMultiplier: 1000,
-    resourceAmountPerTick: 100,
-    foodPerTick: 300,
-    donkeysPerTick: 30,
-    knightsPerTick: 20,
-    crossbowmanPerTick: 20,
-    paladinPerTick: 20,
+    resourceAmountPerTick: 10,
     startingResourcesInputProductionFactor: 4,
-    startingResources: [
-      { resourceId: ResourcesIds.Wheat, amount: 1500 },
-      { resourceId: ResourcesIds.Fish, amount: 1500 },
-    ],
   },
   banks: {
     lordsCost: 1000,
@@ -43,7 +34,7 @@ export const EternumGlobalConfig = {
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 1800, // 30mins
+    armiesTickIntervalInSeconds: 3600, // 1 hour
   },
   carryCapacityGram: {
     [CapacityConfigCategory.None]: 0,
@@ -58,7 +49,7 @@ export const EternumGlobalConfig = {
   },
   battle: {
     graceTickCount: 24,
-    delaySeconds: 180,
+    delaySeconds: 8 * 60 * 60,
   },
   troop: {
     // The 7,200 health value makes battles last up to 20hours at a maximum.
@@ -71,9 +62,11 @@ export const EternumGlobalConfig = {
     crossbowmanStrength: 1,
     advantagePercent: 1000,
     disadvantagePercent: 1000,
-    maxTroopCount: 10_000,
+    maxTroopCount: 500_000,
     baseArmyNumberForStructure: 3,
-    armyExtraPerMilitaryBuilding: 2,
+    armyExtraPerMilitaryBuilding: 1,
+    // max attacking armies per structure = 6 + 1 defensive army
+    maxArmiesPerStructure: 7, // 3 + (3 * 1) = 7 // so they get benefits from at most 3 military buildings
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
     //

@@ -143,6 +143,7 @@ export class SystemManager {
               hexCoords: new Position({ x: 0, y: 0 }),
               isEmpty: false,
               deleted: true,
+              isSiege: false,
             };
           }
 
@@ -155,11 +156,14 @@ export class SystemManager {
             battle.attack_army_health.current < healthMultiplier &&
             battle.defence_army_health.current < healthMultiplier;
 
+          const isSiege = battle.start_at > Date.now() / 1000;
+
           return {
             entityId: battle.entity_id,
             hexCoords: new Position({ x: position.x, y: position.y }),
             isEmpty,
             deleted: false,
+            isSiege,
           };
         });
       },

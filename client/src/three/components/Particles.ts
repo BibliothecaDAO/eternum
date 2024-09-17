@@ -54,6 +54,11 @@ export class Particles {
     }
   }
 
+  resetPosition() {
+    this.points.position.set(0, 0, 0);
+    this.light.position.set(0, 0, 0);
+  }
+
   setParticleSize(size: number) {
     const material = this.points.material as THREE.PointsMaterial;
     material.size = size;

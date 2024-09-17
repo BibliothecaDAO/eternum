@@ -30,6 +30,7 @@ use eternum::utils::number::NumberTrait;
 
 const STRENGTH_PRECISION: u256 = 10_000;
 
+
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Health {
@@ -67,22 +68,52 @@ impl HealthCustomImpl of HealthCustomTrait {
         assert!(self.is_alive(), "{} is dead", entity_name);
     }
 
-    fn steps_to_die(self: @Health, mut deduction: u128) -> u128 {
+    fn steps_to_die(self: @Health, mut deduction: u128, troop_config: TroopConfig) -> u128 {
         if *self.current == 0 || deduction == 0 {
             return 0;
         };
 
-        let mut num_steps = *self.current / deduction;
-        if (num_steps % deduction) > 0 {
+        // 0 < self.current <= deduction
+        if *self.current <= deduction {
+            return 1;
+        }
+
+        // check health is a multiple of normalization factor
+        let single_troop_health = troop_config.health.into() * TroopsImpl::normalization_factor().into();
+        assert!(single_troop_health > 0, "single_troop_health is 0");
+        assert!(
+            *self.current % single_troop_health == 0,
+            "health of entity {} is not a multiple of normalization factor",
+            self.entity_id
+        );
+
+        /// Ensure that if the deduction makes the health less than one troop,
+        /// the troop dies immediately
+        /// e.g if single troop health = 7 * 1000(normalization), then a troop with 3 soldiers will have
+        /// health a total health of 7_000 * 3 =  21_000.
+        /// if deduction is 80 per second, we want it such that deduction happens
+        /// at the rate of 80 per second till it takes 7_000 * (3 -1) =14_000 health,
+        /// then after that, the next step depletes the health completely. i.e to 0
+
+        // note: at this point, we know that
+        // self.current > 0 and self.current > deduction
+        // also self.current
+        let mut num_steps = 0;
+        if deduction >= single_troop_health {
+            num_steps = *self.current / deduction;
+            if (*self.current % deduction) > 0 {
+                num_steps += 1;
+            }
+        } else {
+            // note: we know self.current is at least == single troop health
+            let current_less_one_troop = *self.current - single_troop_health;
+            num_steps = current_less_one_troop / deduction;
+            // add one step to account for the troop deducted
+            // or if current_less_one_troop % deduction == 0
             num_steps += 1;
         }
 
-        // this condition is here in case
-        // self.current < deduction which would make
-        // num_steps = 0 but that would cause the
-        // "inaccurate winner invariant" error so we make it
-        // at least 1.
-        max(num_steps, 1)
+        num_steps
     }
 
     fn percentage_left(self: Health) -> u128 {
@@ -121,6 +152,37 @@ impl TroopsImpl of TroopsTrait {
         self.knight_count -= other.knight_count;
         self.paladin_count -= other.paladin_count;
         self.crossbowman_count -= other.crossbowman_count;
+    }
+
+    // normalize troop counts to nearest mutiple of RESOURCE_PRECISION
+    // so that troop units only exists as whole and not decimals
+    fn normalize_counts(ref self: Troops) {
+        self.knight_count -= self.knight_count % Self::normalization_factor();
+        self.paladin_count -= self.paladin_count % Self::normalization_factor();
+        self.crossbowman_count -= self.crossbowman_count % Self::normalization_factor();
+    }
+
+    fn normalization_factor() -> u64 {
+        let resource_precision_u64: u64 = RESOURCE_PRECISION.try_into().unwrap();
+        return resource_precision_u64;
+    }
+
+    fn assert_normalized(self: Troops) {
+        assert!(
+            self.knight_count % Self::normalization_factor() == 0,
+            "Knight count is not a multiple of {}",
+            Self::normalization_factor()
+        );
+        assert!(
+            self.paladin_count % Self::normalization_factor() == 0,
+            "Paladin count is not a multiple of {}",
+            Self::normalization_factor()
+        );
+        assert!(
+            self.crossbowman_count % Self::normalization_factor() == 0,
+            "Crossbowman count is not a multiple of {}",
+            Self::normalization_factor()
+        );
     }
 
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
@@ -239,6 +301,7 @@ impl TroopsImpl of TroopsTrait {
         self.knight_count = self.actual_type_count(TroopType::Knight, @health);
         self.paladin_count = self.actual_type_count(TroopType::Paladin, @health);
         self.crossbowman_count = self.actual_type_count(TroopType::Crossbowman, @health);
+        self.normalize_counts();
 
         // make the new health be the full health of updated troops
         health.clear();
@@ -282,18 +345,6 @@ impl TroopsImpl of TroopsTrait {
             + self.actual_type_count(TroopType::Crossbowman, health))
             .try_into()
             .unwrap()
-    }
-
-    fn reduce_if_under_precision(mut self: Troops) {
-        if self.knight_count < RESOURCE_PRECISION.try_into().unwrap() {
-            self.knight_count = 0;
-        }
-        if self.paladin_count < RESOURCE_PRECISION.try_into().unwrap() {
-            self.paladin_count = 0;
-        }
-        if self.crossbowman_count < RESOURCE_PRECISION.try_into().unwrap() {
-            self.crossbowman_count = 0;
-        }
     }
 }
 
@@ -369,8 +420,8 @@ impl BattleHealthCustomImpl of BattleHealthCustomTrait {
         Into::<BattleHealth, Health>::into(self).assert_alive("Army")
     }
 
-    fn steps_to_die(self: @BattleHealth, deduction: u128) -> u128 {
-        Into::<BattleHealth, Health>::into(*self).steps_to_die(deduction)
+    fn steps_to_die(self: @BattleHealth, deduction: u128, troop_config: TroopConfig) -> u128 {
+        Into::<BattleHealth, Health>::into(*self).steps_to_die(deduction, troop_config)
     }
 
     fn percentage_left(self: BattleHealth) -> u128 {
@@ -398,7 +449,7 @@ impl ArmyCustomImpl of ArmyCustomTrait {
     }
 
     fn assert_not_in_battle(self: Army) {
-        assert!(self.battle_id.is_zero(), "army in battle")
+        assert!(self.battle_id.is_zero(), "army {} in battle", self.entity_id);
     }
 }
 
@@ -436,7 +487,7 @@ impl ProtecteeCustomImpl of ProtecteeCustomTrait {
         self.protectee_id != 0
     }
 
-    fn protected_resources_holder(self: Protectee) -> ID {
+    fn protected_entity(self: Protectee) -> ID {
         if self.is_other() {
             self.protectee_id
         } else {
@@ -492,9 +543,30 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
 
 #[generate_trait]
 impl BattleEscrowImpl of BattleEscrowTrait {
+    fn deposit_lock_immediately(ref self: Battle, world: IWorldDispatcher, army_protectee: Protectee) {
+        let army_protectee_id = army_protectee.protected_entity();
+        let mut army_resource_lock: ResourceTransferLock = get!(world, army_protectee_id, ResourceTransferLock);
+        army_resource_lock.assert_not_locked();
+
+        let now = starknet::get_block_timestamp();
+        assert!(army_resource_lock.start_at > now, "wrong lock invariant (1)");
+        assert!(army_resource_lock.release_at > now, "wrong lock invariant (2)");
+
+        army_resource_lock.start_at = now;
+        set!(world, (army_resource_lock));
+    }
+
+
     fn deposit_balance(ref self: Battle, world: IWorldDispatcher, from_army: Army, from_army_protectee: Protectee) {
-        let from_army_protectee_id = from_army_protectee.protected_resources_holder();
+        let from_army_protectee_id = from_army_protectee.protected_entity();
         let from_army_protectee_is_self: bool = !get!(world, from_army_protectee_id, Structure).is_structure();
+
+        // ensure resources were not previously locked
+        let mut from_army_resource_lock: ResourceTransferLock = get!(
+            world, from_army_protectee_id, ResourceTransferLock
+        );
+        from_army_resource_lock.assert_not_locked();
+
         if from_army_protectee_is_self {
             // detail items locked in box
             let escrow_id = match from_army.battle_side {
@@ -522,15 +594,18 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                     Option::None => { break; }
                 }
             };
-        }
 
-        // lock the resources protected by the army
-        let mut from_army_resource_lock: ResourceTransferLock = get!(
-            world, from_army_protectee_id, ResourceTransferLock
-        );
-        from_army_resource_lock.assert_not_locked();
-        from_army_resource_lock.release_at = Bounded::MAX;
-        set!(world, (from_army_resource_lock));
+            // lock the resources protected by the army immediately
+            from_army_resource_lock.start_at = starknet::get_block_timestamp();
+            from_army_resource_lock.release_at = Bounded::MAX;
+            set!(world, (from_army_resource_lock));
+        } else {
+            // lock resources of the entity being protected starting from
+            // when the  battle starts to account for battle.start_at delay
+            from_army_resource_lock.start_at = self.start_at;
+            from_army_resource_lock.release_at = Bounded::MAX;
+            set!(world, (from_army_resource_lock));
+        }
     }
 
     fn withdraw_balance_and_reward(
@@ -542,7 +617,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
             BattleSide::Defence => { (self.defenders_resources_escrow_id, self.attackers_resources_escrow_id) }
         };
 
-        let to_army_protectee_id = to_army_protectee.protected_resources_holder();
+        let to_army_protectee_id = to_army_protectee.protected_entity();
         let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure).is_structure();
 
         let winner_side: BattleSide = self.winner();
@@ -630,6 +705,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         // release lock on resource
         let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
         to_army_resource_lock.assert_locked();
+        to_army_resource_lock.start_at = starknet::get_block_timestamp();
         to_army_resource_lock.release_at = starknet::get_block_timestamp();
         set!(world, (to_army_resource_lock));
     }
@@ -638,16 +714,25 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
 #[generate_trait]
 impl BattleCustomImpl of BattleCustomTrait {
+    fn get(world: IWorldDispatcher, battle_id: ID) -> Battle {
+        let mut battle = get!(world, battle_id, Battle);
+        let troop_config = TroopConfigCustomImpl::get(world);
+        battle.update_state(troop_config);
+        return battle;
+    }
+
     /// This function updated the armies health and duration
     /// of battle according to the set delta and battle duration
     ///
     /// Update state should be called before reading
     /// battle model values so that the correct values
     /// are gotten
-    fn update_state(ref self: Battle) {
+    fn update_state(ref self: Battle, troop_config: TroopConfig) {
         let battle_duration_passed = self.duration_passed();
         self.attack_army_health.decrease_current_by((self.defence_delta.into() * battle_duration_passed.into()));
         self.defence_army_health.decrease_current_by((self.attack_delta.into() * battle_duration_passed.into()));
+        self.update_troops_and_health(BattleSide::Attack, troop_config);
+        self.update_troops_and_health(BattleSide::Defence, troop_config);
     }
     /// This function calculates the delta (rate at which health goes down per second)
     /// and therefore, the duration of tha battle.
@@ -674,14 +759,18 @@ impl BattleCustomImpl of BattleCustomTrait {
         self.defence_delta = defence_delta;
 
         // get duration with latest delta
-        self.duration_left = self.duration();
+        self.duration_left = self.duration(troop_config);
     }
 
 
-    fn duration(self: Battle) -> u64 {
-        let mut attack_num_seconds_to_death = self.attack_army_health.steps_to_die(self.defence_delta.into());
+    fn duration(self: Battle, troop_config: TroopConfig) -> u64 {
+        let mut attack_num_seconds_to_death = self
+            .attack_army_health
+            .steps_to_die(self.defence_delta.into(), troop_config);
 
-        let mut defence_num_seconds_to_death = self.defence_army_health.steps_to_die(self.attack_delta.into());
+        let mut defence_num_seconds_to_death = self
+            .defence_army_health
+            .steps_to_die(self.attack_delta.into(), troop_config);
 
         min(defence_num_seconds_to_death, attack_num_seconds_to_death).try_into().unwrap()
     }
@@ -742,6 +831,213 @@ impl BattleCustomImpl of BattleCustomTrait {
         // it's possible that both killed each other or battle has not ended
         return BattleSide::None;
     }
+
+    fn join(ref self: Battle, side: BattleSide, troops: Troops, health: u128) {
+        if side == BattleSide::Defence {
+            self.defence_army.troops.add(troops);
+            self.defence_army_lifetime.troops.add(troops);
+            self.defence_army_health.increase_by(health);
+        } else {
+            self.attack_army.troops.add(troops);
+            self.attack_army_lifetime.troops.add(troops);
+            self.attack_army_health.increase_by(health);
+        }
+    }
+
+    // update battle troops and their health to actual values after battle
+    fn update_troops_and_health(ref self: Battle, side: BattleSide, troop_config: TroopConfig) {
+        let (mut battle_army, mut battle_army_health) = if side == BattleSide::Defence {
+            (self.defence_army, self.defence_army_health)
+        } else {
+            (self.attack_army, self.attack_army_health)
+        };
+
+        if battle_army_health.lifetime.is_non_zero() {
+            battle_army
+                .troops
+                .knight_count =
+                    ((battle_army_health.current * battle_army.troops.knight_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army
+                .troops
+                .paladin_count =
+                    ((battle_army_health.current * battle_army.troops.paladin_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army
+                .troops
+                .crossbowman_count =
+                    ((battle_army_health.current * battle_army.troops.crossbowman_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army.troops.normalize_counts();
+            battle_army_health.current = battle_army.troops.full_health(troop_config);
+            battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
+            if side == BattleSide::Defence {
+                self.defence_army = battle_army;
+                self.defence_army_health = battle_army_health;
+            } else {
+                self.attack_army = battle_army;
+                self.attack_army_health = battle_army_health;
+            }
+        }
+    }
+
+    fn get_troops_share_left(ref self: Battle, mut army: Army) -> Army {
+        let (battle_army, battle_army_lifetime) = if army.battle_side == BattleSide::Defence {
+            (self.defence_army, self.defence_army_lifetime)
+        } else {
+            (self.attack_army, self.attack_army_lifetime)
+        };
+        army
+            .troops
+            .knight_count =
+                if army.troops.knight_count == 0 {
+                    0
+                } else {
+                    army.troops.knight_count
+                        * battle_army.troops.knight_count
+                        / battle_army_lifetime.troops.knight_count
+                };
+
+        army
+            .troops
+            .paladin_count =
+                if army.troops.paladin_count == 0 {
+                    0
+                } else {
+                    army.troops.paladin_count
+                        * battle_army.troops.paladin_count
+                        / battle_army_lifetime.troops.paladin_count
+                };
+
+        army
+            .troops
+            .crossbowman_count =
+                if army.troops.crossbowman_count == 0 {
+                    0
+                } else {
+                    army.troops.crossbowman_count
+                        * battle_army.troops.crossbowman_count
+                        / battle_army_lifetime.troops.crossbowman_count
+                };
+
+        // normalize troop count
+        army.troops.normalize_counts();
+
+        return army;
+    }
+
+    fn reduce_battle_army_troops_and_health_by(
+        ref self: Battle, army_before_normalization: Army, troop_config: TroopConfig
+    ) {
+        // update battle army count and health
+        if army_before_normalization.battle_side == BattleSide::Defence {
+            self.defence_army.troops.deduct(army_before_normalization.troops);
+            self.defence_army_health.current = self.defence_army.troops.full_health(troop_config);
+            self.defence_army_health.lifetime = self.defence_army.troops.full_health(troop_config);
+        } else {
+            self.attack_army.troops.deduct(army_before_normalization.troops);
+            self.attack_army_health.current = self.attack_army.troops.full_health(troop_config);
+            self.attack_army_health.lifetime = self.attack_army.troops.full_health(troop_config);
+        }
+    }
+
+    // reduce battle army lifetime count by the original army count
+    fn reduce_battle_army_lifetime_by(ref self: Battle, army_before_any_modification: Army) {
+        if army_before_any_modification.battle_side == BattleSide::Defence {
+            self.defence_army_lifetime.troops.deduct(army_before_any_modification.troops);
+        } else {
+            self.attack_army_lifetime.troops.deduct(army_before_any_modification.troops);
+        }
+    }
+
+    fn is_empty(self: Battle) -> bool {
+        self.attack_army_lifetime.troops.count().is_zero() && self.defence_army_lifetime.troops.count().is_zero()
+    }
+}
+
+#[cfg(test)]
+mod health_model_tests {
+    use eternum::models::combat::{Health, HealthCustomTrait, TroopsImpl};
+    use eternum::models::config::{TroopConfig};
+
+    fn mock_troop_config() -> TroopConfig {
+        TroopConfig {
+            config_id: 0,
+            health: 7,
+            knight_strength: 0,
+            paladin_strength: 0,
+            crossbowman_strength: 0,
+            advantage_percent: 0,
+            disadvantage_percent: 0,
+            max_troop_count: 0,
+            pillage_health_divisor: 0,
+            army_free_per_structure: 0,
+            army_extra_per_building: 0,
+            army_max_per_structure: 0,
+            battle_leave_slash_num: 0,
+            battle_leave_slash_denom: 0
+        }
+    }
+
+    fn ONE_TROOP_HEALTH() -> u128 {
+        return mock_troop_config().health.into() * TroopsImpl::normalization_factor().try_into().unwrap();
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_equal_single_troop() {
+        let troop_config = mock_troop_config();
+        let troop_count = 4;
+        let current = ONE_TROOP_HEALTH() * troop_count;
+        let deduction = ONE_TROOP_HEALTH();
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, troop_count);
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_has_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 3;
+        let deduction = ONE_TROOP_HEALTH() * 2; // 21_000 / 14_000 = 1.xx i.e has no remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, 2);
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_no_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 4;
+        let deduction = ONE_TROOP_HEALTH() * 2; // 28_000 / 14_000 = 2 i.e has no remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, 2);
+    }
+
+    #[test]
+    fn test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_has_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 3;
+        let deduction = 81; // 14_000 / 81 = 172.xx i.e has remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, ((current - ONE_TROOP_HEALTH()) / deduction) + 1);
+    }
+    #[test]
+    fn test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_no_remainder() {
+        let troop_config = mock_troop_config();
+        let current = ONE_TROOP_HEALTH() * 3;
+        let deduction = 80; // 14_000 / 80 = 175 i.e has no remainder
+        let health = Health { entity_id: 8, current, lifetime: current };
+        let steps_to_die = health.steps_to_die(deduction, troop_config);
+        assert_eq!(steps_to_die, ((current - ONE_TROOP_HEALTH()) / deduction) + 1);
+    }
 }
 
 
@@ -758,8 +1054,8 @@ mod tests {
     use eternum::models::config::BattleConfig;
     use eternum::models::config::BattleConfigCustomTrait;
     use eternum::models::config::CapacityConfigCategory;
+    use eternum::models::quantity::{Quantity};
     use eternum::models::resources::ResourceCustomTrait;
-
     use eternum::models::resources::ResourceTransferLockCustomTrait;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::world::spawn_eternum;
@@ -778,6 +1074,7 @@ mod tests {
             pillage_health_divisor: 8,
             army_free_per_structure: 100,
             army_extra_per_building: 100,
+            army_max_per_structure: 200,
             battle_leave_slash_num: 25,
             battle_leave_slash_denom: 100
         }
@@ -865,7 +1162,8 @@ mod tests {
 
         // move time up but before battle ends
         starknet::testing::set_block_timestamp(battle.duration_left - 1);
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended() == false, "battle should not have ended");
     }
 
@@ -879,7 +1177,8 @@ mod tests {
 
         // move time up to battle duration
         starknet::testing::set_block_timestamp(battle.duration_left);
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended() == true, "battle should have ended");
     }
 
@@ -990,7 +1289,7 @@ mod tests {
         starknet::testing::set_block_timestamp(1);
 
         // use small army
-        let attack_troop_each = 500;
+        let attack_troop_each = 1_000;
         let defence_troop_each = 10_000;
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
@@ -1044,11 +1343,17 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Defence, "unexpected side won");
 
         // withdraw back from escrow
+        let attack_army_left = battle.get_troops_share_left(attack_army);
+        let attack_army_left_quantity = Quantity {
+            entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
+        };
+        set!(world, (attack_army_left_quantity));
         battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
 
         // ensure transfer lock was reenabled
@@ -1126,12 +1431,18 @@ mod tests {
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::None, "unexpected side won");
 
         // withdraw back from escrow
-        battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
+        let attack_army_left = battle.get_troops_share_left(attack_army);
+        let attack_army_left_quantity = Quantity {
+            entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
+        };
+        set!(world, (attack_army_left_quantity));
+        battle.withdraw_balance_and_reward(world, attack_army_left, attack_army_protectee);
 
         // ensure transfer lock was reenabled
         let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
@@ -1141,13 +1452,8 @@ mod tests {
         let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
         let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
 
-        assert!(
-            attack_army_wheat.balance == attack_army_wheat_resource.balance,
-            "attacking army wheat balance should be > 0"
-        );
-        assert!(
-            attack_army_coal.balance == attack_army_coal_resource.balance, "attacking army coal balance should be > 0"
-        );
+        assert_eq!(attack_army_wheat.balance, 0);
+        assert_eq!(attack_army_coal.balance, 0);
 
         // ensure attacker got no reward
         let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
@@ -1223,12 +1529,18 @@ mod tests {
 
         // attacker wins battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
-        battle.update_state();
+        let troop_config = mock_troop_config();
+        battle.update_state(troop_config);
         assert!(battle.has_ended(), "Battle should have ended");
         assert!(battle.winner() == BattleSide::Attack, "unexpected side won");
 
         // attacker withdraw back from escrow
-        battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
+        let attack_army_left = battle.get_troops_share_left(attack_army);
+        let attack_army_left_quantity = Quantity {
+            entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
+        };
+        set!(world, (attack_army_left_quantity));
+        battle.withdraw_balance_and_reward(world, attack_army_left, attack_army_protectee);
 
         // ensure transfer lock was reenabled
         let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);

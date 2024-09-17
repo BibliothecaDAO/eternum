@@ -29,7 +29,7 @@ impl MovableCustomImpl of MovableCustomTrait {
     }
 
     fn assert_blocked(self: Movable) {
-        assert!(self.blocked, "Entity is not blocked");
+        assert!(self.blocked, "Entity {} is not blocked", self.entity_id);
     }
 }
 

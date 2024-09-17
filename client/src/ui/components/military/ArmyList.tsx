@@ -1,8 +1,8 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
-import { PlayerStructure } from "@/hooks/helpers/useEntities";
+import { type ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { type PlayerStructure } from "@/hooks/helpers/useEntities";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -48,7 +48,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const [loading, setLoading] = useState<Loading>(Loading.None);
 
   const maxAmountOfAttackingArmies = useMemo(() => {
-    return (
+    const maxWithBuildings =
       EternumGlobalConfig.troop.baseArmyNumberForStructure +
       existingBuildings.filter(
         (building) =>
@@ -56,8 +56,10 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
           building.category === BuildingType[BuildingType.Barracks] ||
           building.category === BuildingType[BuildingType.Stable],
       ).length *
-        EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
-    );
+        EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding;
+    // remove 1 to force to create defensive army first
+    const hardMax = EternumGlobalConfig.troop.maxArmiesPerStructure - 1;
+    return Math.min(maxWithBuildings, hardMax);
   }, [existingBuildings]);
 
   const numberAttackingArmies = useMemo(() => {
@@ -82,7 +84,9 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       signer: account,
       army_owner_id: structure.entity_id,
       is_defensive_army,
-    }).finally(() => setLoading(Loading.None));
+    }).finally(() => {
+      setLoading(Loading.None);
+    });
   };
   return (
     <>
@@ -94,7 +98,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       </Headline>
 
       <EntityList
-        list={structureArmies}
+        list={structureArmies.sort((a, _) => (a.protectee ? -1 : 1))}
         headerPanel={
           <>
             {" "}
@@ -127,12 +131,16 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
                     });
                   }
                 }}
-                onMouseLeave={() => setTooltip(null)}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                }}
               >
                 <Button
                   isLoading={loading === Loading.CreateAttacking}
                   variant="primary"
-                  onClick={() => handleCreateArmy(false)}
+                  onClick={() => {
+                    handleCreateArmy(false);
+                  }}
                   disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
                   className={clsx({
                     "animate-pulse": selectedQuest?.id === QuestId.CreateArmy,
@@ -145,7 +153,9 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
               <Button
                 isLoading={loading === Loading.CreateDefensive}
                 variant="primary"
-                onClick={() => handleCreateArmy(true)}
+                onClick={() => {
+                  handleCreateArmy(true);
+                }}
                 disabled={loading !== Loading.None || !canCreateProtector}
               >
                 Create Defense Army
@@ -182,7 +192,7 @@ const ArmyItem = ({
 
   const updatedArmy = useMemo(() => {
     if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
-    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
+    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp);
     const updatedArmy = battleManager.getUpdatedArmy(entity, updatedBattle);
     return updatedArmy;
   }, [nextBlockTimestamp, entity]);

@@ -19,7 +19,7 @@ mod map_systems {
     };
     use eternum::models::config::{
         ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig, MercenariesConfig,
-        TroopConfigCustomImpl, TickImpl, TickTrait,
+        TroopConfigCustomImpl, TickImpl, TickTrait, TravelStaminaCostConfig
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
@@ -97,7 +97,8 @@ mod map_systems {
             // ensure unit is not in transit
             get!(world, unit_id, ArrivalTime).assert_not_travelling();
 
-            StaminaCustomImpl::handle_stamina_costs(unit_id, TravelTypes::Explore, world);
+            let stamina_cost = get!(world, (WORLD_CONFIG_ID, TravelTypes::EXPLORE), TravelStaminaCostConfig).cost;
+            StaminaCustomImpl::handle_stamina_costs(unit_id, stamina_cost, world);
 
             // explore coordinate, pay food and mint reward
             MapConfigImpl::pay_exploration_cost(world, unit_entity_owner, unit_quantity);

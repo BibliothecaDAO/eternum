@@ -15,7 +15,7 @@ import {
 } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
-import { TickIds } from "../types";
+import { TickIds, TravelTypes } from "../types";
 import {
   BUILDING_COSTS_SCALED,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
@@ -168,6 +168,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     pillageHealthDivisor: pillage_health_divisor,
     baseArmyNumberForStructure: army_free_per_structure,
     armyExtraPerMilitaryBuilding: army_extra_per_military_building,
+    maxArmiesPerStructure: max_armies_per_structure,
     battleLeaveSlashNum: battle_leave_slash_num,
     battleLeaveSlashDenom: battle_leave_slash_denom,
   } = EternumGlobalConfig.troop;
@@ -185,6 +186,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     pillage_health_divisor: pillage_health_divisor,
     army_free_per_structure: army_free_per_structure,
     army_extra_per_military_building: army_extra_per_military_building,
+    army_max_per_structure: max_armies_per_structure,
     battle_leave_slash_num,
     battle_leave_slash_denom,
   });
@@ -232,8 +234,22 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
     reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision,
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
-
   console.log(`Configuring map config ${txMap.statusReceipt}...`);
+
+  const txExploreStaminaCost = await provider.set_travel_stamina_cost_config({
+    signer: account,
+    travel_type: TravelTypes.Explore,
+    cost: EternumGlobalConfig.stamina.exploreCost,
+  });
+  console.log(`Configuring exploreStaminaCost config ${txExploreStaminaCost.statusReceipt}...`);
+
+  const txTravelStaminaCost = await provider.set_travel_stamina_cost_config({
+    signer: account,
+    travel_type: TravelTypes.Travel,
+    cost: EternumGlobalConfig.stamina.travelCost,
+  });
+
+  console.log(`Configuring travel stamina cost config ${txTravelStaminaCost.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {

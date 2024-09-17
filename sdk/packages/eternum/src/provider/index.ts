@@ -727,6 +727,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_travel_stamina_cost_config(props: SystemProps.SetTravelStaminaCostConfigProps) {
+    const { travel_type, cost, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_travel_stamina_cost_config",
+      calldata: [travel_type, cost],
+    });
+  }
+
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { category, weight_gram, signer } = props;
 
@@ -816,6 +826,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       pillage_health_divisor,
       army_free_per_structure,
       army_extra_per_military_building,
+      army_max_per_structure,
       battle_leave_slash_num,
       battle_leave_slash_denom,
     } = props;
@@ -835,6 +846,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         pillage_health_divisor,
         army_free_per_structure,
         army_extra_per_military_building,
+        army_max_per_structure,
         battle_leave_slash_num,
         battle_leave_slash_denom,
       ],

@@ -96,14 +96,14 @@ export const EventStream = () => {
   }, [world]);
 
   return (
-    <div>
+    <div className="bg-black/10 p-1 rounded border border-black/10">
       {eventList
         .sort((a, b) => a.timestamp - b.timestamp)
         .slice(-EVENT_STREAM_SIZE)
         .map((event, index) => {
           const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
           return (
-            <div key={index} style={{ color }}>
+            <div className="hover:bg-black/20 rounded" key={index} style={{ color }}>
               {emoji} {event.name || "Unknown"} {action} [{new Date(event.timestamp * 1000).toLocaleString()}]
             </div>
           );

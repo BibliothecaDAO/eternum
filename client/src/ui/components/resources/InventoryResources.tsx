@@ -39,7 +39,7 @@ export const InventoryResources = ({
 
   return (inventoriesResources.flat() && inventoriesResources.flat().length > 0) ||
     (dynamicResources && dynamicResources.length > 0) ? (
-    <div className={`p-2 bg-gold/10  ${className}`}>
+    <div className={`p-2 bg-gold/10 ${className}`}>
       {dynamicResources &&
         dynamicResources.length > 0 &&
         dynamicResources.slice(0, updatedMax - dynamicResources.length).map((resource) => {

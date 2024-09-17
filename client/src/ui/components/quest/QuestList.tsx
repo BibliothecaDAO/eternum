@@ -1,15 +1,18 @@
+import { useDojo } from "@/hooks/context/DojoContext";
+import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
+import { useRealm } from "@/hooks/helpers/useRealm";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import Button from "@/ui/elements/Button";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { multiplyByPrecision } from "@/ui/utils/utils";
+import { ID } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { areAllQuestsClaimed, groupQuestsByDepth } from "./utils";
-import Button from "@/ui/elements/Button";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
-import { ID } from "@bibliothecadao/eternum";
 
 export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID | undefined }) => {
-  const [showCompletedQuests, setShowCompletedQuests] = useState(true);
+  const showCompletedQuests = useQuestStore((state) => state.showCompletedQuests);
+  const setShowCompletedQuests = useQuestStore((state) => state.setShowCompletedQuests);
+
   const [skipTutorial, setSkipTutorial] = useState(false);
   const [maxDepthToShow, setMaxDepthToShow] = useState(0);
 
@@ -49,7 +52,7 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
         <SkipTutorial entityId={entityId!} setSkipTutorial={setSkipTutorial} unclaimedQuests={unclaimedQuests} />
       )}
 
-      <div className="flex flex-col gap-1 p-4">
+      <div className="p-4 grid grid-cols-1  gap-4">
         {Object.entries(groupedQuests)
           .sort(([a], [b]) => Number(a) - Number(b))
           .map(([depth, depthQuests]) => {
@@ -66,23 +69,41 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
 };
 
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
-  <div className="flex flex-col items-start">
-    <div className="flex flex-wrap gap-1">
-      {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
-    </div>
-  </div>
+  <>{depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}</>
 );
 
 const QuestCard = ({ quest }: { quest: Quest }) => {
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
 
+  const { getQuestResources } = useRealm();
+
   return (
-    <Button
-      variant={quest.status === QuestStatus.Claimed ? "success" : "outline"}
-      onClick={() => setSelectedQuest(quest)}
+    <div
+      className={`w-full border text-center p-3 rounded ${quest.status === QuestStatus.Claimed ? "border-green" : ""}`}
     >
-      {quest.name}
-    </Button>
+      <h4 className="mb-1">{quest.name}</h4>
+
+      {quest.prizes &&
+        quest.prizes.map((prize, index) => (
+          <div key={index} className="grid grid-cols-3 gap-3">
+            {getQuestResources()[prize.id].map((resource, i) => (
+              <div key={i} className="grid gap-3">
+                <ResourceCost resourceId={resource.resource} amount={resource.amount} />
+              </div>
+            ))}
+          </div>
+        ))}
+
+      <div className="my-4">
+        <Button variant="primary" onClick={() => setSelectedQuest(quest)}>
+          {quest.status === QuestStatus.Claimed
+            ? "Claimed"
+            : quest.status === QuestStatus.Completed
+              ? "Claim"
+              : "Start"}
+        </Button>
+      </div>
+    </div>
   );
 };
 

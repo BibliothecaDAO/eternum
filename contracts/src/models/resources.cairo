@@ -90,6 +90,7 @@ pub struct OwnedResourcesTracker {
 pub struct ResourceTransferLock {
     #[key]
     entity_id: ID,
+    start_at: u64,
     release_at: u64,
 }
 
@@ -106,6 +107,11 @@ impl ResourceTransferLockCustomImpl of ResourceTransferLockCustomTrait {
 
     fn is_open(self: ResourceTransferLock) -> bool {
         let now = starknet::get_block_timestamp();
+        if self.start_at.is_non_zero() {
+            if now < self.start_at {
+                return true;
+            }
+        }
         now >= self.release_at
     }
 }

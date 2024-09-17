@@ -55,10 +55,9 @@ export const HyperstructureResourceChip = ({
   }, [resetContributions]);
 
   return (
-    // <div className="flex mt-1 grid grid-cols-8 gap-2">
-    <div className="mt-1 grid grid-cols-8 gap-2">
+    <div className="mt-0.5 grid grid-cols-8 gap-1 items-center">
       <div
-        className={`flex relative items-center text-xs px-2 p-1 col-span-4`}
+        className={`flex relative items-center text-xs px-2 py-0.5 col-span-4`}
         style={{
           backgroundImage:
             progress.percentage > 0
@@ -86,12 +85,12 @@ export const HyperstructureResourceChip = ({
           isLabor={false}
           withTooltip={false}
           resource={findResourceById(getIconResourceId(resourceId, false))?.trait as string}
-          size="sm"
-          className="mr-3 self-center"
+          size="xs"
+          className="mr-2 self-center"
         />
 
         <div className="flex justify-between">
-          <div className=" self-center text-sm font-bold">{`${progress.percentage}% (${currencyIntlFormat(
+          <div className="self-center text-xs font-semibold">{`${progress.percentage}% (${currencyIntlFormat(
             progress.amount,
           )} / ${currencyIntlFormat(progress.costNeeded)})`}</div>
         </div>
@@ -99,11 +98,14 @@ export const HyperstructureResourceChip = ({
 
       <NumberInput
         value={inputValue}
-        className="w-full col-span-3"
+        className="w-full text-xs col-span-3 h-6"
         onChange={setInputValue}
         max={maxContributableAmount}
       />
-      <div className="ml-2 flex items-center" onClick={() => setInputValue(maxContributableAmount)}>
+      <div
+        className="ml-1 flex items-center text-xs cursor-pointer"
+        onClick={() => setInputValue(maxContributableAmount)}
+      >
         MAX
       </div>
     </div>

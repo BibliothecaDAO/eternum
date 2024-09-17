@@ -382,6 +382,11 @@ export interface SetMapConfigProps extends SystemSigner {
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
 }
+
+export interface SetTravelStaminaCostConfigProps extends SystemSigner {
+  travel_type: num.BigNumberish;
+  cost: num.BigNumberish;
+}
 export interface SetCapacityConfigProps extends SystemSigner {
   category: num.BigNumberish;
   weight_gram: num.BigNumberish;
@@ -430,6 +435,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   pillage_health_divisor: num.BigNumberish;
   army_free_per_structure: num.BigNumberish;
   army_extra_per_military_building: num.BigNumberish;
+  army_max_per_structure: num.BigNumberish;
   battle_leave_slash_num: num.BigNumberish;
   battle_leave_slash_denom: num.BigNumberish;
 }

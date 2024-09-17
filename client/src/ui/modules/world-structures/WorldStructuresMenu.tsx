@@ -141,8 +141,8 @@ const HyperStructureExtraContent = ({
         <br />
         Shares:{" "}
         {currencyIntlFormat(
-          (LeaderboardManager.instance().getShares(ContractAddress(account.address), hyperstructureEntityId) || 0) *
-            100,
+          (LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), hyperstructureEntityId) ||
+            0) * 100,
           0,
         )}
         %

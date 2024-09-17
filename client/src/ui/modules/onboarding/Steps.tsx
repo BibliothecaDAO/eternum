@@ -14,7 +14,7 @@ import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { displayAddress, formatElapsedTime } from "@/ui/utils/utils";
+import { displayAddress, formatTime } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
@@ -354,12 +354,10 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">
-          Days are {formatElapsedTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)} long
-        </h2>
+        <h2 className="mb-4">Days are {formatTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)} long</h2>
         <p className="mb-4 text-xl">
-          Each {formatElapsedTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)} period your Realms and Troops
-          will regain energy and be able to travel again. Don't get caught out in the open.
+          Each {formatTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)} period your Realms and Troops will
+          regain energy and be able to travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>

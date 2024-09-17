@@ -7,7 +7,7 @@ use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
 use eternum::models::combat::{Battle};
 use eternum::models::combat::{Health, Troops};
-use eternum::models::config::{TickConfig, TickImpl, StaminaConfig};
+use eternum::models::config::{TickConfig, TickImpl, StaminaConfig, TravelStaminaCostConfig};
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{EntityOwner, Owner};
@@ -52,7 +52,8 @@ use eternum::utils::testing::{
     constants::{
         MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
         EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
-    }
+    },
+    config::set_travel_and_explore_stamina_cost_config
 };
 
 use starknet::contract_address_const;
@@ -187,6 +188,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_map_config(config_systems_address);
     set_weight_config(config_systems_address);
     set_mine_production_config(config_systems_address);
+    set_travel_and_explore_stamina_cost_config(config_systems_address);
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
