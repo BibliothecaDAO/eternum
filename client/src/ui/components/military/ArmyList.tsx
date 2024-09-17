@@ -94,8 +94,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </div>
       </Headline>
       <div className="px-3 py-2 bg-blueish/20  font-bold">
-        Your Realm can only ever have {EternumGlobalConfig.troop.maxArmiesPerStructure - 1} armies. You can increase
-        your current max number of armies by building military buildings.
+        Build military buildings to increase your current max number of attacking armies. Realms can support up to{" "}
+        {EternumGlobalConfig.troop.maxArmiesPerStructure - 1} attacking armies.
       </div>
       <div className="flex justify-between">
         <div
@@ -152,7 +152,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </Button>
       </div>
       {structureArmies.map((army) => (
-        <ArmyChip className="my-2" army={army} showButtons />
+        <ArmyChip key={army.entity_id} className="my-2" army={army} showButtons />
       ))}
     </div>
   );
