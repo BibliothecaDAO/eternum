@@ -1,6 +1,7 @@
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SceneName } from "@/types";
+import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import _ from "lodash";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
@@ -30,7 +31,7 @@ export default class GameRenderer {
   private unsubscribe: () => void;
 
   // Stats
-  private stats!: any;
+  private stats!: Stats;
   private lerpFactor = 0.9;
 
   // Camera settings
@@ -55,30 +56,23 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private systemManager!: SystemManager;
 
-  constructor(dojoContext: SetupResult) {
-    this.renderer = new THREE.WebGLRenderer({
-      powerPreference: "high-performance",
-      antialias: true,
-    });
-    this.renderer.setPixelRatio(1);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.7;
-    this.renderer.autoClear = false;
+  private isLowGraphicsMode: boolean;
 
+  constructor(dojoContext: SetupResult) {
+    this.isLowGraphicsMode = IS_LOW_GRAPHICS_ENABLED;
+    this.initializeRenderer();
+    this.dojo = dojoContext;
+    this.locationManager = new LocationManager();
+
+    // Ensure we keep the raycaster and mouse
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
+    // Store
     this.state = useUIStore.getState();
     this.unsubscribe = useUIStore.subscribe((state) => {
       this.state = state;
     });
-
-    this.dojo = dojoContext;
-    this.locationManager = new LocationManager();
 
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
@@ -125,8 +119,34 @@ export default class GameRenderer {
     document.body.appendChild(this.labelRenderer.domElement);
   }
 
+  private initializeRenderer() {
+    this.renderer = new THREE.WebGLRenderer({
+      powerPreference: "high-performance",
+      antialias: !this.isLowGraphicsMode,
+    });
+    this.renderer.setPixelRatio(this.isLowGraphicsMode ? 0.75 : window.devicePixelRatio);
+    this.renderer.shadowMap.enabled = !this.isLowGraphicsMode;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.setSize(
+      this.isLowGraphicsMode ? window.innerWidth : window.innerWidth,
+      this.isLowGraphicsMode ? window.innerHeight : window.innerHeight,
+    );
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 0.7;
+    this.renderer.autoClear = false;
+  }
+
   initStats() {
     this.stats = new (Stats as any)();
+    if (import.meta.env.PROD) {
+      this.stats.dom.style.left = "";
+      this.stats.dom.style.right = "0";
+      this.stats.dom.style.overflow = "hidden";
+      this.stats.dom.style.opacity = "0.35";
+      this.stats.dom.style.height = "14px";
+      this.stats.dom.style.zIndex = "1";
+      this.stats.dom.style.borderRadius = "0 0 0 3px";
+    }
     document.body.appendChild(this.stats.dom);
   }
 
@@ -148,6 +168,9 @@ export default class GameRenderer {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.1;
     this.controls.target.set(0, 0, 0);
+    if (this.isLowGraphicsMode) {
+      this.controls.enableDamping = false;
+    }
     this.controls.addEventListener(
       "change",
       _.throttle(() => {

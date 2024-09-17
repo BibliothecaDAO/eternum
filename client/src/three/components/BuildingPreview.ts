@@ -1,3 +1,5 @@
+import { ResourceMiningTypes } from "@/types";
+import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
@@ -6,7 +8,7 @@ import { buildingModelPaths, PREVIEW_BUILD_COLOR_VALID } from "../scenes/constan
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
   private modelLoadPromises: Promise<void>[] = [];
-  private buildingModels: Map<BuildingType, THREE.Group> = new Map();
+  private buildingModels: Map<BuildingType | ResourceMiningTypes, THREE.Group> = new Map();
 
   constructor(private scene: THREE.Scene) {
     this.loadBuildingModels();
@@ -28,7 +30,7 @@ export class BuildingPreview {
                 child.material.opacity = 0.75;
               }
             });
-            this.buildingModels.set(parseInt(building), model);
+            this.buildingModels.set((building + "") as any, model);
             resolve();
           },
           undefined,
@@ -44,8 +46,15 @@ export class BuildingPreview {
     Promise.all(this.modelLoadPromises).then(() => {});
   }
 
-  public getBuildingModel(building: BuildingType): THREE.Group | null {
-    return this.buildingModels.get(building) || null;
+  public getBuildingModel(building: BuildingType | ResourceMiningTypes): THREE.Group | null {
+    return this.buildingModels.get((building + "") as any) || null;
+  }
+
+  public getBuildingType() {
+    const building = this.previewBuilding;
+    if (!building) return null;
+    const buildingType = building.resource ? ResourceIdToMiningType[building.resource as ResourcesIds] : building.type;
+    return buildingType;
   }
 
   public setPreviewBuilding(building: { type: BuildingType; resource?: ResourcesIds }) {
@@ -53,7 +62,9 @@ export class BuildingPreview {
       this.clearPreviewBuilding();
     }
     this.previewBuilding = building;
-    const model = this.getBuildingModel(building.type);
+    const buildingType = building.resource ? ResourceIdToMiningType[building.resource as ResourcesIds] : building.type;
+    const model = this.getBuildingModel(buildingType as BuildingType | ResourceMiningTypes);
+
     if (model) {
       this.scene.add(model);
     }
@@ -65,7 +76,7 @@ export class BuildingPreview {
 
   public clearPreviewBuilding() {
     if (this.previewBuilding) {
-      const model = this.getBuildingModel(this.previewBuilding.type);
+      const model = this.getBuildingModel(this.getBuildingType() as BuildingType | ResourceMiningTypes);
       if (model) {
         this.scene.remove(model);
         this.previewBuilding = null;
@@ -75,7 +86,7 @@ export class BuildingPreview {
 
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
-      const model = this.getBuildingModel(this.previewBuilding.type);
+      const model = this.getBuildingModel(this.getBuildingType() as BuildingType | ResourceMiningTypes);
       if (model) {
         model.position.copy(position);
         model.updateMatrixWorld();
@@ -85,7 +96,7 @@ export class BuildingPreview {
 
   public setBuildingColor(color: THREE.Color) {
     if (this.previewBuilding) {
-      const model = this.getBuildingModel(this.previewBuilding.type);
+      const model = this.getBuildingModel(this.getBuildingType() as BuildingType | ResourceMiningTypes);
       if (model) {
         model.traverse((child: any) => {
           if (child.isMesh) {
