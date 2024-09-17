@@ -92,7 +92,7 @@ export default class HexceptionScene extends HexagonScene {
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
-    this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial({ color: 0xffce31 }), 1000);
+    this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial(), 1000);
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
@@ -336,23 +336,22 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       // update neighbor hexes around the center hex
-      let i = 0;
-      const tmpCol = new THREE.Color(0xffce31);
+      let pillarOffset = 0;
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         matrices.forEach((matrix, index) => {
+          console.log("setting color for", biome, BIOME_COLORS[biome as BiomeType].getHexString());
           hexMesh.setMatrixAt(index, matrix);
-          this.pillars!.setMatrixAt(index + i, matrix);
-          tmpCol.set(BIOME_COLORS[biome as BiomeType]);
-          this.pillars!.setColorAt(index + i, tmpCol);
+          this.pillars!.setMatrixAt(index + pillarOffset, matrix);
+          this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[biome as BiomeType]);
         });
-        this.pillars!.count = i + matrices.length;
-        this.pillars!.instanceMatrix.needsUpdate = true;
+        pillarOffset += matrices.length;
+        this.pillars!.count = pillarOffset;
         this.pillars!.computeBoundingSphere();
         hexMesh.setCount(matrices.length);
-        i += matrices.length;
       }
-
+      this.pillars!.instanceMatrix.needsUpdate = true;
+      this.pillars!.instanceColor!.needsUpdate = true;
       this.interactiveHexManager.renderHexes();
     });
   }

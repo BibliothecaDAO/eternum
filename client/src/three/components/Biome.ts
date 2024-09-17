@@ -1,4 +1,5 @@
 import { snoise } from "@dojoengine/utils";
+import * as THREE from "three";
 
 const MAP_AMPLITUDE = 60;
 const MOISTURE_OCTAVE = 2;
@@ -23,23 +24,23 @@ export type BiomeType =
   | "TropicalSeasonalForest"
   | "TropicalRainForest";
 
-export const BIOME_COLORS: Record<BiomeType, string> = {
-  DeepOcean: "#4a6b63",
-  Ocean: "#657d71",
-  Beach: "#d7b485",
-  Scorched: "#393131",
-  Bare: "#d1ae7f",
-  Tundra: "#cfd4d4",
-  Snow: "#cfd4d4",
-  TemperateDesert: "#ad6c44",
-  Shrubland: "#c1aa7f",
-  Taiga: "#292d23",
-  Grassland: "#6f7338",
-  TemperateDeciduousForest: "#6f7338",
-  TemperateRainForest: "#6f573e",
-  SubtropicalDesert: "#926338",
-  TropicalSeasonalForest: "#897049",
-  TropicalRainForest: "#8a714a",
+export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
+  DeepOcean: new THREE.Color("#4a6b63"),
+  Ocean: new THREE.Color("#657d71"),
+  Beach: new THREE.Color("#d7b485"),
+  Scorched: new THREE.Color("#393131"),
+  Bare: new THREE.Color("#d1ae7f"),
+  Tundra: new THREE.Color("#cfd4d4"),
+  Snow: new THREE.Color("#cfd4d4"),
+  TemperateDesert: new THREE.Color("#ad6c44"),
+  Shrubland: new THREE.Color("#c1aa7f"),
+  Taiga: new THREE.Color("#292d23"),
+  Grassland: new THREE.Color("#6f7338"),
+  TemperateDeciduousForest: new THREE.Color("#6f7338"),
+  TemperateRainForest: new THREE.Color("#6f573e"),
+  SubtropicalDesert: new THREE.Color("#926338"),
+  TropicalSeasonalForest: new THREE.Color("#897049"),
+  TropicalRainForest: new THREE.Color("#8a714a"),
 };
 
 const LEVEL = {
