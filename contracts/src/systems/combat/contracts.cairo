@@ -845,7 +845,7 @@ mod combat_systems {
             let mut battle = BattleCustomImpl::get(world, battle_id);
 
             // check if army left early
-            let army_left_early = (battle.has_started() && !battle.has_ended());
+            let army_left_early = battle.has_ended();
 
             // leave battle
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
