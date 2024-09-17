@@ -31,7 +31,7 @@ export default class GameRenderer {
   private unsubscribe: () => void;
 
   // Stats
-  private stats!: any;
+  private stats!: Stats;
   private lerpFactor = 0.9;
 
   // Camera settings
@@ -129,7 +129,7 @@ export default class GameRenderer {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setSize(
       this.isLowGraphicsMode ? window.innerWidth : window.innerWidth,
-      this.isLowGraphicsMode ? window.innerHeight : window.innerHeight
+      this.isLowGraphicsMode ? window.innerHeight : window.innerHeight,
     );
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.7;
@@ -138,6 +138,15 @@ export default class GameRenderer {
 
   initStats() {
     this.stats = new (Stats as any)();
+    if (import.meta.env.PROD) {
+      this.stats.dom.style.left = "";
+      this.stats.dom.style.right = "0";
+      this.stats.dom.style.overflow = "hidden";
+      this.stats.dom.style.opacity = "0.35";
+      this.stats.dom.style.height = "14px";
+      this.stats.dom.style.zIndex = "1";
+      this.stats.dom.style.borderRadius = "0 0 0 3px";
+    }
     document.body.appendChild(this.stats.dom);
   }
 
