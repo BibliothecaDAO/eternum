@@ -157,8 +157,16 @@ export const Chat = () => {
         const color = getColorForAddress(address);
 
         const isDirect = message?.channel === BigInt(account.address);
-        return { name, content, color, isDirect, fromSelf: message?.identity === BigInt(account.address) };
-      });
+        return {
+          name,
+          content,
+          color,
+          isDirect,
+          fromSelf: message?.identity === BigInt(account.address),
+          timestamp: message?.timestamp,
+        };
+      })
+      .sort((a, b) => Number(a.timestamp) - Number(b.timestamp)); // Sort messages by timestamp
 
     setMessages((prevMessages) => {
       const newMessages = [...globalMessages];
