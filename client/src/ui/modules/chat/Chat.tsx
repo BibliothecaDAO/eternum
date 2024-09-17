@@ -227,7 +227,7 @@ export const Chat = () => {
   );
 };
 
-export const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
+const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
   setTimeout(() => {
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
