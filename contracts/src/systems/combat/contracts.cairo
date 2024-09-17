@@ -591,11 +591,14 @@ mod combat_systems {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
+            println!("\n A \n\n");
+
             let attacking_army_entity_owner = get!(world, attacking_army_id, EntityOwner);
             attacking_army_entity_owner.assert_caller_owner(world);
 
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
             let battle_config = BattleConfigCustomImpl::get(world);
+            println!("\n B \n\n");
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
             let defending_army_owner_entity_id = get!(world, defending_army_id, EntityOwner).entity_owner_id;
@@ -604,12 +607,14 @@ mod combat_systems {
             if defending_army_owner_structure.category != StructureCategory::None {
                 defending_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
             }
+            println!("\n C \n\n");
 
             let attacking_army_owner_entity_id = attacking_army_entity_owner.entity_owner_id;
             let attacking_army_owner_structure = get!(world, attacking_army_owner_entity_id, Structure);
             if attacking_army_owner_structure.category != StructureCategory::None {
                 attacking_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
             }
+            println!("\n D \n\n");
 
             if defending_army.battle_id.is_non_zero() {
                 // defending army appears to be in battle
@@ -618,11 +623,12 @@ mod combat_systems {
                 // army will be removed from the battle
                 let mut defending_army_battle = BattleCustomImpl::get(world, defending_army.battle_id);
                 InternalCombatImpl::leave_battle_if_ended(world, ref defending_army_battle, ref defending_army);
+                println!("\n\n defending army battle duration {} \n\n", defending_army_battle.duration_left);
                 set!(world, (defending_army_battle))
             }
             // ensure defending army is not in battle
             defending_army.assert_not_in_battle();
-
+            println!("\n E \n\n");
             let troop_config = TroopConfigCustomImpl::get(world);
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
@@ -639,7 +645,7 @@ mod combat_systems {
             // ensure both armies are alive
             attacking_army_health.assert_alive("your army");
             defending_army_health.assert_alive("the army you are attacking");
-
+            println!("\n F \n\n");
             // ensure both armies are in the same location
             let attacking_army_position: Position = get!(world, attacking_army_id, Position);
             let defending_army_position: Position = get!(world, defending_army_id, Position);
@@ -653,7 +659,7 @@ mod combat_systems {
             defending_army.battle_id = battle_id;
             defending_army.battle_side = BattleSide::Defence;
             set!(world, (defending_army));
-
+            println!("\n G \n\n");
             let mut attacking_army_protectee: Protectee = get!(world, attacking_army_id, Protectee);
             let mut attacking_army_movable: Movable = get!(world, attacking_army_id, Movable);
             if attacking_army_protectee.is_none() {
@@ -661,7 +667,7 @@ mod combat_systems {
                 attacking_army_movable.blocked = true;
                 set!(world, (attacking_army_movable));
             }
-
+            println!("\n H \n\n");
             let mut defending_army_protectee: Protectee = get!(world, defending_army_id, Protectee);
             let mut defending_army_movable: Movable = get!(world, defending_army_id, Movable);
             if defending_army_protectee.is_none() {
@@ -669,7 +675,7 @@ mod combat_systems {
                 defending_army_movable.blocked = true;
                 set!(world, (defending_army_movable));
             }
-
+            println!("\n I \n\n");
             // create battle
             let now = starknet::get_block_timestamp();
             let mut battle: Battle = Default::default();
@@ -692,8 +698,9 @@ mod combat_systems {
 
             // deposit resources protected by armies into battle escrow pots/boxes
             battle.deposit_balance(world, attacking_army, attacking_army_protectee);
+            println!("\n J \n\n");
             battle.deposit_balance(world, defending_army, defending_army_protectee);
-
+            println!("\n K \n\n");
             // set battle position
             let mut battle_position: Position = Default::default();
             battle_position.entity_id = battle_id;
@@ -845,7 +852,7 @@ mod combat_systems {
             let mut battle = BattleCustomImpl::get(world, battle_id);
 
             // check if army left early
-            let army_left_early = battle.has_ended();
+            let army_left_early = !battle.has_ended();
 
             // leave battle
             InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
@@ -1339,7 +1346,7 @@ mod combat_systems {
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
             set!(
-                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
+                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 6 })
             );
 
             army_id
