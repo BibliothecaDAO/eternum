@@ -300,7 +300,7 @@ export const formatResources = (resources: any[]): Resource[] => {
     .filter((resource) => resource.amount > 0);
 };
 
-export const accentsToAscii = (str: string) => {
+const accentsToAscii = (str: string) => {
   // Character map for transliteration to ASCII
   const charMap: Record<string, string> = {
     á: "a",
