@@ -215,6 +215,7 @@ const OrderRow = ({
   disabled: boolean;
 }) => {
   const { computeTravelTime } = useTravel();
+  const dojo = useDojo();
   const {
     account: { account },
     setup: {
@@ -223,6 +224,14 @@ const OrderRow = ({
   } = useDojo();
 
   const { getRealmAddressName } = useRealm();
+
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const structure = getStructureByEntityId(offer.makerId);
+  const isMakerInBattle = useMemo(() => {
+    const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
+    return battleManager.isBattleOngoing(nextBlockTimestamp!);
+  }, [offer, nextBlockTimestamp]);
 
   const [inputValue, setInputValue] = useState<number>(() => {
     return isBuy
