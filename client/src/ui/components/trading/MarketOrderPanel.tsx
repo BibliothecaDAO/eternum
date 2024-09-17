@@ -1,7 +1,8 @@
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { isStructureInBattle } from "@/hooks/helpers/useStructures";
+import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -85,6 +86,9 @@ export const MarketOrderPanel = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
+  const dojo = useDojo();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
   const selectedResourceBidOffers = useMemo(() => {
     return resourceBidOffers
       .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
@@ -97,10 +101,28 @@ export const MarketOrderPanel = ({
       .sort((a, b) => b.ratio - a.ratio);
   }, [resourceAskOffers, resourceId]);
 
+  const structure = getStructureByEntityId(entityId);
+
+  const isOwnStructureInBattle = useMemo(() => {
+    const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
+    return battleManager.isBattleOngoing(nextBlockTimestamp!);
+  }, [entityId, nextBlockTimestamp]);
+
   return (
     <div className="grid grid-cols-2 gap-4 p-4 h-full">
-      <MarketOrders offers={selectedResourceAskOffers} resourceId={resourceId} entityId={entityId} />
-      <MarketOrders offers={selectedResourceBidOffers} resourceId={resourceId} entityId={entityId} isBuy />
+      <MarketOrders
+        offers={selectedResourceAskOffers}
+        resourceId={resourceId}
+        entityId={entityId}
+        isOwnStructureInBattle={isOwnStructureInBattle}
+      />
+      <MarketOrders
+        offers={selectedResourceBidOffers}
+        resourceId={resourceId}
+        entityId={entityId}
+        isOwnStructureInBattle={isOwnStructureInBattle}
+        isBuy
+      />
     </div>
   );
 };
@@ -110,18 +132,18 @@ const MarketOrders = ({
   entityId,
   isBuy = false,
   offers,
+  isOwnStructureInBattle,
 }: {
   resourceId: ResourcesIds;
   entityId: ID;
   isBuy?: boolean;
   offers: MarketInterface[];
+  isOwnStructureInBattle: boolean;
 }) => {
   const lowestPrice = useMemo(() => {
     const price = offers.reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
     return price === Infinity ? 0 : price;
   }, [offers]);
-
-  const isOwnStructureInBattle = isStructureInBattle(entityId);
 
   return (
     <div className=" h-full flex flex-col gap-4">
@@ -301,16 +323,14 @@ const OrderRow = ({
     }
   };
 
-  const isMakerInBattle = isStructureInBattle(offer.makerId);
-
   return (
     <div
       key={offer.tradeId}
       className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border text-xs relative ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
-      } ${isMakerInBattle ? "opacity-50" : ""}`}
+      } ${disabled ? "opacity-50" : ""}`}
     >
-      {isMakerInBattle && (
+      {disabled && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
           Resources locked in battle
         </div>
@@ -337,7 +357,7 @@ const OrderRow = ({
               setConfirmOrderModal(true);
             }}
             size="xs"
-            className={`self-center flex flex-grow ${isMakerInBattle || disabled ? "pointer-events-none" : ""}`}
+            className={`self-center flex flex-grow ${disabled ? "pointer-events-none" : ""}`}
           >
             {!isBuy ? "Buy" : "Sell"}
           </Button>
