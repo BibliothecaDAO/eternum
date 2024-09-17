@@ -317,10 +317,12 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          const buildingType = building.resource
-            ? ResourceIdToMiningType[building.resource as ResourcesIds]
-            : (BuildingType[building.category].toString() as any);
+          const buildingType =
+            building.resource && building.resource < 254
+              ? ResourceIdToMiningType[building.resource as ResourcesIds]
+              : (BuildingType[building.category].toString() as any);
           const buildingData = this.buildingModels.get(buildingType);
+
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
