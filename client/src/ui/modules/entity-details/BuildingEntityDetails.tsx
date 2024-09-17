@@ -1,5 +1,6 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
@@ -10,7 +11,6 @@ import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "../navigation/LeftNavigationModule";
-import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
@@ -109,11 +109,17 @@ export const BuildingEntityDetails = () => {
         )}
       </div>
       {buildingState.buildingType !== undefined && selectedBuildingHex && isOwnedByPlayer && (
-        <div className="flex justify-center space-x-3 mb-4">
-          <Button onClick={handlePauseResumeProduction} isLoading={isLoading} variant="outline" withoutSound>
+        <div className="flex justify-center space-x-3">
+          <Button
+            className="mb-4"
+            onClick={handlePauseResumeProduction}
+            isLoading={isLoading}
+            variant="outline"
+            withoutSound
+          >
             {isPaused ? "Resume" : "Pause"}
           </Button>
-          <Button onClick={handleDestroyBuilding} variant="danger" withoutSound>
+          <Button className="mb-4" onClick={handleDestroyBuilding} variant="danger" withoutSound>
             Destroy
           </Button>
         </div>
