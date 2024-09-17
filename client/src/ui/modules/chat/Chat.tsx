@@ -4,7 +4,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { shortString, TypedData } from "starknet";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -61,6 +61,8 @@ export const Chat = () => {
     network: { toriiClient },
   } = useDojo();
 
+  const bottomChatRef = useRef<HTMLDivElement>(null);
+
   const [messages, setMessages] = useState<
     { name: string; content: string; color: string; isDirect: boolean; fromSelf: boolean; timestamp: Date }[]
   >([]);
@@ -85,6 +87,10 @@ export const Chat = () => {
     Has(AddressName),
     HasValue(AddressName, { name: BigInt(!channel ? "0x0" : shortString.encodeShortString(channel)) }),
   ]);
+
+  useEffect(() => {
+    scrollToElement(bottomChatRef);
+  }, [allMessageEntities, receivedMessageEntities]);
 
   useEffect(() => {
     const globalMessages = allMessageEntities
@@ -169,10 +175,10 @@ export const Chat = () => {
   const players = getPlayers().filter((player) => player.address !== BigInt(account.address));
   return (
     <div
-      className="flex flex-col gap-2 w-72 border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded"
+      className="flex flex-col gap-2 w-72 border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded max-h-72"
       style={{ zIndex: 100 }}
     >
-      <div className="border p-2 border-gold/40 rounded text-xs">
+      <div className="border p-2 border-gold/40 rounded text-xs max-h-60 overflow-y-auto">
         {messages.map((message, index) => (
           <div
             style={{ color: message.color }}
@@ -186,6 +192,7 @@ export const Chat = () => {
             </div>
           </div>
         ))}
+        <span className="" ref={bottomChatRef}></span>
       </div>
 
       <Select
@@ -218,4 +225,12 @@ export const Chat = () => {
       />
     </div>
   );
+};
+
+export const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
+  setTimeout(() => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, 1);
 };
