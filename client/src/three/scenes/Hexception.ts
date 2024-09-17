@@ -3,11 +3,11 @@ import * as THREE from "three";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
-import { HexPosition, SceneName } from "@/types";
+import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
-import { getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
-import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
+import { getHexForWorldPosition, getWorldPositionForHex, ResourceIdToMiningType } from "@/ui/utils/utils";
+import { BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Biome, BIOME_COLORS, BiomeType } from "../components/Biome";
@@ -65,7 +65,10 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
 
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
-  private buildingModels: Map<BuildingType, { model: THREE.Group; animations: THREE.AnimationClip[] }> = new Map();
+  private buildingModels: Map<
+    BuildingType | ResourceMiningTypes,
+    { model: THREE.Group; animations: THREE.AnimationClip[] }
+  > = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
   private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
@@ -314,7 +317,10 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          const buildingData = this.buildingModels.get(BuildingType[building.category].toString() as any);
+          const buildingType = building.resource
+            ? ResourceIdToMiningType[building.resource as ResourcesIds]
+            : (BuildingType[building.category].toString() as any);
+          const buildingData = this.buildingModels.get(buildingType);
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);

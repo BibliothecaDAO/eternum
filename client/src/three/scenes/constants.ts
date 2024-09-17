@@ -1,3 +1,4 @@
+import { ResourceMiningTypes } from "@/types";
 import { BuildingType, StructureType } from "@bibliothecadao/eternum";
 import { BiomeType } from "../components/Biome";
 
@@ -15,7 +16,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Hyperstructure]: BuildingType.Castle,
 };
 
-export const buildingModelPaths: Record<BuildingType, string> = {
+export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes, string> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
   [BuildingType.Bank]: "/models/buildings/market.glb",
@@ -35,6 +36,10 @@ export const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
   [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
+  [ResourceMiningTypes.Forge]: "/models/buildings/forge.glb",
+  [ResourceMiningTypes.Mine]: "/models/buildings/mine.glb",
+  [ResourceMiningTypes.LumberMill]: "/models/buildings/lumber_mill.glb",
+  [ResourceMiningTypes.Dragonhide]: "/models/buildings/dragonhide.glb",
 };
 
 const BASE_PATH = "/models/bevel-biomes/";
