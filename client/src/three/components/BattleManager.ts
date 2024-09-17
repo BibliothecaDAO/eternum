@@ -8,7 +8,7 @@ import { BattleSystemUpdate } from "../systems/types";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
 
-const MODEL_PATH = "models/buildings/fishery.glb";
+const MODEL_PATH = "models/battle.glb";
 const LABEL_PATH = "textures/army_label.png";
 const MAX_INSTANCES = 1000;
 
