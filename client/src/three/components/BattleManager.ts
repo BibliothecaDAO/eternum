@@ -2,21 +2,16 @@ import { Position } from "@/types/Position";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { GLTFLoader } from "three-stdlib";
 import { GUIManager } from "../helpers/GUIManager";
 import { BattleSystemUpdate } from "../systems/types";
-import InstancedModel from "./InstancedModel";
+import { BattleModel } from "./BattleModel";
 import { LabelManager } from "./LabelManager";
 
-const MODEL_PATH = "models/battle.glb";
 const LABEL_PATH = "textures/army_label.png";
-const MAX_INSTANCES = 1000;
 
 export class BattleManager {
   private scene: THREE.Scene;
-  private instancedModel: InstancedModel | undefined;
-  private dummy: THREE.Object3D = new THREE.Object3D();
-  loadPromise: Promise<void>;
+  private battleModel: BattleModel;
   battles: Battles = new Battles();
 
   private labels: Map<ID, THREE.Points> = new Map();
@@ -24,26 +19,8 @@ export class BattleManager {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.labelManager = new LabelManager(LABEL_PATH);
-
-    this.loadPromise = new Promise<void>((resolve, reject) => {
-      const loader = new GLTFLoader();
-      loader.load(
-        MODEL_PATH,
-        (gltf) => {
-          const model = gltf.scene as THREE.Group;
-          this.instancedModel = new InstancedModel(model, MAX_INSTANCES);
-          this.instancedModel.setCount(0);
-          this.scene.add(this.instancedModel.group);
-          resolve();
-        },
-        undefined,
-        (error) => {
-          console.error("An error occurred while loading the model:", error);
-          reject(error);
-        },
-      );
-    });
+    this.battleModel = new BattleModel(scene);
+    this.labelManager = new LabelManager(LABEL_PATH, 1.5);
 
     const createBattleFolder = GUIManager.addFolder("Create Battle");
     const createBattleParams = { entityId: 0, col: 0, row: 0 };
@@ -84,7 +61,7 @@ export class BattleManager {
   }
 
   async onUpdate(update: BattleSystemUpdate) {
-    await this.loadPromise;
+    await this.battleModel.loadPromise;
 
     const { entityId, hexCoords, isEmpty, deleted, isSiege } = update;
 
@@ -106,38 +83,29 @@ export class BattleManager {
   }
 
   addBattle(entityId: ID, hexCoords: Position, isSiege: boolean) {
-    if (!this.instancedModel) throw new Error("Instanced model not loaded");
-
     const normalizedCoord = hexCoords.getNormalized();
     const position = getWorldPositionForHex({ col: normalizedCoord.x, row: normalizedCoord.y });
 
-    this.dummy.position.copy(position);
-    this.dummy.updateMatrix();
-
     const index = this.battles.addBattle(entityId, hexCoords);
 
-    this.instancedModel.setMatrixAt(index, this.dummy.matrix);
-    this.instancedModel.setCount(this.battles.counter);
-
-    const label = this.labelManager.createLabel(
-      position as any,
-      isSiege ? new THREE.Color("orange") : new THREE.Color("red"),
-    );
+    this.battleModel.updateInstance(index, position);
+    this.battleModel.mesh.count = this.battles.counter;
+    this.battleModel.mesh.instanceMatrix.needsUpdate = true;
+    this.battleModel.mesh.computeBoundingSphere();
+    const label = this.labelManager.createLabel(position, isSiege ? new THREE.Color("orange") : new THREE.Color("red"));
 
     this.labels.set(entityId, label);
     this.scene.add(label);
   }
 
   removeBattle(entityId: ID) {
-    if (!this.instancedModel) throw new Error("Instanced model not loaded");
-
     const meshMatrixIndex = this.battles.getBattleIndex(entityId);
 
     if (meshMatrixIndex === undefined) throw new Error(`meshMatrixIndex not found for entityId ${entityId}`);
 
     const newMatrix = new THREE.Matrix4().scale(new THREE.Vector3(0, 0, 0));
-    this.instancedModel.setMatrixAt(meshMatrixIndex, newMatrix);
-    this.instancedModel.needsUpdate();
+    this.battleModel.mesh.setMatrixAt(meshMatrixIndex, newMatrix);
+    this.battleModel.mesh.instanceMatrix.needsUpdate = true;
 
     this.battles.removeBattle(entityId);
 
@@ -146,6 +114,10 @@ export class BattleManager {
 
     this.labelManager.removeLabel(label, this.scene);
     this.labels.delete(entityId);
+  }
+
+  update(deltaTime: number) {
+    this.battleModel.updateAnimations(deltaTime);
   }
 }
 
