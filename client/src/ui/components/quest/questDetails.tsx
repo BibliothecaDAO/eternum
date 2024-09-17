@@ -166,8 +166,8 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
   [
     QuestId.CreateArmy,
     {
-      name: "Create an Army",
-      description: "Conquest is fulfilling. Create an army to conquer your enemies",
+      name: "Create an attacking Army",
+      description: "Conquest is fulfilling. Create an attacking army to conquer your enemies",
       steps: [
         navigationStep(BuildingThumbs.military),
         "2. Create an attacking army",

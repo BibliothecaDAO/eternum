@@ -192,7 +192,7 @@ export const formatTime = (seconds: number): string => {
   const remainingSeconds = Math.floor(seconds % 60);
 
   const parts = [];
-  if (days > 0) parts.push(`${days} days`);
+  if (days > 0) parts.push(`${days}d`);
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
   if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
