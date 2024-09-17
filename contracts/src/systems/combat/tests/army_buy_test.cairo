@@ -57,8 +57,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
-    let realm_id = realm_system_dispatcher
-        .create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y });
+    let realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1);
     mint(
         world,
         realm_id,

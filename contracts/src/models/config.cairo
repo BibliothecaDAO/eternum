@@ -1,20 +1,19 @@
-use core::debug::PrintTrait;
 use core::integer::BoundedU128;
+use cubit::f128::math::comp::{max as fixed_max};
+use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{
-    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION,
-    HYPERSTRUCTURE_CONFIG_ID, TickIds, split_resources_and_probs
+    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
+    split_resources_and_probs
 };
 use eternum::models::buildings::BuildingCategory;
-use eternum::models::capacity::{
-    CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait
-};
-use eternum::models::position::{Coord};
+use eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
 use eternum::models::combat::{Troops};
 use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
+use eternum::models::position::{Coord};
 use eternum::models::quantity::Quantity;
 
 use eternum::models::resources::{ResourceFoodImpl};
@@ -107,9 +106,7 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
     }
 
     fn assert_can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) {
-        assert!(
-            self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id
-        );
+        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", weight.entity_id);
     }
 
     fn can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) -> bool {
@@ -119,8 +116,7 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
             quantity.value
         };
         if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram
-                * (quantity_value / RESOURCE_PRECISION);
+            let entity_total_weight_capacity = self.weight_gram * (quantity_value / RESOURCE_PRECISION);
             if entity_total_weight_capacity < weight.value {
                 return false;
             };
@@ -180,46 +176,75 @@ pub struct SettlementConfig {
     config_id: ID,
     // starting value radius
     radius: u32,
-    // starting value angle
-    angle: u32,
-    map_size: u32,
+    // starting value angle (precision 100)
+    angle_scaled: u128,
+    center: u32,
     min_distance: u8,
     max_distance: u8,
     // always positive
     min_scaling_factor_scaled: u128,
-    settlement_order: u16,
+    // radius increase in precision 100
+    min_radius_increase: u64,
+    max_radius_increase: u64,
 }
 
 #[generate_trait]
 impl SettlementConfigImpl of SettlementConfigTrait {
-    fn get_next_settlement_coord(ref self: SettlementConfig) -> Coord {
-        let max_radius_fixed = FixedTrait::new_unscaled((self.map_size / 2).into(), false);
+    fn get_scaling_factor(ref self: SettlementConfig) -> Fixed {
+        let max_radius_fixed = FixedTrait::new_unscaled(self.center.into(), false);
         let radius_fixed = FixedTrait::new_unscaled(self.radius.into(), false);
-        let scaling_factor = (max_radius_fixed - radius_fixed) / max_radius_fixed;
-
-        Coord { x: 0, y: 0 }
+        // very small at first and then grows
+        let scaling_factor_fixed = (max_radius_fixed - radius_fixed) / max_radius_fixed;
+        let min_scaling_factor_fixed = FixedTrait::new(self.min_scaling_factor_scaled, false);
+        fixed_max(scaling_factor_fixed, min_scaling_factor_fixed)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::{SettlementConfig, SettlementConfigImpl};
+    fn get_step_size(ref self: SettlementConfig, scaling_factor: Fixed) -> u32 {
+        let min_distance_fixed = FixedTrait::new_unscaled(self.min_distance.into(), false);
+        let max_distance_fixed = FixedTrait::new_unscaled(self.max_distance.into(), false);
+        let range = max_distance_fixed - min_distance_fixed;
+        let scaled_range = scaling_factor * range;
+        let step_size_fixed = min_distance_fixed + scaled_range;
+        step_size_fixed.try_into().unwrap() + 1
+    }
 
-    fn test_get_next_settlement_coord() {
-        // starting values
-        let settlement_config = SettlementConfig {
-            config_id: 0,
-            radius: 50,
-            angle: 0,
-            map_size: 40000,
-            min_distance: 1,
-            max_distance: 5,
-            min_scaling_factor_scaled: 18446744073709551616,
-            settlement_order: 1,
-        };
-        let coord = SettlementConfigImpl::get_next_settlement_coord(settlement_config);
-        assert_eq!(coord.x, 0);
-        assert_eq!(coord.y, 0);
+    fn get_radius_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> u32 {
+        (block_timestamp % step_size.into() + self.min_distance.into()).try_into().unwrap()
+    }
+
+    fn get_angle_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> Fixed {
+        FixedTrait::new_unscaled(
+            (block_timestamp % (self.max_radius_increase - self.min_radius_increase) + self.min_radius_increase).into(),
+            false
+        )
+            / FixedTrait::new_unscaled(100, false)
+    }
+
+    fn increase_angle(ref self: SettlementConfig, angle_increase: Fixed) -> Fixed {
+        self.angle_scaled += angle_increase.mag;
+        FixedTrait::new(self.angle_scaled, false)
+    }
+
+    fn compute_coords(ref self: SettlementConfig, angle: Fixed) -> Coord {
+        let cos = fixed_cos(angle);
+        let sin = fixed_sin(angle);
+
+        let x = FixedTrait::new_unscaled(self.center.into(), false)
+            + cos * FixedTrait::new_unscaled(self.radius.into(), false);
+        let y = FixedTrait::new_unscaled(self.center.into(), false)
+            + sin * FixedTrait::new_unscaled(self.radius.into(), false);
+
+        return Coord { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
+    }
+
+    fn get_next_settlement_coord(ref self: SettlementConfig, block_timestamp: u64) -> Coord {
+        let scaling_factor = Self::get_scaling_factor(ref self);
+        let step_size = Self::get_step_size(ref self, scaling_factor);
+        let radius_increase = Self::get_radius_increase(ref self, step_size, block_timestamp);
+        self.radius += radius_increase;
+        let angle_increase = Self::get_angle_increase(ref self, step_size, block_timestamp);
+        let new_angle_fixed = Self::increase_angle(ref self, angle_increase);
+        Self::compute_coords(ref self, new_angle_fixed)
     }
 }
 
@@ -227,19 +252,14 @@ mod tests {
 impl MapConfigImpl of MapConfigTrait {
     fn random_reward(world: IWorldDispatcher) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true
-        )
-            .at(0);
+        let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);
 
         let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
     }
 
-    fn pay_exploration_cost(
-        world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity
-    ) {
+    fn pay_exploration_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
         let quantity_value = max(unit_quantity.value, 1);
@@ -250,23 +270,14 @@ impl MapConfigImpl of MapConfigTrait {
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 
-    fn pay_travel_cost(
-        world: IWorldDispatcher,
-        unit_entity_owner: EntityOwner,
-        unit_quantity: Quantity,
-        steps: usize
-    ) {
+    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity, steps: usize) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
         let quantity_value = max(unit_quantity.value, 1);
 
         let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
-        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount
-            * quantity_value
-            * steps.into();
-        let mut fish_pay_amount = explore_config.travel_fish_burn_amount
-            * quantity_value
-            * steps.into();
+        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount * quantity_value * steps.into();
+        let mut fish_pay_amount = explore_config.travel_fish_burn_amount * quantity_value * steps.into();
         ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 }
@@ -430,9 +441,7 @@ pub struct BuildingConfig {
 
 #[generate_trait]
 impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
-    fn get(
-        world: IWorldDispatcher, category: BuildingCategory, resource_type: u8
-    ) -> BuildingConfig {
+    fn get(world: IWorldDispatcher, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
         return get!(
             world,
             (
@@ -527,9 +536,7 @@ pub struct PopulationConfig {
 #[generate_trait]
 impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCustomTrait {
     fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        get!(
-            world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig
-        )
+        get!(world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig)
     }
 }
 

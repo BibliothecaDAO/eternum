@@ -97,20 +97,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    let player_1_realm_id = realm_system_dispatcher
-        .create(
-            'Mysticora',
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            Position { entity_id: 0, x: PLAYER_1_REALM_COORD_X, y: PLAYER_1_REALM_COORD_Y }
-        );
+    let player_1_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_1_realm_id,
@@ -137,20 +124,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
-    let player_2_realm_id = realm_system_dispatcher
-        .create(
-            'Mysticora',
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            Position { entity_id: 0, x: PLAYER_2_REALM_COORD_X, y: PLAYER_2_REALM_COORD_Y }
-        );
+    let player_2_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_2_realm_id,
@@ -177,20 +151,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
-    let player_3_realm_id = realm_system_dispatcher
-        .create(
-            'Mysticora',
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            Position { entity_id: 0, x: PLAYER_3_REALM_COORD_X, y: PLAYER_3_REALM_COORD_Y }
-        );
+    let player_3_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_3_realm_id,

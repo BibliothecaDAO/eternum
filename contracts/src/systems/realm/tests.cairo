@@ -94,7 +94,6 @@ fn test_realm_create() {
             regions,
             wonder,
             order,
-            position.clone(),
         );
 
     let realm_owner = get!(world, realm_entity_id, Owner);

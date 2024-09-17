@@ -26,7 +26,6 @@ fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsD
             5, // regions
             1, // wonder
             1, // order
-            position // position
         );
 
     realm_entity_id

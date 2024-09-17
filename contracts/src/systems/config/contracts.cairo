@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig};
+use eternum::models::config::{TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig,};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -132,6 +132,21 @@ trait IMercenariesConfig {
     fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>);
 }
 
+#[dojo::interface]
+trait ISettlementConfig {
+    fn set_settlement_config(
+        ref world: IWorldDispatcher,
+        radius: u32,
+        angle_scaled: u128,
+        center: u32,
+        min_distance: u8,
+        max_distance: u8,
+        min_scaling_factor_scaled: u128,
+        min_radius_increase: u64,
+        max_radius_increase: u64,
+    );
+}
+
 
 #[dojo::contract]
 mod config_systems {
@@ -149,7 +164,7 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -568,6 +583,37 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (MercenariesConfig { config_id: WORLD_CONFIG_ID, troops, rewards }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ISettlementConfig of super::ISettlementConfig<ContractState> {
+        fn set_settlement_config(
+            ref world: IWorldDispatcher,
+            radius: u32,
+            angle_scaled: u128,
+            center: u32,
+            min_distance: u8,
+            max_distance: u8,
+            min_scaling_factor_scaled: u128,
+            min_radius_increase: u64,
+            max_radius_increase: u64
+        ) {
+            assert_caller_is_admin(world);
+            set!(
+                world,
+                (SettlementConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    radius,
+                    angle_scaled,
+                    center,
+                    min_distance,
+                    max_distance,
+                    min_scaling_factor_scaled,
+                    min_radius_increase,
+                    max_radius_increase,
+                })
+            );
         }
     }
 }
