@@ -9,7 +9,7 @@ import { shortString, TypedData } from "starknet";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { toValidAscii } from "@/ui/utils/utils";
-import { MESSAGE_COLORS } from "./constants";
+import { PASTEL_BLUE, PASTEL_PINK } from "./constants";
 
 const GLOBAL_CHANNEL = shortString.encodeShortString("global");
 
@@ -72,11 +72,6 @@ export const Chat = () => {
   const [salt, setSalt] = useState<bigint>(0n);
   const [flashMessageIndex, setFlashMessageIndex] = useState<number | null>(null);
 
-  const getColorForAddress = (address: string) => {
-    const hash = address.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return MESSAGE_COLORS[hash % MESSAGE_COLORS.length];
-  };
-
   const allMessageEntities = useEntityQuery([Has(Message)]);
 
   const selfMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
@@ -109,10 +104,10 @@ export const Chat = () => {
         const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
         const name = shortString.decodeShortString(addressName?.name.toString() || "") || "Unknown";
         const content = !!message?.content ? message.content : "";
-        const color = getColorForAddress(address);
         const timestamp = new Date(Number(message?.timestamp));
 
         const isDirect = message?.channel === BigInt(account.address);
+        const color = isDirect ? PASTEL_BLUE : PASTEL_PINK;
         return {
           name,
           content,
@@ -176,20 +171,18 @@ export const Chat = () => {
   const players = getPlayers().filter((player) => player.address !== BigInt(account.address));
   return (
     <div
-      className="flex flex-col gap-2 w-72 border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded max-h-72"
+      className="flex flex-col gap-2 w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded max-h-80"
       style={{ zIndex: 100 }}
     >
       <div className="border p-2 border-gold/40 rounded text-xs max-h-60 overflow-y-auto">
         {messages.map((message, index) => (
           <div
             style={{ color: message.color }}
-            className={`flex gap-2 ${index === flashMessageIndex ? "animate-flash" : ""}`}
+            className={`flex gap-2 mb-1 ${index === flashMessageIndex ? "animate-flash" : ""}`}
             key={index}
           >
-            <div className="flex flex-row opacity-70">
-              <p className="text-xs opacity-70 mr-2">{message.timestamp.toLocaleTimeString()}</p>
-              <p className="font-bold mr-2">{message.isDirect ? `From ${message.name} ` : `${message.name} `}</p>
-              <p className="">{message.content}</p>
+            <div className="opacity-70">
+              <span className="font-bold mr-2 inline">{`[${message.name}]: ${message.content}`}</span>
             </div>
           </div>
         ))}
