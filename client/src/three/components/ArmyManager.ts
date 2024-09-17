@@ -160,7 +160,7 @@ export class ArmyManager {
       this.moveArmy(entityId, position);
     } else {
       console.debug(`Adding new army with entityId ${entityId} at position`, position);
-      this.addArmy(entityId, position, isMine);
+      this.addArmy(entityId, position, isMine, order);
     }
   }
   async updateChunk(chunkKey: string) {
@@ -270,7 +270,7 @@ export class ArmyManager {
     });
   }
 
-  public addArmy(entityId: ID, hexCoords: Position, isMine: boolean) {
+  public addArmy(entityId: ID, hexCoords: Position, isMine: boolean, order: number) {
     if (this.armies.has(entityId)) return;
 
     this.armies.set(entityId, { entityId, matrixIndex: this.armies.size - 1, hexCoords, isMine });
