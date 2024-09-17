@@ -215,6 +215,7 @@ const OrderRow = ({
   disabled: boolean;
 }) => {
   const { computeTravelTime } = useTravel();
+  const dojo = useDojo();
   const {
     account: { account },
     setup: {
@@ -223,6 +224,14 @@ const OrderRow = ({
   } = useDojo();
 
   const { getRealmAddressName } = useRealm();
+
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const structure = getStructureByEntityId(offer.makerId);
+  const isMakerInBattle = useMemo(() => {
+    const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
+    return battleManager.isBattleOngoing(nextBlockTimestamp!);
+  }, [offer, nextBlockTimestamp]);
 
   const [inputValue, setInputValue] = useState<number>(() => {
     return isBuy
@@ -328,9 +337,9 @@ const OrderRow = ({
       key={offer.tradeId}
       className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border text-xs relative ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
-      } ${disabled ? "opacity-50" : ""}`}
+      } ${isMakerInBattle ? "opacity-50" : ""}`}
     >
-      {disabled && (
+      {isMakerInBattle && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
           Resources locked in battle
         </div>
@@ -357,7 +366,7 @@ const OrderRow = ({
               setConfirmOrderModal(true);
             }}
             size="xs"
-            className={`self-center flex flex-grow ${disabled ? "pointer-events-none" : ""}`}
+            className={`self-center flex flex-grow ${isMakerInBattle || disabled ? "pointer-events-none" : ""}`}
           >
             {!isBuy ? "Buy" : "Sell"}
           </Button>
