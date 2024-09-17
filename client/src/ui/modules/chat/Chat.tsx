@@ -8,6 +8,8 @@ import { useCallback, useEffect, useState } from "react";
 import { shortString, TypedData } from "starknet";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { toValidAscii } from "@/ui/utils/utils";
+import { MESSAGE_COLORS } from "./constants";
 
 const GLOBAL_CHANNEL = shortString.encodeShortString("global");
 
@@ -60,69 +62,16 @@ export const Chat = () => {
   } = useDojo();
 
   const [messages, setMessages] = useState<
-    { name: string; content: string; color: string; isDirect: boolean; fromSelf: boolean }[]
+    { name: string; content: string; color: string; isDirect: boolean; fromSelf: boolean; timestamp: Date }[]
   >([]);
   const [content, setContent] = useState<string>("");
   const [channel, setChannel] = useState<string>("");
   const [salt, setSalt] = useState<bigint>(0n);
   const [flashMessageIndex, setFlashMessageIndex] = useState<number | null>(null);
 
-  const colors = [
-    "#FFB3BA",
-    "#FFDFBA",
-    "#FFFFBA",
-    "#BAFFC9",
-    "#BAE1FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#B3FFB3",
-    "#B3B3FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#FFDFBA",
-    "#FFFFBA",
-    "#BAFFC9",
-    "#BAE1FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#B3FFB3",
-    "#B3B3FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#FFDFBA",
-    "#FFFFBA",
-    "#BAFFC9",
-    "#BAE1FF",
-    "#FFB3E6",
-  ];
-
   const getColorForAddress = (address: string) => {
     const hash = address.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
+    return MESSAGE_COLORS[hash % MESSAGE_COLORS.length];
   };
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
@@ -142,7 +91,6 @@ export const Chat = () => {
       .filter((entity) => {
         const message = getComponentValue(Message, entity);
 
-        console.log(message);
         const isGlobal = message?.channel === BigInt(GLOBAL_CHANNEL);
         const isDirect = message?.channel === BigInt(account.address);
         const fromSelf = message?.identity === BigInt(account.address);
@@ -155,6 +103,7 @@ export const Chat = () => {
         const name = shortString.decodeShortString(addressName?.name.toString() || "") || "Unknown";
         const content = !!message?.content ? message.content : "";
         const color = getColorForAddress(address);
+        const timestamp = new Date(Number(message?.timestamp));
 
         const isDirect = message?.channel === BigInt(account.address);
         return {
@@ -163,7 +112,7 @@ export const Chat = () => {
           color,
           isDirect,
           fromSelf: message?.identity === BigInt(account.address),
-          timestamp: message?.timestamp,
+          timestamp,
         };
       })
       .sort((a, b) => Number(a.timestamp) - Number(b.timestamp)); // Sort messages by timestamp
@@ -192,8 +141,12 @@ export const Chat = () => {
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : "";
+
       const channel = !!recipientAddress ? `0x${recipientAddress.toString(16)}` : GLOBAL_CHANNEL;
-      const data = generateMessageTypedData(account.address, channel, message, `0x${salt?.toString(16)}`);
+
+      const messageInValidAscii = toValidAscii(message);
+      const data = generateMessageTypedData(account.address, channel, messageInValidAscii, `0x${salt?.toString(16)}`);
+
       const signature: any = await account.signMessage(data as TypedData);
 
       await toriiClient.publishMessage(JSON.stringify(data), [
@@ -220,16 +173,17 @@ export const Chat = () => {
       style={{ zIndex: 100 }}
     >
       <div className="border p-2 border-gold/40 rounded text-xs">
-        {messages.slice(-10).map((message, index) => (
+        {messages.map((message, index) => (
           <div
             style={{ color: message.color }}
             className={`flex gap-2 ${index === flashMessageIndex ? "animate-flash" : ""}`}
             key={index}
           >
-            <div className="flex-none opacity-70">
-              {message.isDirect ? `From ${message.name} ` : `${message.name} `}
+            <div className="flex flex-row opacity-70">
+              <p className="text-xs opacity-70 mr-2">{message.timestamp.toLocaleTimeString()}</p>
+              <p className="font-bold mr-2">{message.isDirect ? `From ${message.name} ` : `${message.name} `}</p>
+              <p className="">{message.content}</p>
             </div>
-            <p className="font-bold">{message.content}</p>
           </div>
         ))}
       </div>
