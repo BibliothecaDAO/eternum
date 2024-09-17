@@ -11,7 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const GLOBAL_CHANNEL = shortString.encodeShortString("global");
 
-function generateMessageTypedData(identity: string, channel: string, content: string, salt: string) {
+function generateMessageTypedData(
+  identity: string,
+  channel: string,
+  content: string,
+  salt: string,
+  timestamp = Date.now(),
+) {
   return {
     types: {
       StarknetDomain: [
@@ -39,6 +45,7 @@ function generateMessageTypedData(identity: string, channel: string, content: st
       channel,
       content,
       salt,
+      timestamp,
     },
   };
 }
@@ -134,6 +141,8 @@ export const Chat = () => {
     const globalMessages = allMessageEntities
       .filter((entity) => {
         const message = getComponentValue(Message, entity);
+
+        console.log(message);
         const isGlobal = message?.channel === BigInt(GLOBAL_CHANNEL);
         const isDirect = message?.channel === BigInt(account.address);
         const fromSelf = message?.identity === BigInt(account.address);

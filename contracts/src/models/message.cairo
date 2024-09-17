@@ -9,5 +9,6 @@ pub struct Message {
     pub channel: felt252,
     pub content: ByteArray,
     #[key]
-    pub salt: felt252
+    pub salt: felt252,
+    pub timestamp: u64,
 }
