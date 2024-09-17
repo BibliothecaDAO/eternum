@@ -1,8 +1,11 @@
+import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 const MAX_INSTANCES = 1000;
+const ANIMATION_STATE_IDLE = 0;
+const ANIMATION_STATE_WALKING = 1;
 
 export class ArmyModel {
   private scene: THREE.Scene;
@@ -28,7 +31,7 @@ export class ArmyModel {
     }
     this.animationStates = new Float32Array(MAX_INSTANCES);
     for (let i = 0; i < MAX_INSTANCES; i++) {
-      this.animationStates[i] = 0; // 0 for idle, 1 for walking
+      this.animationStates[i] = ANIMATION_STATE_IDLE;
     }
   }
 
@@ -85,6 +88,11 @@ export class ArmyModel {
     if (this.mixer && this.mesh && this.idleAnimation && this.walkAnimation) {
       const time = performance.now() * 0.001;
       for (let i = 0; i < this.mesh.count; i++) {
+        const animationState = this.animationStates[i];
+        if (IS_LOW_GRAPHICS_ENABLED && animationState === ANIMATION_STATE_IDLE) {
+          continue;
+        }
+
         if (!this.animationActions.has(i)) {
           const idleAction = this.mixer.clipAction(this.idleAnimation);
           const walkAction = this.mixer.clipAction(this.walkAnimation);
@@ -92,12 +100,10 @@ export class ArmyModel {
         }
 
         const actions = this.animationActions.get(i)!;
-        const animationState = this.animationStates[i];
-
-        if (animationState === 0) {
+        if (animationState === ANIMATION_STATE_IDLE) {
           actions.idle.setEffectiveTimeScale(1);
           actions.walk.setEffectiveTimeScale(0);
-        } else {
+        } else if (animationState === ANIMATION_STATE_WALKING) {
           actions.idle.setEffectiveTimeScale(0);
           actions.walk.setEffectiveTimeScale(1);
         }
@@ -121,6 +127,6 @@ export class ArmyModel {
   }
 
   setAnimationState(index: number, isWalking: boolean) {
-    this.animationStates[index] = isWalking ? 1 : 0;
+    this.animationStates[index] = isWalking ? ANIMATION_STATE_WALKING : ANIMATION_STATE_IDLE;
   }
 }
