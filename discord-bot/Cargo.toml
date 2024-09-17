@@ -18,13 +18,13 @@ toml = { version = "0.7", default-features = false, features = ["parse", "displa
 starknet = "0.11.0"
 starknet-crypto = "0.7.0"
 starknet-types-core = "~0.1.4"
-dojo-types = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
-torii-client = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+dojo-types = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.12" }
+torii-client = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.12" }
 torii-grpc = { git = "https://github.com/dojoengine/dojo", features = [
     "client",
-], tag = "v1.0.0-alpha.9" }
-torii-relay = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
-dojo-world = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+], tag = "v1.0.0-alpha.12" }
+torii-relay = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.12" }
+dojo-world = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.12" }
 
 cainome = { git = "https://github.com/cartridge-gg/cainome" }
 cairo-lang-filesystem = "=2.7.0"

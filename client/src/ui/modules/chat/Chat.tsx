@@ -32,6 +32,7 @@ function generateMessageTypedData(
         { name: "identity", type: "ContractAddress" },
         { name: "channel", type: "shortstring" },
         { name: "content", type: "string" },
+        { name: "timestamp", type: "felt" },
         { name: "salt", type: "felt" },
       ],
     },
@@ -46,8 +47,8 @@ function generateMessageTypedData(
       identity,
       channel,
       content,
-      salt,
       timestamp,
+      salt,
     },
   };
 }

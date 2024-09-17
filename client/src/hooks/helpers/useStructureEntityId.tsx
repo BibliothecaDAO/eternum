@@ -1,6 +1,6 @@
 import { Position as PositionInterface } from "@/types/Position";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
@@ -39,8 +39,8 @@ export const useStructureEntityId = () => {
       .values()
       .next().value;
 
-    const structure = getComponentValue(Structure, structureEntity);
-    const structureOwner = getComponentValue(Owner, structureEntity);
+    const structure = getComponentValue(Structure, structureEntity ?? "0" as Entity);
+    const structureOwner = getComponentValue(Owner, structureEntity ?? "0" as Entity);
 
     const isOwner = structureOwner?.address === BigInt(address);
 
