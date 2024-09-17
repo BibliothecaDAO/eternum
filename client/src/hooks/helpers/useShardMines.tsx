@@ -1,5 +1,5 @@
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 
@@ -20,21 +20,21 @@ export const useShardMines = () => {
         Owner,
         runQuery([Has(Owner), HasValue(Owner, { entity_id: shardMine!.entity_id })])
           .values()
-          .next().value,
+          .next().value ?? ("0" as Entity),
       )?.address.toString(16)}`;
 
       const building = getComponentValue(
         Building,
         runQuery([HasValue(Building, { outer_entity_id: shardMine!.entity_id })])
           .values()
-          .next().value,
+          .next().value ?? ("0" as Entity),
       );
 
       const production = getComponentValue(
         Production,
         runQuery([HasValue(Production, { entity_id: shardMine!.entity_id })])
           .values()
-          .next().value,
+          .next().value ?? ("0" as Entity),
       );
 
       return {

@@ -119,6 +119,6 @@ export const addLiquidity = async () => {
   }
 };
 
-// await createAdminBank();
+await createAdminBank();
 await mintResources();
 await addLiquidity();
