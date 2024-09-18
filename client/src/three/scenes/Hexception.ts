@@ -3,14 +3,14 @@ import * as THREE from "three";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
-import { HexPosition, SceneName } from "@/types";
+import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
-import { getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
-import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
+import { getHexForWorldPosition, getWorldPositionForHex, ResourceIdToMiningType } from "@/ui/utils/utils";
+import { BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Biome, BiomeType } from "../components/Biome";
+import { Biome, BIOME_COLORS, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
@@ -65,7 +65,10 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
 
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
-  private buildingModels: Map<BuildingType, { model: THREE.Group; animations: THREE.AnimationClip[] }> = new Map();
+  private buildingModels: Map<
+    BuildingType | ResourceMiningTypes,
+    { model: THREE.Group; animations: THREE.AnimationClip[] }
+  > = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
   private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
@@ -92,7 +95,7 @@ export default class HexceptionScene extends HexagonScene {
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
-    this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial({ color: 0xffce31 }), 1000);
+    this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial(), 1000);
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
@@ -314,7 +317,12 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          const buildingData = this.buildingModels.get(BuildingType[building.category].toString() as any);
+          const buildingType =
+            building.resource && building.resource < 254
+              ? ResourceIdToMiningType[building.resource as ResourcesIds]
+              : (BuildingType[building.category].toString() as any);
+          const buildingData = this.buildingModels.get(buildingType);
+
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
@@ -336,22 +344,21 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       // update neighbor hexes around the center hex
-      let i = 0;
-      const tmpCol = new THREE.Color(0xffce31);
+      let pillarOffset = 0;
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
-          this.pillars!.setMatrixAt(index + i, matrix);
-          this.pillars!.setColorAt(index + i, tmpCol);
+          this.pillars!.setMatrixAt(index + pillarOffset, matrix);
+          this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[biome as BiomeType]);
         });
-        this.pillars!.count = i + matrices.length;
-        this.pillars!.instanceMatrix.needsUpdate = true;
+        pillarOffset += matrices.length;
+        this.pillars!.count = pillarOffset;
         this.pillars!.computeBoundingSphere();
         hexMesh.setCount(matrices.length);
-        i += matrices.length;
       }
-
+      this.pillars!.instanceMatrix.needsUpdate = true;
+      this.pillars!.instanceColor!.needsUpdate = true;
       this.interactiveHexManager.renderHexes();
     });
   }

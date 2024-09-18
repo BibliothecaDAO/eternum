@@ -1,5 +1,5 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
-import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
+import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
@@ -69,8 +69,10 @@ export const ArmyChip = ({
                     <div className="flex flex-row mt-1 h-6 gap-1 mr-2">
                       {updatedArmy?.isMine && (
                         <React.Fragment>
-                          <Pen
-                            className="w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
+                          <Plus
+                            className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
+                              updatedArmy.quantity.value === 0n ? "animate-pulse" : ""
+                            }`}
                             onClick={() => {
                               setTooltip(null);
                               setEditMode(!editMode);
@@ -85,44 +87,50 @@ export const ArmyChip = ({
                               setTooltip(null);
                             }}
                           />
-                          <ViewOnMapIcon
-                            className="w-5 h-5 hover:scale-110 transition-all duration-300"
-                            position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
-                          />
-                          <Swap
-                            className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
-                            onClick={() => {
-                              setTooltip(null);
-                              setShowTroopSwap(!showTroopSwap);
-                            }}
-                            onMouseEnter={() => {
-                              setTooltip({
-                                content: "Swap troops (only possible on same hex)",
-                                position: "top",
-                              });
-                            }}
-                            onMouseLeave={() => {
-                              setTooltip(null);
-                            }}
-                          />
+                          {updatedArmy.quantity.value > 0 && (
+                            <>
+                              <ViewOnMapIcon
+                                className="w-5 h-5 hover:scale-110 transition-all duration-300"
+                                position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
+                              />
+                              <Swap
+                                className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
+                                onClick={() => {
+                                  setTooltip(null);
+                                  setShowTroopSwap(!showTroopSwap);
+                                }}
+                                onMouseEnter={() => {
+                                  setTooltip({
+                                    content: "Swap troops (only possible on same hex)",
+                                    position: "top",
+                                  });
+                                }}
+                                onMouseLeave={() => {
+                                  setTooltip(null);
+                                }}
+                              />
+                            </>
+                          )}
                         </React.Fragment>
                       )}
-                      <Inventory
-                        className="w-4 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
-                        onClick={() => {
-                          setTooltip(null);
-                          setShowInventory(!showInventory);
-                        }}
-                        onMouseEnter={() => {
-                          setTooltip({
-                            content: "Inventory",
-                            position: "top",
-                          });
-                        }}
-                        onMouseLeave={() => {
-                          setTooltip(null);
-                        }}
-                      />
+                      {updatedArmy && updatedArmy.quantity.value > 0 && (
+                        <Inventory
+                          className="w-4 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
+                          onClick={() => {
+                            setTooltip(null);
+                            setShowInventory(!showInventory);
+                          }}
+                          onMouseEnter={() => {
+                            setTooltip({
+                              content: "Inventory",
+                              position: "top",
+                            });
+                          }}
+                          onMouseLeave={() => {
+                            setTooltip(null);
+                          }}
+                        />
+                      )}
                     </div>
                   )}
                 </div>

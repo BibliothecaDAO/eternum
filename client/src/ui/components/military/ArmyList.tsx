@@ -1,7 +1,6 @@
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { type ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { type PlayerStructure } from "@/hooks/helpers/useEntities";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -11,11 +10,9 @@ import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { BuildingType, EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
-import { EntityList } from "../list/EntityList";
-import { InventoryResources } from "../resources/InventoryResources";
-import { ArmyManagementCard } from "./ArmyManagementCard";
+import { ArmyChip } from "./ArmyChip";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 
@@ -89,122 +86,74 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     });
   };
   return (
-    <>
+    <div className="p-2">
       <Headline className="my-3">
         <div className="flex gap-2">
           <div className="self-center">{structure.name} </div>
           <HintModalButton section={HintSection.Buildings} />
         </div>
       </Headline>
+      <div className="px-3 py-2 bg-blueish/20  font-bold">
+        Build military buildings to increase your current max number of attacking armies. Realms can support up to{" "}
+        {EternumGlobalConfig.troop.maxArmiesPerStructure - 1} attacking armies.
+      </div>
+      <div className="flex justify-between">
+        <div
+          className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfAttackingArmies ? "text-green" : "text-red"}`}
+        >
+          {numberAttackingArmies} / {maxAmountOfAttackingArmies} attacking armies
+        </div>
+        <div
+          className={`mt-2 font-bold ${
+            numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES ? "text-green" : "text-red"
+          }`}
+        >
+          {numberDefensiveArmies} / {MAX_AMOUNT_OF_DEFENSIVE_ARMIES} defending army
+        </div>
+      </div>
+      <div className="w-full flex justify-between my-4">
+        <div
+          onMouseEnter={() => {
+            if (!isRealm) {
+              setTooltip({
+                content: "Can only create attacking armies on realms",
+                position: "top",
+              });
+            }
+          }}
+          onMouseLeave={() => {
+            setTooltip(null);
+          }}
+        >
+          <Button
+            isLoading={loading === Loading.CreateAttacking}
+            variant="primary"
+            onClick={() => {
+              handleCreateArmy(false);
+            }}
+            disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
+            className={clsx({
+              "animate-pulse": selectedQuest?.id === QuestId.CreateArmy,
+            })}
+          >
+            Create attacking Army
+          </Button>
+        </div>
 
-      <EntityList
-        list={structureArmies.sort((a, _) => (a.protectee ? -1 : 1))}
-        headerPanel={
-          <>
-            {" "}
-            <div className="px-3 py-2 bg-blueish/20  font-bold">
-              First you must create an Army then you can enlist troops to it. You can only have one defensive army.
-            </div>
-            <div className="flex justify-between">
-              <div
-                className={`mt-2 font-bold ${
-                  numberAttackingArmies < maxAmountOfAttackingArmies ? "text-green" : "text-red"
-                }`}
-              >
-                {numberAttackingArmies} / {maxAmountOfAttackingArmies} attacking armies
-              </div>
-              <div
-                className={`mt-2 font-bold ${
-                  numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES ? "text-green" : "text-red"
-                }`}
-              >
-                {numberDefensiveArmies} / {MAX_AMOUNT_OF_DEFENSIVE_ARMIES} defending army
-              </div>
-            </div>
-            <div className="w-full flex justify-between my-4">
-              <div
-                onMouseEnter={() => {
-                  if (!isRealm) {
-                    setTooltip({
-                      content: "Can only create attacking armies on realms",
-                      position: "top",
-                    });
-                  }
-                }}
-                onMouseLeave={() => {
-                  setTooltip(null);
-                }}
-              >
-                <Button
-                  isLoading={loading === Loading.CreateAttacking}
-                  variant="primary"
-                  onClick={() => {
-                    handleCreateArmy(false);
-                  }}
-                  disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
-                  className={clsx({
-                    "animate-pulse": selectedQuest?.id === QuestId.CreateArmy,
-                  })}
-                >
-                  Create Army
-                </Button>
-              </div>
-
-              <Button
-                isLoading={loading === Loading.CreateDefensive}
-                variant="primary"
-                onClick={() => {
-                  handleCreateArmy(true);
-                }}
-                disabled={loading !== Loading.None || !canCreateProtector}
-              >
-                Create Defense Army
-              </Button>
-            </div>
-          </>
-        }
-        title="armies"
-        panel={({ entity, setSelectedEntity }) => (
-          <>
-            <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
-          </>
-        )}
-        questing={selectedQuest?.id === QuestId.CreateArmy}
-      />
-    </>
-  );
-};
-
-const ArmyItem = ({
-  entity,
-  setSelectedEntity,
-  structure,
-}: {
-  entity: ArmyInfo | undefined;
-  setSelectedEntity: ((entity: ArmyInfo | null) => void) | undefined;
-  structure: PlayerStructure;
-}) => {
-  const dojo = useDojo();
-
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
-  const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0, dojo), [entity?.battle_id, dojo]);
-
-  const updatedArmy = useMemo(() => {
-    if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
-    const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp);
-    const updatedArmy = battleManager.getUpdatedArmy(entity, updatedBattle);
-    return updatedArmy;
-  }, [nextBlockTimestamp, entity]);
-
-  return (
-    <React.Fragment key={entity?.entity_id || 0}>
-      <ArmyManagementCard
-        owner_entity={structure?.entity_id || 0}
-        army={updatedArmy}
-        setSelectedEntity={setSelectedEntity}
-      />
-      <InventoryResources entityIds={[entity?.entity_id || 0]} />
-    </React.Fragment>
+        <Button
+          isLoading={loading === Loading.CreateDefensive}
+          variant="primary"
+          onClick={() => {
+            handleCreateArmy(true);
+          }}
+          disabled={loading !== Loading.None || !canCreateProtector}
+        >
+          Create Defense Army
+        </Button>
+      </div>
+      {structureArmies.map((army) => (
+        <ArmyChip key={army.entity_id} className="my-2" army={army} showButtons />
+      ))}
+    </div>
   );
 };

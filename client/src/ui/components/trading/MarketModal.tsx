@@ -1,6 +1,6 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import { useModalStore } from "@/hooks/store/useModalStore";
@@ -10,8 +10,9 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 import { BankPanel } from "../bank/BankList";
 import { HintModal } from "../hints/HintModal";
@@ -21,6 +22,11 @@ import { MarketTradingHistory } from "./MarketTradingHistory";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
 
 export const MarketModal = () => {
+  const {
+    setup: {
+      components: { Resource },
+    },
+  } = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
   const { playerStructures } = useEntities();
@@ -31,7 +37,6 @@ export const MarketModal = () => {
   const bank = banks.length === 1 ? banks[0] : null;
 
   const { bidOffers, askOffers } = useSetMarket();
-  const { useBalance } = getResourceBalance();
 
   // initial entity id
   const selectedEntityId = useUIStore((state) => state.structureEntityId);
@@ -42,7 +47,9 @@ export const MarketModal = () => {
 
   const structures = useMemo(() => playerStructures(), [playerStructures]);
 
-  const lordsBalance = useBalance(structureEntityId, ResourcesIds.Lords).amount;
+  const lordsBalance =
+    useComponentValue(Resource, getEntityIdFromKeys([BigInt(structureEntityId!), BigInt(ResourcesIds.Lords)]))
+      ?.balance || 0n;
 
   const tabs = useMemo(
     () => [
@@ -118,7 +125,8 @@ export const MarketModal = () => {
               </Select>
             </div>
             <div className=" ml-2 bg-map align-middle flex">
-              {currencyFormat(lordsBalance, 0)} <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
+              {currencyFormat(Number(lordsBalance), 0)}{" "}
+              <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
             </div>
           </div>
           <div className="self-center text-3xl">

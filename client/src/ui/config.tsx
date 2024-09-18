@@ -2,7 +2,7 @@ import { ResourceMiningTypes } from "@/types";
 import { BuildingType } from "@bibliothecadao/eternum";
 
 export const FELT_CENTER = 2147483646;
-
+export const IS_LOW_GRAPHICS_ENABLED = localStorage.getItem("LOW_GRAPHICS_FLAG") === "true";
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {
   [BuildingType.Castle]: "",

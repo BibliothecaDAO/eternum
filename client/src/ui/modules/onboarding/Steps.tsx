@@ -14,7 +14,7 @@ import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { displayAddress, formatTime } from "@/ui/utils/utils";
+import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
@@ -91,7 +91,8 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const onSetName = async () => {
     setLoading(true);
     if (inputName && !addressIsMaster) {
-      const inputNameBigInt = shortString.encodeShortString(inputName);
+      const inputNameValidAscii = toValidAscii(inputName);
+      const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
       await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(inputName);
       setLoading(false);

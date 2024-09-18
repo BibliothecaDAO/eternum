@@ -192,7 +192,7 @@ export const formatTime = (seconds: number): string => {
   const remainingSeconds = Math.floor(seconds % 60);
 
   const parts = [];
-  if (days > 0) parts.push(`${days} days`);
+  if (days > 0) parts.push(`${days}d`);
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
   if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
@@ -298,4 +298,55 @@ export const formatResources = (resources: any[]): Resource[] => {
       amount: Number(resource[1].value),
     }))
     .filter((resource) => resource.amount > 0);
+};
+
+const accentsToAscii = (str: string) => {
+  // Character map for transliteration to ASCII
+  const charMap: Record<string, string> = {
+    á: "a",
+    ú: "u",
+    é: "e",
+    ä: "a",
+    Š: "S",
+    Ï: "I",
+    š: "s",
+    Í: "I",
+    í: "i",
+    ó: "o",
+    ï: "i",
+    ë: "e",
+    ê: "e",
+    â: "a",
+    Ó: "O",
+    ü: "u",
+    Á: "A",
+    Ü: "U",
+    ô: "o",
+    ž: "z",
+    Ê: "E",
+    ö: "o",
+    č: "c",
+    Â: "A",
+    Ä: "A",
+    Ë: "E",
+    É: "E",
+    Č: "C",
+    Ž: "Z",
+    Ö: "O",
+    Ú: "U",
+    Ô: "O",
+    "‘": "'",
+  };
+  const transliterate = (str: string) => {
+    return str
+      .split("")
+      .map((char) => charMap[char] || char)
+      .join("");
+  };
+  return transliterate(str);
+};
+
+export const toValidAscii = (str: string) => {
+  const intermediateString = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return accentsToAscii(intermediateString);
 };

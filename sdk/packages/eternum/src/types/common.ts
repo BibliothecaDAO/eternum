@@ -207,6 +207,7 @@ export interface IOrder {
   orderId: number;
   orderName: string;
   fullOrderName: string;
+  color: string;
 }
 
 export type ID = number;
