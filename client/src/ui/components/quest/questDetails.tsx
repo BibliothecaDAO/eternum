@@ -46,7 +46,7 @@ export enum QuestId {
   PauseProduction,
   CreateTrade,
   CreateDefenseArmy,
-  CreateArmy,
+  CreateAttackArmy,
   Travel,
   BuildWorkersHut,
   Market,
@@ -164,7 +164,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     },
   ],
   [
-    QuestId.CreateArmy,
+    QuestId.CreateAttackArmy,
     {
       name: "Create an attacking Army",
       description: "Conquest is fulfilling. Create an attacking army to conquer your enemies",

@@ -54,7 +54,7 @@ export const useQuests = () => {
     createQuest(QuestId.PauseProduction),
     createQuest(QuestId.CreateTrade),
     createQuest(QuestId.CreateDefenseArmy),
-    createQuest(QuestId.CreateArmy),
+    createQuest(QuestId.CreateAttackArmy),
     createQuest(QuestId.Travel),
     createQuest(QuestId.BuildWorkersHut),
     createQuest(QuestId.Market),
@@ -194,9 +194,9 @@ const useQuestDependencies = () => {
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-      [QuestId.CreateArmy]: {
-        value: questClaimStatus[QuestId.CreateArmy] ? null : hasAttackingArmy,
-        status: questClaimStatus[QuestId.CreateArmy]
+      [QuestId.CreateAttackArmy]: {
+        value: questClaimStatus[QuestId.CreateAttackArmy] ? null : hasAttackingArmy,
+        status: questClaimStatus[QuestId.CreateAttackArmy]
           ? QuestStatus.Claimed
           : hasAttackingArmy
             ? QuestStatus.Completed
