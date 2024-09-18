@@ -712,7 +712,7 @@ describe("isSiege", () => {
   it("Should return true if the battle starts after the current timestamp", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
-    const battle = generateMockBatle(false, 10);
+    const battle = generateMockBatle(true, 10);
 
     vi.mocked(getComponentValue).mockReturnValue(battle);
 
@@ -844,7 +844,7 @@ describe("isAttackable", () => {
   it("Should return true if the defender is alive and it's under siege", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
-    const battle = generateMockBatle(false, 10, BattleSide.Defence);
+    const battle = generateMockBatle(true, 10, BattleSide.Defence);
 
     const defender = generateMockArmyInfo(true);
 
