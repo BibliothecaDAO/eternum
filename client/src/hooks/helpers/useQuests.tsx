@@ -97,13 +97,16 @@ const useQuestDependencies = () => {
 
   const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
   const hasDefensiveArmy = useMemo(
-    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId && army.quantity.value > 0),
+    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId && army.quantity.value > 0n),
+    [entityArmies],
+  );
+  const hasAttackingArmy = useMemo(
+    () => entityArmies.some((army) => army.protectee === undefined && army.quantity.value > 0n),
     [entityArmies],
   );
 
   const orders = useGetMyOffers();
 
-  const hasTroops = useMemo(() => armyHasTroops(entityArmies), [entityArmies]);
   const hasTraveled = useMemo(
     () => armyHasTraveled(entityArmies, structurePosition),
     [entityArmies, structurePosition],
@@ -192,12 +195,10 @@ const useQuestDependencies = () => {
             : QuestStatus.InProgress,
       },
       [QuestId.CreateArmy]: {
-        value: questClaimStatus[QuestId.CreateArmy]
-          ? { armyCount: null, hasTroops: null }
-          : { armyCount: entityArmies.length, hasTroops },
+        value: questClaimStatus[QuestId.CreateArmy] ? null : hasAttackingArmy,
         status: questClaimStatus[QuestId.CreateArmy]
           ? QuestStatus.Claimed
-          : entityArmies.length > 0 && hasTroops
+          : hasAttackingArmy
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
