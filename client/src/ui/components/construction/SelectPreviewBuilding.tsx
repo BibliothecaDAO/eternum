@@ -391,6 +391,8 @@ export const ResourceInfo = ({
 
   const capacity = BUILDING_CAPACITY[BuildingType.Resource];
 
+  const amountProducedPerTick = RESOURCE_OUTPUTS[resourceId];
+
   const { getBalance } = getResourceBalance();
 
   const consumedBy = useMemo(() => {
@@ -424,7 +426,7 @@ export const ResourceInfo = ({
             <div className="w-full font-bold">Produces</div>
 
             <div className="flex gap-2">
-              + {EternumGlobalConfig.resources.resourceAmountPerTick}
+              + {amountProducedPerTick}
               <ResourceIcon className="self-center" resource={findResourceById(resourceId)?.trait || ""} size="md" />
               {findResourceById(resourceId)?.trait || ""} per/s
             </div>

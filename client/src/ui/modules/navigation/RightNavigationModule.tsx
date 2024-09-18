@@ -26,8 +26,6 @@ export enum View {
 }
 
 export const RightNavigationModule = () => {
-  const [lastView, setLastView] = useState<View>(View.ResourceTable);
-
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
 
@@ -64,7 +62,6 @@ export const RightNavigationModule = () => {
               if (view === View.ResourceTable) {
                 setView(View.None);
               } else {
-                setLastView(View.ResourceTable);
                 setView(View.ResourceTable);
               }
             }}
@@ -86,7 +83,6 @@ export const RightNavigationModule = () => {
               if (view === View.ResourceArrivals) {
                 setView(View.None);
               } else {
-                setLastView(View.ResourceArrivals);
                 setView(View.ResourceArrivals);
               }
             }}
