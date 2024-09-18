@@ -93,8 +93,8 @@ export const ResourceChip = ({
 
   useEffect(() => {
     const newRate = showPerHour
-      ? `${currencyIntlFormat(netRate * 3.6, 2)} / h`
-      : `${currencyIntlFormat(netRate / 1000, 2)} / s`;
+      ? `${currencyIntlFormat(netRate * 3.6, 2)}/h`
+      : `${currencyIntlFormat(netRate / 1000, 2)}/s`;
     if (newRate !== displayedNetRate) {
       setIsTransitioning(true);
       setTimeout(() => {
@@ -120,22 +120,23 @@ export const ResourceChip = ({
       }}
     >
       {icon}
-      <div className="grid grid-cols-3 w-full">
-        <div className=" self-center text-sm font-bold">
+      <div className="grid grid-cols-6 w-full">
+        <div className="self-center font-bold col-span-2">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}
         </div>
 
-        <div className="font-bold">
+        <div className="self-center m-y-auto font-bold col-span-3">
           {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) + " left" : ""}
         </div>
 
-        {/* <div className="text-xs w-full self-center text-opacity-65 px-1">{findResourceById(resourceId)?.trait}</div> */}
         {netRate ? (
           <div
-            className={`${Number(netRate) < 0 ? "text-light-red" : "text-green/80"} self-center px-2 flex font-bold`}
+            className={`${
+              Number(netRate) < 0 ? "text-light-red" : "text-green/80"
+            } self-center px-2 flex font-bold col-span-1 text-[10px]`}
           >
             <div
-              className={`transition-opacity duration-${TRANSITION_DURATION_MS} ${
+              className={`self-center transition-opacity duration-${TRANSITION_DURATION_MS} ${
                 isTransitioning ? "opacity-0" : "opacity-100"
               }`}
             >
