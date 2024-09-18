@@ -13,10 +13,7 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(
-    private setup: SetupResult,
-    hexCoords: HexPosition,
-  ) {
+  constructor(private setup: SetupResult, hexCoords: HexPosition) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
     this.address = BigInt(this.setup.network.burnerManager.account?.address || 0n);
@@ -151,18 +148,20 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
 
-    await this.setup.systemCalls.create_building({
-      signer: this.setup.network.burnerManager.account!,
-      entity_id: entityId,
-      directions: directions,
-      building_category: buildingType,
-      produce_resource_type:
-        buildingType == BuildingType.Resource && resourceType
-          ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
-          : new CairoOption<Number>(CairoOptionVariant.None, 0),
-    });
+    await this.setup.systemCalls
+      .create_building({
+        signer: this.setup.network.burnerManager.account!,
+        entity_id: entityId,
+        directions: directions,
+        building_category: buildingType,
+        produce_resource_type:
+          buildingType == BuildingType.Resource && resourceType
+            ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
+            : new CairoOption<Number>(CairoOptionVariant.None, 0),
+      })
+      .then(() => this.setup.components.Building.removeOverride(overrideId));
   };
 
   destroyBuilding = async (col: number, row: number) => {
