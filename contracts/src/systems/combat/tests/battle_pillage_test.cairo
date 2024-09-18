@@ -142,8 +142,7 @@ fn test_battle_pillage__near_max_capacity() {
 
 #[test]
 fn test_simple_battle_pillage() {
-    let (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) =
-        setup();
+    let (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
 
@@ -174,5 +173,4 @@ fn test_simple_battle_pillage() {
 
     assert_ne!(initial_army_weight, army_weight, "Weight not changed after pillage");
 }
-
 
