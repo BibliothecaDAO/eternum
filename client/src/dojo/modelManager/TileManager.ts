@@ -141,6 +141,50 @@ export class TileManager {
     return overrideId;
   };
 
+  private _optimisticPause = (col: number, row: number) => {
+    let overrideId = uuid();
+    const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
+    const building = getComponentValue(this.setup.components.Building, entity);
+    this.setup.components.Building.addOverride(overrideId, {
+      entity,
+      value: {
+        outer_col: building?.outer_col,
+        outer_row: building?.outer_row,
+        inner_col: building?.inner_col,
+        inner_row: building?.inner_row,
+        category: building?.category,
+        produced_resource_type: building?.produced_resource_type,
+        bonus_percent: building?.bonus_percent,
+        entity_id: building?.entity_id,
+        outer_entity_id: building?.outer_entity_id,
+        paused: true,
+      },
+    });
+    return overrideId;
+  };
+
+  private _optimisticResume = (col: number, row: number) => {
+    let overrideId = uuid();
+    const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
+    const building = getComponentValue(this.setup.components.Building, entity);
+    this.setup.components.Building.addOverride(overrideId, {
+      entity,
+      value: {
+        outer_col: building?.outer_col,
+        outer_row: building?.outer_row,
+        inner_col: building?.inner_col,
+        inner_row: building?.inner_row,
+        category: building?.category,
+        produced_resource_type: building?.produced_resource_type,
+        bonus_percent: building?.bonus_percent,
+        entity_id: building?.entity_id,
+        outer_entity_id: building?.outer_entity_id,
+        paused: false,
+      },
+    });
+    return overrideId;
+  };
+
   placeBuilding = async (buildingType: BuildingType, hexCoords: HexPosition, resourceType?: number) => {
     const entityId = this._getOwnerEntityId();
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
@@ -153,18 +197,16 @@ export class TileManager {
     // add optimistic rendering
     let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
 
-    await this.setup.systemCalls
-      .create_building({
-        signer: this.setup.network.burnerManager.account!,
-        entity_id: entityId,
-        directions: directions,
-        building_category: buildingType,
-        produce_resource_type:
-          buildingType == BuildingType.Resource && resourceType
-            ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
-            : new CairoOption<Number>(CairoOptionVariant.None, 0),
-      })
-      .then(() => this.setup.components.Building.removeOverride(overrideId));
+    await this.setup.systemCalls.create_building({
+      signer: this.setup.network.burnerManager.account!,
+      entity_id: entityId,
+      directions: directions,
+      building_category: buildingType,
+      produce_resource_type:
+        buildingType == BuildingType.Resource && resourceType
+          ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
+          : new CairoOption<Number>(CairoOptionVariant.None, 0),
+    });
   };
 
   destroyBuilding = async (col: number, row: number) => {
@@ -188,6 +230,8 @@ export class TileManager {
     const entityId = this._getOwnerEntityId();
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
 
+    this._optimisticPause(col, row);
+
     await this.setup.systemCalls.pause_production({
       signer: this.setup.network.burnerManager.account!,
       entity_id: entityId,
@@ -201,6 +245,8 @@ export class TileManager {
   resumeProduction = async (col: number, row: number) => {
     const entityId = this._getOwnerEntityId();
     if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+
+    this._optimisticResume(col, row);
 
     await this.setup.systemCalls.resume_production({
       signer: this.setup.network.burnerManager.account!,
