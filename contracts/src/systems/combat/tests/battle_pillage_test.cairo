@@ -121,17 +121,13 @@ fn test_battle_pillage__near_max_capacity() {
     let mut army_weight = get!(world, attacker_realm_army_unit_id, Weight);
     set!(world, Weight { entity_id: attacker_realm_army_unit_id, value: 950_000 });
     let initial_army_weight = army_weight.value;
-    println!("Initial weight: {}", initial_army_weight);
+    assert_eq!(initial_army_weight, 0, "Initial army weight not correct");
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
     let army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
-    println!("Quantity: {}", army_quantity.value);
 
     let capacity_config = get!(world, 3, CapacityConfig);
-    println!("Weight cap in grams: {}", capacity_config.weight_gram);
-
-    // capacity_config.assert_can_carry()
 
     combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
@@ -152,24 +148,17 @@ fn test_simple_battle_pillage() {
     assert_eq!(army_pos.y, realm_pos.y, "Army & realm not at same pos");
 
     let mut army_weight = get!(world, attacker_realm_army_unit_id, Weight);
-    // set!(world, Weight { entity_id: attacker_realm_army_unit_id, value: 901_000 });
     let initial_army_weight = army_weight.value;
-    println!("Initial weight: {}", initial_army_weight);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
     let army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
-    println!("Quantity: {}", army_quantity.value);
 
     let capacity_config = get!(world, 3, CapacityConfig);
-    println!("Weight cap in grams: {}", capacity_config.weight_gram);
-
-    // capacity_config.assert_can_carry()
 
     combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
     let army_weight = get!(world, attacker_realm_army_unit_id, Weight).value;
-    println!("New weight: {}", army_weight);
 
     assert_ne!(initial_army_weight, army_weight, "Weight not changed after pillage");
 }
