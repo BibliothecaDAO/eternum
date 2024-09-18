@@ -1051,6 +1051,8 @@ mod combat_systems {
                                 let army_capacity_config: CapacityConfig = get!(
                                     world, CapacityConfigCategory::Army, CapacityConfig
                                 );
+
+                                // Divided by resource precision because we need capacity in gram per client unit
                                 let army_total_capacity = army_capacity_config.weight_gram
                                     * attacking_army.troops.count().into()
                                     / RESOURCE_PRECISION;
