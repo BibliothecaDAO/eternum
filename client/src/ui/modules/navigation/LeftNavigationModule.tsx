@@ -82,7 +82,9 @@ export const LeftNavigationModule = () => {
             disabled={!structureIsMine}
             className={clsx({
               "animate-pulse":
-                view != View.ConstructionView && selectedQuest?.id === QuestId.CreateArmy && isPopupOpen(questsPopup),
+                view != View.ConstructionView &&
+                selectedQuest?.id === QuestId.CreateAttackArmy &&
+                isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm,
             })}
             image={BuildingThumbs.military}
@@ -130,7 +132,7 @@ export const LeftNavigationModule = () => {
           <CircleButton
             disabled={!structureIsMine}
             className={clsx({
-              hidden: !questClaimStatus[QuestId.CreateArmy] && isRealm,
+              hidden: !questClaimStatus[QuestId.CreateAttackArmy] && isRealm,
               "animate-pulse":
                 view != View.ConstructionView && selectedQuest?.id === QuestId.Contribution && isPopupOpen(questsPopup),
             })}

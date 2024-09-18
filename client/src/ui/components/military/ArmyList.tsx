@@ -133,7 +133,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
             }}
             disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
             className={clsx({
-              "animate-pulse": selectedQuest?.id === QuestId.CreateArmy,
+              "animate-pulse": selectedQuest?.id === QuestId.CreateAttackArmy,
             })}
           >
             Create attacking Army
