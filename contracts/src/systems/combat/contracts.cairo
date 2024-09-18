@@ -1052,11 +1052,12 @@ mod combat_systems {
                                     world, CapacityConfigCategory::Army, CapacityConfig
                                 );
                                 let army_total_capacity = army_capacity_config.weight_gram
-                                    * attacking_army.troops.count().into();
+                                    * attacking_army.troops.count().into()
+                                    / RESOURCE_PRECISION;
 
                                 let army_weight: Weight = get!(world, army_id, Weight);
 
-                                let max_carriable = (army_total_capacity / RESOURCE_PRECISION - (army_weight.value))
+                                let max_carriable = (army_total_capacity - (army_weight.value))
                                     / max((WeightConfigCustomImpl::get_weight(world, *chosen_resource_type, 1)), 1);
 
                                 if max_carriable > 0 {
