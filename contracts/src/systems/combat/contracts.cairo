@@ -394,7 +394,7 @@ mod combat_systems {
     use eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
-    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
+    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION};
     use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
@@ -434,7 +434,7 @@ mod combat_systems {
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
 
     use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
-    use eternum::utils::math::{min};
+    use eternum::utils::math::{min, max};
     use eternum::utils::random;
     use super::ICombatContract;
 
@@ -1007,7 +1007,6 @@ mod combat_systems {
             let mut structure_army_strength = structure_army.troops.full_strength(troop_config)
                 * structure_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
-            structure_army_strength += 1;
 
             // a percentage of it's full strength depending on structure army's health
             let mut attacking_army_health: Health = get!(world, army_id, Health);
@@ -1016,7 +1015,6 @@ mod combat_systems {
             let mut attacking_army_strength = attacking_army.troops.full_strength(troop_config)
                 * attacking_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
-            attacking_army_strength += 1;
 
             let attack_successful: @bool = random::choices(
                 array![true, false].span(),
@@ -1030,7 +1028,7 @@ mod combat_systems {
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
-                    / (attacking_army_strength + structure_army_strength);
+                    / max((attacking_army_strength + structure_army_strength), 1);
 
                 // choose x random resource to be stolen
                 let mut chosen_resource_types: Span<u8> = random::choices(
@@ -1055,9 +1053,11 @@ mod combat_systems {
                                 );
                                 let army_total_capacity = army_capacity_config.weight_gram
                                     * attacking_army.troops.count().into();
+
                                 let army_weight: Weight = get!(world, army_id, Weight);
-                                let max_carriable = (army_total_capacity - army_weight.value)
-                                    / (WeightConfigCustomImpl::get_weight(world, *chosen_resource_type, 1) + 1);
+
+                                let max_carriable = (army_total_capacity / RESOURCE_PRECISION - (army_weight.value))
+                                    / max((WeightConfigCustomImpl::get_weight(world, *chosen_resource_type, 1)), 1);
 
                                 if max_carriable > 0 {
                                     let max_resource_amount_stolen: u128 = attacking_army.troops.count().into()
