@@ -10,7 +10,7 @@ import { BuildingThumbs } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { EntityDetails } from "../entity-details/EntityDetails";
@@ -27,17 +27,13 @@ export enum View {
 }
 
 export const LeftNavigationModule = () => {
-  const [lastView, setLastView] = useState<View>(View.EntityView);
-
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
-  const previewBuilding = useUIStore((state) => state.previewBuilding);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const { questClaimStatus } = useQuestClaimStatus();
 
@@ -73,7 +69,6 @@ export const LeftNavigationModule = () => {
               if (view === View.EntityView) {
                 setView(View.None);
               } else {
-                setLastView(View.EntityView);
                 setView(View.EntityView);
               }
             }}
@@ -99,7 +94,6 @@ export const LeftNavigationModule = () => {
               if (view === View.MilitaryView) {
                 setView(View.None);
               } else {
-                setLastView(View.MilitaryView);
                 setView(View.MilitaryView);
               }
             }}
@@ -124,7 +118,6 @@ export const LeftNavigationModule = () => {
               if (view === View.ConstructionView) {
                 setView(View.None);
               } else {
-                setLastView(View.ConstructionView);
                 setView(View.ConstructionView);
               }
             }}
@@ -150,7 +143,6 @@ export const LeftNavigationModule = () => {
               if (view === View.WorldStructuresView) {
                 setView(View.None);
               } else {
-                setLastView(View.WorldStructuresView);
                 setView(View.WorldStructuresView);
               }
             }}

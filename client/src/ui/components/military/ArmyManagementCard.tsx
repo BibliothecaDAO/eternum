@@ -250,6 +250,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
                     try {
                       await provider.set_entity_name({ signer: account, entity_id: army.entity_id, name: naming });
+                      army.name = naming;
                     } catch (e) {
                       console.error(e);
                     }
