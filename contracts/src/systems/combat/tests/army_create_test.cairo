@@ -29,9 +29,6 @@ const STARTING_KNIGHT_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 const STARTING_PALADIN_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 const STARTING_CROSSBOWMAN_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 
-const REALM_COORD_X: u32 = 2;
-const REALM_COORD_Y: u32 = 3;
-
 fn set_configurations(world: IWorldDispatcher) {
     set!(
         world,
@@ -87,6 +84,8 @@ fn test_army_create___attacking_army() {
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = combat_systems_dispatcher.army_create(realm_id, false);
 
+    let realm_position = get!(world, realm_id, Position);
+
     let army: Army = get!(world, army_id, Army);
     assert_eq!(army.troops, Troops { knight_count: 0, paladin_count: 0, crossbowman_count: 0 });
     assert_eq!(army.battle_id, 0);
@@ -96,15 +95,15 @@ fn test_army_create___attacking_army() {
     assert_eq!(army_entity_owner.entity_owner_id, realm_id);
 
     let army_position: Position = get!(world, army_id, Position);
-    assert_eq!(army_position.x, REALM_COORD_X);
-    assert_eq!(army_position.y, REALM_COORD_Y);
+    assert_eq!(army_position.x, realm_position.x);
+    assert_eq!(army_position.y, realm_position.y);
 
     let army_stamina: Stamina = get!(world, army_id, Stamina);
     assert_ne!(army_stamina.last_refill_tick, 0);
 
     let army_movable: Movable = get!(world, army_id, Movable);
-    assert_eq!(army_movable.start_coord_x, REALM_COORD_X);
-    assert_eq!(army_movable.start_coord_y, REALM_COORD_Y);
+    assert_eq!(army_movable.start_coord_x, realm_position.x);
+    assert_eq!(army_movable.start_coord_y, realm_position.y);
 }
 
 #[test]
@@ -134,6 +133,8 @@ fn test_army_create___defending_army() {
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = combat_systems_dispatcher.army_create(realm_id, true);
 
+    let realm_position = get!(world, realm_id, Position);
+
     let army: Army = get!(world, army_id, Army);
     assert_eq!(army.troops, Troops { knight_count: 0, paladin_count: 0, crossbowman_count: 0 });
     assert_eq!(army.battle_id, 0);
@@ -143,8 +144,8 @@ fn test_army_create___defending_army() {
     assert_eq!(army_entity_owner.entity_owner_id, realm_id);
 
     let army_position: Position = get!(world, army_id, Position);
-    assert_eq!(army_position.x, REALM_COORD_X);
-    assert_eq!(army_position.y, REALM_COORD_Y);
+    assert_eq!(army_position.x, realm_position.x);
+    assert_eq!(army_position.y, realm_position.y);
 
     let army_stamina: Stamina = get!(world, army_id, Stamina);
     assert_eq!(army_stamina.last_refill_tick, 0);
