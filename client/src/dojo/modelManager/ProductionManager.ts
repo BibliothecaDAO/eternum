@@ -37,7 +37,6 @@ export class ProductionManager {
   }
 
   public netRate(currentTick: number): [boolean, number] {
-    if (!this._inputs_available(currentTick, this.resourceId)) return [false, 0];
     return this._netRate(this.resourceId);
   }
 
