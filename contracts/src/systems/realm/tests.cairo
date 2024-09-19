@@ -23,7 +23,7 @@ use eternum::utils::testing::{
         spawn_realm, get_default_realm_pos, generate_realm_positions, spawn_hyperstructure,
         get_default_hyperstructure_coord
     },
-    config::{set_combat_config, set_capacity_config}
+    config::{set_combat_config, set_capacity_config, set_settlement_config}
 };
 use starknet::contract_address_const;
 
@@ -44,6 +44,9 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
+    set_capacity_config(config_systems_address);
+    set_settlement_config(config_systems_address);
+
     // set initially minted resources
     let initial_resources = array![
         (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
@@ -55,8 +58,6 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
 
     realm_free_mint_config_dispatcher
         .set_mint_config(config_id: REALM_FREE_MINT_CONFIG_ID, resources: initial_resources.span());
-
-    set_capacity_config(config_systems_address);
 
     (world, realm_systems_dispatcher)
 }

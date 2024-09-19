@@ -103,7 +103,8 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
             .span()
     );
 
-    teleport(world, attacker_realm_army_unit_id, Coord { x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y });
+    let defender_position = get!(world, defender_realm_entity_id, Position);
+    teleport(world, attacker_realm_army_unit_id, Coord { x: defender_position.x, y: defender_position.y });
 
     (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id)
 }
