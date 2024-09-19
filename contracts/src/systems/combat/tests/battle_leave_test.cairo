@@ -10,9 +10,7 @@ use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
 
-use eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION
-};
+use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION};
 use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
@@ -74,9 +72,7 @@ fn set_configurations(world: IWorldDispatcher) {
         world,
         (
             get_combat_config(),
-            TickConfig {
-                config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1
-            },
+            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
             SpeedConfig {
                 config_id: WORLD_CONFIG_ID,
                 speed_config_id: ARMY_ENTITY_TYPE,
@@ -113,9 +109,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_1_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     let player_1_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
@@ -142,9 +136,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_2_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     let player_2_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
@@ -171,9 +163,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_3_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     let player_3_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
@@ -231,18 +221,14 @@ fn test_battle_leave_by_winner() {
 
     //////////// START BATTLE ////////////////////
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_1_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
 
     // player 1 starts battle against player 2
     let battle_id = combat_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
     // player 3 joins battle against player 1
     // so it's player 1 vs (player 2 & 3)
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_3_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     combat_system_dispatcher.battle_join(battle_id, BattleSide::Defence, player_3_army_id);
 
     let battle: Battle = get!(world, battle_id, Battle);
@@ -254,17 +240,13 @@ fn test_battle_leave_by_winner() {
     //////////// LEAVE BATTLE  ////////////////////
     /// player 1 leaves battle after it has ended and they won
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_1_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     combat_system_dispatcher.battle_leave(battle_id, player_1_army_id);
 
     // ensure the player_1 took all the reward from the contest pot
     // the player_1's gold balance should now be triple since it took
     // (player_2 and player 3)'s gold balance after battle ended
-    let player_1_gold_resource: Resource = ResourceCustomImpl::get(
-        world, (player_1_army_id, ResourceTypes::GOLD)
-    );
+    let player_1_gold_resource: Resource = ResourceCustomImpl::get(world, (player_1_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT * 3, player_1_gold_resource.balance);
 
     // ensure player_1's army troop count is correct
@@ -302,18 +284,14 @@ fn test_battle_leave_by_loser() {
 
     //////////// START BATTLE ////////////////////
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_1_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
 
     // player 1 starts battle against player 2
     let battle_id = combat_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
     // player 3 joins battle against player 1
     // so it's player 1 vs (player 2 & 3)
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_3_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     combat_system_dispatcher.battle_join(battle_id, BattleSide::Defence, player_3_army_id);
 
     let battle: Battle = get!(world, battle_id, Battle);
@@ -325,15 +303,11 @@ fn test_battle_leave_by_loser() {
     //////////// LEAVE BATTLE  ////////////////////
     /// player 2 leaves battle after it has ended and they lost
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_2_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     combat_system_dispatcher.battle_leave(battle_id, player_2_army_id);
 
     // ensure the player_2 took no reward and lost balance
-    let player_2_gold_resource: Resource = ResourceCustomImpl::get(
-        world, (player_2_army_id, ResourceTypes::GOLD)
-    );
+    let player_2_gold_resource: Resource = ResourceCustomImpl::get(world, (player_2_army_id, ResourceTypes::GOLD));
     assert_eq!(0, player_2_gold_resource.balance);
 
     // ensure player_3's army troop count is correct

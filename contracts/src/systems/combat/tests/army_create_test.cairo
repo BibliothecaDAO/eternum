@@ -3,16 +3,12 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use eternum::models::config::{
-    TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig
-};
+use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
 
-use eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION
-};
+use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION};
 use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
@@ -20,8 +16,8 @@ use eternum::systems::{
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    config::get_combat_config, world::spawn_eternum, systems::deploy_realm_systems,
-    systems::deploy_combat_systems, general::mint
+    config::get_combat_config, world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_combat_systems,
+    general::mint
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -41,9 +37,7 @@ fn set_configurations(world: IWorldDispatcher) {
         world,
         (
             get_combat_config(),
-            TickConfig {
-                config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1
-            },
+            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
             CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300000, },
             SettlementConfig {
                 config_id: WORLD_CONFIG_ID,

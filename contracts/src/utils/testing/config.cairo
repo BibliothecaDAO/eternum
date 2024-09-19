@@ -2,35 +2,30 @@ use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::integer::BoundedU128;
 use core::ops::index::IndexView;
 use eternum::constants::{
-    ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE,
-    TickIds, TravelTypes
+    ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds, TravelTypes
 };
 
 use eternum::models::{
-    config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory}, combat::Troops,
-    config::MapConfig
+    config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory}, combat::Troops, config::MapConfig
 };
 
 use eternum::systems::config::contracts::{
-    ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher,
-    IStaminaConfigDispatcherTrait, IStaminaRefillConfigDispatcher,
-    IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
-    ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IMercenariesConfigDispatcher,
-    IMercenariesConfigDispatcherTrait, ISettlementConfigDispatcher,
-    ISettlementConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
-    ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher,
-    IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
-    IProductionConfigDispatcher, IProductionConfigDispatcherTrait,
-    ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait,
-    IBattleConfigDispatcher, IBattleConfigDispatcherTrait
+    ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
+    IStaminaRefillConfigDispatcher, IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher,
+    ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
+    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, ISettlementConfigDispatcher,
+    ISettlementConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait, ITickConfigDispatcher,
+    ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
+    IWeightConfigDispatcherTrait, IProductionConfigDispatcher, IProductionConfigDispatcherTrait,
+    ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait, IBattleConfigDispatcher,
+    IBattleConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
-    get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT,
-    MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
-    MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM,
-    STOREHOUSE_CAPACITY_GRAMS, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
+    get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
+    MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
+    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
+    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
 };
 
 use starknet::{ContractAddress};
@@ -47,10 +42,8 @@ fn set_bank_config(config_systems_address: ContractAddress) {
 }
 
 fn set_tick_config(config_systems_address: ContractAddress) {
-    ITickConfigDispatcher { contract_address: config_systems_address }
-        .set_tick_config(TickIds::DEFAULT, 1);
-    ITickConfigDispatcher { contract_address: config_systems_address }
-        .set_tick_config(TickIds::ARMIES, 7200);
+    ITickConfigDispatcher { contract_address: config_systems_address }.set_tick_config(TickIds::DEFAULT, 1);
+    ITickConfigDispatcher { contract_address: config_systems_address }.set_tick_config(TickIds::ARMIES, 7200);
 }
 
 fn set_map_config(config_systems_address: ContractAddress) {
@@ -87,37 +80,29 @@ fn get_combat_config() -> TroopConfig {
 }
 
 fn get_battle_config() -> BattleConfig {
-    return BattleConfig {
-        config_id: WORLD_CONFIG_ID, battle_grace_tick_count: 1, battle_delay_seconds: 1,
-    };
+    return BattleConfig { config_id: WORLD_CONFIG_ID, battle_grace_tick_count: 1, battle_delay_seconds: 1, };
 }
 
 fn set_combat_config(config_systems_address: ContractAddress) {
     let troop_config = get_combat_config();
-    ITroopConfigDispatcher { contract_address: config_systems_address }
-        .set_troop_config(troop_config);
+    ITroopConfigDispatcher { contract_address: config_systems_address }.set_troop_config(troop_config);
 }
 
 fn set_battle_config(config_systems_address: ContractAddress) {
     let battle_config = get_battle_config();
-    IBattleConfigDispatcher { contract_address: config_systems_address }
-        .set_battle_config(battle_config);
+    IBattleConfigDispatcher { contract_address: config_systems_address }.set_battle_config(battle_config);
 }
 
 fn set_mine_production_config(config_systems_address: ContractAddress) {
     IProductionConfigDispatcher { contract_address: config_systems_address }
-        .set_production_config(
-            ResourceTypes::EARTHEN_SHARD, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, array![].span()
-        );
+        .set_production_config(ResourceTypes::EARTHEN_SHARD, EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, array![].span());
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {
-    IStaminaRefillConfigDispatcher { contract_address: config_systems_address }
-        .set_stamina_refill_config(100);
+    IStaminaRefillConfigDispatcher { contract_address: config_systems_address }.set_stamina_refill_config(100);
     IStaminaConfigDispatcher { contract_address: config_systems_address }
         .set_stamina_config(ResourceTypes::PALADIN, 100);
-    IStaminaConfigDispatcher { contract_address: config_systems_address }
-        .set_stamina_config(ResourceTypes::KNIGHT, 80);
+    IStaminaConfigDispatcher { contract_address: config_systems_address }.set_stamina_config(ResourceTypes::KNIGHT, 80);
     IStaminaConfigDispatcher { contract_address: config_systems_address }
         .set_stamina_config(ResourceTypes::CROSSBOWMAN, 80);
 }
@@ -133,44 +118,30 @@ fn set_travel_and_explore_stamina_cost_config(config_systems_address: ContractAd
 fn set_capacity_config(config_systems_address: ContractAddress) {
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(
-            CapacityConfig {
-                category: CapacityConfigCategory::Structure, weight_gram: BoundedU128::max(),
-            }
+            CapacityConfig { category: CapacityConfigCategory::Structure, weight_gram: BoundedU128::max(), }
         );
 
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(
-            CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 100_000, }
-        );
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 100_000, });
+
+    ICapacityConfigDispatcher { contract_address: config_systems_address }
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 10_000, });
 
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(
-            CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 10_000, }
-        );
-
-    ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(
-            CapacityConfig {
-                category: CapacityConfigCategory::Storehouse,
-                weight_gram: STOREHOUSE_CAPACITY_GRAMS,
-            }
+            CapacityConfig { category: CapacityConfigCategory::Storehouse, weight_gram: STOREHOUSE_CAPACITY_GRAMS, }
         );
 }
 
 fn set_speed_config(config_systems_address: ContractAddress) {
-    ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(ARMY_ENTITY_TYPE, 1);
-    ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(DONKEY_ENTITY_TYPE, 60);
+    ITransportConfigDispatcher { contract_address: config_systems_address }.set_speed_config(ARMY_ENTITY_TYPE, 1);
+    ITransportConfigDispatcher { contract_address: config_systems_address }.set_speed_config(DONKEY_ENTITY_TYPE, 60);
 }
 
 fn set_mercenaries_config(config_systems_address: ContractAddress) {
-    let mercenaries_troops = Troops {
-        knight_count: 4_000_000, paladin_count: 4_000_000, crossbowman_count: 4_000_000
-    };
+    let mercenaries_troops = Troops { knight_count: 4_000_000, paladin_count: 4_000_000, crossbowman_count: 4_000_000 };
 
-    let mercenaries_rewards = array![(ResourceTypes::WHEAT, 10_000), (ResourceTypes::FISH, 20_000)]
-        .span();
+    let mercenaries_rewards = array![(ResourceTypes::WHEAT, 10_000), (ResourceTypes::FISH, 20_000)].span();
 
     IMercenariesConfigDispatcher { contract_address: config_systems_address }
         .set_mercenaries_config(mercenaries_troops, mercenaries_rewards);

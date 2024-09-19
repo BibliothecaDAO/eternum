@@ -21,23 +21,19 @@ use eternum::models::stamina::Stamina;
 use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
 use eternum::models::weight::Weight;
 
-use eternum::systems::combat::contracts::{
-    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
-};
+use eternum::systems::combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait};
 
 use eternum::systems::config::contracts::{
     config_systems, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
-    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
+    IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait, IMercenariesConfigDispatcher,
+    IMercenariesConfigDispatcherTrait,
 };
 
 use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
 use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-use eternum::systems::map::contracts::{
-    map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait
-};
+use eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
 
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
@@ -46,14 +42,12 @@ use eternum::systems::transport::contracts::travel_systems::{
 use eternum::utils::testing::{
     world::{spawn_eternum},
     systems::{
-        deploy_realm_systems, deploy_combat_systems, deploy_system, deploy_map_systems,
-        deploy_dev_resource_systems
+        deploy_realm_systems, deploy_combat_systems, deploy_system, deploy_map_systems, deploy_dev_resource_systems
     },
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
-        set_combat_config, set_stamina_config, set_capacity_config, set_speed_config,
-        set_mercenaries_config, set_settlement_config, set_tick_config, set_map_config,
-        set_weight_config, set_mine_production_config
+        set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
+        set_settlement_config, set_tick_config, set_map_config, set_weight_config, set_mine_production_config
     },
     constants::{
         MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
@@ -93,15 +87,11 @@ fn test_map_explore() {
     let expected_explored_coord = army_coord.neighbor(explore_tile_direction);
 
     // ensure that Tile model is correct
-    let explored_tile: Tile = get!(
-        world, (expected_explored_coord.x, expected_explored_coord.y), Tile
-    );
+    let explored_tile: Tile = get!(world, (expected_explored_coord.x, expected_explored_coord.y), Tile);
     assert_eq!(explored_tile.col, explored_tile.col, "wrong col");
     assert_eq!(explored_tile.row, explored_tile.row, "wrong row");
     assert_eq!(explored_tile.explored_by_id, realm_army_unit_id, "wrong realm owner");
-    assert_eq!(
-        explored_tile.explored_at, TIMESTAMP + TICK_INTERVAL_IN_SECONDS, "wrong exploration time"
-    );
+    assert_eq!(explored_tile.explored_at, TIMESTAMP + TICK_INTERVAL_IN_SECONDS, "wrong exploration time");
 
     // ensure that the right amount of food was burnt
     let expected_wheat_balance = INITIAL_WHEAT_BALANCE
@@ -118,14 +108,7 @@ fn test_map_explore() {
 
 #[test]
 fn test_map_explore__mine_mercenaries_protector() {
-    let (
-        world,
-        realm_entity_id,
-        realm_army_unit_id,
-        map_systems_dispatcher,
-        combat_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
@@ -151,8 +134,7 @@ fn test_map_explore__mine_mercenaries_protector() {
         world, mine_entity_id, army_position
     );
 
-    let battle_entity_id = combat_systems_dispatcher
-        .battle_start(realm_army_unit_id, mercenary_entity_id);
+    let battle_entity_id = combat_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
 
     starknet::testing::set_block_timestamp(99999);
 
@@ -166,14 +148,7 @@ fn test_map_explore__mine_mercenaries_protector() {
 
 #[test]
 fn test_map_explore__mine_production_deadline() {
-    let (
-        world,
-        realm_entity_id,
-        realm_army_unit_id,
-        map_systems_dispatcher,
-        _combat_systems_dispatcher
-    ) =
-        setup();
+    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _combat_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
 
@@ -187,19 +162,13 @@ fn test_map_explore__mine_production_deadline() {
     let army_position = get!(world, realm_army_unit_id, Position).into();
     let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(world, army_position);
     InternalMapSystemsImpl::add_production_deadline(world, mine_entity_id);
-    let mine_earthen_shard_production_deadline: ProductionDeadline = get!(
-        world, mine_entity_id, ProductionDeadline
-    );
+    let mine_earthen_shard_production_deadline: ProductionDeadline = get!(world, mine_entity_id, ProductionDeadline);
 
     let current_ts = starknet::get_block_timestamp();
     let min_deadline = current_ts
-        + (100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK)
-            .try_into()
-            .unwrap();
+        + (100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK).try_into().unwrap();
     let max_deadline = current_ts
-        + (10 * 100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK)
-            .try_into()
-            .unwrap();
+        + (10 * 100_000 * RESOURCE_PRECISION / EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK).try_into().unwrap();
     assert_ge!(mine_earthen_shard_production_deadline.deadline_tick, min_deadline);
     assert_le!(mine_earthen_shard_production_deadline.deadline_tick, max_deadline);
 }
@@ -244,9 +213,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
         );
 
     let troops = Troops {
-        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(),
-        paladin_count: 0,
-        crossbowman_count: 0
+        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0
     };
     let realm_army_unit_id: ID = create_army_with_troops(
         world, combat_systems_dispatcher, realm_entity_id, troops, false
@@ -259,9 +226,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     // move to next tick
     let armies_tick_config = TickImpl::get_armies_tick_config(world);
     let current_ts = starknet::get_block_timestamp();
-    starknet::testing::set_block_timestamp(
-        current_ts + armies_tick_config.tick_interval_in_seconds
-    );
+    starknet::testing::set_block_timestamp(current_ts + armies_tick_config.tick_interval_in_seconds);
 
     (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher)
 }

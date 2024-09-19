@@ -1,7 +1,7 @@
 import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
-import { EternumGlobalConfig, EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, EternumProvider, FELT_CENTER, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -27,11 +27,11 @@ const ADMIN_BANK_ENTITY_ID = 999999998n;
 const LORDS_LIQUIDITY_PER_RESOURCE = 250000;
 
 // Precision
-const RESOURCE_PRECISION = 1000;
+const RESOURCE_PRECISION = EternumGlobalConfig.resources.resourcePrecision;
 
 // Banks
-const COORD_X = 2147483899;
-const COORD_Y = 2147483801;
+const COORD_X = FELT_CENTER;
+const COORD_Y = FELT_CENTER;
 
 export const createAdminBank = async () => {
   const tx = await provider.create_admin_bank({

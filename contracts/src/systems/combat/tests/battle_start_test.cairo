@@ -72,9 +72,7 @@ fn set_configurations(world: IWorldDispatcher) {
         world,
         (
             get_combat_config(),
-            TickConfig {
-                config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1
-            },
+            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
             SpeedConfig {
                 config_id: WORLD_CONFIG_ID,
                 speed_config_id: ARMY_ENTITY_TYPE,
@@ -111,8 +109,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    let player_1_realm_id = realm_system_dispatcher
-        .create('Mysticora1', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
+    let player_1_realm_id = realm_system_dispatcher.create('Mysticora1', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_1_realm_id,
@@ -138,8 +135,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
-    let player_2_realm_id = realm_system_dispatcher
-        .create('Mysticora2', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
+    let player_2_realm_id = realm_system_dispatcher.create('Mysticora2', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_2_realm_id,
@@ -165,8 +161,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
     //////////////////////////////////////////////
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
-    let player_3_realm_id = realm_system_dispatcher
-        .create('Mysticora3', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
+    let player_3_realm_id = realm_system_dispatcher.create('Mysticora3', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_3_realm_id,
@@ -223,9 +218,7 @@ fn test_battle_start() {
 
     //////////// START BATTLE ////////////////////
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    starknet::testing::set_account_contract_address(
-        contract_address_const::<PLAYER_1_REALM_OWNER>()
-    );
+    starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     // player 1 starts battle against player 2
     let battle_id = combat_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
     let battle: Battle = get!(world, battle_id, Battle);
@@ -249,23 +242,15 @@ fn test_battle_start() {
     assert_eq!(player_2_army.battle_side, BattleSide::Defence);
 
     // ensure player 1 gold resource still exists but it is locked
-    let player_1_gold_resource: Resource = ResourceCustomImpl::get(
-        world, (player_1_army_id, ResourceTypes::GOLD)
-    );
+    let player_1_gold_resource: Resource = ResourceCustomImpl::get(world, (player_1_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT, player_1_gold_resource.balance);
-    let player_1_resource_lock: ResourceTransferLock = get!(
-        world, player_1_army_id, ResourceTransferLock
-    );
+    let player_1_resource_lock: ResourceTransferLock = get!(world, player_1_army_id, ResourceTransferLock);
     player_1_resource_lock.assert_locked();
 
     // ensure player 2 gold resource still exists but it is locked
-    let player_2_gold_resource: Resource = ResourceCustomImpl::get(
-        world, (player_2_army_id, ResourceTypes::GOLD)
-    );
+    let player_2_gold_resource: Resource = ResourceCustomImpl::get(world, (player_2_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT, player_2_gold_resource.balance);
-    let player_2_resource_lock: ResourceTransferLock = get!(
-        world, player_2_army_id, ResourceTransferLock
-    );
+    let player_2_resource_lock: ResourceTransferLock = get!(world, player_2_army_id, ResourceTransferLock);
     player_2_resource_lock.assert_locked();
 }
 

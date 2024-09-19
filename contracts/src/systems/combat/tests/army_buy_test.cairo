@@ -3,16 +3,12 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use eternum::models::config::{
-    TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig
-};
+use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
 
-use eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION
-};
+use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION};
 use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
@@ -43,9 +39,7 @@ fn set_configurations(world: IWorldDispatcher) {
         world,
         (
             get_combat_config(),
-            TickConfig {
-                config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1
-            },
+            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
             SettlementConfig {
                 config_id: WORLD_CONFIG_ID,
                 radius: 50,
@@ -109,15 +103,9 @@ fn test_army_buy() {
     assert_eq!(army.troops.paladin_count, STARTING_PALADIN_COUNT.try_into().unwrap());
     assert_eq!(army.troops.crossbowman_count, STARTING_CROSSBOWMAN_COUNT.try_into().unwrap());
 
-    let knight_resource: Resource = ResourceCustomImpl::get(
-        world, (realm_id, ResourceTypes::KNIGHT)
-    );
-    let paladin_resource: Resource = ResourceCustomImpl::get(
-        world, (realm_id, ResourceTypes::PALADIN)
-    );
-    let crossbowman_resource: Resource = ResourceCustomImpl::get(
-        world, (realm_id, ResourceTypes::CROSSBOWMAN)
-    );
+    let knight_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::KNIGHT));
+    let paladin_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::PALADIN));
+    let crossbowman_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::CROSSBOWMAN));
     assert_eq!(knight_resource.balance, 0);
     assert_eq!(paladin_resource.balance, 0);
     assert_eq!(crossbowman_resource.balance, 0);
