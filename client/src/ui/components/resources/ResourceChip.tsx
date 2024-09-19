@@ -4,7 +4,10 @@ import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, formatTime } from "../../utils/utils";
+import { currencyFormat, currencyIntlFormat, formatTime } from "../../utils/utils";
+
+const DISPLAY_RATE_TIME_MS = 5_000;
+const TRANSITION_DURATION_MS = 400;
 
 export const ResourceChip = ({
   isLabor = false,
@@ -18,6 +21,10 @@ export const ResourceChip = ({
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const [showPerHour, setShowPerHour] = useState(true);
+  const [displayedNetRate, setDisplayedNetRate] = useState("");
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const production = useMemo(() => {
     return productionManager.getProduction();
@@ -76,6 +83,27 @@ export const ResourceChip = ({
     return () => clearInterval(interval);
   }, [balance, netRate, entityId]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowPerHour((prev) => !prev);
+    }, DISPLAY_RATE_TIME_MS);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const newRate = showPerHour
+      ? `${currencyIntlFormat(netRate * 3.6, 2)}/h`
+      : `${currencyIntlFormat(netRate / 1000, 2)}/s`;
+    if (newRate !== displayedNetRate) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setDisplayedNetRate(newRate);
+        setIsTransitioning(false);
+      }, TRANSITION_DURATION_MS / 2);
+    }
+  }, [netRate, showPerHour]);
+
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
@@ -92,23 +120,29 @@ export const ResourceChip = ({
       }}
     >
       {icon}
-      <div className="flex justify-between w-full">
-        <div className=" self-center text-sm font-bold">
+      <div className="grid grid-cols-6 w-full">
+        <div className="self-center font-bold col-span-2">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}
         </div>
 
-        <div className="font-bold">
+        <div className="self-center m-y-auto font-bold col-span-3">
           {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) + " left" : ""}
         </div>
 
-        {/* <div className="text-xs w-full self-center text-opacity-65 px-1">{findResourceById(resourceId)?.trait}</div> */}
         {netRate ? (
           <div
-            className={`${Number(netRate) < 0 ? "text-light-red" : "text-green/80"} self-center px-2 flex font-bold`}
+            className={`${
+              Number(netRate) < 0 ? "text-light-red" : "text-green/80"
+            } self-center px-2 flex font-bold col-span-1 text-[10px]`}
           >
-            <div>{parseFloat(netRate.toString()) < 0 ? "" : "+"}</div>
-
-            <div>{netRate / 1000} / s</div>
+            <div
+              className={`self-center transition-opacity duration-${TRANSITION_DURATION_MS} ${
+                isTransitioning ? "opacity-0" : "opacity-100"
+              }`}
+            >
+              {parseFloat(netRate.toString()) < 0 ? "" : "+"}
+              {displayedNetRate}
+            </div>
           </div>
         ) : (
           <div

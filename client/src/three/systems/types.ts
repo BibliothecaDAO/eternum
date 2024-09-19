@@ -10,6 +10,7 @@ export type ArmySystemUpdate = {
   battleId: ID;
   defender: boolean;
   currentHealth: bigint;
+  order: number;
 };
 
 export type StructureSystemUpdate = {

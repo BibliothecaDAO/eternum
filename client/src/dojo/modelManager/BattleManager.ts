@@ -136,7 +136,7 @@ export class BattleManager {
     if (!battle) {
       return false;
     }
-    return battle?.start_at > currentTimestamp;
+    return battle?.duration_left !== 0n && battle?.start_at > currentTimestamp;
   }
 
   public getSiegeTimeLeft(currentTimestamp: number): Date {

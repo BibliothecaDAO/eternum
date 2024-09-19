@@ -6,7 +6,7 @@ use eternum::constants::{
 };
 
 use eternum::models::{
-    config::TroopConfig, combat::Troops, config::CapacityConfig, config::CapacityConfigCategory, config::MapConfig
+    config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory}, combat::Troops, config::MapConfig
 };
 
 use eternum::systems::config::contracts::{
@@ -16,7 +16,8 @@ use eternum::systems::config::contracts::{
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
     IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher,
-    IProductionConfigDispatcherTrait, ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait
+    IProductionConfigDispatcherTrait, ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait,
+    IBattleConfigDispatcher, IBattleConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -77,9 +78,18 @@ fn get_combat_config() -> TroopConfig {
     };
 }
 
+fn get_battle_config() -> BattleConfig {
+    return BattleConfig { config_id: WORLD_CONFIG_ID, battle_grace_tick_count: 1, battle_delay_seconds: 1, };
+}
+
 fn set_combat_config(config_systems_address: ContractAddress) {
     let troop_config = get_combat_config();
     ITroopConfigDispatcher { contract_address: config_systems_address }.set_troop_config(troop_config);
+}
+
+fn set_battle_config(config_systems_address: ContractAddress) {
+    let battle_config = get_battle_config();
+    IBattleConfigDispatcher { contract_address: config_systems_address }.set_battle_config(battle_config);
 }
 
 fn set_mine_production_config(config_systems_address: ContractAddress) {
@@ -114,7 +124,7 @@ fn set_capacity_config(config_systems_address: ContractAddress) {
         .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 100_000, });
 
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300_000, });
+        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 10_000, });
 
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(

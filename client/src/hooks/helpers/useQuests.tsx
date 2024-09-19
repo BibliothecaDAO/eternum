@@ -54,7 +54,7 @@ export const useQuests = () => {
     createQuest(QuestId.PauseProduction),
     createQuest(QuestId.CreateTrade),
     createQuest(QuestId.CreateDefenseArmy),
-    createQuest(QuestId.CreateArmy),
+    createQuest(QuestId.CreateAttackArmy),
     createQuest(QuestId.Travel),
     createQuest(QuestId.BuildWorkersHut),
     createQuest(QuestId.Market),
@@ -97,13 +97,16 @@ const useQuestDependencies = () => {
 
   const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
   const hasDefensiveArmy = useMemo(
-    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId && army.quantity.value > 0),
+    () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId && army.quantity.value > 0n),
+    [entityArmies],
+  );
+  const hasAttackingArmy = useMemo(
+    () => entityArmies.some((army) => army.protectee === undefined && army.quantity.value > 0n),
     [entityArmies],
   );
 
   const orders = useGetMyOffers();
 
-  const hasTroops = useMemo(() => armyHasTroops(entityArmies), [entityArmies]);
   const hasTraveled = useMemo(
     () => armyHasTraveled(entityArmies, structurePosition),
     [entityArmies, structurePosition],
@@ -191,13 +194,11 @@ const useQuestDependencies = () => {
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
-      [QuestId.CreateArmy]: {
-        value: questClaimStatus[QuestId.CreateArmy]
-          ? { armyCount: null, hasTroops: null }
-          : { armyCount: entityArmies.length, hasTroops },
-        status: questClaimStatus[QuestId.CreateArmy]
+      [QuestId.CreateAttackArmy]: {
+        value: questClaimStatus[QuestId.CreateAttackArmy] ? null : hasAttackingArmy,
+        status: questClaimStatus[QuestId.CreateAttackArmy]
           ? QuestStatus.Claimed
-          : entityArmies.length > 0 && hasTroops
+          : hasAttackingArmy
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },

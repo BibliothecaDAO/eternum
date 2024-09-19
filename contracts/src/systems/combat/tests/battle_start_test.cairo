@@ -22,7 +22,7 @@ use eternum::systems::{
 };
 use eternum::utils::testing::{
     config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_system, deploy_combat_systems}, general::mint
+    systems::{deploy_realm_systems, deploy_system, deploy_combat_systems}, general::{mint, teleport}
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -64,11 +64,6 @@ const BATTLE_COORD_Y: u32 = 9;
 fn battle_coord() -> Coord {
     Coord { x: BATTLE_COORD_X, y: BATTLE_COORD_Y, }
 }
-
-fn teleport(world: IWorldDispatcher, entity_id: ID, coord: Coord) {
-    set!(world, (Position { entity_id, x: coord.x, y: coord.y, }));
-}
-
 
 fn set_configurations(world: IWorldDispatcher) {
     set!(

@@ -106,3 +106,7 @@ fn mint(world: IWorldDispatcher, entity: ID, mut resources: Span<(u8, u128)>) {
         }
     };
 }
+
+fn teleport(world: IWorldDispatcher, entity_id: ID, coord: Coord) {
+    set!(world, (Position { entity_id, x: coord.x, y: coord.y, }));
+}

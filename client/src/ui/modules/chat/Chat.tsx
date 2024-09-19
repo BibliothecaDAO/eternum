@@ -4,10 +4,12 @@ import TextInput from "@/ui/elements/TextInput";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { shortString, TypedData } from "starknet";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { toValidAscii } from "@/ui/utils/utils";
+import { PASTEL_BLUE, PASTEL_PINK } from "./constants";
 
 const GLOBAL_CHANNEL = shortString.encodeShortString("global");
 
@@ -30,6 +32,7 @@ function generateMessageTypedData(
         { name: "identity", type: "ContractAddress" },
         { name: "channel", type: "shortstring" },
         { name: "content", type: "string" },
+        { name: "timestamp", type: "felt" },
         { name: "salt", type: "felt" },
       ],
     },
@@ -44,8 +47,8 @@ function generateMessageTypedData(
       identity,
       channel,
       content,
-      salt,
       timestamp,
+      salt,
     },
   };
 }
@@ -59,71 +62,15 @@ export const Chat = () => {
     network: { toriiClient },
   } = useDojo();
 
+  const bottomChatRef = useRef<HTMLDivElement>(null);
+
   const [messages, setMessages] = useState<
-    { name: string; content: string; color: string; isDirect: boolean; fromSelf: boolean }[]
+    { name: string; content: string; color: string; isDirect: boolean; fromSelf: boolean; timestamp: Date }[]
   >([]);
   const [content, setContent] = useState<string>("");
   const [channel, setChannel] = useState<string>("");
   const [salt, setSalt] = useState<bigint>(0n);
   const [flashMessageIndex, setFlashMessageIndex] = useState<number | null>(null);
-
-  const colors = [
-    "#FFB3BA",
-    "#FFDFBA",
-    "#FFFFBA",
-    "#BAFFC9",
-    "#BAE1FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#B3FFB3",
-    "#B3B3FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#FFDFBA",
-    "#FFFFBA",
-    "#BAFFC9",
-    "#BAE1FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#B3FFB3",
-    "#B3B3FF",
-    "#FFB3E6",
-    "#E6B3FF",
-    "#B3FFFF",
-    "#FFFFB3",
-    "#FFD9B3",
-    "#D9B3FF",
-    "#B3FFD9",
-    "#FFB3BA",
-    "#FFDFBA",
-    "#FFFFBA",
-    "#BAFFC9",
-    "#BAE1FF",
-    "#FFB3E6",
-  ];
-
-  const getColorForAddress = (address: string) => {
-    const hash = address.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
-  };
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
 
@@ -138,11 +85,14 @@ export const Chat = () => {
   ]);
 
   useEffect(() => {
+    scrollToElement(bottomChatRef);
+  }, [allMessageEntities, receivedMessageEntities]);
+
+  useEffect(() => {
     const globalMessages = allMessageEntities
       .filter((entity) => {
         const message = getComponentValue(Message, entity);
 
-        console.log(message);
         const isGlobal = message?.channel === BigInt(GLOBAL_CHANNEL);
         const isDirect = message?.channel === BigInt(account.address);
         const fromSelf = message?.identity === BigInt(account.address);
@@ -154,16 +104,17 @@ export const Chat = () => {
         const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
         const name = shortString.decodeShortString(addressName?.name.toString() || "") || "Unknown";
         const content = !!message?.content ? message.content : "";
-        const color = getColorForAddress(address);
+        const timestamp = new Date(Number(message?.timestamp));
 
         const isDirect = message?.channel === BigInt(account.address);
+        const color = isDirect ? PASTEL_BLUE : PASTEL_PINK;
         return {
           name,
           content,
           color,
           isDirect,
           fromSelf: message?.identity === BigInt(account.address),
-          timestamp: message?.timestamp,
+          timestamp,
         };
       })
       .sort((a, b) => Number(a.timestamp) - Number(b.timestamp)); // Sort messages by timestamp
@@ -192,8 +143,12 @@ export const Chat = () => {
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : "";
+
       const channel = !!recipientAddress ? `0x${recipientAddress.toString(16)}` : GLOBAL_CHANNEL;
-      const data = generateMessageTypedData(account.address, channel, message, `0x${salt?.toString(16)}`);
+
+      const messageInValidAscii = toValidAscii(message);
+      const data = generateMessageTypedData(account.address, channel, messageInValidAscii, `0x${salt?.toString(16)}`);
+
       const signature: any = await account.signMessage(data as TypedData);
 
       await toriiClient.publishMessage(JSON.stringify(data), [
@@ -216,22 +171,22 @@ export const Chat = () => {
   const players = getPlayers().filter((player) => player.address !== BigInt(account.address));
   return (
     <div
-      className="flex flex-col gap-2 w-72 border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded"
+      className="flex flex-col gap-2 w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded max-h-80"
       style={{ zIndex: 100 }}
     >
-      <div className="border p-2 border-gold/40 rounded text-xs">
-        {messages.slice(-10).map((message, index) => (
+      <div className="border p-2 border-gold/40 rounded text-xs max-h-60 overflow-y-auto">
+        {messages.map((message, index) => (
           <div
             style={{ color: message.color }}
-            className={`flex gap-2 ${index === flashMessageIndex ? "animate-flash" : ""}`}
+            className={`flex gap-2 mb-1 ${index === flashMessageIndex ? "animate-flash" : ""}`}
             key={index}
           >
-            <div className="flex-none opacity-70">
-              {message.isDirect ? `From ${message.name} ` : `${message.name} `}
+            <div className="opacity-70">
+              <span className="font-bold mr-2 inline">{`[${message.name}]: ${message.content}`}</span>
             </div>
-            <p className="font-bold">{message.content}</p>
           </div>
         ))}
+        <span className="" ref={bottomChatRef}></span>
       </div>
 
       <Select
@@ -264,4 +219,12 @@ export const Chat = () => {
       />
     </div>
   );
+};
+
+const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
+  setTimeout(() => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, 1);
 };
