@@ -1,6 +1,6 @@
 import { type ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmNameById } from "@/ui/utils/realms";
-import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   CapacityConfigCategoryStringMap,
   ContractAddress,
@@ -50,13 +50,16 @@ export const useEntities = () => {
     playerRealms: () => {
       return playerRealms.map((id) => {
         const realm = getComponentValue(Realm, id);
-        return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+        const position = getComponentValue(Position, id);
+        return { ...realm, position: position!, name: getRealmNameById(realm!.realm_id) };
       });
     },
     otherRealms: () => {
       return otherRealms.map((id) => {
         const realm = getComponentValue(Realm, id);
-        return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+        const position = getComponentValue(Position, id);
+        if (!realm || !position) return;
+        return { ...realm, position: position!, name: getRealmNameById(realm!.realm_id) };
       });
     },
     playerStructures: (): PlayerStructure[] => {
@@ -73,8 +76,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-              ? `${structure?.category} ${structureName}`
-              : structure.category || "";
+            ? `${structure?.category} ${structureName}`
+            : structure.category || "";
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -183,8 +186,8 @@ export const getEntitiesUtils = () => {
     return entityName
       ? shortString.decodeShortString(entityName.name.toString())
       : realm
-        ? getRealmNameById(realm.realm_id)
-        : entityId.toString();
+      ? getRealmNameById(realm.realm_id)
+      : entityId.toString();
   };
 
   const getAddressNameFromEntity = (entityId: ID) => {
@@ -262,8 +265,8 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+        ? `${structure?.category} ${structureName}`
+        : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)

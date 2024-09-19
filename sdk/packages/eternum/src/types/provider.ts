@@ -150,10 +150,6 @@ interface Realm {
   regions: num.BigNumberish;
   wonder: num.BigNumberish;
   order: num.BigNumberish;
-  position: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
@@ -501,4 +497,15 @@ export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 export interface SetMercenariesConfigProps extends SystemSigner {
   troops: Troops;
   rewards: { resource: number; amount: number }[];
+}
+
+export interface SetSettlementConfigProps extends SystemSigner {
+  radius: num.BigNumberish;
+  angle_scaled: num.BigNumberish;
+  center: num.BigNumberish;
+  min_distance: num.BigNumberish;
+  max_distance: num.BigNumberish;
+  min_scaling_factor_scaled: num.BigNumberish;
+  min_radius_increase: num.BigNumberish;
+  max_radius_increase: num.BigNumberish;
 }

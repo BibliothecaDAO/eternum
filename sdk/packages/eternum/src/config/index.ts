@@ -337,3 +337,28 @@ export const setMercenariesConfig = async (account: Account, provider: EternumPr
   });
   console.log(`Configuring mercenaries ${tx.statusReceipt}...`);
 };
+
+export const setSettlementConfig = async (account: Account, provider: EternumProvider) => {
+  const {
+    radius,
+    angle_scaled,
+    center,
+    min_distance,
+    max_distance,
+    min_scaling_factor_scaled,
+    min_radius_increase,
+    max_radius_increase,
+  } = EternumGlobalConfig.settlement;
+  const tx = await provider.set_settlement_config({
+    signer: account,
+    radius,
+    angle_scaled,
+    center,
+    min_distance,
+    max_distance,
+    min_scaling_factor_scaled,
+    min_radius_increase,
+    max_radius_increase,
+  });
+  console.log(`Configuring settlement ${tx.statusReceipt}...`);
+};

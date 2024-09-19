@@ -12,7 +12,7 @@ import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
 import { getRealmNameById } from "../../ui/utils/realms";
-import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 
@@ -71,14 +71,7 @@ export function useRealm() {
         nextRealmIdFromOrder = orderRealmIds[latestIndex + 1];
       }
 
-      const position = getPosition(nextRealmIdFromOrder);
-
-      // check if there is a structure on position, if no structure we can keep this realm Id
-      if (Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), Has(Structure)])).length === 0) {
-        return nextRealmIdFromOrder;
-      } else {
-        latestRealmIdFromOrder = nextRealmIdFromOrder;
-      }
+      return nextRealmIdFromOrder;
     }
 
     throw new Error(`Could not find an unoccupied realm ID for order ${orderName} after ${maxIterations} attempts`);

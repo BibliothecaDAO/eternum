@@ -1,24 +1,7 @@
 import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
 
-import {
-  EternumProvider,
-  setBattleConfig,
-  setBuildingCategoryPopConfig,
-  setBuildingConfig,
-  setCapacityConfig,
-  setCombatConfig,
-  setHyperstructureConfig,
-  setMercenariesConfig,
-  setPopulationConfig,
-  setProductionConfig,
-  setResourceBuildingConfig,
-  setSpeedConfig,
-  setStaminaConfig,
-  setStaminaRefillConfig,
-  setupGlobals,
-  setWeightConfig,
-} from "@bibliothecadao/eternum";
+import { EternumProvider, setSettlementConfig } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -53,18 +36,19 @@ console.log("Provider set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 console.log("Account set up");
 
-await setBuildingCategoryPopConfig(account, provider);
-await setPopulationConfig(account, provider);
-await setBuildingConfig(account, provider);
-await setResourceBuildingConfig(account, provider);
-await setWeightConfig(account, provider);
-await setCombatConfig(account, provider);
-await setBattleConfig(account, provider);
-await setCapacityConfig(account, provider);
-await setSpeedConfig(account, provider);
-await setupGlobals(account, provider);
-await setHyperstructureConfig(account, provider);
-await setStaminaConfig(account, provider);
-await setStaminaRefillConfig(account, provider);
-await setMercenariesConfig(account, provider);
-await setProductionConfig(account, provider);
+// await setBuildingCategoryPopConfig(account, provider);
+// await setPopulationConfig(account, provider);
+// await setBuildingConfig(account, provider);
+// await setResourceBuildingConfig(account, provider);
+// await setWeightConfig(account, provider);
+// await setCombatConfig(account, provider);
+// await setBattleConfig(account, provider);
+// await setCapacityConfig(account, provider);
+// await setSpeedConfig(account, provider);
+// await setupGlobals(account, provider);
+// await setHyperstructureConfig(account, provider);
+// await setStaminaConfig(account, provider);
+// await setStaminaRefillConfig(account, provider);
+// await setMercenariesConfig(account, provider);
+// await setProductionConfig(account, provider);
+await setSettlementConfig(account, provider);

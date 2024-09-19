@@ -166,7 +166,6 @@ export interface RealmInterface {
   resourceTypesCount: number;
   resourceTypesPacked: bigint;
   order: number;
-  position: Position;
   owner?: ContractAddress;
 }
 

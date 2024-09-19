@@ -1,7 +1,7 @@
 import { ResourceMiningTypes } from "@/types";
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, FELT_CENTER } from "@bibliothecadao/eternum";
 
-export const FELT_CENTER = 2147483646;
+export { FELT_CENTER };
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {

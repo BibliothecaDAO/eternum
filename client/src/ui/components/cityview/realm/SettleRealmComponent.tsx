@@ -2,16 +2,15 @@ import { useState } from "react";
 import Button from "../../../elements/Button";
 
 import { MAX_REALMS } from "@/ui/constants";
-import { getPosition } from "@/ui/utils/utils";
 import { getOrderName, orders } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import { shortString } from "starknet";
 import { order_statments } from "../../../../data/orders";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { getRealm } from "../../../utils/realms";
-import { shortString } from "starknet";
 
 const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +42,6 @@ const SettleRealmComponent = () => {
       let realm = getRealm(new_realm_id);
       if (!realm) return;
 
-      const position = getPosition(new_realm_id);
       calldata.push({
         realm_name: shortString.encodeShortString(realm.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")),
         realm_id: Number(realm.realmId),
@@ -55,7 +53,6 @@ const SettleRealmComponent = () => {
         rivers: realm.rivers,
         harbors: realm.harbors,
         cities: realm.cities,
-        position,
       });
     }
 

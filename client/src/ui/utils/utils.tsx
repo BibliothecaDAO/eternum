@@ -12,7 +12,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
-import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
 import { type SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
@@ -43,12 +42,6 @@ export function multiplyByPrecision(value: number): number {
 
 export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
-}
-
-export function getPosition(realm_id: ID): { x: number; y: number } {
-  const realmPositions = realmsHexPositions as Record<number, Array<{ col: number; row: number }>>;
-  const position = realmPositions[Number(realm_id)][0];
-  return { x: position.col, y: position.row };
 }
 
 export function addressToNumber(address: string) {
