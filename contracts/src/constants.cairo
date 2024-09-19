@@ -22,7 +22,7 @@ const HYPERSTRUCTURE_LEVELING_START_TIER: u64 = 0;
 const REALM_LEVELING_START_TIER: u64 = 1;
 
 // max realms per user
-const MAX_REALMS_PER_ADDRESS: u8 = 5;
+const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 
 // resource precision
 const RESOURCE_PRECISION: u128 = 1_000;
@@ -276,8 +276,9 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
-// DISCUSS: register each new entity_type to the system by creating an entity containing the config components
-// Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
+// DISCUSS: register each new entity_type to the system by creating an entity containing the config
+// components Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when
+// creating it
 const DONKEY_ENTITY_TYPE: u32 = 256;
 const REALM_ENTITY_TYPE: u32 = 257;
 const ARMY_ENTITY_TYPE: u32 = 258;
