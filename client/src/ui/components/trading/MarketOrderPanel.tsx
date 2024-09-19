@@ -165,12 +165,16 @@ const MarketOrders = ({
       <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
         <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
-        <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative">
+        <div
+          className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative ${
+            isOwnStructureInBattle ? "opacity-50" : ""
+          }`}
+        >
           {offers.map((offer, index) => (
-            <OrderRow key={index} offer={offer} entityId={entityId} isBuy={isBuy} disabled={isOwnStructureInBattle} />
+            <OrderRow key={offer.tradeId} offer={offer} entityId={entityId} isBuy={isBuy} />
           ))}
           {isOwnStructureInBattle && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xl text-bold">
               Resources locked in battle
             </div>
           )}
@@ -203,17 +207,7 @@ const OrderRowHeader = ({ resourceId, isBuy }: { resourceId?: number; isBuy: boo
   );
 };
 
-const OrderRow = ({
-  offer,
-  entityId,
-  isBuy,
-  disabled,
-}: {
-  offer: MarketInterface;
-  entityId: ID;
-  isBuy: boolean;
-  disabled: boolean;
-}) => {
+const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: ID; isBuy: boolean }) => {
   const { computeTravelTime } = useTravel();
   const dojo = useDojo();
   const {
@@ -337,9 +331,9 @@ const OrderRow = ({
       key={offer.tradeId}
       className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border text-xs relative ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
-      } ${disabled ? "opacity-50" : ""}`}
+      } ${isMakerInBattle ? "opacity-50" : ""}`}
     >
-      {disabled && (
+      {isMakerInBattle && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
           Resources locked in battle
         </div>
@@ -366,7 +360,7 @@ const OrderRow = ({
               setConfirmOrderModal(true);
             }}
             size="xs"
-            className={`self-center flex flex-grow ${disabled ? "pointer-events-none" : ""}`}
+            className={`self-center flex flex-grow ${isMakerInBattle ? "pointer-events-none" : ""}`}
           >
             {!isBuy ? "Buy" : "Sell"}
           </Button>
@@ -383,7 +377,7 @@ const OrderRow = ({
             }}
             variant="danger"
             size="xs"
-            className={clsx("self-center", { disable: disabled })}
+            className={clsx("self-center", { disable: isMakerInBattle })}
           >
             {loading ? "cancelling" : "cancel"}
           </Button>
