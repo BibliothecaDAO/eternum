@@ -37,6 +37,7 @@ const TIME_BETWEEN_SHARES_CHANGE: u64 = 1000;
 
 fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     let world = spawn_eternum();
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     set_capacity_config(config_systems_address);
     set_settlement_config(config_systems_address);
 
@@ -49,7 +50,6 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
 
     set!(
