@@ -1,15 +1,25 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { getStructureByEntityId, isStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
+import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
-import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
-import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { Headline } from "@/ui/elements/Headline";
+import {
+  copyPlayerAddressToClipboard,
+  displayAddress,
+  formatTime,
+  getEntityIdFromKeys,
+  ResourceIdToMiningType,
+} from "@/ui/utils/utils";
+import { BuildingType, EternumGlobalConfig, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "../navigation/LeftNavigationModule";
 
 export const BuildingEntityDetails = () => {
@@ -34,6 +44,9 @@ export const BuildingEntityDetails = () => {
   const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
 
   const { playerStructures } = useEntities();
+
+  let isCastleSelected =
+    selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] && selectedBuildingHex.innerRow === BUILDINGS_CENTER[1];
 
   const building = useComponentValue(
     dojo.setup.components.Building,
@@ -91,39 +104,93 @@ export const BuildingEntityDetails = () => {
   }, [selectedBuildingHex, buildingState]);
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-grow w-full space-y-1 text-sm">
-        {buildingState.buildingType === BuildingType.Resource && buildingState.resource !== undefined && (
-          <ResourceInfo
-            isPaused={isPaused}
-            resourceId={buildingState.resource}
-            entityId={buildingState.ownerEntityId}
-          />
-        )}
-        {buildingState.buildingType !== undefined && buildingState.buildingType !== BuildingType.Resource && (
-          <BuildingInfo
-            isPaused={isPaused}
-            buildingId={buildingState.buildingType}
-            entityId={buildingState.ownerEntityId}
-            hintModal
+      {isCastleSelected ? (
+        <CastleDetails />
+      ) : (
+        <>
+          <div className="flex-grow w-full space-y-1 text-sm">
+            {buildingState.buildingType === BuildingType.Resource && buildingState.resource !== undefined && (
+              <ResourceInfo
+                isPaused={isPaused}
+                resourceId={buildingState.resource}
+                entityId={buildingState.ownerEntityId}
+              />
+            )}
+            {buildingState.buildingType !== undefined && buildingState.buildingType !== BuildingType.Resource && (
+              <BuildingInfo
+                isPaused={isPaused}
+                buildingId={buildingState.buildingType}
+                entityId={buildingState.ownerEntityId}
+                hintModal
+              />
+            )}
+          </div>
+          {buildingState.buildingType !== undefined && selectedBuildingHex && isOwnedByPlayer && (
+            <div className="flex justify-center space-x-3">
+              <Button
+                className="mb-4"
+                onClick={handlePauseResumeProduction}
+                isLoading={isLoading}
+                variant="outline"
+                withoutSound
+              >
+                {isPaused ? "Resume" : "Pause"}
+              </Button>
+              <Button className="mb-4" onClick={handleDestroyBuilding} variant="danger" withoutSound>
+                Destroy
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+const CastleDetails = () => {
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const structure = getStructureByEntityId(structureEntityId);
+  if (!structure) return;
+
+  const isImmune = isStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
+
+  const immunityEndTimestamp =
+    Number(structure.created_at) +
+    EternumGlobalConfig.battle.graceTickCount * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+
+  const timer = useMemo(() => {
+    if (!nextBlockTimestamp) return 0;
+    return immunityEndTimestamp - nextBlockTimestamp!;
+  }, [nextBlockTimestamp]);
+
+  const address = "0x" + structure?.owner.address.toString(16);
+
+  return (
+    <div className="w-full space-y-1 text-sm">
+      <Headline className="py-3">{structure.name}</Headline>
+      <div className="p-5">
+        <div>Owner: {structure.ownerName}</div>
+        <div className="mt-2">
+          address:
+          <span
+            className="ml-1 hover:text-white"
+            onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
+          >
+            {displayAddress(address)}
+          </span>
+        </div>
+        {isImmune && <div className="mt-2">Immune for: {formatTime(timer)}</div>}
+        {structure && structure.category === StructureType[StructureType.Realm] && (
+          <RealmResourcesIO
+            className={"mt-2"}
+            size={"md"}
+            titleClassName={"uppercase"}
+            structureEntityId={structureEntityId}
           />
         )}
       </div>
-      {buildingState.buildingType !== undefined && selectedBuildingHex && isOwnedByPlayer && (
-        <div className="flex justify-center space-x-3">
-          <Button
-            className="mb-4"
-            onClick={handlePauseResumeProduction}
-            isLoading={isLoading}
-            variant="outline"
-            withoutSound
-          >
-            {isPaused ? "Resume" : "Pause"}
-          </Button>
-          <Button className="mb-4" onClick={handleDestroyBuilding} variant="danger" withoutSound>
-            Destroy
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

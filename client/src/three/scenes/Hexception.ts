@@ -232,7 +232,16 @@ export default class HexceptionScene extends HexagonScene {
     } else {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
-      if (this.tileManager.isHexOccupied(normalizedCoords)) {
+
+      if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
+        this.state.setSelectedBuildingHex({
+          outerCol,
+          outerRow,
+          innerCol: hexCoords.col,
+          innerRow: hexCoords.row,
+        });
+        this.state.setLeftNavigationView(View.EntityView);
+      } else if (this.tileManager.isHexOccupied(normalizedCoords)) {
         this.state.setSelectedBuildingHex({
           outerCol,
           outerRow,
