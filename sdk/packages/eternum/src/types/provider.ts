@@ -506,6 +506,6 @@ export interface SetSettlementConfigProps extends SystemSigner {
   min_distance: num.BigNumberish;
   max_distance: num.BigNumberish;
   min_scaling_factor_scaled: num.BigNumberish;
-  min_radius_increase: num.BigNumberish;
-  max_radius_increase: num.BigNumberish;
+  min_angle_increase: num.BigNumberish;
+  max_angle_increase: num.BigNumberish;
 }

@@ -48,8 +48,8 @@ fn set_configurations(world: IWorldDispatcher) {
                 min_distance: 1,
                 max_distance: 5,
                 min_scaling_factor_scaled: 1844674407370955161,
-                min_radius_increase: 30,
-                max_radius_increase: 100,
+                min_angle_increase: 30,
+                max_angle_increase: 100,
             }
         )
     )

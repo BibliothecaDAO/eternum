@@ -971,8 +971,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       min_distance,
       max_distance,
       min_scaling_factor_scaled,
-      min_radius_increase,
-      max_radius_increase,
+      min_angle_increase,
+      max_angle_increase,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -985,8 +985,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         min_distance,
         max_distance,
         min_scaling_factor_scaled,
-        min_radius_increase,
-        max_radius_increase,
+        min_angle_increase,
+        max_angle_increase,
       ],
     });
   }

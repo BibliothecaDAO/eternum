@@ -346,8 +346,8 @@ export const setSettlementConfig = async (account: Account, provider: EternumPro
     min_distance,
     max_distance,
     min_scaling_factor_scaled,
-    min_radius_increase,
-    max_radius_increase,
+    min_angle_increase,
+    max_angle_increase,
   } = EternumGlobalConfig.settlement;
   const tx = await provider.set_settlement_config({
     signer: account,
@@ -357,8 +357,8 @@ export const setSettlementConfig = async (account: Account, provider: EternumPro
     min_distance,
     max_distance,
     min_scaling_factor_scaled,
-    min_radius_increase,
-    max_radius_increase,
+    min_angle_increase,
+    max_angle_increase,
   });
   console.log(`Configuring settlement ${tx.statusReceipt}...`);
 };

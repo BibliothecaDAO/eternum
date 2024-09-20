@@ -139,11 +139,11 @@ trait ISettlementConfig {
         radius: u32,
         angle_scaled: u128,
         center: u32,
-        min_distance: u8,
-        max_distance: u8,
+        min_distance: u32,
+        max_distance: u32,
         min_scaling_factor_scaled: u128,
-        min_radius_increase: u64,
-        max_radius_increase: u64,
+        min_angle_increase: u64,
+        max_angle_increase: u64,
     );
 }
 
@@ -593,11 +593,11 @@ mod config_systems {
             radius: u32,
             angle_scaled: u128,
             center: u32,
-            min_distance: u8,
-            max_distance: u8,
+            min_distance: u32,
+            max_distance: u32,
             min_scaling_factor_scaled: u128,
-            min_radius_increase: u64,
-            max_radius_increase: u64
+            min_angle_increase: u64,
+            max_angle_increase: u64
         ) {
             assert_caller_is_admin(world);
             set!(
@@ -610,8 +610,8 @@ mod config_systems {
                     min_distance,
                     max_distance,
                     min_scaling_factor_scaled,
-                    min_radius_increase,
-                    max_radius_increase,
+                    min_angle_increase,
+                    max_angle_increase,
                 })
             );
         }

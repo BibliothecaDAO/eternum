@@ -2,6 +2,7 @@ use core::integer::BoundedU128;
 use cubit::f128::math::comp::{max as fixed_max};
 use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
@@ -175,23 +176,25 @@ pub struct SettlementConfig {
     #[key]
     config_id: ID,
     // starting value radius
-    radius: u32,
     // starting value angle (precision 100)
     angle_scaled: u128,
     center: u32,
-    min_distance: u8,
-    max_distance: u8,
     // always positive
     min_scaling_factor_scaled: u128,
-    // radius increase in precision 100
-    min_radius_increase: u64,
-    max_radius_increase: u64,
+    // initial radius in precision 100
+    radius: u32,
+    // min/max radius changes in precision 100
+    min_distance: u32,
+    max_distance: u32,
+    // radius incrase in precision 100
+    min_angle_increase: u64,
+    max_angle_increase: u64,
 }
 
 #[generate_trait]
 impl SettlementConfigImpl of SettlementConfigTrait {
     fn get_scaling_factor(ref self: SettlementConfig) -> Fixed {
-        let max_radius_fixed = FixedTrait::new_unscaled(self.center.into(), false);
+        let max_radius_fixed = FixedTrait::new_unscaled(self.center.into() * 100, false);
         let radius_fixed = FixedTrait::new_unscaled(self.radius.into(), false);
         // very small at first and then grows
         let scaling_factor_fixed = (max_radius_fixed - radius_fixed) / max_radius_fixed;
@@ -205,16 +208,16 @@ impl SettlementConfigImpl of SettlementConfigTrait {
         let range = max_distance_fixed - min_distance_fixed;
         let scaled_range = scaling_factor * range;
         let step_size_fixed = min_distance_fixed + scaled_range;
-        step_size_fixed.try_into().unwrap() + 1
+        step_size_fixed.try_into().unwrap() + 100
     }
 
     fn get_radius_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> u32 {
-        (block_timestamp % step_size.into() + self.min_distance.into()).try_into().unwrap()
+        (block_timestamp % (step_size.into() / 100) * 100 + self.min_distance.into()).try_into().unwrap()
     }
 
     fn get_angle_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> Fixed {
         FixedTrait::new_unscaled(
-            (block_timestamp % (self.max_radius_increase - self.min_radius_increase) + self.min_radius_increase).into(),
+            (block_timestamp % (self.max_angle_increase - self.min_angle_increase) + self.min_angle_increase).into(),
             false
         )
             / FixedTrait::new_unscaled(100, false)
@@ -230,9 +233,9 @@ impl SettlementConfigImpl of SettlementConfigTrait {
         let sin = fixed_sin(angle);
 
         let x = FixedTrait::new_unscaled(self.center.into(), false)
-            + cos * FixedTrait::new_unscaled(self.radius.into(), false);
+            + cos * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
         let y = FixedTrait::new_unscaled(self.center.into(), false)
-            + sin * FixedTrait::new_unscaled(self.radius.into(), false);
+            + sin * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
 
         return Coord { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
     }
