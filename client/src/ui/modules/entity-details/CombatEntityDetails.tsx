@@ -90,7 +90,7 @@ export const CombatEntityDetails = () => {
     [hexPosition, ownArmy, structure, battles],
   );
 
-  const [selectedTab, setSelectedTab] = useState(battles.length > 0 ? 1 : 0);
+  const [selectedTab, setSelectedTab] = useState(0);
 
   return (
     hexPosition && (
