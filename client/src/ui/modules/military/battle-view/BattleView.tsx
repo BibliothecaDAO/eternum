@@ -82,11 +82,11 @@ export const BattleView = () => {
         lifetime: battleAdjusted!.defence_army_health.lifetime,
       }
     : targetArmy
-    ? {
-        current: targetArmy.health.current || 0n,
-        lifetime: targetArmy.health.lifetime || 0n,
-      }
-    : undefined;
+      ? {
+          current: targetArmy.health.current || 0n,
+          lifetime: targetArmy.health.lifetime || 0n,
+        }
+      : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
