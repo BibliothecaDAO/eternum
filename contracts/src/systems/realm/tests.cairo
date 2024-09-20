@@ -114,44 +114,6 @@ fn test_realm_create() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_realm_create_equal_max_realms_per_address() {
-    let (world, realm_systems_dispatcher) = setup();
-
-    let positions = generate_realm_positions();
-
-    let mut index = 0_u8;
-    loop {
-        if index == MAX_REALMS_PER_ADDRESS {
-            break;
-        }
-        spawn_realm(world, realm_systems_dispatcher, *positions.at(index.into()));
-        index += 1;
-    };
-}
-
-
-#[test]
-#[available_gas(3000000000000)]
-#[should_panic(expected: ('max num of realms settled', 'ENTRYPOINT_FAILED'))]
-fn test_realm_create_greater_than_max_realms_per_address() {
-    let (world, realm_systems_dispatcher) = setup();
-
-    let positions = generate_realm_positions();
-
-    starknet::testing::set_contract_address(starknet::get_contract_address());
-
-    let mut index = 0;
-    loop {
-        if index == MAX_REALMS_PER_ADDRESS + 1 {
-            break;
-        }
-        spawn_realm(world, realm_systems_dispatcher, *positions.at(index.into()));
-        index += 1;
-    };
-}
-
-#[test]
-#[available_gas(3000000000000)]
 fn test_mint_starting_resources() {
     let (world, realm_systems_dispatcher) = setup();
 

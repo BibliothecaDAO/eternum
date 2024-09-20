@@ -13,7 +13,7 @@ use eternum::systems::{
 };
 use eternum::utils::map::biomes::Biome;
 
-fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher) -> ID {
+fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position) -> ID {
     let realm_entity_id = realm_systems_dispatcher
         .create(
             'Mysticora',
@@ -27,6 +27,8 @@ fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsD
             1, // wonder
             1, // order
         );
+
+    set!(world, Position { entity_id: realm_entity_id, x: position.x, y: position.y });
 
     realm_entity_id
 }

@@ -51,7 +51,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000, });
 
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher);
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     let maker_id = realm_entity_id;
     let taker_id = 12;
