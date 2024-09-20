@@ -117,8 +117,25 @@ export const Chat = () => {
 
   const setNewTabs = (newTabs: Tab[]) => {
     setTabs(newTabs);
-    console.log(newTabs);
     localStorage.setItem(CHAT_STORAGE_KEY + account.address, JSON.stringify(newTabs));
+  };
+
+  const addNewTab = (newTab: Tab) => {
+    let allTabs = [...tabs];
+
+    if (allTabs.find((tab) => tab.address === newTab.address)) {
+      allTabs.map((tab) => {
+        if (tab.address === newTab.address) {
+          tab.displayed = true;
+        }
+        return tab;
+      });
+    } else {
+      allTabs.push(newTab);
+    }
+
+    setNewTabs(allTabs);
+    setCurrentTab(newTab);
   };
 
   const messages = useMemo(() => {
@@ -203,8 +220,8 @@ export const Chat = () => {
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : currentTab.name === "Global"
-          ? undefined
-          : BigInt(currentTab.address);
+        ? undefined
+        : BigInt(currentTab.address);
 
       const channel = !!recipientAddress ? `0x${recipientAddress.toString(16)}` : GLOBAL_CHANNEL;
 
@@ -222,19 +239,38 @@ export const Chat = () => {
   );
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
+    if (event.key !== "Enter") return;
+    if (content.length === 0) return;
+
+    const contentParser = new ContentParser();
+
+    if (contentParser.isWhisper(content)) {
+      const whisperDestination = contentParser.getWhisperDest(content);
+
+      const player = players.find((player) => player.addressName === whisperDestination);
+      if (!player) return;
+
+      const newTab = {
+        name: player.addressName!,
+        address: toHexString(player.address),
+        displayed: true,
+      };
+
+      addNewTab(newTab);
+      setCurrentTab(newTab);
+    } else {
       publish(content);
-      setContent("");
     }
+    setContent("");
   };
 
   const changeTabs = (tab: string | undefined, address: string, fromSelector: boolean = false) => {
-    if (ContractAddress(address) === ContractAddress(account.address)) {
+    if (address === "Global") {
+      setCurrentTab(DEFAULT_TAB);
       return;
     }
 
-    if (address === "Global") {
-      setCurrentTab(DEFAULT_TAB);
+    if (ContractAddress(address) === ContractAddress(account.address)) {
       return;
     }
 
@@ -244,8 +280,6 @@ export const Chat = () => {
       );
     }
 
-    const sortedAddressesHash = getMessageKey(BigInt(address), account.address);
-    const key = address === "Global" ? GLOBAL_CHANNEL : sortedAddressesHash;
     const numberOfMessages =
       messages.get(ContractAddress(address))?.filter((message) => message.fromSelf === false).length || 0;
 
@@ -349,10 +383,19 @@ export const Chat = () => {
   );
 };
 
-const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
-  setTimeout(() => {
-    if (ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  }, 1);
-};
+const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {};
+
+class ContentParser {
+  isCommand(content: string): boolean {
+    return content.startsWith("/");
+  }
+
+  isWhisper(content: string): boolean {
+    if (!this.isCommand(content)) return false;
+    return content[1] === "w";
+  }
+
+  getWhisperDest(content: string): string {
+    return content.split(" ")[1];
+  }
+}

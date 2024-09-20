@@ -73,8 +73,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-              ? `${structure?.category} ${structureName}`
-              : structure.category || "";
+            ? `${structure?.category} ${structureName}`
+            : structure.category || "";
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -183,8 +183,8 @@ export const getEntitiesUtils = () => {
     return entityName
       ? shortString.decodeShortString(entityName.name.toString())
       : realm
-        ? getRealmNameById(realm.realm_id)
-        : entityId.toString();
+      ? getRealmNameById(realm.realm_id)
+      : entityId.toString();
   };
 
   const getAddressNameFromEntity = (entityId: ID) => {
@@ -218,7 +218,11 @@ export const useGetAllPlayers = () => {
   const playersEntityIds = runQuery([Has(Owner), Has(Realm)]);
 
   const getPlayers = () => {
-    return getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
+    const players = getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
+
+    const uniquePlayers = Array.from(new Map(players.map((player) => [player.address, player])).values());
+
+    return uniquePlayers;
   };
 
   return getPlayers;
@@ -263,8 +267,8 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+        ? `${structure?.category} ${structureName}`
+        : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)
