@@ -68,14 +68,14 @@ export const MarketResource = ({
         </div>
       </div>
 
-      <div className="text-red font-bold flex items-center justify-center">
+      <div className="text-green font-bold flex items-center justify-center">
         {Number(bidPrice) === 0
           ? "0"
           : Number(bidPrice)
               .toFixed(3)
               .replace(/\.?0+$/, "")}
       </div>
-      <div className="text-green font-bold flex items-center justify-center">
+      <div className="text-red font-bold flex items-center justify-center">
         {Number(askPrice) === 0
           ? "0"
           : Number(askPrice)

@@ -213,8 +213,8 @@ const MarketResourceSidebar = ({
       <div className="w-full mb-1">
         <div className="grid grid-cols-5 text-xs font-bold uppercase">
           <div className="col-span-2"></div>
-          <div className="flex items-center justify-center">Sell</div>
           <div className="flex items-center justify-center">Buy</div>
+          <div className="flex items-center justify-center">Sell</div>
           <div className="flex items-center justify-center">AMM</div>
         </div>
       </div>
@@ -234,7 +234,6 @@ const MarketResourceSidebar = ({
               .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
 
             const ammPrice = marketManager?.getMarketPrice() || 0;
-            console.log({ ammPrice });
 
             return (
               <MarketResource
