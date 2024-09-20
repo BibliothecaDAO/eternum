@@ -203,8 +203,8 @@ export const Chat = () => {
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : currentTab.name === "Global"
-        ? undefined
-        : BigInt(currentTab.address);
+          ? undefined
+          : BigInt(currentTab.address);
 
       const channel = !!recipientAddress ? `0x${recipientAddress.toString(16)}` : GLOBAL_CHANNEL;
 
