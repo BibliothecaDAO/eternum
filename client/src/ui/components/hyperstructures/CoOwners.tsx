@@ -11,7 +11,7 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
-import { displayAddress, formatSecondsLeftInDaysHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { displayAddress, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, getOrderName, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -152,7 +152,7 @@ const CoOwnersRows = ({
           onMouseEnter={() => {
             if (!canUpdate)
               setTooltip({
-                content: `Wait ${formatSecondsLeftInDaysHoursMinutes(
+                content: `Wait ${formatTime(
                   Number(hyperstructureConfig?.time_between_shares_change) -
                     Number((nextBlockTimestamp || 0) - Number(hyperstructureUpdate?.last_updated_timestamp)),
                 )} to change`,

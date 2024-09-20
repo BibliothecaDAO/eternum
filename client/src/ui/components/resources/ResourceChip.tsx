@@ -4,7 +4,7 @@ import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, currencyIntlFormat, formatTime } from "../../utils/utils";
+import { currencyFormat, currencyIntlFormat, formatTime, TimeFormat } from "../../utils/utils";
 
 const DISPLAY_RATE_TIME_MS = 5_000;
 const TRANSITION_DURATION_MS = 400;
@@ -120,20 +120,22 @@ export const ResourceChip = ({
       }}
     >
       {icon}
-      <div className="grid grid-cols-6 w-full">
-        <div className="self-center font-bold col-span-2">
+      <div className="grid grid-cols-10 w-full">
+        <div className="self-center font-bold col-span-3">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}
         </div>
 
-        <div className="self-center m-y-auto font-bold col-span-3">
-          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) + " left" : ""}
+        <div className="self-center m-y-auto font-bold col-span-4 text-center">
+          {timeUntilValueReached !== 0
+            ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
+            : ""}
         </div>
 
         {netRate ? (
           <div
             className={`${
               Number(netRate) < 0 ? "text-light-red" : "text-green/80"
-            } self-center px-2 flex font-bold col-span-1 text-[10px]`}
+            } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
           >
             <div
               className={`self-center transition-opacity duration-${TRANSITION_DURATION_MS} ${

@@ -213,11 +213,16 @@ export const useGetAllPlayers = () => {
     },
   } = useDojo();
 
-  const playersEntityIds = runQuery([Has(Owner), Has(Realm)]);
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
+  const playersEntityIds = runQuery([Has(Owner), Has(Realm)]);
+
   const getPlayers = () => {
-    return getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
+    const players = getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
+
+    const uniquePlayers = Array.from(new Map(players.map((player) => [player.address, player])).values());
+
+    return uniquePlayers;
   };
 
   return getPlayers;
