@@ -1,6 +1,5 @@
 use serenity::futures::StreamExt;
 use std::time::Duration;
-use stream_cancel::{StreamExt as _, Tripwire};
 use tokio::sync::mpsc;
 use tokio::time::sleep;
 
@@ -12,7 +11,6 @@ use torii_grpc::types::{EntityKeysClause, KeysClause};
 use crate::types::{Config, EventHandler, GameEventData};
 
 pub fn subscribe_with_reconnection(config: Config, event_sender: mpsc::Sender<GameEventData>) {
-    let (_, tripwire) = Tripwire::new();
     let event_handler = EventHandler { event_sender };
 
     tokio::spawn(async move {
@@ -25,6 +23,9 @@ pub fn subscribe_with_reconnection(config: Config, event_sender: mpsc::Sender<Ga
         )
         .await
         .unwrap();
+
+        let mut tries = 0;
+        let max_num_tries = 200;
 
         let mut backoff = Duration::from_secs(1);
         let max_backoff = Duration::from_secs(60);
@@ -39,10 +40,8 @@ pub fn subscribe_with_reconnection(config: Config, event_sender: mpsc::Sender<Ga
                 .await;
 
             match rcv {
-                Ok(rcv) => {
+                Ok(mut rcv) => {
                     backoff = Duration::from_secs(1); // Reset backoff on successful connection
-
-                    let mut rcv = rcv.take_until_if(tripwire.clone());
 
                     while let Some(Ok((_, entity))) = rcv.next().await {
                         tracing::info!("Received event");
@@ -50,20 +49,18 @@ pub fn subscribe_with_reconnection(config: Config, event_sender: mpsc::Sender<Ga
                     }
                 }
                 Err(_) => {
-                    // Check if the tripwire has been triggered before attempting to reconnect
-                    if tripwire.clone().await {
-                        break; // Exit the loop if the subscription has been cancelled
-                    }
+                    tracing::warn!("Subscription was lost, attempting to reconnect");
+                    tries += 1;
                 }
             }
 
-            // If we've reached this point, the stream has ended (possibly due to disconnection)
-            // We'll try to reconnect after a delay, unless the tripwire has been triggered
-            if tripwire.clone().await {
-                break; // Exit the loop if the subscription has been cancelled
-            }
             sleep(backoff).await;
             backoff = std::cmp::min(backoff * 2, max_backoff);
+
+            if tries >= max_num_tries {
+                tracing::error!("Max number of tries reached, exiting");
+                break;
+            }
         }
 
         tracing::error!("Torii client disconnected");
