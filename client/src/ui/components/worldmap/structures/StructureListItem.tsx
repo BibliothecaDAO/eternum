@@ -1,4 +1,3 @@
-import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
@@ -11,10 +10,11 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { formatTime } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { TroopMenuRow } from "../../military/TroopChip";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { RealmResourcesIO } from "../../resources/RealmResourcesIO";
 
 type StructureListItemProps = {
   structure: Structure;
@@ -26,10 +26,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const dojo = useDojo();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
   const setTooltip = useUIStore((state) => state.setTooltip);
-
-  const [showInventory, setShowInventory] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
 
   const { getRealmAddressName } = useRealm();
@@ -166,13 +163,9 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         } rounded-md border-gold/20 p-2`}
       >
         <div className="flex w-full justify-between">
-          <div className="flex flex-col w-[45%]">
+          <div className="flex flex-col w-[45%] justify-between">
             <div className="h4 text-xl flex flex-row justify-between ">
               <div className="mr-2 text-base">{structure.name}</div>
-              <Inventory
-                className="my-auto w-4 hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all mr-2"
-                onClick={() => setShowInventory(!showInventory)}
-              />
             </div>
             {structure.category === StructureType[StructureType.Hyperstructure] && (
               <div className="text-xs">Progress: {progress?.percentage ?? 0}%</div>
@@ -181,19 +174,21 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
               <div className="font-bold">Owner: {addressName === "" ? "Bandits" : addressName}</div>
             </div>
             {isImmune && <div>Immune for: {formatTime(timer)}</div>}
+
+            {structure.category === StructureType[StructureType.Realm] && (
+              <RealmResourcesIO structureEntityId={structure.entity_id} />
+            )}
           </div>
           <div className="flex flex-col content-center w-[55%]">
             <TroopMenuRow troops={updatedBattle?.defence_army?.troops || structure.protector?.troops} />
-            {showInventory && (
-              <InventoryResources
-                entityIds={[structure.entity_id]}
-                className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
-                resourcesIconSize="xs"
-                dynamic={
-                  structure.category === StructureType[StructureType.FragmentMine] ? [ResourcesIds.Earthenshard] : []
-                }
-              />
-            )}
+            <InventoryResources
+              entityIds={[structure.entity_id]}
+              className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
+              resourcesIconSize="xs"
+              dynamic={
+                structure.category === StructureType[StructureType.FragmentMine] ? [ResourcesIds.Earthenshard] : []
+              }
+            />
           </div>
         </div>
       </div>

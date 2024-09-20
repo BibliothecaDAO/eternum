@@ -106,7 +106,7 @@ export const LeftNavigationModule = () => {
         name: "construction",
         button: (
           <CircleButton
-            disabled={!structureIsMine}
+            disabled={!structureIsMine || !isRealm}
             className={clsx({
               "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.Settle] && isRealm,
