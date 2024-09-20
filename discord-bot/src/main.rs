@@ -1,30 +1,24 @@
 mod commands;
 mod constants;
 mod events;
+mod subscription;
 mod types;
 mod utils;
 
 use anyhow::Context as _;
+use serenity::all::{GatewayIntents, Http};
 use serenity::Client;
-use serenity::{
-    all::{GatewayIntents, Http},
-    futures::StreamExt,
-};
 use shuttle_runtime::SecretStore;
 use sqlx::{Executor, PgPool};
 use std::sync::Arc;
+use subscription::subscribe_with_reconnection;
 use tokio::sync::mpsc;
 use types::EventProcessor;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
-use starknet_crypto::Felt;
-use torii_client::client::Client as ToriiClient;
-
-use torii_grpc::types::{EntityKeysClause, KeysClause};
-
-use crate::types::{Config, EventHandler, MessageDispatcher};
+use crate::types::{Config, MessageDispatcher};
 
 struct Data {
     database: PgPool,
@@ -40,52 +34,30 @@ async fn check_user_in_database(
         .await
 }
 
-async fn setup_torii_client(database: PgPool, config: Config) -> eyre::Result<()> {
+async fn setup_services(database: PgPool, config: Config) -> eyre::Result<()> {
+    let (event_sender, mut event_receiver) = mpsc::channel(100);
+    let (message_sender, message_receiver) = mpsc::channel(100);
+
+    let mut message_dispatcher = MessageDispatcher {
+        http: Arc::new(Http::new(&config.discord_token.clone())),
+        message_receiver,
+    };
+
     tokio::spawn(async move {
-        tracing::info!("Setting up Torii client");
-        let client = ToriiClient::new(
-            config.torii_url.clone(),
-            config.node_url.clone(),
-            config.torii_relay_url.clone(),
-            Felt::from_hex_unchecked(&config.world_address.clone()),
-        )
-        .await
-        .unwrap();
+        tracing::info!("Starting message dispatcher");
+        message_dispatcher.run().await;
+    });
 
-        let mut rcv = client
-            .on_event_message_updated(vec![EntityKeysClause::Keys(KeysClause {
-                keys: vec![],
-                pattern_matching: torii_grpc::types::PatternMatching::VariableLen,
-                models: vec![],
-            })])
-            .await
-            .unwrap();
-
-        let (event_sender, mut event_receiver) = mpsc::channel(100);
-        let (message_sender, message_receiver) = mpsc::channel(100);
-
-        let event_handler = EventHandler { event_sender };
-        let mut message_dispatcher = MessageDispatcher {
-            http: Arc::new(Http::new(&config.discord_token.clone())),
-            message_receiver,
-        };
-
-        tokio::spawn(async move {
-            let processor = EventProcessor::new(&database, &message_sender, config.channel_id);
-            while let Some(event) = event_receiver.recv().await {
-                processor.process_event(event).await;
-            }
-        });
-
-        tokio::spawn(async move {
-            message_dispatcher.run().await;
-        });
-        tracing::info!("Everything set up correctly");
-        while let Some(Ok((_, entity))) = rcv.next().await {
-            event_handler.handle_event(entity).await;
+    let config_clone = config.clone();
+    tokio::spawn(async move {
+        tracing::info!("Starting event processor");
+        let processor = EventProcessor::new(&database, &message_sender, config_clone.channel_id);
+        while let Some(event) = event_receiver.recv().await {
+            processor.process_event(event).await;
         }
     });
 
+    subscribe_with_reconnection(config, event_sender);
     tracing::info!("Torii client setup task spawned");
 
     Ok(())
@@ -96,7 +68,8 @@ async fn main(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
 ) -> shuttle_serenity::ShuttleSerenity {
-    tracing::error!("Launching Eternum's Discord bot");
+    tracing::info!("Launching Eternum's Discord bot");
+
     let config = Config::from_secrets(secret_store).expect("Failed to get config");
 
     let config_clone = config.clone();
@@ -122,7 +95,7 @@ async fn main(
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                setup_torii_client(pool.clone(), config.clone())
+                setup_services(pool.clone(), config.clone())
                     .await
                     .expect("Failed to setup torii client");
                 Ok(Data {
