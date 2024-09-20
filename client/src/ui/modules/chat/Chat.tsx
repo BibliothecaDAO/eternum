@@ -88,7 +88,6 @@ export const Chat = () => {
     if (account.address === masterAccount.address) return;
 
     if (storedTabs.length === 0) {
-      console.log("here");
       setNewTabs([DEFAULT_TAB]);
     } else {
       setTabs([...storedTabs]);
