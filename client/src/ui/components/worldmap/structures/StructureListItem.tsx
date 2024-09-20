@@ -60,7 +60,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;
-  }, [nextBlockTimestamp]);
+  }, [nextBlockTimestamp, structure]);
 
   const battleButtons = useMemo(() => {
     if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
