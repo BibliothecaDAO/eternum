@@ -69,8 +69,6 @@ fn test_realm_create() {
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let position = Position { x: 20, y: 30, entity_id: 1 };
-
     let realm_id = 1;
     let resource_types_packed = 1;
     let resource_types_count = 1;
@@ -96,6 +94,8 @@ fn test_realm_create() {
             wonder,
             order,
         );
+
+    let position = get!(world, realm_entity_id, Position);
 
     let realm_owner = get!(world, realm_entity_id, Owner);
     assert(realm_owner.address == contract_address_const::<'caller'>(), 'wrong realm owner');
