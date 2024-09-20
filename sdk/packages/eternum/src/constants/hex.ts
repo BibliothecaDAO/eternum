@@ -66,10 +66,20 @@ export const neighborOffsetsOdd = [
 ];
 
 export const getNeighborHexes = (col: number, row: number) => {
-  const offsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  const offsets = getNeighborOffsets(row);
   return offsets.map((offset) => ({
     col: col + offset.i,
     row: row + offset.j,
     direction: offset.direction,
   }));
+};
+
+export const getNeighborOffsets = (row: number) => {
+  return row < 0
+    ? row % 2 !== 0
+      ? neighborOffsetsEven
+      : neighborOffsetsOdd
+    : row % 2 === 0
+    ? neighborOffsetsEven
+    : neighborOffsetsOdd;
 };
