@@ -93,14 +93,14 @@ export const EternumGlobalConfig = {
     ],
   },
   settlement: {
-    radius: 20,
+    radius: 2000,
     angle_scaled: 0,
     center: 2147483646,
-    min_distance: 0,
-    max_distance: 2,
+    min_distance: 10,
+    max_distance: 30,
     min_scaling_factor_scaled: 1844674407370955161n,
     min_angle_increase: 10,
-    max_angle_increase: 30,
+    max_angle_increase: 40,
   },
 };
 
