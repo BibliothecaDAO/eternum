@@ -22,8 +22,6 @@ export const CombatEntityDetails = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
 
-  const [ownArmySelected, setOwnArmySelected] = useState<{ id: ID; position: Position } | undefined>();
-
   const getStructures = getPlayerStructures();
   const hexPosition = useMemo(() => new Position({ x: selectedHex.col, y: selectedHex.row }), [selectedHex]);
 
@@ -92,7 +90,7 @@ export const CombatEntityDetails = () => {
     [hexPosition, ownArmy, structure, battles],
   );
 
-  const [selectedTab, setSelectedTab] = useState(battles.length > 0 ? 1 : 0);
+  const [selectedTab, setSelectedTab] = useState(0);
 
   return (
     hexPosition && (

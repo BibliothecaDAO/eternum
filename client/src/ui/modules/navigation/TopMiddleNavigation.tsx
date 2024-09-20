@@ -10,7 +10,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { gramToKg } from "@/ui/utils/utils";
+import { formatTime, gramToKg } from "@/ui/utils/utils";
 import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
@@ -253,7 +253,7 @@ const TickProgress = () => {
           position: "bottom",
           content: (
             <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60}m</span>
+              <span>A day in Eternum is {formatTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)}</span>
             </span>
           ),
         });

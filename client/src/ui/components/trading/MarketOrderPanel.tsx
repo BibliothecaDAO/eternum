@@ -105,7 +105,7 @@ export const MarketOrderPanel = ({
 
   const isOwnStructureInBattle = useMemo(() => {
     const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
-    return battleManager.isBattleOngoing(nextBlockTimestamp!);
+    return battleManager.isBattleOngoing(nextBlockTimestamp!) && !battleManager.isSiege(nextBlockTimestamp!);
   }, [entityId, nextBlockTimestamp]);
 
   return (
@@ -224,7 +224,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   const structure = getStructureByEntityId(offer.makerId);
   const isMakerInBattle = useMemo(() => {
     const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
-    return battleManager.isBattleOngoing(nextBlockTimestamp!);
+    return battleManager.isBattleOngoing(nextBlockTimestamp!) && !battleManager.isSiege(nextBlockTimestamp!);
   }, [offer, nextBlockTimestamp]);
 
   const [inputValue, setInputValue] = useState<number>(() => {
