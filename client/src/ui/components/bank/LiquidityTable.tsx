@@ -1,4 +1,5 @@
-import { ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
+import { useState } from "react";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
 
 type LiquidityTableProps = {
@@ -18,26 +19,42 @@ export const LiquidityTableHeader = () => (
 );
 
 export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProps) => {
+  const [searchTerm, setSearchTerm] = useState("");
+
   if (!bank_entity_id) {
     return <div>Entity not found</div>;
   }
 
+  const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
+    if (tier === "lords") return [];
+    return resourceIds.filter((resourceId) =>
+      resources
+        .find((r) => r.id === resourceId)
+        ?.trait.toLowerCase()
+        .includes(searchTerm.toLowerCase()),
+    );
+  });
+
   return (
     <div className="p-4 h-full bg-gold/10 overflow-x-auto relative">
+      <input
+        type="text"
+        placeholder="Search resources..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full p-2 mb-6 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
+      />
       <LiquidityTableHeader />
       <div className="overflow-y-auto">
         <div className="grid gap-2 relative">
-          {Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
-            if (tier === "lords") return null;
-            return resourceIds.map((resourceId) => (
-              <LiquidityResourceRow
-                key={resourceId}
-                bankEntityId={bank_entity_id!}
-                entityId={entity_id}
-                resourceId={resourceId}
-              />
-            ));
-          })}
+          {filteredResources.map((resourceId) => (
+            <LiquidityResourceRow
+              key={resourceId}
+              bankEntityId={bank_entity_id!}
+              entityId={entity_id}
+              resourceId={resourceId}
+            />
+          ))}
         </div>
       </div>
     </div>
