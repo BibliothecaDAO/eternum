@@ -30,7 +30,7 @@ export const MarketResource = ({
   onClick,
   askPrice,
   bidPrice,
-  depth,
+  ammPrice,
 }: {
   entityId: ID;
   resource: Resources;
@@ -38,7 +38,7 @@ export const MarketResource = ({
   onClick: (value: number) => void;
   askPrice: string;
   bidPrice: string;
-  depth: number;
+  ammPrice: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resource.id);
@@ -68,9 +68,23 @@ export const MarketResource = ({
         </div>
       </div>
 
-      <div className="text-red font-bold flex items-center justify-center">{bidPrice}</div>
-      <div className="text-green font-bold flex items-center justify-center">{askPrice}</div>
-      <div className="text-blueish font-bold flex items-center justify-center">{depth}</div>
+      <div className="text-green font-bold flex items-center justify-center">
+        {Number(bidPrice) === 0
+          ? "0"
+          : Number(bidPrice)
+              .toFixed(3)
+              .replace(/\.?0+$/, "")}
+      </div>
+      <div className="text-red font-bold flex items-center justify-center">
+        {Number(askPrice) === 0
+          ? "0"
+          : Number(askPrice)
+              .toFixed(3)
+              .replace(/\.?0+$/, "")}
+      </div>
+      <div className="text-blueish font-bold flex items-center justify-center">
+        {ammPrice === 0 ? "0" : ammPrice.toFixed(3).replace(/\.?0+$/, "")}
+      </div>
     </div>
   );
 };

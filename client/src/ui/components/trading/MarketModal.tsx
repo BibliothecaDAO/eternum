@@ -1,3 +1,4 @@
+import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
@@ -147,6 +148,7 @@ export const MarketModal = () => {
         <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
           <MarketResourceSidebar
             entityId={structureEntityId}
+            bankEntityId={bank?.entityId}
             search={""}
             onClick={(value) => setSelectedResource(value)}
             selectedResource={selectedResource}
@@ -183,6 +185,7 @@ export const MarketModal = () => {
 
 const MarketResourceSidebar = ({
   entityId,
+  bankEntityId,
   search,
   onClick,
   selectedResource,
@@ -190,12 +193,15 @@ const MarketResourceSidebar = ({
   resourceBidOffers,
 }: {
   entityId: ID;
+  bankEntityId: ID | undefined;
   search: string;
   onClick: (value: number) => void;
   selectedResource: number;
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
+  const { setup } = useDojo();
+
   const filteredResources = useMemo(() => {
     return resources.filter((resource) => {
       return resource.trait.toLowerCase().includes(search.toLowerCase());
@@ -207,9 +213,9 @@ const MarketResourceSidebar = ({
       <div className="w-full mb-1">
         <div className="grid grid-cols-5 text-xs font-bold uppercase">
           <div className="col-span-2"></div>
-          <div className="flex items-center justify-center">Sell</div>
           <div className="flex items-center justify-center">Buy</div>
-          <div className="flex items-center justify-center">Qty</div>
+          <div className="flex items-center justify-center">Sell</div>
+          <div className="flex items-center justify-center">AMM</div>
         </div>
       </div>
 
@@ -217,6 +223,8 @@ const MarketResourceSidebar = ({
         {filteredResources
           .filter((resource) => resource.id !== ResourcesIds.Lords)
           .map((resource) => {
+            const marketManager = bankEntityId ? new MarketManager(setup, bankEntityId, 0n, resource.id) : undefined;
+
             const askPrice = resourceBidOffers
               .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
               .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
@@ -225,9 +233,7 @@ const MarketResourceSidebar = ({
               .filter((offer) => offer.takerGets[0].resourceId === resource.id)
               .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
 
-            const depth =
-              resourceBidOffers.filter((offer) => offer.makerGets[0].resourceId === resource.id).length +
-              resourceAskOffers.filter((offer) => offer.takerGets[0].resourceId === resource.id).length;
+            const ammPrice = marketManager?.getMarketPrice() || 0;
 
             return (
               <MarketResource
@@ -238,7 +244,7 @@ const MarketResourceSidebar = ({
                 onClick={onClick}
                 askPrice={askPrice === Infinity ? "0" : askPrice.toFixed(2)}
                 bidPrice={bidPrice === Infinity ? "0" : bidPrice.toFixed(2)}
-                depth={depth}
+                ammPrice={ammPrice}
               />
             );
           })}
