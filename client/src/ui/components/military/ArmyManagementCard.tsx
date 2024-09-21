@@ -87,7 +87,10 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   });
 
   const remainingTroops = useMemo(() => {
-    return Math.max(0, MAX_TROOPS_PER_ARMY - Object.values(troopCounts).reduce((a, b) => a + b, 0));
+    return (
+      Math.max(0, MAX_TROOPS_PER_ARMY - Object.values(troopCounts).reduce((a, b) => a + b, 0)) -
+      Number(army?.quantity.value)
+    );
   }, [troopCounts]);
 
   const getMaxTroopCount = useCallback(
