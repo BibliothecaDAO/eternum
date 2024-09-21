@@ -145,7 +145,7 @@ export const Chat = () => {
         const message = getComponentValue(Message, entity);
         if (!message) return false;
 
-        const address = `0x${message?.identity.toString(16)}`;
+        const address = toHexString(message?.identity);
         const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
         if (!addressName) return false;
 
@@ -219,20 +219,17 @@ export const Chat = () => {
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : currentTab.name === "Global"
-          ? undefined
-          : BigInt(currentTab.address);
+        ? undefined
+        : BigInt(currentTab.address);
 
-      const channel = !!recipientAddress ? `0x${recipientAddress.toString(16)}` : GLOBAL_CHANNEL;
+      const channel = !!recipientAddress ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 
       const messageInValidAscii = toValidAscii(message);
-      const data = generateMessageTypedData(account.address, channel, messageInValidAscii, `0x${salt?.toString(16)}`);
+      const data = generateMessageTypedData(account.address, channel, messageInValidAscii, toHexString(salt));
 
       const signature: any = await account.signMessage(data as TypedData);
 
-      await toriiClient.publishMessage(JSON.stringify(data), [
-        `0x${signature.r.toString(16)}`,
-        `0x${signature.s.toString(16)}`,
-      ]);
+      await toriiClient.publishMessage(JSON.stringify(data), [toHexString(signature.r), toHexString(signature.s)]);
     },
     [account, recipientEntities, salt, toriiClient, currentTab.address],
   );
@@ -361,7 +358,7 @@ export const Chat = () => {
           <SelectContent>
             {players &&
               players.map((player, index) => (
-                <SelectItem className="flex justify-between" key={index} value={`0x${player.address.toString(16)}`}>
+                <SelectItem className="flex justify-between" key={index} value={toHexString(player.address)}>
                   {player.addressName}
                 </SelectItem>
               ))}

@@ -16,6 +16,7 @@ import {
   formatTime,
   getEntityIdFromKeys,
   ResourceIdToMiningType,
+  toHexString,
 } from "@/ui/utils/utils";
 import { BuildingType, EternumGlobalConfig, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -165,7 +166,7 @@ const CastleDetails = () => {
     return immunityEndTimestamp - nextBlockTimestamp!;
   }, [nextBlockTimestamp]);
 
-  const address = "0x" + structure?.owner.address.toString(16);
+  const address = toHexString(structure?.owner.address);
 
   return (
     <div className="w-full space-y-1 text-sm">

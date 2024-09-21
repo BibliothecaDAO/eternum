@@ -17,6 +17,7 @@ import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getEntitiesUtils } from "./useEntities";
 import { useRealm } from "./useRealm";
+import { toHexString } from "@/ui/utils/utils";
 
 export type GuildAndName = {
   guild: ComponentValue<ClientComponents["Guild"]["schema"]>;
@@ -62,7 +63,7 @@ export const useGuilds = () => {
       const player = getComponentValue(AddressName, playerEntity);
 
       const name = shortString.decodeShortString(player!.name.toString());
-      const address = "0x" + player?.address.toString(16);
+      const address = toHexString(player?.address || 0n);
 
       const isInvited = getComponentValue(
         GuildWhitelist,
@@ -182,7 +183,7 @@ const formatGuildMembers = (
       const guildMember = getComponentValue(GuildMember, entity);
       if (!guildMember) return;
       const addressName = getAddressName(guildMember.address);
-      const playerAddress = "0x" + guildMember.address.toString(16);
+      const playerAddress = toHexString(guildMember.address);
       return {
         guildMember,
         playerAddress,
@@ -203,7 +204,7 @@ const formatGuildWhitelist = (
       if (!guildWhitelist) return;
 
       const addressName = getAddressName(guildWhitelist.address);
-      const playerAddress = "0x" + guildWhitelist.address.toString(16);
+      const playerAddress = toHexString(guildWhitelist.address);
       return {
         guildWhitelist,
         playerAddress,
