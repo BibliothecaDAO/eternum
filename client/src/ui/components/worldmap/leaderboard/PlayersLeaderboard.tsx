@@ -9,6 +9,7 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { currencyIntlFormat, displayAddress, sortItems } from "../../../utils/utils";
+import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 
 type PlayerPointsLeaderboardKeys = keyof PlayerPointsLeaderboardInterface;
 
@@ -79,7 +80,11 @@ export const PlayersLeaderboard = () => {
             >
               <div className="col-span-1 ">{`#${index + 1}`}</div>
               <div className="col-span-1">{playerName}</div>
-              <OrderIcon className="col-span-1" order={orderName} size="xs" />
+              {order ? (
+                <OrderIcon className="col-span-1" order={orderName} size="xs" />
+              ) : (
+                <Cross className="w-4 h-4 flex justify-center paper" />
+              )}
               <div className="col-span-2">{displayAddress(address.toString(16))}</div>
               <div className="col-span-1"> {currencyIntlFormat(points)}</div>
             </div>
