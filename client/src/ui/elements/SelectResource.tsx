@@ -9,22 +9,9 @@ interface SelectResourceProps {
 }
 
 export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, className }) => {
-  const resourceIds: number[] = [
-    ResourcesIds.Wood,
-    ResourcesIds.Stone,
-    ResourcesIds.Coal,
-    ResourcesIds.Copper,
-    ResourcesIds.Obsidian,
-    ResourcesIds.Silver,
-    ResourcesIds.Ironwood,
-    ResourcesIds.ColdIron,
-    ResourcesIds.Gold,
-    ResourcesIds.Hartwood,
-    ResourcesIds.Diamonds,
-    ResourcesIds.Sapphire,
-    ResourcesIds.Ruby,
-    ResourcesIds.DeepCrystal,
-  ];
+  const resourceIds = Object.values(ResourcesIds)
+    .filter((resource) => resource !== ResourcesIds.Earthenshard && resource !== ResourcesIds.Lords)
+    .filter((resource) => typeof resource === "number");
 
   return (
     <Select onValueChange={(value) => onSelect(value ? parseInt(value) : null)}>
