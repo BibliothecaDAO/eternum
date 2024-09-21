@@ -209,7 +209,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
   );
 };
 
-export const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
+const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
   const { setup } = useDojo();
   const inputResources = RESOURCE_INPUTS_SCALED[marketManager.resourceId];
   if (!inputResources?.length) return null;
