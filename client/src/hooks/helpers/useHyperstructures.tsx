@@ -12,6 +12,7 @@ import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, ru
 import { toInteger } from "lodash";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import { toHexString } from "@/ui/utils/utils";
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -42,7 +43,7 @@ export const useHyperstructures = () => {
         .values()
         .next().value;
 
-      const owner = `0x${getComponentValue(Owner, ownerEntityIds || ("" as Entity))?.address.toString(16)}`;
+      const owner = toHexString(getComponentValue(Owner, ownerEntityIds || ("" as Entity))?.address || 0n);
       const entityName = getComponentValue(EntityName, hyperstructureEntityId);
       return {
         ...hyperstructure,

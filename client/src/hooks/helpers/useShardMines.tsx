@@ -2,6 +2,8 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { toHexString } from "@/ui/utils/utils";
 
 export const useShardMines = () => {
   const {
@@ -16,12 +18,9 @@ export const useShardMines = () => {
       const position = getComponentValue(Position, shardMineEntityId);
       const entityName = getComponentValue(EntityName, shardMineEntityId);
 
-      const owner = `0x${getComponentValue(
-        Owner,
-        runQuery([Has(Owner), HasValue(Owner, { entity_id: shardMine!.entity_id })])
-          .values()
-          .next().value ?? ("0" as Entity),
-      )?.address.toString(16)}`;
+      const owner = toHexString(
+        getComponentValue(Owner, getEntityIdFromKeys([BigInt(shardMine!.entity_id)]))?.address || 0n,
+      );
 
       const building = getComponentValue(
         Building,
