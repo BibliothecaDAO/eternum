@@ -43,7 +43,7 @@ export const ResourceBar = ({
   };
 
   const handleAmountChange = (amount: string) => {
-    !disableInput && setAmount && setAmount(parseInt(amount) || 0);
+    !disableInput && setAmount && setAmount(parseInt(amount.replaceAll(" ", "")) || 0);
   };
 
   const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
