@@ -1,6 +1,7 @@
 import { ID, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 
 export class StaminaManager {
@@ -58,16 +59,16 @@ export class StaminaManager {
     return newStamina;
   }
 
-  public getMaxStamina = (troops: any): number => {
+  public getMaxStamina = (troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined): number => {
     let maxStaminas: number[] = [];
     const staminaConfig = this.getStaminaConfig();
-    if (troops.knight_count > 0) {
+    if ((troops?.knight_count ?? 0) > 0) {
       maxStaminas.push(staminaConfig.knightConfig);
     }
-    if (troops.crossbowman_count > 0) {
+    if ((troops?.crossbowman_count ?? 0) > 0) {
       maxStaminas.push(staminaConfig.crossbowmanConfig);
     }
-    if (troops.paladin_count > 0) {
+    if ((troops?.paladin_count ?? 0) > 0) {
       maxStaminas.push(staminaConfig.paladinConfig);
     }
 
