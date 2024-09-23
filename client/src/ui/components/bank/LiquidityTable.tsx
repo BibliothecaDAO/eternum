@@ -8,7 +8,7 @@ type LiquidityTableProps = {
 };
 
 export const LiquidityTableHeader = () => (
-  <div className="grid grid-cols-7 gap-4 mb-4 px-2">
+  <div className="grid grid-cols-7 gap-4 mb-4 px-2 border-b">
     <div className="uppercase">Pair</div>
     <div className="uppercase">
       <p>Price</p>
@@ -47,12 +47,13 @@ export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProp
       <LiquidityTableHeader />
       <div className="overflow-y-auto">
         <div className="grid gap-2 relative">
-          {filteredResources.map((resourceId) => (
+          {filteredResources.map((resourceId, index) => (
             <LiquidityResourceRow
               key={resourceId}
               bankEntityId={bank_entity_id!}
               entityId={entity_id}
               resourceId={resourceId}
+              isFirst={index === 0 ? true : false}
             />
           ))}
         </div>
