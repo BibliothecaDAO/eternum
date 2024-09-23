@@ -27,7 +27,7 @@ mod resource_bridge_systems {
     use eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
-    use eternum::models::structure::{Structure, StructureCustomTrait};
+    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl};
     use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use starknet::ContractAddress;
@@ -43,9 +43,10 @@ mod resource_bridge_systems {
             amount: u256,
             client_fee_recipient: ContractAddress
         ) {
-            // ensure transfer recipient is a structure
+            // ensure transfer recipient is a bank
             let recipient_structure: Structure = get!(world, recipient_id, Structure);
             recipient_structure.assert_is_structure();
+            assert!(recipient_structure.category == StructureCategory::Bank, "structure is not a bank");
 
             // ensure bridge deposit is not paused
             InternalBridgeImpl::assert_deposit_not_paused(world);
@@ -88,9 +89,10 @@ mod resource_bridge_systems {
             // ensure caller is owner of from_id
             get!(world, from_id, EntityOwner).assert_caller_owner(world);
 
-            // ensure from_id is a structure
+            // ensure from_id is a bank
             let from_structure: Structure = get!(world, from_id, Structure);
             from_structure.assert_is_structure();
+            assert!(from_structure.category == StructureCategory::Bank, "structure is not a bank");
 
             // ensure bridge withdrawal is not paused
             InternalBridgeImpl::assert_withdraw_not_paused(world);
