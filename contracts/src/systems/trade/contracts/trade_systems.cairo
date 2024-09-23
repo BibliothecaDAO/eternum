@@ -47,7 +47,9 @@ mod trade_systems {
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::trade::{Trade, Status, TradeStatus};
     use eternum::models::weight::{Weight, WeightCustomTrait};
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl as internal_resources,};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{
+        InternalResourceSystemsImpl as internal_resources,
+    };
 
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
 

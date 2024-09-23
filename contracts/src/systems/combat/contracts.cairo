@@ -430,7 +430,7 @@ mod combat_systems {
             AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
 
     use eternum::utils::math::{PercentageValueImpl, PercentageImpl};

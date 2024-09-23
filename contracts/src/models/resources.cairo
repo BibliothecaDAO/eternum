@@ -165,9 +165,8 @@ impl ResourceFoodImpl of ResourceFoodTrait {
 impl ResourceCustomImpl of ResourceCustomTrait {
     fn get(world: IWorldDispatcher, key: (ID, u8)) -> Resource {
         let mut resource: Resource = get!(world, key, Resource);
-        if resource.entity_id == 0 {
-            return resource;
-        };
+        assert!(resource.resource_type.is_non_zero(), "resource type not found");
+        assert!(resource.entity_id.is_non_zero(), "entity id not found");
 
         resource.harvest(world);
         return resource;

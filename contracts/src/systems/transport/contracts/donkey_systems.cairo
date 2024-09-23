@@ -13,7 +13,9 @@ mod donkey_systems {
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::weight::Weight;
 
-    use eternum::systems::resources::contracts::resource_systems::{ResourceSystemsImpl, InternalResourceSystemsImpl};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{
+        ResourceSystemsImpl, InternalResourceSystemsImpl
+    };
 
 
     #[generate_trait]
