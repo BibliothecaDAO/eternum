@@ -109,7 +109,6 @@ mod resource_bridge_systems {
             resource.save(world);
 
             // get relative withdrawal amount
-            let this = get_contract_address();
             let withdrawal_amount = InternalBridgeImpl::resource_amount_to_token_amount(token, amount);
 
             // take fees from withdrawn amount
@@ -175,7 +174,6 @@ mod resource_bridge_systems {
                 / PercentageValueImpl::_100().into();
 
             // send fees to recipients
-            let this = get_contract_address();
             let erc20 = ERC20ABIDispatcher { contract_address: token };
             if velords_fee_amount.is_non_zero() {
                 erc20.transfer(fee_split_config.velords_fee_recipient, velords_fee_amount);
