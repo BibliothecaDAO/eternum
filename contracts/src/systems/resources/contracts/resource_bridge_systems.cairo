@@ -54,26 +54,26 @@ mod resource_bridge_systems {
             let resource_bridge_token_whitelist = get!(world, token, ResourceBridgeWhitelistConfig);
             InternalBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
-            // get resource id associated with token
-            let resource_type = resource_bridge_token_whitelist.resource_type;
-
-            let total_fees = InternalBridgeImpl::send_fees_on_deposit(world, token, client_fee_recipient, amount);
-            assert!(total_fees.is_non_zero(), "Bridge: deposit amount too small");
-            let amount_less_fees = amount - total_fees;
-
-            // mint resource to recipient
-            let mut resource: Resource = ResourceCustomImpl::get(world, (recipient_id, resource_type));
-            let deposit_amount_given = InternalBridgeImpl::token_amount_to_resource_amount(token, amount_less_fees);
-            resource.add(deposit_amount_given);
-            resource.save(world);
-
-            // receive the deposit amount from the caller
+            // transfer the deposit amount from the caller to this contract
             let caller = get_caller_address();
             let this = get_contract_address();
             assert!(
                 ERC20ABIDispatcher { contract_address: token }.transfer_from(caller, this, amount),
                 "Bridge: transfer failed"
             );
+
+            // take fees from deposit
+            let total_fees = InternalBridgeImpl::send_fees_on_deposit(world, token, client_fee_recipient, amount);
+            assert!(total_fees.is_non_zero(), "Bridge: deposit amount too small");
+            let amount_less_fees = amount - total_fees;
+
+            // get resource id associated with token
+            let resource_type = resource_bridge_token_whitelist.resource_type;
+            // mint resource to recipient
+            let mut resource: Resource = ResourceCustomImpl::get(world, (recipient_id, resource_type));
+            let deposit_amount_given = InternalBridgeImpl::token_amount_to_resource_amount(token, amount_less_fees);
+            resource.add(deposit_amount_given);
+            resource.save(world);
         }
 
 
@@ -112,7 +112,7 @@ mod resource_bridge_systems {
             let this = get_contract_address();
             let withdrawal_amount = InternalBridgeImpl::resource_amount_to_token_amount(token, amount);
 
-            // send withdrawal fees to recipients
+            // take fees from withdrawn amount
             let total_fees = InternalBridgeImpl::send_fees_on_withdrawal(
                 world, token, client_fee_recipient, withdrawal_amount
             );
@@ -121,8 +121,7 @@ mod resource_bridge_systems {
 
             // transfer withdrawal amount to recipient
             assert!(
-                ERC20ABIDispatcher { contract_address: token }
-                    .transfer_from(this, recipient_address, withdrawal_amount_less_fees),
+                ERC20ABIDispatcher { contract_address: token }.transfer(recipient_address, withdrawal_amount_less_fees),
                 "Bridge: transfer failed"
             );
         }
@@ -179,13 +178,13 @@ mod resource_bridge_systems {
             let this = get_contract_address();
             let erc20 = ERC20ABIDispatcher { contract_address: token };
             if velords_fee_amount.is_non_zero() {
-                erc20.transfer_from(this, fee_split_config.velords_fee_recipient, velords_fee_amount);
+                erc20.transfer(fee_split_config.velords_fee_recipient, velords_fee_amount);
             }
             if season_pool_fee_amount.is_non_zero() {
-                erc20.transfer_from(this, fee_split_config.season_pool_fee_recipient, season_pool_fee_amount);
+                erc20.transfer(fee_split_config.season_pool_fee_recipient, season_pool_fee_amount);
             }
             if client_fee_amount.is_non_zero() {
-                erc20.transfer_from(this, client_fee_recipient, client_fee_amount);
+                erc20.transfer(client_fee_recipient, client_fee_amount);
             }
 
             // return the total fees sent
