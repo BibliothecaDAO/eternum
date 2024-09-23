@@ -27,7 +27,7 @@ export const Leaderboard = ({
   } = useDojo();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-  const { getAddressName, getAddressOrder } = useRealm();
+  const { getAddressName } = useRealm();
 
   const playerPointsLeaderboard = useMemo(() => {
     return LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId);
@@ -44,7 +44,6 @@ export const Leaderboard = ({
   const sortingParams = useMemo(() => {
     return [
       { label: "Name", sortKey: "name", className: "" },
-      { label: "Order", sortKey: "order", className: "" },
       { label: "Address", sortKey: "address", className: "" },
       { label: "Points", sortKey: "points", className: "flex justify-end" },
     ];
@@ -63,7 +62,7 @@ export const Leaderboard = ({
 
   return update ? (
     <>
-      <SortPanel className="px-3 py-2 grid grid-cols-4">
+      <SortPanel className="px-3 py-2 grid grid-cols-3">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton
             className={className}
@@ -85,15 +84,11 @@ export const Leaderboard = ({
 
         const isOwner = address === ContractAddress(account.address);
 
-        const order = getAddressOrder(address) || 0;
-        const orderName = getOrderName(order);
-
         return (
           <div key={index} className={`flex mt-1 ${isOwner ? "bg-green/20" : ""} text-xxs text-gold`}>
             <div className={`flex relative group items-center text-xs px-2 p-1 w-full`}>
-              <div className="flex w-full grid grid-cols-4">
+              <div className="flex w-full grid grid-cols-3">
                 <div className="text-sm font-bold">{playerName}</div>
-                <OrderIcon containerClassName="" order={orderName} size="xs" />
                 <div className=" text-sm font-bold">{displayAddress(address.toString(16))}</div>
                 <div className="text-right">{currencyIntlFormat(points)}</div>
               </div>
