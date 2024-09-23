@@ -168,12 +168,9 @@ mod resource_bridge_systems {
             world: IWorldDispatcher, token: ContractAddress, client_fee_recipient: ContractAddress, amount: u256
         ) -> u256 {
             let fee_split_config = get!(world, WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
-            let velords_fee_amount = (amount * fee_split_config.velords_fee_on_dpt_percent.into())
-                / PercentageValueImpl::_100().into();
-            let season_pool_fee_amount = (amount * fee_split_config.season_pool_fee_on_dpt_percent.into())
-                / PercentageValueImpl::_100().into();
-            let client_fee_amount = (amount * fee_split_config.client_fee_on_dpt_percent.into())
-                / PercentageValueImpl::_100().into();
+            let velords_fee_amount = Self::calculate_fees(amount, fee_split_config.velords_fee_on_dpt_percent);
+            let season_pool_fee_amount = Self::calculate_fees(amount, fee_split_config.season_pool_fee_on_dpt_percent);
+            let client_fee_amount = Self::calculate_fees(amount, fee_split_config.client_fee_on_dpt_percent);
 
             // send fees to recipients
             let erc20 = ERC20ABIDispatcher { contract_address: token };
@@ -196,12 +193,9 @@ mod resource_bridge_systems {
             world: IWorldDispatcher, token: ContractAddress, client_fee_recipient: ContractAddress, amount: u256
         ) -> u256 {
             let fee_split_config = get!(world, WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
-            let velords_fee_amount = (amount * fee_split_config.velords_fee_on_wtdr_percent.into())
-                / PercentageValueImpl::_100().into();
-            let season_pool_fee_amount = (amount * fee_split_config.season_pool_fee_on_wtdr_percent.into())
-                / PercentageValueImpl::_100().into();
-            let client_fee_amount = (amount * fee_split_config.client_fee_on_wtdr_percent.into())
-                / PercentageValueImpl::_100().into();
+            let velords_fee_amount = Self::calculate_fees(amount, fee_split_config.velords_fee_on_wtdr_percent);
+            let season_pool_fee_amount = Self::calculate_fees(amount, fee_split_config.season_pool_fee_on_wtdr_percent);
+            let client_fee_amount = Self::calculate_fees(amount, fee_split_config.client_fee_on_wtdr_percent);
 
             // send fees to recipients
             let erc20 = ERC20ABIDispatcher { contract_address: token };
@@ -217,6 +211,11 @@ mod resource_bridge_systems {
 
             // return the total fees sent
             velords_fee_amount + season_pool_fee_amount + client_fee_amount
+        }
+
+
+        fn calculate_fees(amount: u256, fee_percent: u16) -> u256 {
+            return (amount * fee_percent.into()) / PercentageValueImpl::_100().into();
         }
     }
 }
