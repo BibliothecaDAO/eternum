@@ -20,7 +20,7 @@ mod resource_transfer_system_tests {
 
     use eternum::systems::config::contracts::{config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait};
 
-    use eternum::systems::resources::contracts::{
+    use eternum::systems::resources::contracts::resource_systems::{
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
 

@@ -20,6 +20,27 @@ trait IResourceBridgeSystems {
     );
 }
 
+#[starknet::interface]
+pub trait ERC20ABI<TState> {
+    // IERC20
+    fn total_supply(self: @TState) -> u256;
+    fn balance_of(self: @TState, account: ContractAddress) -> u256;
+    fn allowance(self: @TState, owner: ContractAddress, spender: ContractAddress) -> u256;
+    fn transfer(ref self: TState, recipient: ContractAddress, amount: u256) -> bool;
+    fn transfer_from(ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
+    fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
+
+    // IERC20Metadata
+    fn name(self: @TState) -> ByteArray;
+    fn symbol(self: @TState) -> ByteArray;
+    fn decimals(self: @TState) -> u8;
+
+    // IERC20CamelOnly
+    fn totalSupply(self: @TState) -> u256;
+    fn balanceOf(self: @TState, account: ContractAddress) -> u256;
+    fn transferFrom(ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
+}
+
 #[dojo::contract]
 mod resource_bridge_systems {
     use eternum::alias::ID;
@@ -29,9 +50,9 @@ mod resource_bridge_systems {
     use eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
     use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl};
-    use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
+    use super::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
 
 
     #[abi(embed_v0)]

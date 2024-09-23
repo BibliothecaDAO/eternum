@@ -14,7 +14,7 @@ mod resource_approval_system_tests {
     use eternum::models::quantity::Quantity;
     use eternum::models::resources::{Resource, ResourceAllowance};
 
-    use eternum::systems::resources::contracts::{
+    use eternum::systems::resources::contracts::resource_systems::{
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
 
