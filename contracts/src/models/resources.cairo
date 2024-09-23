@@ -284,37 +284,6 @@ impl OwnedResourcesTrackerCustomImpl of OwnedResourcesTrackerCustomTrait {
         let pos = resource_type - 1;
         self.resource_types = set_u256_bit(self.resource_types, pos.into(), value);
     }
-
-
-    /// Get all the resources an entity owns and their probability of occurence
-    ///
-    /// # Returns
-    ///
-    /// * `Span<u8>` - The resource types
-    /// * `Span<u128>` - The resource probabilities
-    ///
-    ///    resource_types.length == resource_probabilities.length
-    ///
-    fn get_owned_resources_and_probs(self: @OwnedResourcesTracker) -> (Span<u8>, Span<u128>) {
-        let zipped = get_resource_probabilities();
-        let mut owned_resource_types = array![];
-        let mut owned_resource_probabilities = array![];
-        let mut index = 0;
-        loop {
-            if index == zipped.len() {
-                break;
-            }
-
-            let (resource_type, probability) = *zipped.at(index);
-            if self.owns_resource_type(resource_type) {
-                owned_resource_types.append(resource_type);
-                owned_resource_probabilities.append(probability);
-            }
-            index += 1;
-        };
-
-        return (owned_resource_types.span(), owned_resource_probabilities.span());
-    }
 }
 
 #[cfg(test)]
