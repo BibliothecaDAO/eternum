@@ -2,7 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
 import TextInput from "@/ui/elements/TextInput";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shortString, TypedData } from "starknet";
@@ -102,17 +102,11 @@ export const Chat = () => {
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
 
-  const selfMessageEntities = useEntityQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
-  const receivedMessageEntities = useEntityQuery([
-    Has(Message),
-    HasValue(Message, { channel: BigInt(account.address) }),
-  ]);
-
   const recipientEntities = useEntityQuery([Has(AddressName), HasValue(AddressName, { name: BigInt("0x0") })]);
 
   useEffect(() => {
     scrollToElement(bottomChatRef);
-  }, [allMessageEntities, receivedMessageEntities]);
+  }, [allMessageEntities]);
 
   const setNewTabs = (newTabs: Tab[]) => {
     setTabs(newTabs);
@@ -193,7 +187,7 @@ export const Chat = () => {
     });
 
     return messageMap;
-  }, [allMessageEntities, receivedMessageEntities]);
+  }, [allMessageEntities]);
 
   const messagesToDisplay = useMemo(() => {
     if (currentTab.name === "Global") {
@@ -206,13 +200,14 @@ export const Chat = () => {
   }, [messages, currentTab.address]);
 
   useEffect(() => {
-    const salts = selfMessageEntities.map((entity) => {
+    const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
+    const salts = Array.from(selfMessageEntities).map((entity) => {
       const message = getComponentValue(Message, entity);
       return message?.salt || 0n;
     });
     if (!salts.length) return;
     setSalt(salts.sort((a, b) => Number(b) - Number(a))[0] + 1n);
-  }, [selfMessageEntities, salt]);
+  }, [salt]);
 
   const publish = useCallback(
     async (message: string) => {
@@ -327,7 +322,7 @@ export const Chat = () => {
             />
           ))}
       </div>
-      <div className="flex flex-col gap-2 w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded-b max-h-80">
+      <div className="flex flex-col gap-2 w-[28vw] max-w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded-b max-h-80">
         <div className="border p-2 border-gold/40 rounded text-xs h-60 overflow-y-auto min-h-40">
           {messagesToDisplay?.map((message, index) => (
             <div
@@ -339,7 +334,12 @@ export const Chat = () => {
                 <span className="font-bold mr-1 inline" onClick={() => changeTabs(message.name, message.address)}>
                   [{message.fromSelf ? "you" : message.name}]:
                 </span>
-                <span className="font-bold mr-2 inline">{`${message.content}`}</span>
+                <span
+                  className="font-bold mr-2 inline text-wrap max-w-full"
+                  style={{ wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "pre-wrap" }}
+                >
+                  {`${message.content}`}
+                </span>
               </div>
             </div>
           ))}
@@ -379,7 +379,13 @@ export const Chat = () => {
   );
 };
 
-const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {};
+const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
+  setTimeout(() => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, 1);
+};
 
 class ContentParser {
   isCommand(content: string): boolean {
