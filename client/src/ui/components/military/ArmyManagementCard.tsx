@@ -81,9 +81,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const [naming, setNaming] = useState("");
 
   const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
-    [ResourcesIds.Knight]: 1000,
-    [ResourcesIds.Crossbowman]: 1000,
-    [ResourcesIds.Paladin]: 1000,
+    [ResourcesIds.Knight]: 0,
+    [ResourcesIds.Crossbowman]: 0,
+    [ResourcesIds.Paladin]: 0,
   });
 
   const remainingTroops = useMemo(() => {
@@ -242,7 +242,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                 <TextInput
                   placeholder="Type Name"
                   className="h-full"
-                  value={naming}
                   onChange={(name) => setNaming(name)}
                 />
                 <Button

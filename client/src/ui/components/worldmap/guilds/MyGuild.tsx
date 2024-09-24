@@ -103,7 +103,6 @@ export const MyGuild = () => {
                   <TextInput
                     placeholder="Type Name"
                     className=""
-                    value={naming}
                     onChange={(name) => setNaming(name)}
                     maxLength={MAX_NAME_LENGTH}
                   />
@@ -187,7 +186,6 @@ export const MyGuild = () => {
                       <TextInput
                         placeholder="Player address"
                         className="border border-gold  !w-1/2 !flex-grow-0 !text-light-pink text-xs mx-5"
-                        value={playerAddress}
                         onChange={(playerAddress) => setPlayerAddress(playerAddress)}
                       />
                       <Button
@@ -237,11 +235,7 @@ export const MyGuild = () => {
             <div className="flex  justify-between items-baseline gap-4 p-4">
               <div className="w-full text-xl">Guild Name</div>
 
-              <TextInput
-                value={newGuildName}
-                onChange={(newGuildName) => setNewGuildName(newGuildName)}
-                maxLength={MAX_NAME_LENGTH}
-              />
+              <TextInput onChange={(newGuildName) => setNewGuildName(newGuildName)} maxLength={MAX_NAME_LENGTH} />
               <div className="flex justify-center gap-2">
                 <SelectBox selected={isPublic} onClick={() => setIsPublic(!isPublic)}>
                   Public

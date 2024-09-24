@@ -158,7 +158,6 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               <Headline>From</Headline>
               <TextInput
                 placeholder="Search Structures..."
-                value={fromSearchTerm}
                 onChange={(fromSearchTerm) => setFromSearchTerm(fromSearchTerm)}
                 className="my-2"
               />
@@ -186,7 +185,6 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               <Headline>To</Headline>
               <TextInput
                 placeholder="Search entities..."
-                value={toSearchTerm}
                 onChange={(toSearchTerm) => setToSearchTerm(toSearchTerm)}
                 className="my-2"
               />

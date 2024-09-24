@@ -115,7 +115,6 @@ export const SelectLocationPanel = ({
         <TextInput
           className="border border-gold mx-1 !w-auto !text-light-pink"
           placeholder="Search by ID or name"
-          value={nameFilter}
           onChange={setNameFilter}
         />
         <SortPanel className="px-2 py-2 border-b-0">

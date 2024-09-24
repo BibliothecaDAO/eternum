@@ -482,10 +482,7 @@ export class BattleManager {
     durationPassed: number,
   ) {
     const damagesDone = this.damagesDone(delta, durationPassed);
-    const currentHealthAfterDamage = BigInt(
-      Math.min(Number(health.current), Number(this.getCurrentHealthAfterDamage(health, damagesDone))),
-    );
-    return currentHealthAfterDamage;
+    return this.getCurrentHealthAfterDamage(health, damagesDone);
   }
 
   private attackingDelta(battle: ComponentValue<Components["Battle"]["schema"]>) {
