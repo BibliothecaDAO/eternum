@@ -229,7 +229,9 @@ export class ArmyManager {
     this.armyModel.mesh.count = count;
     console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count} and matrices:`);
     this.armyModel.mesh.instanceMatrix.needsUpdate = true;
-    this.armyModel.mesh.instanceColor!.needsUpdate = true;
+    if (this.armyModel.mesh.instanceColor) {
+      this.armyModel.mesh.instanceColor.needsUpdate = true;
+    }
     this.armyModel.mesh.computeBoundingSphere();
     this.updateLabelsForChunk(chunkKey);
   }
