@@ -18,6 +18,7 @@ class Minimap {
   };
   private scaleX: number;
   private scaleY: number;
+  private isDragging: boolean = false;
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -36,6 +37,10 @@ class Minimap {
 
     // Add event listener for click event
     this.canvas.addEventListener("click", this.handleClick.bind(this));
+    // Add event listeners for dragging
+    this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
+    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
+    this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
   }
 
   draw() {
@@ -87,7 +92,22 @@ class Minimap {
     this.draw();
   }
 
-  handleClick(event: MouseEvent) {
+  private handleMouseDown(event: MouseEvent) {
+    this.isDragging = true;
+    this.moveCamera(event);
+  }
+
+  private handleMouseMove(event: MouseEvent) {
+    if (this.isDragging) {
+      this.moveCamera(event);
+    }
+  }
+
+  private handleMouseUp() {
+    this.isDragging = false;
+  }
+
+  private moveCamera(event: MouseEvent) {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
@@ -96,6 +116,10 @@ class Minimap {
     const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
 
     this.worldmapScene.moveCameraToColRow(col, row, 0);
+  }
+
+  handleClick(event: MouseEvent) {
+    this.moveCamera(event);
   }
 }
 
