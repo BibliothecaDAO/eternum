@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -81,6 +81,12 @@
   </head>
   <body>
     <div id="root"></div>
+    <canvas
+      id="minimap"
+      width="200"
+      height="200"
+      style="position: absolute; top: 10px; right: 10px; border: 1px solid black; z-index: 1000"
+    ></canvas>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
