@@ -1,8 +1,10 @@
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import * as THREE from "three";
+import WorldmapScene from "../scenes/Worldmap";
 import { StructureManager } from "./StructureManager";
 
 class Minimap {
+  private worldmapScene: WorldmapScene;
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
   private camera: THREE.PerspectiveCamera;
@@ -18,10 +20,12 @@ class Minimap {
   private scaleY: number;
 
   constructor(
+    worldmapScene: WorldmapScene,
     exploredTiles: Map<number, Set<number>>,
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
   ) {
+    this.worldmapScene = worldmapScene;
     this.canvas = document.getElementById("minimap") as HTMLCanvasElement;
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
@@ -29,6 +33,9 @@ class Minimap {
     this.camera = camera;
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
+
+    // Add event listener for click event
+    this.canvas.addEventListener("click", this.handleClick.bind(this));
   }
 
   draw() {
@@ -78,6 +85,17 @@ class Minimap {
 
   update() {
     this.draw();
+  }
+
+  handleClick(event: MouseEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const col = Math.floor(x / this.scaleX) + this.displayRange.minCol;
+    const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
+
+    this.worldmapScene.moveCameraToColRow(col, row, 0);
   }
 }
 
