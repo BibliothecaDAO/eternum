@@ -18,6 +18,7 @@ import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
+import Minimap from "../components/Minimap";
 import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
 import { StructurePreview } from "../components/StructurePreview";
@@ -49,6 +50,7 @@ export default class WorldmapScene extends HexagonScene {
   private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
   private armySubscription: any;
   private selectedHexManager: SelectedHexManager;
+  private minimap!: Minimap;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -146,6 +148,8 @@ export default class WorldmapScene extends HexagonScene {
         }
       },
     );
+
+    this.minimap = new Minimap(this.exploredTiles, this.camera, this.structureManager);
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -538,5 +542,6 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.battleManager.update(deltaTime);
+    this.minimap.update();
   }
 }

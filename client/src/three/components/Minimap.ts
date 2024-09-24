@@ -1,11 +1,13 @@
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import * as THREE from "three";
+import { StructureManager } from "./StructureManager";
 
 class Minimap {
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
-  private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
+  private exploredTiles: Map<number, Set<number>>;
+  private structureManager: StructureManager;
   private displayRange: any = {
     minCol: 0,
     maxCol: 500,
@@ -13,10 +15,15 @@ class Minimap {
     maxRow: 500,
   };
 
-  constructor(scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
+  constructor(
+    exploredTiles: Map<number, Set<number>>,
+    camera: THREE.PerspectiveCamera,
+    structureManager: StructureManager,
+  ) {
     this.canvas = document.getElementById("minimap") as HTMLCanvasElement;
     this.context = this.canvas.getContext("2d")!;
-    this.scene = scene;
+    this.structureManager = structureManager;
+    this.exploredTiles = exploredTiles;
     this.camera = camera;
   }
 
@@ -28,28 +35,18 @@ class Minimap {
     const scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     const scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
 
-    // Draw the scene objects
-    this.scene.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
-        const position = object.position;
-        const { col, row } = getHexForWorldPosition(position);
-        if (col == 185 && row == 150) {
-          console.log("object", object);
-        }
-
-        if (
-          col >= this.displayRange.minCol &&
-          col <= this.displayRange.maxCol &&
-          row >= this.displayRange.minRow &&
-          row <= this.displayRange.maxRow
-        ) {
-          const scaledCol = (col - this.displayRange.minCol) * scaleX;
-          const scaledRow = (row - this.displayRange.minRow) * scaleY;
-          this.context.fillStyle = "white";
-          this.context.fillRect(scaledCol, scaledRow, 1, 1);
-        }
-      }
-    });
+    // Draw structures
+    const allStructures = this.structureManager.structures.getStructures();
+    console.log("structures", allStructures);
+    for (const [structureType, structures] of allStructures) {
+      structures.forEach((structure) => {
+        const { col, row } = structure.hexCoords;
+        const scaledCol = (col - this.displayRange.minCol) * scaleX;
+        const scaledRow = (row - this.displayRange.minRow) * scaleY;
+        this.context.fillStyle = "blue";
+        this.context.fillRect(scaledCol, scaledRow, 3, 3);
+      });
+    }
 
     // Draw the camera position
     const cameraPosition = this.camera.position;

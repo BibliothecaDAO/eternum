@@ -7,7 +7,6 @@ import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
-import Minimap from "./components/Minimap";
 import { TransitionManager } from "./components/TransitionManager";
 import { GUIManager } from "./helpers/GUIManager";
 import { LocationManager } from "./helpers/LocationManager";
@@ -58,8 +57,6 @@ export default class GameRenderer {
   private systemManager!: SystemManager;
 
   private isLowGraphicsMode: boolean;
-
-  private minimap!: Minimap;
 
   constructor(dojoContext: SetupResult) {
     this.isLowGraphicsMode = IS_LOW_GRAPHICS_ENABLED;
@@ -217,7 +214,6 @@ export default class GameRenderer {
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
 
     this.renderModels();
-    this.minimap = new Minimap(this.worldmapScene.getScene(), this.camera);
     // Init animation
     this.animate();
   }
@@ -325,8 +321,6 @@ export default class GameRenderer {
     this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
 
     // Update the minimap
-    this.minimap.update();
-
     requestAnimationFrame(() => {
       this.animate();
     });
