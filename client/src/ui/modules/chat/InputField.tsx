@@ -44,8 +44,6 @@ export const InputField = ({
 
       if (input.current.length === 0) return;
 
-      console.log(input.current);
-
       const contentParser = new ContentParser();
       if (contentParser.isWhisper(input.current)) {
         const whisperDestination = contentParser.getWhisperDest(input.current);
