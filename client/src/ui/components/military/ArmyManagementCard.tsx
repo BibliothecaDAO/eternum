@@ -239,11 +239,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
           <div className="flex justify-between p-2">
             {editName ? (
               <div className="flex space-x-2">
-                <TextInput
-                  placeholder="Type Name"
-                  className="h-full"
-                  onChange={(name) => setNaming(name)}
-                />
+                <TextInput placeholder="Type Name" className="h-full" onChange={(name) => setNaming(name)} />
                 <Button
                   variant="default"
                   isLoading={isLoading}

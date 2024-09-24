@@ -12,8 +12,7 @@ interface TextInputProps {
 }
 
 const TextInput = (props: TextInputProps) => {
-  const { disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } =
-    props;
+  const { disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } = props;
 
   return (
     <form

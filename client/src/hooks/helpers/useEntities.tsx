@@ -73,8 +73,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-            ? `${structure?.category} ${structureName}`
-            : structure.category || "";
+              ? `${structure?.category} ${structureName}`
+              : structure.category || "";
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -266,15 +266,15 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-        ? `${structure?.category} ${structureName}`
-        : structure.category || "";
+          ? `${structure?.category} ${structureName}`
+          : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)
     .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
 };
 
-export const getStructureName = (
+const getStructureName = (
   entityName: ComponentValue<ClientComponents["EntityName"]["schema"]> | undefined,
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined,
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined,
@@ -285,8 +285,8 @@ export const getStructureName = (
     structure.category === StructureType[StructureType.Realm]
       ? getRealmNameById(realm!.realm_id)
       : entityName
-      ? shortString.decodeShortString(entityName.name.toString())
-      : `${structure.category} ${structure.entity_id}` || "";
+        ? shortString.decodeShortString(entityName.name.toString())
+        : `${structure.category} ${structure.entity_id}` || "";
 
   return name;
 };
