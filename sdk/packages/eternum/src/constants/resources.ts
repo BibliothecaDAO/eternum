@@ -231,11 +231,11 @@ export const resources: Array<Resources> = [
     ticker: "$DRGNHD",
   },
   {
-    trait: "Donkeys",
+    trait: "Donkey",
     value: 249,
     colour: "#ec4899",
     id: 249,
-    description: "Donkeys.",
+    description: "Donkey.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
     ticker: "$DONKEY",
   },
