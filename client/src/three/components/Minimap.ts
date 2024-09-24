@@ -14,6 +14,8 @@ class Minimap {
     minRow: 0,
     maxRow: 500,
   };
+  private scaleX: number;
+  private scaleY: number;
 
   constructor(
     exploredTiles: Map<number, Set<number>>,
@@ -25,6 +27,8 @@ class Minimap {
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
     this.camera = camera;
+    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
+    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
   }
 
   draw() {
@@ -32,27 +36,29 @@ class Minimap {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Calculate scale factors
-    const scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
-    const scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
 
     // Draw structures
     const allStructures = this.structureManager.structures.getStructures();
-    console.log("structures", allStructures);
+
     for (const [structureType, structures] of allStructures) {
       structures.forEach((structure) => {
         const { col, row } = structure.hexCoords;
-        const scaledCol = (col - this.displayRange.minCol) * scaleX;
-        const scaledRow = (row - this.displayRange.minRow) * scaleY;
+        const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
+        const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
         this.context.fillStyle = "blue";
         this.context.fillRect(scaledCol, scaledRow, 3, 3);
       });
     }
 
     // Draw the camera position
+    this.drawCamera();
+  }
+
+  drawCamera() {
     const cameraPosition = this.camera.position;
     const { col, row } = getHexForWorldPosition(cameraPosition);
-    const scaledCol = (col - this.displayRange.minCol) * scaleX;
-    const scaledRow = (row - this.displayRange.minRow) * scaleY;
+    const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
+    const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
     this.context.fillStyle = "red";
     this.context.fillRect(scaledCol, scaledRow, 3, 3);
   }
