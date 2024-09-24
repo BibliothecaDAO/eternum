@@ -9,10 +9,10 @@ class Minimap {
   private exploredTiles: Map<number, Set<number>>;
   private structureManager: StructureManager;
   private displayRange: any = {
-    minCol: 0,
-    maxCol: 500,
-    minRow: 0,
-    maxRow: 500,
+    minCol: 150,
+    maxCol: 350,
+    minRow: 100,
+    maxRow: 200,
   };
   private scaleX: number;
   private scaleY: number;
@@ -46,7 +46,7 @@ class Minimap {
         const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
         const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
         this.context.fillStyle = "blue";
-        this.context.fillRect(scaledCol, scaledRow, 3, 3);
+        this.context.fillRect(scaledCol, scaledRow, 2, 2);
       });
     }
 
@@ -59,8 +59,21 @@ class Minimap {
     const { col, row } = getHexForWorldPosition(cameraPosition);
     const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
     const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
-    this.context.fillStyle = "red";
-    this.context.fillRect(scaledCol, scaledRow, 3, 3);
+
+    // draw a trapezoid
+    this.context.fillStyle = "green";
+    this.context.beginPath();
+    const topSideWidth = (window.innerWidth / 105) * this.scaleX;
+    const bottomSideWidth = (window.innerWidth / 170) * this.scaleX;
+    const height = 13 * this.scaleY;
+    this.context.moveTo(scaledCol - topSideWidth / 2, scaledRow - height);
+    this.context.lineTo(scaledCol + topSideWidth / 2, scaledRow - height);
+    this.context.lineTo(scaledCol + bottomSideWidth / 2, scaledRow);
+    this.context.lineTo(scaledCol - bottomSideWidth / 2, scaledRow);
+    this.context.lineTo(scaledCol - topSideWidth / 2, scaledRow - height);
+    this.context.closePath();
+    this.context.lineWidth = 2;
+    this.context.stroke();
   }
 
   update() {
