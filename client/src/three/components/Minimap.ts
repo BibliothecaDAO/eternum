@@ -256,6 +256,7 @@ class Minimap {
   }
 
   handleClick = (event: MouseEvent) => {
+    event.stopPropagation();
     const { col, row, x, y } = this.getMousePosition(event);
 
     const borderWidthX = this.canvas.width * this.BORDER_WIDTH_PERCENT;
