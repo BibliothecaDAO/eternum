@@ -24,6 +24,7 @@ class Minimap {
   private scaleX: number;
   private scaleY: number;
   private isDragging: boolean = false;
+  private biomeCache: Map<string, string>; // Add biomeCache
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -43,6 +44,7 @@ class Minimap {
     this.camera = camera;
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
+    this.biomeCache = new Map(); // Initialize biomeCache
 
     // Add event listener for click event
     this.canvas.addEventListener("click", this.handleClick.bind(this));
@@ -70,14 +72,22 @@ class Minimap {
   }
 
   private drawExploredTiles() {
-    //this.context.fillStyle = "rgba(0, 255, 0, 0.5)"; // semi-transparent green for explored tiles
-
     this.exploredTiles.forEach((rows, col) => {
       rows.forEach((row) => {
+        const cacheKey = `${col},${row}`;
+        let biomeColor;
+
+        if (this.biomeCache.has(cacheKey)) {
+          biomeColor = this.biomeCache.get(cacheKey)!;
+        } else {
+          const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+          biomeColor = BIOME_COLORS[biome].getStyle();
+          this.biomeCache.set(cacheKey, biomeColor);
+        }
+
         const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
         const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
-        const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
-        this.context.fillStyle = BIOME_COLORS[biome].getStyle();
+        this.context.fillStyle = biomeColor;
         this.context.fillRect(scaledCol, scaledRow, this.scaleX, this.scaleY);
       });
     });
