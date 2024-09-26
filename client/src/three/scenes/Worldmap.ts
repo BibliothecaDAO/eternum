@@ -149,7 +149,7 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager);
+    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.biome);
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -252,7 +252,7 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLeftNavigationView(View.EntityView);
     }
   }
-  protected onHexagonRightClick(): void {}
+  protected onHexagonRightClick(): void { }
 
   private onArmySelection(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {

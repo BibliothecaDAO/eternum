@@ -1,6 +1,8 @@
+import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
+import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
 class Minimap {
@@ -10,6 +12,7 @@ class Minimap {
   private camera: THREE.PerspectiveCamera;
   private exploredTiles: Map<number, Set<number>>;
   private structureManager: StructureManager;
+  private biome: Biome;
   private displayRange: any = {
     minCol: 150,
     maxCol: 350,
@@ -25,12 +28,14 @@ class Minimap {
     exploredTiles: Map<number, Set<number>>,
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
+    biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
     this.canvas = document.getElementById("minimap") as HTMLCanvasElement;
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
+    this.biome = biome;
     this.camera = camera;
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
@@ -47,11 +52,28 @@ class Minimap {
     // Clear the canvas
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    // Draw explored tiles
+    this.drawExploredTiles();
+
     // Draw structures
     this.drawStructures();
 
     // Draw the camera position
     this.drawCamera();
+  }
+
+  private drawExploredTiles() {
+    //this.context.fillStyle = "rgba(0, 255, 0, 0.5)"; // semi-transparent green for explored tiles
+
+    this.exploredTiles.forEach((rows, col) => {
+      rows.forEach((row) => {
+        const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
+        const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+        const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+        this.context.fillStyle = BIOME_COLORS[biome].getStyle();
+        this.context.fillRect(scaledCol, scaledRow, this.scaleX, this.scaleY);
+      });
+    });
   }
 
   private drawStructures() {
@@ -62,8 +84,8 @@ class Minimap {
         const { col, row } = structure.hexCoords;
         const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
         const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
-        this.context.fillStyle = "blue";
-        this.context.fillRect(scaledCol, scaledRow, 2, 2);
+        this.context.fillStyle = "red";
+        this.context.fillRect(scaledCol, scaledRow, 3, 3);
       });
     }
   }
