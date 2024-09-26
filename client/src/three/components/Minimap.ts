@@ -1,9 +1,9 @@
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
-import { throttle } from "lodash"; // Import throttle from lodash
+import { throttle } from "lodash";
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
-import { ArmyManager } from "./ArmyManager"; // Import ArmyManager
+import { ArmyManager } from "./ArmyManager";
 import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
@@ -11,9 +11,9 @@ const MINIMAP_CONFIG = {
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
   COLORS: {
-    ARMY: "#0000FF", // blue
-    STRUCTURE: "#FF0000", // red
-    CAMERA: "#008000", // green
+    ARMY: "#0000FF",
+    STRUCTURE: "#FF0000",
+    CAMERA: "#008000",
   },
   SIZES: {
     STRUCTURE: 3,
@@ -24,7 +24,7 @@ const MINIMAP_CONFIG = {
       HEIGHT_FACTOR: 13,
     },
   },
-  BORDER_WIDTH_PERCENT: 0.15, // 15% border width
+  BORDER_WIDTH_PERCENT: 0.10,
 };
 
 class Minimap {
@@ -34,7 +34,7 @@ class Minimap {
   private camera: THREE.PerspectiveCamera;
   private exploredTiles: Map<number, Set<number>>;
   private structureManager: StructureManager;
-  private armyManager: ArmyManager; // Add armyManager
+  private armyManager: ArmyManager;
   private biome: Biome;
   private displayRange: any = {
     minCol: 150,
@@ -45,16 +45,16 @@ class Minimap {
   private scaleX: number;
   private scaleY: number;
   private isDragging: boolean = false;
-  private biomeCache: Map<string, string>; // Add biomeCache
-  private scaledCoords: Map<string, { scaledCol: number, scaledRow: number }>; // Add scaledCoords map
-  private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT; // Use config value
+  private biomeCache: Map<string, string>;
+  private scaledCoords: Map<string, { scaledCol: number, scaledRow: number }>;
+  private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
 
   constructor(
     worldmapScene: WorldmapScene,
     exploredTiles: Map<number, Set<number>>,
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
-    armyManager: ArmyManager, // Add armyManager
+    armyManager: ArmyManager,
     biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
@@ -62,24 +62,21 @@ class Minimap {
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
-    this.armyManager = armyManager; // Initialize armyManager
+    this.armyManager = armyManager;
     this.biome = biome;
     this.camera = camera;
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
-    this.biomeCache = new Map(); // Initialize biomeCache
-    this.scaledCoords = new Map(); // Initialize scaledCoords map
-    this.computeScaledCoords(); // Compute scaled coordinates initially
+    this.biomeCache = new Map();
+    this.scaledCoords = new Map();
+    this.computeScaledCoords();
 
-    // Throttle the draw function to 30 FPS
-    this.draw = throttle(this.draw.bind(this), 1000 / 30);
+    this.draw = throttle(this.draw, 1000 / 30);
 
-    // Add event listener for click event
-    this.canvas.addEventListener("click", this.handleClick.bind(this));
-    // Add event listeners for dragging
-    this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
-    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
-    this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
+    this.canvas.addEventListener("click", this.handleClick);
+    this.canvas.addEventListener("mousedown", this.handleMouseDown);
+    this.canvas.addEventListener("mousemove", this.handleMouseMove);
+    this.canvas.addEventListener("mouseup", this.handleMouseUp);
   }
 
   private computeScaledCoords() {
@@ -93,20 +90,20 @@ class Minimap {
     }
   }
 
+  private getMousePosition(event: MouseEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const col = Math.floor(x / this.scaleX) + this.displayRange.minCol;
+    const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
+    return { col, row, x, y };
+  }
+
   draw() {
-    // Clear the canvas
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-    // Draw explored tiles
     this.drawExploredTiles();
-
-    // Draw structures
     this.drawStructures();
-
-    // Draw the camera position
     this.drawCamera();
-
-    // Draw armies
     this.drawArmies();
   }
 
@@ -149,14 +146,14 @@ class Minimap {
   }
 
   private drawArmies() {
-    const allArmies = this.armyManager.getArmies(); // Use armyManager to get armies
+    const allArmies = this.armyManager.getArmies();
 
     allArmies.forEach((army) => {
       const { x: col, y: row } = army.hexCoords.getNormalized();
       const cacheKey = `${col},${row}`;
       if (this.scaledCoords.has(cacheKey)) {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY; // Color for armies
+        this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY;
         this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.ARMY, MINIMAP_CONFIG.SIZES.ARMY);
       }
     });
@@ -169,7 +166,6 @@ class Minimap {
     if (this.scaledCoords.has(cacheKey)) {
       const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
 
-      // draw a trapezoid
       this.context.fillStyle = MINIMAP_CONFIG.COLORS.CAMERA;
       this.context.beginPath();
       const topSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX;
@@ -190,99 +186,69 @@ class Minimap {
     this.draw();
   }
 
-  private handleMouseDown(event: MouseEvent) {
+  private handleMouseDown = (event: MouseEvent) => {
     this.isDragging = true;
     this.moveCamera(event);
   }
 
-  private handleMouseMove(event: MouseEvent) {
+  private handleMouseMove = (event: MouseEvent) => {
     if (this.isDragging) {
       this.moveCamera(event);
     }
   }
 
-  private handleMouseUp() {
+  private handleMouseUp = () => {
     this.isDragging = false;
   }
 
   private moveCamera(event: MouseEvent) {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const col = Math.floor(x / this.scaleX) + this.displayRange.minCol;
-    const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
-
+    const { col, row } = this.getMousePosition(event);
     this.worldmapScene.moveCameraToColRow(col, row, 0);
-
   }
 
   private moveMapRange(direction: string) {
-    let newMinCol, newMaxCol, newMinRow, newMaxRow;
+    const colShift = (this.displayRange.maxCol - this.displayRange.minCol) / 4;
+    const rowShift = (this.displayRange.maxRow - this.displayRange.minRow) / 4;
 
     switch (direction) {
       case 'left':
-        newMinCol = this.displayRange.minCol - (this.displayRange.maxCol - this.displayRange.minCol) / 3;
-        newMaxCol = this.displayRange.maxCol - (this.displayRange.maxCol - this.displayRange.minCol) / 3;
-        newMinRow = this.displayRange.minRow;
-        newMaxRow = this.displayRange.maxRow;
+        this.displayRange.minCol -= colShift;
+        this.displayRange.maxCol -= colShift;
         break;
       case 'right':
-        newMinCol = this.displayRange.minCol + (this.displayRange.maxCol - this.displayRange.minCol) / 3;
-        newMaxCol = this.displayRange.maxCol + (this.displayRange.maxCol - this.displayRange.minCol) / 3;
-        newMinRow = this.displayRange.minRow;
-        newMaxRow = this.displayRange.maxRow;
+        this.displayRange.minCol += colShift;
+        this.displayRange.maxCol += colShift;
         break;
       case 'top':
-        newMinCol = this.displayRange.minCol;
-        newMaxCol = this.displayRange.maxCol;
-        newMinRow = this.displayRange.minRow - (this.displayRange.maxRow - this.displayRange.minRow) / 3;
-        newMaxRow = this.displayRange.maxRow - (this.displayRange.maxRow - this.displayRange.minRow) / 3;
+        this.displayRange.minRow -= rowShift;
+        this.displayRange.maxRow -= rowShift;
         break;
       case 'bottom':
-        newMinCol = this.displayRange.minCol;
-        newMaxCol = this.displayRange.maxCol;
-        newMinRow = this.displayRange.minRow + (this.displayRange.maxRow - this.displayRange.minRow) / 3;
-        newMaxRow = this.displayRange.maxRow + (this.displayRange.maxRow - this.displayRange.minRow) / 3;
+        this.displayRange.minRow += rowShift;
+        this.displayRange.maxRow += rowShift;
         break;
       default:
         return;
     }
-
-    this.displayRange = {
-      minCol: newMinCol,
-      maxCol: newMaxCol,
-      minRow: newMinRow,
-      maxRow: newMaxRow,
-    };
 
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
     this.computeScaledCoords();
   }
 
-  handleClick(event: MouseEvent) {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const col = Math.floor(x / this.scaleX) + this.displayRange.minCol;
-    const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
+  handleClick = (event: MouseEvent) => {
+    const { col, row, x, y } = this.getMousePosition(event);
 
     const borderWidthX = this.canvas.width * this.BORDER_WIDTH_PERCENT;
     const borderWidthY = this.canvas.height * this.BORDER_WIDTH_PERCENT;
 
     if (x < borderWidthX) {
-      // Click is within the left border area
       this.moveMapRange('left');
     } else if (x > this.canvas.width - borderWidthX) {
-      // Click is within the right border area
       this.moveMapRange('right');
     } else if (y < borderWidthY) {
-      // Click is within the top border area
       this.moveMapRange('top');
     } else if (y > this.canvas.height - borderWidthY) {
-      // Click is within the bottom border area
       this.moveMapRange('bottom');
     }
     this.worldmapScene.moveCameraToColRow(col, row, 0);
