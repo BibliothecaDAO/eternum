@@ -149,7 +149,7 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.biome);
+    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager, this.biome);
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {

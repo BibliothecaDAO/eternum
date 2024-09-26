@@ -2,6 +2,7 @@ import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
+import { ArmyManager } from "./ArmyManager"; // Import ArmyManager
 import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
@@ -12,6 +13,7 @@ class Minimap {
   private camera: THREE.PerspectiveCamera;
   private exploredTiles: Map<number, Set<number>>;
   private structureManager: StructureManager;
+  private armyManager: ArmyManager; // Add armyManager
   private biome: Biome;
   private displayRange: any = {
     minCol: 150,
@@ -28,6 +30,7 @@ class Minimap {
     exploredTiles: Map<number, Set<number>>,
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
+    armyManager: ArmyManager, // Add armyManager
     biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
@@ -35,6 +38,7 @@ class Minimap {
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
+    this.armyManager = armyManager; // Initialize armyManager
     this.biome = biome;
     this.camera = camera;
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
@@ -60,6 +64,9 @@ class Minimap {
 
     // Draw the camera position
     this.drawCamera();
+
+    // Draw armies
+    this.drawArmies();
   }
 
   private drawExploredTiles() {
@@ -88,6 +95,18 @@ class Minimap {
         this.context.fillRect(scaledCol, scaledRow, 3, 3);
       });
     }
+  }
+
+  private drawArmies() {
+    const allArmies = this.armyManager.getArmies(); // Use armyManager to get armies
+
+    allArmies.forEach((army) => {
+      const { x: col, y: row } = army.hexCoords.getNormalized();
+      const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
+      const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+      this.context.fillStyle = "blue"; // Color for armies
+      this.context.fillRect(scaledCol, scaledRow, 3, 3);
+    });
   }
 
   drawCamera() {
