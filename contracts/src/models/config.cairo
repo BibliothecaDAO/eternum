@@ -503,6 +503,9 @@ struct ResourceBridgeFeeSplitConfig {
     velords_fee_recipient: ContractAddress,
     // the address that will receive the season pool fee
     season_pool_fee_recipient: ContractAddress,
+    // max bank fee amount
+    max_bank_fee_dpt_percent: u16,
+    max_bank_fee_wtdr_percent: u16,
 }
 
 

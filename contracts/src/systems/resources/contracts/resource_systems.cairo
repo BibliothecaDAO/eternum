@@ -33,6 +33,7 @@ mod resource_systems {
         ResourceTransferLockCustomTrait
     };
     use eternum::models::resources::{DetachedResource};
+    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::models::weight::Weight;
     use eternum::models::weight::WeightCustomTrait;
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
@@ -172,6 +173,66 @@ mod resource_systems {
 
     #[generate_trait]
     pub impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
+        // send resources to a bank's location but retain ownership of the resources
+        fn send_to_bank(world: IWorldDispatcher, owner_id: ID, bank_id: ID, resource: (u8, u128),) -> ID {
+            // ensure owner and bank are stationary
+            get!(world, owner_id, ArrivalTime).assert_not_travelling();
+            get!(world, bank_id, ArrivalTime).assert_not_travelling();
+
+            // ensure bank_id is a valid bank
+            let bank_structure: Structure = get!(world, bank_id, Structure);
+            bank_structure.assert_is_structure();
+            assert!(bank_structure.category == StructureCategory::Bank, "structure is not a bank");
+
+            // ensure owner and bank are not in the same location
+            let owner_coord: Coord = get!(world, owner_id, Position).into();
+            let bank_coord: Coord = get!(world, bank_id, Position).into();
+            assert!(owner_coord != bank_coord, "owner and bank are in the same location");
+
+            // ensure resource spending is not locked
+            let owner_resource_lock: ResourceTransferLock = get!(world, owner_id, ResourceTransferLock);
+            owner_resource_lock.assert_not_locked();
+
+            // ensure bank has no resource lock
+            let bank_resource_lock: ResourceTransferLock = get!(world, bank_id, ResourceTransferLock);
+            bank_resource_lock.assert_not_locked();
+
+            // burn resources from sender's balance
+            let (resource_type, resource_amount) = resource;
+            let mut owner_resource = ResourceCustomImpl::get(world, (owner_id, resource_type));
+            owner_resource.burn(resource_amount);
+            owner_resource.save(world);
+
+            // add resources to donkey going to bank
+            let donkey_to_bank_id = world.uuid();
+            let mut donkey_to_bank_resource = ResourceCustomImpl::get(world, (donkey_to_bank_id, resource_type));
+            donkey_to_bank_resource.add(resource_amount);
+            donkey_to_bank_resource.save(world);
+
+            // update total weight
+            let mut total_resources_weight = WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
+
+            // increase donkey's weight
+            let mut donkey_to_bank_weight: Weight = get!(world, donkey_to_bank_id, Weight);
+            donkey_to_bank_weight.value = total_resources_weight;
+            set!(world, (donkey_to_bank_weight));
+
+            // decrease owner's weight
+            let mut owner_weight: Weight = get!(world, owner_id, Weight);
+            let owner_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(world, owner_id);
+            owner_weight.deduct(owner_capacity, total_resources_weight);
+            set!(world, (owner_weight));
+
+            // create donkey that can carry weight
+            donkey::create_donkey(world, false, donkey_to_bank_id, owner_id, owner_coord, bank_coord);
+            donkey::burn_donkey(world, owner_id, total_resources_weight);
+
+            // emit transfer event
+            Self::emit_transfer_event(world, owner_id, donkey_to_bank_id, array![resource].span());
+
+            donkey_to_bank_id
+        }
+
         fn transfer(
             world: IWorldDispatcher,
             owner_id: ID,
@@ -267,7 +328,6 @@ mod resource_systems {
                 donkey::create_donkey(
                     world, is_round_trip, actual_recipient_id, recipient_id, owner_coord, recipient_coord
                 );
-
                 if transport_resource_burn {
                     donkey::burn_donkey(world, transport_provider_id, total_resources_weight);
                 }

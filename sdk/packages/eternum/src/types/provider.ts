@@ -215,6 +215,8 @@ export interface CreateBankProps extends SystemSigner {
   };
   owner_fee_num: num.BigNumberish;
   owner_fee_denom: num.BigNumberish;
+  owner_bridge_fee_dpt_percent: num.BigNumberish;
+  owner_bridge_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface CreateAdminBankProps extends SystemSigner {
@@ -224,6 +226,8 @@ export interface CreateAdminBankProps extends SystemSigner {
   };
   owner_fee_num: num.BigNumberish;
   owner_fee_denom: num.BigNumberish;
+  owner_bridge_fee_dpt_percent: num.BigNumberish;
+  owner_bridge_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface OpenAccountProps extends SystemSigner {
@@ -235,6 +239,12 @@ export interface ChangeBankOwnerFeeProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
   new_swap_fee_num: num.BigNumberish;
   new_swap_fee_denom: num.BigNumberish;
+}
+
+export interface ChangeBankBridgeFeeProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+  new_bridge_fee_dpt_percent: num.BigNumberish;
+  new_bridge_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface BuyResourcesProps extends SystemSigner {

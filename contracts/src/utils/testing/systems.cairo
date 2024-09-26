@@ -12,6 +12,11 @@ use eternum::systems::{
 };
 use starknet::{ContractAddress};
 
+fn deploy_contract(contract_class_hash: felt252, calldata: Array<felt252>) -> ContractAddress {
+    let (address, _) = starknet::deploy_syscall(contract_class_hash.try_into().unwrap(), 0, calldata.span(), false)
+        .unwrap();
+    address
+}
 
 fn deploy_system(world: IWorldDispatcher, class_hash_felt: felt252) -> ContractAddress {
     let contract_address = world.deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap());

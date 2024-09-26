@@ -25,8 +25,12 @@
     "ProductionOutput",
     "DetachedResource",
     "ResourceCost",
-    "TravelStaminaCostConfig"
+    "TravelStaminaCostConfig",
+    "ResourceBridgeConfig",
+    "ResourceBridgeFeeSplitConfig",
+    "ResourceBridgeWhitelistConfig"
   ],
+  
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker", "Production"],
   "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount", "CapacityCategory"],
   "REALM_SYSTEMS": [

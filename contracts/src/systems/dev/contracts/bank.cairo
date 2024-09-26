@@ -4,7 +4,14 @@ use eternum::models::position::{Coord};
 
 #[dojo::interface]
 trait IBankSystems {
-    fn create_admin_bank(ref world: IWorldDispatcher, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128) -> ID;
+    fn create_admin_bank(
+        ref world: IWorldDispatcher,
+        coord: Coord,
+        owner_fee_num: u128,
+        owner_fee_denom: u128,
+        owner_bridge_fee_dpt_percent: u16,
+        owner_bridge_fee_wtdr_percent: u16
+    ) -> ID;
 }
 
 #[dojo::contract]
@@ -29,7 +36,12 @@ mod dev_bank_systems {
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_admin_bank(
-            ref world: IWorldDispatcher, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128
+            ref world: IWorldDispatcher,
+            coord: Coord,
+            owner_fee_num: u128,
+            owner_fee_denom: u128,
+            owner_bridge_fee_dpt_percent: u16,
+            owner_bridge_fee_wtdr_percent: u16
         ) -> ID {
             // explore the tile
             InternalMapSystemsImpl::explore(world, 0, coord, array![].span());
@@ -48,7 +60,14 @@ mod dev_bank_systems {
                     },
                     StructureCount { coord, count: 1 },
                     CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure },
-                    Bank { entity_id: ADMIN_BANK_ENTITY_ID, owner_fee_num, owner_fee_denom, exists: true },
+                    Bank {
+                        entity_id: ADMIN_BANK_ENTITY_ID,
+                        owner_fee_num,
+                        owner_fee_denom,
+                        owner_bridge_fee_dpt_percent,
+                        owner_bridge_fee_wtdr_percent,
+                        exists: true
+                    },
                     Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },
                     Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin }
                 )
