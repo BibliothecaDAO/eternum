@@ -13,7 +13,7 @@ const MINIMAP_CONFIG = {
   COLORS: {
     ARMY: "#0000FF",
     STRUCTURE: "#FF0000",
-    CAMERA: "#008000",
+    CAMERA: "#FFFFFF",
   },
   SIZES: {
     STRUCTURE: 3,
@@ -103,8 +103,8 @@ class Minimap {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawExploredTiles();
     this.drawStructures();
-    this.drawCamera();
     this.drawArmies();
+    this.drawCamera();
   }
 
   private drawExploredTiles() {
@@ -166,7 +166,7 @@ class Minimap {
     if (this.scaledCoords.has(cacheKey)) {
       const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
 
-      this.context.fillStyle = MINIMAP_CONFIG.COLORS.CAMERA;
+      this.context.strokeStyle = MINIMAP_CONFIG.COLORS.CAMERA;
       this.context.beginPath();
       const topSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX;
       const bottomSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX;
@@ -177,9 +177,20 @@ class Minimap {
       this.context.lineTo(scaledCol - bottomSideWidth / 2, scaledRow);
       this.context.lineTo(scaledCol - topSideWidth / 2, scaledRow - height);
       this.context.closePath();
-      this.context.lineWidth = 2;
+      this.context.lineWidth = 1;
       this.context.stroke();
     }
+  }
+
+  moveMinimapCenterToUrlLocation() {
+    const url = new URL(window.location.href);
+    const col = parseInt(url.searchParams.get("col") || "0");
+    const row = parseInt(url.searchParams.get("row") || "0");
+    this.displayRange.minCol = col - MINIMAP_CONFIG.MAP_COLS_WIDTH / 2;
+    this.displayRange.maxCol = col + MINIMAP_CONFIG.MAP_COLS_WIDTH / 2;
+    this.displayRange.minRow = row - MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
+    this.displayRange.maxRow = row + MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
+    this.computeScaledCoords();
   }
 
   update() {
