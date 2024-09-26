@@ -26,6 +26,7 @@ class Minimap {
   private scaleY: number;
   private isDragging: boolean = false;
   private biomeCache: Map<string, string>; // Add biomeCache
+  private scaledCoords: Map<string, { scaledCol: number, scaledRow: number }>; // Add scaledCoords map
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -46,6 +47,8 @@ class Minimap {
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
     this.biomeCache = new Map(); // Initialize biomeCache
+    this.scaledCoords = new Map(); // Initialize scaledCoords map
+    this.computeScaledCoords(); // Compute scaled coordinates initially
 
     // Throttle the draw function to 30 FPS
     this.draw = throttle(this.draw.bind(this), 1000 / 30);
@@ -56,6 +59,17 @@ class Minimap {
     this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
     this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
     this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
+  }
+
+  private computeScaledCoords() {
+    this.scaledCoords.clear();
+    for (let col = this.displayRange.minCol; col <= this.displayRange.maxCol; col++) {
+      for (let row = this.displayRange.minRow; row <= this.displayRange.maxRow; row++) {
+        const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
+        const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+        this.scaledCoords.set(`${col},${row}`, { scaledCol, scaledRow });
+      }
+    }
   }
 
   draw() {
@@ -89,8 +103,7 @@ class Minimap {
           this.biomeCache.set(cacheKey, biomeColor);
         }
 
-        const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
-        const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
         this.context.fillStyle = biomeColor;
         this.context.fillRect(scaledCol, scaledRow, this.scaleX, this.scaleY);
       });
@@ -103,8 +116,7 @@ class Minimap {
     for (const [structureType, structures] of allStructures) {
       structures.forEach((structure) => {
         const { col, row } = structure.hexCoords;
-        const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
-        const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+        const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
         this.context.fillStyle = "red";
         this.context.fillRect(scaledCol, scaledRow, 3, 3);
       });
@@ -116,8 +128,7 @@ class Minimap {
 
     allArmies.forEach((army) => {
       const { x: col, y: row } = army.hexCoords.getNormalized();
-      const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
-      const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+      const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
       this.context.fillStyle = "blue"; // Color for armies
       this.context.fillRect(scaledCol, scaledRow, 3, 3);
     });
@@ -126,8 +137,7 @@ class Minimap {
   drawCamera() {
     const cameraPosition = this.camera.position;
     const { col, row } = getHexForWorldPosition(cameraPosition);
-    const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
-    const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+    const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
 
     // draw a trapezoid
     this.context.fillStyle = "green";
