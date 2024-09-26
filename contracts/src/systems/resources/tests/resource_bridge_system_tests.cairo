@@ -330,6 +330,10 @@ mod resource_bridge_system_tests {
         // Set the bank owner as the owner of the realm as well
         set!(world, (Owner { entity_id: realm_id.into(), address: BANK_OWNER_ADDRESS() }));
 
+        // transfer lords to bank owner
+        let lords_balance = token.balance_of(REALM_OWNER_ADDRESS());
+        token.transfer(BANK_OWNER_ADDRESS(), lords_balance);
+
         // Make bank owner the caller
         set_contract_address(BANK_OWNER_ADDRESS());
 
