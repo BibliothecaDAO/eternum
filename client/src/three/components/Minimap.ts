@@ -7,6 +7,23 @@ import { ArmyManager } from "./ArmyManager"; // Import ArmyManager
 import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
+const MINIMAP_CONFIG = {
+  COLORS: {
+    ARMY: "#0000FF", // blue
+    STRUCTURE: "#FF0000", // red
+    CAMERA: "#008000", // green
+  },
+  SIZES: {
+    STRUCTURE: 3,
+    ARMY: 3,
+    CAMERA: {
+      TOP_SIDE_WIDTH_FACTOR: 105,
+      BOTTOM_SIDE_WIDTH_FACTOR: 170,
+      HEIGHT_FACTOR: 13,
+    },
+  },
+};
+
 class Minimap {
   private worldmapScene: WorldmapScene;
   private canvas: HTMLCanvasElement;
@@ -117,8 +134,8 @@ class Minimap {
       structures.forEach((structure) => {
         const { col, row } = structure.hexCoords;
         const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
-        this.context.fillStyle = "red";
-        this.context.fillRect(scaledCol, scaledRow, 3, 3);
+        this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURE;
+        this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.STRUCTURE, MINIMAP_CONFIG.SIZES.STRUCTURE);
       });
     }
   }
@@ -129,8 +146,8 @@ class Minimap {
     allArmies.forEach((army) => {
       const { x: col, y: row } = army.hexCoords.getNormalized();
       const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
-      this.context.fillStyle = "blue"; // Color for armies
-      this.context.fillRect(scaledCol, scaledRow, 3, 3);
+      this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY; // Color for armies
+      this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.ARMY, MINIMAP_CONFIG.SIZES.ARMY);
     });
   }
 
@@ -140,11 +157,11 @@ class Minimap {
     const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
 
     // draw a trapezoid
-    this.context.fillStyle = "green";
+    this.context.fillStyle = MINIMAP_CONFIG.COLORS.CAMERA;
     this.context.beginPath();
-    const topSideWidth = (window.innerWidth / 105) * this.scaleX;
-    const bottomSideWidth = (window.innerWidth / 170) * this.scaleX;
-    const height = 13 * this.scaleY;
+    const topSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX;
+    const bottomSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX;
+    const height = MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY;
     this.context.moveTo(scaledCol - topSideWidth / 2, scaledRow - height);
     this.context.lineTo(scaledCol + topSideWidth / 2, scaledRow - height);
     this.context.lineTo(scaledCol + bottomSideWidth / 2, scaledRow);
