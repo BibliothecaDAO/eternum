@@ -395,17 +395,39 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_bank(props: SystemProps.CreateBankProps) {
-    const { realm_entity_id, coord, owner_fee_num, owner_fee_denom, owner_bridge_fee_dpt_percent, owner_bridge_fee_wtdr_percent, signer } = props;
+    const {
+      realm_entity_id,
+      coord,
+      owner_fee_num,
+      owner_fee_denom,
+      owner_bridge_fee_dpt_percent,
+      owner_bridge_fee_wtdr_percent,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "create_bank",
-      calldata: [realm_entity_id, coord, owner_fee_num, owner_fee_denom, owner_bridge_fee_dpt_percent, owner_bridge_fee_wtdr_percent],
+      calldata: [
+        realm_entity_id,
+        coord,
+        owner_fee_num,
+        owner_fee_denom,
+        owner_bridge_fee_dpt_percent,
+        owner_bridge_fee_wtdr_percent,
+      ],
     });
   }
 
   public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
-    const { coord, owner_fee_num, owner_fee_denom, owner_bridge_fee_dpt_percent, owner_bridge_fee_wtdr_percent, signer } = props;
+    const {
+      coord,
+      owner_fee_num,
+      owner_fee_denom,
+      owner_bridge_fee_dpt_percent,
+      owner_bridge_fee_wtdr_percent,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
