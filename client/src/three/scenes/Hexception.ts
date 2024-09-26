@@ -178,7 +178,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+    Promise.all(this.modelLoadPromises).then(() => { });
   }
 
   setup() {
@@ -217,6 +217,8 @@ export default class HexceptionScene extends HexagonScene {
 
     this.moveCameraToURLLocation();
   }
+
+  onSwitchOff() { }
 
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
@@ -269,8 +271,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
   }
-  protected onHexagonRightClick(): void {}
-  protected onHexagonDoubleClick(): void {}
+  protected onHexagonRightClick(): void { }
+  protected onHexagonDoubleClick(): void { }
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);

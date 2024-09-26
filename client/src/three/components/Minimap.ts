@@ -182,6 +182,14 @@ class Minimap {
     }
   }
 
+  hideMinimap() {
+    this.canvas.style.display = "none";
+  }
+
+  showMinimap() {
+    this.canvas.style.display = "block";
+  }
+
   moveMinimapCenterToUrlLocation() {
     const url = new URL(window.location.href);
     const col = parseInt(url.searchParams.get("col") || "0");

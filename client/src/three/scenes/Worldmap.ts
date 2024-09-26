@@ -283,6 +283,11 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
     this.minimap.moveMinimapCenterToUrlLocation();
+    this.minimap.showMinimap();
+  }
+
+  onSwitchOff() {
+    this.minimap.hideMinimap();
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {

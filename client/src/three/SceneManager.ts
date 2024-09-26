@@ -5,7 +5,7 @@ import { HexagonScene } from "./scenes/HexagonScene";
 export class SceneManager {
   private currentScene: SceneName | undefined = undefined;
   private scenes = new Map<SceneName, HexagonScene>();
-  constructor(private transitionManager: TransitionManager) {}
+  constructor(private transitionManager: TransitionManager) { }
 
   getCurrentScene() {
     return this.currentScene;
@@ -26,6 +26,10 @@ export class SceneManager {
   switchScene(sceneName: SceneName) {
     const scene = this.scenes.get(sceneName);
     if (scene) {
+      const previousScene = this.scenes.get(this.currentScene!);
+      if (previousScene) {
+        previousScene.onSwitchOff();
+      }
       this.transitionManager.fadeOut(() => {
         this._updateCurrentScene(sceneName);
         if (scene.setup) {

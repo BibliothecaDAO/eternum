@@ -389,7 +389,7 @@ export abstract class HexagonScene {
     mesh.position.set(x, -0.05, z);
     mesh.receiveShadow = true;
     // disable raycast
-    mesh.raycast = () => {};
+    mesh.raycast = () => { };
 
     this.scene.add(mesh);
   }
@@ -428,4 +428,5 @@ export abstract class HexagonScene {
   protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
   public abstract setup(): void;
   public abstract moveCameraToURLLocation(): void;
+  public abstract onSwitchOff(): void;
 }
