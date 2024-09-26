@@ -24,6 +24,7 @@ const MINIMAP_CONFIG = {
       HEIGHT_FACTOR: 13,
     },
   },
+  BORDER_WIDTH_PERCENT: 0.15, // 15% border width
 };
 
 class Minimap {
@@ -46,7 +47,7 @@ class Minimap {
   private isDragging: boolean = false;
   private biomeCache: Map<string, string>; // Add biomeCache
   private scaledCoords: Map<string, { scaledCol: number, scaledRow: number }>; // Add scaledCoords map
-  private BORDER_WIDTH_PERCENT = 0.15; // 15% border width
+  private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT; // Use config value
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -221,28 +222,28 @@ class Minimap {
 
     switch (direction) {
       case 'left':
-        newMinCol = this.displayRange.minCol - (this.displayRange.maxCol - this.displayRange.minCol) / 4;
-        newMaxCol = this.displayRange.maxCol - (this.displayRange.maxCol - this.displayRange.minCol) / 4;
+        newMinCol = this.displayRange.minCol - (this.displayRange.maxCol - this.displayRange.minCol) / 3;
+        newMaxCol = this.displayRange.maxCol - (this.displayRange.maxCol - this.displayRange.minCol) / 3;
         newMinRow = this.displayRange.minRow;
         newMaxRow = this.displayRange.maxRow;
         break;
       case 'right':
-        newMinCol = this.displayRange.minCol + (this.displayRange.maxCol - this.displayRange.minCol) / 4;
-        newMaxCol = this.displayRange.maxCol + (this.displayRange.maxCol - this.displayRange.minCol) / 4;
+        newMinCol = this.displayRange.minCol + (this.displayRange.maxCol - this.displayRange.minCol) / 3;
+        newMaxCol = this.displayRange.maxCol + (this.displayRange.maxCol - this.displayRange.minCol) / 3;
         newMinRow = this.displayRange.minRow;
         newMaxRow = this.displayRange.maxRow;
         break;
       case 'top':
         newMinCol = this.displayRange.minCol;
         newMaxCol = this.displayRange.maxCol;
-        newMinRow = this.displayRange.minRow - (this.displayRange.maxRow - this.displayRange.minRow) / 4;
-        newMaxRow = this.displayRange.maxRow - (this.displayRange.maxRow - this.displayRange.minRow) / 4;
+        newMinRow = this.displayRange.minRow - (this.displayRange.maxRow - this.displayRange.minRow) / 3;
+        newMaxRow = this.displayRange.maxRow - (this.displayRange.maxRow - this.displayRange.minRow) / 3;
         break;
       case 'bottom':
         newMinCol = this.displayRange.minCol;
         newMaxCol = this.displayRange.maxCol;
-        newMinRow = this.displayRange.minRow + (this.displayRange.maxRow - this.displayRange.minRow) / 4;
-        newMaxRow = this.displayRange.maxRow + (this.displayRange.maxRow - this.displayRange.minRow) / 4;
+        newMinRow = this.displayRange.minRow + (this.displayRange.maxRow - this.displayRange.minRow) / 3;
+        newMaxRow = this.displayRange.maxRow + (this.displayRange.maxRow - this.displayRange.minRow) / 3;
         break;
       default:
         return;
