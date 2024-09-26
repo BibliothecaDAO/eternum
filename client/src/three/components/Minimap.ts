@@ -47,9 +47,14 @@ class Minimap {
     // Clear the canvas
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Calculate scale factors
-
     // Draw structures
+    this.drawStructures();
+
+    // Draw the camera position
+    this.drawCamera();
+  }
+
+  private drawStructures() {
     const allStructures = this.structureManager.structures.getStructures();
 
     for (const [structureType, structures] of allStructures) {
@@ -61,9 +66,6 @@ class Minimap {
         this.context.fillRect(scaledCol, scaledRow, 2, 2);
       });
     }
-
-    // Draw the camera position
-    this.drawCamera();
   }
 
   drawCamera() {
