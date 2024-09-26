@@ -1,5 +1,6 @@
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
+import { throttle } from "lodash"; // Import throttle from lodash
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
 import { ArmyManager } from "./ArmyManager"; // Import ArmyManager
@@ -45,6 +46,9 @@ class Minimap {
     this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
     this.biomeCache = new Map(); // Initialize biomeCache
+
+    // Throttle the draw function to 30 FPS
+    this.draw = throttle(this.draw.bind(this), 1000 / 30);
 
     // Add event listener for click event
     this.canvas.addEventListener("click", this.handleClick.bind(this));
