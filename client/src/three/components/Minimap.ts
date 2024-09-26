@@ -8,6 +8,8 @@ import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
 const MINIMAP_CONFIG = {
+  MAP_COLS_WIDTH: 200,
+  MAP_ROWS_HEIGHT: 100,
   COLORS: {
     ARMY: "#0000FF", // blue
     STRUCTURE: "#FF0000", // red
@@ -44,6 +46,7 @@ class Minimap {
   private isDragging: boolean = false;
   private biomeCache: Map<string, string>; // Add biomeCache
   private scaledCoords: Map<string, { scaledCol: number, scaledRow: number }>; // Add scaledCoords map
+  private BORDER_WIDTH_PERCENT = 0.15; // 15% border width
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -119,10 +122,11 @@ class Minimap {
           biomeColor = BIOME_COLORS[biome].getStyle();
           this.biomeCache.set(cacheKey, biomeColor);
         }
-
-        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        this.context.fillStyle = biomeColor;
-        this.context.fillRect(scaledCol, scaledRow, this.scaleX, this.scaleY);
+        if (this.scaledCoords.has(cacheKey)) {
+          const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+          this.context.fillStyle = biomeColor;
+          this.context.fillRect(scaledCol, scaledRow, this.scaleX, this.scaleY);
+        }
       });
     });
   }
@@ -133,9 +137,12 @@ class Minimap {
     for (const [structureType, structures] of allStructures) {
       structures.forEach((structure) => {
         const { col, row } = structure.hexCoords;
-        const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
-        this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURE;
-        this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.STRUCTURE, MINIMAP_CONFIG.SIZES.STRUCTURE);
+        const cacheKey = `${col},${row}`;
+        if (this.scaledCoords.has(cacheKey)) {
+          const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+          this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURE;
+          this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.STRUCTURE, MINIMAP_CONFIG.SIZES.STRUCTURE);
+        }
       });
     }
   }
@@ -145,31 +152,37 @@ class Minimap {
 
     allArmies.forEach((army) => {
       const { x: col, y: row } = army.hexCoords.getNormalized();
-      const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
-      this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY; // Color for armies
-      this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.ARMY, MINIMAP_CONFIG.SIZES.ARMY);
+      const cacheKey = `${col},${row}`;
+      if (this.scaledCoords.has(cacheKey)) {
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+        this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY; // Color for armies
+        this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.ARMY, MINIMAP_CONFIG.SIZES.ARMY);
+      }
     });
   }
 
   drawCamera() {
     const cameraPosition = this.camera.position;
     const { col, row } = getHexForWorldPosition(cameraPosition);
-    const { scaledCol, scaledRow } = this.scaledCoords.get(`${col},${row}`)!;
+    const cacheKey = `${col},${row}`;
+    if (this.scaledCoords.has(cacheKey)) {
+      const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
 
-    // draw a trapezoid
-    this.context.fillStyle = MINIMAP_CONFIG.COLORS.CAMERA;
-    this.context.beginPath();
-    const topSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX;
-    const bottomSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX;
-    const height = MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY;
-    this.context.moveTo(scaledCol - topSideWidth / 2, scaledRow - height);
-    this.context.lineTo(scaledCol + topSideWidth / 2, scaledRow - height);
-    this.context.lineTo(scaledCol + bottomSideWidth / 2, scaledRow);
-    this.context.lineTo(scaledCol - bottomSideWidth / 2, scaledRow);
-    this.context.lineTo(scaledCol - topSideWidth / 2, scaledRow - height);
-    this.context.closePath();
-    this.context.lineWidth = 2;
-    this.context.stroke();
+      // draw a trapezoid
+      this.context.fillStyle = MINIMAP_CONFIG.COLORS.CAMERA;
+      this.context.beginPath();
+      const topSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX;
+      const bottomSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX;
+      const height = MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY;
+      this.context.moveTo(scaledCol - topSideWidth / 2, scaledRow - height);
+      this.context.lineTo(scaledCol + topSideWidth / 2, scaledRow - height);
+      this.context.lineTo(scaledCol + bottomSideWidth / 2, scaledRow);
+      this.context.lineTo(scaledCol - bottomSideWidth / 2, scaledRow);
+      this.context.lineTo(scaledCol - topSideWidth / 2, scaledRow - height);
+      this.context.closePath();
+      this.context.lineWidth = 2;
+      this.context.stroke();
+    }
   }
 
   update() {
@@ -200,10 +213,78 @@ class Minimap {
     const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
 
     this.worldmapScene.moveCameraToColRow(col, row, 0);
+
+  }
+
+  private moveMapRange(direction: string) {
+    let newMinCol, newMaxCol, newMinRow, newMaxRow;
+
+    switch (direction) {
+      case 'left':
+        newMinCol = this.displayRange.minCol - (this.displayRange.maxCol - this.displayRange.minCol) / 4;
+        newMaxCol = this.displayRange.maxCol - (this.displayRange.maxCol - this.displayRange.minCol) / 4;
+        newMinRow = this.displayRange.minRow;
+        newMaxRow = this.displayRange.maxRow;
+        break;
+      case 'right':
+        newMinCol = this.displayRange.minCol + (this.displayRange.maxCol - this.displayRange.minCol) / 4;
+        newMaxCol = this.displayRange.maxCol + (this.displayRange.maxCol - this.displayRange.minCol) / 4;
+        newMinRow = this.displayRange.minRow;
+        newMaxRow = this.displayRange.maxRow;
+        break;
+      case 'top':
+        newMinCol = this.displayRange.minCol;
+        newMaxCol = this.displayRange.maxCol;
+        newMinRow = this.displayRange.minRow - (this.displayRange.maxRow - this.displayRange.minRow) / 4;
+        newMaxRow = this.displayRange.maxRow - (this.displayRange.maxRow - this.displayRange.minRow) / 4;
+        break;
+      case 'bottom':
+        newMinCol = this.displayRange.minCol;
+        newMaxCol = this.displayRange.maxCol;
+        newMinRow = this.displayRange.minRow + (this.displayRange.maxRow - this.displayRange.minRow) / 4;
+        newMaxRow = this.displayRange.maxRow + (this.displayRange.maxRow - this.displayRange.minRow) / 4;
+        break;
+      default:
+        return;
+    }
+
+    this.displayRange = {
+      minCol: newMinCol,
+      maxCol: newMaxCol,
+      minRow: newMinRow,
+      maxRow: newMaxRow,
+    };
+
+    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
+    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
+    this.computeScaledCoords();
   }
 
   handleClick(event: MouseEvent) {
-    this.moveCamera(event);
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const col = Math.floor(x / this.scaleX) + this.displayRange.minCol;
+    const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
+
+    const borderWidthX = this.canvas.width * this.BORDER_WIDTH_PERCENT;
+    const borderWidthY = this.canvas.height * this.BORDER_WIDTH_PERCENT;
+
+    if (x < borderWidthX) {
+      // Click is within the left border area
+      this.moveMapRange('left');
+    } else if (x > this.canvas.width - borderWidthX) {
+      // Click is within the right border area
+      this.moveMapRange('right');
+    } else if (y < borderWidthY) {
+      // Click is within the top border area
+      this.moveMapRange('top');
+    } else if (y > this.canvas.height - borderWidthY) {
+      // Click is within the bottom border area
+      this.moveMapRange('bottom');
+    }
+    this.worldmapScene.moveCameraToColRow(col, row, 0);
   }
 }
 
