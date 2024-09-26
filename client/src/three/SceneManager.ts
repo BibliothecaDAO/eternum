@@ -5,7 +5,7 @@ import { HexagonScene } from "./scenes/HexagonScene";
 export class SceneManager {
   private currentScene: SceneName | undefined = undefined;
   private scenes = new Map<SceneName, HexagonScene>();
-  constructor(private transitionManager: TransitionManager) { }
+  constructor(private transitionManager: TransitionManager) {}
 
   getCurrentScene() {
     return this.currentScene;

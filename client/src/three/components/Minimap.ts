@@ -24,7 +24,7 @@ const MINIMAP_CONFIG = {
       HEIGHT_FACTOR: 13,
     },
   },
-  BORDER_WIDTH_PERCENT: 0.10,
+  BORDER_WIDTH_PERCENT: 0.1,
 };
 
 class Minimap {
@@ -46,7 +46,7 @@ class Minimap {
   private scaleY: number;
   private isDragging: boolean = false;
   private biomeCache: Map<string, string>;
-  private scaledCoords: Map<string, { scaledCol: number, scaledRow: number }>;
+  private scaledCoords: Map<string, { scaledCol: number; scaledRow: number }>;
   private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
 
   constructor(
@@ -208,17 +208,17 @@ class Minimap {
   private handleMouseDown = (event: MouseEvent) => {
     this.isDragging = true;
     this.moveCamera(event);
-  }
+  };
 
   private handleMouseMove = (event: MouseEvent) => {
     if (this.isDragging) {
       this.moveCamera(event);
     }
-  }
+  };
 
   private handleMouseUp = () => {
     this.isDragging = false;
-  }
+  };
 
   private moveCamera(event: MouseEvent) {
     const { col, row } = this.getMousePosition(event);
@@ -230,19 +230,19 @@ class Minimap {
     const rowShift = (this.displayRange.maxRow - this.displayRange.minRow) / 4;
 
     switch (direction) {
-      case 'left':
+      case "left":
         this.displayRange.minCol -= colShift;
         this.displayRange.maxCol -= colShift;
         break;
-      case 'right':
+      case "right":
         this.displayRange.minCol += colShift;
         this.displayRange.maxCol += colShift;
         break;
-      case 'top':
+      case "top":
         this.displayRange.minRow -= rowShift;
         this.displayRange.maxRow -= rowShift;
         break;
-      case 'bottom':
+      case "bottom":
         this.displayRange.minRow += rowShift;
         this.displayRange.maxRow += rowShift;
         break;
@@ -263,16 +263,16 @@ class Minimap {
     const borderWidthY = this.canvas.height * this.BORDER_WIDTH_PERCENT;
 
     if (x < borderWidthX) {
-      this.moveMapRange('left');
+      this.moveMapRange("left");
     } else if (x > this.canvas.width - borderWidthX) {
-      this.moveMapRange('right');
+      this.moveMapRange("right");
     } else if (y < borderWidthY) {
-      this.moveMapRange('top');
+      this.moveMapRange("top");
     } else if (y > this.canvas.height - borderWidthY) {
-      this.moveMapRange('bottom');
+      this.moveMapRange("bottom");
     }
     this.worldmapScene.moveCameraToColRow(col, row, 0);
-  }
+  };
 }
 
 export default Minimap;
