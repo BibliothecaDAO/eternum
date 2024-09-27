@@ -4,12 +4,13 @@ import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
+import { getEntitiesUtils } from "./useEntities";
 
 export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   isMine: boolean;
@@ -217,6 +218,38 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
 
   return { realms };
 }
+
+export const getStructuresOfOtherPlayers = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { Owner, Structure },
+    },
+  } = useDojo();
+
+  const { getEntityName, getAddressNameFromEntity } = getEntitiesUtils();
+
+  const structures = useMemo(() => {
+    const structuresEntities = runQuery([
+      Has(Structure),
+      NotValue(Owner, { address: ContractAddress(account.address) }),
+    ]);
+
+    return Array.from(structuresEntities).map((entityId) => {
+      const structure = getComponentValue(Structure, entityId);
+      if (!structure) return undefined;
+
+      const structureName = getEntityName(structure.entity_id);
+      const playerName = getAddressNameFromEntity(structure.entity_id);
+      return {
+        structureName,
+        playerName,
+      };
+    });
+  }, [account.address]);
+
+  return structures;
+};
 
 export const isStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
   const tickCount = currentTickCount(currentTimestamp);

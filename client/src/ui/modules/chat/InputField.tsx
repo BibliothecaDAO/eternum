@@ -1,22 +1,21 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import useUIStore from "@/hooks/store/useUIStore";
 import TextInput from "@/ui/elements/TextInput";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo, useRef } from "react";
 import { Signature, TypedData, WeierstrassSignatureType } from "starknet";
-import { GLOBAL_CHANNEL } from "./Chat";
+import { addNewTab, GLOBAL_CHANNEL } from "./Chat";
 import { Tab } from "./ChatTab";
 
 export const InputField = ({
   currentTab,
-  addNewTab,
   setCurrentTab,
   salt,
 }: {
   currentTab: Tab;
-  addNewTab: (newTab: Tab) => void;
   setCurrentTab: (tab: Tab) => void;
   salt: bigint;
 }) => {
@@ -27,6 +26,9 @@ export const InputField = ({
     },
     network: { toriiClient },
   } = useDojo();
+
+  const tabs = useUIStore((state) => state.tabs);
+  const setTabs = useUIStore((state) => state.setTabs);
 
   const getPlayers = useGetAllPlayers();
   const players = useMemo(
@@ -57,13 +59,12 @@ export const InputField = ({
           displayed: true,
         };
 
-        addNewTab(newTab);
-        setCurrentTab(newTab);
+        addNewTab(tabs, newTab, setCurrentTab, account.address, setTabs);
       } else {
         publish(input.current);
       }
     },
-    [input.current, players, addNewTab, setCurrentTab],
+    [input.current, players, setCurrentTab],
   );
 
   const publish = useCallback(
@@ -75,8 +76,8 @@ export const InputField = ({
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : currentTab.name === "Global"
-          ? undefined
-          : BigInt(currentTab.address);
+        ? undefined
+        : BigInt(currentTab.address);
 
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 

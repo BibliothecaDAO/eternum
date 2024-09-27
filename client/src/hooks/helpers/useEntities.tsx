@@ -73,8 +73,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-              ? `${structure?.category} ${structureName}`
-              : structure.category || "";
+            ? `${structure?.category} ${structureName}`
+            : structure.category || "";
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -177,13 +177,11 @@ export const getEntitiesUtils = () => {
     };
   };
 
-  const getEntityName = (entityId: ID) => {
+  const getEntityName = (entityId: ID, abbreviate: boolean = false) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(entityId)]));
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
-
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(entityId)]));
-    const name = getStructureName(entityName, structure, realm);
-    return name;
+    return getStructureName(entityName, structure, realm, abbreviate);
   };
 
   const getAddressNameFromEntity = (entityId: ID) => {
@@ -207,6 +205,7 @@ export const getEntitiesUtils = () => {
 
 export const useGetAllPlayers = () => {
   const {
+    account: { account },
     setup: {
       components: { Owner, Realm },
     },
@@ -214,7 +213,11 @@ export const useGetAllPlayers = () => {
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
-  const playersEntityIds = runQuery([Has(Owner), Has(Realm)]);
+  const playersEntityIds = runQuery([
+    Has(Owner),
+    Has(Realm),
+    NotValue(Owner, { address: ContractAddress(account.address) }),
+  ]);
 
   const getPlayers = () => {
     const players = getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
@@ -238,10 +241,11 @@ export const getAddressNameFromEntityIds = (
       if (!owner) return;
 
       const addressName = getAddressNameFromEntity(owner?.entity_id);
+      if (!addressName) return;
       return { ...owner, addressName };
     })
     .filter(
-      (owner): owner is ComponentValue<ClientComponents["Owner"]["schema"]> & { addressName: string | undefined } =>
+      (owner): owner is ComponentValue<ClientComponents["Owner"]["schema"]> & { addressName: string } =>
         owner !== undefined,
     );
 };
@@ -266,27 +270,40 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+        ? `${structure?.category} ${structureName}`
+        : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)
     .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
 };
 
-const getStructureName = (
+export const getStructureName = (
   entityName: ComponentValue<ClientComponents["EntityName"]["schema"]> | undefined,
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined,
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined,
+  abbreviate: boolean = false,
 ) => {
   if (!structure) return "Unknown";
 
-  const name =
-    structure.category === StructureType[StructureType.Realm]
-      ? getRealmNameById(realm!.realm_id)
-      : entityName
-        ? shortString.decodeShortString(entityName.name.toString())
-        : `${structure.category} ${structure.entity_id}` || "";
+  let name = "";
+  if (structure.category === StructureType[StructureType.Realm]) {
+    name = getRealmNameById(realm!.realm_id);
+  } else if (entityName) {
+    name = shortString.decodeShortString(entityName.name.toString());
+  } else {
+    name = `${structure.category} ${structure.entity_id}`;
+
+    if (abbreviate) {
+      if (structure.category === StructureType[StructureType.FragmentMine]) {
+        name = `FM ${structure.entity_id}`;
+      } else if (structure.category === StructureType[StructureType.Hyperstructure]) {
+        name = `HS ${structure.entity_id}`;
+      } else if (structure.category === StructureType[StructureType.Bank]) {
+        name = `BK ${structure.entity_id}`;
+      }
+    }
+  }
 
   return name;
 };
