@@ -578,38 +578,29 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl RealmLevelConfigCustomImpl of super::IRealmLevelConfig<ContractState> {
-        fn set_realm_level_config(ref world: IWorldDispatcher, level: u8, resources: Span<(u8, u128)>) {
+        fn set_realm_level_config(ref world: IWorldDispatcher, level: u8, mut resources: Span<(u8, u128)>) {
             // ensure only admin can set this
             assert_caller_is_admin(world);
 
             let detached_resource_id = world.uuid();
             let detached_resource_count = resources.len();
-            let mut resources = resources;
             let mut index = 0;
-            loop {
-                match resources.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                        assert(resource_amount > 0, 'amount must not be 0');
+            for (
+                resource_type, resource_amount
+            ) in resources {
+                let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                assert(resource_amount > 0, 'amount must not be 0');
 
-                        set!(
-                            world,
-                            (
-                                DetachedResource {
-                                    entity_id: detached_resource_id,
-                                    index,
-                                    resource_type,
-                                    resource_amount: resource_amount
-                                },
-                            )
-                        );
+                set!(
+                    world,
+                    (
+                        DetachedResource {
+                            entity_id: detached_resource_id, index, resource_type, resource_amount: resource_amount
+                        },
+                    )
+                );
 
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                };
+                index += 1;
             };
 
             set!(
