@@ -196,18 +196,18 @@ mod realm_systems {
             // make payment to upgrade to next level
             let next_level = realm.level + 1;
             let realm_level_config = get!(world, next_level, RealmLevelConfig);
-            let detached_resource_id = realm_level_config.detached_resource_id;
-            let detached_resource_count = realm_level_config.detached_resource_count;
+            let required_resources_id = realm_level_config.required_resources_id;
+            let required_resource_count = realm_level_config.required_resource_count;
             let mut index = 0;
             loop {
-                if index == detached_resource_count {
+                if index == required_resource_count {
                     break;
                 }
 
-                let mut detached_resource = get!(world, (detached_resource_id, index), DetachedResource);
+                let mut required_resource = get!(world, (required_resources_id, index), DetachedResource);
 
                 // burn resource from realm
-                let mut realm_resource = ResourceCustomImpl::get(world, (realm_id, detached_resource.resource_type));
+                let mut realm_resource = ResourceCustomImpl::get(world, (realm_id, required_resource.resource_type));
                 realm_resource.burn(detached_resource.resource_amount);
                 realm_resource.save(world);
                 index += 1;

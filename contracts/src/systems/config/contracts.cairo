@@ -619,8 +619,8 @@ mod config_systems {
                 world,
                 (RealmLevelConfig {
                     level,
-                    detached_resource_id: detached_resource_id.into(),
-                    detached_resource_count: detached_resource_count.try_into().unwrap()
+                    required_resources_id: detached_resource_id.into(),
+                    required_resource_count: detached_resource_count.try_into().unwrap()
                 })
             );
         }

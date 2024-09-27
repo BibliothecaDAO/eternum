@@ -481,6 +481,6 @@ pub struct HasClaimedStartingResources {
 struct RealmLevelConfig {
     #[key]
     level: u8,
-    detached_resource_id: ID,
-    detached_resource_count: u8,
+    required_resources_id: ID,
+    required_resource_count: u8,
 }
