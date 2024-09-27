@@ -582,9 +582,6 @@ mod config_systems {
             // ensure only admin can set this
             assert_caller_is_admin(world);
 
-            // ensure level is between 1 and 3
-            assert(level > 0 && level < 4, 'level must be between 1 and 3');
-
             let detached_resource_id = world.uuid();
             let detached_resource_count = resources.len();
             let mut resources = resources;

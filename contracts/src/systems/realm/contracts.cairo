@@ -208,7 +208,7 @@ mod realm_systems {
 
                 // burn resource from realm
                 let mut realm_resource = ResourceCustomImpl::get(world, (realm_id, required_resource.resource_type));
-                realm_resource.burn(detached_resource.resource_amount);
+                realm_resource.burn(required_resource.resource_amount);
                 realm_resource.save(world);
                 index += 1;
             };
