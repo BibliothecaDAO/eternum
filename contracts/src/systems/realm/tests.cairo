@@ -241,7 +241,7 @@ fn test_upgrade_level_success() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ('Caller is not the owner', 'ENTRYPOINT_FAILED'))]
+#[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
 fn test_upgrade_level_not_owner() {
     let (world, realm_systems_dispatcher) = setup();
 
