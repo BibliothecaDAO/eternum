@@ -7,8 +7,7 @@ type OSWindows =
   | "Construction"
   | "Assistant"
   | "Quests"
-  | "Guilds"
-  | "PlayerID";
+  | "Guilds";
 
 export interface OSInterface {
   onClick: () => void;
@@ -28,4 +27,3 @@ export const construction: OSWindows = "Construction";
 export const assistant: OSWindows = "Assistant";
 export const quests: OSWindows = "Quests";
 export const guilds: OSWindows = "Guilds";
-export const playerID: OSWindows = "PlayerID";
