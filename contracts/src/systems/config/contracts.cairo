@@ -20,6 +20,11 @@ trait IRealmFreeMintConfig {
 }
 
 #[dojo::interface]
+trait IRealmLevelConfig {
+    fn set_realm_level_config(ref world: IWorldDispatcher, level: u8, resources: Span<(u8, u128)>);
+}
+
+#[dojo::interface]
 trait IWeightConfig {
     fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
 }
@@ -149,7 +154,7 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, RealmLevelConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -568,6 +573,56 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (MercenariesConfig { config_id: WORLD_CONFIG_ID, troops, rewards }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl RealmLevelConfigCustomImpl of super::IRealmLevelConfig<ContractState> {
+        fn set_realm_level_config(ref world: IWorldDispatcher, level: u8, resources: Span<(u8, u128)>) {
+            // ensure only admin can set this
+            assert_caller_is_admin(world);
+
+            // ensure level is between 1 and 3
+            assert(level > 0 && level < 4, 'level must be between 1 and 3');
+
+            let detached_resource_id = world.uuid();
+            let detached_resource_count = resources.len();
+            let mut resources = resources;
+            let mut index = 0;
+            loop {
+                match resources.pop_front() {
+                    Option::Some((
+                        resource_type, resource_amount
+                    )) => {
+                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                        assert(resource_amount > 0, 'amount must not be 0');
+
+                        set!(
+                            world,
+                            (
+                                DetachedResource {
+                                    entity_id: detached_resource_id,
+                                    index,
+                                    resource_type,
+                                    resource_amount: resource_amount
+                                },
+                            )
+                        );
+
+                        index += 1;
+                    },
+                    Option::None => { break; }
+                };
+            };
+
+            set!(
+                world,
+                (RealmLevelConfig {
+                    level,
+                    detached_resource_id: detached_resource_id.into(),
+                    detached_resource_count: detached_resource_count.try_into().unwrap()
+                })
+            );
         }
     }
 }

@@ -21,15 +21,16 @@ pub struct Realm {
     regions: u8,
     wonder: u8,
     order: u8,
+    level: u8,
 }
 
 
-trait RealmCustomTrait {
-    fn has_resource(self: Realm, resource_type: u8) -> bool;
-    fn assert_is_set(self: Realm);
-}
-
+#[generate_trait]
 impl RealmCustomImpl of RealmCustomTrait {
+    fn max_level(self: Realm) -> u8 {
+        3
+    }
+
     fn has_resource(self: Realm, resource_type: u8) -> bool {
         let mut resource_types: Span<u8> = unpack_resource_types(self.resource_types_packed, self.resource_types_count);
         let mut has_resource = false;

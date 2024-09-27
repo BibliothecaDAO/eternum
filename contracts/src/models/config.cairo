@@ -474,3 +474,13 @@ pub struct HasClaimedStartingResources {
     config_id: ID,
     claimed: bool,
 }
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+struct RealmLevelConfig {
+    #[key]
+    level: u8,
+    detached_resource_id: ID,
+    detached_resource_count: u8,
+}

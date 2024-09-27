@@ -909,12 +909,13 @@ export function defineContractComponents(world: World) {
           regions: RecsType.Number,
           wonder: RecsType.Number,
           order: RecsType.Number,
+          level: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
             customTypes: [],
           },
         },

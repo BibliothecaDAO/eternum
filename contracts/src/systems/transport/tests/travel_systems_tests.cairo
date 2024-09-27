@@ -134,6 +134,7 @@ fn test_travel_with_realm_bonus() {
                 regions: 0,
                 wonder: 0,
                 order: 0,
+                level: 0
             },
             Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
             LevelingConfig {
@@ -208,6 +209,7 @@ fn test_travel_with_realm_and_order_bonus() {
                 regions: 0,
                 wonder: 0,
                 order: realm_order_id.into(),
+                level: 0
             },
             Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
             LevelingConfig {
