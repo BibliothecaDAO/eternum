@@ -1,7 +1,7 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
@@ -28,7 +28,6 @@ export const ResourceBar = ({
   setAmount,
   disableInput = false,
 }: ResourceBarProps) => {
-  console.log({ resourceId });
   const { getBalance } = getResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
@@ -42,8 +41,8 @@ export const ResourceBar = ({
     setResourceId && setResourceId(resourceId);
   };
 
-  const handleAmountChange = (amount: string) => {
-    !disableInput && setAmount && setAmount(parseInt(amount.replaceAll(" ", "")) || 0);
+  const handleAmountChange = (amount: number) => {
+    !disableInput && setAmount && setAmount(amount);
   };
 
   const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
@@ -52,16 +51,19 @@ export const ResourceBar = ({
   return (
     <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap ">
       <div className="self-center">
-        <TextInput
-          className="text-2xl border-transparent"
-          value={isNaN(amount) ? "0" : amount.toLocaleString()}
+        <NumberInput
+          className="text-2xl border-transparent "
+          value={amount}
           onChange={(amount) => handleAmountChange(amount)}
+          max={Infinity}
+          arrows={false}
+          allowDecimals
         />
 
         {!disableInput && (
           <div
-            className="flex text-xs text-gold/70 mt-1 ml-2"
-            onClick={() => handleAmountChange(finalResourceBalance.toString())}
+            className="flex text-xs text-gold/70 mt-1 justify-center items-center relative text-center self-center mx-auto w-full"
+            onClick={() => handleAmountChange(finalResourceBalance)}
           >
             Max: {isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}
             {hasLordsFees && (

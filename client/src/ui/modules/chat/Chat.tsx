@@ -1,17 +1,17 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
-import TextInput from "@/ui/elements/TextInput";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { shortString, TypedData } from "starknet";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { shortString } from "starknet";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { toHexString, toValidAscii } from "@/ui/utils/utils";
+import { toHexString } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { ChatTab, DEFAULT_TAB, getMessageKey, Tab } from "./ChatTab";
 import { PASTEL_BLUE, PASTEL_PINK } from "./constants";
+import { InputField } from "./InputField";
 
 interface ChatMessage {
   address: string;
@@ -21,48 +21,8 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-const GLOBAL_CHANNEL = shortString.encodeShortString("global");
+export const GLOBAL_CHANNEL = shortString.encodeShortString("global");
 const CHAT_STORAGE_KEY = "chat_tabs";
-
-function generateMessageTypedData(
-  identity: string,
-  channel: string,
-  content: string,
-  salt: string,
-  timestamp = Date.now(),
-) {
-  return {
-    types: {
-      StarknetDomain: [
-        { name: "name", type: "shortstring" },
-        { name: "version", type: "shortstring" },
-        { name: "chainId", type: "shortstring" },
-        { name: "revision", type: "shortstring" },
-      ],
-      "eternum-Message": [
-        { name: "identity", type: "ContractAddress" },
-        { name: "channel", type: "shortstring" },
-        { name: "content", type: "string" },
-        { name: "timestamp", type: "felt" },
-        { name: "salt", type: "felt" },
-      ],
-    },
-    primaryType: "eternum-Message",
-    domain: {
-      name: "Eternum",
-      version: "1",
-      chainId: "1",
-      revision: "1",
-    },
-    message: {
-      identity,
-      channel,
-      content,
-      timestamp,
-      salt,
-    },
-  };
-}
 
 export const Chat = () => {
   const {
@@ -71,11 +31,13 @@ export const Chat = () => {
     setup: {
       components: { Message, AddressName },
     },
-    network: { toriiClient },
   } = useDojo();
 
   const getPlayers = useGetAllPlayers();
-  const players = getPlayers().filter((player) => ContractAddress(player.address) !== ContractAddress(account.address));
+  const players = useMemo(
+    () => getPlayers().filter((player) => ContractAddress(player.address) !== ContractAddress(account.address)),
+    [getPlayers, account.address],
+  );
 
   const [currentTab, setCurrentTab] = useState<Tab>(DEFAULT_TAB);
   const [tabs, setTabs] = useState<Tab[]>([]);
@@ -96,96 +58,63 @@ export const Chat = () => {
 
   const bottomChatRef = useRef<HTMLDivElement>(null);
 
-  const [content, setContent] = useState<string>("");
-
   const [salt, setSalt] = useState<bigint>(0n);
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
-
-  const recipientEntities = useEntityQuery([Has(AddressName), HasValue(AddressName, { name: BigInt("0x0") })]);
-
-  useEffect(() => {
-    scrollToElement(bottomChatRef);
-  }, [allMessageEntities]);
 
   const setNewTabs = (newTabs: Tab[]) => {
     setTabs(newTabs);
     localStorage.setItem(CHAT_STORAGE_KEY + account.address, JSON.stringify(newTabs));
   };
 
-  const addNewTab = (newTab: Tab) => {
-    let allTabs = [...tabs];
-
-    if (allTabs.find((tab) => tab.address === newTab.address)) {
-      allTabs.map((tab) => {
-        if (tab.address === newTab.address) {
-          tab.displayed = true;
-        }
-        return tab;
-      });
-    } else {
-      allTabs.push(newTab);
-    }
-
-    setNewTabs(allTabs);
-    setCurrentTab(newTab);
-  };
-
   const messages = useMemo(() => {
     const messageMap = new Map<ContractAddress, ChatMessage[]>();
 
-    allMessageEntities
-      .filter((entity) => {
-        const message = getComponentValue(Message, entity);
-        if (!message) return false;
+    allMessageEntities.forEach((entity) => {
+      const message = getComponentValue(Message, entity);
+      if (!message) return undefined;
 
-        const address = toHexString(message?.identity);
-        const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
-        if (!addressName) return false;
+      const address = toHexString(message.identity);
+      const addressName = getComponentValue(AddressName, getEntityIdFromKeys([ContractAddress(address)]));
+      if (!addressName) return undefined;
 
-        const fromSelf = message?.identity === BigInt(account.address);
+      const fromSelf = message?.identity === BigInt(account.address);
 
-        if (fromSelf) return true;
+      const shouldKeep =
+        fromSelf ||
+        BigInt(message.channel) === BigInt(account.address) ||
+        BigInt(message.channel) === BigInt(GLOBAL_CHANNEL);
+      if (!shouldKeep) {
+        return undefined;
+      }
 
-        return (
-          message.identity === BigInt(account.address) ||
-          message.channel === BigInt(account.address) ||
-          message.channel === BigInt(GLOBAL_CHANNEL)
-        );
-      })
-      .forEach((entity) => {
-        const message = getComponentValue(Message, entity);
+      const senderAddress = toHexString(message.identity);
 
-        if (!message) return;
+      const senderName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(senderAddress)]));
+      const name = shortString.decodeShortString(senderName?.name.toString() || "") || "Unknown";
+      const content = !!message.content ? message.content : "";
+      const timestamp = new Date(Number(message.timestamp));
 
-        const senderAddress = toHexString(message.identity);
+      const sortedAddressesHash = getMessageKey(message.identity, BigInt(message.channel));
 
-        const senderName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(senderAddress)]));
-        const name = shortString.decodeShortString(senderName?.name.toString() || "") || "Unknown";
-        const content = !!message.content ? message.content : "";
-        const timestamp = new Date(Number(message.timestamp));
+      const key = BigInt(message.channel) === BigInt(GLOBAL_CHANNEL) ? GLOBAL_CHANNEL : sortedAddressesHash;
 
-        const sortedAddressesHash = getMessageKey(message.identity, message.channel);
+      if (!messageMap.has(ContractAddress(key))) {
+        messageMap.set(ContractAddress(key), []);
+      }
 
-        const key = message.channel === BigInt(GLOBAL_CHANNEL) ? GLOBAL_CHANNEL : sortedAddressesHash;
-
-        if (!messageMap.has(ContractAddress(key))) {
-          messageMap.set(ContractAddress(key), []);
-        }
-
-        messageMap.get(ContractAddress(key))?.push({
-          address: senderAddress,
-          name,
-          content,
-          fromSelf: message.identity === BigInt(account.address),
-          timestamp,
-        });
+      messageMap.get(ContractAddress(key))?.push({
+        address: senderAddress,
+        name,
+        content,
+        fromSelf: message.identity === BigInt(account.address),
+        timestamp,
       });
+    });
 
     messageMap.forEach((messages, _) => {
       messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     });
-
     return messageMap;
   }, [allMessageEntities]);
 
@@ -195,9 +124,12 @@ export const Chat = () => {
     }
 
     const sortedAddressesHash = getMessageKey(currentTab.address, account.address);
-
     return messages.get(ContractAddress(sortedAddressesHash));
   }, [messages, currentTab.address]);
+
+  useEffect(() => {
+    scrollToElement(bottomChatRef);
+  }, [messagesToDisplay]);
 
   useEffect(() => {
     const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
@@ -207,53 +139,7 @@ export const Chat = () => {
     });
     if (!salts.length) return;
     setSalt(salts.sort((a, b) => Number(b) - Number(a))[0] + 1n);
-  }, [salt]);
-
-  const publish = useCallback(
-    async (message: string) => {
-      const recipientAddress = !!recipientEntities.length
-        ? getComponentValue(AddressName, recipientEntities[0])?.address
-        : currentTab.name === "Global"
-          ? undefined
-          : BigInt(currentTab.address);
-
-      const channel = !!recipientAddress ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
-
-      const messageInValidAscii = toValidAscii(message);
-      const data = generateMessageTypedData(account.address, channel, messageInValidAscii, toHexString(salt));
-
-      const signature: any = await account.signMessage(data as TypedData);
-
-      await toriiClient.publishMessage(JSON.stringify(data), [toHexString(signature.r), toHexString(signature.s)]);
-    },
-    [account, recipientEntities, salt, toriiClient, currentTab.address],
-  );
-
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter") return;
-    if (content.length === 0) return;
-
-    const contentParser = new ContentParser();
-
-    if (contentParser.isWhisper(content)) {
-      const whisperDestination = contentParser.getWhisperDest(content);
-
-      const player = players.find((player) => player.addressName === whisperDestination);
-      if (!player) return;
-
-      const newTab = {
-        name: player.addressName!,
-        address: toHexString(player.address),
-        displayed: true,
-      };
-
-      addNewTab(newTab);
-      setCurrentTab(newTab);
-    } else {
-      publish(content);
-    }
-    setContent("");
-  };
+  }, [salt, messagesToDisplay]);
 
   const changeTabs = (tab: string | undefined, address: string, fromSelector: boolean = false) => {
     if (address === "Global") {
@@ -299,6 +185,24 @@ export const Chat = () => {
     setNewTabs(newTabs);
   };
 
+  const addNewTab = (newTab: Tab) => {
+    let allTabs = [...tabs];
+
+    if (allTabs.find((tab) => tab.address === newTab.address)) {
+      allTabs.map((tab) => {
+        if (tab.address === newTab.address) {
+          tab.displayed = true;
+        }
+        return tab;
+      });
+    } else {
+      allTabs.push(newTab);
+    }
+
+    setNewTabs(allTabs);
+    setCurrentTab(newTab);
+  };
+
   const removeTab = (address: string) => {
     const newTabs = tabs.map((tab) => (tab.address === address ? { ...tab, displayed: false } : tab));
 
@@ -308,7 +212,7 @@ export const Chat = () => {
   };
 
   return (
-    <div className="rounded max-w-[28vw]" style={{ zIndex: 100 }}>
+    <div className="rounded max-w-[28vw]" style={{ zIndex: 1 }}>
       <div className="flex flex-row overflow-x-auto max-w-full no-scrollbar h-8 items-end">
         {tabs
           .filter((tab) => tab.displayed)
@@ -367,13 +271,7 @@ export const Chat = () => {
             </SelectItem>
           </SelectContent>
         </Select>
-        <TextInput
-          className="border border-gold/40  !w-auto  text-gold"
-          placeholder="Message"
-          value={content}
-          onChange={setContent}
-          onKeyPress={handleKeyPress}
-        />
+        <InputField currentTab={currentTab} addNewTab={addNewTab} setCurrentTab={setCurrentTab} salt={salt} />
       </div>
     </div>
   );
@@ -386,18 +284,3 @@ const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
     }
   }, 1);
 };
-
-class ContentParser {
-  isCommand(content: string): boolean {
-    return content.startsWith("/");
-  }
-
-  isWhisper(content: string): boolean {
-    if (!this.isCommand(content)) return false;
-    return content[1] === "w";
-  }
-
-  getWhisperDest(content: string): string {
-    return content.split(" ")[1];
-  }
-}

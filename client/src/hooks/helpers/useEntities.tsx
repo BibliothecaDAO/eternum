@@ -180,11 +180,10 @@ export const getEntitiesUtils = () => {
   const getEntityName = (entityId: ID) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(entityId)]));
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
-    return entityName
-      ? shortString.decodeShortString(entityName.name.toString())
-      : realm
-        ? getRealmNameById(realm.realm_id)
-        : entityId.toString();
+
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(entityId)]));
+    const name = getStructureName(entityName, structure, realm);
+    return name;
   };
 
   const getAddressNameFromEntity = (entityId: ID) => {
@@ -273,4 +272,21 @@ const formatStructures = (
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)
     .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
+};
+
+const getStructureName = (
+  entityName: ComponentValue<ClientComponents["EntityName"]["schema"]> | undefined,
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined,
+  realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined,
+) => {
+  if (!structure) return "Unknown";
+
+  const name =
+    structure.category === StructureType[StructureType.Realm]
+      ? getRealmNameById(realm!.realm_id)
+      : entityName
+        ? shortString.decodeShortString(entityName.name.toString())
+        : `${structure.category} ${structure.entity_id}` || "";
+
+  return name;
 };

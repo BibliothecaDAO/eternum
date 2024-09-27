@@ -117,7 +117,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
               <TextInput
                 placeholder="Type Name"
                 className="h-full flex-grow"
-                value={naming}
                 onChange={(name) => setNaming(name)}
                 maxLength={MAX_NAME_LENGTH}
               />
