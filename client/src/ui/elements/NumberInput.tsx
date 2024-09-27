@@ -51,7 +51,6 @@ export const NumberInput = ({
         value={displayValue}
         onChange={(e) => {
           if (allowDecimals) {
-            console.log("heyyyy");
             setDisplayValue(e.target.value.match(/[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)/)?.[0] ?? min.toString());
             onChange(parseFloat(e.target.value.match(/[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)/)?.[0] ?? min.toString()));
           } else {
@@ -69,7 +68,7 @@ export const NumberInput = ({
             playClick();
           }}
         >
-          {arrows && <ArrowRight className="fill-gold" width={"6px"} height={"8px"} />}
+          <ArrowRight className="fill-gold" width={"6px"} height={"8px"} />
         </div>
       )}
     </div>

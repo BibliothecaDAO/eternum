@@ -5,7 +5,7 @@ import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo, useRef } from "react";
-import { TypedData } from "starknet";
+import { Signature, TypedData, WeierstrassSignatureType } from "starknet";
 import { GLOBAL_CHANNEL } from "./Chat";
 import { Tab } from "./ChatTab";
 
@@ -16,8 +16,8 @@ export const InputField = ({
   salt,
 }: {
   currentTab: Tab;
-  addNewTab: any;
-  setCurrentTab: any;
+  addNewTab: (newTab: Tab) => void;
+  setCurrentTab: (tab: Tab) => void;
   salt: bigint;
 }) => {
   const {
@@ -83,9 +83,12 @@ export const InputField = ({
       const messageInValidAscii = toValidAscii(message);
       const data = generateMessageTypedData(account.address, channel, messageInValidAscii, toHexString(salt));
 
-      const signature: any = await account.signMessage(data as TypedData);
+      const signature: Signature = await account.signMessage(data as TypedData);
 
-      await toriiClient.publishMessage(JSON.stringify(data), [toHexString(signature.r), toHexString(signature.s)]);
+      await toriiClient.publishMessage(JSON.stringify(data), [
+        toHexString((signature as WeierstrassSignatureType).r),
+        toHexString((signature as WeierstrassSignatureType).s),
+      ]);
     },
     [account, salt, toriiClient, currentTab.address],
   );
