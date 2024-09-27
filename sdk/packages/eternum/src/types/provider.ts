@@ -444,6 +444,10 @@ export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
   calls: { building_category: BuildingType; population: num.BigNumberish; capacity: num.BigNumberish }[];
 }
 
+export interface SetBuildingGeneralConfigProps extends SystemSigner {
+  cost_scale_percent: num.BigNumberish;
+}
+
 export interface SetPopulationConfigProps extends SystemSigner {
   base_population: num.BigNumberish;
 }

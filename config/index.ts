@@ -6,6 +6,7 @@ import {
   setBattleConfig,
   setBuildingCategoryPopConfig,
   setBuildingConfig,
+  setBuildingGeneralConfig,
   setCapacityConfig,
   setCombatConfig,
   setHyperstructureConfig,
@@ -57,6 +58,7 @@ await setBuildingCategoryPopConfig(account, provider);
 await setPopulationConfig(account, provider);
 await setBuildingConfig(account, provider);
 await setResourceBuildingConfig(account, provider);
+await setBuildingGeneralConfig(account, provider);
 await setWeightConfig(account, provider);
 await setCombatConfig(account, provider);
 await setBattleConfig(account, provider);

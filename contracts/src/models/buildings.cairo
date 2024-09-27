@@ -2,10 +2,10 @@ use core::poseidon::poseidon_hash_span;
 use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
-use eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID};
+use eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID, WORLD_CONFIG_ID};
 use eternum::models::config::{
     TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigCustomImpl,
-    BuildingCategoryPopConfigCustomTrait, PopulationConfig
+    BuildingCategoryPopConfigCustomTrait, PopulationConfig, BuildingGeneralConfig
 };
 use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
 use eternum::models::population::{Population, PopulationCustomTrait};
@@ -15,6 +15,7 @@ use eternum::models::production::{
 };
 use eternum::models::resources::ResourceCustomTrait;
 use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+use eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes
 
@@ -89,22 +90,6 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
 
 
 #[generate_trait]
-impl BonusPercentageImpl of BonusPercentageTrait {
-    fn _1() -> u128 {
-        100
-    }
-
-    fn _10() -> u128 {
-        1_000
-    }
-
-    fn _100() -> u128 {
-        10_000
-    }
-}
-
-
-#[generate_trait]
 impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
     fn is_resource_producer(self: Building) -> bool {
         self.produced_resource().is_non_zero()
@@ -138,7 +123,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
             BuildingCategory::None => 0,
             BuildingCategory::Castle => 0,
             BuildingCategory::Resource => 0,
-            BuildingCategory::Farm => BonusPercentageImpl::_10().try_into().unwrap(), // 10%
+            BuildingCategory::Farm => PercentageValueImpl::_10().try_into().unwrap(), // 10%
             BuildingCategory::FishingVillage => 0,
             BuildingCategory::Barracks => 0,
             BuildingCategory::Market => 0,
@@ -293,7 +278,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
         let production_config: ProductionConfig = get!(world, produced_resource_type, ProductionConfig);
 
         let bonus_amount: u128 = (production_config.amount * (*self.bonus_percent).into())
-            / BonusPercentageImpl::_100();
+            / PercentageValueImpl::_100().into();
 
         production_config.amount + bonus_amount
     }
@@ -428,7 +413,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         category: BuildingCategory,
         produce_resource_type: Option<u8>,
         inner_coord: Coord
-    ) -> Building {
+    ) -> (Building, BuildingQuantityv2) {
         // check that the entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);
         outer_entity_position.assert_not_zero();
@@ -488,7 +473,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         // set population
         set!(world, (population));
 
-        building
+        (building, building_quantity)
     }
 
     /// Pause building production without removing the building
@@ -598,8 +583,11 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         destroyed_building_category
     }
 
-    fn make_payment(world: IWorldDispatcher, entity_id: ID, category: BuildingCategory, resource_type: u8) {
-        let building_config: BuildingConfig = BuildingConfigCustomImpl::get(world, category, resource_type);
+    fn pay_fixed_cost(self: Building, building_quantity: BuildingQuantityv2, world: IWorldDispatcher) {
+        let building_general_config: BuildingGeneralConfig = get!(world, WORLD_CONFIG_ID, BuildingGeneralConfig);
+        let building_config: BuildingConfig = BuildingConfigCustomImpl::get(
+            world, self.category, self.produced_resource_type
+        );
         let mut index = 0;
         loop {
             if index == building_config.resource_cost_count {
@@ -607,8 +595,12 @@ impl BuildingCustomImpl of BuildingCustomTrait {
             }
 
             let resource_cost: ResourceCost = get!(world, (building_config.resource_cost_id, index), ResourceCost);
-            let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_cost.resource_type));
-            resource.burn(resource_cost.amount);
+            let mut resource = ResourceCustomImpl::get(world, (self.outer_entity_id, resource_cost.resource_type));
+            let additional_cost = PercentageImpl::get(
+                resource_cost.amount, building_general_config.cost_scale_percent.into()
+            );
+            let total_cost = resource_cost.amount + ((building_quantity.value.into() - 1) * additional_cost);
+            resource.burn(total_cost);
             resource.save(world);
             index += 1;
         };
