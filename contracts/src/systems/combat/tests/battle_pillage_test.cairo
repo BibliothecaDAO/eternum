@@ -125,9 +125,9 @@ fn test_battle_pillage__near_max_capacity() {
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
-    let army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
+    let _army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
 
-    let capacity_config = get!(world, 3, CapacityConfig);
+    let _capacity_config = get!(world, 3, CapacityConfig);
 
     combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
@@ -152,9 +152,9 @@ fn test_simple_battle_pillage() {
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
-    let army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
+    let _army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
 
-    let capacity_config = get!(world, 3, CapacityConfig);
+    let _capacity_config = get!(world, 3, CapacityConfig);
 
     combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 

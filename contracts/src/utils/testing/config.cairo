@@ -17,7 +17,7 @@ use eternum::systems::config::contracts::{
     ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
     IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher,
     IProductionConfigDispatcherTrait, ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait,
-    IBattleConfigDispatcher, IBattleConfigDispatcherTrait
+    IBattleConfigDispatcher, IBattleConfigDispatcherTrait, IRealmLevelConfigDispatcher, IRealmLevelConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -155,5 +155,16 @@ fn set_weight_config(config_systems_address: ContractAddress) {
             .set_weight_config(resource_id.into(), weight);
         i += 1;
     }
+}
+
+fn set_realm_level_config(config_systems_address: ContractAddress) {
+    IRealmLevelConfigDispatcher { contract_address: config_systems_address }
+        .set_realm_level_config(1, array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100),].span());
+
+    IRealmLevelConfigDispatcher { contract_address: config_systems_address }
+        .set_realm_level_config(2, array![(ResourceTypes::STONE, 200), (ResourceTypes::FISH, 200),].span());
+
+    IRealmLevelConfigDispatcher { contract_address: config_systems_address }
+        .set_realm_level_config(3, array![(ResourceTypes::COAL, 300), (ResourceTypes::IRONWOOD, 300),].span());
 }
 
