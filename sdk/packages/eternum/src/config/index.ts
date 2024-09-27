@@ -19,6 +19,7 @@ import { TickIds, TravelTypes } from "../types";
 import {
   BUILDING_COSTS_SCALED,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  REALM_LEVEL_COSTS_SCALED,
   RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
@@ -104,6 +105,29 @@ export const setBuildingConfig = async (account: Account, provider: EternumProvi
   const tx = await provider.set_building_config({ signer: account, calls: calldataArray });
 
   console.log(`Configuring building cost config ${tx.statusReceipt}...`);
+};
+
+export const setRealmLevelConfig = async (account: Account, provider: EternumProvider) => {
+  const calldataArray = [];
+
+  for (const level of Object.keys(REALM_LEVEL_COSTS_SCALED) as unknown as number[]) {
+    if (REALM_LEVEL_COSTS_SCALED[level].length !== 0) {
+      const calldata = {
+        level,
+        cost_of_level: REALM_LEVEL_COSTS_SCALED[level].map((cost) => {
+          return {
+            ...cost,
+            amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+          };
+        }),
+      };
+
+      calldataArray.push(calldata);
+    }
+  }
+
+  const tx = await provider.set_realm_level_config({ signer: account, calls: calldataArray });
+  console.log(`Configuring realm level cost config ${tx.statusReceipt}...`);
 };
 
 export const setResourceBuildingConfig = async (account: Account, provider: EternumProvider) => {

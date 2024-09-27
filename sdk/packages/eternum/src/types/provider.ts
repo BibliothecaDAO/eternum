@@ -161,6 +161,9 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
 }
 
 export interface CreateRealmProps extends Realm, SystemSigner {}
+export interface UpgradeRealmProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+}
 
 export interface TransferItemsProps extends SystemSigner {
   sender_id: num.BigNumberish;
@@ -453,6 +456,13 @@ export interface SetBuildingConfigProps extends SystemSigner {
     building_category: BuildingType;
     building_resource_type: ResourcesIds;
     cost_of_building: ResourceCosts[];
+  }[];
+}
+
+export interface SetRealmLevelConfigProps extends SystemSigner {
+  calls: {
+    level: num.BigNumberish;
+    cost_of_level: ResourceCosts[];
   }[];
 }
 

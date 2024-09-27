@@ -642,6 +642,21 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Earthenshard]: [],
 };
 
+export const REALM_LEVEL_COSTS: ResourceInputs = {
+  [1]: [
+    { resource: ResourcesIds.Wheat, amount: 500 },
+    { resource: ResourcesIds.Fish, amount: 500 },
+  ],
+  [2]: [
+    { resource: ResourcesIds.Wheat, amount: 1000 },
+    { resource: ResourcesIds.Fish, amount: 1000 },
+  ],
+  [3]: [
+    { resource: ResourcesIds.Wheat, amount: 2000 },
+    { resource: ResourcesIds.Fish, amount: 2000 },
+  ],
+};
+
 export const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Castle]: [],
   [BuildingType.Bank]: [],

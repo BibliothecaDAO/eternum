@@ -12,6 +12,7 @@ import {
   setMercenariesConfig,
   setPopulationConfig,
   setProductionConfig,
+  setRealmLevelConfig,
   setResourceBuildingConfig,
   setSpeedConfig,
   setStaminaConfig,
@@ -56,6 +57,7 @@ console.log("Account set up");
 await setBuildingCategoryPopConfig(account, provider);
 await setPopulationConfig(account, provider);
 await setBuildingConfig(account, provider);
+await setRealmLevelConfig(account, provider);
 await setResourceBuildingConfig(account, provider);
 await setWeightConfig(account, provider);
 await setCombatConfig(account, provider);
