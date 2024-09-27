@@ -445,7 +445,7 @@ export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
 }
 
 export interface SetBuildingGeneralConfigProps extends SystemSigner {
-  cost_scale_percent: num.BigNumberish;
+  base_cost_percent_increase: num.BigNumberish;
 }
 
 export interface SetPopulationConfigProps extends SystemSigner {

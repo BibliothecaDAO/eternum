@@ -594,12 +594,21 @@ impl BuildingCustomImpl of BuildingCustomTrait {
                 break;
             }
 
+            // calculate cost of building based on the formula:
+            // Cost = Base + (Base * Rate * (N - 1)²)
+            // Where:
+            //  Base = The cost of the first building
+            //  Rate = How quickly the cost goes up (a small number like 0.1 or 0.2)
+            //  N = Which number building this is (1st, 2nd, 3rd, etc.)
+            //
             let resource_cost: ResourceCost = get!(world, (building_config.resource_cost_id, index), ResourceCost);
             let mut resource = ResourceCustomImpl::get(world, (self.outer_entity_id, resource_cost.resource_type));
-            let additional_cost = PercentageImpl::get(
-                resource_cost.amount, building_general_config.cost_scale_percent.into()
+            let percentage_additional_cost = PercentageImpl::get(
+                resource_cost.amount, building_general_config.base_cost_percent_increase.into()
             );
-            let total_cost = resource_cost.amount + ((building_quantity.value.into() - 1) * additional_cost);
+            let scale_factor = building_quantity.value - 1;
+            let total_cost = resource_cost.amount
+                + (scale_factor.into() * scale_factor.into() * percentage_additional_cost);
             resource.burn(total_cost);
             resource.save(world);
             index += 1;

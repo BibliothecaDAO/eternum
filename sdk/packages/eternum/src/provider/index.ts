@@ -879,12 +879,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_building_general_config(props: SystemProps.SetBuildingGeneralConfigProps) {
-    const { cost_scale_percent, signer } = props;
+    const { base_cost_percent_increase, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_building_general_config",
-      calldata: [cost_scale_percent],
+      calldata: [base_cost_percent_increase],
     });
   }
 

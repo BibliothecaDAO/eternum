@@ -350,7 +350,7 @@ pub struct BuildingGeneralConfig {
     #[key]
     config_id: ID,
     // cost scale percent
-    cost_scale_percent: u16,
+    base_cost_percent_increase: u16,
 }
 
 

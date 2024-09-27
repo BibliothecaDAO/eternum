@@ -76,7 +76,7 @@ export const setBuildingCategoryPopConfig = async (account: Account, provider: E
 export const setBuildingGeneralConfig = async (account: Account, provider: EternumProvider) => {
   const tx = await provider.set_building_general_config({
     signer: account,
-    cost_scale_percent: BUILDING_FIXED_COST_SCALE_PERCENT,
+    base_cost_percent_increase: BUILDING_FIXED_COST_SCALE_PERCENT,
   });
 
   console.log(`Configuring building general config ${tx.statusReceipt}...`);
