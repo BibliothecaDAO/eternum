@@ -126,7 +126,8 @@ export const PlayerId = () => {
                     structureSpecificElement = (
                       <div key={structure.entity_id}>
                         <RealmResourcesIO
-                          className="w-full overflow-x-auto no-scrollbar"
+                          className="w-full overflow-x-auto no-scrollbar font-normal"
+                          titleClassName="font-normal text-sm"
                           structureEntityId={structure.entity_id}
                         />
                       </div>

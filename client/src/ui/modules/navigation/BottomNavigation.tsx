@@ -11,9 +11,9 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
-import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
+import { social, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { Assistant } from "../assistant/Assistant";
-import { Guilds } from "../guilds/Guilds";
+import { Social } from "../social/Social";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 
@@ -89,10 +89,10 @@ export const BottomNavigation = () => {
           <CircleButton
             tooltipLocation="top"
             image={BuildingThumbs.guild}
-            label={guilds}
-            active={isPopupOpen(guilds)}
+            label={social}
+            active={isPopupOpen(social)}
             size="lg"
-            onClick={() => togglePopup(guilds)}
+            onClick={() => togglePopup(social)}
             className={clsx({
               hidden: !questClaimStatus[QuestId.Travel],
             })}
@@ -113,7 +113,7 @@ export const BottomNavigation = () => {
         <Questing entityId={structureEntityId} />
         <Assistant />
         <Leaderboard />
-        <Guilds />
+        <Social />
       </div>
 
       <motion.div

@@ -211,12 +211,14 @@ export const Chat = () => {
             ))}
         </div>
         <div
-          className="h-8 w-8 self-center"
+          className="flex flex-row items-end w-8 h-8 text-sm text-center"
           onClick={() => {
             setHideChat(!hideChat);
           }}
         >
-          <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
+          <div className="bg-hex-bg bg-black/5 h-6 w-6 rounded-t">
+            <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
+          </div>
         </div>
       </div>
       <div

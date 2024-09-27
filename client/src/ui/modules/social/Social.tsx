@@ -1,16 +1,16 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { guilds } from "@/ui/components/navigation/Config";
+import { social } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { GuildsPanel } from "@/ui/components/worldmap/guilds/GuildsPanel";
 import { PlayersPanel } from "@/ui/components/worldmap/players/PlayersPanel";
 import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 
-export const Guilds = () => {
+export const Social = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
-  const isOpen = useUIStore((state) => state.isPopupOpen(guilds));
+  const isOpen = useUIStore((state) => state.isPopupOpen(social));
 
   const tabs = useMemo(
     () => [
@@ -29,7 +29,7 @@ export const Guilds = () => {
   );
 
   return (
-    <OSWindow width="600px" onClick={() => togglePopup(guilds)} show={isOpen} title={guilds} hintSection={"guilds"}>
+    <OSWindow width="600px" onClick={() => togglePopup(social)} show={isOpen} title={social} hintSection={"guilds"}>
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: number) => setSelectedTab(index)}
