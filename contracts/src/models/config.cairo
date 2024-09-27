@@ -349,7 +349,6 @@ pub struct BankConfig {
 pub struct BuildingGeneralConfig {
     #[key]
     config_id: ID,
-    // cost scale percent
     base_cost_percent_increase: u16,
 }
 

@@ -583,7 +583,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         destroyed_building_category
     }
 
-    fn pay_fixed_cost(self: Building, building_quantity: BuildingQuantityv2, world: IWorldDispatcher) {
+    fn make_payment(self: Building, building_quantity: BuildingQuantityv2, world: IWorldDispatcher) {
         let building_general_config: BuildingGeneralConfig = get!(world, WORLD_CONFIG_ID, BuildingGeneralConfig);
         let building_config: BuildingConfig = BuildingConfigCustomImpl::get(
             world, self.category, self.produced_resource_type

@@ -57,8 +57,8 @@ mod building_systems {
                 world, entity_id, building_category, produce_resource_type, building_coord
             );
 
-            // pay fixed cost of the building
-            building.pay_fixed_cost(building_quantity, world);
+            // pay one time cost of the building
+            building.make_payment(building_quantity, world);
         }
         fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
             BuildingCustomImpl::pause_production(world, entity_id, building_coord);
