@@ -1,3 +1,4 @@
+import useUIStore from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
 import { throttle } from "lodash";
@@ -15,8 +16,14 @@ const MINIMAP_CONFIG = {
   COLORS: {
     ARMY: "#FF0000",
     MY_ARMY: "#00FF00",
-    STRUCTURE: "#0000FF",
     CAMERA: "#FFFFFF",
+    STRUCTURES: {
+      Realm: "#0000ff",
+      Hyperstructure: "#FFFFFF",
+      Bank: "#FFFF00",
+      FragmentMine: "#00FFFF",
+      Settlement: "#FFA500",
+    },
   },
   SIZES: {
     STRUCTURE: 2,
@@ -173,7 +180,8 @@ class Minimap {
         const cacheKey = `${col},${row}`;
         if (this.scaledCoords.has(cacheKey)) {
           const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-          this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURE;
+          // @ts-ignore
+          this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURES[structureType];
           this.context.fillRect(
             scaledCol - this.structureSize.width * (row % 2 !== 0 ? 1 : 0.5),
             scaledRow - this.structureSize.height / 2,
@@ -225,10 +233,12 @@ class Minimap {
 
   hideMinimap() {
     this.canvas.style.display = "none";
+    useUIStore.getState().setShowMinimap(false);
   }
 
   showMinimap() {
     this.canvas.style.display = "block";
+    useUIStore.getState().setShowMinimap(true);
   }
 
   moveMinimapCenterToUrlLocation() {

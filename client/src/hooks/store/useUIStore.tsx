@@ -51,6 +51,8 @@ interface UIStore {
   setLeftNavigationView: (view: LeftView) => void;
   rightNavigationView: RightView;
   setRightNavigationView: (view: RightView) => void;
+  showMinimap: boolean;
+  setShowMinimap: (show: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore;
@@ -104,6 +106,8 @@ const useUIStore = create(
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
     rightNavigationView: RightView.None,
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+    showMinimap: false,
+    setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
