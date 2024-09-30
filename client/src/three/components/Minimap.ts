@@ -50,6 +50,13 @@ class Minimap {
   private biomeCache: Map<string, string>;
   private scaledCoords: Map<string, { scaledCol: number; scaledRow: number }>;
   private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
+  private structureSize: { width: number; height: number };
+  private armySize: { width: number; height: number };
+  private cameraSize: {
+    topSideWidth: number;
+    bottomSideWidth: number;
+    height: number;
+  };
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -71,6 +78,9 @@ class Minimap {
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
     this.biomeCache = new Map();
     this.scaledCoords = new Map();
+    this.structureSize = { width: 0, height: 0 };
+    this.armySize = { width: 0, height: 0 };
+    this.cameraSize = { topSideWidth: 0, bottomSideWidth: 0, height: 0 };
     this.recomputeScales();
 
     this.draw = throttle(this.draw, 1000 / 30);
@@ -93,6 +103,21 @@ class Minimap {
         this.scaledCoords.set(`${col},${row}`, { scaledCol, scaledRow });
       }
     }
+
+    // Precompute sizes
+    this.structureSize = {
+      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
+      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleY,
+    };
+    this.armySize = {
+      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleY,
+    };
+    this.cameraSize = {
+      topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
+      bottomSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX,
+      height: MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY,
+    };
   }
 
   private getMousePosition(event: MouseEvent) {
@@ -141,8 +166,6 @@ class Minimap {
 
   private drawStructures() {
     const allStructures = this.structureManager.structures.getStructures();
-    const structureWidth = MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX;
-    const structureHeight = MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleY;
     for (const [structureType, structures] of allStructures) {
       structures.forEach((structure) => {
         const { col, row } = structure.hexCoords;
@@ -151,10 +174,10 @@ class Minimap {
           const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
           this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURE;
           this.context.fillRect(
-            scaledCol - structureWidth * (row % 2 !== 0 ? 1 : 0.5),
-            scaledRow - structureHeight / 2,
-            structureWidth,
-            structureHeight,
+            scaledCol - this.structureSize.width * (row % 2 !== 0 ? 1 : 0.5),
+            scaledRow - this.structureSize.height / 2,
+            this.structureSize.width,
+            this.structureSize.height,
           );
         }
       });
@@ -163,8 +186,6 @@ class Minimap {
 
   private drawArmies() {
     const allArmies = this.armyManager.getArmies();
-    const armyWidth = MINIMAP_CONFIG.SIZES.ARMY * this.scaleX;
-    const armyHeight = MINIMAP_CONFIG.SIZES.ARMY * this.scaleY;
     allArmies.forEach((army) => {
       const { x: col, y: row } = army.hexCoords.getNormalized();
       const cacheKey = `${col},${row}`;
@@ -172,10 +193,10 @@ class Minimap {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
         this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY;
         this.context.fillRect(
-          scaledCol - armyWidth * (row % 2 !== 0 ? 1 : 0.5),
-          scaledRow - armyHeight / 2,
-          armyWidth,
-          armyHeight,
+          scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.armySize.height / 2,
+          this.armySize.width,
+          this.armySize.height,
         );
       }
     });
@@ -190,14 +211,11 @@ class Minimap {
 
       this.context.strokeStyle = MINIMAP_CONFIG.COLORS.CAMERA;
       this.context.beginPath();
-      const topSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX;
-      const bottomSideWidth = (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX;
-      const height = MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY;
-      this.context.moveTo(scaledCol - topSideWidth / 2, scaledRow - height);
-      this.context.lineTo(scaledCol + topSideWidth / 2, scaledRow - height);
-      this.context.lineTo(scaledCol + bottomSideWidth / 2, scaledRow);
-      this.context.lineTo(scaledCol - bottomSideWidth / 2, scaledRow);
-      this.context.lineTo(scaledCol - topSideWidth / 2, scaledRow - height);
+      this.context.moveTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
+      this.context.lineTo(scaledCol + this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
+      this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth / 2, scaledRow);
+      this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth / 2, scaledRow);
+      this.context.lineTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
       this.context.closePath();
       this.context.lineWidth = 1;
       this.context.stroke();
