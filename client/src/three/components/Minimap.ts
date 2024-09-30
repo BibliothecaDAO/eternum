@@ -18,8 +18,8 @@ const MINIMAP_CONFIG = {
     CAMERA: "#FFFFFF",
   },
   SIZES: {
-    STRUCTURE: 3,
-    ARMY: 3,
+    STRUCTURE: 2,
+    ARMY: 2,
     CAMERA: {
       TOP_SIDE_WIDTH_FACTOR: 105,
       BOTTOM_SIDE_WIDTH_FACTOR: 170,
@@ -128,7 +128,12 @@ class Minimap {
         if (this.scaledCoords.has(cacheKey)) {
           const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
           this.context.fillStyle = biomeColor;
-          this.context.fillRect(scaledCol, scaledRow, this.scaleX, this.scaleY);
+          this.context.fillRect(
+            scaledCol - this.scaleX * (row % 2 !== 0 ? 1 : 0.5),
+            scaledRow - this.scaleY / 2,
+            this.scaleX,
+            this.scaleY,
+          );
         }
       });
     });
@@ -136,7 +141,8 @@ class Minimap {
 
   private drawStructures() {
     const allStructures = this.structureManager.structures.getStructures();
-
+    const structureWidth = MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX;
+    const structureHeight = MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleY;
     for (const [structureType, structures] of allStructures) {
       structures.forEach((structure) => {
         const { col, row } = structure.hexCoords;
@@ -144,7 +150,12 @@ class Minimap {
         if (this.scaledCoords.has(cacheKey)) {
           const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
           this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURE;
-          this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.STRUCTURE, MINIMAP_CONFIG.SIZES.STRUCTURE);
+          this.context.fillRect(
+            scaledCol - structureWidth * (row % 2 !== 0 ? 1 : 0.5),
+            scaledRow - structureHeight / 2,
+            structureWidth,
+            structureHeight,
+          );
         }
       });
     }
@@ -152,14 +163,20 @@ class Minimap {
 
   private drawArmies() {
     const allArmies = this.armyManager.getArmies();
-
+    const armyWidth = MINIMAP_CONFIG.SIZES.ARMY * this.scaleX;
+    const armyHeight = MINIMAP_CONFIG.SIZES.ARMY * this.scaleY;
     allArmies.forEach((army) => {
       const { x: col, y: row } = army.hexCoords.getNormalized();
       const cacheKey = `${col},${row}`;
       if (this.scaledCoords.has(cacheKey)) {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
         this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY;
-        this.context.fillRect(scaledCol, scaledRow, MINIMAP_CONFIG.SIZES.ARMY, MINIMAP_CONFIG.SIZES.ARMY);
+        this.context.fillRect(
+          scaledCol - armyWidth * (row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - armyHeight / 2,
+          armyWidth,
+          armyHeight,
+        );
       }
     });
   }
