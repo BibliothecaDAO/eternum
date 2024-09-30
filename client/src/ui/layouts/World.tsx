@@ -1,12 +1,14 @@
 import { Leva } from "leva";
 import useUIStore from "../../hooks/store/useUIStore";
 
+import clsx from "clsx";
 import { Redirect } from "wouter";
 import { HooksComponent } from "../components/HooksComponent";
 import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
+import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
@@ -14,17 +16,16 @@ import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import TopMiddleContainer from "../containers/TopMiddleContainer";
 import { Tooltip } from "../elements/Tooltip";
+import { Chat } from "../modules/chat/Chat";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
 import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
-import { Chat } from "../modules/chat/Chat";
-import { Onboarding } from "./Onboarding";
-import clsx from "clsx";
+import { TopRightNavigation } from "../modules/navigation/TopRightNavigation";
 import { EventStream } from "../modules/stream/EventStream";
-import { BottomLeftContainer } from "../containers/BottomLeftContainer";
+import { Onboarding } from "./Onboarding";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -73,6 +74,7 @@ export const World = () => {
         <>
           <TopMiddleContainer>
             <TopMiddleNavigation />
+            <TopRightNavigation />
           </TopMiddleContainer>
 
           <LeftMiddleContainer>
