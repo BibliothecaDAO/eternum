@@ -69,7 +69,7 @@ class Minimap {
     this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
     this.biomeCache = new Map();
     this.scaledCoords = new Map();
-    this.computeScaledCoords();
+    this.recomputeScales();
 
     this.draw = throttle(this.draw, 1000 / 30);
 
@@ -79,7 +79,9 @@ class Minimap {
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
   }
 
-  private computeScaledCoords() {
+  private recomputeScales() {
+    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
+    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
     this.scaledCoords.clear();
     for (let col = this.displayRange.minCol; col <= this.displayRange.maxCol; col++) {
       for (let row = this.displayRange.minRow; row <= this.displayRange.maxRow; row++) {
@@ -198,7 +200,7 @@ class Minimap {
     this.displayRange.maxCol = col + MINIMAP_CONFIG.MAP_COLS_WIDTH / 2;
     this.displayRange.minRow = row - MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
     this.displayRange.maxRow = row + MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
-    this.computeScaledCoords();
+    this.recomputeScales();
   }
 
   update() {
@@ -249,10 +251,7 @@ class Minimap {
       default:
         return;
     }
-
-    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
-    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
-    this.computeScaledCoords();
+    this.recomputeScales();
   }
 
   handleClick = (event: MouseEvent) => {
