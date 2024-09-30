@@ -8,6 +8,8 @@ import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
 const MINIMAP_CONFIG = {
+  MIN_ZOOM_RANGE: 75,
+  MAX_ZOOM_RANGE: 300,
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
   COLORS: {
@@ -77,6 +79,7 @@ class Minimap {
     this.canvas.addEventListener("mousedown", this.handleMouseDown);
     this.canvas.addEventListener("mousemove", this.handleMouseMove);
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
+    this.canvas.addEventListener("wheel", this.handleWheel);
   }
 
   private recomputeScales() {
@@ -251,6 +254,38 @@ class Minimap {
       default:
         return;
     }
+    this.recomputeScales();
+  }
+
+  private handleWheel = (event: WheelEvent) => {
+    event.stopPropagation();
+    const zoomOut = event.deltaY > 0; // Zoom out for positive deltaY, zoom in for negative
+    this.zoom(zoomOut);
+  };
+
+  private zoom(zoomOut: boolean) {
+    const currentRange = Math.abs(this.displayRange.maxCol - this.displayRange.minCol);
+    console.log(
+      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, minCol: ${this.displayRange.minCol}, maxCol: ${
+        this.displayRange.maxCol
+      }`,
+    );
+    if (!zoomOut && currentRange < MINIMAP_CONFIG.MIN_ZOOM_RANGE) {
+      return;
+    }
+    if (zoomOut && currentRange > MINIMAP_CONFIG.MAX_ZOOM_RANGE) {
+      return;
+    }
+
+    const ratio = this.canvas.width / this.canvas.height;
+    const delta = zoomOut ? -5 : 5;
+    const deltaX = Math.round(delta * ratio);
+    const deltaY = delta;
+    this.displayRange.minCol = this.displayRange.minCol + deltaX;
+    this.displayRange.maxCol = this.displayRange.maxCol - deltaX;
+    this.displayRange.minRow = this.displayRange.minRow + deltaY;
+    this.displayRange.maxRow = this.displayRange.maxRow - deltaY;
+
     this.recomputeScales();
   }
 
