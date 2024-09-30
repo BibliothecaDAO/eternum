@@ -13,8 +13,9 @@ const MINIMAP_CONFIG = {
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
   COLORS: {
-    ARMY: "#0000FF",
-    STRUCTURE: "#FF0000",
+    ARMY: "#FF0000",
+    MY_ARMY: "#00FF00",
+    STRUCTURE: "#0000FF",
     CAMERA: "#FFFFFF",
   },
   SIZES: {
@@ -191,7 +192,7 @@ class Minimap {
       const cacheKey = `${col},${row}`;
       if (this.scaledCoords.has(cacheKey)) {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        this.context.fillStyle = MINIMAP_CONFIG.COLORS.ARMY;
+        this.context.fillStyle = army.isMine ? MINIMAP_CONFIG.COLORS.MY_ARMY : MINIMAP_CONFIG.COLORS.ARMY;
         this.context.fillRect(
           scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
           scaledRow - this.armySize.height / 2,
