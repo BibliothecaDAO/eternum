@@ -161,6 +161,11 @@ mod resource_bridge_systems {
     use starknet::{get_caller_address, get_contract_address};
     use super::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
 
+    #[derive(Copy, Drop, Serde)]
+    enum TxType {
+        Deposit,
+        Withdrawal
+    }
 
     #[abi(embed_v0)]
     impl ResourceBridgeImpl of super::IResourceBridgeSystems<ContractState> {
@@ -198,15 +203,19 @@ mod resource_bridge_systems {
             );
 
             // take non bank fees from deposit
-            let non_bank_fees = InternalBridgeImpl::send_non_bank_fees_on_deposit(
-                world, token, client_fee_recipient, amount
+            let non_bank_fees = InternalBridgeImpl::send_non_bank_fees(
+                world, token, client_fee_recipient, amount, TxType::Deposit
             );
             let token_amount_less_non_bank_fees = amount - non_bank_fees;
 
             // take bank fees from deposit and get final resource amount
             let resource_total_amount = InternalBridgeImpl::token_amount_to_resource_amount(token, amount);
-            let resource_bank_fees = InternalBridgeImpl::send_bank_fees_on_deposit(
-                world, through_bank_id, resource_bridge_token_whitelist.resource_type, resource_total_amount
+            let resource_bank_fees = InternalBridgeImpl::send_bank_fees(
+                world,
+                through_bank_id,
+                resource_bridge_token_whitelist.resource_type,
+                resource_total_amount,
+                TxType::Deposit
             );
             let resource_amount_less_non_bank_fees = InternalBridgeImpl::token_amount_to_resource_amount(
                 token, token_amount_less_non_bank_fees
@@ -290,11 +299,11 @@ mod resource_bridge_systems {
             resource.save(world);
 
             let token_amount = InternalBridgeImpl::resource_amount_to_token_amount(token, resource_amount);
-            let bank_resource_fee_amount = InternalBridgeImpl::send_bank_fees_on_withdrawal(
-                world, through_bank_id, resource_type, resource_amount
+            let bank_resource_fee_amount = InternalBridgeImpl::send_bank_fees(
+                world, through_bank_id, resource_type, resource_amount, TxType::Withdrawal
             );
-            let non_bank_token_fee_amount = InternalBridgeImpl::send_non_bank_fees_on_withdrawal(
-                world, token, client_fee_recipient, token_amount
+            let non_bank_token_fee_amount = InternalBridgeImpl::send_non_bank_fees(
+                world, token, client_fee_recipient, token_amount, TxType::Withdrawal
             );
             let bank_token_fee_amount = InternalBridgeImpl::resource_amount_to_token_amount(
                 token, bank_resource_fee_amount
@@ -346,21 +355,27 @@ mod resource_bridge_systems {
             return relative_amount;
         }
 
-
-        fn send_bank_fees_on_deposit(world: IWorldDispatcher, bank_id: ID, resource_type: u8, amount: u128) -> u128 {
+        fn send_bank_fees(
+            world: IWorldDispatcher, bank_id: ID, resource_type: u8, amount: u128, tx_type: TxType
+        ) -> u128 {
             let bank = get!(world, bank_id, Bank);
             let bank_owner = get!(world, bank_id, Owner).address;
             // if caller is bank owner, no fees are paid
             if bank_owner != get_caller_address() {
                 let fee_split_config = get!(world, WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
-                let bank_fee_dpt_percent = min(
-                    fee_split_config.max_bank_fee_dpt_percent, bank.owner_bridge_fee_dpt_percent
-                );
-                if bank_fee_dpt_percent.is_non_zero() {
-                    let bank_fee_amount: u128 = Self::calculate_fees(amount.into(), bank_fee_dpt_percent)
+                let bank_fee_percent = match tx_type {
+                    TxType::Deposit => {
+                        min(fee_split_config.max_bank_fee_dpt_percent, bank.owner_bridge_fee_dpt_percent)
+                    },
+                    TxType::Withdrawal => {
+                        min(fee_split_config.max_bank_fee_wtdr_percent, bank.owner_bridge_fee_wtdr_percent)
+                    },
+                };
+                if bank_fee_percent.is_non_zero() {
+                    let bank_fee_amount: u128 = Self::calculate_fees(amount.into(), bank_fee_percent)
                         .try_into()
                         .unwrap();
-                    assert!(bank_fee_amount.is_non_zero(), "Bridge: deposit amount too small to pay bank fees");
+                    assert!(bank_fee_amount.is_non_zero(), "Bridge: amount too small to pay bank fees");
                     // add fees to bank
                     let mut bank_resource = ResourceCustomImpl::get(world, (bank_id, resource_type));
                     bank_resource.add(bank_fee_amount);
@@ -371,39 +386,30 @@ mod resource_bridge_systems {
             return 0;
         }
 
-        fn send_bank_fees_on_withdrawal(world: IWorldDispatcher, bank_id: ID, resource_type: u8, amount: u128) -> u128 {
-            let bank = get!(world, bank_id, Bank);
-            let bank_owner = get!(world, bank_id, Owner).address;
-            // if caller is bank owner, no fees are paid
-            if bank_owner != get_caller_address() {
-                let fee_split_config = get!(world, WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
-                let bank_fee_wtdr_percent = min(
-                    fee_split_config.max_bank_fee_wtdr_percent, bank.owner_bridge_fee_wtdr_percent
-                );
-
-                if bank_fee_wtdr_percent.is_non_zero() {
-                    // if fee is 0, return 0
-                    let bank_fee_amount: u128 = Self::calculate_fees(amount.into(), bank_fee_wtdr_percent)
-                        .try_into()
-                        .unwrap();
-                    assert!(bank_fee_amount.is_non_zero(), "Bridge: withdrawal amount too small to pay bank fees");
-                    // add fees to bank
-                    let mut bank_resource = ResourceCustomImpl::get(world, (bank_id, resource_type));
-                    bank_resource.add(bank_fee_amount);
-                    bank_resource.save(world);
-                    return bank_fee_amount;
-                }
-            }
-            return 0;
-        }
-
-        fn send_non_bank_fees_on_deposit(
-            world: IWorldDispatcher, token: ContractAddress, client_fee_recipient: ContractAddress, amount: u256
+        fn send_non_bank_fees(
+            world: IWorldDispatcher,
+            token: ContractAddress,
+            client_fee_recipient: ContractAddress,
+            amount: u256,
+            tx_type: TxType
         ) -> u256 {
             let fee_split_config = get!(world, WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
-            let velords_fee_amount = Self::calculate_fees(amount, fee_split_config.velords_fee_on_dpt_percent);
-            let season_pool_fee_amount = Self::calculate_fees(amount, fee_split_config.season_pool_fee_on_dpt_percent);
-            let client_fee_amount = Self::calculate_fees(amount, fee_split_config.client_fee_on_dpt_percent);
+            let (velords_fee_amount, season_pool_fee_amount, client_fee_amount) = match tx_type {
+                TxType::Deposit => {
+                    (
+                        Self::calculate_fees(amount, fee_split_config.velords_fee_on_dpt_percent),
+                        Self::calculate_fees(amount, fee_split_config.season_pool_fee_on_dpt_percent),
+                        Self::calculate_fees(amount, fee_split_config.client_fee_on_dpt_percent)
+                    )
+                },
+                TxType::Withdrawal => {
+                    (
+                        Self::calculate_fees(amount, fee_split_config.velords_fee_on_wtdr_percent),
+                        Self::calculate_fees(amount, fee_split_config.season_pool_fee_on_wtdr_percent),
+                        Self::calculate_fees(amount, fee_split_config.client_fee_on_wtdr_percent)
+                    )
+                }
+            };
             assert!(
                 velords_fee_amount.is_non_zero()
                     && season_pool_fee_amount.is_non_zero()
@@ -426,38 +432,6 @@ mod resource_bridge_systems {
             // return the total fees sent
             velords_fee_amount + season_pool_fee_amount + client_fee_amount
         }
-
-
-        fn send_non_bank_fees_on_withdrawal(
-            world: IWorldDispatcher, token: ContractAddress, client_fee_recipient: ContractAddress, amount: u256
-        ) -> u256 {
-            let fee_split_config = get!(world, WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
-            let velords_fee_amount = Self::calculate_fees(amount, fee_split_config.velords_fee_on_wtdr_percent);
-            let season_pool_fee_amount = Self::calculate_fees(amount, fee_split_config.season_pool_fee_on_wtdr_percent);
-            let client_fee_amount = Self::calculate_fees(amount, fee_split_config.client_fee_on_wtdr_percent);
-            assert!(
-                velords_fee_amount.is_non_zero()
-                    && season_pool_fee_amount.is_non_zero()
-                    && client_fee_amount.is_non_zero(),
-                "Bridge: withdrawal amount too small to take fees"
-            );
-
-            // send fees to recipients
-            let erc20 = ERC20ABIDispatcher { contract_address: token };
-            if velords_fee_amount.is_non_zero() {
-                erc20.transfer(fee_split_config.velords_fee_recipient, velords_fee_amount);
-            }
-            if season_pool_fee_amount.is_non_zero() {
-                erc20.transfer(fee_split_config.season_pool_fee_recipient, season_pool_fee_amount);
-            }
-            if client_fee_amount.is_non_zero() {
-                erc20.transfer(client_fee_recipient, client_fee_amount);
-            }
-
-            // return the total fees sent
-            velords_fee_amount + season_pool_fee_amount + client_fee_amount
-        }
-
 
         fn calculate_fees(amount: u256, fee_percent: u16) -> u256 {
             return (amount * fee_percent.into()) / PercentageValueImpl::_100().into();
