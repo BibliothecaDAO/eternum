@@ -2,22 +2,22 @@ import { type ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
 import {
-  CapacityConfigCategoryStringMap,
+  CAPACITY_CONFIG_CATEGORY_STRING_MAP,
   ContractAddress,
   EntityType,
-  type ID,
   StructureType,
+  type ID,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
-  type Component,
-  type ComponentValue,
-  type Entity,
   Has,
   HasValue,
   NotValue,
   getComponentValue,
   runQuery,
+  type Component,
+  type ComponentValue,
+  type Entity,
 } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
@@ -133,7 +133,7 @@ export const getEntitiesUtils = () => {
 
     const entityCapacityCategory = getComponentValue(CapacityCategory, getEntityIdFromKeys([entityIdBigInt]))
       ?.category as unknown as string;
-    const capacityCategoryId = CapacityConfigCategoryStringMap[entityCapacityCategory] || 0n;
+    const capacityCategoryId = CAPACITY_CONFIG_CATEGORY_STRING_MAP[entityCapacityCategory] || 0n;
     const capacity = getComponentValue(CapacityConfig, getEntityIdFromKeys([BigInt(capacityCategoryId)]));
 
     const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityIdBigInt]));
