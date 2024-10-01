@@ -1,6 +1,5 @@
 import {
   BUILDING_COSTS,
-  EXPLORATION_COSTS,
   EternumGlobalConfig,
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
@@ -9,12 +8,10 @@ import {
   RESOURCE_BUILDING_COSTS,
   RESOURCE_INPUTS,
   RESOURCE_OUTPUTS,
-  ResourceInputs,
-  ResourceOutputs,
   ResourcesIds,
   STRUCTURE_COSTS,
 } from "../constants";
-import { Resource } from "../types";
+import { ResourceInputs, ResourceOutputs } from "../types";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   let multipliedCosts: ResourceOutputs = {};
@@ -106,11 +103,6 @@ export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
 
 export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(
   RESOURCE_INPUTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-
-export const EXPLORATION_COSTS_SCALED: Resource[] = scaleResources(
-  EXPLORATION_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
 

@@ -11,7 +11,7 @@ import { FELT_CENTER } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { BiomeType, ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { BiomeType, ID, NEIGHBOR_OFFSETS_EVEN, NEIGHBOR_OFFSETS_ODD } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
@@ -335,7 +335,7 @@ export default class WorldmapScene extends HexagonScene {
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
-      const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+      const neighborOffsets = row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
 
       neighborOffsets.forEach(({ i, j }) => {
         const neighborCol = col + i;
@@ -426,7 +426,7 @@ export default class WorldmapScene extends HexagonScene {
         }
 
         if (!isExplored) {
-          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          const neighborOffsets = globalRow % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
             const neighborRow = globalRow + j;
