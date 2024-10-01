@@ -33,6 +33,8 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
       setTimeout(() => {
         inputRef.current?.focus();
       }, 0);
+    } else {
+      setSearchInput("");
     }
   };
 
@@ -51,7 +53,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
   };
 
   return (
-    <div className="flex items-center" key={"PleaseKeepThis"}>
+    <div className="flex items-center">
       <Cross
         className={clsx(
           "my-auto w-8 mx-auto hover:fill-gold/50 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all",
