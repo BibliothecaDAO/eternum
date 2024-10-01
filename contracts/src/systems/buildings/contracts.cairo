@@ -53,14 +53,12 @@ mod building_systems {
             get!(world, entity_id, EntityOwner).assert_caller_owner(world);
 
             // todo: check that entity is a realm
-            let building: Building = BuildingCustomImpl::create(
+            let (building, building_quantity) = BuildingCustomImpl::create(
                 world, entity_id, building_category, produce_resource_type, building_coord
             );
 
-            // make payment for building
-            BuildingCustomImpl::make_payment(
-                world, building.outer_entity_id, building.category, building.produced_resource_type
-            );
+            // pay one time cost of the building
+            building.make_payment(building_quantity, world);
         }
         fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
             BuildingCustomImpl::pause_production(world, entity_id, building_coord);

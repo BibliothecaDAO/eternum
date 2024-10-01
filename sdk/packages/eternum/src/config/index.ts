@@ -3,6 +3,7 @@ import {
   ARMY_ENTITY_TYPE,
   BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
+  BUILDING_FIXED_COST_SCALE_PERCENT,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
@@ -70,6 +71,15 @@ export const setBuildingCategoryPopConfig = async (account: Account, provider: E
   });
 
   console.log(`Configuring building category population ${tx.statusReceipt}...`);
+};
+
+export const setBuildingGeneralConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_building_general_config({
+    signer: account,
+    base_cost_percent_increase: BUILDING_FIXED_COST_SCALE_PERCENT,
+  });
+
+  console.log(`Configuring building general config ${tx.statusReceipt}...`);
 };
 
 export const setPopulationConfig = async (account: Account, provider: EternumProvider) => {
