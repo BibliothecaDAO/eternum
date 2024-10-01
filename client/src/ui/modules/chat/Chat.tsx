@@ -1,3 +1,4 @@
+import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
 import { useEntityQuery } from "@dojoengine/react";
@@ -6,6 +7,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
 
+import useUIStore from "@/hooks/store/useUIStore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { toHexString } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
@@ -33,14 +35,18 @@ export const Chat = () => {
     },
   } = useDojo();
 
+  const [hideChat, setHideChat] = useState(false);
   const getPlayers = useGetAllPlayers();
   const players = useMemo(
     () => getPlayers().filter((player) => ContractAddress(player.address) !== ContractAddress(account.address)),
     [getPlayers, account.address],
   );
 
-  const [currentTab, setCurrentTab] = useState<Tab>(DEFAULT_TAB);
-  const [tabs, setTabs] = useState<Tab[]>([]);
+  const currentTab = useUIStore((state) => state.currentTab);
+  const setCurrentTab = useUIStore((state) => state.setCurrentTab);
+
+  const tabs = useUIStore((state) => state.tabs);
+  const setTabs = useUIStore((state) => state.setTabs);
 
   const storedTabs = useMemo(() => {
     return [...JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY + account.address) || "[]")];
@@ -50,22 +56,17 @@ export const Chat = () => {
     if (account.address === masterAccount.address) return;
 
     if (storedTabs.length === 0) {
-      setNewTabs([DEFAULT_TAB]);
+      setNewTabs([DEFAULT_TAB], account.address, setTabs);
     } else {
-      setTabs([...storedTabs]);
+      setNewTabs([...storedTabs], account.address, setTabs);
     }
-  }, [storedTabs]);
+  }, [storedTabs, account.address]);
 
   const bottomChatRef = useRef<HTMLDivElement>(null);
 
   const [salt, setSalt] = useState<bigint>(0n);
 
   const allMessageEntities = useEntityQuery([Has(Message)]);
-
-  const setNewTabs = (newTabs: Tab[]) => {
-    setTabs(newTabs);
-    localStorage.setItem(CHAT_STORAGE_KEY + account.address, JSON.stringify(newTabs));
-  };
 
   const messages = useMemo(() => {
     const messageMap = new Map<ContractAddress, ChatMessage[]>();
@@ -116,7 +117,7 @@ export const Chat = () => {
       messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     });
     return messageMap;
-  }, [allMessageEntities]);
+  }, [allMessageEntities, account.address]);
 
   const messagesToDisplay = useMemo(() => {
     if (currentTab.name === "Global") {
@@ -182,25 +183,7 @@ export const Chat = () => {
         return tab;
       });
     }
-    setNewTabs(newTabs);
-  };
-
-  const addNewTab = (newTab: Tab) => {
-    let allTabs = [...tabs];
-
-    if (allTabs.find((tab) => tab.address === newTab.address)) {
-      allTabs.map((tab) => {
-        if (tab.address === newTab.address) {
-          tab.displayed = true;
-        }
-        return tab;
-      });
-    } else {
-      allTabs.push(newTab);
-    }
-
-    setNewTabs(allTabs);
-    setCurrentTab(newTab);
+    setNewTabs(newTabs, account.address, setTabs);
   };
 
   const removeTab = (address: string) => {
@@ -208,26 +191,44 @@ export const Chat = () => {
 
     setCurrentTab(DEFAULT_TAB);
 
-    setNewTabs(newTabs);
+    setNewTabs(newTabs, account.address, setTabs);
   };
 
   return (
-    <div className="rounded max-w-[28vw]" style={{ zIndex: 1 }}>
-      <div className="flex flex-row overflow-x-auto max-w-full no-scrollbar h-8 items-end">
-        {tabs
-          .filter((tab) => tab.displayed)
-          .map((tab) => (
-            <ChatTab
-              key={tab.address}
-              tab={tab}
-              changeTabs={changeTabs}
-              selected={tab.name === currentTab.name}
-              removeTab={removeTab}
-            />
-          ))}
+    <div className={`rounded max-w-[28vw] `} style={{ zIndex: 1 }}>
+      <div className="flex flex-row justify-between">
+        <div className="flex flex-row overflow-x-auto max-w-full no-scrollbar h-8 items-end">
+          {tabs
+            .filter((tab) => tab.displayed)
+            .map((tab) => (
+              <ChatTab
+                key={tab.address}
+                tab={tab}
+                changeTabs={changeTabs}
+                selected={tab.name === currentTab.name}
+                removeTab={removeTab}
+              />
+            ))}
+        </div>
+        <div
+          className="flex flex-row items-end w-8 h-8 text-sm text-center"
+          onClick={() => {
+            setHideChat(!hideChat);
+          }}
+        >
+          <div className="bg-hex-bg bg-black/5 h-6 w-6 rounded-t">
+            <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
+          </div>
+        </div>
       </div>
-      <div className="flex flex-col gap-2 w-[28vw] max-w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded-b max-h-80">
-        <div className="border p-2 border-gold/40 rounded text-xs h-60 overflow-y-auto min-h-40">
+      <div
+        className={`flex flex-col gap-2 w-[28vw] max-w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded-b`}
+      >
+        <div
+          className={`border p-2 border-gold/40 rounded text-xs overflow-y-auto transition-all duration-300 ${
+            hideChat ? "h-0 hidden" : "h-60 block"
+          }`}
+        >
           {messagesToDisplay?.map((message, index) => (
             <div
               style={{ color: currentTab.name === "Global" ? PASTEL_PINK : PASTEL_BLUE }}
@@ -271,7 +272,7 @@ export const Chat = () => {
             </SelectItem>
           </SelectContent>
         </Select>
-        <InputField currentTab={currentTab} addNewTab={addNewTab} setCurrentTab={setCurrentTab} salt={salt} />
+        <InputField currentTab={currentTab} setCurrentTab={setCurrentTab} salt={salt} />
       </div>
     </div>
   );
@@ -283,4 +284,33 @@ const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
       ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, 1);
+};
+
+const setNewTabs = (newTabs: Tab[], address: string, setTabs: (tabs: Tab[]) => void) => {
+  setTabs(newTabs);
+  localStorage.setItem(CHAT_STORAGE_KEY + address, JSON.stringify(newTabs));
+};
+
+export const addNewTab = (
+  oldTabs: Tab[],
+  newTab: Tab,
+  setCurrentTab: (tab: Tab) => void,
+  address: string,
+  setTabs: (tabs: Tab[]) => void,
+) => {
+  let allTabs = [...oldTabs];
+
+  if (allTabs.find((tab) => tab.address === newTab.address)) {
+    allTabs.map((tab) => {
+      if (tab.address === newTab.address) {
+        tab.displayed = true;
+      }
+      return tab;
+    });
+  } else {
+    allTabs.push(newTab);
+  }
+
+  setNewTabs(allTabs, address, setTabs);
+  setCurrentTab(newTab);
 };
