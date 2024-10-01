@@ -43,7 +43,7 @@ export const Buildings = () => {
   return (
     <div>
       <Headline>Buildings</Headline>
-      <div className="mt-2 mb-2">Every time you build a construction, the cost of the next one grows exponantially</div>
+      <div className="mt-2 mb-2">Every time you build a construction, the cost of the next one grows exponentially</div>
 
       <table className="not-prose w-full p-2 border-gold/10">
         <thead>
