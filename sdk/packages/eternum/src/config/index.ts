@@ -24,6 +24,8 @@ import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
 import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
+import { EternumGlobalConfig as DefaultConfig } from "../constants/global";
+
 interface Config {
   account: Account;
   provider: EternumProvider;
@@ -33,8 +35,8 @@ interface Config {
 export class EternumConfig {
   public globalConfig: EternumGlobalConfig;
 
-  constructor(config: EternumGlobalConfig) {
-    this.globalConfig = config;
+  constructor(config?: EternumGlobalConfig) {
+    this.globalConfig = config || DefaultConfig;
   }
 
   async setup(account: Account, provider: EternumProvider) {
