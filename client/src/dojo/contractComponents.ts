@@ -276,6 +276,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BuildingGeneralConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          base_cost_percent_increase: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BuildingGeneralConfig",
+            types: ["u32", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     BuildingQuantityv2: (() => {
       return defineComponent(
         world,
