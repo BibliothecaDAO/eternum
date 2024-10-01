@@ -5,13 +5,13 @@ import {
   CapacityConfigCategory,
   ContractAddress,
   EternumGlobalConfig,
-  type ID,
+  NEIGHBOR_OFFSETS_EVEN,
+  NEIGHBOR_OFFSETS_ODD,
   ResourcesIds,
   getNeighborHexes,
-  neighborOffsetsEven,
-  neighborOffsetsOdd,
+  type ID,
 } from "@bibliothecadao/eternum";
-import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, type ComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { type ClientComponents } from "../createClientComponents";
 import { type SetupResult } from "../setup";
@@ -77,10 +77,7 @@ export class ArmyMovementManager {
   private readonly staminaManager: StaminaManager;
   private readonly entityQuantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
 
-  constructor(
-    private readonly setup: SetupResult,
-    entityId: ID,
-  ) {
+  constructor(private readonly setup: SetupResult, entityId: ID) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
@@ -270,7 +267,7 @@ export class ArmyMovementManager {
 
     const startPos = { col: path[0].col, row: path[0].row };
     const endPos = { col: path[1].col, row: path[1].row };
-    const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+    const neighborOffsets = startPos.row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
 
     for (const offset of neighborOffsets) {
       if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {

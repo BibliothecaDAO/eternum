@@ -3,39 +3,105 @@ import {
   ARMY_ENTITY_TYPE,
   BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
+  BUILDING_COSTS,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
-  EternumGlobalConfig,
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
+  HYPERSTRUCTURE_TOTAL_COSTS,
+  RESOURCE_BUILDING_COSTS,
+  RESOURCE_INPUTS,
+  RESOURCE_OUTPUTS,
   ResourcesIds,
   STAMINA_REFILL_PER_TICK,
   TROOPS_STAMINAS,
   WEIGHTS_GRAM,
 } from "../constants";
-import { BuildingType } from "../constants/structures";
+import { BuildingType, STRUCTURE_COSTS } from "../constants/structures";
 import { EternumProvider } from "../provider";
-import { TickIds, TravelTypes } from "../types";
-import {
-  BUILDING_COSTS_SCALED,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  RESOURCE_BUILDING_COSTS_SCALED,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
-} from "../utils";
+import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
+import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
-// Function to configure all resources
-export const setProductionConfig = async (account: Account, provider: EternumProvider) => {
+interface Config {
+  account: Account;
+  provider: EternumProvider;
+  config: EternumGlobalConfig;
+}
+
+export class EternumConfig {
+  public globalConfig: EternumGlobalConfig;
+
+  constructor(config: EternumGlobalConfig) {
+    this.globalConfig = config;
+  }
+
+  async setup(account: Account, provider: EternumProvider) {
+    const config = { account, provider, config: this.globalConfig };
+    await setProductionConfig(config);
+    await setBuildingCategoryPopConfig(config);
+    await setPopulationConfig(config);
+    await setBuildingConfig(config);
+    await setResourceBuildingConfig(config);
+    await setWeightConfig(config);
+    await setBattleConfig(config);
+    await setCombatConfig(config);
+    await setupGlobals(config);
+    await setCapacityConfig(config);
+    await setSpeedConfig(config);
+    await setHyperstructureConfig(config);
+    await setStaminaConfig(config);
+    await setStaminaRefillConfig(config);
+    await setMercenariesConfig(config);
+  }
+
+  getResourceBuildingCostsScaled(): ResourceInputs {
+    return scaleResourceInputs(RESOURCE_BUILDING_COSTS, this.globalConfig.resources.resourceMultiplier);
+  }
+
+  getResourceOutputsScaled(): ResourceOutputs {
+    return scaleResourceOutputs(RESOURCE_OUTPUTS, this.globalConfig.resources.resourceMultiplier);
+  }
+
+  getBuildingCostsScaled(): ResourceInputs {
+    return scaleResourceInputs(BUILDING_COSTS, this.globalConfig.resources.resourceMultiplier);
+  }
+
+  getResourceInputsScaled(): ResourceInputs {
+    return scaleResourceInputs(RESOURCE_INPUTS, this.globalConfig.resources.resourceMultiplier);
+  }
+
+  getStructureCostsScaled(): ResourceInputs {
+    return scaleResourceInputs(STRUCTURE_COSTS, this.globalConfig.resources.resourceMultiplier);
+  }
+
+  getHyperstructureConstructionCostsScaled(): { resource: number; amount: number }[] {
+    return scaleResources(HYPERSTRUCTURE_CONSTRUCTION_COSTS, this.globalConfig.resources.resourceMultiplier);
+  }
+
+  getHyperstructureCreationCostsScaled(): { resource: number; amount: number }[] {
+    return scaleResources(HYPERSTRUCTURE_CREATION_COSTS, this.globalConfig.resources.resourceMultiplier);
+  }
+
+  getHyperstructureTotalCostsScaled(): { resource: number; amount: number }[] {
+    return scaleResources(HYPERSTRUCTURE_TOTAL_COSTS, this.globalConfig.resources.resourceMultiplier);
+  }
+}
+
+export const setProductionConfig = async (config: Config) => {
   const calldataArray = [];
 
-  for (const resourceId of Object.keys(RESOURCE_INPUTS_SCALED) as unknown as ResourcesIds[]) {
+  for (const resourceId of Object.keys(
+    scaleResourceInputs(RESOURCE_INPUTS, config.config.resources.resourceMultiplier),
+  ) as unknown as ResourcesIds[]) {
     const calldata = {
-      amount: RESOURCE_OUTPUTS_SCALED[resourceId],
+      amount: scaleResourceOutputs(RESOURCE_OUTPUTS, config.config.resources.resourceMultiplier)[resourceId],
       resource_type: resourceId,
-      cost: RESOURCE_INPUTS_SCALED[resourceId].map((cost) => {
+      cost: scaleResourceInputs(RESOURCE_INPUTS, config.config.resources.resourceMultiplier)[resourceId].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+          amount: cost.amount * config.config.resources.resourcePrecision,
         };
       }),
     };
@@ -43,12 +109,12 @@ export const setProductionConfig = async (account: Account, provider: EternumPro
     calldataArray.push(calldata);
   }
 
-  const tx = await provider.set_production_config({ signer: account, calls: calldataArray });
+  const tx = await config.provider.set_production_config({ signer: config.account, calls: calldataArray });
 
   console.log(`Configuring resource production ${tx.statusReceipt}...`);
 };
 
-export const setBuildingCategoryPopConfig = async (account: Account, provider: EternumProvider) => {
+export const setBuildingCategoryPopConfig = async (config: Config) => {
   const calldataArray = [];
 
   for (const buildingId of Object.keys(BUILDING_POPULATION) as unknown as BuildingType[]) {
@@ -64,35 +130,37 @@ export const setBuildingCategoryPopConfig = async (account: Account, provider: E
     }
   }
 
-  const tx = await provider.set_building_category_pop_config({
-    signer: account,
+  const tx = await config.provider.set_building_category_pop_config({
+    signer: config.account,
     calls: calldataArray,
   });
 
   console.log(`Configuring building category population ${tx.statusReceipt}...`);
 };
 
-export const setPopulationConfig = async (account: Account, provider: EternumProvider) => {
-  const tx = await provider.set_population_config({
-    signer: account,
+export const setPopulationConfig = async (config: Config) => {
+  const tx = await config.provider.set_population_config({
+    signer: config.account,
     base_population: BASE_POPULATION_CAPACITY,
   });
 
   console.log(`Configuring population config ${tx.statusReceipt}...`);
 };
 
-export const setBuildingConfig = async (account: Account, provider: EternumProvider) => {
+export const setBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
   for (const buildingId of Object.keys(BUILDING_RESOURCE_PRODUCED) as unknown as BuildingType[]) {
-    if (BUILDING_COSTS_SCALED[buildingId].length !== 0) {
+    if (scaleResourceInputs(BUILDING_COSTS, config.config.resources.resourceMultiplier)[buildingId].length !== 0) {
       const calldata = {
         building_category: buildingId,
         building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
-        cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
+        cost_of_building: scaleResourceInputs(BUILDING_COSTS, config.config.resources.resourceMultiplier)[
+          buildingId
+        ].map((cost) => {
           return {
             ...cost,
-            amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+            amount: cost.amount * config.config.resources.resourcePrecision,
           };
         }),
       };
@@ -101,22 +169,26 @@ export const setBuildingConfig = async (account: Account, provider: EternumProvi
     }
   }
 
-  const tx = await provider.set_building_config({ signer: account, calls: calldataArray });
+  const tx = await config.provider.set_building_config({ signer: config.account, calls: calldataArray });
 
   console.log(`Configuring building cost config ${tx.statusReceipt}...`);
 };
 
-export const setResourceBuildingConfig = async (account: Account, provider: EternumProvider) => {
+export const setResourceBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
-  for (const resourceId of Object.keys(RESOURCE_BUILDING_COSTS_SCALED) as unknown as ResourcesIds[]) {
+  for (const resourceId of Object.keys(
+    scaleResourceInputs(RESOURCE_BUILDING_COSTS, config.config.resources.resourceMultiplier),
+  ) as unknown as ResourcesIds[]) {
     const calldata = {
       building_category: BuildingType.Resource,
       building_resource_type: resourceId,
-      cost_of_building: RESOURCE_BUILDING_COSTS_SCALED[resourceId].map((cost) => {
+      cost_of_building: scaleResourceInputs(RESOURCE_BUILDING_COSTS, config.config.resources.resourceMultiplier)[
+        resourceId
+      ].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+          amount: cost.amount * config.config.resources.resourcePrecision,
         };
       }),
     };
@@ -124,30 +196,30 @@ export const setResourceBuildingConfig = async (account: Account, provider: Eter
     calldataArray.push(calldata);
   }
 
-  const tx = await provider.set_building_config({ signer: account, calls: calldataArray });
+  const tx = await config.provider.set_building_config({ signer: config.account, calls: calldataArray });
 
   console.log(`Configuring resource building cost config ${tx.statusReceipt}...`);
 };
 
-export const setWeightConfig = async (account: Account, provider: EternumProvider) => {
+export const setWeightConfig = async (config: Config) => {
   const calldataArray = Object.entries(WEIGHTS_GRAM).map(([resourceId, weight]) => ({
     entity_type: resourceId,
     weight_gram: weight,
   }));
 
-  const tx = await provider.set_weight_config({
-    signer: account,
+  const tx = await config.provider.set_weight_config({
+    signer: config.account,
     calls: calldataArray,
   });
 
   console.log(`Configuring weight config  ${tx.statusReceipt}...`);
 };
 
-export const setBattleConfig = async (account: Account, provider: EternumProvider) => {
-  const { graceTickCount: battle_grace_tick_count, delaySeconds: battle_delay_seconds } = EternumGlobalConfig.battle;
+export const setBattleConfig = async (config: Config) => {
+  const { graceTickCount: battle_grace_tick_count, delaySeconds: battle_delay_seconds } = config.config.battle;
 
-  const tx = await provider.set_battle_config({
-    signer: account,
+  const tx = await config.provider.set_battle_config({
+    signer: config.account,
     config_id: 0,
     battle_grace_tick_count,
     battle_delay_seconds,
@@ -156,7 +228,7 @@ export const setBattleConfig = async (account: Account, provider: EternumProvide
   console.log(`Configuring battle config ${tx.statusReceipt}...`);
 };
 
-export const setCombatConfig = async (account: Account, provider: EternumProvider) => {
+export const setCombatConfig = async (config: Config) => {
   const {
     health: health,
     knightStrength: knight_strength,
@@ -171,10 +243,10 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     maxArmiesPerStructure: max_armies_per_structure,
     battleLeaveSlashNum: battle_leave_slash_num,
     battleLeaveSlashDenom: battle_leave_slash_denom,
-  } = EternumGlobalConfig.troop;
+  } = config.config.troop;
 
-  const tx = await provider.set_troop_config({
-    signer: account,
+  const tx = await config.provider.set_troop_config({
+    signer: config.account,
     config_id: 0,
     health,
     knight_strength,
@@ -182,7 +254,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
-    max_troop_count: max_troop_count * EternumGlobalConfig.resources.resourcePrecision,
+    max_troop_count: max_troop_count * config.config.resources.resourcePrecision,
     pillage_health_divisor: pillage_health_divisor,
     army_free_per_structure: army_free_per_structure,
     army_extra_per_military_building: army_extra_per_military_building,
@@ -194,68 +266,64 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
   console.log(`Configuring combat config ${tx.statusReceipt}...`);
 };
 
-export const setupGlobals = async (account: Account, provider: EternumProvider) => {
+export const setupGlobals = async (config: Config) => {
   // Set the bank config
-  const txBank = await provider.set_bank_config({
-    signer: account,
-    lords_cost: EternumGlobalConfig.banks.lordsCost * EternumGlobalConfig.resources.resourcePrecision,
-    lp_fee_num: EternumGlobalConfig.banks.lpFeesNumerator,
-    lp_fee_denom: EternumGlobalConfig.banks.lpFeesDenominator,
+  const txBank = await config.provider.set_bank_config({
+    signer: config.account,
+    lords_cost: config.config.banks.lordsCost * config.config.resources.resourcePrecision,
+    lp_fee_num: config.config.banks.lpFeesNumerator,
+    lp_fee_denom: config.config.banks.lpFeesDenominator,
   });
 
   console.log(`Configuring bank config ${txBank.statusReceipt}...`);
 
-  const txDefaultTick = await provider.set_tick_config({
-    signer: account,
+  const txDefaultTick = await config.provider.set_tick_config({
+    signer: config.account,
     tick_id: TickIds.Default,
-    tick_interval_in_seconds: EternumGlobalConfig.tick.defaultTickIntervalInSeconds,
+    tick_interval_in_seconds: config.config.tick.defaultTickIntervalInSeconds,
   });
   console.log(`Configuring tick config ${txDefaultTick.statusReceipt}...`);
 
-  const txArmiesTick = await provider.set_tick_config({
-    signer: account,
+  const txArmiesTick = await config.provider.set_tick_config({
+    signer: config.account,
     tick_id: TickIds.Armies,
-    tick_interval_in_seconds: EternumGlobalConfig.tick.armiesTickIntervalInSeconds,
+    tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
   });
 
   console.log(`Configuring tick config ${txArmiesTick.statusReceipt}...`);
 
-  const txMap = await provider.set_map_config({
-    signer: account,
+  const txMap = await config.provider.set_map_config({
+    signer: config.account,
     config_id: 0,
-    explore_wheat_burn_amount:
-      EternumGlobalConfig.exploration.exploreWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
-    explore_fish_burn_amount:
-      EternumGlobalConfig.exploration.exploreFishBurn * EternumGlobalConfig.resources.resourcePrecision,
-    travel_wheat_burn_amount:
-      EternumGlobalConfig.exploration.travelWheatBurn * EternumGlobalConfig.resources.resourcePrecision,
-    travel_fish_burn_amount:
-      EternumGlobalConfig.exploration.travelFishBurn * EternumGlobalConfig.resources.resourcePrecision,
-    reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision,
-    shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
+    explore_wheat_burn_amount: config.config.exploration.exploreWheatBurn * config.config.resources.resourcePrecision,
+    explore_fish_burn_amount: config.config.exploration.exploreFishBurn * config.config.resources.resourcePrecision,
+    travel_wheat_burn_amount: config.config.exploration.travelWheatBurn * config.config.resources.resourcePrecision,
+    travel_fish_burn_amount: config.config.exploration.travelFishBurn * config.config.resources.resourcePrecision,
+    reward_amount: config.config.exploration.reward * config.config.resources.resourcePrecision,
+    shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
   });
   console.log(`Configuring map config ${txMap.statusReceipt}...`);
 
-  const txExploreStaminaCost = await provider.set_travel_stamina_cost_config({
-    signer: account,
+  const txExploreStaminaCost = await config.provider.set_travel_stamina_cost_config({
+    signer: config.account,
     travel_type: TravelTypes.Explore,
-    cost: EternumGlobalConfig.stamina.exploreCost,
+    cost: config.config.stamina.exploreCost,
   });
   console.log(`Configuring exploreStaminaCost config ${txExploreStaminaCost.statusReceipt}...`);
 
-  const txTravelStaminaCost = await provider.set_travel_stamina_cost_config({
-    signer: account,
+  const txTravelStaminaCost = await config.provider.set_travel_stamina_cost_config({
+    signer: config.account,
     travel_type: TravelTypes.Travel,
-    cost: EternumGlobalConfig.stamina.travelCost,
+    cost: config.config.stamina.travelCost,
   });
 
   console.log(`Configuring travel stamina cost config ${txTravelStaminaCost.statusReceipt}...`);
 };
 
-export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {
-  for (const [category, weight_gram] of Object.entries(EternumGlobalConfig.carryCapacityGram)) {
-    const tx = await provider.set_capacity_config({
-      signer: account,
+export const setCapacityConfig = async (config: Config) => {
+  for (const [category, weight_gram] of Object.entries(config.config.carryCapacityGram)) {
+    const tx = await config.provider.set_capacity_config({
+      signer: config.account,
       category,
       weight_gram,
     });
@@ -264,40 +332,43 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   }
 };
 
-export const setSpeedConfig = async (account: Account, provider: EternumProvider) => {
-  const txDonkey = await provider.set_speed_config({
-    signer: account,
+export const setSpeedConfig = async (config: Config) => {
+  const txDonkey = await config.provider.set_speed_config({
+    signer: config.account,
     entity_type: DONKEY_ENTITY_TYPE,
-    sec_per_km: EternumGlobalConfig.speed.donkey,
+    sec_per_km: config.config.speed.donkey,
   });
 
   console.log(`Configuring speed Donkey config ${txDonkey.statusReceipt}...`);
 
-  const txArmy = await provider.set_speed_config({
-    signer: account,
+  const txArmy = await config.provider.set_speed_config({
+    signer: config.account,
     entity_type: ARMY_ENTITY_TYPE,
-    sec_per_km: EternumGlobalConfig.speed.army,
+    sec_per_km: config.config.speed.army,
   });
 
   console.log(`Configuring speed Army config ${txArmy.statusReceipt}...`);
 };
 
-export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {
-  const tx = await provider.set_hyperstructure_config({
-    signer: account,
+export const setHyperstructureConfig = async (config: Config) => {
+  const tx = await config.provider.set_hyperstructure_config({
+    signer: config.account,
     time_between_shares_change: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
-    resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map((resource) => ({
+    resources_for_completion: scaleResources(
+      HYPERSTRUCTURE_TOTAL_COSTS,
+      config.config.resources.resourceMultiplier,
+    ).map((resource) => ({
       ...resource,
-      amount: resource.amount * EternumGlobalConfig.resources.resourcePrecision,
+      amount: resource.amount * config.config.resources.resourcePrecision,
     })),
   });
   console.log(`Configuring hyperstructure ${tx.statusReceipt}...`);
 };
 
-export const setStaminaConfig = async (account: Account, provider: EternumProvider) => {
+export const setStaminaConfig = async (config: Config) => {
   for (const [unit_type, stamina] of Object.entries(TROOPS_STAMINAS)) {
-    const tx = await provider.set_stamina_config({
-      signer: account,
+    const tx = await config.provider.set_stamina_config({
+      signer: config.account,
       unit_type: unit_type,
       max_stamina: stamina,
     });
@@ -305,34 +376,28 @@ export const setStaminaConfig = async (account: Account, provider: EternumProvid
   }
 };
 
-export const setStaminaRefillConfig = async (account: Account, provider: EternumProvider) => {
-  const tx = await provider.set_stamina_refill_config({
-    signer: account,
+export const setStaminaRefillConfig = async (config: Config) => {
+  const tx = await config.provider.set_stamina_refill_config({
+    signer: config.account,
     amount_per_tick: STAMINA_REFILL_PER_TICK,
   });
   console.log(`Configuring stamina refill per tick to ${STAMINA_REFILL_PER_TICK} ${tx.statusReceipt}...`);
 };
 
-export const setMercenariesConfig = async (account: Account, provider: EternumProvider) => {
-  const tx = await provider.set_mercenaries_config({
-    signer: account,
+export const setMercenariesConfig = async (config: Config) => {
+  const tx = await config.provider.set_mercenaries_config({
+    signer: config.account,
     troops: {
       knight_count:
-        BigInt(EternumGlobalConfig.mercenaries.troops.knight_count) *
-        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+        BigInt(config.config.mercenaries.troops.knight_count) * BigInt(config.config.resources.resourcePrecision),
       paladin_count:
-        BigInt(EternumGlobalConfig.mercenaries.troops.paladin_count) *
-        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+        BigInt(config.config.mercenaries.troops.paladin_count) * BigInt(config.config.resources.resourcePrecision),
       crossbowman_count:
-        BigInt(EternumGlobalConfig.mercenaries.troops.crossbowman_count) *
-        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+        BigInt(config.config.mercenaries.troops.crossbowman_count) * BigInt(config.config.resources.resourcePrecision),
     },
-    rewards: EternumGlobalConfig.mercenaries.rewards.map((reward) => ({
+    rewards: config.config.mercenaries.rewards.map((reward) => ({
       resource: reward.resource,
-      amount:
-        reward.amount *
-        EternumGlobalConfig.resources.resourcePrecision *
-        EternumGlobalConfig.resources.resourceMultiplier,
+      amount: reward.amount * config.config.resources.resourcePrecision * config.config.resources.resourceMultiplier,
     })),
   });
   console.log(`Configuring mercenaries ${tx.statusReceipt}...`);

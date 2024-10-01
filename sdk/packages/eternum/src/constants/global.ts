@@ -1,5 +1,4 @@
-import { ResourcesIds } from "./resources";
-import { CapacityConfigCategory } from "./structures";
+import { CapacityConfigCategory, ResourcesIds } from ".";
 
 export const EternumGlobalConfig = {
   stamina: {
@@ -112,3 +111,5 @@ export const HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S = 17280; // 2 days
 export const DONKEY_ENTITY_TYPE = 256;
 export const REALM_ENTITY_TYPE = 257;
 export const ARMY_ENTITY_TYPE = 258;
+
+export const STAMINA_REFILL_PER_TICK = 20;

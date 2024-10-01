@@ -1,7 +1,8 @@
+import { config } from "..";
 import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
-import { EternumGlobalConfig, EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -26,9 +27,6 @@ const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_
 const ADMIN_BANK_ENTITY_ID = 999999998n;
 const LORDS_LIQUIDITY_PER_RESOURCE = 250000;
 
-// Precision
-const RESOURCE_PRECISION = 1000;
-
 // Banks
 const COORD_X = 2147483899;
 const COORD_Y = 2147483801;
@@ -37,8 +35,8 @@ export const createAdminBank = async () => {
   const tx = await provider.create_admin_bank({
     signer: account,
     coord: { x: COORD_X, y: COORD_Y },
-    owner_fee_num: EternumGlobalConfig.banks.ownerFeesNumerator,
-    owner_fee_denom: EternumGlobalConfig.banks.ownerFeesDenominator,
+    owner_fee_num: config.globalConfig.banks.ownerFeesNumerator,
+    owner_fee_denom: config.globalConfig.banks.ownerFeesDenominator,
   });
   console.log(`Creating admin bank ${tx.statusReceipt}...`);
 };
@@ -84,13 +82,20 @@ export const mintResources = async () => {
   const lordsTx = await provider.mint_resources({
     signer: account,
     receiver_id: ADMIN_BANK_ENTITY_ID,
-    resources: [ResourcesIds.Lords, RESOURCE_PRECISION * LORDS_LIQUIDITY_PER_RESOURCE * totalResourceCount],
+    resources: [
+      ResourcesIds.Lords,
+      config.globalConfig.resources.resourcePrecision * LORDS_LIQUIDITY_PER_RESOURCE * totalResourceCount,
+    ],
   });
   console.log(`Minting lords ${lordsTx.statusReceipt}...`);
 
   // mint all other resources
   const resources = ammResourceIds.flatMap((resourceId) => {
-    return [resourceId, AMMStartingLiquidity[resourceId as keyof typeof AMMStartingLiquidity]! * RESOURCE_PRECISION];
+    return [
+      resourceId,
+      AMMStartingLiquidity[resourceId as keyof typeof AMMStartingLiquidity]! *
+        config.globalConfig.resources.resourcePrecision,
+    ];
   });
 
   const resourcesTx = await provider.mint_resources({
@@ -112,8 +117,8 @@ export const addLiquidity = async () => {
       bank_entity_id: ADMIN_BANK_ENTITY_ID,
       entity_id: ADMIN_BANK_ENTITY_ID,
       resource_type: resourceId,
-      resource_amount: amount * RESOURCE_PRECISION,
-      lords_amount: LORDS_LIQUIDITY_PER_RESOURCE * RESOURCE_PRECISION,
+      resource_amount: amount * config.globalConfig.resources.resourcePrecision,
+      lords_amount: LORDS_LIQUIDITY_PER_RESOURCE * config.globalConfig.resources.resourcePrecision,
     });
     console.log(`Adding liquidity for ${resourceId} ${tx.statusReceipt}...`);
   }

@@ -6,7 +6,7 @@ import {
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
   BuildingType,
-  ResourceRarity,
+  RESOURCE_RARITY,
   ResourcesIds,
   resources,
 } from "@bibliothecadao/eternum";
@@ -27,12 +27,12 @@ export const BuildingTable = () => {
   };
 
   const getAdjustedResourceInputs = (buildingId: number) => {
-    // const multiplier = HyperstructureResourceMultipliers[buildingId] || 1; // Default multiplier is 1
+    // const multiplier = HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[buildingId] || 1; // Default multiplier is 1
 
     return (
       BUILDING_COSTS_SCALED[buildingId]?.map((input) => ({
         ...input,
-        adjustedAmount: input.amount * ResourceRarity[input.resource],
+        adjustedAmount: input.amount * RESOURCE_RARITY[input.resource],
       })) || []
     );
   };

@@ -3,8 +3,8 @@ import {
   RESOURCE_BUILDING_COSTS,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
+  RESOURCE_RARITY,
   RESOURCE_TIERS,
-  ResourceRarity,
   Resources,
   WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
@@ -42,7 +42,7 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
 
   // New function to calculate adjusted resource inputs based on rarity
   const getAdjustedResourceInputs = (resourceId: number) => {
-    const multiplier = ResourceRarity[resourceId] || 1; // Default multiplier is 1
+    const multiplier = RESOURCE_RARITY[resourceId] || 1; // Default multiplier is 1
 
     return (
       RESOURCE_INPUTS_SCALED[resourceId]?.map((input) => ({
@@ -90,7 +90,9 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
             <TableCell className="text-center">{resource.id}</TableCell>
             <TableCell className="text-center">{resource.ticker}</TableCell>
             {/* <TableCell>{getResourceDescription(resource.id)}</TableCell> */}
-            <TableCell className="text-center">{ResourceRarity[resource.id as keyof typeof ResourceRarity]}</TableCell>
+            <TableCell className="text-center">
+              {RESOURCE_RARITY[resource.id as keyof typeof RESOURCE_RARITY]}
+            </TableCell>
 
             <TableCell className="text-center">{getResourceTier(resource.id)}</TableCell>
             <TableCell className="text-center">{getResourceWeight(resource.id)}</TableCell>

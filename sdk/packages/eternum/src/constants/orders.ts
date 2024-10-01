@@ -1,6 +1,6 @@
 import { IOrder } from "../types";
 
-export const orderNameDict: { [key: number]: string } = {
+export const ORDER_NAME_DICT: { [key: number]: string } = {
   1: "power",
   2: "anger",
   3: "brilliance",

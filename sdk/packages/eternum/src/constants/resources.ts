@@ -1,15 +1,5 @@
-import { Resource, Resources } from "../types";
-import { EternumGlobalConfig } from "./global";
-import { BuildingType, StructureType } from "./structures";
-
-export const findResourceById = (value: number) => {
-  return resources.find((e) => e.id === value);
-};
-
-export const findResourceIdByTrait = (trait: string) => {
-  // @ts-ignore
-  return resources.find((e) => e?.trait === trait).id;
-};
+import { ResourcesIds } from ".";
+import { ResourceInputs, ResourceOutputs, Resources } from "../types";
 
 export const resources: Array<Resources> = [
   {
@@ -303,69 +293,7 @@ export const resources: Array<Resources> = [
   },
 ];
 
-/* eslint-disable @typescript-eslint/naming-convention */
-
-export enum ResourcesIds {
-  Wood = 1,
-  Stone = 2,
-  Coal = 3,
-  Copper = 4,
-  Obsidian = 5,
-  Silver = 6,
-  Ironwood = 7,
-  ColdIron = 8,
-  Gold = 9,
-  Hartwood = 10,
-  Diamonds = 11,
-  Sapphire = 12,
-  Ruby = 13,
-  DeepCrystal = 14,
-  Ignium = 15,
-  EtherealSilica = 16,
-  TrueIce = 17,
-  TwilightQuartz = 18,
-  AlchemicalSilver = 19,
-  Adamantine = 20,
-  Mithral = 21,
-  Dragonhide = 22,
-  Earthenshard = 29,
-  Donkey = 249,
-  Knight = 250,
-  Crossbowman = 251,
-  Paladin = 252,
-  Lords = 253,
-  Wheat = 254,
-  Fish = 255,
-}
-
-// weight that determines the amount of resources need to finish the hyperstructure
-export const HyperstructureResourceMultipliers: { [key in ResourcesIds]?: number } = {
-  [ResourcesIds.Wood]: 1.0,
-  [ResourcesIds.Stone]: 1.27,
-  [ResourcesIds.Coal]: 1.31,
-  [ResourcesIds.Copper]: 1.9,
-  [ResourcesIds.Obsidian]: 2.26,
-  [ResourcesIds.Silver]: 2.88,
-  [ResourcesIds.Ironwood]: 4.25,
-  [ResourcesIds.ColdIron]: 5.24,
-  [ResourcesIds.Gold]: 5.49,
-  [ResourcesIds.Hartwood]: 8.44,
-  [ResourcesIds.Diamonds]: 16.72,
-  [ResourcesIds.Sapphire]: 20.3,
-  [ResourcesIds.Ruby]: 20.98,
-  [ResourcesIds.DeepCrystal]: 20.98,
-  [ResourcesIds.Ignium]: 29.15,
-  [ResourcesIds.EtherealSilica]: 30.95,
-  [ResourcesIds.TrueIce]: 36.06,
-  [ResourcesIds.TwilightQuartz]: 45.18,
-  [ResourcesIds.AlchemicalSilver]: 53.92,
-  [ResourcesIds.Adamantine]: 91.2,
-  [ResourcesIds.Mithral]: 135.53,
-  [ResourcesIds.Dragonhide]: 217.92,
-  [ResourcesIds.Earthenshard]: 20.98,
-};
-
-export const ResourceRarity: { [key in ResourcesIds]?: number } = {
+export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Wood]: 1.0,
   [ResourcesIds.Stone]: 1.27,
   [ResourcesIds.Coal]: 1.31,
@@ -396,11 +324,6 @@ export const ResourceRarity: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Lords]: 1,
   [ResourcesIds.Wheat]: 1,
   [ResourcesIds.Fish]: 1,
-};
-
-// if it's labor, then remove 28 to get the icon resource id
-export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
-  return isLabor ? resourceId - 28 : resourceId;
 };
 
 // weight in kg
@@ -457,14 +380,6 @@ export const RESOURCE_TIERS = {
   ],
   mythic: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
 };
-
-export interface ResourceInputs {
-  [key: number]: { resource: ResourcesIds; amount: number }[];
-}
-
-export interface ResourceOutputs {
-  [key: number]: number;
-}
 
 export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Wood]: 50,
@@ -640,59 +555,6 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Earthenshard]: [],
 };
 
-export const BUILDING_COSTS: ResourceInputs = {
-  [BuildingType.Castle]: [],
-  [BuildingType.Bank]: [],
-  [BuildingType.FragmentMine]: [],
-  [BuildingType.Resource]: [],
-  [BuildingType.Farm]: [{ resource: ResourcesIds.Fish, amount: 900 }],
-  [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 900 }],
-
-  [BuildingType.Market]: [
-    { resource: ResourcesIds.Fish, amount: 1500 },
-    { resource: ResourcesIds.Stone, amount: 250 },
-    { resource: ResourcesIds.Obsidian, amount: 100 },
-    { resource: ResourcesIds.Ruby, amount: 50 },
-    { resource: ResourcesIds.DeepCrystal, amount: 10 },
-  ],
-  [BuildingType.Barracks]: [
-    { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 150 },
-    { resource: ResourcesIds.Coal, amount: 150 },
-    { resource: ResourcesIds.Silver, amount: 100 },
-    { resource: ResourcesIds.Gold, amount: 90 },
-  ],
-  [BuildingType.ArcheryRange]: [
-    { resource: ResourcesIds.Fish, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 150 },
-    { resource: ResourcesIds.Obsidian, amount: 150 },
-    { resource: ResourcesIds.Gold, amount: 50 },
-    { resource: ResourcesIds.Hartwood, amount: 50 },
-  ],
-  [BuildingType.Stable]: [
-    { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 150 },
-    { resource: ResourcesIds.Silver, amount: 150 },
-    { resource: ResourcesIds.Ironwood, amount: 70 },
-    { resource: ResourcesIds.Gold, amount: 50 },
-  ],
-  [BuildingType.TradingPost]: [],
-  [BuildingType.WorkersHut]: [
-    { resource: ResourcesIds.Wheat, amount: 600 },
-    { resource: ResourcesIds.Stone, amount: 150 },
-    { resource: ResourcesIds.Wood, amount: 150 },
-    { resource: ResourcesIds.Coal, amount: 150 },
-  ],
-  [BuildingType.WatchTower]: [],
-  [BuildingType.Walls]: [],
-  [BuildingType.Storehouse]: [
-    { resource: ResourcesIds.Fish, amount: 2000 },
-    { resource: ResourcesIds.Coal, amount: 150 },
-    { resource: ResourcesIds.Stone, amount: 150 },
-    { resource: ResourcesIds.Sapphire, amount: 20 },
-  ],
-};
-
 export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Wood]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
   [ResourcesIds.Stone]: [{ resource: ResourcesIds.Fish, amount: 750 }],
@@ -724,223 +586,4 @@ export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Fish]: [{ resource: ResourcesIds.Fish, amount: 750 }],
   [ResourcesIds.Lords]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
   [ResourcesIds.Earthenshard]: [{ resource: ResourcesIds.Fish, amount: 750 }],
-};
-
-export const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
-  {
-    resource: ResourcesIds.Earthenshard,
-    amount: 1000,
-  },
-];
-
-export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] = [
-  { resource: ResourcesIds.Wood, amount: 500 },
-  { resource: ResourcesIds.Stone, amount: 500 },
-  { resource: ResourcesIds.Coal, amount: 500 },
-  { resource: ResourcesIds.Copper, amount: 300 },
-  { resource: ResourcesIds.Obsidian, amount: 300 },
-  { resource: ResourcesIds.Silver, amount: 300 },
-  { resource: ResourcesIds.Ironwood, amount: 300 },
-  { resource: ResourcesIds.ColdIron, amount: 150 },
-  { resource: ResourcesIds.Gold, amount: 150 },
-  { resource: ResourcesIds.Hartwood, amount: 150 },
-  { resource: ResourcesIds.Diamonds, amount: 150 },
-  { resource: ResourcesIds.Sapphire, amount: 150 },
-  { resource: ResourcesIds.Ruby, amount: 150 },
-  { resource: ResourcesIds.DeepCrystal, amount: 150 },
-  { resource: ResourcesIds.Ignium, amount: 150 },
-  { resource: ResourcesIds.EtherealSilica, amount: 150 },
-  { resource: ResourcesIds.TrueIce, amount: 150 },
-  { resource: ResourcesIds.TwilightQuartz, amount: 150 },
-  { resource: ResourcesIds.AlchemicalSilver, amount: 150 },
-  { resource: ResourcesIds.Adamantine, amount: 150 },
-  { resource: ResourcesIds.Mithral, amount: 150 },
-  { resource: ResourcesIds.Dragonhide, amount: 150 },
-];
-
-export const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
-  ...HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  ...HYPERSTRUCTURE_CREATION_COSTS,
-];
-
-export const STRUCTURE_COSTS: ResourceInputs = {
-  [StructureType.Hyperstructure]: HYPERSTRUCTURE_CREATION_COSTS,
-  [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
-  [StructureType.Settlement]: [
-    { resource: ResourcesIds.Wheat, amount: 100_000 },
-    { resource: ResourcesIds.Fish, amount: 100_000 },
-  ],
-};
-
-export const RESOURCE_INFORMATION: {
-  [key: number]: string;
-} = {
-  [ResourcesIds.Wood]:
-    "Wood is the backbone of civilization. Fire, industry, and shelter spawned from its sinew and sap.",
-  [ResourcesIds.Stone]: "Stone masonry is a culture bending the bones of the earth itself to their own purpose.",
-  [ResourcesIds.Coal]:
-    "Coal is the only answer when fire is not enough to stave off the gnawing, winter cold or the ravenous demands of iron forges.",
-  [ResourcesIds.Copper]:
-    "The malleability of copper is a strength. A copper axe will crush a skull as easily as a copper pot sizzles an egg.",
-  [ResourcesIds.Obsidian]:
-    "Hard and brittle, obsidian can be honed to a razors edge nanometers wide, parting armor on an atomic level. The preferred material of assassins and cheap jewelers.",
-  [ResourcesIds.Silver]:
-    "The luster and rarity of silver draws out the basest instinct of laymen and nobility alike. Greed.",
-  [ResourcesIds.Ironwood]:
-    "Metallic minerals drawn from the ironwood’s deep delving roots are the source of its legendary hardness and appearance.",
-  [ResourcesIds.ColdIron]:
-    "Something has infected this metallic ore with a cruel chill and an extraordinary thirst for the warmth of living things.",
-  [ResourcesIds.Gold]: "Ripped from its million-year geological womb within the earth to be hoarded in mortal coffers.",
-  [ResourcesIds.Hartwood]:
-    "Revered by the Orders of Cunning, hartwood is only cut in dire circumstance. It bleeds like any mortal and some claim to hear voices from its sap long after being tapped from the trunk.",
-  [ResourcesIds.Diamonds]:
-    "Diamonds carry the hardness of obsidian, the strength of cold iron, and the preciousness of gold. Blood is easily spilled in its name.",
-  [ResourcesIds.Sapphire]:
-    "Sapphires are given birth from titanic forces that crush and grind for thousands of years in a hellscape of heat and pressure. The result is a gemstone accustomed to both pain and beauty.",
-  [ResourcesIds.Ruby]:
-    "Rubies are the chimeric fusion of metal alloys and oxygen. This hybrid of metal and minerals is often scarcer than the lives of those who seek it.",
-  [ResourcesIds.DeepCrystal]:
-    "Deep crystal was imprisoned from the mortal world by a timeless geode, the source of these formations have confounded scholars for centuries. Strange vibrations can be felt when held.",
-  [ResourcesIds.Ignium]:
-    "Some horrible power has irrevocably scarred this ignium stone with an infernal radiation that evaporates water and skin alike.",
-  [ResourcesIds.EtherealSilica]:
-    "Ethereal silica is a glass that funnels and bends light in ways that deviate from known physics. Those exposed for long periods of time experience an all- consuming lethargic bliss.",
-  [ResourcesIds.TrueIce]:
-    "True ice does not melt, it is carved like living stone from frozen abyssal caverns far beneath the earth. Many a careless mason has lost their life when placing this near Ignium.",
-  [ResourcesIds.TwilightQuartz]:
-    "Fortunately, this gemstone grows deep within the earth, far away from the soft flesh of mortal kind. Its elegance hides a tendency to rapidly engulf organic matter it encounters in a matter of hours.",
-  [ResourcesIds.AlchemicalSilver]:
-    "Alchemical Silver is found pooled beneath battlegrounds from a forgotten, lost era. It can retain an almost unlimited amount of potential energy, making it the perfect catalyst for those delving into the mysteries of the universe.",
-  [ResourcesIds.Adamantine]:
-    "Adamantine forms around ontological anomalies like the immune response of a planetary entity. It contains the supernatural strength to contain such terrors from spreading. Woe to those who shortsightedly take it from its original purpose.",
-  [ResourcesIds.Mithral]:
-    "This otherworldly metal has the strength of adamantine but is lighter than air. The pieces are held in place by strange gravitational core. Those who spend much time with it slowly succumb to neurotic delusions of a rapturous, divine apocalypse.",
-  [ResourcesIds.Dragonhide]:
-    "Dragons are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.",
-  [ResourcesIds.Earthenshard]:
-    "Earthenshard is a rare and powerful resource that can be used to create powerful items.",
-};
-
-export const EXPLORATION_COSTS: Resource[] = [
-  {
-    resourceId: ResourcesIds.Wheat,
-    amount: EternumGlobalConfig.exploration.exploreWheatBurn,
-  },
-  { resourceId: ResourcesIds.Fish, amount: EternumGlobalConfig.exploration.exploreFishBurn },
-];
-
-export enum QuestType {
-  Food = 1,
-  CommonResources,
-  UncommonResources,
-  UniqueResources,
-  RareResources,
-  LegendaryResources,
-  MythicResources,
-  Trade,
-  Military,
-  Earthenshard,
-  Travel,
-  Population,
-  Market,
-  Mine,
-  Pillage,
-  Hyperstructure,
-  Contribution,
-  PauseProduction,
-  CreateDefenseArmy,
-}
-
-export const QUEST_RESOURCES = {
-  [QuestType.Food]: [
-    { resource: ResourcesIds.Wheat, amount: 1500 },
-    { resource: ResourcesIds.Fish, amount: 1500 },
-  ],
-  [QuestType.CommonResources]: [
-    { resource: ResourcesIds.Wood, amount: 5 },
-    { resource: ResourcesIds.Stone, amount: 5 },
-    { resource: ResourcesIds.Coal, amount: 5 },
-    { resource: ResourcesIds.Copper, amount: 5 },
-  ],
-  [QuestType.UncommonResources]: [
-    { resource: ResourcesIds.Obsidian, amount: 5 },
-    { resource: ResourcesIds.Silver, amount: 5 },
-    { resource: ResourcesIds.Ironwood, amount: 5 },
-  ],
-  [QuestType.UniqueResources]: [
-    { resource: ResourcesIds.ColdIron, amount: 5 },
-    { resource: ResourcesIds.Gold, amount: 5 },
-    { resource: ResourcesIds.Hartwood, amount: 5 },
-    { resource: ResourcesIds.Diamonds, amount: 5 },
-  ],
-  [QuestType.RareResources]: [
-    { resource: ResourcesIds.Sapphire, amount: 5 },
-    { resource: ResourcesIds.Ruby, amount: 5 },
-    { resource: ResourcesIds.DeepCrystal, amount: 5 },
-  ],
-  [QuestType.LegendaryResources]: [
-    { resource: ResourcesIds.Ignium, amount: 5 },
-    { resource: ResourcesIds.EtherealSilica, amount: 5 },
-    { resource: ResourcesIds.TrueIce, amount: 5 },
-    { resource: ResourcesIds.TwilightQuartz, amount: 5 },
-  ],
-  [QuestType.MythicResources]: [
-    { resource: ResourcesIds.AlchemicalSilver, amount: 5 },
-    { resource: ResourcesIds.Adamantine, amount: 5 },
-    { resource: ResourcesIds.Mithral, amount: 5 },
-    { resource: ResourcesIds.Dragonhide, amount: 5 },
-  ],
-  [QuestType.Trade]: [
-    { resource: ResourcesIds.Donkey, amount: 3 },
-    { resource: ResourcesIds.Lords, amount: 100 },
-  ],
-  [QuestType.Military]: [
-    { resource: ResourcesIds.Knight, amount: 3 },
-    { resource: ResourcesIds.Crossbowman, amount: 3 },
-    { resource: ResourcesIds.Paladin, amount: 3 },
-  ],
-  [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.Travel]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.Population]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.Market]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.Mine]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.Pillage]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.Contribution]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
-  [QuestType.PauseProduction]: [{ resource: ResourcesIds.Earthenshard, amount: 2.5 }],
-  [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.Earthenshard, amount: 2.5 }],
-};
-
-export enum RealmLevels {
-  Settlement = 1,
-  City,
-  Kingdom,
-  Empire,
-}
-
-export const REALM_UPGRADE_COSTS = {
-  [RealmLevels.Settlement]: [],
-
-  [RealmLevels.City]: [
-    { resource: ResourcesIds.Wood, amount: 2000 },
-    { resource: ResourcesIds.Stone, amount: 2000 },
-    { resource: ResourcesIds.Coal, amount: 1200 },
-    { resource: ResourcesIds.Silver, amount: 1200 },
-  ],
-
-  [RealmLevels.Kingdom]: [
-    { resource: ResourcesIds.ColdIron, amount: 2000 },
-    { resource: ResourcesIds.Hartwood, amount: 1000 },
-    { resource: ResourcesIds.Diamonds, amount: 750 },
-    { resource: ResourcesIds.Sapphire, amount: 750 },
-    { resource: ResourcesIds.DeepCrystal, amount: 750 },
-  ],
-
-  [RealmLevels.Empire]: [
-    { resource: ResourcesIds.Adamantine, amount: 100 },
-    { resource: ResourcesIds.Mithral, amount: 100 },
-    { resource: ResourcesIds.Dragonhide, amount: 100 },
-    { resource: ResourcesIds.Wood, amount: 200 },
-    { resource: ResourcesIds.Stone, amount: 200 },
-  ],
 };

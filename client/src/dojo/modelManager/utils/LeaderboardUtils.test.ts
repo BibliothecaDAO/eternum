@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  TOTAL_CONTRIBUTABLE_AMOUNT,
   computeInitialContributionPoints,
   getTotalPointsPercentage,
-  TOTAL_CONTRIBUTABLE_AMOUNT,
 } from "./LeaderboardUtils";
-import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
 
 const EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT = 2;
 
