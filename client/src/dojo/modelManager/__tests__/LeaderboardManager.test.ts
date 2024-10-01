@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LeaderboardManager } from "../LeaderboardManager";
 
-const PLAYER_ADDRESS_INDEX = 0;
-const POINTS_INDEX = 1;
+// const PLAYER_ADDRESS_INDEX = 0;
+// const POINTS_INDEX = 1;
 
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const actual = await importOriginal();
