@@ -18,17 +18,16 @@ export const resources: Array<Resources> = [
     colour: "#78350f",
     id: 1,
     description: "Wood is the backbone of civilization. Fire, industry, and shelter spawned from its sinew and sap.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wood.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/1.png?raw=true",
     ticker: "$WOOD",
   },
-
   {
     trait: "Stone",
     value: 3941,
     colour: "#e0e0e0",
     id: 2,
     description: "Stone masonry is a culture bending the bones of the earth itself to their own purpose.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/stone.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/2.png?raw=true",
     ticker: "$STONE",
   },
   {
@@ -38,7 +37,7 @@ export const resources: Array<Resources> = [
     id: 3,
     description:
       "Coal is the only answer when fire is not enough to stave off the gnawing, winter cold or the ravenous demands of iron forges.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/coal.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/3.png?raw=true",
     ticker: "$COAL",
   },
   {
@@ -48,7 +47,7 @@ export const resources: Array<Resources> = [
     id: 4,
     description:
       "The malleability of copper is a strength. A copper axe will crush a skull as easily as a copper pot sizzles an egg.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/copper.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/4.png?raw=true",
     ticker: "$COPPER",
   },
   {
@@ -58,7 +57,7 @@ export const resources: Array<Resources> = [
     id: 5,
     description:
       "Hard and brittle, obsidian can be honed to a razors edge nanometers wide, parting armor on an atomic level. The preferred material of assassins and cheap jewelers.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/obsidian.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/5.png?raw=true",
     ticker: "$OBS",
   },
   {
@@ -67,7 +66,7 @@ export const resources: Array<Resources> = [
     colour: "#eeeeee",
     id: 6,
     description: "The luster and rarity of silver draws out the basest instinct of laymen and nobility alike. Greed.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/silver.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/6.png?raw=true",
     ticker: "$SILVER",
   },
 
@@ -77,8 +76,8 @@ export const resources: Array<Resources> = [
     colour: "#b91c1c",
     id: 7,
     description:
-      "Metallic minerals drawn from the ironwood’s deep delving roots are the source of its legendary hardness and appearance.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ironwood.gif?raw=true",
+      "Metallic minerals drawn from the ironwood's deep delving roots are the source of its legendary hardness and appearance.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/7.png?raw=true",
     ticker: "$IRNWD",
   },
   {
@@ -88,7 +87,7 @@ export const resources: Array<Resources> = [
     id: 8,
     description:
       "Something has infected this metallic ore with a cruel chill and an extraordinary thirst for the warmth of living things.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/cold%20iron.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/8.png?raw=true",
     ticker: "$CLDIRN",
   },
   {
@@ -97,7 +96,7 @@ export const resources: Array<Resources> = [
     colour: "#fcd34d",
     id: 9,
     description: "Ripped from its million-year geological womb within the earth to be hoarded in mortal coffers.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/gold.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/9.png?raw=true",
     ticker: "$GOLD",
   },
   {
@@ -107,7 +106,7 @@ export const resources: Array<Resources> = [
     id: 10,
     description:
       "Revered by the Orders of Cunning, hartwood is only cut in dire circumstance. It bleeds like any mortal and some claim to hear voices from its sap long after being tapped from the trunk.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/hartwood.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/10.png?raw=true",
     ticker: "$HRTWD",
   },
   {
@@ -117,7 +116,7 @@ export const resources: Array<Resources> = [
     id: 11,
     description:
       "Diamonds carry the hardness of obsidian, the strength of cold iron, and the preciousness of gold. Blood is easily spilled in its name.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/diamond.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/11.png?raw=true",
     ticker: "$DMND",
   },
   {
@@ -127,7 +126,7 @@ export const resources: Array<Resources> = [
     id: 12,
     description:
       "Sapphires are given birth from titanic forces that crush and grind for thousands of years in a hellscape of heat and pressure. The result is a gemstone accustomed to both pain and beauty.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/sapphire.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/12.png?raw=true",
     ticker: "$SPHR",
   },
   {
@@ -137,7 +136,7 @@ export const resources: Array<Resources> = [
     id: 13,
     description:
       "Rubies are the chimeric fusion of metal alloys and oxygen. This hybrid of metal and minerals is often scarcer than the lives of those who seek it.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ruby.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/13.png?raw=true",
     ticker: "$RUBY",
   },
   {
@@ -147,7 +146,7 @@ export const resources: Array<Resources> = [
     id: 14,
     description:
       "Deep crystal was imprisoned from the mortal world by a timeless geode, the source of these formations have confounded scholars for centuries. Strange vibrations can be felt when held.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/deep%20crystal.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/14.png?raw=true",
     ticker: "$CRYSTL",
   },
   {
@@ -157,7 +156,7 @@ export const resources: Array<Resources> = [
     id: 15,
     description:
       "Some horrible power has irrevocably scarred this ignium stone with an infernal radiation that evaporates water and skin alike.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ignium.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/15.png?raw=true",
     ticker: "$IGNIUM",
   },
   {
@@ -167,7 +166,7 @@ export const resources: Array<Resources> = [
     id: 16,
     description:
       "Ethereal silica is a glass that funnels and bends light in ways that deviate from known physics. Those exposed for long periods of time experience an all- consuming lethargic bliss.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ethereal%20silica.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/16.png?raw=true",
     ticker: "$SILICA",
   },
   {
@@ -177,7 +176,7 @@ export const resources: Array<Resources> = [
     id: 17,
     description:
       "True ice does not melt, it is carved like living stone from frozen abyssal caverns far beneath the earth. Many a careless mason has lost their life when placing this near Ignium.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/true%20ice.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/17.png?raw=true",
     ticker: "$TRUICE",
   },
   {
@@ -187,7 +186,7 @@ export const resources: Array<Resources> = [
     id: 18,
     description:
       "Fortunately, this gemstone grows deep within the earth, far away from the soft flesh of mortal kind. Its elegance hides a tendency to rapidly engulf organic matter it encounters in a matter of hours.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/twilight%20quartz.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/18.png?raw=true",
     ticker: "$QUARTZ",
   },
   {
@@ -197,7 +196,7 @@ export const resources: Array<Resources> = [
     id: 19,
     description:
       "Alchemical Silver is found pooled beneath battlegrounds from a forgotten, lost era. It can retain an almost unlimited amount of potential energy, making it the perfect catalyst for those delving into the mysteries of the universe.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/alchemical%20silver.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/19.png?raw=true",
     ticker: "$ALCHMY",
   },
   {
@@ -207,7 +206,7 @@ export const resources: Array<Resources> = [
     id: 20,
     description:
       "Adamantine forms around ontological anomalies like the immune response of a planetary entity. It contains the supernatural strength to contain such terrors from spreading. Woe to those who shortsightedly take it from its original purpose.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/adamantine.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/20.png?raw=true",
     ticker: "$ADMT",
   },
   {
@@ -217,7 +216,7 @@ export const resources: Array<Resources> = [
     id: 21,
     description:
       "This otherworldly metal has the strength of adamantine but is lighter than air. The pieces are held in place by strange gravitational core. Those who spend much time with it slowly succumb to neurotic delusions of a rapturous, divine apocalypse.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/mithral.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/21.png?raw=true",
     ticker: "$MITHRL",
   },
   {
@@ -227,7 +226,7 @@ export const resources: Array<Resources> = [
     id: 22,
     description:
       "Dragons are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/dragonhide.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/22.png?raw=true",
     ticker: "$DRGNHD",
   },
   {
@@ -236,7 +235,7 @@ export const resources: Array<Resources> = [
     colour: "#ec4899",
     id: 249,
     description: "Donkey.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/249.png?raw=true",
     ticker: "$DONKEY",
   },
   {
@@ -245,7 +244,7 @@ export const resources: Array<Resources> = [
     colour: "#ec4899",
     id: 250,
     description: "Wheat.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/250.png?raw=true",
     ticker: "$KNIGHT",
   },
   {
@@ -254,7 +253,7 @@ export const resources: Array<Resources> = [
     colour: "#ec4899",
     id: 251,
     description: "Wheat.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/251.png?raw=true",
     ticker: "$CRSSBW",
   },
   {
@@ -263,7 +262,7 @@ export const resources: Array<Resources> = [
     colour: "#ec4899",
     id: 252,
     description: "Wheat.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/252.png?raw=true",
     ticker: "$PLDN",
   },
   {
@@ -272,25 +271,25 @@ export const resources: Array<Resources> = [
     colour: "#ec4899",
     id: 253,
     description: "Lords.",
-    img: "",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/253.png?raw=true",
     ticker: "$LORDS",
   },
   {
     trait: "Wheat",
     value: 254,
-    colour: "#ec4899",
+    colour: "#F5DEB3",
     id: 254,
     description: "Wheat.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/254.png?raw=true",
     ticker: "$WHEAT",
   },
   {
     trait: "Fish",
     value: 255,
-    colour: "#ec4899",
+    colour: "#87CEEB",
     id: 255,
     description: "Fish.",
-    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/.gif?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/255.png?raw=true",
     ticker: "$FISH",
   },
   {
@@ -299,7 +298,7 @@ export const resources: Array<Resources> = [
     colour: "#ec4899",
     id: 29,
     description: "Ancient Fragment is a rare and powerful resource that can be used to create powerful items.",
-    img: "",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/29.png?raw=true",
     ticker: "$FRAGMENT",
   },
 ];
@@ -366,39 +365,37 @@ export const HyperstructureResourceMultipliers: { [key in ResourcesIds]?: number
   [ResourcesIds.Earthenshard]: 20.98,
 };
 
-export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
-
-export const resourcesByGuild = {
-  [Guilds[0]]: [
-    ResourcesIds.Wood,
-    ResourcesIds.Stone,
-    ResourcesIds.Coal,
-    ResourcesIds.Ironwood,
-    ResourcesIds.Hartwood,
-    ResourcesIds.TrueIce,
-  ],
-  [Guilds[1]]: [
-    ResourcesIds.Copper,
-    ResourcesIds.Silver,
-    ResourcesIds.Gold,
-    ResourcesIds.ColdIron,
-    ResourcesIds.AlchemicalSilver,
-    ResourcesIds.Adamantine,
-  ],
-  [Guilds[2]]: [
-    ResourcesIds.Diamonds,
-    ResourcesIds.Sapphire,
-    ResourcesIds.Ruby,
-    ResourcesIds.DeepCrystal,
-    ResourcesIds.TwilightQuartz,
-  ],
-  [Guilds[3]]: [
-    ResourcesIds.Obsidian,
-    ResourcesIds.Ignium,
-    ResourcesIds.EtherealSilica,
-    ResourcesIds.Mithral,
-    ResourcesIds.Dragonhide,
-  ],
+export const ResourceRarity: { [key in ResourcesIds]?: number } = {
+  [ResourcesIds.Wood]: 1.0,
+  [ResourcesIds.Stone]: 1.27,
+  [ResourcesIds.Coal]: 1.31,
+  [ResourcesIds.Copper]: 1.9,
+  [ResourcesIds.Obsidian]: 2.26,
+  [ResourcesIds.Silver]: 2.88,
+  [ResourcesIds.Ironwood]: 4.25,
+  [ResourcesIds.ColdIron]: 5.24,
+  [ResourcesIds.Gold]: 5.49,
+  [ResourcesIds.Hartwood]: 8.44,
+  [ResourcesIds.Diamonds]: 16.72,
+  [ResourcesIds.Sapphire]: 20.3,
+  [ResourcesIds.Ruby]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.Ignium]: 29.15,
+  [ResourcesIds.EtherealSilica]: 30.95,
+  [ResourcesIds.TrueIce]: 36.06,
+  [ResourcesIds.TwilightQuartz]: 45.18,
+  [ResourcesIds.AlchemicalSilver]: 53.92,
+  [ResourcesIds.Adamantine]: 91.2,
+  [ResourcesIds.Mithral]: 135.53,
+  [ResourcesIds.Dragonhide]: 217.92,
+  [ResourcesIds.Earthenshard]: 20.98,
+  [ResourcesIds.Donkey]: 1,
+  [ResourcesIds.Knight]: 1,
+  [ResourcesIds.Crossbowman]: 1,
+  [ResourcesIds.Paladin]: 1,
+  [ResourcesIds.Lords]: 1,
+  [ResourcesIds.Wheat]: 1,
+  [ResourcesIds.Fish]: 1,
 };
 
 // if it's labor, then remove 28 to get the icon resource id
@@ -492,7 +489,7 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Adamantine]: 50,
   [ResourcesIds.Mithral]: 50,
   [ResourcesIds.Dragonhide]: 50,
-  [ResourcesIds.Donkey]: 15,
+  [ResourcesIds.Donkey]: 2,
   [ResourcesIds.Knight]: 0.05,
   [ResourcesIds.Crossbowman]: 0.05,
   [ResourcesIds.Paladin]: 0.05,
@@ -570,7 +567,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.DeepCrystal]: [
     { resource: ResourcesIds.Ruby, amount: 0.002 },
-    { resource: ResourcesIds.Ignium, amount: 0.0014 },
+    { resource: ResourcesIds.Ignium, amount: 0.0021 },
     { resource: ResourcesIds.Fish, amount: 0.002 },
   ],
   [ResourcesIds.Ignium]: [
@@ -614,8 +611,9 @@ export const RESOURCE_INPUTS: ResourceInputs = {
     { resource: ResourcesIds.Fish, amount: 0.002 },
   ],
   [ResourcesIds.Donkey]: [
-    { resource: ResourcesIds.Wheat, amount: 0.01 },
-    { resource: ResourcesIds.Fish, amount: 0.02 },
+    { resource: ResourcesIds.Wheat, amount: 0.025 },
+    { resource: ResourcesIds.Fish, amount: 0.025 },
+    { resource: ResourcesIds.Gold, amount: 0.001 },
     { resource: ResourcesIds.Diamonds, amount: 0.001 },
   ],
   [ResourcesIds.Knight]: [
@@ -646,81 +644,86 @@ export const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Castle]: [],
   [BuildingType.Bank]: [],
   [BuildingType.FragmentMine]: [],
-  [BuildingType.Resource]: [
-    { resource: ResourcesIds.Wheat, amount: 500 },
-    { resource: ResourcesIds.Fish, amount: 500 },
-  ],
+  [BuildingType.Resource]: [],
   [BuildingType.Farm]: [{ resource: ResourcesIds.Fish, amount: 900 }],
   [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 900 }],
+
+  [BuildingType.Market]: [
+    { resource: ResourcesIds.Fish, amount: 1500 },
+    { resource: ResourcesIds.Stone, amount: 250 },
+    { resource: ResourcesIds.Obsidian, amount: 100 },
+    { resource: ResourcesIds.Ruby, amount: 50 },
+    { resource: ResourcesIds.DeepCrystal, amount: 10 },
+  ],
   [BuildingType.Barracks]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
     { resource: ResourcesIds.Wood, amount: 150 },
-    { resource: ResourcesIds.Coal, amount: 50 },
-  ],
-  [BuildingType.Market]: [
-    { resource: ResourcesIds.Wheat, amount: 1500 },
-    { resource: ResourcesIds.Stone, amount: 100 },
-    { resource: ResourcesIds.Gold, amount: 20 },
-    { resource: ResourcesIds.Ruby, amount: 20 },
+    { resource: ResourcesIds.Coal, amount: 150 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.Gold, amount: 90 },
   ],
   [BuildingType.ArcheryRange]: [
-    { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 100 },
-    { resource: ResourcesIds.Obsidian, amount: 40 },
+    { resource: ResourcesIds.Fish, amount: 2000 },
+    { resource: ResourcesIds.Wood, amount: 150 },
+    { resource: ResourcesIds.Obsidian, amount: 150 },
+    { resource: ResourcesIds.Gold, amount: 50 },
+    { resource: ResourcesIds.Hartwood, amount: 50 },
   ],
   [BuildingType.Stable]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 100 },
-    { resource: ResourcesIds.ColdIron, amount: 40 },
+    { resource: ResourcesIds.Wood, amount: 150 },
+    { resource: ResourcesIds.Silver, amount: 150 },
+    { resource: ResourcesIds.Ironwood, amount: 70 },
+    { resource: ResourcesIds.Gold, amount: 50 },
   ],
   [BuildingType.TradingPost]: [],
   [BuildingType.WorkersHut]: [
-    { resource: ResourcesIds.Wheat, amount: 500 },
-    { resource: ResourcesIds.Stone, amount: 10 },
-    { resource: ResourcesIds.Wood, amount: 10 },
-    { resource: ResourcesIds.Coal, amount: 20 },
+    { resource: ResourcesIds.Wheat, amount: 600 },
+    { resource: ResourcesIds.Stone, amount: 150 },
+    { resource: ResourcesIds.Wood, amount: 150 },
+    { resource: ResourcesIds.Coal, amount: 150 },
   ],
   [BuildingType.WatchTower]: [],
   [BuildingType.Walls]: [],
   [BuildingType.Storehouse]: [
-    { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 100 },
-    { resource: ResourcesIds.Ironwood, amount: 10 },
-    { resource: ResourcesIds.Silver, amount: 10 },
+    { resource: ResourcesIds.Fish, amount: 2000 },
+    { resource: ResourcesIds.Coal, amount: 150 },
+    { resource: ResourcesIds.Stone, amount: 150 },
+    { resource: ResourcesIds.Sapphire, amount: 20 },
   ],
 };
 
 export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
-  [ResourcesIds.Wood]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Stone]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Coal]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Copper]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Obsidian]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Silver]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Ironwood]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.ColdIron]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Gold]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Hartwood]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Diamonds]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Sapphire]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Ruby]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.DeepCrystal]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Ignium]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.EtherealSilica]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.TrueIce]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.TwilightQuartz]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.AlchemicalSilver]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Adamantine]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Mithral]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Dragonhide]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Crossbowman]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Wheat]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Fish]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Lords]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
-  [ResourcesIds.Earthenshard]: [{ resource: ResourcesIds.Fish, amount: 500 }],
+  [ResourcesIds.Wood]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Stone]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Coal]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Copper]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Obsidian]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Silver]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Ironwood]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.ColdIron]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Gold]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Hartwood]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Diamonds]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Sapphire]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Ruby]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.DeepCrystal]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Ignium]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.EtherealSilica]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.TrueIce]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.TwilightQuartz]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.AlchemicalSilver]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Adamantine]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Mithral]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Dragonhide]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Crossbowman]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Wheat]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Fish]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.Lords]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Earthenshard]: [{ resource: ResourcesIds.Fish, amount: 750 }],
 };
 
 export const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
@@ -750,9 +753,9 @@ export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: numb
   { resource: ResourcesIds.TrueIce, amount: 150 },
   { resource: ResourcesIds.TwilightQuartz, amount: 150 },
   { resource: ResourcesIds.AlchemicalSilver, amount: 150 },
-  { resource: ResourcesIds.Adamantine, amount: 100 },
-  { resource: ResourcesIds.Mithral, amount: 100 },
-  { resource: ResourcesIds.Dragonhide, amount: 50 },
+  { resource: ResourcesIds.Adamantine, amount: 150 },
+  { resource: ResourcesIds.Mithral, amount: 150 },
+  { resource: ResourcesIds.Dragonhide, amount: 150 },
 ];
 
 export const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
@@ -906,4 +909,38 @@ export const QUEST_RESOURCES = {
   [QuestType.Contribution]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.PauseProduction]: [{ resource: ResourcesIds.Earthenshard, amount: 2.5 }],
   [QuestType.CreateDefenseArmy]: [{ resource: ResourcesIds.Earthenshard, amount: 2.5 }],
+};
+
+export enum RealmLevels {
+  Settlement = 1,
+  City,
+  Kingdom,
+  Empire,
+}
+
+export const REALM_UPGRADE_COSTS = {
+  [RealmLevels.Settlement]: [],
+
+  [RealmLevels.City]: [
+    { resource: ResourcesIds.Wood, amount: 2000 },
+    { resource: ResourcesIds.Stone, amount: 2000 },
+    { resource: ResourcesIds.Coal, amount: 1200 },
+    { resource: ResourcesIds.Silver, amount: 1200 },
+  ],
+
+  [RealmLevels.Kingdom]: [
+    { resource: ResourcesIds.ColdIron, amount: 2000 },
+    { resource: ResourcesIds.Hartwood, amount: 1000 },
+    { resource: ResourcesIds.Diamonds, amount: 750 },
+    { resource: ResourcesIds.Sapphire, amount: 750 },
+    { resource: ResourcesIds.DeepCrystal, amount: 750 },
+  ],
+
+  [RealmLevels.Empire]: [
+    { resource: ResourcesIds.Adamantine, amount: 100 },
+    { resource: ResourcesIds.Mithral, amount: 100 },
+    { resource: ResourcesIds.Dragonhide, amount: 100 },
+    { resource: ResourcesIds.Wood, amount: 200 },
+    { resource: ResourcesIds.Stone, amount: 200 },
+  ],
 };

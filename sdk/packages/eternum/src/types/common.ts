@@ -108,6 +108,7 @@ export interface Resources {
   description: string;
   img: string;
   ticker: string;
+  rarity?: string;
 }
 
 export interface Resource {
