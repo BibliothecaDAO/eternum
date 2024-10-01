@@ -4,6 +4,7 @@ import {
   BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
   BUILDING_COSTS,
+  BUILDING_FIXED_COST_SCALE_PERCENT,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
@@ -56,6 +57,7 @@ export class EternumConfig {
     await setStaminaConfig(config);
     await setStaminaRefillConfig(config);
     await setMercenariesConfig(config);
+    await setBuildingGeneralConfig(config);
   }
 
   getResourceBuildingCostsScaled(): ResourceInputs {
@@ -147,6 +149,15 @@ export const setPopulationConfig = async (config: Config) => {
   });
 
   console.log(`Configuring population config ${tx.statusReceipt}...`);
+};
+
+export const setBuildingGeneralConfig = async (config: Config) => {
+  const tx = await config.provider.set_building_general_config({
+    signer: config.account,
+    base_cost_percent_increase: BUILDING_FIXED_COST_SCALE_PERCENT,
+  });
+
+  console.log(`Configuring building general config ${tx.statusReceipt}...`);
 };
 
 export const setBuildingConfig = async (config: Config) => {
