@@ -1,9 +1,10 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { toHexString } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
+  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  HyperstructureResourceMultipliers,
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
@@ -12,7 +13,6 @@ import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, ru
 import { toInteger } from "lodash";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { toHexString } from "@/ui/utils/utils";
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -128,7 +128,9 @@ const getAllProgressesAndTotalPercentage = (
     };
     percentage +=
       (progress.amount *
-        HyperstructureResourceMultipliers[progress.resource_type as keyof typeof HyperstructureResourceMultipliers]!) /
+        HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
+          progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
+        ]!) /
       TOTAL_CONTRIBUTABLE_AMOUNT;
     return progress;
   });

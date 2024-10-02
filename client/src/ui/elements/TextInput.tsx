@@ -1,7 +1,7 @@
 import clsx from "clsx";
+import React from "react";
 
 interface TextInputProps {
-  value: string;
   disabled?: boolean;
   onChange: (value: string) => void;
   className?: string;
@@ -10,33 +10,41 @@ interface TextInputProps {
   onBlur?: (e: any) => void;
   onFocus?: (e: any) => void;
   onKeyDown?: (e: any) => void;
-  onKeyPress?: (e: any) => void;
 }
-const formatNumber = (value: string) => {
-  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-};
 
-const TextInput = (props: TextInputProps) => {
-  const { value, disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown, onKeyPress } =
-    props;
+const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref) => {
+  const { disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } = props;
+
   return (
-    <input
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        (e.target as any).reset();
+      }}
       className={clsx(
-        "w-full p-2 transition-all duration-300 focus:outline-none  border-opacity-50 focus:border-opacity-100  placeholder-white/25 flex-grow  bg-transparent border border-gold/40 rounded-sm font-bold",
+        "w-full p-2 transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent border border-gold/40 rounded-sm font-bold",
         className,
       )}
-      disabled={disabled || false}
-      type="text"
-      value={formatNumber(value)}
-      onChange={(e) => onChange(e.target.value.replace(/,/g, ""))}
-      placeholder={placeholder}
-      maxLength={maxLength}
-      onBlur={onBlur}
-      onFocus={onFocus}
-      onKeyDown={onKeyDown}
-      onKeyPress={onKeyPress}
-    />
+    >
+      <input
+        ref={ref}
+        autoFocus={true}
+        className={clsx(
+          "w-full h-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent rounded-sm font-bold",
+        )}
+        disabled={disabled || false}
+        type="text"
+        onChange={(e) => onChange(e.currentTarget.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        onBlur={onBlur}
+        onFocus={onFocus}
+        onKeyDown={onKeyDown}
+        autoComplete="off"
+      />
+    </form>
   );
-};
+});
 
 export default TextInput;

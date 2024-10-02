@@ -2,8 +2,8 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import {
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_ON_COMPLETION,
+  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  HyperstructureResourceMultipliers,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
@@ -12,14 +12,14 @@ export const TOTAL_CONTRIBUTABLE_AMOUNT: number = HYPERSTRUCTURE_TOTAL_COSTS_SCA
   (total, { resource, amount }) => {
     return (
       total +
-      (HyperstructureResourceMultipliers[resource as keyof typeof HyperstructureResourceMultipliers] ?? 0) * amount
+      (HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[resource as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS] ?? 0) * amount
     );
   },
   0,
 );
 
 function getResourceMultiplier(resourceType: ResourcesIds): number {
-  return HyperstructureResourceMultipliers[resourceType] ?? 0;
+  return HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[resourceType] ?? 0;
 }
 
 export function computeInitialContributionPoints(

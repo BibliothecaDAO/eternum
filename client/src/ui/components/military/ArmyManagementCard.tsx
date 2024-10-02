@@ -81,9 +81,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const [naming, setNaming] = useState("");
 
   const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
-    [ResourcesIds.Knight]: 1000,
-    [ResourcesIds.Crossbowman]: 1000,
-    [ResourcesIds.Paladin]: 1000,
+    [ResourcesIds.Knight]: 0,
+    [ResourcesIds.Crossbowman]: 0,
+    [ResourcesIds.Paladin]: 0,
   });
 
   const remainingTroops = useMemo(() => {
@@ -239,12 +239,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
           <div className="flex justify-between p-2">
             {editName ? (
               <div className="flex space-x-2">
-                <TextInput
-                  placeholder="Type Name"
-                  className="h-full"
-                  value={naming}
-                  onChange={(name) => setNaming(name)}
-                />
+                <TextInput placeholder="Type Name" className="h-full" onChange={(name) => setNaming(name)} />
                 <Button
                   variant="default"
                   isLoading={isLoading}

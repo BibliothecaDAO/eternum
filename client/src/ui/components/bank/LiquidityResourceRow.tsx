@@ -1,7 +1,6 @@
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useTravel } from "@/hooks/helpers/useTravel";
-import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -11,11 +10,12 @@ import {
   EternumGlobalConfig,
   ID,
   RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS,
   ResourcesIds,
   resources,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
@@ -23,16 +23,15 @@ type LiquidityResourceRowProps = {
   bankEntityId: ID;
   entityId: ID;
   resourceId: ResourcesIds;
+  isFirst?: boolean;
 };
 
-export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: LiquidityResourceRowProps) => {
+export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFirst }: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
   const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
-
-  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const marketEntityId = useMemo(
     () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
@@ -161,7 +160,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
         >
           {marketManager.getMarketPrice().toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
           {showInputResourcesPrice && (
-            <div className="absolute bottom-10 left-0 z-[100] pointer-events-none">
+            <div className={`${isFirst ? "top-10" : "bottom-10"} absolute left-0 z-[100] pointer-events-none`}>
               <InputResourcesPrice marketManager={marketManager} />
             </div>
           )}
@@ -212,24 +211,27 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
 const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
   const { setup } = useDojo();
   const inputResources = RESOURCE_INPUTS_SCALED[marketManager.resourceId];
+  const outputAmount = RESOURCE_OUTPUTS[marketManager.resourceId];
+
   if (!inputResources?.length) return null;
-  const totalPrice = inputResources.reduce((sum, resource) => {
-    const price = new MarketManager(
-      setup,
-      marketManager.bankEntityId,
-      marketManager.player,
-      resource.resource,
-    ).getMarketPrice();
-    return sum + Number(price) * resource.amount;
-  }, 0);
+  const totalPrice =
+    inputResources.reduce((sum, resource) => {
+      const price = new MarketManager(
+        setup,
+        marketManager.bankEntityId,
+        marketManager.player,
+        resource.resource,
+      ).getMarketPrice();
+      return sum + Number(price) * resource.amount;
+    }, 0) / outputAmount;
   return (
     <div className="p-2 w-full flex flex-col items-center justify-center bg-black/70 rounded-lg shadow-xl">
       <div className="flex items-center justify-center">
         {inputResources.map(({ resource }, index) => (
-          <>
+          <React.Fragment key={index}>
             {index > 0 && <span className="mx-1">+</span>}
             <ResourceIcon key={resource} resource={ResourcesIds[resource]} size="sm" />
-          </>
+          </React.Fragment>
         ))}
       </div>
       <div className="flex flex-row text-xxs text-gold w-full items-center justify-between mt-1">

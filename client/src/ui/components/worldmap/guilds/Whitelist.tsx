@@ -83,7 +83,6 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
           <TextInput
             placeholder="Search by name or address"
             className="border border-gold !text-light-pink text-xs my-2 w-1/4!"
-            value={searchQuery}
             onChange={(query) => setSearchQuery(query)}
           />
           <SortPanel className="px-3 py-2 grid grid-cols-3 gap-4">

@@ -5,6 +5,8 @@ on:
     paths-ignore:
       - "contracts/**"
       - "**/manifest.json"
+      - "discord-bot/**"
+      - "config/**"
       - ".github/**"
       - "pnpm-lock.yaml"
 

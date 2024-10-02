@@ -45,7 +45,6 @@ export const Guilds = () => {
 
   const sortingParams: SortingParamGuildAndName[] = useMemo(() => {
     return [
-      { label: "Rank", sortKey: "rank", className: "col-span-1" },
       { label: "Guild Name", sortKey: "name", className: "col-span-1" },
       { label: "Access", sortKey: "is_public", className: "col-span-1" },
       { label: "Members", sortKey: "member_count", className: "col-span-1" },
@@ -117,7 +116,6 @@ export const Guilds = () => {
                     guild.guild.entity_id === guildDisplayed?.guildEntityId ? "bg-green/20" : ""
                   } `}
                 >
-                  <p className="col-span-1">{`#${index + 1}`} </p>
                   <p
                     className="col-span-1 hover:text-white truncate"
                     onClick={() => setSelectedGuild({ guildEntityId: guild.guild.entity_id, name: guild.name })}

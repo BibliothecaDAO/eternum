@@ -1,7 +1,5 @@
 import { Headline } from "@/ui/elements/Headline";
 import { tableOfContents } from "./utils";
-import { EXPLORATION_COSTS, EternumGlobalConfig } from "@bibliothecadao/eternum";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
 
 export const TheMap = () => {
   const chapters = [
@@ -41,38 +39,39 @@ export const TheMap = () => {
 };
 
 const ExplorationTable = () => {
-  const explorationCosts = EXPLORATION_COSTS.map((cost) => ({
-    ...cost,
-  }));
+  // const exploreFishBurn = config.globalConfig.exploration.exploreFishBurn;
+  // const exploreWheatBurn = config.globalConfig.exploration.exploreWheatBurn;
 
-  const exploreCost = EternumGlobalConfig.stamina.exploreCost;
-  const travelCost = EternumGlobalConfig.stamina.travelCost;
+  // const travelFishBurn = config.globalConfig.exploration.travelFishBurn;
+  // const travelWheatBurn = config.globalConfig.exploration.travelWheatBurn;
 
   return (
-    <table className="not-prose w-full p-2 border-gold/10">
+    <table className="not-prose w-full border-collapse border border-gold/10">
       <thead>
         <tr>
-          <th className=" p-2"></th>
+          <th className="border border-gold/10 p-2"></th>
           <th className="border border-gold/10 p-2">Stamina</th>
           <th className="border border-gold/10 p-2">Resources</th>
         </tr>
       </thead>
-      <tbody>
+      {/* <tbody>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Exploration</td>
-          <td className="border border-gold/10 p-2">{exploreCost}</td>
-          <td className="border border-gold/10 p-2 gap-1 flex flex-col">
-            {explorationCosts.map((cost, index) => (
-              <ResourceCost key={index} resourceId={cost.resourceId} amount={cost.amount} size="lg" />
-            ))}
+          <td className="border border-gold/10 p-2">20</td>
+          <td className="border border-gold/10 p-2">
+            <div>Fish: {exploreFishBurn} per unit</div>
+            <div>Wheat: {exploreWheatBurn} per unit</div>
           </td>
         </tr>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Travel</td>
-          <td className="border border-gold/10 p-2">{travelCost}</td>
-          <td className="border border-gold/10 p-2">None</td>
+          <td className="border border-gold/10 p-2">10</td>
+          <td className="border border-gold/10 p-2">
+            <div>Fish: {travelFishBurn} per unit</div>
+            <div>Wheat: {travelWheatBurn} per unit</div>
+          </td>
         </tr>
-      </tbody>
+      </tbody> */}
     </table>
   );
 };

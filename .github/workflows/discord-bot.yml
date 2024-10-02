@@ -4,6 +4,8 @@ on:
   pull_request:
     paths-ignore:
       - "contracts/**"
+      - "config/**"
+      - "client/**"
       - "**/manifest.json"
       - ".github/**"
       - "pnpm-lock.yaml"
