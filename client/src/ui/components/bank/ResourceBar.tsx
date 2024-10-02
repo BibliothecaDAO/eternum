@@ -2,9 +2,10 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
 type ResourceBarProps = {
@@ -31,6 +32,10 @@ export const ResourceBar = ({
   const { getBalance } = getResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
+  const [searchInput, setSearchInput] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSelectedResourceBalance(divideByPrecision(getBalance(entityId, Number(resourceId)).balance));
@@ -47,6 +52,34 @@ export const ResourceBar = ({
 
   const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
   const finalResourceBalance = hasLordsFees ? selectedResourceBalance - lordsFee : selectedResourceBalance;
+
+  const filteredResources = resources.filter(
+    (resource) => resource.trait.toLowerCase().startsWith(searchInput.toLowerCase()) || resource.id === resourceId,
+  );
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen && inputRef.current) {
+      setResourceId(ResourcesIds.Wood);
+      setSearchInput("");
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (filteredResources.length > 0) {
+        const selectedResource = filteredResources.filter((resource) => resource.id !== resourceId)[0];
+        setResourceId(selectedResource.id);
+        setOpen(false);
+      }
+      setSearchInput("");
+    } else {
+      e.stopPropagation();
+    }
+  };
 
   return (
     <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap ">
@@ -76,15 +109,30 @@ export const ResourceBar = ({
       </div>
 
       <Select
+        open={open}
+        onOpenChange={handleOpenChange}
         value={findResourceById(Number(resourceId))!.trait}
-        onValueChange={(trait) => handleResourceChange(trait)}
+        onValueChange={(trait) => {
+          handleResourceChange(trait);
+          setOpen(false);
+          setSearchInput("");
+        }}
       >
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder={HintSection.Resources} />
         </SelectTrigger>
         <SelectContent className="bg-black/90 text-gold">
-          {resources.map((resource, index) => (
-            <SelectItem key={index} value={resource.trait}>
+          {resources.length > 1 && (
+            <TextInput
+              ref={inputRef}
+              onChange={setSearchInput}
+              placeholder="Filter resources..."
+              className="w-full"
+              onKeyDown={handleKeyDown}
+            />
+          )}
+          {filteredResources.map((resource, index) => (
+            <SelectItem key={index} value={resource.trait} disabled={resource.id === resourceId}>
               <ResourceCost
                 resourceId={resource.id}
                 amount={divideByPrecision(getBalance(entityId, resource.id).balance)}
