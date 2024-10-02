@@ -51,7 +51,6 @@ export const ResourceChip = ({
     return netRate[1];
   }, [productionManager, production]);
 
-  if (resourceId === ResourcesIds.Donkey) console.log(maxBalance);
   const isConsumingInputsWithoutOutput = useMemo(() => {
     if (!production?.production_rate) return false;
     return productionManager.isConsumingInputsWithoutOutput(currentDefaultTick);
@@ -77,7 +76,6 @@ export const ResourceChip = ({
 
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
-        console.log(maxBalance);
         if (Math.abs(netRate) > 0) {
           return Math.min(maxBalance, Math.max(0, prevDisplayBalance + netRate));
         }
@@ -109,7 +107,6 @@ export const ResourceChip = ({
   }, [netRate, showPerHour]);
 
   const reachedMaxCap = maxBalance === displayBalance && Math.abs(netRate) > 0;
-  if (resourceId === ResourcesIds.Obsidian) console.log(netRate);
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
