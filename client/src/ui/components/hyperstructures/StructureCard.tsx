@@ -112,8 +112,12 @@ export const Exchange = ({
   return (
     <Tabs defaultValue="troops" className="w-full">
       <TabsList className="grid w-full grid-cols-2 gap-4">
-        <TabsTrigger value="troops" className="border hover:opacity-70">Troops</TabsTrigger>
-        <TabsTrigger value="resources" className="border hover:opacity-70">Resources</TabsTrigger>
+        <TabsTrigger value="troops" className="border hover:opacity-70">
+          Troops
+        </TabsTrigger>
+        <TabsTrigger value="resources" className="border hover:opacity-70">
+          Resources
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="troops">
         {/* <div className="flex flex-col">... existing troops exchange UI ...</div> */}
@@ -138,7 +142,7 @@ export const Exchange = ({
   );
 };
 
-export const TroopExchange = ({
+const TroopExchange = ({
   giverArmyName,
   giverArmyEntityId,
   structureEntityId,

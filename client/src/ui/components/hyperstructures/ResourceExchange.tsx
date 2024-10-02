@@ -38,10 +38,13 @@ export const ResourceExchange = ({
   const [resourcesGiven, setResourcesGiven] = useState<Record<number, number>>(
     Object.keys(ResourcesIds)
       .filter((key) => !isNaN(Number(ResourcesIds[key])))
-      .reduce((acc, key) => {
-        acc[ResourcesIds[key]] = 0;
-        return acc;
-      }, {} as Record<number, number>),
+      .reduce(
+        (acc, key) => {
+          acc[ResourcesIds[key]] = 0;
+          return acc;
+        },
+        {} as Record<number, number>,
+      ),
   );
 
   const giverArmyResources = useMemo(() => getResourcesFromBalance(giverArmyEntityId), [loading]);
