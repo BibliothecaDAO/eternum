@@ -1,4 +1,4 @@
-import { findResourceById, getIconResourceId, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
