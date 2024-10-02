@@ -17,7 +17,7 @@ import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 
-export type RealmInfo =
+type RealmInfo =
   | {
       realmId: ID;
       name: string;
@@ -262,7 +262,7 @@ export function getRealms(): RealmInfo[] {
     const population = getComponentValue(Population, entity);
     const structure = getComponentValue(Structure, entity);
 
-    if (realm && owner && position) {
+    if (realm && owner && position && structure) {
       const { realm_id, cities, rivers, wonder, harbors, regions, resource_types_count, resource_types_packed, order } =
         realm;
 
