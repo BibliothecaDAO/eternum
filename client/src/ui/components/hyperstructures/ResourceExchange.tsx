@@ -37,10 +37,10 @@ export const ResourceExchange = ({
   const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
   const [resourcesGiven, setResourcesGiven] = useState<Record<number, number>>(
     Object.keys(ResourcesIds)
-      .filter((key) => !isNaN(Number(ResourcesIds[key])))
+      .filter((key) => !isNaN(Number(key)))
       .reduce(
         (acc, key) => {
-          acc[ResourcesIds[key]] = 0;
+          acc[Number(key)] = 0;
           return acc;
         },
         {} as Record<number, number>,
