@@ -70,7 +70,7 @@ export const BattleProgressBar = ({
     if (time.getTime() === 0) return;
     const timer = setInterval(() => {
       const date = new Date(0);
-      date.setSeconds(time.getTime() / 1000 - 1);
+      date.setTime(time.getTime() - 1000);
       setTime(date);
     }, 1000);
     return () => clearInterval(timer);
