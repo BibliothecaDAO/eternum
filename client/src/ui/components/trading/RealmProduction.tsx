@@ -17,11 +17,11 @@ export const RealmProduction = () => {
   return (
     <>
       <div className="flex flex-row justify-evenly my-2 ">
-        <div className="border">
+        <div>
           <p>Search produced resource</p>
           <SelectResource onSelect={(resourceId) => setFilterProduced(resourceId)} className="w-full" />
         </div>
-        <div className="border">
+        <div>
           <p>Search consumed resource</p>
           <SelectResource onSelect={(resourceId) => setFilterConsumed(resourceId)} className="w-full" />
         </div>
@@ -60,7 +60,7 @@ export const RealmProduction = () => {
               >
                 <p className="text-md font-bold">{realm.ownerName}</p>
                 <p className="text-sm mb-1">{realm.name}</p>
-                {realm.realmId && <RealmResourcesIO structureEntityId={realm.structure.entity_id} />}
+                {realm.realmId && <RealmResourcesIO realmEntityId={realm.entityId} />}
               </div>
             );
           })}

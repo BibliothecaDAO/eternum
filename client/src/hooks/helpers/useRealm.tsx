@@ -17,27 +17,25 @@ import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 
-type RealmInfo =
-  | {
-      realmId: ID;
-      name: string;
-      cities: number;
-      rivers: number;
-      wonder: number;
-      harbors: number;
-      regions: number;
-      resourceTypesCount: number;
-      resourceTypesPacked: bigint;
-      order: number;
-      position: ComponentValue<ClientComponents["Position"]["schema"]>;
-      population?: number | undefined;
-      capacity?: number;
-      hasCapacity: boolean;
-      owner: ContractAddress;
-      ownerName: string;
-      structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
-    }
-  | undefined;
+type RealmInfo = {
+  realmId: ID;
+  entityId: ID;
+  name: string;
+  cities: number;
+  rivers: number;
+  wonder: number;
+  harbors: number;
+  regions: number;
+  resourceTypesCount: number;
+  resourceTypesPacked: bigint;
+  order: number;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  population?: number | undefined;
+  capacity?: number;
+  hasCapacity: boolean;
+  owner: ContractAddress;
+  ownerName: string;
+};
 
 export function useRealm() {
   const {
@@ -255,16 +253,27 @@ export function getRealms(): RealmInfo[] {
 
   const realmEntities = runQuery([Has(Realm)]);
 
-  const realms = Array.from(realmEntities).map((entity) => {
-    const realm = getComponentValue(Realm, entity);
-    const owner = getComponentValue(Owner, entity);
-    const position = getComponentValue(Position, entity);
-    const population = getComponentValue(Population, entity);
-    const structure = getComponentValue(Structure, entity);
+  return Array.from(realmEntities)
+    .map((entity) => {
+      const realm = getComponentValue(Realm, entity);
+      const owner = getComponentValue(Owner, entity);
+      const position = getComponentValue(Position, entity);
+      const population = getComponentValue(Population, entity);
 
-    if (realm && owner && position && structure) {
-      const { realm_id, cities, rivers, wonder, harbors, regions, resource_types_count, resource_types_packed, order } =
-        realm;
+      if (!realm || !owner || !position) return;
+
+      const {
+        realm_id,
+        entity_id,
+        cities,
+        rivers,
+        wonder,
+        harbors,
+        regions,
+        resource_types_count,
+        resource_types_packed,
+        order,
+      } = realm;
 
       const name = getRealmNameById(realm_id);
 
@@ -275,6 +284,7 @@ export function getRealms(): RealmInfo[] {
 
       return {
         realmId: realm_id,
+        entityId: entity_id,
         name,
         cities,
         rivers,
@@ -289,10 +299,7 @@ export function getRealms(): RealmInfo[] {
         hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
         owner: address,
         ownerName,
-        structure,
       };
-    }
-  });
-
-  return realms;
+    })
+    .filter((realm) => realm !== undefined);
 }

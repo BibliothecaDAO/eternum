@@ -4,18 +4,17 @@ import { unpackResources } from "@/ui/utils/packedData";
 import { ID, RESOURCE_INPUTS_SCALED, ResourcesIds } from "@bibliothecadao/eternum";
 
 export const RealmResourcesIO = ({
-  structureEntityId,
+  realmEntityId,
   className,
   titleClassName,
   size = "xs",
 }: {
-  structureEntityId?: ID;
+  realmEntityId?: ID;
   className?: string;
   titleClassName?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }) => {
-  const { realm } = useGetRealm(structureEntityId);
-  if (!realm) return;
+  const { realm } = useGetRealm(realmEntityId);
 
   const resourcesProduced = unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount);
 
