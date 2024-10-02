@@ -6,6 +6,7 @@ import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
@@ -14,6 +15,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
+import { ResourceExchange } from "./ResourceExchange";
 
 const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
@@ -96,6 +98,44 @@ const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; c
     [ResourcesIds.Knight]: troops.knight_count,
     [ResourcesIds.Paladin]: troops.paladin_count,
   };
+};
+
+export const Exchange = ({
+  giverArmyName,
+  giverArmyEntityId,
+  structureEntityId,
+  takerArmy,
+  allowReverse,
+}: TroopsProps) => {
+  // ... existing code ...
+
+  return (
+    <Tabs defaultValue="troops" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 gap-4">
+        <TabsTrigger value="troops" className="border hover:opacity-70">Troops</TabsTrigger>
+        <TabsTrigger value="resources" className="border hover:opacity-70">Resources</TabsTrigger>
+      </TabsList>
+      <TabsContent value="troops">
+        {/* <div className="flex flex-col">... existing troops exchange UI ...</div> */}
+        <TroopExchange
+          giverArmyName={giverArmyName}
+          giverArmyEntityId={giverArmyEntityId}
+          structureEntityId={structureEntityId}
+          takerArmy={takerArmy}
+          allowReverse={allowReverse}
+        />
+      </TabsContent>
+      <TabsContent value="resources">
+        <ResourceExchange
+          giverArmyName={giverArmyName}
+          giverArmyEntityId={giverArmyEntityId}
+          structureEntityId={structureEntityId}
+          takerArmy={takerArmy}
+          allowReverse={allowReverse}
+        />
+      </TabsContent>
+    </Tabs>
+  );
 };
 
 export const TroopExchange = ({
