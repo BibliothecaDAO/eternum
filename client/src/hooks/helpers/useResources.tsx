@@ -115,11 +115,11 @@ export const usePlayerArrivals = () => {
 
   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
 
-  const fragments = [NotValue(OwnedResourcesTracker, { resource_types: 0n }), Has(Weight), Has(ArrivalTime)];
+  const queryFragments = [NotValue(OwnedResourcesTracker, { resource_types: 0n }), Has(Weight), Has(ArrivalTime)];
 
   const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
     return positions.flatMap((position) => {
-      return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...fragments]));
+      return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
     });
   }, []);
 
@@ -148,12 +148,12 @@ export const usePlayerArrivals = () => {
     const arrivals = getArrivalsWithResourceOnPosition(playerStructurePositions)
       .map(createArrivalInfo)
       .filter((arrival: any): arrival is ArrivalInfo => arrival !== undefined);
-
+    console.log(getArrivalsWithResourceOnPosition(playerStructurePositions));
     setEntitiesWithInventory(arrivals);
   }, [playerStructurePositions]);
 
   useEffect(() => {
-    const query = defineQuery([Has(Position), ...fragments], { runOnInit: false });
+    const query = defineQuery([Has(Position), ...queryFragments], { runOnInit: false });
 
     const sub = query.update$.subscribe((update) => {
       if (isComponentUpdate(update, Position)) {
