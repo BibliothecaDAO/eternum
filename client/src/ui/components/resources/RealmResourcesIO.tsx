@@ -9,12 +9,13 @@ export const RealmResourcesIO = ({
   titleClassName,
   size = "xs",
 }: {
-  structureEntityId: ID;
+  structureEntityId?: ID;
   className?: string;
   titleClassName?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }) => {
   const { realm } = useGetRealm(structureEntityId);
+  if (!realm) return;
 
   const resourcesProduced = unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount);
 

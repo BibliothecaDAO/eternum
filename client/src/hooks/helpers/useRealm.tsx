@@ -1,3 +1,4 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import {
   BASE_POPULATION_CAPACITY,
   ContractAddress,
@@ -6,7 +7,7 @@ import {
   getQuestResources as getStartingResources,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
@@ -15,6 +16,28 @@ import { getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
+
+export type RealmInfo =
+  | {
+      realmId: ID;
+      name: string;
+      cities: number;
+      rivers: number;
+      wonder: number;
+      harbors: number;
+      regions: number;
+      resourceTypesCount: number;
+      resourceTypesPacked: bigint;
+      order: number;
+      position: ComponentValue<ClientComponents["Position"]["schema"]>;
+      population?: number | undefined;
+      capacity?: number;
+      hasCapacity: boolean;
+      owner: ContractAddress;
+      ownerName: string;
+      structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+    }
+  | undefined;
 
 export function useRealm() {
   const {
@@ -221,4 +244,55 @@ export function useGetRealm(realmEntityId: ID | undefined) {
   return {
     realm,
   };
+}
+
+export function getRealms(): RealmInfo[] {
+  const {
+    setup: {
+      components: { Realm, Position, Owner, Population, AddressName, Structure },
+    },
+  } = useDojo();
+
+  const realmEntities = runQuery([Has(Realm)]);
+
+  const realms = Array.from(realmEntities).map((entity) => {
+    const realm = getComponentValue(Realm, entity);
+    const owner = getComponentValue(Owner, entity);
+    const position = getComponentValue(Position, entity);
+    const population = getComponentValue(Population, entity);
+    const structure = getComponentValue(Structure, entity);
+
+    if (realm && owner && position) {
+      const { realm_id, cities, rivers, wonder, harbors, regions, resource_types_count, resource_types_packed, order } =
+        realm;
+
+      const name = getRealmNameById(realm_id);
+
+      const { address } = owner;
+
+      const addressName = getComponentValue(AddressName, getEntityIdFromKeys([address]));
+      const ownerName = shortString.decodeShortString(addressName?.name.toString() ?? "0x0");
+
+      return {
+        realmId: realm_id,
+        name,
+        cities,
+        rivers,
+        wonder,
+        harbors,
+        regions,
+        resourceTypesCount: resource_types_count,
+        resourceTypesPacked: resource_types_packed,
+        order,
+        position,
+        ...population,
+        hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+        owner: address,
+        ownerName,
+        structure,
+      };
+    }
+  });
+
+  return realms;
 }
