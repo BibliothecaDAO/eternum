@@ -107,8 +107,6 @@ export const Exchange = ({
   takerArmy,
   allowReverse,
 }: TroopsProps) => {
-  // ... existing code ...
-
   return (
     <Tabs defaultValue="troops" className="w-full">
       <TabsList className="grid w-full grid-cols-2 gap-4">
@@ -120,7 +118,6 @@ export const Exchange = ({
         </TabsTrigger>
       </TabsList>
       <TabsContent value="troops">
-        {/* <div className="flex flex-col">... existing troops exchange UI ...</div> */}
         <TroopExchange
           giverArmyName={giverArmyName}
           giverArmyEntityId={giverArmyEntityId}
