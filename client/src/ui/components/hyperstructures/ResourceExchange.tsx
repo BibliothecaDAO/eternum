@@ -88,7 +88,6 @@ export const ResourceExchange = ({
                 ? giverArmyResources.find((giverResource) => giverResource.resourceId === resource.resourceId)
                     ?.amount || 0
                 : resource.amount;
-            console.log("Amount? ", amount);
             return (
               <ResourceRow
                 key={resource.resourceId}
