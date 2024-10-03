@@ -64,7 +64,7 @@ const ExplorationTable = () => {
           <td className="border border-gold/10 p-2">
             <div className="flex flex-row items-center justify-around">
               <Lightning className="fill-order-power/70 w-8"></Lightning>
-              <p>20</p>
+              <p>{EternumGlobalConfig.stamina.exploreCost}</p>
             </div>
           </td>
           <td className="border border-gold/10 p-2">
@@ -83,7 +83,7 @@ const ExplorationTable = () => {
           <td className="border border-gold/10 p-2">
             <div className="flex flex-row items-center justify-around">
               <Lightning className="fill-order-power/70 w-8"></Lightning>
-              <p>10</p>
+              <p>{EternumGlobalConfig.stamina.travelCost}</p>
             </div>
           </td>
           <td className="border border-gold/10 p-2">
