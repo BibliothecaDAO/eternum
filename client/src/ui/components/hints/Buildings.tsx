@@ -64,10 +64,13 @@ export const Buildings = () => {
                   src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
                 />
               </td>
-              <td className="text text-left">
+              <td className="text text-center">
                 {building.building_capacity !== 0 && (
                   <>
-                    Housing: + {building.building_capacity} <br />
+                    <p>Max population capacity:</p>
+                    <p >
+                      + {building.building_capacity} <br />
+                    </p>
                   </>
                 )}
                 {building.building_population !== 0 && <>Population: +{building.building_population}</>}
