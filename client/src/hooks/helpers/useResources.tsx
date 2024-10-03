@@ -148,7 +148,6 @@ export const usePlayerArrivals = () => {
     const arrivals = getArrivalsWithResourceOnPosition(playerStructurePositions)
       .map(createArrivalInfo)
       .filter((arrival: any): arrival is ArrivalInfo => arrival !== undefined);
-    console.log(getArrivalsWithResourceOnPosition(playerStructurePositions));
     setEntitiesWithInventory(arrivals);
   }, [playerStructurePositions]);
 
