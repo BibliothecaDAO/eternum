@@ -15,6 +15,7 @@ export const RealmResourcesIO = ({
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }) => {
   const { realm } = useGetRealm(realmEntityId);
+  if (!realm) return;
 
   const resourcesProduced = unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount);
 
