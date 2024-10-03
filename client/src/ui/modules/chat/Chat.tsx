@@ -211,7 +211,7 @@ export const Chat = () => {
             ))}
         </div>
         <div
-          className="flex flex-row items-end w-8 h-8 text-sm text-center"
+          className="flex flex-row items-end h-8"
           onClick={() => {
             setHideChat(!hideChat);
           }}
