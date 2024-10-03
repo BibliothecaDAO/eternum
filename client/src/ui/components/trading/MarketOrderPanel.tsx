@@ -21,7 +21,7 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmationPopup } from "../bank/ConfirmationPopup";
 
 export const MarketResource = ({
@@ -503,6 +503,7 @@ const OrderCreation = ({
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
+  const [bid, setBid] = useState((lords / resource).toFixed(2));
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
@@ -510,6 +511,21 @@ const OrderCreation = ({
       systemCalls: { create_order },
     },
   } = useDojo();
+  useEffect(() => {
+    setBid((lords / resource).toFixed(2));
+  }, [resource, lords]);
+
+  const updateLords = useCallback((newBid: number, newResource: number) => {
+    setLords(Number((newBid * newResource).toFixed(2)));
+  }, []);
+
+  const handleBidChange = (newBid: number) => {
+    const numericBid = Number(newBid);
+    if (!isNaN(numericBid) && numericBid > 0) {
+      setBid(newBid.toString());
+      updateLords(numericBid, resource);
+    }
+  };
 
   const takerGives = useMemo(() => {
     return isBuy ? [resourceId, multiplyByPrecision(resource)] : [ResourcesIds.Lords, multiplyByPrecision(lords)];
@@ -534,10 +550,6 @@ const OrderCreation = ({
       setLoading(false);
     });
   };
-
-  const bid = useMemo(() => {
-    return (lords / resource).toFixed(2);
-  }, [resource, lords]);
 
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
@@ -615,7 +627,13 @@ const OrderCreation = ({
         </div>
         <div className="flex w-1/3 justify-center px-3 text-center font-bold self-center">
           <div className="uppercase text-2xl">
-            {bid.toString()}
+            <NumberInput
+              allowDecimals={true}
+              value={Number(bid)}
+              onChange={handleBidChange}
+              className="w-full text-center"
+              max={Infinity}
+            />
             <div className="uppercase text-xs flex gap-1 mt-1 ">
               <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
               per / <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />
