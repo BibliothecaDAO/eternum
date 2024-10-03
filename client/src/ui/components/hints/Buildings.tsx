@@ -68,7 +68,7 @@ export const Buildings = () => {
                 {building.building_capacity !== 0 && (
                   <>
                     <p>Max population capacity:</p>
-                    <p >
+                    <p>
                       + {building.building_capacity} <br />
                     </p>
                   </>
