@@ -227,7 +227,7 @@ const MarketResourceSidebar = ({
 
             const askPrice = resourceBidOffers
               .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
-              .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
+              .reduce((acc, offer) => (offer.perLords > acc ? offer.perLords : acc), 0);
 
             const bidPrice = resourceAskOffers
               .filter((offer) => offer.takerGets[0].resourceId === resource.id)
