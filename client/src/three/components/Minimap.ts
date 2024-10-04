@@ -39,28 +39,28 @@ const MINIMAP_CONFIG = {
 
 class Minimap {
   private worldmapScene: WorldmapScene;
-  private canvas: HTMLCanvasElement;
-  private context: CanvasRenderingContext2D;
-  private camera: THREE.PerspectiveCamera;
-  private exploredTiles: Map<number, Set<number>>;
-  private structureManager: StructureManager;
-  private armyManager: ArmyManager;
-  private biome: Biome;
+  private canvas!: HTMLCanvasElement;
+  private context!: CanvasRenderingContext2D;
+  private camera!: THREE.PerspectiveCamera;
+  private exploredTiles!: Map<number, Set<number>>;
+  private structureManager!: StructureManager;
+  private armyManager!: ArmyManager;
+  private biome!: Biome;
   private displayRange: any = {
     minCol: 150,
     maxCol: 350,
     minRow: 100,
     maxRow: 200,
   };
-  private scaleX: number;
-  private scaleY: number;
+  private scaleX!: number;
+  private scaleY!: number;
   private isDragging: boolean = false;
-  private biomeCache: Map<string, string>;
-  private scaledCoords: Map<string, { scaledCol: number; scaledRow: number }>;
+  private biomeCache!: Map<string, string>;
+  private scaledCoords!: Map<string, { scaledCol: number; scaledRow: number }>;
   private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
-  private structureSize: { width: number; height: number };
-  private armySize: { width: number; height: number };
-  private cameraSize: {
+  private structureSize!: { width: number; height: number };
+  private armySize!: { width: number; height: number };
+  private cameraSize!: {
     topSideWidth: number;
     bottomSideWidth: number;
     height: number;
