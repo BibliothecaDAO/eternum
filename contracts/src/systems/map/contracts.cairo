@@ -19,7 +19,8 @@ mod map_systems {
     };
     use eternum::models::config::{
         ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig, MercenariesConfig,
-        TroopConfigCustomImpl, TickImpl, TickTrait, TravelStaminaCostConfig
+        TroopConfigCustomImpl, TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig,
+        TravelFoodCostConfigImpl
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
@@ -100,8 +101,10 @@ mod map_systems {
             let stamina_cost = get!(world, (WORLD_CONFIG_ID, TravelTypes::EXPLORE), TravelStaminaCostConfig).cost;
             StaminaCustomImpl::handle_stamina_costs(unit_id, stamina_cost, world);
 
+            let army = get!(world, unit_id, Army);
+
             // explore coordinate, pay food and mint reward
-            MapConfigImpl::pay_exploration_cost(world, unit_entity_owner, unit_quantity);
+            TravelFoodCostConfigImpl::pay_exploration_cost(world, unit_entity_owner, army.troops);
             let exploration_reward = MapConfigImpl::random_reward(world);
 
             InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward, 0, false, false);

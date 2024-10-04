@@ -1,6 +1,11 @@
 import { type HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  computeExploreFoodCosts,
+  computeTravelFoodCosts,
+  getEntityIdFromKeys,
+  multiplyByPrecision,
+} from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
   ContractAddress,
@@ -75,7 +80,7 @@ export class ArmyMovementManager {
   private readonly fishManager: ProductionManager;
   private readonly wheatManager: ProductionManager;
   private readonly staminaManager: StaminaManager;
-  private readonly entityQuantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
+  private readonly entityArmy: ComponentValue<ClientComponents["Army"]["schema"]>;
 
   constructor(
     private readonly setup: SetupResult,
@@ -85,7 +90,16 @@ export class ArmyMovementManager {
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
     const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
-    this.entityQuantity = getComponentValue(this.setup.components.Quantity, this.entity) ?? { entity_id: 0, value: 0n };
+    this.entityArmy = getComponentValue(this.setup.components.Army, this.entity) ?? {
+      entity_id: 0,
+      troops: {
+        knight_count: 0n,
+        paladin_count: 0n,
+        crossbowman_count: 0n,
+      },
+      battle_id: 0,
+      battle_side: "",
+    };
     this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
     this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.setup, entityId);
@@ -99,19 +113,12 @@ export class ArmyMovementManager {
     }
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    const wheatPayAmount =
-      EternumGlobalConfig.exploration.exploreWheatBurn *
-      EternumGlobalConfig.resources.resourcePrecision *
-      Number(this.entityQuantity.value);
-    const fishPayAmount =
-      EternumGlobalConfig.exploration.exploreFishBurn *
-      EternumGlobalConfig.resources.resourcePrecision *
-      Number(this.entityQuantity.value);
+    const exploreFoodCosts = computeExploreFoodCosts(this.entityArmy.troops);
 
-    if (fish < fishPayAmount) {
+    if (fish < exploreFoodCosts.fishPayAmount) {
       return false;
     }
-    if (wheat < wheatPayAmount) {
+    if (wheat < exploreFoodCosts.wheatPayAmount) {
       return false;
     }
 
@@ -126,17 +133,11 @@ export class ArmyMovementManager {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
     const maxStaminaSteps = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
 
-    const travelWheatPayAmountPerStep =
-      EternumGlobalConfig.exploration.travelWheatBurn *
-      EternumGlobalConfig.resources.resourcePrecision *
-      Number(this.entityQuantity.value);
-    const travelFishPayAmountPerStep =
-      EternumGlobalConfig.exploration.travelFishBurn *
-      EternumGlobalConfig.resources.resourcePrecision *
-      Number(this.entityQuantity.value);
+    const travelFoodCosts = computeTravelFoodCosts(this.entityArmy.troops);
+
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / travelWheatPayAmountPerStep);
-    const maxTravelFishSteps = Math.floor(fish / travelFishPayAmountPerStep);
+    const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
+    const maxTravelFishSteps = Math.floor(fish / multiplyByPrecision(travelFoodCosts.fishPayAmount));
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
     return Math.min(maxStaminaSteps, maxTravelSteps);
   };

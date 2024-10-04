@@ -15,7 +15,8 @@ use eternum::{
         systems::{deploy_system, deploy_realm_systems, deploy_combat_systems},
         config::{
             set_combat_config, setup_globals, set_stamina_config, set_capacity_config, set_speed_config,
-            set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config
+            set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config,
+            set_travel_food_cost_config
         }
     },
 };
@@ -43,6 +44,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     set_weight_config(config_systems_address);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
     set_battle_config(config_systems_address);
+    set_travel_food_cost_config(config_systems_address);
 
     let realm_system_dispatcher = deploy_realm_systems(world);
     let combat_system_dispatcher = deploy_combat_systems(world);

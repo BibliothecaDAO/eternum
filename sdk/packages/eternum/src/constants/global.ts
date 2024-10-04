@@ -22,12 +22,6 @@ export const EternumGlobalConfig = {
     workerHuts: 5,
   },
   exploration: {
-    // food burn amount per unit during exploration
-    exploreWheatBurn: 0.003,
-    exploreFishBurn: 0.003,
-    // food burn amount per unit during travel
-    travelWheatBurn: 0.001,
-    travelFishBurn: 0.001,
     reward: 750,
     shardsMinesFailProbability: 99000,
   },
@@ -40,7 +34,7 @@ export const EternumGlobalConfig = {
     [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
     [CapacityConfigCategory.Donkey]: 100_000,
     [CapacityConfigCategory.Army]: 10_000,
-    [CapacityConfigCategory.Storehouse]: 10_000_000_000,
+    [CapacityConfigCategory.Storehouse]: 3_000_000_000,
   },
   speed: {
     donkey: 6,

@@ -26,7 +26,8 @@
     "ProductionOutput",
     "DetachedResource",
     "ResourceCost",
-    "TravelStaminaCostConfig"
+    "TravelStaminaCostConfig",
+    "TravelFoodCostConfig"
   ],
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker", "Production"],
   "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount", "CapacityCategory"],

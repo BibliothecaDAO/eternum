@@ -2,7 +2,9 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig};
+use eternum::models::config::{
+    TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, TravelFoodCostConfig
+};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -43,6 +45,12 @@ trait ITickConfig {
 trait IStaminaConfig {
     fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16);
 }
+
+#[dojo::interface]
+trait ITravelFoodCostConfig {
+    fn set_travel_food_cost_config(ref world: IWorldDispatcher, travel_food_cost_config: TravelFoodCostConfig);
+}
+
 #[dojo::interface]
 trait IStaminaRefillConfig {
     fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16);
@@ -150,7 +158,7 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, BuildingGeneralConfig
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, BuildingGeneralConfig, TravelFoodCostConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -287,6 +295,16 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl TravelFoodCostConfigCustomImpl of super::ITravelFoodCostConfig<ContractState> {
+        fn set_travel_food_cost_config(ref world: IWorldDispatcher, mut travel_food_cost_config: TravelFoodCostConfig) {
+            assert_caller_is_admin(world);
+            
+            travel_food_cost_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (travel_food_cost_config));
         }
     }
 

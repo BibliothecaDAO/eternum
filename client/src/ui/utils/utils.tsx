@@ -8,6 +8,7 @@ import {
   type Position,
   type Resource,
   ResourcesIds,
+  TROOPS_FOOD_CONSUMPTION,
   WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -354,4 +355,56 @@ const accentsToAscii = (str: string) => {
 export const toValidAscii = (str: string) => {
   const intermediateString = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   return accentsToAscii(intermediateString);
+};
+
+export const computeTravelFoodCosts = (troops: any) => {
+  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
+  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
+  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+
+  const paladinCount = Number(troops.paladin_count);
+  const knightCount = Number(troops.knight_count);
+  const crossbowmanCount = Number(troops.crossbowman_count);
+
+  const paladinWheatConsumption = paladinFoodConsumption.travel_wheat_burn_amount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.travel_wheat_burn_amount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travel_wheat_burn_amount * crossbowmanCount;
+
+  const paladinFishConsumption = paladinFoodConsumption.travel_fish_burn_amount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.travel_fish_burn_amount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travel_fish_burn_amount * crossbowmanCount;
+
+  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
+  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+
+  return {
+    wheatPayAmount,
+    fishPayAmount,
+  };
+};
+
+export const computeExploreFoodCosts = (troops: any) => {
+  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
+  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
+  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+
+  const paladinCount = Number(troops.paladin_count);
+  const knightCount = Number(troops.knight_count);
+  const crossbowmanCount = Number(troops.crossbowman_count);
+
+  const paladinWheatConsumption = paladinFoodConsumption.explore_wheat_burn_amount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.explore_wheat_burn_amount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.explore_wheat_burn_amount * crossbowmanCount;
+
+  const paladinFishConsumption = paladinFoodConsumption.explore_fish_burn_amount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.explore_fish_burn_amount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.explore_fish_burn_amount * crossbowmanCount;
+
+  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
+  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+
+  return {
+    wheatPayAmount,
+    fishPayAmount,
+  };
 };
