@@ -75,7 +75,27 @@ class Minimap {
     biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
-    this.canvas = document.getElementById("minimap") as HTMLCanvasElement;
+    this.waitForMinimapElement().then((canvas) => {
+      this.canvas = canvas;
+      this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera);
+    });
+  }
+
+  private async waitForMinimapElement(): Promise<HTMLCanvasElement> {
+    return new Promise((resolve) => {
+      const checkElement = () => {
+        const element = document.getElementById("minimap") as HTMLCanvasElement;
+        if (element) {
+          resolve(element);
+        } else {
+          requestAnimationFrame(checkElement);
+        }
+      };
+      checkElement();
+    });
+  }
+
+  private initializeCanvas(structureManager: StructureManager, exploredTiles: Map<number, Set<number>>, armyManager: ArmyManager, biome: Biome, camera: THREE.PerspectiveCamera) {
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
@@ -312,8 +332,7 @@ class Minimap {
   private zoom(zoomOut: boolean) {
     const currentRange = Math.abs(this.displayRange.maxCol - this.displayRange.minCol);
     console.log(
-      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, minCol: ${this.displayRange.minCol}, maxCol: ${
-        this.displayRange.maxCol
+      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, minCol: ${this.displayRange.minCol}, maxCol: ${this.displayRange.maxCol
       }`,
     );
     if (!zoomOut && currentRange < MINIMAP_CONFIG.MIN_ZOOM_RANGE) {
