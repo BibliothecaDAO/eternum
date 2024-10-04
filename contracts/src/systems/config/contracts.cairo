@@ -302,7 +302,7 @@ mod config_systems {
     impl TravelFoodCostConfigCustomImpl of super::ITravelFoodCostConfig<ContractState> {
         fn set_travel_food_cost_config(ref world: IWorldDispatcher, mut travel_food_cost_config: TravelFoodCostConfig) {
             assert_caller_is_admin(world);
-            
+
             travel_food_cost_config.config_id = WORLD_CONFIG_ID;
             set!(world, (travel_food_cost_config));
         }
