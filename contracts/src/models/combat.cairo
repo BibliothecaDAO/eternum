@@ -222,13 +222,38 @@ impl TroopsImpl of TroopsTrait {
     fn delta(
         self: @Troops, self_health: @Health, enemy_troops: @Troops, enemy_health: @Health, troop_config: TroopConfig
     ) -> (u64, u64) {
-        let self_delta: i128 = self.strength_against(self_health, enemy_troops, enemy_health, troop_config);
-        let self_delta_abs: u64 = Into::<i128, felt252>::into(self_delta.abs()).try_into().unwrap();
 
-        let enemy_delta: i128 = enemy_troops.strength_against(enemy_health, self, self_health, troop_config);
-        let enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs()).try_into().unwrap();
+        let self = *self;
+        let self_health = *self_health;
+        let enemy_troops = *enemy_troops;
+        let enemy_health = *enemy_health;
 
-        return (enemy_delta_abs, self_delta_abs);
+
+        /// 
+        /// ARMY 1 = 12.7 * 0.1, TD dealt = 1.27 ps, TD received = 1.259 so  120 / 1.259 = 95.31 time till death
+        /// ARMY 2 = 12.59 * 0.1, TD dealt = 1.259 ps , TD received ps = 1.27, so 120 / 1.27  = 94.48 time till death
+        /// 
+        /// ARMY 1 = 1_270_000 * 0.1, TD dealt = 127_000 ps, TD received = 125_900 = 95.31 time till death
+        /// ARMY 2 = 1_259_000 * 0.1, TD dealt = 125_900 ps , TD received ps = 127_000, so 120 / 1.27  = 94.48 time till death
+        /// 
+        /// // 10_000 * 0.1 = 1_000 * 95.31 = 953_100 seconds = 23.82 hours
+        ///  we use logs to make time plateau. 
+        /// 
+        /// // ask loaf if small army vs small army should take long vs big vs big
+        /// 
+        /// 
+        let self_total_strength: u64 = self.strength_against(@self_health, @enemy_troops, @enemy_health, troop_config) + 1;
+        let enemy_total_strength: u64 = enemy_troops.strength_against(@enemy_health, @self, @self_health, troop_config) + 1;
+        
+        let self_damage_per_second: u64 = (self.count() / (enemy_total_strength * 10 / 100)) + 1;
+        let self_seconds_till_death: u64 = ((self.count() * self_damage_per_second * 1) / 1_00) + 1;
+        let self_delta: u64 = (self_health.current / self_seconds_till_death.into() + 1).try_into().unwrap();
+
+        let enemy_damage_per_second: u64 = (enemy_troops.count() / (self_total_strength * 10 / 100)) + 1;
+        let enemy_seconds_till_death: u64 = ((enemy_troops.count() * enemy_damage_per_second * 1) / 1_00) + 1;
+        let enemy_delta: u64 = (enemy_health.current / enemy_seconds_till_death.into() + 1).try_into().unwrap();
+
+        return (enemy_delta, self_delta);
     }
 
     /// @dev Calculates the net combat strength of one troop against another, factoring in
@@ -243,53 +268,111 @@ impl TroopsImpl of TroopsTrait {
     /// advantage for the attacking troops.
     fn strength_against(
         self: @Troops, self_health: @Health, enemy_troops: @Troops, enemy_health: @Health, troop_config: TroopConfig
-    ) -> i128 {
-        let self = *self;
-        let enemy_troops = *enemy_troops;
+    ) -> u64 {
+        let (self, enemy_troops) = (*self, *enemy_troops);
+
+        /// 
+        /// KNIGHT
+        /// 
+        let mut self_knight_strength: u64 = self.actual_type_count(TroopType::Knight, self_health).into()
+            * troop_config.knight_strength.into();
+        let mut enemy_knight_strength: u64 = enemy_troops.actual_type_count(TroopType::Knight, enemy_health).into()
+            * troop_config.knight_strength.into();
+        
+        let self_knight_strength_with_bonus_a 
+            = self_knight_strength + (enemy_knight_strength * troop_config.advantage_percent.into() / self_knight_strength / PercentageValueImpl::_100());
+        let self_knight_strength_with_bonus_b 
+            = self_knight_strength + PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
+        let self_knight_strength_with_bonus = min(self_knight_strength_with_bonus_a, self_knight_strength_with_bonus_b);
+
+        /// 
+        /// PALADIN
+        /// 
+        let mut self_paladin_strength: u64 = self.actual_type_count(TroopType::Paladin, self_health).into()
+            * troop_config.paladin_strength.into();
+        let mut enemy_paladin_strength: u64 = enemy_troops.actual_type_count(TroopType::Paladin, enemy_health).into()
+            * troop_config.paladin_strength.into();
+        
+        let self_paladin_strength_with_bonus_a 
+            = self_paladin_strength + (enemy_paladin_strength * troop_config.advantage_percent.into() / self_paladin_strength / PercentageValueImpl::_100());
+        let self_paladin_strength_with_bonus_b 
+            = self_paladin_strength + PercentageImpl::get(self_paladin_strength.into(), troop_config.advantage_percent.into());
+        let self_paladin_strength_with_bonus = min(self_paladin_strength_with_bonus_a, self_paladin_strength_with_bonus_b);
+
+
+        /// 
+        /// CROSSBOWMAN
+        /// 
+        let mut self_crossbowman_strength: u64 = self.actual_type_count(TroopType::Crossbowman, self_health).into()
+            * troop_config.crossbowman_strength.into();
+        let mut enemy_crossbowman_strength: u64 = enemy_troops.actual_type_count(TroopType::Crossbowman, enemy_health).into()
+            * troop_config.crossbowman_strength.into();
+        
+        let self_crossbowman_strength_with_bonus_a 
+            = self_crossbowman_strength + (enemy_crossbowman_strength * troop_config.advantage_percent.into() / self_crossbowman_strength / PercentageValueImpl::_100());
+        let self_crossbowman_strength_with_bonus_b 
+            = self_crossbowman_strength + PercentageImpl::get(self_crossbowman_strength.into(), troop_config.advantage_percent.into());
+        let self_crossbowman_strength_with_bonus = min(self_crossbowman_strength_with_bonus_a, self_crossbowman_strength_with_bonus_b);
+
+        let self_total_strength  
+            = self_knight_strength_with_bonus 
+                + self_paladin_strength_with_bonus 
+                    + self_crossbowman_strength_with_bonus;
+
+       return self_total_strength;
+
+        
+
+                 
+        // 1k, 10c, 1p,  = 12 * 10 hp 
+        // 1(1.1) = 1.1 knight, 10(1.05) = 10.5 crossbowman, 1(1.1) = 1.1  paladin, 
+        //  original sum  = 12
+        //  with bonus = 12.7
+        //
+        // 5, 3, 4
+        // 5(1.02) = 5.1 knights, 3(1.03) = 3.09 crossbowman, 4(1.1) = 4.4 paladin
+        // o = 12
+        // b = 12.59
+        //
+        //
+        /// assume, paladin > crossbowman, 
+        ///         crossbowman > knights, 
+        ///         knights > paladin
+        /// 
+        /// paladin bonus = 3 / 1 * 0.1 = min(0.3, 0.1)
+        /// 
+        /// crossbowman bonus = 5 / 10 * 0.1 = min(0.05, 0.1)
+        /// 
+        /// k bonus = 4 / 1 *  10 / 100  = 0.4 so min(0.4, 0.1)
+        /// 
+        /// 
+        /// ARMY 2
+        ///  p = 10/ 4 * 0.1 = 0.1
+        ///  c = 1 / 3 * 0.1 = 0.03
+        ///  k = 1 / 5 * 0.1 = 0.02
+        /// 
+        /// 
+        /// 
+        /// ARMY 1 = 12.7 * 0.1, TD dealt = 1.27 ps, TD received = 1.259 so  120 / 1.259 = 95.31 time till death
+        /// ARMY 2 = 12.59 * 0.1, TD dealt = 1.259 ps , TD received ps = 1.27, so 120 / 1.27  = 94.48 time till death
+        /// 
+        /// ARMY 1 = 1_270_000 * 0.1, TD dealt = 127_000 ps, TD received = 125_900 = 95.31 time till death
+        /// ARMY 2 = 1_259_000 * 0.1, TD dealt = 125_900 ps , TD received ps = 127_000, so 120 / 1.27  = 94.48 time till death
+        /// 
+        /// // 10_000 * 0.1 = 1_000 * 95.31 = 953_100 seconds = 23.82 hours
+        ///  we use logs to make time plateau. 
+        /// 
+        /// // ask loaf if small army vs small army should take long vs big vs big
+        /// 
+        /// 
+        /// 
+        /// 
+        /// 
+        /// 
+
 
         ///////////////         Calculate the strength of the Attacker      //////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////
-
-        let mut self_knight_strength: u64 = self.actual_type_count(TroopType::Knight, self_health).into()
-            * troop_config.knight_strength.into();
-        self_knight_strength += PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
-
-        let mut self_paladin_strength: u64 = self.actual_type_count(TroopType::Paladin, self_health).into()
-            * troop_config.paladin_strength.into();
-        self_paladin_strength +=
-            PercentageImpl::get(self_paladin_strength.into(), troop_config.advantage_percent.into());
-
-        let mut self_crossbowman_strength: u64 = self.actual_type_count(TroopType::Crossbowman, self_health).into()
-            * troop_config.crossbowman_strength.into();
-        self_crossbowman_strength +=
-            PercentageImpl::get(self_crossbowman_strength.into(), troop_config.advantage_percent.into());
-
-        ///////////////         Calculate the strength of the Defender      //////////////////////
-        //////////////////////////////////////////////////////////////////////////////////////////
-
-        let mut enemy_knight_strength: u64 = enemy_troops.actual_type_count(TroopType::Knight, enemy_health).into()
-            * troop_config.knight_strength.into();
-        enemy_knight_strength -= PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
-
-        let mut enemy_paladin_strength: u64 = enemy_troops.actual_type_count(TroopType::Paladin, enemy_health).into()
-            * troop_config.paladin_strength.into();
-        enemy_paladin_strength -= PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
-
-        let mut enemy_crossbowman_strength: u64 = enemy_troops
-            .actual_type_count(TroopType::Crossbowman, enemy_health)
-            .into()
-            * troop_config.crossbowman_strength.into();
-        enemy_crossbowman_strength -=
-            PercentageImpl::get(enemy_crossbowman_strength, troop_config.disadvantage_percent.into());
-
-        ///////////////          Calculate the strength difference          //////////////////////
-        //////////////////////////////////////////////////////////////////////////////////////////
-
-        let self_knight_strength: i128 = self_knight_strength.into() - enemy_paladin_strength.into();
-        let self_paladin_strength: i128 = self_paladin_strength.into() - enemy_crossbowman_strength.into();
-        let self_crossbowman_strength: i128 = self_crossbowman_strength.into() - enemy_knight_strength.into();
-
-        self_knight_strength + self_paladin_strength + self_crossbowman_strength
     }
 
     fn count(self: Troops) -> u64 {
@@ -1119,6 +1202,15 @@ mod tests {
         battle.reset_delta(mock_troop_config());
 
         battle
+    }
+
+    #[test]
+    fn test_fabio() {
+        let attack_troop_each = 1 ;
+        let defence_troop_each = 30_000 * 1_000;
+        let mut battle = mock_battle(attack_troop_each, defence_troop_each);
+        print!("\n\n battle duration: {}\n\n", battle.duration_left);
+
     }
 
     #[test]
