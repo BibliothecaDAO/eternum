@@ -29,7 +29,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -314,27 +314,63 @@ export const TopMiddleNavigation = () => {
 
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
-  const progress = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    return (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+  const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+
+  let cycleTime = EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+
+  useEffect(() => {
+    const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);
+    setTimeUntilNextCycle(initialTime);
+
+    const interval = setInterval(() => {
+      setTimeUntilNextCycle((prevTime) => {
+        if (prevTime <= 1) {
+          return initialTime;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [nextBlockTimestamp]);
+
+  const progress = useMemo(() => {
+    return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
+  }, [timeUntilNextCycle]);
+
+  const updateTooltip = useCallback(() => {
+    if (isTooltipOpen) {
+      setTooltip({
+        position: "bottom",
+        content: (
+          <div className="whitespace-nowrap pointer-events-none flex flex-col">
+            <div>
+              A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+            </div>
+            <div>
+              Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
+            </div>
+          </div>
+        ),
+      });
+    }
+  }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
+
+  useEffect(() => {
+    updateTooltip();
+  }, [updateTooltip]);
 
   return (
     <div
       onMouseEnter={() => {
-        setTooltip({
-          position: "bottom",
-          content: (
-            <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {formatTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)}</span>
-            </span>
-          ),
-        });
+        setIsTooltipOpen(true);
+        updateTooltip();
       }}
       onMouseLeave={() => {
+        setIsTooltipOpen(false);
         setTooltip(null);
       }}
       className="self-center text-center px-1 py-1 flex gap-1"

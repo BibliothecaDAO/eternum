@@ -436,7 +436,7 @@ export const ResourceInfo = ({
 
           {capacity !== 0 && (
             <div className="pt-3 uppercase">
-              <span className="font-bold">Capacity </span>
+              <span className="font-bold">Max population capacity </span>
               <br /> +{capacity}
             </div>
           )}
@@ -553,7 +553,7 @@ export const BuildingInfo = ({
 
           {capacity !== 0 && (
             <div className="pt-3 uppercase">
-              <span className="font-bold">Capacity </span>
+              <span className="font-bold">Max population capacity </span>
               <br /> +{capacity}
             </div>
           )}
