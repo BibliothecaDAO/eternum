@@ -125,15 +125,6 @@ export class LeaderboardManager {
     return parsedEvent;
   }
 
-  private parseHyperstructureFinishedEvent(
-    event: ComponentValue<ClientComponents["events"]["HyperstructureFinished"]["schema"]>,
-  ): HyperstructureFinishedEvent {
-    return {
-      hyperstructureEntityId: event.hyperstructure_entity_id,
-      timestamp: event.timestamp,
-    };
-  }
-
   private parseCoOwnersChangeEvent(
     event: ComponentValue<ClientComponents["events"]["HyperstructureCoOwnersChange"]["schema"]>,
   ): HyperstructureCoOwnersChange {

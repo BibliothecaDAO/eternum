@@ -39,7 +39,7 @@ export const BattleActions = ({
   battleAdjusted,
 }: {
   battleManager: BattleManager;
-  userArmiesInBattle: (ArmyInfo | undefined)[];
+  userArmiesInBattle: ArmyInfo[];
   ownArmyEntityId: ID | undefined;
   attackerArmies: (ArmyInfo | undefined)[];
   defenderArmies: (ArmyInfo | undefined)[];
@@ -70,7 +70,7 @@ export const BattleActions = ({
   const { getAliveArmy } = getArmyByEntityId();
 
   const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(
-    userArmiesInBattle?.[0]?.entity_id || ownArmyEntityId || 0,
+    userArmiesInBattle[0]?.entity_id || ownArmyEntityId || 0,
   );
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);

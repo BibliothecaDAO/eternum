@@ -228,6 +228,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.contribute_to_construction(props);
   };
 
+  const end_game = async (props: SystemProps.EndGameProps) => {
+    await provider.end_game(props);
+  };
+
   const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
     await provider.set_co_owners(props);
   };
@@ -332,9 +336,11 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_army: withQueueing(withErrorHandling(create_army)),
     delete_army: withQueueing(withErrorHandling(delete_army)),
     uuid: withQueueing(withErrorHandling(uuid)),
+
     create_hyperstructure: withQueueing(withErrorHandling(create_hyperstructure)),
     contribute_to_construction: withQueueing(withErrorHandling(contribute_to_construction)),
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
+    end_game: withQueueing(withErrorHandling(end_game)),
 
     mint_resources: withQueueing(withErrorHandling(mint_resources)),
     mint_starting_resources: withQueueing(withErrorHandling(mint_starting_resources)),

@@ -22,6 +22,7 @@ export const BattleSideView = ({
   ownSideTroopsUpdated,
   ownArmyEntityId,
   structure,
+  userArmiesInBattle,
 }: {
   battleManager: BattleManager;
   battleSide: BattleSide;
@@ -31,6 +32,7 @@ export const BattleSideView = ({
   ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
   ownArmyEntityId: ID | undefined;
   structure: Structure | undefined;
+  userArmiesInBattle: ArmyInfo[];
 }) => {
   const {
     account: { account },
@@ -94,18 +96,28 @@ export const BattleSideView = ({
           )}
         </div>
 
-        {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (
-          <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full">
+          {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (
             <Button
               onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
               isLoading={loading}
-              className="size-xs h-10 self-center"
+              className="size-xs h-10 self-center w-full"
               variant="primary"
             >
               Join Side
             </Button>
-          </div>
-        )}
+          )}
+          {Boolean(battleEntityId) && isActive && userArmiesInBattle.length > 0 && (
+            <Button
+              onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
+              isLoading={loading}
+              className="size-xs h-10 self-center w-full mt-2"
+              variant="danger"
+            >
+              Leave with all armies
+            </Button>
+          )}
+        </div>
       </div>
       {showBattleDetails && battleEntityId ? (
         <BattleHistory battleSide={battleSide} battleId={battleEntityId} />

@@ -57,7 +57,7 @@ const CoOwnersRows = ({
   const {
     account: { account },
     setup: {
-      components: { HyperstructureUpdate, HyperstructureConfig },
+      components: { Hyperstructure, HyperstructureConfig },
     },
   } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -68,23 +68,19 @@ const CoOwnersRows = ({
     return getComponentValue(HyperstructureConfig, getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]));
   }, [hyperstructureEntityId]);
 
-  const hyperstructureUpdate = useComponentValue(
-    HyperstructureUpdate,
-    getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
-  );
+  const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
 
   const canUpdate = useMemo(() => {
     if (!hyperstructureConfig || !nextBlockTimestamp) return false;
-    if (!hyperstructureUpdate) return true;
-    if (ContractAddress(hyperstructureUpdate.last_updated_by) === ContractAddress(account.address)) {
+    if (!hyperstructure) return true;
+    if (ContractAddress(hyperstructure.last_updated_by) === ContractAddress(account.address)) {
       return (
-        nextBlockTimestamp >
-        hyperstructureUpdate.last_updated_timestamp + hyperstructureConfig.time_between_shares_change
+        nextBlockTimestamp > hyperstructure.last_updated_timestamp + hyperstructureConfig.time_between_shares_change
       );
     } else {
       return true;
     }
-  }, [hyperstructureUpdate, hyperstructureConfig, nextBlockTimestamp]);
+  }, [hyperstructure, hyperstructureConfig, nextBlockTimestamp]);
 
   const structure = getStructureByEntityId(hyperstructureEntityId);
 
@@ -147,7 +143,7 @@ const CoOwnersRows = ({
               setTooltip({
                 content: `Wait ${formatTime(
                   Number(hyperstructureConfig?.time_between_shares_change) -
-                    Number((nextBlockTimestamp || 0) - Number(hyperstructureUpdate?.last_updated_timestamp)),
+                    Number((nextBlockTimestamp || 0) - (hyperstructure?.last_updated_timestamp ?? 0)),
                 )} to change`,
                 position: "top",
               });

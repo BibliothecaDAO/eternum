@@ -1,9 +1,8 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import { useGetOtherPlayers } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import TextInput from "@/ui/elements/TextInput";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
-import { ContractAddress } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo, useRef } from "react";
 import { Signature, TypedData, WeierstrassSignatureType } from "starknet";
@@ -30,11 +29,8 @@ export const InputField = ({
   const tabs = useUIStore((state) => state.tabs);
   const setTabs = useUIStore((state) => state.setTabs);
 
-  const getPlayers = useGetAllPlayers();
-  const players = useMemo(
-    () => getPlayers().filter((player) => ContractAddress(player.address) !== ContractAddress(account.address)),
-    [getPlayers, account.address],
-  );
+  const getPlayers = useGetOtherPlayers();
+  const players = useMemo(() => getPlayers(), [getPlayers]);
 
   const input = useRef<string>("");
 
@@ -76,8 +72,8 @@ export const InputField = ({
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : currentTab.name === "Global"
-          ? undefined
-          : BigInt(currentTab.address);
+        ? undefined
+        : BigInt(currentTab.address);
 
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 

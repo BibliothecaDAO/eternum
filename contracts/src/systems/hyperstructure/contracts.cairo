@@ -1,5 +1,9 @@
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
-use eternum::models::position::Coord;
+use eternum::{
+    models::{position::Coord, config::HyperstructureResourceConfigCustomTrait},
+    constants::{get_contributable_resources_with_rarity, RESOURCE_PRECISION}
+};
 use starknet::ContractAddress;
 
 #[dojo::interface]
@@ -14,17 +18,27 @@ trait IHyperstructureSystems {
     fn set_co_owners(
         ref world: IWorldDispatcher, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>
     );
+    fn end_game(
+        ref world: IWorldDispatcher,
+        hyperstructures_contributed_to: Span<ID>,
+        hyperstructure_shareholder_epochs: Span<(ID, u16)>
+    );
 }
 
 
 #[dojo::contract]
 mod hyperstructure_systems {
     use core::array::ArrayIndex;
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::{
-        alias::ID, constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards},
+        alias::ID,
+        constants::{
+            HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
+            get_contributable_resources_with_rarity, RESOURCE_PRECISION
+        },
         models::{
             config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig, CapacityConfigCategory},
-            capacity::{CapacityCategory}, hyperstructure::{Progress, Contribution, HyperstructureUpdate},
+            capacity::{CapacityCategory}, hyperstructure::{Progress, Contribution, Hyperstructure, Epoch},
             owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceCustomImpl, ResourceCost},
@@ -32,7 +46,10 @@ mod hyperstructure_systems {
         },
         systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
     };
-    use starknet::ContractAddress;
+
+    use starknet::{ContractAddress, contract_address_const};
+
+    use super::calculate_total_contributable_amount;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
@@ -71,9 +88,21 @@ mod hyperstructure_systems {
         timestamp: u64,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    #[dojo::model]
+    struct GameEnded {
+        #[key]
+        winner_address: ContractAddress,
+        timestamp: u64,
+    }
+
+
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
         fn create(ref world: IWorldDispatcher, creator_entity_id: ID, coord: Coord) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, creator_entity_id, Owner).assert_caller_owner();
 
             InternalTravelSystemsImpl::assert_tile_explored(world, coord);
@@ -95,13 +124,20 @@ mod hyperstructure_systems {
 
             let new_uuid: ID = world.uuid();
 
+            let current_time = starknet::get_block_timestamp();
+
             set!(
                 world,
                 (
                     Structure {
+                        entity_id: new_uuid, category: StructureCategory::Hyperstructure, created_at: current_time
+                    },
+                    Hyperstructure {
                         entity_id: new_uuid,
-                        category: StructureCategory::Hyperstructure,
-                        created_at: starknet::get_block_timestamp()
+                        current_epoch: 0,
+                        completed: false,
+                        last_updated_by: contract_address_const::<0>(),
+                        last_updated_timestamp: current_time
                     },
                     CapacityCategory { entity_id: new_uuid, category: CapacityConfigCategory::Structure },
                     StructureCount { coord, count: 1 },
@@ -131,10 +167,12 @@ mod hyperstructure_systems {
             contributor_entity_id: ID,
             contributions: Span<(u8, u128)>
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, contributor_entity_id, Owner).assert_caller_owner();
 
             let structure = get!(world, hyperstructure_entity_id, Structure);
-            assert(structure.category == StructureCategory::Hyperstructure, 'not a hyperstructure');
+            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
 
             let timestamp = starknet::get_block_timestamp();
 
@@ -159,6 +197,10 @@ mod hyperstructure_systems {
 
             if (resource_was_completed
                 && InternalHyperstructureSystemsImpl::check_if_construction_done(world, hyperstructure_entity_id)) {
+                let mut hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
+                hyperstructure.completed = true;
+                set!(world, (hyperstructure,));
+
                 emit!(
                     world,
                     (HyperstructureFinished {
@@ -171,6 +213,10 @@ mod hyperstructure_systems {
         fn set_co_owners(
             ref world: IWorldDispatcher, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
+            assert!(co_owners.len() <= 10, "too many co-owners");
+
             let caller = starknet::get_caller_address();
 
             let owner = get!(world, hyperstructure_entity_id, Owner);
@@ -178,24 +224,17 @@ mod hyperstructure_systems {
 
             let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
 
-            let mut hyperstructure_update = get!(world, hyperstructure_entity_id, HyperstructureUpdate);
+            let mut hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
 
             let timestamp = starknet::get_block_timestamp();
 
-            if (hyperstructure_update.last_updated_by == caller) {
+            if (hyperstructure.last_updated_by == caller) {
                 assert!(
                     timestamp
-                        - hyperstructure_update
-                            .last_updated_timestamp > hyperstructure_config
-                            .time_between_shares_change,
+                        - hyperstructure.last_updated_timestamp > hyperstructure_config.time_between_shares_change,
                     "time between shares change not passed"
                 );
             }
-
-            hyperstructure_update.last_updated_timestamp = timestamp;
-            hyperstructure_update.last_updated_by = caller;
-
-            set!(world, (hyperstructure_update,));
 
             let mut total: u16 = 0;
             let mut i = 0;
@@ -205,9 +244,53 @@ mod hyperstructure_systems {
                 i += 1;
             };
             assert!(total == 10000, "total percentage must be 10000");
+
+            let epoch = Epoch {
+                hyperstructure_entity_id,
+                index: hyperstructure.current_epoch,
+                start_timestamp: timestamp,
+                owners: co_owners
+            };
+
+            hyperstructure.last_updated_timestamp = timestamp;
+            hyperstructure.last_updated_by = caller;
+            hyperstructure.current_epoch += 1;
+
+            set!(world, (hyperstructure, epoch,));
+
             emit!(
                 world,
                 (HyperstructureCoOwnersChange { id: world.uuid(), hyperstructure_entity_id, timestamp, co_owners })
+            );
+        }
+
+        fn end_game(
+            ref world: IWorldDispatcher,
+            hyperstructures_contributed_to: Span<ID>,
+            hyperstructure_shareholder_epochs: Span<(ID, u16)>
+        ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
+            let mut total_points: u128 = 0;
+            let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
+
+            total_points +=
+                InternalHyperstructureSystemsImpl::compute_total_contribution_points(
+                    world, hyperstructures_contributed_to
+                );
+
+            total_points +=
+                InternalHyperstructureSystemsImpl::compute_total_share_points(world, hyperstructure_shareholder_epochs);
+
+            assert!(total_points >= hyperstructure_config.points_for_win, "Not enough points to end the game");
+
+            SeasonCustomImpl::end_season(world);
+
+            emit!(
+                world,
+                (GameEnded {
+                    winner_address: starknet::get_caller_address(), timestamp: starknet::get_block_timestamp()
+                }),
             );
         }
     }
@@ -303,5 +386,155 @@ mod hyperstructure_systems {
 
             resource_progress.amount == resource_amount_for_completion
         }
+
+        fn compute_total_share_points(
+            world: IWorldDispatcher, hyperstructure_shareholder_epochs: Span<(ID, u16)>,
+        ) -> u128 {
+            let mut points = 0;
+            let mut i = 0;
+
+            let timestamp = starknet::get_block_timestamp();
+
+            let player_address = starknet::get_caller_address();
+            while (i < hyperstructure_shareholder_epochs.len()) {
+                let (hyperstructure_entity_id, index) = *hyperstructure_shareholder_epochs.at(i);
+
+                let epoch = get!(world, (hyperstructure_entity_id, index), Epoch);
+                let next_epoch = get!(world, (hyperstructure_entity_id, index + 1), Epoch);
+
+                let next_epoch_start_timestamp = if (next_epoch.owners.len() == 0) {
+                    timestamp
+                } else {
+                    next_epoch.start_timestamp
+                };
+
+                let time_elapsed = next_epoch_start_timestamp - epoch.start_timestamp;
+
+                let mut j = 0;
+                while (j < epoch.owners.len()) {
+                    let (owner_address, share_percentage) = *epoch.owners.at(j);
+                    if (owner_address == player_address) {
+                        points += Self::compute_share_points(world, time_elapsed, share_percentage);
+                    }
+                    j += 1;
+                };
+                i += 1;
+            };
+
+            return points;
+        }
+
+        fn compute_share_points(world: IWorldDispatcher, time_elapsed: u64, share_percentage: u16) -> u128 {
+            let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
+            let points_per_cycle = hyperstructure_config.points_per_cycle;
+
+            let points = time_elapsed.into() * points_per_cycle * share_percentage.into() / 10000;
+            return points;
+        }
+
+
+        fn compute_total_contribution_points(
+            world: IWorldDispatcher, hyperstructures_contributed_to: Span<ID>
+        ) -> u128 {
+            let resources_with_rarity = get_contributable_resources_with_rarity();
+
+            let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
+
+            let total_contributable_amount = calculate_total_contributable_amount(world);
+
+            let mut total_points = 0;
+
+            let mut i = 0;
+
+            while (i < hyperstructures_contributed_to.len()) {
+                let hyperstructure_entity_id = *hyperstructures_contributed_to.at(i);
+
+                let mut hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
+
+                if (!hyperstructure.completed) {
+                    continue;
+                }
+
+                total_points +=
+                    Self::compute_contributions_for_hyperstructure(
+                        world,
+                        total_contributable_amount,
+                        hyperstructure_entity_id,
+                        resources_with_rarity,
+                        hyperstructure_config.points_on_completion
+                    );
+
+                i += 1;
+            };
+
+            return total_points;
+        }
+
+        fn compute_contributions_for_hyperstructure(
+            world: IWorldDispatcher,
+            total_contributable_amount: u128,
+            hyperstructure_entity_id: ID,
+            resources_with_rarity: Span<(u8, u128)>,
+            points_on_completion: u128
+        ) -> u128 {
+            let player_address = starknet::get_caller_address();
+
+            let mut total_points = 0;
+            let mut i = 0;
+            while (i < resources_with_rarity.len()) {
+                let (resource_id, resource_rarity) = *resources_with_rarity.at(i);
+
+                let contribution = get!(world, (hyperstructure_entity_id, player_address, resource_id), Contribution);
+
+                total_points +=
+                    Self::compute_contribution_points(
+                        total_contributable_amount, resource_rarity, contribution.amount, points_on_completion
+                    );
+
+                i += 1;
+            };
+
+            return total_points;
+        }
+
+        fn compute_contribution_points(
+            total_contributable_amount: u128, resource_rarity: u128, resource_quantity: u128, points_on_completion: u128
+        ) -> u128 {
+            let percentage = Self::get_total_points_percentage(
+                total_contributable_amount, resource_rarity, resource_quantity
+            );
+            percentage * points_on_completion / 1_000_000
+        }
+
+        fn get_total_points_percentage(
+            total_contributable_amount: u128, resource_rarity: u128, resource_quantity: u128,
+        ) -> u128 {
+            // resource rarity already has a x100 factor in
+            let effective_contribution = (resource_quantity / RESOURCE_PRECISION) * (resource_rarity);
+            effective_contribution * 1_000_000 / total_contributable_amount
+        }
     }
+}
+
+
+fn calculate_total_contributable_amount(world: IWorldDispatcher) -> u128 {
+    let resources_with_rarity = get_contributable_resources_with_rarity();
+    let mut total: u128 = 0;
+
+    let mut i = 0;
+    loop {
+        if i >= resources_with_rarity.len() {
+            break;
+        }
+
+        let (resource_type, rarity) = *resources_with_rarity.at(i);
+        let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
+        let amount = hyperstructure_resource_config.amount_for_completion;
+
+        total += (amount / RESOURCE_PRECISION) * rarity.into();
+
+        i += 1;
+    };
+
+    total
 }

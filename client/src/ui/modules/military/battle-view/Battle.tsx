@@ -40,7 +40,7 @@ export const Battle = ({
   defenderArmies: (ArmyInfo | undefined)[];
   defenderHealth: Health | undefined;
   defenderTroops: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
-  userArmiesInBattle: (ArmyInfo | undefined)[];
+  userArmiesInBattle: ArmyInfo[];
   structure: Structure | undefined;
 }) => {
   const [showBattleDetails, setShowBattleDetails] = useState<boolean>(false);
@@ -87,6 +87,7 @@ export const Battle = ({
               ownSideTroopsUpdated={attackerTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={undefined}
+              userArmiesInBattle={userArmiesInBattle}
             />
             {showBattleDetails && battleAdjusted ? (
               <LockedResources
@@ -113,6 +114,7 @@ export const Battle = ({
               ownSideTroopsUpdated={defenderTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={structure}
+              userArmiesInBattle={userArmiesInBattle}
             />
           </div>
         </div>

@@ -919,11 +919,24 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
-    const { resources_for_completion, time_between_shares_change, signer } = props;
+    const {
+      resources_for_completion,
+      time_between_shares_change,
+      points_per_cycle,
+      points_for_win,
+      points_on_completion,
+      signer,
+    } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_hyperstructure_config",
-      calldata: [resources_for_completion, time_between_shares_change],
+      calldata: [
+        resources_for_completion,
+        time_between_shares_change,
+        points_per_cycle,
+        points_for_win,
+        points_on_completion,
+      ],
     });
   }
 
@@ -942,6 +955,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "contribute_to_construction",
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
+    });
+  }
+
+  public async end_game(props: SystemProps.EndGameProps) {
+    const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "end_game",
+      calldata: [hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
     });
   }
 

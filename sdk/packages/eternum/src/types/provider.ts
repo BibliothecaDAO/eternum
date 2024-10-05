@@ -473,6 +473,9 @@ export interface SetSpeedConfigProps extends SystemSigner {
 export interface SetHyperstructureConfig extends SystemSigner {
   resources_for_completion: { resource: number; amount: number }[];
   time_between_shares_change: num.BigNumberish;
+  points_per_cycle: num.BigNumberish;
+  points_for_win: num.BigNumberish;
+  points_on_completion: num.BigNumberish;
 }
 
 export interface CreateHyperstructureProps extends SystemSigner {
@@ -484,6 +487,11 @@ export interface ContributeToConstructionProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
   contributor_entity_id: num.BigNumberish;
   contributions: { resource: number; amount: number }[];
+}
+
+export interface EndGameProps extends SystemSigner {
+  hyperstructure_contributed_to: num.BigNumberish[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: num.BigNumberish; epoch: num.BigNumberish }[];
 }
 
 export interface SetCoOwnersProps extends SystemSigner {
