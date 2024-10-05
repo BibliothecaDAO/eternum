@@ -75,7 +75,7 @@ fn get_combat_config() -> TroopConfig {
         army_max_per_structure: 200,
         battle_leave_slash_num: 25,
         battle_leave_slash_denom: 100,
-        battle_time_reduction_scale: 1000,
+        battle_time_scale: 1000,
     };
 }
 

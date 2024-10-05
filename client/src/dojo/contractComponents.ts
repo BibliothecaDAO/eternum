@@ -1210,7 +1210,7 @@ export function defineContractComponents(world: World) {
           army_max_per_structure: RecsType.Number,
           battle_leave_slash_num: RecsType.Number,
           battle_leave_slash_denom: RecsType.Number,
-          battle_time_reduction_scale: RecsType.Number,
+          battle_time_scale: RecsType.Number,
         },
         {
           metadata: {

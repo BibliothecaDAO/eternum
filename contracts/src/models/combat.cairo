@@ -241,7 +241,7 @@ impl TroopsImpl of TroopsTrait {
         /// scale seconds_till_death by a percentage (e.g 1/1000) of `self_count`
         /// we add 1 to prevent division by 0 errors
         let self_seconds_till_death_scaled: u64 = 1
-            + ((self.count() * self_seconds_till_death) / troop_config.battle_time_reduction_scale.into());
+            + ((self.count() * self_seconds_till_death) / troop_config.battle_time_scale.into());
         /// calculate damage received based on seconds till death
         /// we add 1 to prevent division by 0 errors
         let self_damage_received: u64 = 1
@@ -255,7 +255,7 @@ impl TroopsImpl of TroopsTrait {
         /// scale seconds_till_death by a percentage (1/1000) of `enemy_count`
         /// we add 1 to prevent division by 0 errors
         let enemy_seconds_till_death_scaled: u64 = 1
-            + ((enemy_troops.count() * enemy_seconds_till_death) / troop_config.battle_time_reduction_scale.into());
+            + ((enemy_troops.count() * enemy_seconds_till_death) / troop_config.battle_time_scale.into());
         /// calculate damage received based on seconds till death
         /// we add 1 to prevent division by 0 errors
         let enemy_damage_received: u64 = 1
@@ -1107,7 +1107,7 @@ mod health_model_tests {
             army_max_per_structure: 0,
             battle_leave_slash_num: 0,
             battle_leave_slash_denom: 0,
-            battle_time_reduction_scale: 0
+            battle_time_scale: 0
         }
     }
 
@@ -1203,7 +1203,7 @@ mod tests {
             army_max_per_structure: 200,
             battle_leave_slash_num: 25,
             battle_leave_slash_denom: 100,
-            battle_time_reduction_scale: 1000
+            battle_time_scale: 1000
         }
     }
 
