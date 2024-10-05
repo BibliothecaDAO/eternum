@@ -3,7 +3,11 @@ import { calculateCompletionPoints } from "@/dojo/modelManager/utils/Leaderboard
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { ProgressWithPercentage, useHyperstructures, useHyperstructureUpdates } from "@/hooks/helpers/useHyperstructures";
+import {
+  ProgressWithPercentage,
+  useHyperstructures,
+  useHyperstructureUpdates,
+} from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";

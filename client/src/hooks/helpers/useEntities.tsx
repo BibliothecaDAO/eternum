@@ -73,8 +73,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-            ? `${structure?.category} ${structureName}`
-            : structure.category || "";
+              ? `${structure?.category} ${structureName}`
+              : structure.category || "";
           return { ...structure, position: position!, name };
         })
         .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -291,8 +291,8 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-        ? `${structure?.category} ${structureName}`
-        : structure.category || "";
+          ? `${structure?.category} ${structureName}`
+          : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)
