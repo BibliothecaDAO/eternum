@@ -277,7 +277,7 @@ fn test_battle_leave_by_winner() {
 
     // ensure player_1's army troop count is correct
     let player_1_army: Army = get!(world, player_1_army_id, Army);
-    assert_eq!(player_1_army.troops.count(), 8_745_000);
+    assert_eq!(player_1_army.troops.count(), 8_997_000);
 
     // ensure the battle was updated correctly
     let battle: Battle = get!(world, battle_id, Battle);

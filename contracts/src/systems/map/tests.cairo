@@ -135,8 +135,9 @@ fn test_map_explore__mine_mercenaries_protector() {
     );
 
     let battle_entity_id = combat_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
-
-    starknet::testing::set_block_timestamp(99999);
+    let battle = get!(world, battle_entity_id, Battle);
+    let current_ts = starknet::get_block_timestamp();
+    starknet::testing::set_block_timestamp(current_ts + battle.duration_left);
 
     combat_systems_dispatcher.battle_leave(battle_entity_id, realm_army_unit_id);
     combat_systems_dispatcher.battle_claim(realm_army_unit_id, mine_entity_id);
