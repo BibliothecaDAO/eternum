@@ -303,6 +303,8 @@ export interface Config {
     // 25%
     battleLeaveSlashNum: number;
     battleLeaveSlashDenom: number;
+    // 1_000. multiply this number by 2 to reduce battle time by 2x, etc.
+    battleTimeReductionScale: number;
   };
   mercenaries: {
     troops: {

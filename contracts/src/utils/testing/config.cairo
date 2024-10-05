@@ -62,7 +62,7 @@ fn set_map_config(config_systems_address: ContractAddress) {
 fn get_combat_config() -> TroopConfig {
     return TroopConfig {
         config_id: WORLD_CONFIG_ID,
-        health: 7_200,
+        health: 1,
         knight_strength: 1,
         paladin_strength: 1,
         crossbowman_strength: 1,
@@ -74,7 +74,8 @@ fn get_combat_config() -> TroopConfig {
         army_extra_per_building: 100,
         army_max_per_structure: 200,
         battle_leave_slash_num: 25,
-        battle_leave_slash_denom: 100
+        battle_leave_slash_denom: 100,
+        battle_time_reduction_scale: 1000,
     };
 }
 
