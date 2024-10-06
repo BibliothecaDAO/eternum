@@ -17,11 +17,11 @@ type CircleButtonProps = {
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
-  xs: "w-6 h-6",
-  sm: "w-8 h-8",
-  md: "w-10 h-10",
-  lg: "w-12 h-12",
-  xl: "w-16 h-16",
+  xs: "w-6 h-6 rounded-full",
+  sm: "w-8 h-8 rounded-full",
+  md: "w-10 h-10 rounded-full",
+  lg: "w-12 h-12 rounded-full",
+  xl: "w-16 h-16 rounded-xl",
 };
 
 const CircleButton = ({
@@ -68,11 +68,11 @@ const CircleButton = ({
           }
         }}
         className={clsx(
-          "flex transition-all duration-150  cursor-pointer items-center justify-center fill-current text-gold hover:border-gold  shadow-2xl group rounded-full bg-hex-bg hover:bg-gold border-2 border-white/10",
+          "flex transition-all duration-150  cursor-pointer items-center justify-center fill-current text-gold hover:border-gold  shadow-2xl group  bg-hex-bg hover:bg-gold border-2 border-white/10",
           active ? "bg-gold" : "bg-black/90",
           className,
           sizes[size],
-          { "opacity-50 cursor-not-allowed": disabled },
+          { "cursor-not-allowed": disabled },
           { " !border-gold sepia-0 ": active },
           { " border-brown/30 sepia-[.50] ": !active },
         )}
@@ -83,6 +83,7 @@ const CircleButton = ({
         <div className={clsx()}>
           <img src={image} alt="icon" />
         </div>
+        {disabled && <div className="absolute inset-0 bg-black opacity-50 rounded-full"></div>}
       </button>
       {notification && !disabled ? (
         <div

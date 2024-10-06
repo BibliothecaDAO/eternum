@@ -25,6 +25,7 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -109,9 +110,50 @@ export const TopMiddleNavigation = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <div className="pointer-events-auto mt-1 ">
+    <div className="pointer-events-auto mx-2 pt-1 w-screen flex justify-between">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div className=" bg-black/90 rounded-l-xl my-1 border-white/5 border flex gap-1">
+        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded bg-black/90 border-gold/10 relative">
+          <div className="self-center flex justify-between w-full">
+            {structure.isMine ? (
+              <Select
+                value={structureEntityId.toString()}
+                onValueChange={(a: string) => {
+                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Structure" />
+                </SelectTrigger>
+                <SelectContent className="bg-black/90">
+                  {structures.map((structure, index) => (
+                    <SelectItem
+                      className="flex justify-between"
+                      key={index}
+                      value={structure.entity_id?.toString() || ""}
+                    >
+                      <h5 className="self-center flex gap-4">
+                        {structureIcons[structure.category]}
+                        {structure.name}
+                      </h5>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div>
+                <div className="self-center flex gap-4">
+                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
+                  {structure.owner ? structure.name : "Unsettled"}
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        <div className=" bg-black/90  my-1  flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -165,48 +207,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded bg-black/90 border-gold/10 relative">
-          <div className="self-center flex justify-between w-full">
-            {structure.isMine ? (
-              <Select
-                value={structureEntityId.toString()}
-                onValueChange={(a: string) => {
-                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Structure" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90">
-                  {structures.map((structure, index) => (
-                    <SelectItem
-                      className="flex justify-between"
-                      key={index}
-                      value={structure.entity_id?.toString() || ""}
-                    >
-                      <h5 className="self-center flex gap-4">
-                        {structureIcons[structure.category]}
-                        {structure.name}
-                      </h5>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div>
-                <div className="self-center flex gap-4">
-                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
-                  {structure.owner ? structure.name : "Unsettled"}
-                </div>
-              </div>
-            )}
-          </div>
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-        <div className=" bg-black/90 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
+        <div className=" bg-black/90 rounded-r my-1  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"
@@ -232,6 +233,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
       </motion.div>
+      <SecondaryMenuItems />
     </div>
   );
 };
@@ -270,7 +272,7 @@ const TickProgress = () => {
       setTooltip({
         position: "bottom",
         content: (
-          <div className="whitespace-nowrap pointer-events-none flex flex-col">
+          <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
             <div>
               A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
             </div>

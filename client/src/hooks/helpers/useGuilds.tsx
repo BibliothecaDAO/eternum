@@ -1,4 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { toHexString } from "@/ui/utils/utils";
 import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
@@ -17,7 +18,6 @@ import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getEntitiesUtils } from "./useEntities";
 import { useRealm } from "./useRealm";
-import { toHexString } from "@/ui/utils/utils";
 
 export type GuildAndName = {
   guild: ComponentValue<ClientComponents["Guild"]["schema"]>;

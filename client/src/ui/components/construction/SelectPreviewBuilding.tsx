@@ -106,7 +106,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-3 gap-2 p-2">
+          <div className="grid grid-cols-2 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
@@ -162,7 +162,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-3 gap-2 p-2">
+          <div className="grid grid-cols-2 gap-2 p-2">
             {buildingTypes
               .filter(
                 (a) =>
@@ -236,7 +236,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-3 gap-2 p-2">
+          <div className="grid grid-cols-2 gap-2 p-2">
             {" "}
             {buildingTypes
               .filter(
@@ -345,39 +345,34 @@ const BuildingCard = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
   return (
     <div
-      style={{
-        backgroundImage: `url(${
-          resourceId
-            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
-            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
-        })`,
-        backgroundSize: "contain",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
       onClick={onClick}
       className={clsx(
-        "text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-36 min-w-20  hover:border-gradient hover:border-2 hover:bg-gold/20",
+        "text-gold bg-black/30 overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded-xl",
         {
           "!border-lightest": active,
         },
         className,
       )}
     >
+      <img
+        src={
+          resourceId
+            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
+            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
+        }
+        alt={buildingName}
+        className="absolute inset-0 w-full h-full object-contain"
+      />
       {(!hasFunds || !hasPopulation) && (
-        <div className="absolute w-full h-full bg-black/70 text-white/60 p-4 text-xs flex justify-center">
+        <div className="absolute w-full h-full bg-black/70 p-4 text-xs flex justify-center">
           <div className="self-center flex items-center space-x-2">
             {!hasFunds && <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />}
             {!hasPopulation && <ResourceIcon tooltipText="Need More Housing" resource="House" size="lg" />}
           </div>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/90 ">
+      <div className="absolute bottom-0 left-0 right-0 p-2">
         <div className="truncate">{buildingName}</div>
-      </div>
-      <div className="flex relative flex-col items-start text-xs font-bold p-2">
-        {isResourceProductionBuilding(buildingId) && resourceName && <ResourceIcon resource={resourceName} size="lg" />}
-
         <InfoIcon
           onMouseEnter={() => {
             setTooltip({
@@ -390,6 +385,13 @@ const BuildingCard = ({
           }}
           className="w-4 h-4 absolute top-2 right-2"
         />
+      </div>
+      <div className="flex relative flex-col items-end p-2 rounded">
+        <div className="rounded p-1 bg-black/10">
+          {isResourceProductionBuilding(buildingId) && resourceName && (
+            <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />
+          )}
+        </div>
       </div>
     </div>
   );

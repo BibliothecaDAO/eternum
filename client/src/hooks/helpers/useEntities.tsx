@@ -19,6 +19,7 @@ import {
   type ComponentValue,
   type Entity,
 } from "@dojoengine/recs";
+import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getResourcesUtils } from "./useResources";
@@ -46,44 +47,50 @@ export const useEntities = () => {
     HasValue(Owner, { address: ContractAddress(account.address) }),
   ]);
 
+  const memoizedPlayerRealms = useMemo(() => {
+    return playerRealms.map((id) => {
+      const realm = getComponentValue(Realm, id);
+      return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+    });
+  }, [playerRealms]);
+
+  const memoizedOtherRealms = useMemo(() => {
+    return otherRealms.map((id) => {
+      const realm = getComponentValue(Realm, id);
+      return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+    });
+  }, [otherRealms]);
+
+  const memoizedPlayerStructures = useMemo(() => {
+    return playerStructures
+      .map((id) => {
+        const structure = getComponentValue(Structure, id);
+        if (!structure) return;
+
+        const realm = getComponentValue(Realm, id);
+        const position = getComponentValue(Position, id);
+
+        const structureName = getEntityName(structure.entity_id);
+
+        const name = realm
+          ? getRealmNameById(realm.realm_id)
+          : structureName
+          ? `${structure?.category} ${structureName}`
+          : structure.category || "";
+        return { ...structure, position: position!, name };
+      })
+      .filter((structure): structure is PlayerStructure => structure !== undefined)
+      .sort((a, b) => {
+        if (a.category === StructureType[StructureType.Realm]) return -1;
+        if (b.category === StructureType[StructureType.Realm]) return 1;
+        return a.category.localeCompare(b.category);
+      });
+  }, [playerStructures]);
+
   return {
-    playerRealms: () => {
-      return playerRealms.map((id) => {
-        const realm = getComponentValue(Realm, id);
-        return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
-      });
-    },
-    otherRealms: () => {
-      return otherRealms.map((id) => {
-        const realm = getComponentValue(Realm, id);
-        return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
-      });
-    },
-    playerStructures: (): PlayerStructure[] => {
-      return playerStructures
-        .map((id) => {
-          const structure = getComponentValue(Structure, id);
-          if (!structure) return;
-
-          const realm = getComponentValue(Realm, id);
-          const position = getComponentValue(Position, id);
-
-          const structureName = getEntityName(structure.entity_id);
-
-          const name = realm
-            ? getRealmNameById(realm.realm_id)
-            : structureName
-              ? `${structure?.category} ${structureName}`
-              : structure.category || "";
-          return { ...structure, position: position!, name };
-        })
-        .filter((structure): structure is PlayerStructure => structure !== undefined)
-        .sort((a, b) => {
-          if (a.category === StructureType[StructureType.Realm]) return -1;
-          if (b.category === StructureType[StructureType.Realm]) return 1;
-          return a.category.localeCompare(b.category);
-        });
-    },
+    playerRealms: () => memoizedPlayerRealms,
+    otherRealms: () => memoizedOtherRealms,
+    playerStructures: () => memoizedPlayerStructures,
   };
 };
 
@@ -270,8 +277,8 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+        ? `${structure?.category} ${structureName}`
+        : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)

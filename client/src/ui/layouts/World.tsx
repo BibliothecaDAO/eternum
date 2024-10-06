@@ -14,14 +14,12 @@ import { BottomRightContainer } from "../containers/BottomRightContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
-import TopMiddleContainer from "../containers/TopMiddleContainer";
 import { Tooltip } from "../elements/Tooltip";
 import { Chat } from "../modules/chat/Chat";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
 import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
-import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { PlayerId } from "../modules/social/PlayerId";
 import { EventStream } from "../modules/stream/EventStream";
@@ -72,9 +70,7 @@ export const World = () => {
         </BattleContainer>
       ) : (
         <>
-          <TopMiddleContainer>
-            <TopMiddleNavigation />
-          </TopMiddleContainer>
+          {/* <TopMiddleContainer></TopMiddleContainer> */}
 
           <LeftMiddleContainer>
             <LeftNavigationModule />
@@ -100,7 +96,7 @@ export const World = () => {
 
       <PlayerId />
       <TopLeftContainer>
-        <TopLeftNavigation />
+        <TopMiddleNavigation />
       </TopLeftContainer>
       <Redirect to="/" />
       <Leva

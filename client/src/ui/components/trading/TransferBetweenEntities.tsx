@@ -1,21 +1,17 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
-import { usePlayResourceSound } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
-import ListSelect from "@/ui/elements/ListSelect";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
 import TextInput from "@/ui/elements/TextInput";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, resources } from "@bibliothecadao/eternum";
-import clsx from "clsx";
+import { multiplyByPrecision } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ToggleComponent } from "../toggle/ToggleComponent";
+import { SelectEntityFromList } from "./SelectEntityFromList";
+import { SelectResources } from "./SelectResources";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -132,7 +128,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
 
   return (
     <div className="p-2 h-full">
-      <h4 className="text-center capitalize my-5">{currentStep?.title}</h4>
+      <Headline className="text-center capitalize my-5">{currentStep?.title}</Headline>
 
       <div className="flex justify-center gap-4 mb-8 text-xl">
         {selectedEntityIdFrom?.toString() && selectedEntityIdTo?.toString() && (
@@ -163,23 +159,25 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               />
               {entitiesListWithAccountNames
                 .filter(({ name }) => name !== "Other Realms")
-                .map(({ entities, name: title }, index) => (
-                  <ToggleComponent
-                    title={title}
-                    key={index}
-                    props={{
-                      searchTerm: fromSearchTerm,
-                      open: fromSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdFrom?.entityId),
-                    }}
-                  >
-                    <SelectEntityFromList
-                      onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
-                      selectedCounterpartyId={selectedEntityIdTo?.entityId!}
-                      selectedEntityId={selectedEntityIdFrom?.entityId!}
-                      entities={filterEntities(entities, fromSearchTerm, selectedEntityIdFrom?.entityId)}
-                    />
-                  </ToggleComponent>
-                ))}
+                .map(({ entities, name: title }, index) => {
+                  const filteredEntities = filterEntities(entities, fromSearchTerm, selectedEntityIdFrom?.entityId);
+                  if (filteredEntities.length === 0) return null;
+                  return (
+                    <ToggleComponent
+                      title={title}
+                      key={index}
+                      searchTerm={fromSearchTerm}
+                      initialOpen={fromSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdFrom?.entityId)}
+                    >
+                      <SelectEntityFromList
+                        onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
+                        selectedCounterpartyId={selectedEntityIdTo?.entityId!}
+                        selectedEntityId={selectedEntityIdFrom?.entityId!}
+                        entities={filteredEntities}
+                      />
+                    </ToggleComponent>
+                  );
+                })}
             </div>
             <div className="justify-around overflow-auto">
               <Headline>To</Headline>
@@ -192,10 +190,8 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
                 <ToggleComponent
                   title={title}
                   key={index}
-                  props={{
-                    searchTerm: toSearchTerm,
-                    open: toSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdTo?.entityId),
-                  }}
+                  searchTerm={toSearchTerm}
+                  initialOpen={toSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdTo?.entityId)}
                 >
                   <SelectEntityFromList
                     onSelect={(name, entityId) => setSelectedEntityIdTo({ name, entityId })}
@@ -225,8 +221,8 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
       )}
 
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <div className="grid grid-cols-2 gap-16 px-16 h-full">
-          <div className="p-4   h-full">
+        <div className="grid grid-cols-2 gap-8 px-8 h-full">
+          <div className=" bg-gold/10  h-auto border border-gold/40">
             <SelectResources
               selectedResourceIds={selectedResourceIds}
               setSelectedResourceIds={setSelectedResourceIds}
@@ -273,159 +269,6 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
           <p>Check transfers in the right sidebar transfer menu.</p>
         </div>
       )}
-    </div>
-  );
-};
-
-const SelectEntityFromList = ({
-  onSelect,
-  selectedEntityId,
-  selectedCounterpartyId,
-  entities,
-}: {
-  onSelect: (name: string, entityId: ID) => void;
-  selectedEntityId: ID | null;
-  selectedCounterpartyId: ID | null;
-  entities: any[];
-}) => {
-  const { getRealmAddressName } = useRealm();
-
-  return (
-    <div className="overflow-y-scroll max-h-72 border border-gold/10 gap-2 flex-col">
-      {entities.map((entity, index) => {
-        const realmName = getRealmAddressName(entity.entity_id);
-        return (
-          <div
-            key={index}
-            className={clsx(
-              "flex w-full justify-between hover:bg-white/10 items-center p-1 text-xs pl-2",
-              selectedEntityId === entity.entity_id && "border-gold/10 border",
-            )}
-            onClick={() => onSelect(entity.name, entity.entity_id!)}
-          >
-            <div className="text-sm">
-              {realmName} ({entity.name})
-            </div>
-            <Button
-              disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
-              size="md"
-              variant="outline"
-            >
-              {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
-            </Button>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-const SelectResources = ({
-  selectedResourceIds,
-  setSelectedResourceIds,
-  selectedResourceAmounts,
-  setSelectedResourceAmounts,
-  entity_id,
-}: {
-  selectedResourceIds: any;
-  setSelectedResourceIds: any;
-  selectedResourceAmounts: any;
-  setSelectedResourceAmounts: any;
-  entity_id: ID;
-}) => {
-  const { getBalance } = getResourceBalance();
-  const { playResourceSound } = usePlayResourceSound();
-
-  const unselectedResources = useMemo(
-    () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
-    [selectedResourceIds],
-  );
-
-  const addResourceGive = () => {
-    setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
-    setSelectedResourceAmounts({
-      ...selectedResourceAmounts,
-      [unselectedResources[0].id]: 1,
-    });
-    playResourceSound(unselectedResources[0].id);
-  };
-
-  return (
-    <div className="flex flex-col items-center col-span-4 space-y-2">
-      {selectedResourceIds.map((id: any, index: any) => {
-        const resource = getBalance(entity_id, id);
-        let options = [resources.find((res) => res.id === id), ...unselectedResources] as any;
-        options = options.map((res: any) => {
-          const bal = getBalance(entity_id, res.id);
-          return {
-            id: res.id,
-            label: <ResourceCost resourceId={res.id} amount={divideByPrecision(bal?.balance || 0)} />,
-          };
-        });
-        if (selectedResourceIds.length > 1) {
-          options = [
-            {
-              id: 0,
-              label: (
-                <div className="flex items-center justify-center">
-                  <div className="ml-1 text-danger">Remove item</div>
-                </div>
-              ),
-            },
-            ...options,
-          ];
-        }
-        return (
-          <div key={id} className="flex items-center gap-8 w-64 ">
-            <ListSelect
-              className=" overflow-hidden max-h-48 w-full"
-              options={options}
-              value={selectedResourceIds[index]}
-              onChange={(value) => {
-                if (value === 0) {
-                  const tmp = [...selectedResourceIds];
-                  tmp.splice(index, 1);
-                  setSelectedResourceIds(tmp);
-                  const tmpAmounts = { ...selectedResourceAmounts };
-                  delete tmpAmounts[id];
-                  setSelectedResourceAmounts(tmpAmounts);
-                  return;
-                }
-                const tmp = [...selectedResourceIds];
-                tmp[index] = value;
-                playResourceSound(value);
-                setSelectedResourceIds(tmp);
-                setSelectedResourceAmounts({
-                  ...selectedResourceAmounts,
-                  [value]: 1,
-                });
-              }}
-            />
-            <NumberInput
-              className="h-14"
-              max={divideByPrecision(resource?.balance || 0)}
-              min={1}
-              value={selectedResourceAmounts[id]}
-              onChange={(value) => {
-                setSelectedResourceAmounts({
-                  ...selectedResourceAmounts,
-                  [id]: Math.min(divideByPrecision(resource?.balance || 0), value),
-                });
-              }}
-            />
-          </div>
-        );
-      })}
-      <Button
-        variant="primary"
-        className="mt-16"
-        size="md"
-        onClick={() => {
-          addResourceGive();
-        }}
-      >
-        Add Resource
-      </Button>
     </div>
   );
 };
