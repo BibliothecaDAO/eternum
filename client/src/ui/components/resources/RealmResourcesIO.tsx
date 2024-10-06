@@ -15,9 +15,8 @@ export const RealmResourcesIO = ({
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }) => {
   const { realm } = useGetRealm(realmEntityId);
-  if (!realm) return;
 
-  const resourcesProduced = unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount);
+  const resourcesProduced = realm ? unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount) : [];
 
   const resourcesConsumed = [
     ...new Set(
@@ -30,20 +29,22 @@ export const RealmResourcesIO = ({
   ];
 
   return (
-    <div className={`text-gold text-sm ${className}`}>
-      <div className={`font-bold ${titleClassName}`}>Produces</div>
-      <div className="flex flex-row">
-        {resourcesProduced.map((resourceId) => (
-          <ResourceIcon resource={ResourcesIds[resourceId]} size={size} key={resourceId} />
-        ))}
-      </div>
+    realm && (
+      <div className={`text-gold text-sm ${className}`}>
+        <div className={`font-bold ${titleClassName}`}>Produces</div>
+        <div className="flex flex-row">
+          {resourcesProduced.map((resourceId) => (
+            <ResourceIcon resource={ResourcesIds[resourceId]} size={size} key={resourceId} />
+          ))}
+        </div>
 
-      <div className={`font-bold ${titleClassName}`}>Consumes</div>
-      <div className="flex flex-row">
-        {resourcesConsumed.map((resourceId) => (
-          <ResourceIcon resource={ResourcesIds[resourceId]} size={size} key={resourceId} />
-        ))}
+        <div className={`font-bold ${titleClassName}`}>Consumes</div>
+        <div className="flex flex-row">
+          {resourcesConsumed.map((resourceId) => (
+            <ResourceIcon resource={ResourcesIds[resourceId]} size={size} key={resourceId} />
+          ))}
+        </div>
       </div>
-    </div>
+    )
   );
 };
