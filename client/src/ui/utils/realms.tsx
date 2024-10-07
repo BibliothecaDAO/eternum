@@ -6,11 +6,8 @@ import {
   orders,
   RealmInterface,
 } from "@bibliothecadao/eternum";
-import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import realmsJson from "../../data/geodata/realms.json";
-import realmsOrdersJson from "../../data/geodata/realms_raw.json";
 import { packResources } from "./packedData";
-import { getPosition } from "./utils";
 
 interface Attribute {
   trait_type: string;
@@ -61,8 +58,6 @@ export function getRealm(realmId: ID): RealmInterface | undefined {
   const orderName = orderAttribute ? orderAttribute.value.split(" ").pop() || "" : "";
   const order = orders.find(({ orderName: name }) => name === orderName)?.orderId || 0;
 
-  const position = getPosition(realmId);
-
   return {
     realmId,
     name: getRealmNameById(realmId),
@@ -74,7 +69,6 @@ export function getRealm(realmId: ID): RealmInterface | undefined {
     regions,
     wonder,
     order,
-    position,
   };
 }
 

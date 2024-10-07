@@ -1,7 +1,8 @@
 import { ResourceMiningTypes } from "@/types";
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, FELT_CENTER } from "@bibliothecadao/eternum";
 
-export const FELT_CENTER = 2147483646;
+export { FELT_CENTER };
+
 export const IS_LOW_GRAPHICS_ENABLED = localStorage.getItem("LOW_GRAPHICS_FLAG") === "true";
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";

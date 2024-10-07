@@ -26,6 +26,10 @@ export class SceneManager {
   switchScene(sceneName: SceneName) {
     const scene = this.scenes.get(sceneName);
     if (scene) {
+      const previousScene = this.scenes.get(this.currentScene!);
+      if (previousScene) {
+        previousScene.onSwitchOff();
+      }
       this.transitionManager.fadeOut(() => {
         this._updateCurrentScene(sceneName);
         if (scene.setup) {

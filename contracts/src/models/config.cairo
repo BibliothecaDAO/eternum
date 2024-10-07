@@ -1,5 +1,8 @@
-use core::debug::PrintTrait;
 use core::integer::BoundedU128;
+use cubit::f128::math::comp::{max as fixed_max};
+use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
@@ -11,11 +14,12 @@ use eternum::models::buildings::BuildingCategory;
 use eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
 use eternum::models::combat::{Troops};
 use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
+use eternum::models::position::{Coord};
 use eternum::models::quantity::Quantity;
 
 use eternum::models::resources::{ResourceFoodImpl};
 use eternum::models::weight::Weight;
-use eternum::utils::math::{max};
+use eternum::utils::math::{max, min};
 use eternum::utils::random;
 
 use starknet::ContractAddress;
@@ -167,6 +171,87 @@ pub struct MapConfig {
     // weight of sucess = 1000
     // ex: if set to 5000
     shards_mines_fail_probability: u128,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct SettlementConfig {
+    #[key]
+    config_id: ID,
+    // starting value radius
+    // starting value angle (precision 100)
+    angle_scaled: u128,
+    center: u32,
+    // always positive
+    min_scaling_factor_scaled: u128,
+    // initial radius in precision 100
+    radius: u32,
+    // min/max radius changes in precision 100
+    min_distance: u32,
+    max_distance: u32,
+    // radius incrase in precision 100
+    min_angle_increase: u64,
+    max_angle_increase: u64,
+}
+
+#[generate_trait]
+impl SettlementConfigImpl of SettlementConfigTrait {
+    fn get_scaling_factor(ref self: SettlementConfig) -> Fixed {
+        let max_radius_fixed = FixedTrait::new_unscaled(self.center.into() * 100, false);
+        let radius_fixed = FixedTrait::new_unscaled(self.radius.into(), false);
+        // very small at first and then grows
+        let scaling_factor_fixed = (max_radius_fixed - radius_fixed) / max_radius_fixed;
+        let min_scaling_factor_fixed = FixedTrait::new(self.min_scaling_factor_scaled, false);
+        fixed_max(scaling_factor_fixed, min_scaling_factor_fixed)
+    }
+
+    fn get_step_size(ref self: SettlementConfig, scaling_factor: Fixed) -> u32 {
+        let min_distance_fixed = FixedTrait::new_unscaled(self.min_distance.into(), false);
+        let max_distance_fixed = FixedTrait::new_unscaled(self.max_distance.into(), false);
+        let range = max_distance_fixed - min_distance_fixed;
+        let scaled_range = scaling_factor * range;
+        let step_size_fixed = min_distance_fixed + scaled_range;
+        step_size_fixed.try_into().unwrap() + 100
+    }
+
+    fn get_radius_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> u32 {
+        (block_timestamp % (step_size.into() / 100) * 100 + self.min_distance.into()).try_into().unwrap()
+    }
+
+    fn get_angle_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> Fixed {
+        FixedTrait::new_unscaled(
+            (block_timestamp % (self.max_angle_increase - self.min_angle_increase) + self.min_angle_increase).into(),
+            false
+        )
+            / FixedTrait::new_unscaled(100, false)
+    }
+
+    fn increase_angle(ref self: SettlementConfig, angle_increase: Fixed) -> Fixed {
+        self.angle_scaled += angle_increase.mag;
+        FixedTrait::new(self.angle_scaled, false)
+    }
+
+    fn compute_coords(ref self: SettlementConfig, angle: Fixed) -> Coord {
+        let cos = fixed_cos(angle);
+        let sin = fixed_sin(angle);
+
+        let x = FixedTrait::new_unscaled(self.center.into(), false)
+            + cos * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
+        let y = FixedTrait::new_unscaled(self.center.into(), false)
+            + sin * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
+
+        return Coord { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
+    }
+
+    fn get_next_settlement_coord(ref self: SettlementConfig, block_timestamp: u64) -> Coord {
+        let scaling_factor = Self::get_scaling_factor(ref self);
+        let step_size = Self::get_step_size(ref self, scaling_factor);
+        let radius_increase = Self::get_radius_increase(ref self, step_size, block_timestamp);
+        self.radius += radius_increase;
+        let angle_increase = Self::get_angle_increase(ref self, step_size, block_timestamp);
+        let new_angle_fixed = Self::increase_angle(ref self, angle_increase);
+        Self::compute_coords(ref self, new_angle_fixed)
+    }
 }
 
 #[generate_trait]

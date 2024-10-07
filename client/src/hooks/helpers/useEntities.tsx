@@ -1,6 +1,6 @@
 import { type ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmNameById } from "@/ui/utils/realms";
-import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   CAPACITY_CONFIG_CATEGORY_STRING_MAP,
   ContractAddress,
@@ -85,7 +85,7 @@ export const useEntities = () => {
       const realm = getComponentValue(Realm, id);
       return {
         ...realm,
-        position: getPosition(realm!.realm_id),
+        position: getComponentValue(Position, id),
         name: getRealmNameById(realm!.realm_id),
         owner: getComponentValue(Owner, id),
       } as RealmWithPosition;
@@ -97,7 +97,7 @@ export const useEntities = () => {
       const realm = getComponentValue(Realm, id);
       return {
         ...realm,
-        position: getPosition(realm!.realm_id),
+        position: getComponentValue(Position, id),
         name: getRealmNameById(realm!.realm_id),
         owner: getComponentValue(Owner, id),
       } as RealmWithPosition;

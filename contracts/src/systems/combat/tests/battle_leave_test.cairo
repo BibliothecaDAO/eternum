@@ -3,7 +3,9 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle};
-use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SpeedConfig};
+use eternum::models::config::{
+    TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SpeedConfig, SettlementConfig
+};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
@@ -76,6 +78,17 @@ fn set_configurations(world: IWorldDispatcher) {
                 speed_config_id: ARMY_ENTITY_TYPE,
                 entity_type: ARMY_ENTITY_TYPE,
                 sec_per_km: 200
+            },
+            SettlementConfig {
+                config_id: WORLD_CONFIG_ID,
+                radius: 50,
+                angle_scaled: 0,
+                center: 2147483646,
+                min_distance: 1,
+                max_distance: 5,
+                min_scaling_factor_scaled: 1844674407370955161,
+                min_angle_increase: 30,
+                max_angle_increase: 100,
             }
         )
     )
@@ -97,20 +110,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    let player_1_realm_id = realm_system_dispatcher
-        .create(
-            'Mysticora',
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            Position { entity_id: 0, x: PLAYER_1_REALM_COORD_X, y: PLAYER_1_REALM_COORD_Y }
-        );
+    let player_1_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_1_realm_id,
@@ -137,20 +137,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
-    let player_2_realm_id = realm_system_dispatcher
-        .create(
-            'Mysticora',
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            Position { entity_id: 0, x: PLAYER_2_REALM_COORD_X, y: PLAYER_2_REALM_COORD_Y }
-        );
+    let player_2_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_2_realm_id,
@@ -177,20 +164,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
-    let player_3_realm_id = realm_system_dispatcher
-        .create(
-            'Mysticora',
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            Position { entity_id: 0, x: PLAYER_3_REALM_COORD_X, y: PLAYER_3_REALM_COORD_Y }
-        );
+    let player_3_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
     mint(
         world,
         player_3_realm_id,

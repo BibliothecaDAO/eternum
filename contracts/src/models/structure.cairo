@@ -83,4 +83,8 @@ impl StructureCountCustomImpl of StructureCountCustomTrait {
     fn assert_none(self: StructureCount) {
         assert!(self.count == 0, "structure exists at this location");
     }
+
+    fn is_none(self: StructureCount) -> bool {
+        self.count == 0
+    }
 }

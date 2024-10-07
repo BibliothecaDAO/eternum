@@ -208,7 +208,7 @@ h6 {
 
 #root {
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 canvas {

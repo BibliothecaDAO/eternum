@@ -1,5 +1,6 @@
 {
   "CONFIG_SYSTEMS": [
+    "SettlementConfig",
     "ProductionInput",
     "CapacityConfig",
     "SpeedConfig",
@@ -35,6 +36,7 @@
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker", "Production"],
   "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount", "CapacityCategory"],
   "REALM_SYSTEMS": [
+    "SettlementConfig",
     "Owner",
     "Realm",
     "Position",

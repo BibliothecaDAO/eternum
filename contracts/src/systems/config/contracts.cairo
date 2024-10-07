@@ -152,6 +152,22 @@ trait IResourceBridgeConfig {
     );
 }
 
+#[dojo::interface]
+trait ISettlementConfig {
+    fn set_settlement_config(
+        ref world: IWorldDispatcher,
+        radius: u32,
+        angle_scaled: u128,
+        center: u32,
+        min_distance: u32,
+        max_distance: u32,
+        min_scaling_factor_scaled: u128,
+        min_angle_increase: u64,
+        max_angle_increase: u64,
+    );
+}
+
+
 #[dojo::contract]
 mod config_systems {
     use eternum::alias::ID;
@@ -168,8 +184,8 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        ResourceBridgeWhitelistConfig, BuildingGeneralConfig
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig
     };
     use eternum::models::hyperstructure::SeasonCustomImpl;
 
@@ -613,6 +629,7 @@ mod config_systems {
         }
     }
 
+    #[abi(embed_v0)]
     impl IResourceBridgeConfig of super::IResourceBridgeConfig<ContractState> {
         fn set_resource_bridge_config(ref world: IWorldDispatcher, mut resource_bridge_config: ResourceBridgeConfig) {
             assert_caller_is_admin(world);
@@ -646,6 +663,37 @@ mod config_systems {
             );
 
             set!(world, (resource_bridge_whitelist_config));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ISettlementConfig of super::ISettlementConfig<ContractState> {
+        fn set_settlement_config(
+            ref world: IWorldDispatcher,
+            radius: u32,
+            angle_scaled: u128,
+            center: u32,
+            min_distance: u32,
+            max_distance: u32,
+            min_scaling_factor_scaled: u128,
+            min_angle_increase: u64,
+            max_angle_increase: u64
+        ) {
+            assert_caller_is_admin(world);
+            set!(
+                world,
+                (SettlementConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    radius,
+                    angle_scaled,
+                    center,
+                    min_distance,
+                    max_distance,
+                    min_scaling_factor_scaled,
+                    min_angle_increase,
+                    max_angle_increase,
+                })
+            );
         }
     }
 }
