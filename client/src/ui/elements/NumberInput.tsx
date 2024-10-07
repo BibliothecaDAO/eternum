@@ -13,6 +13,8 @@ type NumberInputProps = {
   max: number;
   arrows?: boolean;
   allowDecimals?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 };
 
 export const NumberInput = ({
@@ -24,6 +26,8 @@ export const NumberInput = ({
   min = 0,
   arrows = true,
   allowDecimals = false,
+  onFocus,
+  onBlur,
 }: NumberInputProps) => {
   const formatNumber = (num: number): string => {
     if (num >= 1000) {
@@ -44,7 +48,7 @@ export const NumberInput = ({
   };
 
   return (
-    <div className={clsx("flex items-center h-10 text-lg bg-gold/20 w-full", className)}>
+    <div className={clsx("flex items-center h-10 text-lg bg-gold/20 w-full rounded-xl", className)}>
       {arrows && (
         <div
           className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold/10 hover:bg-gold/30 "
@@ -60,6 +64,8 @@ export const NumberInput = ({
         min={min}
         className="w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={displayValue}
+        onFocus={onFocus}
+        onBlur={onBlur}
         onChange={(e) => {
           const inputValue = e.target.value;
           if (allowDecimals) {

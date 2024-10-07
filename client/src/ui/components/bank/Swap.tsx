@@ -33,6 +33,9 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
+  // New state to track which amount is being edited
+  const [editingField, setEditingField] = useState<"lords" | "resource" | null>(null);
+
   const ownerFee = lordsAmount * OWNER_FEE;
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * LP_FEE;
 
@@ -45,22 +48,26 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     setup.components.Market,
     getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
   );
-  useEffect(() => {
-    const amount = isBuyResource ? lordsAmount : resourceAmount;
-    const setAmount = isBuyResource ? setResourceAmount : setLordsAmount;
-    const operation = isBuyResource ? marketManager.buyResource : marketManager.sellResource;
 
-    if (amount > 0) {
-      const cost = operation(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator);
-      setAmount(divideByPrecision(cost));
+  useEffect(() => {
+    if (editingField) {
+      const amount = editingField === "lords" ? lordsAmount : resourceAmount;
+      const setAmount = editingField === "lords" ? setResourceAmount : setLordsAmount;
+      const operation = isBuyResource ? marketManager.buyResource : marketManager.sellResource;
+
+      if (amount > 0) {
+        const cost = operation(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator);
+        setAmount(divideByPrecision(cost));
+      }
     }
-  }, [lordsAmount, resourceAmount, isBuyResource, marketManager, market]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lordsAmount, resourceAmount, isBuyResource, marketManager, market, editingField]);
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const balanceId = isBuyResource ? BigInt(ResourcesIds.Lords) : resourceId;
     return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
-  }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId]);
+  }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId, ownerFee]);
 
   const canSwap = useMemo(
     () => lordsAmount > 0 && resourceAmount > 0 && hasEnough,
@@ -82,16 +89,16 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, lordsAmount]);
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
       const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - ownerFee) : resourceAmount;
-      const selectableResources = isLords
-        ? resources.filter((r) => r.id === ResourcesIds.Lords)
-        : resources.filter((r) => r.id !== ResourcesIds.Lords);
+      const selectableResources = resources.filter((r) =>
+        isLords ? r.id === ResourcesIds.Lords : r.id !== ResourcesIds.Lords,
+      );
 
       return (
         <ResourceBar
@@ -103,11 +110,14 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
           resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
+          onFocus={() => setEditingField(isLords ? "lords" : "resource")}
+          onBlur={() => setEditingField(null)}
         />
       );
     },
-    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId, ownerFee],
+    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId, ownerFee, resources],
   );
+
   const renderConfirmationPopup = useMemo(() => {
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
     const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
@@ -174,7 +184,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       <div className="mx-auto bg-gold/10 px-3 py-1">
         <div className="relative my-2 space-y-1">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
-          <div className="absolute  left-1/2 top-[94px]">
+          <div className="absolute left-1/2 top-[94px]">
             <Button isLoading={false} disabled={false} onClick={onInvert} size="md" className="">
               <Refresh
                 className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}

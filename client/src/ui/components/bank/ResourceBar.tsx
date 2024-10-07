@@ -8,17 +8,6 @@ import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } 
 import { useEffect, useRef, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
-type ResourceBarProps = {
-  entityId: ID;
-  lordsFee: number;
-  resources: Resources[];
-  resourceId: ResourcesIds;
-  setResourceId: (resourceId: ResourcesIds) => void;
-  amount: number;
-  setAmount: (amount: number) => void;
-  disableInput?: boolean;
-};
-
 export const ResourceBar = ({
   entityId,
   lordsFee,
@@ -28,7 +17,20 @@ export const ResourceBar = ({
   amount,
   setAmount,
   disableInput = false,
-}: ResourceBarProps) => {
+  onFocus,
+  onBlur,
+}: {
+  entityId: ID;
+  lordsFee: number;
+  resources: Resources[];
+  resourceId: ResourcesIds;
+  setResourceId: (resourceId: ResourcesIds) => void;
+  amount: number;
+  setAmount: (amount: number) => void;
+  disableInput?: boolean;
+  onFocus?: () => void; // New prop
+  onBlur?: () => void; // New prop
+}) => {
   const { getBalance } = getResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
@@ -39,15 +41,15 @@ export const ResourceBar = ({
 
   useEffect(() => {
     setSelectedResourceBalance(divideByPrecision(getBalance(entityId, Number(resourceId)).balance));
-  }, [resourceId]);
+  }, [resourceId, getBalance, entityId]);
 
   const handleResourceChange = (trait: string) => {
-    const resourceId = findResourceIdByTrait(trait);
-    setResourceId && setResourceId(resourceId);
+    const newResourceId = findResourceIdByTrait(trait);
+    setResourceId(newResourceId);
   };
 
   const handleAmountChange = (amount: number) => {
-    !disableInput && setAmount && setAmount(amount);
+    setAmount(amount);
   };
 
   const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
@@ -71,9 +73,11 @@ export const ResourceBar = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       if (filteredResources.length > 0) {
-        const selectedResource = filteredResources.filter((resource) => resource.id !== resourceId)[0];
-        setResourceId(selectedResource.id);
-        setOpen(false);
+        const selectedResource = filteredResources.find((resource) => resource.id !== resourceId);
+        if (selectedResource) {
+          setResourceId(selectedResource.id);
+          setOpen(false);
+        }
       }
       setSearchInput("");
     } else {
@@ -82,20 +86,22 @@ export const ResourceBar = ({
   };
 
   return (
-    <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap ">
+    <div className="w-full bg-gold/10 rounded-xl p-3 flex justify-between h-28 flex-wrap">
       <div className="self-center">
         <NumberInput
-          className="text-2xl border-transparent "
+          className="text-2xl border-transparent"
           value={amount}
-          onChange={(amount) => handleAmountChange(amount)}
+          onChange={handleAmountChange}
           max={Infinity}
           arrows={false}
           allowDecimals
+          onFocus={onFocus}
+          onBlur={onBlur}
         />
 
         {!disableInput && (
           <div
-            className="flex text-xs text-gold/70 mt-1 justify-center items-center relative text-center self-center mx-auto w-full"
+            className="flex text-xs text-gold/70 mt-1 justify-center items-center relative text-center self-center mx-auto w-full cursor-pointer"
             onClick={() => handleAmountChange(finalResourceBalance)}
           >
             Max: {isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}
@@ -111,14 +117,14 @@ export const ResourceBar = ({
       <Select
         open={open}
         onOpenChange={handleOpenChange}
-        value={findResourceById(Number(resourceId))!.trait}
+        value={findResourceById(Number(resourceId))?.trait || ""}
         onValueChange={(trait) => {
           handleResourceChange(trait);
           setOpen(false);
           setSearchInput("");
         }}
       >
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-[140px]" disabled={disableInput}>
           <SelectValue placeholder={HintSection.Resources} />
         </SelectTrigger>
         <SelectContent className="bg-black/90 text-gold">
@@ -129,10 +135,11 @@ export const ResourceBar = ({
               placeholder="Filter resources..."
               className="w-full"
               onKeyDown={handleKeyDown}
+              disabled={disableInput}
             />
           )}
-          {filteredResources.map((resource, index) => (
-            <SelectItem key={index} value={resource.trait} disabled={resource.id === resourceId}>
+          {filteredResources.map((resource) => (
+            <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId || disableInput}>
               <ResourceCost
                 resourceId={resource.id}
                 amount={divideByPrecision(getBalance(entityId, resource.id).balance)}
