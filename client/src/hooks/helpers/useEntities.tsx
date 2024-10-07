@@ -30,7 +30,7 @@ export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["sche
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
 };
 
-export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;

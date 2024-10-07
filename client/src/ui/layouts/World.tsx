@@ -68,8 +68,6 @@ export const World = () => {
         </BattleContainer>
       ) : (
         <>
-          {/* <TopMiddleContainer></TopMiddleContainer> */}
-
           <LeftMiddleContainer>
             <LeftNavigationModule />
           </LeftMiddleContainer>
@@ -81,10 +79,6 @@ export const World = () => {
           <BottomRightContainer>
             <EventStream />
           </BottomRightContainer>
-
-          {/* <BottomLeftContainer>
-            <Chat />
-          </BottomLeftContainer> */}
 
           <RightMiddleContainer>
             <RightNavigationModule />

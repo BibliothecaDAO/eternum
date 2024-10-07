@@ -70,11 +70,7 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
 };
 
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
-  <>
-    {depthQuests?.map((quest: Quest) => (
-      <QuestCard quest={quest} key={quest.name} />
-    ))}
-  </>
+  <>{depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}</>
 );
 
 const QuestCard = ({ quest }: { quest: Quest }) => {
@@ -106,8 +102,8 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
           {quest.status === QuestStatus.Claimed
             ? "Claimed"
             : quest.status === QuestStatus.Completed
-            ? "Claim"
-            : "Start"}
+              ? "Claim"
+              : "Start"}
         </Button>
       </div>
     </div>
