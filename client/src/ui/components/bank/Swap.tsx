@@ -6,9 +6,8 @@ import { useTravel } from "@/hooks/helpers/useTravel";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
@@ -39,11 +38,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const marketManager = useMemo(
     () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
     [setup, bankEntityId, resourceId, account.address],
-  );
-
-  const market = useComponentValue(
-    setup.components.Market,
-    getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
   );
 
   const hasEnough = useMemo(() => {
