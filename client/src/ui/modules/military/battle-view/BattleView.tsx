@@ -48,8 +48,8 @@ export const BattleView = () => {
     : BattleSide[BattleSide.Attack];
 
   const ownArmyBattleStarter = useMemo(
-    () => getAliveArmy(battleView!.ownArmyEntityId || 0),
-    [battleView!.ownArmyEntityId],
+    () => getAliveArmy(battleView?.ownArmyEntityId || 0),
+    [battleView?.ownArmyEntityId || 0],
   );
 
   const attackerArmies =
@@ -82,11 +82,11 @@ export const BattleView = () => {
         lifetime: battleAdjusted!.defence_army_health.lifetime,
       }
     : targetArmy
-      ? {
-          current: targetArmy.health.current || 0n,
-          lifetime: targetArmy.health.lifetime || 0n,
-        }
-      : undefined;
+    ? {
+        current: targetArmy.health.current || 0n,
+        lifetime: targetArmy.health.lifetime || 0n,
+      }
+    : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
@@ -100,7 +100,7 @@ export const BattleView = () => {
     <Battle
       battleManager={battleManager}
       ownArmySide={ownArmySide}
-      ownArmyEntityId={battleView?.ownArmyEntityId}
+      ownArmyEntityId={battleView?.ownArmyEntityId || 0}
       battleAdjusted={battleAdjusted}
       attackerArmies={attackerArmies}
       attackerHealth={attackerHealth}
