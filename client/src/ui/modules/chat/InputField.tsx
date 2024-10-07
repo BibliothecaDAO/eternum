@@ -72,8 +72,8 @@ export const InputField = ({
       const recipientAddress = !!recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : currentTab.name === "Global"
-        ? undefined
-        : BigInt(currentTab.address);
+          ? undefined
+          : BigInt(currentTab.address);
 
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 
