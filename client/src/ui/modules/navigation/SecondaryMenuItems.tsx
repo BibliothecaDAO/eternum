@@ -16,7 +16,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import { isRealmSelected } from "@/ui/utils/utils";
 import clsx from "clsx";
 
-import { ArrowDown } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { useMemo } from "react";
 import { leaderboard, quests as questsWindow, social } from "../../components/navigation/Config";
 
@@ -56,13 +56,13 @@ export const SecondaryMenuItems = () => {
               size="lg"
               onClick={() => togglePopup(questsWindow)}
               notification={realmSelected ? unclaimedQuestsCount : undefined}
-              notificationLocation={"topleft"}
+              notificationLocation={"bottomleft"}
               disabled={!realmSelected}
             />
 
             {questToClaim && !isMapView && realmSelected && (
-              <div className="absolute bg-black/90 text-gold border-gradient border top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
-                <ArrowDown className="text-gold w-4 mr-3" />
+              <div className="absolute bg-black/90 text-gold border-gradient border top-20 w-32 px-1 py-1 flex uppercase">
+                <ArrowUp className="text-gold w-4 mr-3" />
                 <div className="text-xs">Claim your reward</div>
               </div>
             )}

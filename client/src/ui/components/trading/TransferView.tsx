@@ -9,7 +9,7 @@ export const TransferView = () => {
     account: { account },
   } = useDojo();
 
-  const { playerRealms, playerStructures, otherRealms } = useEntities();
+  const { playerRealms, playerStructures, otherRealms, otherStructures } = useEntities();
 
   const [guildOnly, setGuildOnly] = useState(false);
 
@@ -40,6 +40,14 @@ export const TransferView = () => {
               : !playersInPlayersGuildAddress.includes(a.owner.address),
           ),
           name: "Other Realms",
+        },
+        {
+          entities: otherStructures((a) =>
+            guildOnly
+              ? playersInPlayersGuildAddress.includes(a.owner.address)
+              : !playersInPlayersGuildAddress.includes(a.owner.address),
+          ),
+          name: "Other Structures",
         },
       ]}
     />

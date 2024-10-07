@@ -27,6 +27,7 @@ export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["sche
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   category?: string | undefined;
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
 };
 
 export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
@@ -72,6 +73,13 @@ export const useEntities = () => {
     });
   }, [allStructures]);
 
+  const filterOtherStructures = useMemo(() => {
+    return allStructures.filter((id) => {
+      const owner = getComponentValue(Owner, id);
+      return owner && ContractAddress(owner.address) !== ContractAddress(account.address);
+    });
+  }, [allStructures]);
+
   const playerRealms = useMemo(() => {
     return filterPlayerRealms.map((id) => {
       const realm = getComponentValue(Realm, id);
@@ -110,9 +118,9 @@ export const useEntities = () => {
         const name = realm
           ? getRealmNameById(realm.realm_id)
           : structureName
-            ? `${structure?.category} ${structureName}`
-            : structure.category || "";
-        return { ...structure, position: position!, name };
+          ? `${structure?.category} ${structureName}`
+          : structure.category || "";
+        return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
       })
       .filter((structure): structure is PlayerStructure => structure !== undefined)
       .sort((a, b) => {
@@ -121,6 +129,23 @@ export const useEntities = () => {
         return a.category.localeCompare(b.category);
       });
   }, [filterPlayerStructures]);
+
+  const otherStructures = useMemo(() => {
+    return filterOtherStructures
+      .map((id) => {
+        const structure = getComponentValue(Structure, id);
+        if (!structure || structure.category === StructureType[StructureType.Realm]) return;
+
+        const position = getComponentValue(Position, id);
+
+        const structureName = getEntityName(structure.entity_id);
+
+        const name = structureName ? `${structure?.category} ${structureName}` : structure.category || "";
+        return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
+      })
+      .filter((structure): structure is PlayerStructure => structure !== undefined)
+      .sort((a, b) => a.category.localeCompare(b.category));
+  }, [filterOtherStructures]);
 
   const getPlayerRealms = (filterFn?: (realm: RealmWithPosition) => boolean) => {
     return useMemo(() => {
@@ -140,10 +165,17 @@ export const useEntities = () => {
     }, [otherRealms, filterFn]);
   };
 
+  const getOtherStructures = (filterFn?: (structure: PlayerStructure) => boolean) => {
+    return useMemo(() => {
+      return filterFn ? otherStructures.filter(filterFn) : otherStructures;
+    }, [otherRealms, filterFn]);
+  };
+
   return {
     playerRealms: getPlayerRealms,
     otherRealms: getOtherRealms,
     playerStructures: getPlayerStructures,
+    otherStructures: getOtherStructures,
   };
 };
 
@@ -303,8 +335,8 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+        ? `${structure?.category} ${structureName}`
+        : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)
