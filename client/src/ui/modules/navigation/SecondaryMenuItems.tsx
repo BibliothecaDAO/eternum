@@ -100,7 +100,7 @@ export const SecondaryMenuItems = () => {
     ];
   }, [unclaimedQuestsCount, selectedQuest, quests, structureEntityId]);
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3 mt-1">
       {" "}
       <div className="self-center px-3 flex space-x-2">
         {secondaryNavigation.map((a, index) => (
