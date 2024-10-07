@@ -150,6 +150,7 @@ export const BuildingEntityDetails = () => {
 };
 
 const CastleDetails = () => {
+  const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
@@ -160,7 +161,7 @@ const CastleDetails = () => {
 
   const immunityEndTimestamp =
     Number(structure.created_at) +
-    EternumGlobalConfig.battle.graceTickCount * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;

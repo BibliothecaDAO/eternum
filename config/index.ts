@@ -42,8 +42,12 @@ const setupConfig = process.env.VITE_PUBLIC_DEV
   ? {
       ...EternumGlobalConfig,
       stamina: {
-        travelCost: 1,
-        exploreCost: 2,
+        travelCost: 0,
+        exploreCost: 0,
+      },
+      battle: {
+        graceTickCount: 0,
+        delaySeconds: 0,
       },
     }
   : EternumGlobalConfig;

@@ -33,4 +33,16 @@ export class ClientConfigManager {
     );
     return staminaConfig?.cost!;
   }
+
+  getBattleGraceTickCount() {
+    const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+    return battleConfig?.battle_grace_tick_count!;
+  }
+
+  getBattleDelay() {
+    const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+    return battleConfig?.battle_delay_seconds!;
+  }
 }
