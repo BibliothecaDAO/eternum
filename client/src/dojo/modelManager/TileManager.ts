@@ -20,7 +20,10 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(private setup: SetupResult, hexCoords: HexPosition) {
+  constructor(
+    private setup: SetupResult,
+    hexCoords: HexPosition,
+  ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
     this.address = BigInt(this.setup.network.burnerManager.account?.address || 0n);
