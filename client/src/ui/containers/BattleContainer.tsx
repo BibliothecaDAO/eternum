@@ -1,20 +1,21 @@
 import useUIStore from "@/hooks/store/useUIStore";
+import { useEffect } from "react";
 
 export const BattleContainer = ({ children }: { children: React.ReactNode }) => {
   const setBattleView = useUIStore((state) => state.setBattleView);
 
   const battleView = useUIStore((state) => state.battleView);
 
-  // const handleEscapePress = (e: any) => {
-  //   if (e.key === "Escape") {
-  //     setBattleView(null);
-  //   }
-  // };
+  const handleEscapePress = (e: any) => {
+    if (e.key === "Escape") {
+      setBattleView(null);
+    }
+  };
 
-  // useEffect(() => {
-  //   document.addEventListener("keydown", (e) => handleEscapePress(e));
-  //   return () => document.removeEventListener("keydown", (e) => handleEscapePress(e));
-  // }, []);
+  useEffect(() => {
+    document.addEventListener("keydown", (e) => handleEscapePress(e));
+    return () => document.removeEventListener("keydown", (e) => handleEscapePress(e));
+  }, []);
 
   return (
     <div
