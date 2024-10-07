@@ -95,7 +95,13 @@ class Minimap {
     });
   }
 
-  private initializeCanvas(structureManager: StructureManager, exploredTiles: Map<number, Set<number>>, armyManager: ArmyManager, biome: Biome, camera: THREE.PerspectiveCamera) {
+  private initializeCanvas(
+    structureManager: StructureManager,
+    exploredTiles: Map<number, Set<number>>,
+    armyManager: ArmyManager,
+    biome: Biome,
+    camera: THREE.PerspectiveCamera,
+  ) {
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
@@ -332,7 +338,8 @@ class Minimap {
   private zoom(zoomOut: boolean) {
     const currentRange = Math.abs(this.displayRange.maxCol - this.displayRange.minCol);
     console.log(
-      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, minCol: ${this.displayRange.minCol}, maxCol: ${this.displayRange.maxCol
+      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, minCol: ${this.displayRange.minCol}, maxCol: ${
+        this.displayRange.maxCol
       }`,
     );
     if (!zoomOut && currentRange < MINIMAP_CONFIG.MIN_ZOOM_RANGE) {
