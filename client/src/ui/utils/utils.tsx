@@ -98,7 +98,8 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
 
   const col = hexCoords.col;
   const row = hexCoords.row;
-  const x = col * horizDist - ((row % 2) * horizDist) / 2;
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
   return new THREE.Vector3(x, y, z);
@@ -113,7 +114,8 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
 
   const row = Math.round(worldPosition.z / vertDist);
   // hexception offsets hack
-  const col = Math.round((worldPosition.x + ((row % 2) * horizDist) / 2) / horizDist);
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const col = Math.round((worldPosition.x + rowOffset) / horizDist);
 
   return {
     col,

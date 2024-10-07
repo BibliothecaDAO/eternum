@@ -75,11 +75,13 @@ export const getNeighborHexes = (col: number, row: number) => {
 };
 
 export const getNeighborOffsets = (row: number) => {
-  return row < 0
-    ? row % 2 !== 0
-      ? neighborOffsetsEven
-      : neighborOffsetsOdd
-    : row % 2 === 0
-    ? neighborOffsetsEven
-    : neighborOffsetsOdd;
+  return row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+};
+
+export const getDirectionBetweenAdjacentHexes = (
+  from: { col: number; row: number },
+  to: { col: number; row: number },
+): Direction | null => {
+  const neighbors = getNeighborHexes(from.col, from.row);
+  return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 };

@@ -2,7 +2,14 @@ import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BuildingType, Direction, getNeighborHexes, ID, StructureType } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  Direction,
+  getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
+  ID,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
@@ -13,10 +20,7 @@ export class TileManager {
   private row: number;
   private address: bigint;
 
-  constructor(
-    private setup: SetupResult,
-    hexCoords: HexPosition,
-  ) {
+  constructor(private setup: SetupResult, hexCoords: HexPosition) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
     this.address = BigInt(this.setup.network.burnerManager.account?.address || 0n);
@@ -270,14 +274,6 @@ export class TileManager {
       });
     }
   };
-}
-
-function getDirectionBetweenAdjacentHexes(
-  from: { col: number; row: number },
-  to: { col: number; row: number },
-): Direction | null {
-  const neighbors = getNeighborHexes(from.col, from.row);
-  return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 }
 
 function getDirectionsArray(start: [number, number], end: [number, number]): Direction[] {

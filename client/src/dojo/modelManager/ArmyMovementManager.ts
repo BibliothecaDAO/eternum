@@ -7,9 +7,8 @@ import {
   EternumGlobalConfig,
   type ID,
   ResourcesIds,
+  getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
-  neighborOffsetsEven,
-  neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
 import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
@@ -77,10 +76,7 @@ export class ArmyMovementManager {
   private readonly staminaManager: StaminaManager;
   private readonly entityQuantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
 
-  constructor(
-    private readonly setup: SetupResult,
-    entityId: ID,
-  ) {
+  constructor(private readonly setup: SetupResult, entityId: ID) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
@@ -270,13 +266,7 @@ export class ArmyMovementManager {
 
     const startPos = { col: path[0].col, row: path[0].row };
     const endPos = { col: path[1].col, row: path[1].row };
-    const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-
-    for (const offset of neighborOffsets) {
-      if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
-        return offset.direction;
-      }
-    }
+    return getDirectionBetweenAdjacentHexes(startPos, endPos);
   };
 
   private readonly _exploreHex = async (path: HexPosition[], currentArmiesTick: number) => {
