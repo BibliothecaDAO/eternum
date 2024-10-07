@@ -2,6 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import Button from "@/ui/elements/Button";
+import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
 import TextInput from "@/ui/elements/TextInput";
 import { multiplyByPrecision } from "@/ui/utils/utils";
@@ -38,7 +39,15 @@ interface SelectedEntity {
   entityId: ID;
 }
 
-export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { entities: any[]; name: string }[] }) => {
+export const TransferBetweenEntities = ({
+  entitiesList,
+  filtered,
+  filterBy,
+}: {
+  entitiesList: { entities: any[]; name: string }[];
+  filtered: boolean;
+  filterBy: (filtered: boolean) => void;
+}) => {
   const { getRealmAddressName } = useRealm();
 
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<SelectedEntity | null>(null);
@@ -54,16 +63,6 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
   const [toSearchTerm, setToSearchTerm] = useState("");
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
-
-  const entitiesListWithAccountNames = useMemo(() => {
-    return entitiesList.map(({ entities, name }) => ({
-      entities: entities.map((entity) => ({
-        ...entity,
-        accountName: getRealmAddressName(entity.entity_id),
-      })),
-      name,
-    }));
-  }, [entitiesList]);
 
   const {
     account: { account },
@@ -126,6 +125,16 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     );
   };
 
+  const entitiesListWithAccountNames = useMemo(() => {
+    return entitiesList.map(({ entities, name }) => ({
+      entities: entities.map((entity) => ({
+        ...entity,
+        accountName: getRealmAddressName(entity.entity_id),
+      })),
+      name,
+    }));
+  }, [entitiesList]);
+
   return (
     <div className="p-2 h-full">
       <Headline className="text-center capitalize my-5">{currentStep?.title}</Headline>
@@ -181,6 +190,14 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
             </div>
             <div className="justify-around overflow-auto">
               <Headline>To</Headline>
+              <div className="p-1">
+                {" "}
+                <div className="flex space-x-2 items-center cursor-pointer" onClick={() => filterBy(!filtered)}>
+                  <Checkbox enabled={filtered} />
+                  <div>Guild Only</div>
+                </div>
+              </div>
+
               <TextInput
                 placeholder="Search entities..."
                 onChange={(toSearchTerm) => setToSearchTerm(toSearchTerm)}

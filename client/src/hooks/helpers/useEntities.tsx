@@ -12,7 +12,6 @@ import { useEntityQuery } from "@dojoengine/react";
 import {
   Has,
   HasValue,
-  NotValue,
   getComponentValue,
   runQuery,
   type Component,
@@ -30,6 +29,12 @@ export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["sche
   category?: string | undefined;
 };
 
+export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  name: string;
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+};
+
 export const useEntities = () => {
   const {
     account: { account },
@@ -40,29 +45,59 @@ export const useEntities = () => {
 
   const { getEntityName } = getEntitiesUtils();
 
-  const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: ContractAddress(account.address) })]);
-  const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: ContractAddress(account.address) })]);
-  const playerStructures = useEntityQuery([
-    Has(Structure),
-    HasValue(Owner, { address: ContractAddress(account.address) }),
-  ]);
+  // Get all realms
+  const allRealms = useEntityQuery([Has(Realm)]);
 
-  const memoizedPlayerRealms = useMemo(() => {
-    return playerRealms.map((id) => {
-      const realm = getComponentValue(Realm, id);
-      return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+  const filterPlayerRealms = useMemo(() => {
+    return allRealms.filter((id) => {
+      const owner = getComponentValue(Owner, id);
+      return owner && ContractAddress(owner.address) === ContractAddress(account.address);
     });
-  }, [playerRealms]);
+  }, [allRealms]);
 
-  const memoizedOtherRealms = useMemo(() => {
-    return otherRealms.map((id) => {
-      const realm = getComponentValue(Realm, id);
-      return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+  const filterOtherRealms = useMemo(() => {
+    return allRealms.filter((id) => {
+      const owner = getComponentValue(Owner, id);
+      return owner && ContractAddress(owner.address) !== ContractAddress(account.address);
     });
-  }, [otherRealms]);
+  }, [allRealms]);
 
-  const memoizedPlayerStructures = useMemo(() => {
-    return playerStructures
+  // Get all structures
+  const allStructures = useEntityQuery([Has(Structure)]);
+
+  const filterPlayerStructures = useMemo(() => {
+    return allStructures.filter((id) => {
+      const owner = getComponentValue(Owner, id);
+      return owner && ContractAddress(owner.address) === ContractAddress(account.address);
+    });
+  }, [allStructures]);
+
+  const playerRealms = useMemo(() => {
+    return filterPlayerRealms.map((id) => {
+      const realm = getComponentValue(Realm, id);
+      return {
+        ...realm,
+        position: getPosition(realm!.realm_id),
+        name: getRealmNameById(realm!.realm_id),
+        owner: getComponentValue(Owner, id),
+      } as RealmWithPosition;
+    });
+  }, [filterPlayerRealms]);
+
+  const otherRealms = useMemo(() => {
+    return filterOtherRealms.map((id) => {
+      const realm = getComponentValue(Realm, id);
+      return {
+        ...realm,
+        position: getPosition(realm!.realm_id),
+        name: getRealmNameById(realm!.realm_id),
+        owner: getComponentValue(Owner, id),
+      } as RealmWithPosition;
+    });
+  }, [filterOtherRealms]);
+
+  const playerStructures = useMemo(() => {
+    return filterPlayerStructures
       .map((id) => {
         const structure = getComponentValue(Structure, id);
         if (!structure) return;
@@ -75,8 +110,8 @@ export const useEntities = () => {
         const name = realm
           ? getRealmNameById(realm.realm_id)
           : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+            ? `${structure?.category} ${structureName}`
+            : structure.category || "";
         return { ...structure, position: position!, name };
       })
       .filter((structure): structure is PlayerStructure => structure !== undefined)
@@ -85,12 +120,30 @@ export const useEntities = () => {
         if (b.category === StructureType[StructureType.Realm]) return 1;
         return a.category.localeCompare(b.category);
       });
-  }, [playerStructures]);
+  }, [filterPlayerStructures]);
+
+  const getPlayerRealms = (filterFn?: (realm: RealmWithPosition) => boolean) => {
+    return useMemo(() => {
+      return filterFn ? playerRealms.filter(filterFn) : playerRealms;
+    }, [playerRealms, filterFn]);
+  };
+
+  const getOtherRealms = (filterFn?: (realm: RealmWithPosition) => boolean) => {
+    return useMemo(() => {
+      return filterFn ? otherRealms.filter(filterFn) : otherRealms;
+    }, [otherRealms, filterFn]);
+  };
+
+  const getPlayerStructures = (filterFn?: (structure: PlayerStructure) => boolean) => {
+    return useMemo(() => {
+      return filterFn ? playerStructures.filter(filterFn) : playerStructures;
+    }, [otherRealms, filterFn]);
+  };
 
   return {
-    playerRealms: () => memoizedPlayerRealms,
-    otherRealms: () => memoizedOtherRealms,
-    playerStructures: () => memoizedPlayerStructures,
+    playerRealms: getPlayerRealms,
+    otherRealms: getOtherRealms,
+    playerStructures: getPlayerStructures,
   };
 };
 
@@ -210,33 +263,6 @@ export const getEntitiesUtils = () => {
   return { getEntityName, getEntityInfo, getAddressNameFromEntity, getPlayerAddressFromEntity };
 };
 
-export const useGetAllPlayers = () => {
-  const {
-    account: { account },
-    setup: {
-      components: { Owner, Realm },
-    },
-  } = useDojo();
-
-  const { getAddressNameFromEntity } = getEntitiesUtils();
-
-  const playersEntityIds = runQuery([
-    Has(Owner),
-    Has(Realm),
-    NotValue(Owner, { address: ContractAddress(account.address) }),
-  ]);
-
-  const getPlayers = () => {
-    const players = getAddressNameFromEntityIds(Array.from(playersEntityIds), Owner, getAddressNameFromEntity);
-
-    const uniquePlayers = Array.from(new Map(players.map((player) => [player.address, player])).values());
-
-    return uniquePlayers;
-  };
-
-  return getPlayers;
-};
-
 export const getAddressNameFromEntityIds = (
   entityId: Entity[],
   Owner: Component<ClientComponents["Owner"]["schema"]>,
@@ -277,8 +303,8 @@ const formatStructures = (
       const name = realm
         ? getRealmNameById(realm.realm_id)
         : structureName
-        ? `${structure?.category} ${structureName}`
-        : structure.category || "";
+          ? `${structure?.category} ${structureName}`
+          : structure.category || "";
       return { ...structure, position: position!, name };
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)

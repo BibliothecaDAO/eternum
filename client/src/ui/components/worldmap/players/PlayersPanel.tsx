@@ -1,10 +1,11 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntitiesUtils, useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import useUIStore from "@/hooks/store/useUIStore";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress, toHexString } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
 export const PlayersPanel = () => {

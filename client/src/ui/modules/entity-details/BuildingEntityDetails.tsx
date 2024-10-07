@@ -11,11 +11,11 @@ import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import {
+  ResourceIdToMiningType,
   copyPlayerAddressToClipboard,
   displayAddress,
   formatTime,
   getEntityIdFromKeys,
-  ResourceIdToMiningType,
   toHexString,
 } from "@/ui/utils/utils";
 import { BuildingType, EternumGlobalConfig, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
@@ -54,8 +54,9 @@ export const BuildingEntityDetails = () => {
     getEntityIdFromKeys(Object.values(selectedBuildingHex).map((v) => BigInt(v))),
   );
 
+  const structures = playerStructures();
+
   useEffect(() => {
-    const structures = playerStructures();
     if (building) {
       setBuildingState({
         buildingType: BuildingType[building.category as keyof typeof BuildingType],

@@ -35,7 +35,7 @@ export const SecondaryMenuItems = () => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { playerStructures } = useEntities();
-  const structures = useMemo(() => playerStructures(), [playerStructures]);
+  const structures = playerStructures();
 
   const questToClaim = quests?.find((quest: any) => quest.status === QuestStatus.Completed);
 

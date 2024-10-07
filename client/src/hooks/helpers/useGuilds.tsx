@@ -80,6 +80,24 @@ export const useGuilds = () => {
     return players;
   };
 
+  const getPlayerListInGuild = (guild_entity_id: ID) => {
+    const players = Array.from(
+      runQuery([Has(AddressName), Has(GuildMember), HasValue(Guild, { entity_id: guild_entity_id })]),
+    ).map((playerEntity) => {
+      const player = getComponentValue(AddressName, playerEntity);
+
+      const name = shortString.decodeShortString(player!.name.toString());
+      const address = toHexString(player?.address || 0n);
+
+      return {
+        name,
+        address,
+      };
+    });
+
+    return players;
+  };
+
   const useGuildMembers = useCallback((guildEntityId: ID) => {
     const guildMembers = useEntityQuery([HasValue(GuildMember, { guild_entity_id: guildEntityId })]);
     return {
@@ -141,6 +159,16 @@ export const useGuilds = () => {
     return { guild, isOwner, name: guild.name };
   }, []);
 
+  const getPlayersInPlayersGuild = useCallback((accountAddress: ContractAddress) => {
+    const guild = getGuildFromPlayerAddress(accountAddress);
+    if (!guild) return [];
+
+    const guildEntityId = guild.guildEntityId;
+    if (typeof guildEntityId !== "number") return [];
+
+    return getPlayerListInGuild(guildEntityId);
+  }, []);
+
   return {
     useGuildQuery,
     useGuildMembers,
@@ -150,6 +178,7 @@ export const useGuilds = () => {
     getGuildOwner,
     getGuildFromEntityId,
     getPlayerList,
+    getPlayersInPlayersGuild,
   };
 };
 

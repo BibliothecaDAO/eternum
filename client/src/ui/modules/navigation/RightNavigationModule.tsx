@@ -10,7 +10,6 @@ import { BaseContainer } from "../../containers/BaseContainer";
 export enum View {
   None,
   ResourceTable,
-  ResourceArrivals,
 }
 
 export const RightNavigationModule = () => {
