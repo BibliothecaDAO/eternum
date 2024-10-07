@@ -198,7 +198,7 @@ export const TopMiddleNavigation = () => {
             style={{ width: `${progress}%` }}
           ></div>
         </div>
-        <div className=" bg-black/90  rounded-b-xl   flex gap-1">
+        <div className=" bg-black/90 bg-hex-bg   rounded-b-xl   flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -252,7 +252,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className=" bg-black/90 rounded-b-xl  flex gap-4 justify-between px-4">
+        <div className=" bg-black/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"
