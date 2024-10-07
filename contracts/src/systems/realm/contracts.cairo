@@ -160,13 +160,15 @@ mod realm_systems {
                 InternalMapSystemsImpl::explore(world, entity_id.into(), coord, array![(1, 0)].span());
             }
 
+            let owner_address = starknet::get_caller_address();
             emit!(
                 world,
                 (SettleRealmData {
                     id: world.uuid(),
                     event_id: EventType::SettleRealm,
                     entity_id,
-                    owner_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    owner_address,
+                    owner_name: get!(world, owner_address, AddressName).name,
                     realm_name,
                     resource_types_packed,
                     resource_types_count,

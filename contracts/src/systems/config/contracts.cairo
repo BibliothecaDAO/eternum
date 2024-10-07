@@ -107,6 +107,7 @@ trait ITroopConfig {
 
 #[dojo::interface]
 trait IBuildingConfig {
+    fn set_building_general_config(ref world: IWorldDispatcher, base_cost_percent_increase: u16);
     fn set_building_config(
         ref world: IWorldDispatcher,
         building_category: BuildingCategory,
@@ -164,7 +165,7 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, BuildingGeneralConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
@@ -543,6 +544,12 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl BuildingConfigCustomImpl of super::IBuildingConfig<ContractState> {
+        fn set_building_general_config(ref world: IWorldDispatcher, base_cost_percent_increase: u16) {
+            assert_caller_is_admin(world);
+
+            set!(world, BuildingGeneralConfig { config_id: WORLD_CONFIG_ID, base_cost_percent_increase });
+        }
+
         fn set_building_config(
             ref world: IWorldDispatcher,
             building_category: BuildingCategory,

@@ -2,7 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision, formatResources, formatSecondsLeftInDaysHoursMinutes } from "@/ui/utils/utils";
+import { divideByPrecision, formatResources, formatTime } from "@/ui/utils/utils";
 import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
@@ -46,7 +46,7 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
         </div>
       </div>
       <div className="absolute bottom-1 right-2 text-xs text-gold/60">
-        {`${formatSecondsLeftInDaysHoursMinutes(Date.now() / 1000 - history.timestamp)} ago`}
+        {`${formatTime(Date.now() / 1000 - history.timestamp)} ago`}
       </div>
     </div>
   );

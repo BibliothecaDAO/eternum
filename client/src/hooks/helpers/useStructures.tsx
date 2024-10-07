@@ -4,12 +4,13 @@ import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
+import { getEntitiesUtils } from "./useEntities";
 
 export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   isMine: boolean;
@@ -124,7 +125,7 @@ export const getStructureByEntityId = (entityId: ID) => {
   const {
     account: { account },
     setup: {
-      components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm, Position },
+      components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm, Position, AddressName },
     },
   } = useDojo();
 
@@ -146,6 +147,9 @@ export const getStructureByEntityId = (entityId: ID) => {
 
     const onChainName = getComponentValue(EntityName, structureEntityId);
 
+    const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
+    const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
+
     const name =
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
@@ -166,6 +170,7 @@ export const getStructureByEntityId = (entityId: ID) => {
       protector,
       isMine: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
       isMercenary: owner.address === 0n,
+      ownerName,
     };
   }, [entityId]);
 

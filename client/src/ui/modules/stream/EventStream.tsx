@@ -1,3 +1,4 @@
+import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
@@ -44,6 +45,8 @@ export const EventStream = () => {
   const {
     setup: { components },
   } = useDojo();
+
+  const [hideEventStream, setHideEventStream] = useState(false);
   const [eventList, setEventList] = useState<EventData[]>([]);
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
@@ -96,18 +99,36 @@ export const EventStream = () => {
   }, [world]);
 
   return (
-    <div className="bg-black/10 p-1 rounded border border-black/10">
-      {eventList
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .slice(-EVENT_STREAM_SIZE)
-        .map((event, index) => {
-          const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
-          return (
-            <div className="hover:bg-black/20 rounded" key={index} style={{ color }}>
-              {emoji} {event.name || "Unknown"} {action} [{new Date(event.timestamp * 1000).toLocaleString()}]
-            </div>
-          );
-        })}
+    <div className="h-full w-[30vw]">
+      <div
+        className="flex flex-row items-end text-sm text-center"
+        onClick={() => {
+          setHideEventStream(!hideEventStream);
+        }}
+      >
+        <div className="bg-black/10 h-6 w-6 rounded-t">
+          <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
+        </div>
+      </div>
+      {hideEventStream ? (
+        <div className="bg-black/10 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full">
+          Events
+        </div>
+      ) : (
+        <div className="bg-black/10 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full">
+          {eventList
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .slice(-EVENT_STREAM_SIZE)
+            .map((event, index) => {
+              const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
+              return (
+                <div className="hover:bg-black/20 rounded" key={index} style={{ color }}>
+                  {emoji} {event.name || "Unknown"} {action} [{new Date(event.timestamp * 1000).toLocaleString()}]
+                </div>
+              );
+            })}
+        </div>
+      )}
     </div>
   );
 };

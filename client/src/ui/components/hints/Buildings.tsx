@@ -43,6 +43,7 @@ export const Buildings = () => {
   return (
     <div>
       <Headline>Buildings</Headline>
+      <div className="mt-2 mb-2">Every time you build a construction, the cost of the next one grows exponentially</div>
 
       <table className="not-prose w-full p-2 border-gold/10">
         <thead>
@@ -63,10 +64,13 @@ export const Buildings = () => {
                   src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
                 />
               </td>
-              <td className="text text-left">
+              <td className="text text-center">
                 {building.building_capacity !== 0 && (
                   <>
-                    Housing: + {building.building_capacity} <br />
+                    <p>Max population capacity:</p>
+                    <p>
+                      + {building.building_capacity} <br />
+                    </p>
                   </>
                 )}
                 {building.building_population !== 0 && <>Population: +{building.building_population}</>}

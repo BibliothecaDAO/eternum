@@ -431,6 +431,15 @@ pub struct BankConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
+pub struct BuildingGeneralConfig {
+    #[key]
+    config_id: ID,
+    base_cost_percent_increase: u16,
+}
+
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 pub struct BuildingConfig {
     #[key]
     config_id: ID,

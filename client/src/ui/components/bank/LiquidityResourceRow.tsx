@@ -5,9 +5,17 @@ import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  EternumGlobalConfig,
+  ID,
+  RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
@@ -15,13 +23,15 @@ type LiquidityResourceRowProps = {
   bankEntityId: ID;
   entityId: ID;
   resourceId: ResourcesIds;
+  isFirst?: boolean;
 };
 
-export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: LiquidityResourceRowProps) => {
+export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFirst }: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
+  const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
 
   const marketEntityId = useMemo(
     () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
@@ -143,8 +153,17 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
       <div className="grid grid-cols-7 gap-4 text-lg hover:bg-gold/20 my-1 border border-gold/10 px-2">
         {pair}
 
-        <div className="flex items-center">
+        <div
+          className="flex items-center relative"
+          onMouseEnter={() => setShowInputResourcesPrice(true)}
+          onMouseLeave={() => setShowInputResourcesPrice(false)}
+        >
           {marketManager.getMarketPrice().toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
+          {showInputResourcesPrice && (
+            <div className={`${isFirst ? "top-10" : "bottom-10"} absolute left-0 z-[100] pointer-events-none`}>
+              <InputResourcesPrice marketManager={marketManager} />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col col-span-2">
@@ -186,5 +205,42 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
       </div>
       {openConfirmation && renderConfirmationPopup}
     </>
+  );
+};
+
+const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
+  const { setup } = useDojo();
+  const inputResources = RESOURCE_INPUTS_SCALED[marketManager.resourceId];
+  const outputAmount = RESOURCE_OUTPUTS[marketManager.resourceId];
+
+  if (!inputResources?.length) return null;
+  const totalPrice =
+    inputResources.reduce((sum, resource) => {
+      const price = new MarketManager(
+        setup,
+        marketManager.bankEntityId,
+        marketManager.player,
+        resource.resource,
+      ).getMarketPrice();
+      return sum + Number(price) * resource.amount;
+    }, 0) / outputAmount;
+  return (
+    <div className="p-2 w-full flex flex-col items-center justify-center bg-black/70 rounded-lg shadow-xl">
+      <div className="flex items-center justify-center">
+        {inputResources.map(({ resource }, index) => (
+          <React.Fragment key={index}>
+            {index > 0 && <span className="mx-1">+</span>}
+            <ResourceIcon key={resource} resource={ResourcesIds[resource]} size="sm" />
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="flex flex-row text-xxs text-gold w-full items-center justify-between mt-1">
+        <span className="mr-1 whitespace-nowrap">production cost:</span>
+        <div className="flex items-center space-x-1">
+          <span className="font-semibold ">{totalPrice.toFixed(2)}</span>
+          <ResourceIcon resource="Lords" size="xs" />
+        </div>
+      </div>
+    </div>
   );
 };

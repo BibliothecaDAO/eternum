@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { displayAddress } from "../utils/utils";
+import { displayAddress, toHexString } from "../utils/utils";
 
 export const AddressSelect = ({
   addressList,
@@ -51,16 +51,14 @@ export const AddressSelect = ({
           <SelectTrigger className="h-10 text-[1rem]">
             <SelectValue
               className="text-[1rem]"
-              placeholder={`${players[0].addressName} (${displayAddress(
-                "0x" + players[0].address.toString(16) || "0x0",
-              )})`}
+              placeholder={`${players[0].addressName} (${displayAddress(toHexString(players[0].address || 0n))})`}
             />
           </SelectTrigger>
           <SelectContent className="text-[1rem]">
             {players.map((player, index) => (
               <SelectItem className="h-10 text-[1rem]" key={index} value={player.address.toString()}>
                 <h5 className="text-[1rem]">{`${player.addressName} (${displayAddress(
-                  "0x" + player.address.toString(16),
+                  toHexString(player.address),
                 )})`}</h5>
               </SelectItem>
             ))}

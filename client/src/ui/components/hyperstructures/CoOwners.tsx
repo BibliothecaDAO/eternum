@@ -3,16 +3,14 @@ import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
+import useUIStore from "@/hooks/store/useUIStore";
 import { AddressSelect } from "@/ui/elements/AddressSelect";
 import Button from "@/ui/elements/Button";
-
-import useUIStore from "@/hooks/store/useUIStore";
 import { NumberInput } from "@/ui/elements/NumberInput";
-import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
-import { displayAddress, formatSecondsLeftInDaysHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, getOrderName, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
+import { displayAddress, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { ContractAddress, HYPERSTRUCTURE_CONFIG_ID, ID } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { Plus } from "lucide-react";
@@ -90,12 +88,11 @@ const CoOwnersRows = ({
 
   const structure = getStructureByEntityId(hyperstructureEntityId);
 
-  const { getAddressName, getAddressOrder } = useRealm();
+  const { getAddressName } = useRealm();
 
   const sortingParams = useMemo(() => {
     return [
       { label: "Name", sortKey: "name", className: "" },
-      { label: "Order", sortKey: "order", className: "" },
       { label: "Address", sortKey: "address", className: "" },
       { label: "Percentage", sortKey: "percentage", className: "flex justify-end" },
     ];
@@ -108,7 +105,7 @@ const CoOwnersRows = ({
 
   return (
     <>
-      <SortPanel className="px-3 py-2 grid grid-cols-4">
+      <SortPanel className="px-3 py-2 grid grid-cols-3">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton
             className={className}
@@ -131,15 +128,11 @@ const CoOwnersRows = ({
 
         const isOwner = coOwner.address === ContractAddress(account.address);
 
-        const order = getAddressOrder(coOwner.address) || 0;
-        const orderName = getOrderName(order);
-
         return (
           <div key={index} className={`flex mt-1 ${isOwner ? "bg-green/20" : ""} text-xxs text-gold`}>
             <div className={`flex relative group items-center text-xs px-2 p-1 w-full`}>
-              <div className="flex w-full grid grid-cols-4">
+              <div className="flex w-full grid grid-cols-3">
                 <div className="text-sm font-bold">{playerName}</div>
-                <OrderIcon containerClassName="" order={orderName} size="xs" />
                 <div className=" text-sm font-bold">{displayAddress(coOwner.address.toString(16))}</div>
                 <div className="text-right">{coOwner.percentage / 100}%</div>
               </div>
@@ -152,7 +145,7 @@ const CoOwnersRows = ({
           onMouseEnter={() => {
             if (!canUpdate)
               setTooltip({
-                content: `Wait ${formatSecondsLeftInDaysHoursMinutes(
+                content: `Wait ${formatTime(
                   Number(hyperstructureConfig?.time_between_shares_change) -
                     Number((nextBlockTimestamp || 0) - Number(hyperstructureUpdate?.last_updated_timestamp)),
                 )} to change`,

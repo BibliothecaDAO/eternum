@@ -5,12 +5,12 @@ import {
   CapacityConfigCategory,
   ContractAddress,
   EternumGlobalConfig,
-  type ID,
+  ID,
   ResourcesIds,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
-import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, type ComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { type ClientComponents } from "../createClientComponents";
 import { type SetupResult } from "../setup";
@@ -76,7 +76,10 @@ export class ArmyMovementManager {
   private readonly staminaManager: StaminaManager;
   private readonly entityQuantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
 
-  constructor(private readonly setup: SetupResult, entityId: ID) {
+  constructor(
+    private readonly setup: SetupResult,
+    entityId: ID,
+  ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);

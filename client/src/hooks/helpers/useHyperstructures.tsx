@@ -1,9 +1,10 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { toHexString } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
+  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  HyperstructureResourceMultipliers,
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
@@ -42,7 +43,7 @@ export const useHyperstructures = () => {
         .values()
         .next().value;
 
-      const owner = `0x${getComponentValue(Owner, ownerEntityIds || ("" as Entity))?.address.toString(16)}`;
+      const owner = toHexString(getComponentValue(Owner, ownerEntityIds || ("" as Entity))?.address || 0n);
       const entityName = getComponentValue(EntityName, hyperstructureEntityId);
       return {
         ...hyperstructure,
@@ -127,7 +128,9 @@ const getAllProgressesAndTotalPercentage = (
     };
     percentage +=
       (progress.amount *
-        HyperstructureResourceMultipliers[progress.resource_type as keyof typeof HyperstructureResourceMultipliers]!) /
+        HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
+          progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
+        ]!) /
       TOTAL_CONTRIBUTABLE_AMOUNT;
     return progress;
   });

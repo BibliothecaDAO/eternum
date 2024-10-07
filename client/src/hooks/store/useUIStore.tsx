@@ -1,5 +1,7 @@
+import { DEFAULT_TAB, Tab } from "@/ui/modules/chat/ChatTab";
 import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
@@ -51,6 +53,12 @@ interface UIStore {
   setLeftNavigationView: (view: LeftView) => void;
   rightNavigationView: RightView;
   setRightNavigationView: (view: RightView) => void;
+  selectedPlayer: ContractAddress | null;
+  setSelectedPlayer: (player: ContractAddress | null) => void;
+  tabs: Tab[];
+  setTabs: (tabs: Tab[]) => void;
+  currentTab: Tab;
+  setCurrentTab: (tab: Tab) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore;
@@ -104,6 +112,12 @@ const useUIStore = create(
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
     rightNavigationView: RightView.None,
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+    selectedPlayer: null,
+    setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
+    tabs: [],
+    setTabs: (tabs: Tab[]) => set({ tabs }),
+    currentTab: DEFAULT_TAB,
+    setCurrentTab: (tab: Tab) => set({ currentTab: tab }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

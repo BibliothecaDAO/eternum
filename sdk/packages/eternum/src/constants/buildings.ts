@@ -1,5 +1,6 @@
+import { ResourcesIds } from ".";
+import { ResourceInputs } from "../types";
 import { BuildingType } from "./structures";
-import { ResourcesIds } from "./resources";
 
 export const BUILDING_INFORMATION: {
   [key: number]: string;
@@ -74,4 +75,57 @@ export const BUILDING_RESOURCE_PRODUCED: { [key: number]: number } = {
   [BuildingType.WatchTower]: 0,
   [BuildingType.Walls]: 0,
   [BuildingType.Storehouse]: 0,
+};
+
+export const BUILDING_COSTS: ResourceInputs = {
+  [BuildingType.Castle]: [],
+  [BuildingType.Bank]: [],
+  [BuildingType.FragmentMine]: [],
+  [BuildingType.Resource]: [],
+  [BuildingType.Farm]: [{ resource: ResourcesIds.Fish, amount: 900 }],
+  [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 900 }],
+
+  [BuildingType.Market]: [
+    { resource: ResourcesIds.Fish, amount: 1500 },
+    { resource: ResourcesIds.Stone, amount: 250 },
+    { resource: ResourcesIds.Obsidian, amount: 100 },
+    { resource: ResourcesIds.Ruby, amount: 50 },
+    { resource: ResourcesIds.DeepCrystal, amount: 10 },
+  ],
+  [BuildingType.Barracks]: [
+    { resource: ResourcesIds.Wheat, amount: 2000 },
+    { resource: ResourcesIds.Wood, amount: 150 },
+    { resource: ResourcesIds.Coal, amount: 150 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.Gold, amount: 90 },
+  ],
+  [BuildingType.ArcheryRange]: [
+    { resource: ResourcesIds.Fish, amount: 2000 },
+    { resource: ResourcesIds.Wood, amount: 150 },
+    { resource: ResourcesIds.Obsidian, amount: 150 },
+    { resource: ResourcesIds.Gold, amount: 50 },
+    { resource: ResourcesIds.Hartwood, amount: 50 },
+  ],
+  [BuildingType.Stable]: [
+    { resource: ResourcesIds.Wheat, amount: 2000 },
+    { resource: ResourcesIds.Wood, amount: 150 },
+    { resource: ResourcesIds.Silver, amount: 150 },
+    { resource: ResourcesIds.Ironwood, amount: 70 },
+    { resource: ResourcesIds.Gold, amount: 50 },
+  ],
+  [BuildingType.TradingPost]: [],
+  [BuildingType.WorkersHut]: [
+    { resource: ResourcesIds.Wheat, amount: 600 },
+    { resource: ResourcesIds.Stone, amount: 150 },
+    { resource: ResourcesIds.Wood, amount: 150 },
+    { resource: ResourcesIds.Coal, amount: 150 },
+  ],
+  [BuildingType.WatchTower]: [],
+  [BuildingType.Walls]: [],
+  [BuildingType.Storehouse]: [
+    { resource: ResourcesIds.Fish, amount: 2000 },
+    { resource: ResourcesIds.Coal, amount: 150 },
+    { resource: ResourcesIds.Stone, amount: 150 },
+    { resource: ResourcesIds.Sapphire, amount: 20 },
+  ],
 };

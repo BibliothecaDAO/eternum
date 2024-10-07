@@ -1,7 +1,9 @@
+import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { Headline } from "@/ui/elements/Headline";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { multiplyByPrecision } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
-import { EXPLORATION_COSTS, EternumGlobalConfig } from "@bibliothecadao/eternum";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
 
 export const TheMap = () => {
   const chapters = [
@@ -41,18 +43,17 @@ export const TheMap = () => {
 };
 
 const ExplorationTable = () => {
-  const explorationCosts = EXPLORATION_COSTS.map((cost) => ({
-    ...cost,
-  }));
+  const exploreFishBurn = multiplyByPrecision(EternumGlobalConfig.exploration.exploreFishBurn);
+  const exploreWheatBurn = multiplyByPrecision(EternumGlobalConfig.exploration.exploreWheatBurn);
 
-  const exploreCost = EternumGlobalConfig.stamina.exploreCost;
-  const travelCost = EternumGlobalConfig.stamina.travelCost;
+  const travelFishBurn = multiplyByPrecision(EternumGlobalConfig.exploration.travelFishBurn);
+  const travelWheatBurn = multiplyByPrecision(EternumGlobalConfig.exploration.travelWheatBurn);
 
   return (
-    <table className="not-prose w-full p-2 border-gold/10">
+    <table className="not-prose w-full border-collapse border border-gold/10">
       <thead>
         <tr>
-          <th className=" p-2"></th>
+          <th className="border border-gold/10 p-2"></th>
           <th className="border border-gold/10 p-2">Stamina</th>
           <th className="border border-gold/10 p-2">Resources</th>
         </tr>
@@ -60,17 +61,41 @@ const ExplorationTable = () => {
       <tbody>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Exploration</td>
-          <td className="border border-gold/10 p-2">{exploreCost}</td>
-          <td className="border border-gold/10 p-2 gap-1 flex flex-col">
-            {explorationCosts.map((cost, index) => (
-              <ResourceCost key={index} resourceId={cost.resourceId} amount={cost.amount} size="lg" />
-            ))}
+          <td className="border border-gold/10 p-2">
+            <div className="flex flex-row items-center justify-around">
+              <Lightning className="fill-order-power/70 w-8"></Lightning>
+              <p>{EternumGlobalConfig.stamina.exploreCost}</p>
+            </div>
+          </td>
+          <td className="border border-gold/10 p-2">
+            <div className="flex flex-row items-center justify-around">
+              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Wheat]} />
+              <p>{exploreWheatBurn} / unit</p>
+            </div>
+            <div className="flex flex-row items-center justify-around">
+              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Fish]} />
+              <p>{exploreFishBurn} / unit</p>
+            </div>
           </td>
         </tr>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Travel</td>
-          <td className="border border-gold/10 p-2">{travelCost}</td>
-          <td className="border border-gold/10 p-2">None</td>
+          <td className="border border-gold/10 p-2">
+            <div className="flex flex-row items-center justify-around">
+              <Lightning className="fill-order-power/70 w-8"></Lightning>
+              <p>{EternumGlobalConfig.stamina.travelCost}</p>
+            </div>
+          </td>
+          <td className="border border-gold/10 p-2">
+            <div className="flex flex-row items-center justify-around">
+              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Wheat]} />
+              <p>{travelWheatBurn} / unit</p>
+            </div>
+            <div className="flex flex-row items-center justify-around">
+              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Fish]} />
+              <p>{travelFishBurn} / unit</p>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>

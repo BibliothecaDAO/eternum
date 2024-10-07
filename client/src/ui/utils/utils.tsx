@@ -16,6 +16,10 @@ import { type SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
+export const toHexString = (num: bigint) => {
+  return `0x${num.toString(16)}`;
+};
+
 export const formatNumber = (num: number, decimals: number): string => {
   return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
@@ -180,17 +184,27 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
 };
 
-export const formatTime = (seconds: number): string => {
+export enum TimeFormat {
+  D = 1,
+  H = 2,
+  M = 4,
+  S = 8,
+}
+
+export const formatTime = (
+  seconds: number,
+  format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
+): string => {
   const days = Math.floor(seconds / (3600 * 24));
   const hours = Math.floor((seconds % (3600 * 24)) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = Math.floor(seconds % 60);
 
   const parts = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
+  if (days > 0 && format & TimeFormat.D) parts.push(`${days}d`);
+  if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}h`);
+  if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}m`);
+  if (remainingSeconds > 0 && format & TimeFormat.S) parts.push(`${remainingSeconds}s`);
 
   return parts.join(" ");
 };
@@ -255,15 +269,6 @@ export const formatSecondsInHoursMinutes = (seconds: number) => {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   return `${hours}h:${minutes}m`;
-};
-
-export const formatSecondsLeftInDaysHoursMinutes = (seconds: number) => {
-  const days = Math.floor(seconds / 86400);
-  const secondsLeft = seconds % 86400;
-  const hours = Math.floor(secondsLeft / 3600);
-  const minutes = Math.floor((secondsLeft % 3600) / 60);
-
-  return `${days} days ${hours}h ${minutes}m`;
 };
 
 export const isResourceProductionBuilding = (buildingId: BuildingType) => {

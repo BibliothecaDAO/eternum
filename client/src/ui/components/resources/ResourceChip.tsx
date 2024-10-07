@@ -1,10 +1,10 @@
-import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID, ResourcesIds } from "@bibliothecadao/eternum";
 
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, currencyIntlFormat, formatTime } from "../../utils/utils";
+import { currencyFormat, currencyIntlFormat, formatTime, TimeFormat } from "../../utils/utils";
 
 const DISPLAY_RATE_TIME_MS = 5_000;
 const TRANSITION_DURATION_MS = 400;
@@ -13,10 +13,12 @@ export const ResourceChip = ({
   isLabor = false,
   resourceId,
   entityId,
+  maxBalance,
 }: {
   isLabor?: boolean;
   resourceId: ID;
   entityId: ID;
+  maxBalance: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
@@ -75,9 +77,9 @@ export const ResourceChip = ({
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
         if (Math.abs(netRate) > 0) {
-          return prevDisplayBalance + netRate;
+          return Math.min(maxBalance, Math.max(0, prevDisplayBalance + netRate));
         }
-        return prevDisplayBalance;
+        return Math.min(maxBalance, prevDisplayBalance);
       });
     }, 1000);
     return () => clearInterval(interval);
@@ -104,6 +106,7 @@ export const ResourceChip = ({
     }
   }, [netRate, showPerHour]);
 
+  const reachedMaxCap = maxBalance === displayBalance && Math.abs(netRate) > 0;
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
@@ -120,20 +123,22 @@ export const ResourceChip = ({
       }}
     >
       {icon}
-      <div className="grid grid-cols-6 w-full">
-        <div className="self-center font-bold col-span-2">
+      <div className="grid grid-cols-10 w-full">
+        <div className="self-center font-bold col-span-3">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}
         </div>
 
-        <div className="self-center m-y-auto font-bold col-span-3">
-          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) + " left" : ""}
+        <div className="self-center m-y-auto font-bold col-span-4 text-center">
+          {timeUntilValueReached !== 0
+            ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
+            : ""}
         </div>
 
-        {netRate ? (
+        {netRate && !reachedMaxCap ? (
           <div
             className={`${
               Number(netRate) < 0 ? "text-light-red" : "text-green/80"
-            } self-center px-2 flex font-bold col-span-1 text-[10px]`}
+            } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
           >
             <div
               className={`self-center transition-opacity duration-${TRANSITION_DURATION_MS} ${
@@ -149,15 +154,21 @@ export const ResourceChip = ({
             onMouseEnter={() => {
               setTooltip({
                 position: "top",
-                content: <>Production has stopped because inputs have been depleted</>,
+                content: (
+                  <>
+                    {isConsumingInputsWithoutOutput
+                      ? "Production has stopped because inputs have been depleted"
+                      : "Production has stopped because the max balance has been reached"}
+                  </>
+                ),
               });
             }}
             onMouseLeave={() => {
               setTooltip(null);
             }}
-            className="self-center px-2"
+            className="self-center px-2 col-span-3 mx-auto"
           >
-            {isConsumingInputsWithoutOutput ? "⚠️" : ""}
+            {isConsumingInputsWithoutOutput || reachedMaxCap ? "⚠️" : ""}
           </div>
         )}
       </div>

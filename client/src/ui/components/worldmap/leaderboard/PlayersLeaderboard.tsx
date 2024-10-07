@@ -2,10 +2,9 @@ import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
-import { ContractAddress, getOrderName } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { PlayerPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
-import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { currencyIntlFormat, displayAddress, sortItems } from "../../../utils/utils";
@@ -23,7 +22,7 @@ export const PlayersLeaderboard = () => {
     account: { account },
   } = useDojo();
 
-  const { getAddressName, getAddressOrder } = useRealm();
+  const { getAddressName } = useRealm();
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
@@ -37,8 +36,7 @@ export const PlayersLeaderboard = () => {
   const sortingParams: SortingParamPlayerPointsLeaderboard[] = useMemo(() => {
     return [
       { label: "Rank", sortKey: "rank", className: "col-span-1" },
-      { label: "Name", sortKey: "addressName", className: "col-span-1" },
-      { label: "Order", sortKey: "order", className: "col-span-1" },
+      { label: "Name", sortKey: "addressName", className: "col-span-2" },
       { label: "Address", sortKey: "address", className: "col-span-2" },
       { label: "Points", sortKey: "totalPoints", className: "col-span-1" },
     ];
@@ -69,17 +67,13 @@ export const PlayersLeaderboard = () => {
 
           const isOwner = address === ContractAddress(account.address);
 
-          const order = getAddressOrder(address) || 0;
-          const orderName = getOrderName(order);
-
           return (
             <div
               key={index}
               className={`grid grid-cols-6 gap-4  p-1 ${isOwner ? "bg-green/20" : ""}  text-xxs text-gold`}
             >
               <div className="col-span-1 ">{`#${index + 1}`}</div>
-              <div className="col-span-1">{playerName}</div>
-              <OrderIcon className="col-span-1" order={orderName} size="xs" />
+              <div className="col-span-2">{playerName}</div>
               <div className="col-span-2">{displayAddress(address.toString(16))}</div>
               <div className="col-span-1"> {currencyIntlFormat(points)}</div>
             </div>

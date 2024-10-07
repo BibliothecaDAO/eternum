@@ -203,14 +203,7 @@ impl ResourceCustomImpl of ResourceCustomTrait {
         let entity_structure: Structure = get!(world, self.entity_id, Structure);
         let entity_is_structure = entity_structure.is_structure();
         if entity_is_structure {
-            let mut storehouse_building_quantity: BuildingQuantityv2 = get!(
-                world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantityv2
-            );
-            let storehouse_capacity_gram = get!(world, CapacityConfigCategory::Storehouse, CapacityConfig).weight_gram;
-
-            let max_resource_balance = storehouse_capacity_gram
-                + (storehouse_building_quantity.value.into() * storehouse_capacity_gram);
-            self.balance = min(self.balance, max_resource_balance);
+            self.limit_balance_by_storehouse_capacity(world);
         }
 
         // save the updated resource
@@ -240,11 +233,23 @@ impl ResourceCustomImpl of ResourceCustomTrait {
         }
     }
 
+    fn limit_balance_by_storehouse_capacity(ref self: Resource, world: IWorldDispatcher) {
+        let storehouse_building_quantity: BuildingQuantityv2 = get!(
+            world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantityv2
+        );
+        let storehouse_capacity_gram = get!(world, CapacityConfigCategory::Storehouse, CapacityConfig).weight_gram;
+
+        let max_resource_balance = storehouse_capacity_gram
+            + (storehouse_building_quantity.value.into() * storehouse_capacity_gram);
+        self.balance = min(self.balance, max_resource_balance);
+    }
+
     fn harvest(ref self: Resource, world: IWorldDispatcher) {
         let mut production: Production = get!(world, (self.entity_id, self.resource_type), Production);
         let tick = TickImpl::get_default_tick_config(world);
         if production.is_active() && production.last_updated_tick != tick.current() {
             production.harvest(ref self, @tick);
+            self.limit_balance_by_storehouse_capacity(world);
             set!(world, (self));
             set!(world, (production));
         }

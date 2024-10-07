@@ -160,10 +160,6 @@ export class BattleManager {
   public isBattleOngoing(currentTimestamp: number): boolean {
     const battle = this.getBattle();
 
-    if (this.isSiege(currentTimestamp)) {
-      return false;
-    }
-
     const timeSinceLastUpdate = this.getElapsedTime(currentTimestamp);
 
     return battle ? timeSinceLastUpdate < battle.duration_left : false;
@@ -432,10 +428,24 @@ export class BattleManager {
       };
     }
 
+    let knight_count = (health.current * currentTroops.knight_count) / health.lifetime;
+    let paladin_count = (health.current * currentTroops.paladin_count) / health.lifetime;
+    let crossbowman_count = (health.current * currentTroops.crossbowman_count) / health.lifetime;
+
+    if (knight_count < EternumGlobalConfig.resources.resourcePrecision) {
+      knight_count = 0n;
+    }
+    if (paladin_count < EternumGlobalConfig.resources.resourcePrecision) {
+      paladin_count = 0n;
+    }
+    if (crossbowman_count < EternumGlobalConfig.resources.resourcePrecision) {
+      crossbowman_count = 0n;
+    }
+
     return {
-      knight_count: (health.current * currentTroops.knight_count) / health.lifetime,
-      paladin_count: (health.current * currentTroops.paladin_count) / health.lifetime,
-      crossbowman_count: (health.current * currentTroops.crossbowman_count) / health.lifetime,
+      knight_count,
+      paladin_count,
+      crossbowman_count,
     };
   };
 
@@ -445,12 +455,25 @@ export class BattleManager {
     const attackDelta = this.attackingDelta(battle);
     const defenceDelta = this.defendingDelta(battle);
 
-    battle.attack_army_health.current = this.getUdpdatedHealth(attackDelta, battle.attack_army_health, durationPassed);
+    battle.attack_army_health.current = this.getUdpdatedHealth(defenceDelta, battle.attack_army_health, durationPassed);
+    if (
+      battle.attack_army_health.current <
+      EternumGlobalConfig.troop.health * EternumGlobalConfig.resources.resourcePrecision
+    ) {
+      battle.attack_army_health.current = 0n;
+    }
+
     battle.defence_army_health.current = this.getUdpdatedHealth(
-      defenceDelta,
+      attackDelta,
       battle.defence_army_health,
       durationPassed,
     );
+    if (
+      battle.defence_army_health.current <
+      EternumGlobalConfig.troop.health * EternumGlobalConfig.resources.resourcePrecision
+    ) {
+      battle.defence_army_health.current = 0n;
+    }
   }
 
   private getUdpdatedHealth(
@@ -459,10 +482,7 @@ export class BattleManager {
     durationPassed: number,
   ) {
     const damagesDone = this.damagesDone(delta, durationPassed);
-    const currentHealthAfterDamage = BigInt(
-      Math.min(Number(health.current), Number(this.getCurrentHealthAfterDamage(health, damagesDone))),
-    );
-    return currentHealthAfterDamage;
+    return this.getCurrentHealthAfterDamage(health, damagesDone);
   }
 
   private attackingDelta(battle: ComponentValue<Components["Battle"]["schema"]>) {

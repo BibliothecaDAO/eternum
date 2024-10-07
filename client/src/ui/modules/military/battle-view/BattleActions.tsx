@@ -57,6 +57,7 @@ export const BattleActions = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);

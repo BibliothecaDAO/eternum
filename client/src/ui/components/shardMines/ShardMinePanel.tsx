@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { displayAddress } from "@/ui/utils/utils";
 import TextInput from "@/ui/elements/TextInput";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
@@ -28,7 +27,6 @@ export const ShardMinePanel = ({ entity }: any) => {
               <TextInput
                 placeholder="Type Name"
                 className="h-full"
-                value={naming}
                 onChange={(name) => setNaming(name)}
                 maxLength={MAX_NAME_LENGTH}
               />

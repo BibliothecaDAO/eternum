@@ -18,7 +18,7 @@ import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { shortString } from "starknet";
 
 const ACCOUNT_CHANGE_EVENT = "addressChanged";
@@ -71,7 +71,6 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
-  const [inputName, setInputName] = useState("");
 
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
 
@@ -79,6 +78,9 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const name = getAddressName(ContractAddress(account.address));
   const { playerRealms } = useEntities();
+
+  const input = useRef<string>("");
+  const [canSetName, setCanSetName] = useState(false);
 
   // @dev: refactor this
   useEffect(() => {
@@ -90,11 +92,11 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const onSetName = async () => {
     setLoading(true);
-    if (inputName && !addressIsMaster) {
-      const inputNameValidAscii = toValidAscii(inputName);
+    if (input.current && !addressIsMaster) {
+      const inputNameValidAscii = toValidAscii(input.current);
       const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
       await set_address_name({ name: inputNameBigInt, signer: account as any });
-      setAddressName(inputName);
+      setAddressName(input.current);
       setLoading(false);
     }
   };
@@ -175,14 +177,16 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                   <TextInput
                     placeholder="Your Name... (Max 31 characters)"
                     maxLength={MAX_NAME_LENGTH}
-                    value={inputName}
-                    onChange={setInputName}
+                    onChange={(value) => {
+                      input.current = value;
+                      setCanSetName(input.current.length > 0);
+                    }}
                   />
                   <Button
                     isLoading={loading || !account}
                     onClick={onSetName}
                     variant="primary"
-                    disabled={loading || inputName.length === 0}
+                    disabled={loading || !canSetName}
                   >
                     Set Name
                   </Button>

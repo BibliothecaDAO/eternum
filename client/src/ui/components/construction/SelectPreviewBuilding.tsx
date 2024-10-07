@@ -15,6 +15,7 @@ import {
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
+  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
@@ -23,6 +24,8 @@ import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -33,14 +36,17 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
+import { Component, getComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 export const SelectPreviewBuildingMenu = () => {
+  const dojo = useDojo();
+
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -104,7 +110,9 @@ export const SelectPreviewBuildingMenu = () => {
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const cost = [...RESOURCE_BUILDING_COSTS_SCALED[resourceId], ...RESOURCE_INPUTS_SCALED[resourceId]];
+              const buildingCosts = getResourceBuildingCosts(structureEntityId, dojo, resourceId);
+              if (!buildingCosts) return;
+              const cost = [...buildingCosts, ...RESOURCE_INPUTS_SCALED[resourceId]];
 
               const hasBalance = checkBalance(cost);
 
@@ -156,11 +164,19 @@ export const SelectPreviewBuildingMenu = () => {
         component: (
           <div className="grid grid-cols-3 gap-2 p-2">
             {buildingTypes
-              .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
+              .filter(
+                (a) =>
+                  a !== BuildingType[BuildingType.Barracks] &&
+                  a !== BuildingType[BuildingType.ArcheryRange] &&
+                  a !== BuildingType[BuildingType.Stable],
+              )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-                const cost = BUILDING_COSTS_SCALED[building];
-                const hasBalance = checkBalance(cost);
+
+                const buildingCosts = getBuildingCosts(structureEntityId, dojo, building);
+                if (!buildingCosts) return;
+
+                const hasBalance = checkBalance(buildingCosts);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
@@ -223,19 +239,24 @@ export const SelectPreviewBuildingMenu = () => {
           <div className="grid grid-cols-3 gap-2 p-2">
             {" "}
             {buildingTypes
-              .filter((a) => a === "Barracks" || a === "ArcheryRange" || a === "Stable")
+              .filter(
+                (a) =>
+                  a === BuildingType[BuildingType.Barracks] ||
+                  a === BuildingType[BuildingType.ArcheryRange] ||
+                  a === BuildingType[BuildingType.Stable],
+              )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
+                const buildingCost = getBuildingCosts(structureEntityId, dojo, building);
 
-                const cost = BUILDING_COSTS_SCALED[building];
-                const hasBalance = checkBalance(cost);
+                const hasBalance = checkBalance(buildingCost);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
-                const isBarracks = building === BuildingType["Barracks"];
-                const isArcheryRange = building === BuildingType["ArcheryRange"];
-                const isStable = building === BuildingType["Stable"];
+                const isBarracks = building === BuildingType.Barracks;
+                const isArcheryRange = building === BuildingType.ArcheryRange;
+                const isStable = building === BuildingType.Stable;
 
                 return (
                   <BuildingCard
@@ -383,10 +404,10 @@ export const ResourceInfo = ({
   entityId: ID | undefined;
   isPaused?: boolean;
 }) => {
+  const dojo = useDojo();
   const cost = RESOURCE_INPUTS_SCALED[resourceId];
 
-  const buildingCost = RESOURCE_BUILDING_COSTS_SCALED[resourceId];
-
+  const buildingCost = getResourceBuildingCosts(entityId ?? 0, dojo, resourceId) ?? [];
   const population = BUILDING_POPULATION[BuildingType.Resource];
 
   const capacity = BUILDING_CAPACITY[BuildingType.Resource];
@@ -415,7 +436,7 @@ export const ResourceInfo = ({
 
           {capacity !== 0 && (
             <div className="pt-3 uppercase">
-              <span className="font-bold">Capacity </span>
+              <span className="font-bold">Max population capacity </span>
               <br /> +{capacity}
             </div>
           )}
@@ -494,7 +515,9 @@ export const BuildingInfo = ({
   hintModal?: boolean;
   isPaused?: boolean;
 }) => {
-  const cost = BUILDING_COSTS_SCALED[buildingId] || [];
+  const dojo = useDojo();
+
+  const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
 
   const population = BUILDING_POPULATION[buildingId] || 0;
   const capacity = BUILDING_CAPACITY[buildingId] || 0;
@@ -530,7 +553,7 @@ export const BuildingInfo = ({
 
           {capacity !== 0 && (
             <div className="pt-3 uppercase">
-              <span className="font-bold">Capacity </span>
+              <span className="font-bold">Max population capacity </span>
               <br /> +{capacity}
             </div>
           )}
@@ -578,18 +601,18 @@ export const BuildingInfo = ({
         ""
       )}
 
-      {cost.length != 0 && (
+      {buildingCost.length != 0 && (
         <>
           <div className="pt-2 font-bold uppercase">One Time Cost</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            {Object.keys(cost).map((resourceId, index) => {
-              const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
+            {Object.keys(buildingCost).map((resourceId, index) => {
+              const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource);
               return (
                 <ResourceCost
                   key={`fixed-cost-${index}`}
                   type="horizontal"
-                  resourceId={cost[Number(resourceId)].resource}
-                  amount={cost[Number(resourceId)].amount}
+                  resourceId={buildingCost[Number(resourceId)].resource}
+                  amount={buildingCost[Number(resourceId)].amount}
                   balance={balance.balance}
                 />
               );
@@ -624,4 +647,104 @@ const getConsumedBy = (resourceProduced: ResourcesIds) => {
       }
     })
     .filter(Boolean);
+};
+
+const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceId: ResourcesIds) => {
+  const buildingGeneralConfig = getComponentValue(
+    dojo.setup.components.BuildingGeneralConfig,
+    getEntityIdFromKeys([WORLD_CONFIG_ID]),
+  );
+
+  if (!buildingGeneralConfig) {
+    return;
+  }
+  const buildingType = resourceIdToBuildingCategory(resourceId);
+
+  const buildingQuantity = getBuildingQuantity(
+    realmEntityId,
+    buildingType ?? 0,
+    dojo.setup.components.BuildingQuantityv2,
+  );
+
+  let updatedCosts: {
+    resource: ResourcesIds;
+    amount: number;
+  }[] = [];
+
+  RESOURCE_BUILDING_COSTS_SCALED[Number(buildingType)].forEach((cost) => {
+    const baseCost = cost.amount;
+    const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
+    const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
+    const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
+    updatedCosts.push({ resource: cost.resource, amount: totalCost });
+  });
+  return updatedCosts;
+};
+
+const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory?: BuildingType) => {
+  const buildingGeneralConfig = getComponentValue(
+    dojo.setup.components.BuildingGeneralConfig,
+    getEntityIdFromKeys([WORLD_CONFIG_ID]),
+  );
+
+  if (!buildingGeneralConfig) {
+    return;
+  }
+
+  const buildingQuantity = getBuildingQuantity(
+    realmEntityId,
+    buildingCategory ?? 0,
+    dojo.setup.components.BuildingQuantityv2,
+  );
+
+  let updatedCosts: {
+    resource: ResourcesIds;
+    amount: number;
+  }[] = [];
+
+  BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
+    const baseCost = cost.amount;
+    const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
+    const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
+    const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
+    updatedCosts.push({ resource: cost.resource, amount: totalCost });
+  });
+  return updatedCosts;
+};
+
+const getBuildingQuantity = (
+  outerEntityId: ID,
+  buildingCategory: BuildingType,
+  buildingQuantityComponent: Component<ClientComponents["BuildingQuantityv2"]["schema"]>,
+) => {
+  const buildingQuantity = getComponentValue(
+    buildingQuantityComponent,
+    getEntityIdFromKeys([BigInt(outerEntityId), BigInt(buildingCategory)]),
+  );
+  return buildingQuantity?.value;
+};
+
+const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType => {
+  if (resourceId === ResourcesIds.Wheat) {
+    return BuildingType.Farm;
+  }
+  if (resourceId === ResourcesIds.Fish) {
+    return BuildingType.FishingVillage;
+  }
+  if (resourceId > 0 && resourceId < 22) {
+    return BuildingType.Resource;
+  }
+  if (resourceId === ResourcesIds.Donkey) {
+    return BuildingType.Market;
+  }
+  if (resourceId === ResourcesIds.Knight) {
+    return BuildingType.Barracks;
+  }
+  if (resourceId === ResourcesIds.Crossbowman) {
+    return BuildingType.ArcheryRange;
+  }
+  if (resourceId === ResourcesIds.Paladin) {
+    return BuildingType.Stable;
+  }
+  return BuildingType.None;
 };

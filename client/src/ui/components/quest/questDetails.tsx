@@ -296,7 +296,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
         <div>
           <div className="mt-2">Build a market to produce donkeys. Donkeys are a resource used to transport goods.</div>{" "}
           <div className="flex flex-row mt-2">
-            <ResourceIcon size="sm" resource={"Donkeys"} />
+            <ResourceIcon size="sm" resource={ResourcesIds[ResourcesIds.Donkey]} />
             <div>
               {" "}
               Donkeys can transport {EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey] /

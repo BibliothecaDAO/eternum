@@ -276,6 +276,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BuildingGeneralConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          base_cost_percent_increase: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BuildingGeneralConfig",
+            types: ["u32", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     BuildingQuantityv2: (() => {
       return defineComponent(
         world,
@@ -1607,6 +1624,7 @@ const eventsComponents = (world: World) => {
             id: RecsType.Number,
             event_id: RecsType.String,
             entity_id: RecsType.Number,
+            owner_address: RecsType.BigInt,
             owner_name: RecsType.BigInt,
             realm_name: RecsType.BigInt,
             resource_types_packed: RecsType.BigInt,
@@ -1629,6 +1647,7 @@ const eventsComponents = (world: World) => {
                 "u32",
                 "EventType",
                 "u32",
+                "ContractAddress",
                 "felt252",
                 "felt252",
                 "u128",
