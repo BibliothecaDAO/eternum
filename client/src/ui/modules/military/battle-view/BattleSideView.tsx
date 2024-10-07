@@ -22,7 +22,7 @@ export const BattleSideView = ({
   ownSideTroopsUpdated,
   ownArmyEntityId,
   structure,
-  userArmiesInBattle,
+  userArmiesOnThatSide,
 }: {
   battleManager: BattleManager;
   battleSide: BattleSide;
@@ -32,15 +32,17 @@ export const BattleSideView = ({
   ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
   ownArmyEntityId: ID | undefined;
   structure: Structure | undefined;
-  userArmiesInBattle: ArmyInfo[];
+  userArmiesOnThatSide: ArmyInfo[];
 }) => {
   const {
     account: { account },
 
     setup: {
-      systemCalls: { battle_join },
+      systemCalls: { battle_join, battle_leave },
     },
   } = useDojo();
+
+  const [confirmLeaveWithAllArmies, setConfirmLeaveWithAllArmies] = useState(false);
 
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
@@ -64,6 +66,21 @@ export const BattleSideView = ({
     }
   };
 
+  const leaveWithAllArmies = async () => {
+    if (!confirmLeaveWithAllArmies) {
+      setConfirmLeaveWithAllArmies(true);
+    } else {
+      setConfirmLeaveWithAllArmies(false);
+      setLoading(true);
+      await battle_leave({
+        signer: account,
+        battle_id: battleEntityId!,
+        army_ids: userArmiesOnThatSide.map((army) => army.entity_id),
+      });
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className={`flex col-span-5 -bottom-y bg-[#1b1a1a] mx-4 bg-hex-bg ${
@@ -76,7 +93,7 @@ export const BattleSideView = ({
           structure={structure}
           show={ownSideArmies.length > 0}
         />
-        <div className="flex flex-col gap-1 mb-2 max-h-36 overflow-y-auto">
+        <div className="flex flex-col gap-1 mb-2 max-h-24 overflow-y-auto">
           {React.Children.toArray(
             ownSideArmies.map((army) => {
               if (!army) return;
@@ -107,14 +124,14 @@ export const BattleSideView = ({
               Join Side
             </Button>
           )}
-          {Boolean(battleEntityId) && isActive && userArmiesInBattle.length > 0 && (
+          {Boolean(battleEntityId) && isActive && userArmiesOnThatSide.length > 0 && (
             <Button
-              onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
+              onClick={leaveWithAllArmies}
               isLoading={loading}
               className="size-xs h-10 self-center w-full mt-2"
               variant="danger"
             >
-              Leave with all armies
+              {confirmLeaveWithAllArmies ? "Confirm Leave" : "Leave with all armies"}
             </Button>
           )}
         </div>

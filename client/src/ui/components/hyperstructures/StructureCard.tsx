@@ -176,8 +176,8 @@ export const TroopExchange = ({
     };
     await army_merge_troops({
       signer: account,
-      from_army_id: fromArmy?.entity_id,
-      to_army_id: toArmy?.entity_id,
+      from_army_id: fromArmy?.entity_id ?? 0n,
+      to_army_id: toArmy?.entity_id ?? 0n,
       troops: transferedTroops,
     }).then(() => {
       if (

@@ -87,7 +87,9 @@ export const Battle = ({
               ownSideTroopsUpdated={attackerTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={undefined}
-              userArmiesInBattle={userArmiesInBattle}
+              userArmiesOnThatSide={userArmiesInBattle.filter(
+                (army) => army.battle_side === BattleSide[BattleSide.Attack],
+              )}
             />
             {showBattleDetails && battleAdjusted ? (
               <LockedResources
@@ -114,7 +116,9 @@ export const Battle = ({
               ownSideTroopsUpdated={defenderTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={structure}
-              userArmiesInBattle={userArmiesInBattle}
+              userArmiesOnThatSide={userArmiesInBattle.filter(
+                (army) => army.battle_side === BattleSide[BattleSide.Defence],
+              )}
             />
           </div>
         </div>

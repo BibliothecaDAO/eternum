@@ -55,7 +55,7 @@ export const useGetHyperstructuresWithContributionsFromPlayer = () => {
   const getContributions = useCallback(() => {
     const entityIds = runQuery([HasValue(Contribution, { player_address: ContractAddress(account.address) })]);
     const hyperstructureEntityIds = Array.from(entityIds).map(
-      (entityId) => getComponentValue(Contribution, entityId)?.hyperstructure_entity_id,
+      (entityId) => getComponentValue(Contribution, entityId)?.hyperstructure_entity_id ?? 0,
     );
     return new Set(hyperstructureEntityIds);
   }, [account.address]);

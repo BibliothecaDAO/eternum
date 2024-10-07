@@ -143,10 +143,10 @@ export const useGetPlayerEpochs = () => {
             }
           })
         ) {
-          return { hyperstructureEntityId: epoch?.hyperstructure_entity_id, index: epoch?.index };
+          return { hyperstructure_entity_id: epoch?.hyperstructure_entity_id, epoch: epoch?.index };
         }
       })
-      .filter((epoch): epoch is { hyperstructureEntityId: ID; index: number } => epoch !== undefined);
+      .filter((epoch): epoch is { hyperstructure_entity_id: ID; epoch: number } => epoch !== undefined);
   }, [account.address]);
 
   return getEpochs;

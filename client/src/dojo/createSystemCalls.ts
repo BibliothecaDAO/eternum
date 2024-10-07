@@ -6,10 +6,15 @@ class PromiseQueue {
   private readonly queue: Array<() => Promise<any>> = [];
   private processing = false;
 
-  async enqueue(task: () => Promise<any>) {
-    return await new Promise((resolve, reject) => {
+  async enqueue<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
       this.queue.push(async () => {
-        await task().then(resolve).catch(reject);
+        try {
+          const result = await task();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
       });
       this.processQueue();
     });
@@ -51,12 +56,14 @@ const withErrorHandling =
 export function createSystemCalls({ provider }: SetupNetworkResult) {
   const promiseQueue = new PromiseQueue();
 
-  const withQueueing = (fn: (...args: any[]) => Promise<any>) => {
-    return async (...args: any[]) => await promiseQueue.enqueue(async () => await fn(...args));
+  const withQueueing = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
+    return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+      return await promiseQueue.enqueue(async () => await fn(...args));
+    };
   };
 
-  const withErrorHandling = (fn: (...args: any[]) => Promise<any>) => {
-    return async (...args: any[]) => {
+  const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
+    return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
       try {
         return await fn(...args);
       } catch (error: any) {

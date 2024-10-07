@@ -311,7 +311,7 @@ export interface BattleJoinProps extends SystemSigner {
 
 export interface BattleLeaveProps extends SystemSigner {
   battle_id: num.BigNumberish;
-  army_id: num.BigNumberish;
+  army_ids: num.BigNumberish[];
 }
 
 export interface BattlePillageProps extends SystemSigner {
@@ -325,10 +325,10 @@ export interface BattleClaimProps extends SystemSigner {
 }
 
 type BattleClaimAndLeave = BattleClaimProps & BattleLeaveProps;
-export interface BattleClaimAndLeaveProps extends SystemSigner, BattleClaimAndLeave {}
+export interface BattleClaimAndLeaveProps extends SystemSigner, Omit<BattleClaimAndLeave, "army_ids"> {}
 
 type BattleLeaveAndRaid = BattlePillageProps & BattleLeaveProps;
-export interface BattleLeaveAndRaidProps extends SystemSigner, BattleLeaveAndRaid {}
+export interface BattleLeaveAndRaidProps extends SystemSigner, Omit<BattleLeaveAndRaid, "army_ids"> {}
 
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;
@@ -495,8 +495,8 @@ export interface SetPrivateProps extends SystemSigner {
 }
 
 export interface EndGameProps extends SystemSigner {
-  hyperstructure_contributed_to: num.BigNumberish[];
-  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: num.BigNumberish; epoch: num.BigNumberish }[];
+  hyperstructure_contributed_to: number[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
 }
 
 export interface SetCoOwnersProps extends SystemSigner {

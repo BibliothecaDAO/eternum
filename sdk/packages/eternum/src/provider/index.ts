@@ -544,13 +544,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async battle_leave(props: SystemProps.BattleLeaveProps) {
-    const { battle_id, army_id, signer } = props;
+    const { battle_id, army_ids, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
-      entrypoint: "battle_leave",
-      calldata: [battle_id, army_id],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      army_ids.map((army_id) => ({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        entrypoint: "battle_leave",
+        calldata: [battle_id, army_id],
+      })),
+    );
   }
 
   public async battle_pillage(props: SystemProps.BattlePillageProps) {
