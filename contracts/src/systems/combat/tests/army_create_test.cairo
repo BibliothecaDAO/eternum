@@ -3,7 +3,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory};
+use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
@@ -29,16 +29,24 @@ const STARTING_KNIGHT_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 const STARTING_PALADIN_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 const STARTING_CROSSBOWMAN_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 
-const REALM_COORD_X: u32 = 2;
-const REALM_COORD_Y: u32 = 3;
-
 fn set_configurations(world: IWorldDispatcher) {
     set!(
         world,
         (
             get_combat_config(),
             TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
-            CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300000, }
+            CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300000, },
+            SettlementConfig {
+                config_id: WORLD_CONFIG_ID,
+                radius: 50,
+                angle_scaled: 0,
+                center: 2147483646,
+                min_distance: 1,
+                max_distance: 5,
+                min_scaling_factor_scaled: 1844674407370955161,
+                min_angle_increase: 30,
+                max_angle_increase: 100,
+            }
         )
     )
 }
@@ -53,8 +61,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID,) {
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
-    let realm_id = realm_system_dispatcher
-        .create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y });
+    let realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1);
     mint(
         world,
         realm_id,
@@ -77,6 +84,8 @@ fn test_army_create___attacking_army() {
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = combat_systems_dispatcher.army_create(realm_id, false);
 
+    let realm_position = get!(world, realm_id, Position);
+
     let army: Army = get!(world, army_id, Army);
     assert_eq!(army.troops, Troops { knight_count: 0, paladin_count: 0, crossbowman_count: 0 });
     assert_eq!(army.battle_id, 0);
@@ -86,15 +95,15 @@ fn test_army_create___attacking_army() {
     assert_eq!(army_entity_owner.entity_owner_id, realm_id);
 
     let army_position: Position = get!(world, army_id, Position);
-    assert_eq!(army_position.x, REALM_COORD_X);
-    assert_eq!(army_position.y, REALM_COORD_Y);
+    assert_eq!(army_position.x, realm_position.x);
+    assert_eq!(army_position.y, realm_position.y);
 
     let army_stamina: Stamina = get!(world, army_id, Stamina);
     assert_ne!(army_stamina.last_refill_tick, 0);
 
     let army_movable: Movable = get!(world, army_id, Movable);
-    assert_eq!(army_movable.start_coord_x, REALM_COORD_X);
-    assert_eq!(army_movable.start_coord_y, REALM_COORD_Y);
+    assert_eq!(army_movable.start_coord_x, realm_position.x);
+    assert_eq!(army_movable.start_coord_y, realm_position.y);
 }
 
 #[test]
@@ -124,6 +133,8 @@ fn test_army_create___defending_army() {
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
     let army_id = combat_systems_dispatcher.army_create(realm_id, true);
 
+    let realm_position = get!(world, realm_id, Position);
+
     let army: Army = get!(world, army_id, Army);
     assert_eq!(army.troops, Troops { knight_count: 0, paladin_count: 0, crossbowman_count: 0 });
     assert_eq!(army.battle_id, 0);
@@ -133,8 +144,8 @@ fn test_army_create___defending_army() {
     assert_eq!(army_entity_owner.entity_owner_id, realm_id);
 
     let army_position: Position = get!(world, army_id, Position);
-    assert_eq!(army_position.x, REALM_COORD_X);
-    assert_eq!(army_position.y, REALM_COORD_Y);
+    assert_eq!(army_position.x, realm_position.x);
+    assert_eq!(army_position.y, realm_position.y);
 
     let army_stamina: Stamina = get!(world, army_id, Stamina);
     assert_eq!(army_stamina.last_refill_tick, 0);

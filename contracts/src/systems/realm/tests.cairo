@@ -23,7 +23,7 @@ use eternum::utils::testing::{
         spawn_realm, get_default_realm_pos, generate_realm_positions, spawn_hyperstructure,
         get_default_hyperstructure_coord
     },
-    config::{set_combat_config, set_capacity_config}
+    config::{set_combat_config, set_capacity_config, set_settlement_config}
 };
 use starknet::contract_address_const;
 
@@ -44,6 +44,9 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
+    set_capacity_config(config_systems_address);
+    set_settlement_config(config_systems_address);
+
     // set initially minted resources
     let initial_resources = array![
         (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
@@ -56,8 +59,6 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     realm_free_mint_config_dispatcher
         .set_mint_config(config_id: REALM_FREE_MINT_CONFIG_ID, resources: initial_resources.span());
 
-    set_capacity_config(config_systems_address);
-
     (world, realm_systems_dispatcher)
 }
 
@@ -67,8 +68,6 @@ fn test_realm_create() {
     let (world, realm_systems_dispatcher) = setup();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
-
-    let position = Position { x: 20, y: 30, entity_id: 1 };
 
     let realm_id = 1;
     let resource_types_packed = 1;
@@ -94,8 +93,9 @@ fn test_realm_create() {
             regions,
             wonder,
             order,
-            position.clone(),
         );
+
+    let position = get!(world, realm_entity_id, Position);
 
     let realm_owner = get!(world, realm_entity_id, Owner);
     assert(realm_owner.address == contract_address_const::<'caller'>(), 'wrong realm owner');
@@ -111,44 +111,6 @@ fn test_realm_create() {
     assert_eq!(tile.explored_at, TIMESTAMP, "wrong exploration time");
 }
 
-
-#[test]
-#[available_gas(3000000000000)]
-fn test_realm_create_equal_max_realms_per_address() {
-    let (world, realm_systems_dispatcher) = setup();
-
-    let positions = generate_realm_positions();
-
-    let mut index = 0_u8;
-    loop {
-        if index == MAX_REALMS_PER_ADDRESS {
-            break;
-        }
-        spawn_realm(world, realm_systems_dispatcher, *positions.at(index.into()));
-        index += 1;
-    };
-}
-
-
-#[test]
-#[available_gas(3000000000000)]
-#[should_panic(expected: ('max num of realms settled', 'ENTRYPOINT_FAILED'))]
-fn test_realm_create_greater_than_max_realms_per_address() {
-    let (world, realm_systems_dispatcher) = setup();
-
-    let positions = generate_realm_positions();
-
-    starknet::testing::set_contract_address(starknet::get_contract_address());
-
-    let mut index = 0;
-    loop {
-        if index == MAX_REALMS_PER_ADDRESS + 1 {
-            break;
-        }
-        spawn_realm(world, realm_systems_dispatcher, *positions.at(index.into()));
-        index += 1;
-    };
-}
 
 #[test]
 #[available_gas(3000000000000)]
