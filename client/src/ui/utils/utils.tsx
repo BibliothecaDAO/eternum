@@ -12,7 +12,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
-import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
 import { type SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
@@ -47,12 +46,6 @@ export function multiplyByPrecision(value: number): number {
 
 export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
-}
-
-export function getPosition(realm_id: ID): { x: number; y: number } {
-  const realmPositions = realmsHexPositions as Record<number, Array<{ col: number; row: number }>>;
-  const position = realmPositions[Number(realm_id)][0];
-  return { x: position.col, y: position.row };
 }
 
 export function addressToNumber(address: string) {
@@ -109,7 +102,8 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
 
   const col = hexCoords.col;
   const row = hexCoords.row;
-  const x = col * horizDist - ((row % 2) * horizDist) / 2;
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
   return new THREE.Vector3(x, y, z);
@@ -124,7 +118,8 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
 
   const row = Math.round(worldPosition.z / vertDist);
   // hexception offsets hack
-  const col = Math.round((worldPosition.x + ((row % 2) * horizDist) / 2) / horizDist);
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const col = Math.round((worldPosition.x + rowOffset) / horizDist);
 
   return {
     col,

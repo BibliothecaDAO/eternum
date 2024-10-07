@@ -27,7 +27,7 @@ use eternum::systems::hyperstructure::contracts::{
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_hyperstructure_systems},
     general::{spawn_realm, get_default_realm_pos, spawn_hyperstructure, get_default_hyperstructure_coord},
-    config::set_capacity_config
+    config::{set_capacity_config, set_settlement_config}
 };
 
 use starknet::contract_address_const;
@@ -40,6 +40,9 @@ const POINTS_ON_COMPLETION: u128 = 2_000_000;
 
 fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     let world = spawn_eternum();
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    set_capacity_config(config_systems_address);
+    set_settlement_config(config_systems_address);
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
@@ -50,10 +53,7 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
-
-    set_capacity_config(config_systems_address);
 
     set!(
         world,
