@@ -1,7 +1,7 @@
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat, gramToKg } from "@/ui/utils/utils";
+import { currencyFormat, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
   EternumGlobalConfig,
@@ -78,6 +78,7 @@ const ResourceTable = () => {
         resource_type: resourceId,
         cost: RESOURCE_INPUTS_SCALED[resourceId].map((cost: any) => ({
           ...cost,
+          amount: multiplyByPrecision(cost.amount),
         })),
       };
 
@@ -97,25 +98,30 @@ const ResourceTable = () => {
         </tr>
       </thead>
       <tbody>
-        {resourceTable.map((resource) => (
-          <tr className="border border-gold/10" key={resource.resource_type}>
-            <td>
-              <ResourceIcon size="xl" resource={resource.resource?.trait || ""} />
-            </td>
-            <td className="text-xl text-center">{currencyFormat(resource.amount, 0)}</td>
-            <td className="gap-1 flex flex-col p-2">
-              {resource.cost.map((cost: any, resource_type: any) => (
-                <div key={resource_type}>
-                  <ResourceCost
-                    resourceId={cost.resource}
-                    amount={Number(currencyFormat(Number(cost.amount), 0))}
-                    size="lg"
-                  />
-                </div>
-              ))}
-            </td>
-          </tr>
-        ))}
+        {resourceTable.map((resource) => {
+          const decimals = resource.amount > EternumGlobalConfig.resources.resourcePrecision ? 0 : 2;
+          return (
+            <tr className="border border-gold/10" key={resource.resource_type}>
+              <td>
+                <ResourceIcon size="xl" resource={resource.resource?.trait || ""} />
+              </td>
+              <td className="text-xl text-center">{currencyFormat(resource.amount, decimals)}</td>
+              <td className="gap-1 flex flex-col p-2">
+                {resource.cost.map((cost, index) => {
+                  return (
+                    <div key={index}>
+                      <ResourceCost
+                        resourceId={cost.resource}
+                        amount={Number(currencyFormat(Number(cost.amount), 1))}
+                        size="lg"
+                      />
+                    </div>
+                  );
+                })}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

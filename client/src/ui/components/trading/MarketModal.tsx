@@ -21,6 +21,7 @@ import { ModalContainer } from "../ModalContainer";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
+import { RealmProduction } from "./RealmProduction";
 
 export const MarketModal = () => {
   const {
@@ -96,6 +97,15 @@ export const MarketModal = () => {
           </div>
         ),
         component: <TransferView />,
+      },
+      {
+        key: "resourceProd",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Realm Production</div>
+          </div>
+        ),
+        component: <RealmProduction />,
       },
     ],
     [selectedResource, structureEntityId, askOffers, bidOffers],

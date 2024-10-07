@@ -1,8 +1,9 @@
+import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { Headline } from "@/ui/elements/Headline";
-import { tableOfContents } from "./utils";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import { ResourcesIds, TROOPS_FOOD_CONSUMPTION } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { multiplyByPrecision } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ResourcesIds, TROOPS_FOOD_CONSUMPTION } from "@bibliothecadao/eternum";
+import { tableOfContents } from "./utils";
 
 export const TheMap = () => {
   const chapters = [
@@ -53,8 +54,13 @@ const ExplorationTable = () => {
       </thead>
       <tbody>
         <tr>
-          <td className="border border-gold/10 p-2 font-bold">Travel</td>
-          <td className="border border-gold/10 p-2">10</td>
+          <td className="border border-gold/10 p-2 font-bold">
+            <div className="flex flex-row items-center justify-center">
+              <Lightning className="fill-order-power/70 w-8"></Lightning>
+              Travel
+            </div>
+          </td>
+          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.travelCost}</td>
           <td>
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>
@@ -109,8 +115,13 @@ const ExplorationTable = () => {
           </td>
         </tr>
         <tr>
-          <td className="border border-gold/10 p-2 font-bold">Exploration</td>
-          <td className="border border-gold/10 p-2">20</td>
+          <td className="border border-gold/10 p-2 font-bold">
+            <div className="flex flex-row items-center justify-center">
+              <Lightning className="fill-order-power/70 w-8"></Lightning>
+              Exploration
+            </div>
+          </td>
+          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.exploreCost}</td>
           <td>
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>
