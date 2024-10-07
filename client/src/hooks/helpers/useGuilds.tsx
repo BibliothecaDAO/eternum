@@ -1,4 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { toHexString } from "@/ui/utils/utils";
 import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
@@ -17,7 +18,6 @@ import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getEntitiesUtils } from "./useEntities";
 import { useRealm } from "./useRealm";
-import { toHexString } from "@/ui/utils/utils";
 
 export type GuildAndName = {
   guild: ComponentValue<ClientComponents["Guild"]["schema"]>;
@@ -74,6 +74,24 @@ export const useGuilds = () => {
         name,
         address,
         isInvited: isInvited ? true : false,
+      };
+    });
+
+    return players;
+  };
+
+  const getPlayerListInGuild = (guild_entity_id: ID) => {
+    const players = Array.from(
+      runQuery([Has(AddressName), Has(GuildMember), HasValue(Guild, { entity_id: guild_entity_id })]),
+    ).map((playerEntity) => {
+      const player = getComponentValue(AddressName, playerEntity);
+
+      const name = shortString.decodeShortString(player!.name.toString());
+      const address = toHexString(player?.address || 0n);
+
+      return {
+        name,
+        address,
       };
     });
 
@@ -141,6 +159,16 @@ export const useGuilds = () => {
     return { guild, isOwner, name: guild.name };
   }, []);
 
+  const getPlayersInPlayersGuild = useCallback((accountAddress: ContractAddress) => {
+    const guild = getGuildFromPlayerAddress(accountAddress);
+    if (!guild) return [];
+
+    const guildEntityId = guild.guildEntityId;
+    if (typeof guildEntityId !== "number") return [];
+
+    return getPlayerListInGuild(guildEntityId);
+  }, []);
+
   return {
     useGuildQuery,
     useGuildMembers,
@@ -150,6 +178,7 @@ export const useGuilds = () => {
     getGuildOwner,
     getGuildFromEntityId,
     getPlayerList,
+    getPlayersInPlayersGuild,
   };
 };
 

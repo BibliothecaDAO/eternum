@@ -32,6 +32,8 @@ mod realm_systems {
     use eternum::models::config::{CapacityConfigCategory, SettlementConfig, SettlementConfigImpl};
     use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources};
     use eternum::models::event::{SettleRealmData, EventType};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::map::Tile;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::Movable;
@@ -44,13 +46,14 @@ mod realm_systems {
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-
     use starknet::ContractAddress;
 
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
         fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, (entity_id), Realm).assert_is_set();
 
             let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
@@ -99,6 +102,8 @@ mod realm_systems {
             wonder: u8,
             order: u8,
         ) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure that the coord is not occupied by any other structure
             let timestamp = starknet::get_block_timestamp();
             let mut found_coords = false;

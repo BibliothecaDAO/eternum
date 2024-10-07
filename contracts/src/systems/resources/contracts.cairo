@@ -22,6 +22,8 @@ mod resource_systems {
     use eternum::models::config::{
         WeightConfig, WeightConfigCustomImpl, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory
     };
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::metadata::ForeignKey;
     use eternum::models::movable::{ArrivalTime, ArrivalTimeCustomTrait};
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
@@ -64,6 +66,8 @@ mod resource_systems {
         /// * `resources` - The resources to approve.
         ///
         fn approve(ref world: IWorldDispatcher, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             assert(entity_id != recipient_entity_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
@@ -108,6 +112,8 @@ mod resource_systems {
         fn send(
             ref world: IWorldDispatcher, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             assert(sender_entity_id != recipient_entity_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
 
@@ -134,6 +140,8 @@ mod resource_systems {
         fn pickup(
             ref world: IWorldDispatcher, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             assert(owner_entity_id != recipient_entity_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
 
