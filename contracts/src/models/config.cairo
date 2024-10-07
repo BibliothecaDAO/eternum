@@ -257,9 +257,7 @@ impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
     fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, troops: Troops, steps: usize) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
-        // let quantity_value = max(unit_quantity.value, 1);
 
-        // let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
         let knight_travel_food_cost_config: TravelFoodCostConfig = get!(
             world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), TravelFoodCostConfig
         );
