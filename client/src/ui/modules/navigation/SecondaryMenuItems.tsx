@@ -61,7 +61,7 @@ export const SecondaryMenuItems = () => {
             />
 
             {questToClaim && !isMapView && realmSelected && (
-              <div className="absolute bg-black/90 text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
+              <div className="absolute bg-black/90 text-gold border-gradient border top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
                 <div className="text-xs">Claim your reward</div>
               </div>
