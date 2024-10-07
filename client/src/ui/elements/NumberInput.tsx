@@ -13,6 +13,9 @@ type NumberInputProps = {
   max: number;
   arrows?: boolean;
   allowDecimals?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  disabled?: boolean;
 };
 
 export const NumberInput = ({
@@ -24,16 +27,30 @@ export const NumberInput = ({
   min = 0,
   arrows = true,
   allowDecimals = false,
+  onFocus,
+  onBlur,
+  disabled = false,
 }: NumberInputProps) => {
+  const formatNumber = (num: number): string => {
+    if (num >= 1000) {
+      return num.toLocaleString("en-US");
+    }
+    return num.toString();
+  };
+
   const { play: playClick } = useUiSounds(soundSelector.click);
-  const [displayValue, setDisplayValue] = useState(value.toString());
+  const [displayValue, setDisplayValue] = useState(formatNumber(value));
 
   useEffect(() => {
-    setDisplayValue(value.toString());
+    setDisplayValue(formatNumber(value));
   }, [value]);
 
+  const parseNumber = (str: string): number => {
+    return parseFloat(str.replace(/,/g, ""));
+  };
+
   return (
-    <div className={clsx("flex items-center h-10 text-lg bg-gold/20 w-full", className)}>
+    <div className={clsx("flex items-center h-10 text-lg bg-gold/20 w-full rounded-xl", className)}>
       {arrows && (
         <div
           className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold/10 hover:bg-gold/30 "
@@ -49,13 +66,31 @@ export const NumberInput = ({
         min={min}
         className="w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={displayValue}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        disabled={disabled}
         onChange={(e) => {
+          const inputValue = e.target.value;
           if (allowDecimals) {
-            setDisplayValue(e.target.value.match(/[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)/)?.[0] ?? min.toString());
-            onChange(parseFloat(e.target.value.match(/[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)/)?.[0] ?? min.toString()));
+            const match = inputValue.match(/[+-]?([0-9,]+([.][0-9]*)?|[.][0-9]+)/);
+            if (match) {
+              const parsedValue = parseNumber(match[0]);
+              setDisplayValue(formatNumber(parsedValue));
+              onChange(parsedValue);
+            } else {
+              setDisplayValue(formatNumber(min));
+              onChange(min);
+            }
           } else {
-            setDisplayValue(e.target.value.match(/[+-]?([0-9]+)/)?.[0] ?? min.toString());
-            onChange(parseInt(e.target.value.match(/[+-]?([0-9]+)/)?.[0] ?? min.toString()));
+            const match = inputValue.match(/[+-]?([0-9,]+)/);
+            if (match) {
+              const parsedValue = parseNumber(match[0]);
+              setDisplayValue(formatNumber(Math.floor(parsedValue)));
+              onChange(Math.floor(parsedValue));
+            } else {
+              setDisplayValue(formatNumber(min));
+              onChange(min);
+            }
           }
         }}
       />

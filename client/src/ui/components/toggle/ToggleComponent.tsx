@@ -1,40 +1,48 @@
-import Button from "@/ui/elements/Button";
-import React, { useEffect, useState } from "react";
 import clsx from "clsx";
+import { ArrowDown } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
-type ToggleComponentProps = {
+interface ToggleComponentProps {
   title: string;
   children: React.ReactNode;
-  props?: any;
-};
+  initialOpen?: boolean;
+  searchTerm?: string;
+}
 
-export const ToggleComponent = ({ title, children, props }: ToggleComponentProps) => {
-  const [isToggled, setIsToggled] = useState(false);
-
-  const toggleList = () => {
-    setIsToggled(!isToggled);
-  };
+export const ToggleComponent: React.FC<ToggleComponentProps> = ({
+  title,
+  children,
+  initialOpen = false,
+  searchTerm,
+}) => {
+  const [isOpen, setIsOpen] = useState(initialOpen);
 
   useEffect(() => {
-    if (props.searchTerm !== undefined) {
-      setIsToggled(false);
+    if (searchTerm !== undefined) {
+      setIsOpen(false);
     }
-  }, [props.searchTerm]);
+  }, [searchTerm]);
 
-  const effectiveIsToggled = props?.open ? props?.open && !isToggled : isToggled;
+  const toggleOpen = () => setIsOpen(!isOpen);
+
+  const effectiveIsOpen = initialOpen ? initialOpen && !isOpen : isOpen;
 
   return (
-    <div className="w-full" {...props}>
-      <Button onClick={toggleList} className="mt-2 w-full transition-all duration-200" variant="primary">
-        {title}
-      </Button>
+    <div className="w-full">
+      <button
+        onClick={toggleOpen}
+        className="mt-2 w-full transition-all duration-200 border-b border-gold/20 p-2 flex justify-between items-center text-lg font-bold"
+      >
+        <span>{title}</span>
+        <ArrowDown className={clsx("transition-transform", isOpen && "rotate-180")} />
+      </button>
       <div
         className={clsx(
           "transition-max-height duration-300 ease-in-out overflow-hidden",
-          effectiveIsToggled ? "max-h-[500px] visible" : "max-h-0 invisible",
+          effectiveIsOpen ? "max-h-[500px] visible" : "max-h-0 invisible",
         )}
       >
-        <div>{children}</div>
+        {children}
       </div>
     </div>
   );

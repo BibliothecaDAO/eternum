@@ -1,13 +1,13 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import useUIStore from "@/hooks/store/useUIStore";
 import TextInput from "@/ui/elements/TextInput";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo, useRef } from "react";
 import { Signature, TypedData, WeierstrassSignatureType } from "starknet";
-import { addNewTab, GLOBAL_CHANNEL } from "./Chat";
+import { GLOBAL_CHANNEL, addNewTab } from "./Chat";
 import { Tab } from "./ChatTab";
 
 export const InputField = ({

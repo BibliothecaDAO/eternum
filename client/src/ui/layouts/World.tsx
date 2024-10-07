@@ -8,20 +8,16 @@ import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
-import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
-import TopMiddleContainer from "../containers/TopMiddleContainer";
 import { Tooltip } from "../elements/Tooltip";
-import { Chat } from "../modules/chat/Chat";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
 import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
-import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { PlayerId } from "../modules/social/PlayerId";
 import { EventStream } from "../modules/stream/EventStream";
@@ -72,10 +68,6 @@ export const World = () => {
         </BattleContainer>
       ) : (
         <>
-          <TopMiddleContainer>
-            <TopMiddleNavigation />
-          </TopMiddleContainer>
-
           <LeftMiddleContainer>
             <LeftNavigationModule />
           </LeftMiddleContainer>
@@ -85,12 +77,8 @@ export const World = () => {
           </BottomMiddleContainer>
 
           <BottomRightContainer>
-            <Chat />
-          </BottomRightContainer>
-
-          <BottomLeftContainer>
             <EventStream />
-          </BottomLeftContainer>
+          </BottomRightContainer>
 
           <RightMiddleContainer>
             <RightNavigationModule />
@@ -100,7 +88,7 @@ export const World = () => {
 
       <PlayerId />
       <TopLeftContainer>
-        <TopLeftNavigation />
+        <TopMiddleNavigation />
       </TopLeftContainer>
       <Redirect to="/" />
       <Leva
