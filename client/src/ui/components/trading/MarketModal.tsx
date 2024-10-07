@@ -20,6 +20,7 @@ import { BankPanel } from "../bank/BankList";
 import { HintModal } from "../hints/HintModal";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
+import { RealmProduction } from "./RealmProduction";
 import { TransferView } from "./TransferView";
 
 export const MarketModal = () => {
@@ -96,6 +97,15 @@ export const MarketModal = () => {
           </div>
         ),
         component: <TransferView />,
+      },
+      {
+        key: "resourceProd",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Realm Production</div>
+          </div>
+        ),
+        component: <RealmProduction />,
       },
     ],
     [selectedResource, structureEntityId, askOffers, bidOffers],

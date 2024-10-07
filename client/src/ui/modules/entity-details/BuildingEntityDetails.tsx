@@ -189,7 +189,7 @@ const CastleDetails = () => {
             className={"mt-2"}
             size={"md"}
             titleClassName={"uppercase"}
-            structureEntityId={structureEntityId}
+            realmEntityId={structure.entity_id}
           />
         )}
       </div>
