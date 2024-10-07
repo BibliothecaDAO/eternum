@@ -85,7 +85,7 @@ export const useEntities = () => {
       const realm = getComponentValue(Realm, id);
       return {
         ...realm,
-        position: getPosition(realm!.realm_id),
+        position: getComponentValue(Position, id),
         name: getRealmNameById(realm!.realm_id),
         owner: getComponentValue(Owner, id),
       } as RealmWithPosition;
@@ -97,7 +97,7 @@ export const useEntities = () => {
       const realm = getComponentValue(Realm, id);
       return {
         ...realm,
-        position: getPosition(realm!.realm_id),
+        position: getComponentValue(Position, id),
         name: getRealmNameById(realm!.realm_id),
         owner: getComponentValue(Owner, id),
       } as RealmWithPosition;

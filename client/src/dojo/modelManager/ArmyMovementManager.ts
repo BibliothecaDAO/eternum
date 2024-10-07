@@ -76,10 +76,7 @@ export class ArmyMovementManager {
   private readonly staminaManager: StaminaManager;
   private readonly entityQuantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
 
-  constructor(
-    private readonly setup: SetupResult,
-    entityId: ID,
-  ) {
+  constructor(private readonly setup: SetupResult, entityId: ID) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
@@ -274,7 +271,7 @@ export class ArmyMovementManager {
 
   private readonly _exploreHex = async (path: HexPosition[], currentArmiesTick: number) => {
     const direction = this._findDirection(path);
-    if (direction === undefined) return;
+    if (direction === undefined || direction === null) return;
 
     const overrideId = this._optimisticExplore(path[1].col, path[1].row, currentArmiesTick);
 
