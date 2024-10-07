@@ -128,7 +128,7 @@ export const PlayerId = () => {
                         <RealmResourcesIO
                           className="w-full overflow-x-auto no-scrollbar font-normal"
                           titleClassName="font-normal text-sm"
-                          structureEntityId={structure.entity_id}
+                          realmEntityId={structure.entity_id}
                         />
                       </div>
                     );

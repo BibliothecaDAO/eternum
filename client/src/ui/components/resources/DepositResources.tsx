@@ -54,7 +54,7 @@ export const DepositResources = ({ entityId, battleInProgress, armyInBattle }: D
     inventoryResources.length > 0 && (
       <div className="w-full">
         <Button
-          size="md"
+          size="xs"
           className="w-full"
           isLoading={isLoading}
           disabled={entityState === EntityState.Traveling || battleInProgress || armyInBattle}

@@ -109,9 +109,7 @@ export const ResourceChip = ({
   const reachedMaxCap = maxBalance === displayBalance && Math.abs(netRate) > 0;
   return (
     <div
-      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
-        netRate && netRate < 0 ? "bg-red/5" : "bg-green/5"
-      } `}
+      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
       onMouseEnter={() => {
         setTooltip({
           position: "top",

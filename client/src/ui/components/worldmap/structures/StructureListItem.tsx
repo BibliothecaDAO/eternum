@@ -176,7 +176,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
             {isImmune && <div>Immune for: {formatTime(timer)}</div>}
 
             {structure.category === StructureType[StructureType.Realm] && (
-              <RealmResourcesIO structureEntityId={structure.entity_id} />
+              <RealmResourcesIO realmEntityId={structure.entity_id} />
             )}
           </div>
           <div className="flex flex-col content-center w-[55%]">

@@ -298,7 +298,7 @@ export const setupGlobals = async (config: Config) => {
     tick_id: TickIds.Default,
     tick_interval_in_seconds: config.config.tick.defaultTickIntervalInSeconds,
   });
-  console.log(`Configuring tick config ${txDefaultTick.statusReceipt}...`);
+  console.log(`Configuring  tick config ${txDefaultTick.statusReceipt}...`);
 
   const txArmiesTick = await config.provider.set_tick_config({
     signer: config.account,
@@ -306,7 +306,7 @@ export const setupGlobals = async (config: Config) => {
     tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
   });
 
-  console.log(`Configuring tick config ${txArmiesTick.statusReceipt}...`);
+  console.log(`Configuring army tick config ${txArmiesTick.statusReceipt}...`);
 
   const txMap = await config.provider.set_map_config({
     signer: config.account,

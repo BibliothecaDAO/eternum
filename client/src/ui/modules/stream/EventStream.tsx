@@ -1,4 +1,8 @@
+import { ReactComponent as Combat } from "@/assets/icons/Combat.svg";
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
+import { ReactComponent as Compass } from "@/assets/icons/Compass.svg";
+import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
+import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
@@ -23,13 +27,25 @@ enum EventType {
 }
 
 const EVENT_CONFIG = {
-  [EventType.SettleRealm]: { action: "settled a realm", emoji: "🏰", color: "#FFAB91" },
-  [EventType.MapExplored]: { action: "explored a tile", emoji: "🌎", color: "#A5D6A7" },
-  [EventType.BattleJoin]: { action: "joined a battle", emoji: "⚔️", color: "#EF9A9A" },
+  [EventType.SettleRealm]: {
+    action: "settled a realm",
+    emoji: <Crown className="w-6 self-center" />,
+    color: "#FFAB91",
+  },
+  [EventType.MapExplored]: {
+    action: "explored a tile",
+    emoji: <Compass className="w-6 self-center" />,
+    color: "#A5D6A7",
+  },
+  [EventType.BattleJoin]: {
+    action: "joined a battle",
+    emoji: <Combat className="w-6 self-center" />,
+    color: "#EF9A9A",
+  },
   [EventType.BattleLeave]: { action: "left a battle", emoji: "🏃", color: "#90CAF9" },
   [EventType.BattleClaim]: { action: "claimed a structure", emoji: "🏴", color: "#FFCC80" },
   [EventType.BattlePillage]: { action: "pillaged a structure", emoji: "💰", color: "#CE93D8" },
-  [EventType.Swap]: { action: "made a swap", emoji: "🔄", color: "#80DEEA" },
+  [EventType.Swap]: { action: "made a swap", emoji: <Swap className="w-6 self-center" />, color: "#80DEEA" },
   [EventType.HyperstructureFinished]: { action: "finished a hyperstructure", emoji: "⭐", color: "#FFF59D" },
   [EventType.HyperstructureContribution]: { action: "contributed to a hyperstructure", emoji: "🏗️", color: "#FFD54F" },
   [EventType.AcceptOrder]: { action: "accepted an order", emoji: "✅", color: "#C5E1A5" },
@@ -101,7 +117,7 @@ export const EventStream = () => {
   return (
     <div className="h-full w-[30vw]">
       <div
-        className="flex flex-row items-end text-sm text-center"
+        className="flex flex-row text-sm text-center"
         onClick={() => {
           setHideEventStream(!hideEventStream);
         }}
@@ -111,19 +127,20 @@ export const EventStream = () => {
         </div>
       </div>
       {hideEventStream ? (
-        <div className="bg-black/10 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full">
+        <div className="bg-black/5 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full">
           Events
         </div>
       ) : (
-        <div className="bg-black/10 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full">
+        <div className="bg-black/40 rounded-bl-2xl p-1 rounded-tr  border border-gold/40 h-full">
           {eventList
             .sort((a, b) => a.timestamp - b.timestamp)
             .slice(-EVENT_STREAM_SIZE)
             .map((event, index) => {
               const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
               return (
-                <div className="hover:bg-black/20 rounded" key={index} style={{ color }}>
-                  {emoji} {event.name || "Unknown"} {action} [{new Date(event.timestamp * 1000).toLocaleString()}]
+                <div className="hover:bg-black/20 rounded flex gap-1" key={index}>
+                  {emoji} [{event.name || "Unknown"}]: {action}{" "}
+                  <span className="opacity-50">[{new Date(event.timestamp * 1000).toLocaleString()}]</span>
                 </div>
               );
             })}
