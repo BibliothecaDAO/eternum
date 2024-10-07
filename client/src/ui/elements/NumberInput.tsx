@@ -15,6 +15,7 @@ type NumberInputProps = {
   allowDecimals?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
+  disabled?: boolean;
 };
 
 export const NumberInput = ({
@@ -28,6 +29,7 @@ export const NumberInput = ({
   allowDecimals = false,
   onFocus,
   onBlur,
+  disabled = false,
 }: NumberInputProps) => {
   const formatNumber = (num: number): string => {
     if (num >= 1000) {
@@ -66,6 +68,7 @@ export const NumberInput = ({
         value={displayValue}
         onFocus={onFocus}
         onBlur={onBlur}
+        disabled={disabled}
         onChange={(e) => {
           const inputValue = e.target.value;
           if (allowDecimals) {
