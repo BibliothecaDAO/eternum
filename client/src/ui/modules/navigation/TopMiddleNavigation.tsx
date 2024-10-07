@@ -110,9 +110,9 @@ export const TopMiddleNavigation = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <div className="pointer-events-auto mx-2 pt-1 w-screen flex justify-between">
-      <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded bg-black/90 border-gold/10 relative">
+    <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
+      <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
+        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-black border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -153,7 +153,7 @@ export const TopMiddleNavigation = () => {
             style={{ width: `${progress}%` }}
           ></div>
         </div>
-        <div className=" bg-black/90  my-1  flex gap-1">
+        <div className=" bg-black/90  rounded-b-xl   flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -207,7 +207,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className=" bg-black/90 rounded-r my-1  flex gap-4 justify-between px-4">
+        <div className=" bg-black/90 rounded-b-xl  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"

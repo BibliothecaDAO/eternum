@@ -10,7 +10,7 @@ type CircleButtonProps = {
   disabled?: boolean;
   active?: boolean;
   label?: string;
-  image?: string; // Added image prop
+  image?: string;
   tooltipLocation?: "top" | "bottom" | "left" | "right";
   notification?: number;
   notificationLocation?: "topleft" | "topright" | "bottomleft" | "bottomright";
@@ -22,6 +22,13 @@ const sizes = {
   md: "w-10 h-10 rounded-full",
   lg: "w-12 h-12 rounded-full",
   xl: "w-16 h-16 rounded-xl",
+};
+
+const notificationPositions = {
+  topleft: "-top-1 -left-1",
+  topright: "-top-1 -right-1",
+  bottomleft: "-bottom-1 -left-1",
+  bottomright: "-bottom-1 -right-1",
 };
 
 const CircleButton = ({
@@ -39,50 +46,48 @@ const CircleButton = ({
   ...props
 }: CircleButtonProps) => {
   const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
-  const setTooltip = useUIStore((state) => state.setTooltip);
   const { play: playClick } = useUiSounds(soundSelector.click);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const notificationPositions = {
-    topleft: "-top-1 -left-1",
-    topright: "-top-1 -right-1",
-    bottomleft: "-bottom-1 -left-1",
-    bottomright: "-bottom-1 -right-1",
+  const handleMouseEnter = () => {
+    hoverClick();
+    if (label) {
+      setTooltip({
+        position: tooltipLocation,
+        content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
+      });
+    }
+  };
+
+  const handleClick = () => {
+    if (!disabled) {
+      onClick();
+      playClick();
+    }
   };
 
   return (
     <div className="relative">
       <button
-        onMouseEnter={() => {
-          hoverClick();
-          label &&
-            setTooltip({
-              position: tooltipLocation,
-              content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
-            });
-        }}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setTooltip(null)}
-        onClick={() => {
-          if (!disabled) {
-            onClick();
-            playClick();
-          }
-        }}
+        onClick={handleClick}
         className={clsx(
-          "flex transition-all duration-150  cursor-pointer items-center justify-center fill-current text-gold hover:border-gold  shadow-2xl group  bg-hex-bg hover:bg-gold border-2 border-white/10",
-          active ? "bg-gold" : "bg-black/90",
+          "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-white/10",
+          active ? "bg-gold !border-gold sepia-0" : "bg-black/90 border-brown/30",
           className,
           sizes[size],
           { "cursor-not-allowed": disabled },
-          { " !border-gold sepia-0 ": active },
-          { " border-brown/30 sepia-[.50] ": !active },
         )}
         disabled={disabled}
         {...props}
       >
         {children}
-        <div className={clsx()}>
-          <img src={image} alt="icon" />
-        </div>
+        {image && (
+          <div>
+            <img className="p-2" src={image} alt="icon" />
+          </div>
+        )}
         {disabled && <div className="absolute inset-0 bg-black opacity-50 rounded-full"></div>}
       </button>
       {notification && !disabled ? (
@@ -95,7 +100,7 @@ const CircleButton = ({
           {notification}
         </div>
       ) : (
-        <></>
+        ""
       )}
     </div>
   );

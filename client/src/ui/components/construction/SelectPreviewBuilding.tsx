@@ -535,36 +535,34 @@ export const BuildingInfo = ({
   }, [resourceProduced]);
 
   return (
-    <div className="p-2 text-sm text-gold">
+    <div className="p-2 text-sm">
       <Headline className="pb-3">
         <div className="flex gap-2">
-          <div className="self-center">{name} </div>
+          <div className="self-center">{name}</div>
           {hintModal && <HintModalButton section={HintSection.Buildings} />}
         </div>
       </Headline>
 
-      {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
+      {isPaused && <div className="py-3 font-bold">⚠️ Building Production Paused</div>}
 
       <div className="grid grid-cols-2 gap-4">
         <div>
           {population !== 0 && (
             <div className="font-bold uppercase">
-              <span className="font-bold">Population </span> <br />+{population}{" "}
+              <span className="font-bold">Population</span>
+              <br />+{population}
             </div>
           )}
-
           {capacity !== 0 && (
             <div className="pt-3 uppercase">
-              <span className="font-bold">Max population capacity </span>
-              <br /> +{capacity}
+              <span className="font-bold">Max population capacity</span>
+              <br />+{capacity}
             </div>
           )}
         </div>
-
         {resourceProduced !== 0 && (
           <div className="uppercase">
             <div className="w-full font-bold">Produces</div>
-
             <div className="flex gap-2">
               +{perTick}
               <ResourceIcon
@@ -586,7 +584,6 @@ export const BuildingInfo = ({
               ongoingCost &&
               Object.keys(ongoingCost).map((resourceId, index) => {
                 const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
-
                 return (
                   <ResourceCost
                     key={`ongoing-cost-${index}`}
@@ -599,11 +596,9 @@ export const BuildingInfo = ({
               })}
           </div>
         </>
-      ) : (
-        ""
-      )}
+      ) : null}
 
-      {buildingCost.length != 0 && (
+      {buildingCost.length !== 0 && (
         <>
           <div className="pt-2 font-bold uppercase">One Time Cost</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
@@ -622,9 +617,10 @@ export const BuildingInfo = ({
           </div>
         </>
       )}
+
       {usedIn.length > 0 && (
         <>
-          <div className="pt-3 pb-1 font-bold uppercase ">Consumed by</div>
+          <div className="pt-3 pb-1 font-bold uppercase">Consumed by</div>
           <div className="flex flex-row">
             {React.Children.toArray(
               usedIn.map((resourceId) => (
