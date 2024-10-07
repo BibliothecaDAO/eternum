@@ -64,6 +64,7 @@ export class EternumConfig {
     await setStaminaRefillConfig(config);
     await setMercenariesConfig(config);
     await setBuildingGeneralConfig(config);
+    await setSettlementConfig(config);
   }
 
   getResourceBuildingCostsScaled(): ResourceInputs {
@@ -430,4 +431,29 @@ export const setMercenariesConfig = async (config: Config) => {
     })),
   });
   console.log(`Configuring mercenaries ${tx.statusReceipt}...`);
+};
+
+export const setSettlementConfig = async (config: Config) => {
+  const {
+    radius,
+    angle_scaled,
+    center,
+    min_distance,
+    max_distance,
+    min_scaling_factor_scaled,
+    min_angle_increase,
+    max_angle_increase,
+  } = config.config.settlement;
+  const tx = await config.provider.set_settlement_config({
+    signer: config.account,
+    radius,
+    angle_scaled,
+    center,
+    min_distance,
+    max_distance,
+    min_scaling_factor_scaled,
+    min_angle_increase,
+    max_angle_increase,
+  });
+  console.log(`Configuring settlement ${tx.statusReceipt}...`);
 };

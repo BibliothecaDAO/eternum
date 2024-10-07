@@ -66,10 +66,22 @@ export const NEIGHBOR_OFFSETS_ODD = [
 ];
 
 export const getNeighborHexes = (col: number, row: number) => {
-  const offsets = row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
+  const offsets = getNeighborOffsets(row);
   return offsets.map((offset) => ({
     col: col + offset.i,
     row: row + offset.j,
     direction: offset.direction,
   }));
+};
+
+export const getNeighborOffsets = (row: number) => {
+  return row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
+};
+
+export const getDirectionBetweenAdjacentHexes = (
+  from: { col: number; row: number },
+  to: { col: number; row: number },
+): Direction | null => {
+  const neighbors = getNeighborHexes(from.col, from.row);
+  return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 };

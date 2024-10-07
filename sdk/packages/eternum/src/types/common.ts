@@ -167,7 +167,6 @@ export interface RealmInterface {
   resourceTypesCount: number;
   resourceTypesPacked: bigint;
   order: number;
-  position: Position;
   owner?: ContractAddress;
 }
 
@@ -308,5 +307,15 @@ export interface Config {
       resource: ResourcesIds;
       amount: number;
     }>;
+  };
+  settlement: {
+    radius: number;
+    angle_scaled: number;
+    center: number;
+    min_distance: number;
+    max_distance: number;
+    min_scaling_factor_scaled: bigint;
+    min_angle_increase: number;
+    max_angle_increase: number;
   };
 }

@@ -14,12 +14,12 @@ use eternum::systems::config::contracts::{
     ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
     IStaminaRefillConfigDispatcher, IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher,
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
-    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
-    ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher,
-    IProductionConfigDispatcherTrait, ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait,
-    IBattleConfigDispatcher, IBattleConfigDispatcherTrait, ITravelFoodCostConfigDispatcher,
-    ITravelFoodCostConfigDispatcherTrait
+    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, ISettlementConfigDispatcher,
+    ISettlementConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait, ITickConfigDispatcher,
+    ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
+    IWeightConfigDispatcherTrait, IProductionConfigDispatcher, IProductionConfigDispatcherTrait,
+    ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait, IBattleConfigDispatcher,
+    IBattleConfigDispatcherTrait, ITravelFoodCostConfigDispatcher, ITravelFoodCostConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -183,6 +183,20 @@ fn set_mercenaries_config(config_systems_address: ContractAddress) {
 
     IMercenariesConfigDispatcher { contract_address: config_systems_address }
         .set_mercenaries_config(mercenaries_troops, mercenaries_rewards);
+}
+
+fn set_settlement_config(config_systems_address: ContractAddress) {
+    ISettlementConfigDispatcher { contract_address: config_systems_address }
+        .set_settlement_config(
+            radius: 50,
+            angle_scaled: 0,
+            center: 2147483646,
+            min_distance: 1,
+            max_distance: 5,
+            min_scaling_factor_scaled: 1844674407370955161,
+            min_angle_increase: 30,
+            max_angle_increase: 100,
+        );
 }
 
 fn set_weight_config(config_systems_address: ContractAddress) {

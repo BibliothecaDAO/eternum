@@ -10,11 +10,10 @@ import {
   CapacityConfigCategory,
   ContractAddress,
   EternumGlobalConfig,
-  NEIGHBOR_OFFSETS_EVEN,
-  NEIGHBOR_OFFSETS_ODD,
+  ID,
   ResourcesIds,
+  getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
-  type ID,
 } from "@bibliothecadao/eternum";
 import { getComponentValue, type ComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
@@ -271,18 +270,12 @@ export class ArmyMovementManager {
 
     const startPos = { col: path[0].col, row: path[0].row };
     const endPos = { col: path[1].col, row: path[1].row };
-    const neighborOffsets = startPos.row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
-
-    for (const offset of neighborOffsets) {
-      if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
-        return offset.direction;
-      }
-    }
+    return getDirectionBetweenAdjacentHexes(startPos, endPos);
   };
 
   private readonly _exploreHex = async (path: HexPosition[], currentArmiesTick: number) => {
     const direction = this._findDirection(path);
-    if (direction === undefined) return;
+    if (direction === undefined || direction === null) return;
 
     const overrideId = this._optimisticExplore(path[1].col, path[1].row, currentArmiesTick);
 

@@ -85,8 +85,19 @@ export const EternumGlobalConfig = {
       { resource: ResourcesIds.Fish, amount: 200 },
     ],
   },
+  settlement: {
+    radius: 2000,
+    angle_scaled: 0,
+    center: 2147483646,
+    min_distance: 10,
+    max_distance: 30,
+    min_scaling_factor_scaled: 1844674407370955161n,
+    min_angle_increase: 10,
+    max_angle_increase: 40,
+  },
 };
 
+export const FELT_CENTER = 2147483646;
 export const WORLD_CONFIG_ID = 999999999n;
 export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
 export const U32_MAX = 4294967295;

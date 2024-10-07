@@ -17,7 +17,7 @@ use eternum::models::config::{
     stamina_refill_config, tick_config, map_config, realm_free_mint_config, mercenaries_config, leveling_config,
     production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
     population_config, has_claimed_starting_resources, hyperstructure_config, travel_stamina_cost_config,
-    travel_food_cost_config
+    travel_food_cost_config, settlement_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
@@ -87,6 +87,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         map_config::TEST_CLASS_HASH,
         realm_free_mint_config::TEST_CLASS_HASH,
         mercenaries_config::TEST_CLASS_HASH,
+        settlement_config::TEST_CLASS_HASH,
         leveling_config::TEST_CLASS_HASH,
         production_config::TEST_CLASS_HASH,
         bank_config::TEST_CLASS_HASH,

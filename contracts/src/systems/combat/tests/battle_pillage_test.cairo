@@ -16,7 +16,7 @@ use eternum::{
         config::{
             set_combat_config, setup_globals, set_stamina_config, set_capacity_config, set_speed_config,
             set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config,
-            set_travel_food_cost_config
+            set_travel_food_cost_config, set_settlement_config
         }
     },
 };
@@ -36,6 +36,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    set_settlement_config(config_systems_address);
     set_combat_config(config_systems_address);
     setup_globals(config_systems_address);
     set_stamina_config(config_systems_address);
@@ -104,7 +105,8 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
             .span()
     );
 
-    teleport(world, attacker_realm_army_unit_id, Coord { x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y });
+    let defender_position = get!(world, defender_realm_entity_id, Position);
+    teleport(world, attacker_realm_army_unit_id, Coord { x: defender_position.x, y: defender_position.y });
 
     (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id)
 }

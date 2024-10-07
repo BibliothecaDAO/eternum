@@ -2,7 +2,7 @@ import { useState } from "react";
 import Button from "../../../elements/Button";
 
 import { MAX_REALMS } from "@/ui/constants";
-import { getPosition, toValidAscii } from "@/ui/utils/utils";
+import { toValidAscii } from "@/ui/utils/utils";
 import { getOrderName, orders } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { shortString } from "starknet";
@@ -45,7 +45,6 @@ const SettleRealmComponent = () => {
 
       const realmNameInAscii = toValidAscii(realm.name);
 
-      const position = getPosition(new_realm_id);
       calldata.push({
         realm_name: shortString.encodeShortString(realmNameInAscii),
         realm_id: Number(realm.realmId),
@@ -57,7 +56,6 @@ const SettleRealmComponent = () => {
         rivers: realm.rivers,
         harbors: realm.harbors,
         cities: realm.cities,
-        position,
       });
     }
 
