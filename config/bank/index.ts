@@ -1,4 +1,4 @@
-import { config } from "..";
+import { EternumConfig } from "@bibliothecadao/eternum";
 import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
@@ -16,6 +16,8 @@ if (
 const VITE_PUBLIC_MASTER_ADDRESS = process.env.VITE_PUBLIC_MASTER_ADDRESS;
 const VITE_PUBLIC_MASTER_PRIVATE_KEY = process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
 
+// default config
+const config = new EternumConfig();
 const manifest = process.env.VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 // Bug in bun we have to use http://127.0.0.1:5050/
 const nodeUrl = process.env.VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : process.env.VITE_PUBLIC_NODE_URL;
