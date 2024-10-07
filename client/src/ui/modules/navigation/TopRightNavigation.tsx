@@ -1,21 +1,19 @@
 import useUIStore from "@/hooks/store/useUIStore";
 
-export const TopRightNavigation = () => {
+export const MiniMapNavigation = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const showMinimap = useUIStore((state) => state.showMinimap);
 
   return (
-    <div className="absolute top-[10px] right-[10px] z-[1001] text-xxs pointer-events-auto flex flex-col">
+    <div className=" bottom-[10px] left-[10px] z-[1001] text-xxs pointer-events-auto flex flex-col self-end ">
       <canvas
         id="minimap"
         width={200}
         height={112}
+        className="border border-gold/30 rounded-tr-xl bg-hex-bg "
         style={{
-          border: '1px solid rgba(0, 0, 0, 0.7)',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          borderRadius: '5px',
+          backgroundColor: "rgba(0, 0, 0, 0.3)",
           zIndex: 2,
-          display: 'none',
         }}
       />
       <div className="flex justify-between ml-auto">
@@ -64,7 +62,6 @@ export const TopRightNavigation = () => {
           </div>
         )}
       </div>
-
     </div>
   );
 };
