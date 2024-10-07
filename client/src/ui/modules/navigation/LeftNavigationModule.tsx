@@ -26,6 +26,7 @@ import { Chat } from "../chat/Chat";
 import { EntityDetails } from "../entity-details/EntityDetails";
 import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
+import { MiniMapNavigation } from "./TopRightNavigation";
 
 export enum View {
   None,
@@ -273,8 +274,10 @@ export const LeftNavigationModule = () => {
           </motion.div>
         </div>
       </div>
-
-      <Chat />
+      <div className="flex">
+        <Chat />
+        <MiniMapNavigation />
+      </div>
     </div>
   );
 };
