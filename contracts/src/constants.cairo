@@ -218,6 +218,35 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         .span();
 }
 
+fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
+    return array![
+        (ResourceTypes::WOOD, 100),
+        (ResourceTypes::STONE, 127),
+        (ResourceTypes::COAL, 131),
+        (ResourceTypes::COPPER, 190),
+        (ResourceTypes::OBSIDIAN, 226),
+        (ResourceTypes::SILVER, 288),
+        (ResourceTypes::IRONWOOD, 425),
+        (ResourceTypes::COLD_IRON, 524),
+        (ResourceTypes::GOLD, 549),
+        (ResourceTypes::HARTWOOD, 844),
+        (ResourceTypes::DIAMONDS, 1672),
+        (ResourceTypes::SAPPHIRE, 2030),
+        (ResourceTypes::RUBY, 2098),
+        (ResourceTypes::DEEP_CRYSTAL, 2098),
+        (ResourceTypes::IGNIUM, 2915),
+        (ResourceTypes::ETHEREAL_SILICA, 3095),
+        (ResourceTypes::TRUE_ICE, 3606),
+        (ResourceTypes::TWILIGHT_QUARTZ, 4518),
+        (ResourceTypes::ALCHEMICAL_SILVER, 5392),
+        (ResourceTypes::ADAMANTINE, 9120),
+        (ResourceTypes::MITHRAL, 13553),
+        (ResourceTypes::DRAGONHIDE, 21792),
+        (ResourceTypes::EARTHEN_SHARD, 2098)
+    ]
+        .span();
+}
+
 fn get_resources_without_earthenshards_probs() -> Span<u128> {
     // 35
     return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span();

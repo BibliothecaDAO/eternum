@@ -33,6 +33,8 @@ mod realm_systems {
     use eternum::models::config::{CapacityConfigCategory};
     use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources};
     use eternum::models::event::{SettleRealmData, EventType};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::map::Tile;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::Movable;
@@ -45,13 +47,14 @@ mod realm_systems {
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-
     use starknet::ContractAddress;
 
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
         fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, (entity_id), Realm).assert_is_set();
 
             let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
@@ -101,6 +104,8 @@ mod realm_systems {
             order: u8,
             position: Position,
         ) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure that the coord is not occupied by any other structure
             let coord: Coord = position.into();
             let structure_count: StructureCount = get!(world, coord, StructureCount);

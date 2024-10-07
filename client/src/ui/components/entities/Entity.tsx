@@ -115,23 +115,24 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}
       <div className="flex items-center text-xs flex-wrap">
         <div className="w-full flex justify-between">
-          <div className="flex gap-3 font-bold">
-            <span> {entityIcon[entity.entityType]}</span>
-            <span>{name}</span>
-          </div>
-
           <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
         </div>
       </div>
       {entity.entityType === EntityType.TROOP && <ArmyCapacity army={army} className="my-2 ml-5" />}
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
-      {entityState !== EntityState.Traveling && (
-        <DepositResources
-          entityId={entityId}
-          battleInProgress={battleInProgress}
-          armyInBattle={Boolean(army?.battle_id)}
-        />
-      )}
+      <div className="flex justify-between items-center gap-8">
+        {entityState !== EntityState.Traveling && (
+          <DepositResources
+            entityId={entityId}
+            battleInProgress={battleInProgress}
+            armyInBattle={Boolean(army?.battle_id)}
+          />
+        )}
+        <div className="flex gap-3 text-xs items-center whitespace-nowrap">
+          {entityIcon[entity.entityType]}
+          <span className="truncate">{name}</span>
+        </div>
+      </div>
     </div>
   );
 };

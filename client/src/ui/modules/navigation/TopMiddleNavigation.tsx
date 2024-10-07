@@ -1,5 +1,8 @@
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
+import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
@@ -15,7 +18,9 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   CapacityConfigCategory,
+  ContractAddress,
   EternumGlobalConfig,
+  HYPERSTRUCTURE_POINTS_FOR_WIN,
   ID,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -25,6 +30,7 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -41,15 +47,49 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const { setup } = useDojo();
+  const {
+    account: { account },
+    setup,
+  } = useDojo();
+
+  const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
+  const getEpochs = useGetPlayerEpochs();
+
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
   const { getEntityInfo } = getEntitiesUtils();
+
+  const percentageOfPoints = useMemo(() => {
+    const playersByRank = LeaderboardManager.instance().getPlayersByRank(useUIStore.getState().nextBlockTimestamp!);
+    const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
+    const playerPoints = player?.[1] ?? 0;
+
+    return Math.min((playerPoints / HYPERSTRUCTURE_POINTS_FOR_WIN) * 100, 100);
+  }, [structureEntityId, nextBlockTimestamp]);
+
+  const hasReachedFinalPoints = useMemo(() => {
+    return percentageOfPoints >= 100;
+  }, [percentageOfPoints]);
+
+  const endGame = useCallback(async () => {
+    if (!hasReachedFinalPoints) {
+      return;
+    }
+    const contributions = Array.from(getContributions());
+    const epochs = getEpochs();
+
+    await setup.systemCalls.end_game({
+      signer: account,
+      hyperstructure_contributed_to: contributions,
+      hyperstructure_shareholder_epochs: epochs,
+    });
+  }, [hasReachedFinalPoints, getContributions]);
 
   const structure = useMemo(() => {
     return getEntityInfo(structureEntityId);
@@ -100,18 +140,65 @@ export const TopMiddleNavigation = () => {
     );
   }, [structureEntityId]);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
-
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
     const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
+  const gradient = useMemo(() => {
+    const filledPercentage = percentageOfPoints;
+    const emptyPercentage = 1 - percentageOfPoints;
+    return `linear-gradient(to right, #f3c99f80 ${filledPercentage}%, #f3c99f80 ${filledPercentage}%, #0000000d ${filledPercentage}%, #0000000d ${
+      filledPercentage + emptyPercentage
+    }%)`;
+  }, [percentageOfPoints]);
+
   return (
-    <div className="pointer-events-auto mt-1 ">
-      <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div className=" bg-black/90 rounded-l-xl my-1 border-white/5 border flex gap-1">
+    <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
+      <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
+        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-black border-gold/10 relative">
+          <div className="self-center flex justify-between w-full">
+            {structure.isMine ? (
+              <Select
+                value={structureEntityId.toString()}
+                onValueChange={(a: string) => {
+                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Structure" />
+                </SelectTrigger>
+                <SelectContent className="bg-black/90">
+                  {structures.map((structure, index) => (
+                    <SelectItem
+                      className="flex justify-between"
+                      key={index}
+                      value={structure.entity_id?.toString() || ""}
+                    >
+                      <h5 className="self-center flex gap-4">
+                        {structureIcons[structure.category]}
+                        {structure.name}
+                      </h5>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div>
+                <div className="self-center flex gap-4">
+                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
+                  {structure.owner ? structure.name : "Unsettled"}
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        <div className=" bg-black/90 bg-hex-bg   rounded-b-xl   flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -165,48 +252,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded bg-black/90 border-gold/10 relative">
-          <div className="self-center flex justify-between w-full">
-            {structure.isMine ? (
-              <Select
-                value={structureEntityId.toString()}
-                onValueChange={(a: string) => {
-                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Structure" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90">
-                  {structures.map((structure, index) => (
-                    <SelectItem
-                      className="flex justify-between"
-                      key={index}
-                      value={structure.entity_id?.toString() || ""}
-                    >
-                      <h5 className="self-center flex gap-4">
-                        {structureIcons[structure.category]}
-                        {structure.name}
-                      </h5>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div>
-                <div className="self-center flex gap-4">
-                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
-                  {structure.owner ? structure.name : "Unsettled"}
-                </div>
-              </div>
-            )}
-          </div>
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-        <div className=" bg-black/90 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
+        <div className=" bg-black/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"
@@ -230,8 +276,33 @@ export const TopMiddleNavigation = () => {
           {isMapView && (
             <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
           )}
+          <Button
+            variant="outline"
+            size="xs"
+            className={clsx("self-center")}
+            onMouseOver={() => {
+              if (!hasReachedFinalPoints) {
+                setTooltip({
+                  position: "bottom",
+                  content: (
+                    <span className="whitespace-nowrap pointer-events-none">
+                      <span>Not enough points to end the season</span>
+                    </span>
+                  ),
+                });
+              }
+            }}
+            onMouseOut={() => {
+              setTooltip(null);
+            }}
+            style={{ background: gradient }}
+            onClick={endGame}
+          >
+            End season
+          </Button>
         </div>
       </motion.div>
+      <SecondaryMenuItems />
     </div>
   );
 };
@@ -270,7 +341,7 @@ const TickProgress = () => {
       setTooltip({
         position: "bottom",
         content: (
-          <div className="whitespace-nowrap pointer-events-none flex flex-col">
+          <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
             <div>
               A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
             </div>

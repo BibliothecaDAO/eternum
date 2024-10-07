@@ -180,7 +180,9 @@
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",
-    "HyperstructureUpdate"
+    "Hyperstructure",
+    "Epoch",
+    "Season"
   ],
   "BUILDINGS_SYSTEMS": [
     "Resource",

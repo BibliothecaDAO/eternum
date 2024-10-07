@@ -22,6 +22,8 @@ mod map_systems {
         TroopConfigCustomImpl, TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig,
         TravelFoodCostConfigImpl
     };
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
@@ -79,6 +81,8 @@ mod map_systems {
     #[abi(embed_v0)]
     impl MapSystemsImpl of super::IMapSystems<ContractState> {
         fn explore(ref world: IWorldDispatcher, unit_id: ID, direction: Direction) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // check that caller owns unit
             get!(world, unit_id, EntityOwner).assert_caller_owner(world);
 
@@ -209,6 +213,7 @@ mod map_systems {
             );
             entity_id
         }
+
         fn add_production_deadline(world: IWorldDispatcher, mine_entity_id: ID) -> u64 {
             let earthen_shard_production_config: ProductionConfig = get!(
                 world, ResourceTypes::EARTHEN_SHARD, ProductionConfig

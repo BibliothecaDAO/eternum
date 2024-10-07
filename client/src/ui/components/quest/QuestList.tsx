@@ -3,6 +3,7 @@ import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
+import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
@@ -79,9 +80,11 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
 
   return (
     <div
-      className={`w-full border text-center p-3 rounded ${quest.status === QuestStatus.Claimed ? "border-green" : ""}`}
+      className={`w-full border px-4 py-2 rounded-xl  ${
+        quest.status === QuestStatus.Claimed ? "border-green/40 bg-green/20" : "border-red/40 bg-red/20"
+      }`}
     >
-      <h4 className="mb-1">{quest.name}</h4>
+      <Headline className="mb-4 text-xl">{quest.name}</Headline>
 
       {quest.prizes &&
         quest.prizes.map((prize, index) => (

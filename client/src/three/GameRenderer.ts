@@ -214,7 +214,6 @@ export default class GameRenderer {
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
 
     this.renderModels();
-
     // Init animation
     this.animate();
   }
@@ -321,6 +320,7 @@ export default class GameRenderer {
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
 
+    // Update the minimap
     requestAnimationFrame(() => {
       this.animate();
     });

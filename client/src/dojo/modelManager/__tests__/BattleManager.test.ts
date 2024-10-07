@@ -269,9 +269,13 @@ describe("getUpdatedTroops", () => {
       crossbowman_count: 10n,
     };
 
-    expect(() => battleManager["getUpdatedTroops"](currentHealth, currentTroops)).toThrow(
-      "Current health shouldn't be bigger than lifetime",
-    );
+    const ret = battleManager["getUpdatedTroops"](currentHealth, currentTroops);
+
+    expect(ret).toStrictEqual({
+      knight_count: 0n,
+      paladin_count: 0n,
+      crossbowman_count: 0n,
+    });
   });
 });
 

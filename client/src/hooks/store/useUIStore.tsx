@@ -6,11 +6,11 @@ import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
-import { createPopupsSlice, PopupsStore } from "./_popupsStore";
-import { createThreeStoreSlice, ThreeStore } from "./_threeStore";
+import { PopupsStore, createPopupsSlice } from "./_popupsStore";
+import { ThreeStore, createThreeStoreSlice } from "./_threeStore";
 import { BattleViewInfo } from "./types";
 import { BlockchainStore, createBlockchainStore } from "./useBlockchainStore";
-import { createRealmStoreSlice, RealmStore } from "./useRealmStore";
+import { RealmStore, createRealmStoreSlice } from "./useRealmStore";
 
 interface UIStore {
   theme: string;
@@ -53,6 +53,8 @@ interface UIStore {
   setLeftNavigationView: (view: LeftView) => void;
   rightNavigationView: RightView;
   setRightNavigationView: (view: RightView) => void;
+  showMinimap: boolean;
+  setShowMinimap: (show: boolean) => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
   tabs: Tab[];
@@ -112,6 +114,8 @@ const useUIStore = create(
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
     rightNavigationView: RightView.None,
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+    showMinimap: false,
+    setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
     tabs: [],

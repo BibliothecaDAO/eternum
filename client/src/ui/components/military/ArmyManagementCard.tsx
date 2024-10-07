@@ -373,7 +373,7 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
       onMouseEnter={() => {
         setTooltip({
           content: "View on Map",
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {

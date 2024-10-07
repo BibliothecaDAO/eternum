@@ -19,6 +19,8 @@ mod travel_systems {
     use eternum::constants::{WORLD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
     use eternum::models::combat::Army;
     use eternum::models::config::{LevelingConfig, MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
@@ -31,6 +33,7 @@ mod travel_systems {
     use eternum::models::weight::Weight;
 
     use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
+
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
@@ -65,6 +68,8 @@ mod travel_systems {
         /// * `destination_coord` - The coordinate to travel to
         ///
         fn travel(ref world: IWorldDispatcher, travelling_entity_id: ID, destination_coord: Coord) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // todo@security prevent free transport units from travelling
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
@@ -87,6 +92,8 @@ mod travel_systems {
 
 
         fn travel_hex(ref world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);

@@ -6,10 +6,9 @@ import { useTravel } from "@/hooks/helpers/useTravel";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
@@ -41,26 +40,11 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     [setup, bankEntityId, resourceId, account.address],
   );
 
-  const market = useComponentValue(
-    setup.components.Market,
-    getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
-  );
-  useEffect(() => {
-    const amount = isBuyResource ? lordsAmount : resourceAmount;
-    const setAmount = isBuyResource ? setResourceAmount : setLordsAmount;
-    const operation = isBuyResource ? marketManager.buyResource : marketManager.sellResource;
-
-    if (amount > 0) {
-      const cost = operation(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator);
-      setAmount(divideByPrecision(cost));
-    }
-  }, [lordsAmount, resourceAmount, isBuyResource, marketManager, market]);
-
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const balanceId = isBuyResource ? BigInt(ResourcesIds.Lords) : resourceId;
     return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
-  }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId]);
+  }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId, ownerFee]);
 
   const canSwap = useMemo(
     () => lordsAmount > 0 && resourceAmount > 0 && hasEnough,
@@ -82,16 +66,48 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, lordsAmount]);
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
+
+  // Dedicated handler for Lords Amount
+  const handleLordsAmountChange = (amount: number) => {
+    setLordsAmount(amount);
+    if (isBuyResource) {
+      const calculatedResourceAmount = divideByPrecision(
+        marketManager.buyResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+      );
+      setResourceAmount(calculatedResourceAmount);
+    } else {
+      const calculatedResourceAmount = divideByPrecision(
+        marketManager.sellResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+      );
+      setResourceAmount(calculatedResourceAmount);
+    }
+  };
+
+  // Dedicated handler for Resource Amount
+  const handleResourceAmountChange = (amount: number) => {
+    setResourceAmount(amount);
+    if (isBuyResource) {
+      const calculatedLordsAmount = divideByPrecision(
+        marketManager.buyResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+      );
+      setLordsAmount(calculatedLordsAmount);
+    } else {
+      const calculatedLordsAmount = divideByPrecision(
+        marketManager.sellResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+      );
+      setLordsAmount(calculatedLordsAmount);
+    }
+  };
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
       const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - ownerFee) : resourceAmount;
-      const selectableResources = isLords
-        ? resources.filter((r) => r.id === ResourcesIds.Lords)
-        : resources.filter((r) => r.id !== ResourcesIds.Lords);
+      const selectableResources = resources.filter((r) =>
+        isLords ? r.id === ResourcesIds.Lords : r.id !== ResourcesIds.Lords,
+      );
 
       return (
         <ResourceBar
@@ -99,15 +115,26 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
           resources={selectableResources}
           lordsFee={ownerFee}
           amount={amount}
-          setAmount={isLords ? setLordsAmount : setResourceAmount}
+          setAmount={isLords ? handleLordsAmountChange : handleResourceAmountChange}
           resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
         />
       );
     },
-    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId, ownerFee],
+    [
+      entityId,
+      isBuyResource,
+      lordsAmount,
+      resourceAmount,
+      resourceId,
+      ownerFee,
+      resources,
+      handleLordsAmountChange,
+      handleResourceAmountChange,
+    ],
   );
+
   const renderConfirmationPopup = useMemo(() => {
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
     const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
@@ -174,7 +201,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       <div className="mx-auto bg-gold/10 px-3 py-1">
         <div className="relative my-2 space-y-1">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
-          <div className="absolute  left-1/2 top-[94px]">
+          <div className="absolute left-1/2 top-[94px]">
             <Button isLoading={false} disabled={false} onClick={onInvert} size="md" className="">
               <Refresh
                 className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}

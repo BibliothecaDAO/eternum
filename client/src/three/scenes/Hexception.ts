@@ -218,6 +218,8 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToURLLocation();
   }
 
+  onSwitchOff() {}
+
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };

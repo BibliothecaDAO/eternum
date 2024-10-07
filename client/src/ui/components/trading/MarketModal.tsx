@@ -15,13 +15,13 @@ import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
+import { ModalContainer } from "../ModalContainer";
 import { BankPanel } from "../bank/BankList";
 import { HintModal } from "../hints/HintModal";
-import { ModalContainer } from "../ModalContainer";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
-import { TransferBetweenEntities } from "./TransferBetweenEntities";
 import { RealmProduction } from "./RealmProduction";
+import { TransferView } from "./TransferView";
 
 export const MarketModal = () => {
   const {
@@ -47,7 +47,7 @@ export const MarketModal = () => {
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
 
-  const structures = useMemo(() => playerStructures(), [playerStructures]);
+  const structures = playerStructures();
 
   const lordsBalance =
     useComponentValue(Resource, getEntityIdFromKeys([BigInt(structureEntityId!), BigInt(ResourcesIds.Lords)]))
@@ -260,26 +260,5 @@ const MarketResourceSidebar = ({
           })}
       </div>
     </div>
-  );
-};
-
-const TransferView = () => {
-  const { playerRealms, playerStructures, otherRealms } = useEntities();
-
-  return (
-    <TransferBetweenEntities
-      entitiesList={[
-        { entities: playerRealms(), name: "Player Realms" },
-        {
-          entities: playerStructures().filter((structure) => structure.category === "Hyperstructure"),
-          name: "Player Hyperstructures",
-        },
-        {
-          entities: playerStructures().filter((structure) => structure.category === "FragmentMine"),
-          name: "Player Fragment Mines",
-        },
-        { entities: otherRealms(), name: "Other Realms" },
-      ]}
-    />
   );
 };
