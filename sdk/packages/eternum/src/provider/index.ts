@@ -958,6 +958,15 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_private(props: SystemProps.SetPrivateProps) {
+    const { hyperstructure_entity_id, to_private, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "set_private",
+      calldata: [hyperstructure_entity_id, to_private],
+    });
+  }
+
   public async end_game(props: SystemProps.EndGameProps) {
     const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
     return await this.executeAndCheckTransaction(signer, {

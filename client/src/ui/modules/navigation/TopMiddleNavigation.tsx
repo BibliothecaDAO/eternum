@@ -65,13 +65,11 @@ export const TopMiddleNavigation = () => {
   const { getEntityInfo } = getEntitiesUtils();
 
   const percentageOfPoints = useMemo(() => {
-    return (
-      ((LeaderboardManager.instance()
-        .getPlayersByRank(useUIStore.getState().nextBlockTimestamp!)
-        .find(([player, _]) => ContractAddress(player) === ContractAddress(account.address))?.[1] ?? 0) /
-        HYPERSTRUCTURE_POINTS_FOR_WIN) *
-      100
-    );
+    const playersByRank = LeaderboardManager.instance().getPlayersByRank(useUIStore.getState().nextBlockTimestamp!);
+    const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
+    const playerPoints = player?.[1] ?? 0;
+
+    return Math.min((playerPoints / HYPERSTRUCTURE_POINTS_FOR_WIN) * 100, 100);
   }, [structureEntityId, nextBlockTimestamp]);
 
   const hasReachedFinalPoints = useMemo(() => {
@@ -280,12 +278,7 @@ export const TopMiddleNavigation = () => {
           <Button
             variant="outline"
             size="xs"
-            className={clsx("self-center text-white", {
-              "animate-pulse":
-                (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
-                selectedQuest.status !== QuestStatus.Completed &&
-                !isMapView,
-            })}
+            className={clsx("self-center")}
             onMouseOver={() => {
               if (!hasReachedFinalPoints) {
                 setTooltip({

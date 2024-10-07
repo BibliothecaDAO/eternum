@@ -23,6 +23,7 @@ trait IHyperstructureSystems {
         hyperstructures_contributed_to: Span<ID>,
         hyperstructure_shareholder_epochs: Span<(ID, u16)>
     );
+    fn set_private(ref world: IWorldDispatcher, hyperstructure_entity_id: ID, private: bool);
 }
 
 
@@ -42,7 +43,7 @@ mod hyperstructure_systems {
             owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceCustomImpl, ResourceCost},
-            structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}
+            structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}, guild::{GuildMember}
         },
         systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
     };
@@ -137,7 +138,8 @@ mod hyperstructure_systems {
                         current_epoch: 0,
                         completed: false,
                         last_updated_by: contract_address_const::<0>(),
-                        last_updated_timestamp: current_time
+                        last_updated_timestamp: current_time,
+                        private: false,
                     },
                     CapacityCategory { entity_id: new_uuid, category: CapacityConfigCategory::Structure },
                     StructureCount { coord, count: 1 },
@@ -173,6 +175,16 @@ mod hyperstructure_systems {
 
             let structure = get!(world, hyperstructure_entity_id, Structure);
             assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+
+            let hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
+            if (hyperstructure.private) {
+                let contributor_address = starknet::get_caller_address();
+                let guild_member = get!(world, contributor_address, GuildMember);
+
+                let hyperstructure_owner = get!(world, hyperstructure_entity_id, Owner);
+                let owner_guild_member = get!(world, hyperstructure_owner.address, GuildMember);
+                assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
+            }
 
             let timestamp = starknet::get_block_timestamp();
 
@@ -262,6 +274,15 @@ mod hyperstructure_systems {
                 world,
                 (HyperstructureCoOwnersChange { id: world.uuid(), hyperstructure_entity_id, timestamp, co_owners })
             );
+        }
+
+        fn set_private(ref world: IWorldDispatcher, hyperstructure_entity_id: ID, private: bool) {
+            let owner = get!(world, hyperstructure_entity_id, Owner);
+            owner.assert_caller_owner();
+
+            let mut hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
+            hyperstructure.private = private;
+            set!(world, (hyperstructure,));
         }
 
         fn end_game(

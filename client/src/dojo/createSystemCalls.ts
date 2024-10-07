@@ -228,6 +228,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.contribute_to_construction(props);
   };
 
+  const set_private = async (props: SystemProps.SetPrivateProps) => {
+    await provider.set_private(props);
+  };
+
   const end_game = async (props: SystemProps.EndGameProps) => {
     await provider.end_game(props);
   };
@@ -339,6 +343,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     create_hyperstructure: withQueueing(withErrorHandling(create_hyperstructure)),
     contribute_to_construction: withQueueing(withErrorHandling(contribute_to_construction)),
+    set_private: withQueueing(withErrorHandling(set_private)),
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
     end_game: withQueueing(withErrorHandling(end_game)),
 

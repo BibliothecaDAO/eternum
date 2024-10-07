@@ -11,7 +11,7 @@ import {
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyIntlFormat } from "@/ui/utils/utils";
+import { currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ContractAddress,
   EternumGlobalConfig,
@@ -19,6 +19,7 @@ import {
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 import { ContributionSummary } from "./ContributionSummary";
 import { HyperstructureDetails } from "./HyperstructureDetails";
@@ -28,6 +29,7 @@ enum Loading {
   None,
   Contribute,
   ChangeName,
+  SetPrivate,
 }
 
 export const HyperstructurePanel = ({ entity }: any) => {
@@ -35,7 +37,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { contribute_to_construction },
+      systemCalls: { contribute_to_construction, set_private },
+      components: { Hyperstructure },
     },
   } = useDojo();
 
@@ -57,6 +60,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
   const ownerName = getAddressNameFromEntity(entity.entity_id);
+
+  const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
 
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
@@ -108,6 +113,21 @@ export const HyperstructurePanel = ({ entity }: any) => {
     return LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), entity.entity_id);
   }, [myContributions, updates]);
 
+  const setPrivate = async () => {
+    setIsLoading(Loading.SetPrivate);
+    try {
+      await set_private({
+        signer: account,
+        hyperstructure_entity_id: entity.entity_id,
+        to_private: !hyperstructure?.private,
+      });
+    } finally {
+      setIsLoading(Loading.None);
+      setNewContributions({});
+      setResetContributions(false);
+    }
+  };
+  console.log(hyperstructure);
   return (
     <div className="flex flex-col justify-between h-full">
       <div className="grid grid-cols-5 text-xxs bg-blueish/10 p-1">
@@ -148,9 +168,14 @@ export const HyperstructurePanel = ({ entity }: any) => {
             <div className="flex justify-between items-center">
               <h5 className="truncate pr-5">{entity.name}</h5>
               {account.address === entity.owner && (
-                <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
-                  edit name
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
+                    edit name
+                  </Button>
+                  <Button isLoading={isLoading === Loading.SetPrivate} size="xs" variant="default" onClick={setPrivate}>
+                    Make {hyperstructure?.private ? "public" : "private"}
+                  </Button>
+                </div>
               )}
             </div>
           )}

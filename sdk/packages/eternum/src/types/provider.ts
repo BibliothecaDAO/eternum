@@ -489,6 +489,11 @@ export interface ContributeToConstructionProps extends SystemSigner {
   contributions: { resource: number; amount: number }[];
 }
 
+export interface SetPrivateProps extends SystemSigner {
+  hyperstructure_entity_id: num.BigNumberish;
+  to_private: boolean;
+}
+
 export interface EndGameProps extends SystemSigner {
   hyperstructure_contributed_to: num.BigNumberish[];
   hyperstructure_shareholder_epochs: { hyperstructure_entity_id: num.BigNumberish; epoch: num.BigNumberish }[];

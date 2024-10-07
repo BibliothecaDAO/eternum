@@ -20,6 +20,7 @@ pub struct Hyperstructure {
     completed: bool,
     last_updated_by: ContractAddress,
     last_updated_timestamp: u64,
+    private: bool,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
