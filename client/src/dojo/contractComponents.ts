@@ -502,10 +502,51 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Hyperstructure: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.Number,
+          current_epoch: RecsType.Number,
+          completed: RecsType.Boolean,
+          last_updated_by: RecsType.BigInt,
+          last_updated_timestamp: RecsType.Number,
+          private: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "Hyperstructure",
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Epoch: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.Number,
+          index: RecsType.Number,
+          start_timestamp: RecsType.Number,
+          owners: RecsType.BigIntArray,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "Epoch",
+            types: ["u32", "u16", "u64", "array"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     HyperstructureConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, time_between_shares_change: RecsType.BigInt },
+        { config_id: RecsType.Number, time_between_shares_change: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
@@ -525,24 +566,6 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "HyperstructureResourceConfig",
             types: ["u32", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    HyperstructureUpdate: (() => {
-      return defineComponent(
-        world,
-        {
-          hyperstructure_entity_id: RecsType.Number,
-          last_updated_timestamp: RecsType.BigInt,
-          last_updated_by: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "HyperstructureUpdate",
-            types: ["u32", "u64", "contractaddress"],
             customTypes: [],
           },
         },

@@ -1,5 +1,6 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useHyperstructureUpdates } from "@/hooks/helpers/useHyperstructures";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -22,7 +23,7 @@ export const Leaderboard = ({
   const {
     account: { account },
     setup: {
-      components: { HyperstructureUpdate, Owner },
+      components: { Owner },
     },
   } = useDojo();
 
@@ -33,13 +34,7 @@ export const Leaderboard = ({
     return LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0, hyperstructureEntityId);
   }, [nextBlockTimestamp, hyperstructureEntityId]);
 
-  const updateEntityIds = useEntityQuery([
-    HasValue(HyperstructureUpdate, { hyperstructure_entity_id: hyperstructureEntityId }),
-  ]);
-
-  const update = useMemo(() => {
-    return getComponentValue(HyperstructureUpdate, updateEntityIds[0]);
-  }, [updateEntityIds]);
+  const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 
   const sortingParams = useMemo(() => {
     return [
@@ -60,7 +55,7 @@ export const Leaderboard = ({
     return ContractAddress(owner.address) === ContractAddress(account.address);
   }, [hyperstructureEntityId]);
 
-  return update ? (
+  return hyperstructure ? (
     <>
       <SortPanel className="px-3 py-2 grid grid-cols-3">
         {sortingParams.map(({ label, sortKey, className }) => (

@@ -321,7 +321,7 @@ export interface BattleJoinProps extends SystemSigner {
 
 export interface BattleLeaveProps extends SystemSigner {
   battle_id: num.BigNumberish;
-  army_id: num.BigNumberish;
+  army_ids: num.BigNumberish[];
 }
 
 export interface BattlePillageProps extends SystemSigner {
@@ -335,10 +335,10 @@ export interface BattleClaimProps extends SystemSigner {
 }
 
 type BattleClaimAndLeave = BattleClaimProps & BattleLeaveProps;
-export interface BattleClaimAndLeaveProps extends SystemSigner, BattleClaimAndLeave {}
+export interface BattleClaimAndLeaveProps extends SystemSigner, Omit<BattleClaimAndLeave, "army_ids"> {}
 
 type BattleLeaveAndRaid = BattlePillageProps & BattleLeaveProps;
-export interface BattleLeaveAndRaidProps extends SystemSigner, BattleLeaveAndRaid {}
+export interface BattleLeaveAndRaidProps extends SystemSigner, Omit<BattleLeaveAndRaid, "army_ids"> {}
 
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;
@@ -483,6 +483,9 @@ export interface SetSpeedConfigProps extends SystemSigner {
 export interface SetHyperstructureConfig extends SystemSigner {
   resources_for_completion: { resource: number; amount: number }[];
   time_between_shares_change: num.BigNumberish;
+  points_per_cycle: num.BigNumberish;
+  points_for_win: num.BigNumberish;
+  points_on_completion: num.BigNumberish;
 }
 
 export interface CreateHyperstructureProps extends SystemSigner {
@@ -494,6 +497,16 @@ export interface ContributeToConstructionProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
   contributor_entity_id: num.BigNumberish;
   contributions: { resource: number; amount: number }[];
+}
+
+export interface SetPrivateProps extends SystemSigner {
+  hyperstructure_entity_id: num.BigNumberish;
+  to_private: boolean;
+}
+
+export interface EndGameProps extends SystemSigner {
+  hyperstructure_contributed_to: number[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
 }
 
 export interface SetCoOwnersProps extends SystemSigner {

@@ -87,7 +87,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   };
   return (
     <div className="p-2">
-      <Headline className="my-3">
+      <Headline>
         <div className="flex gap-2">
           <div className="self-center">{structure.name} </div>
           <HintModalButton section={HintSection.Buildings} />

@@ -58,6 +58,9 @@ struct HyperstructureConfig {
     #[key]
     config_id: ID,
     time_between_shares_change: u64,
+    points_per_cycle: u128,
+    points_for_win: u128,
+    points_on_completion: u128,
 }
 
 // capacity

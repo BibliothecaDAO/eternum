@@ -31,6 +31,7 @@ mod bank_systems {
     use eternum::models::bank::bank::{Bank};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::config::{BankConfig, CapacityConfigCategory};
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl};
@@ -50,6 +51,8 @@ mod bank_systems {
             owner_bridge_fee_dpt_percent: u16,
             owner_bridge_fee_wtdr_percent: u16
         ) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let bank_entity_id: ID = world.uuid();
 
             //todo: check that tile is explored
@@ -95,6 +98,8 @@ mod bank_systems {
         fn change_owner_amm_fee(
             ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let player = starknet::get_caller_address();
 
             let owner = get!(world, bank_entity_id, Owner);

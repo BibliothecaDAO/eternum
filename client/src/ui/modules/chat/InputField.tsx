@@ -1,13 +1,12 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import useUIStore from "@/hooks/store/useUIStore";
 import TextInput from "@/ui/elements/TextInput";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
-import { ContractAddress } from "@bibliothecadao/eternum";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo, useRef } from "react";
 import { Signature, TypedData, WeierstrassSignatureType } from "starknet";
-import { addNewTab, GLOBAL_CHANNEL } from "./Chat";
+import { GLOBAL_CHANNEL, addNewTab } from "./Chat";
 import { Tab } from "./ChatTab";
 
 export const InputField = ({
@@ -30,11 +29,8 @@ export const InputField = ({
   const tabs = useUIStore((state) => state.tabs);
   const setTabs = useUIStore((state) => state.setTabs);
 
-  const getPlayers = useGetAllPlayers();
-  const players = useMemo(
-    () => getPlayers().filter((player) => ContractAddress(player.address) !== ContractAddress(account.address)),
-    [getPlayers, account.address],
-  );
+  const getPlayers = useGetOtherPlayers();
+  const players = useMemo(() => getPlayers(), [getPlayers]);
 
   const input = useRef<string>("");
 

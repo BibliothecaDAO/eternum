@@ -1,6 +1,6 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -36,11 +36,11 @@ export const Chat = () => {
   } = useDojo();
 
   const [hideChat, setHideChat] = useState(false);
-  const getPlayers = useGetAllPlayers();
-  const players = useMemo(
-    () => getPlayers().filter((player) => ContractAddress(player.address) !== ContractAddress(account.address)),
-    [getPlayers, account.address],
-  );
+  const getPlayers = useGetOtherPlayers();
+
+  const players = useMemo(() => {
+    return getPlayers();
+  }, [getPlayers]);
 
   const currentTab = useUIStore((state) => state.currentTab);
   const setCurrentTab = useUIStore((state) => state.setCurrentTab);
@@ -195,7 +195,7 @@ export const Chat = () => {
   };
 
   return (
-    <div className={`rounded max-w-[28vw] `} style={{ zIndex: 1 }}>
+    <div className={`rounded max-w-[28vw] pointer-events-auto flex flex-col`} style={{ zIndex: 1 }}>
       <div className="flex flex-row justify-between">
         <div className="flex flex-row overflow-x-auto max-w-full no-scrollbar h-8 items-end">
           {tabs
@@ -211,7 +211,7 @@ export const Chat = () => {
             ))}
         </div>
         <div
-          className="flex flex-row items-end w-8 h-8 text-sm text-center"
+          className="flex flex-row items-end h-8"
           onClick={() => {
             setHideChat(!hideChat);
           }}
@@ -222,11 +222,11 @@ export const Chat = () => {
         </div>
       </div>
       <div
-        className={`flex flex-col gap-2 w-[28vw] max-w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded-b`}
+        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded-b pointer-events-auto flex-grow`}
       >
         <div
-          className={`border p-2 border-gold/40 rounded text-xs overflow-y-auto transition-all duration-300 ${
-            hideChat ? "h-0 hidden" : "h-60 block"
+          className={`border p-2 border-gold/40 rounded text-xs overflow-y-auto transition-all duration-300 flex-grow ${
+            hideChat ? "h-0 hidden" : "block h-[20vh]"
           }`}
         >
           {messagesToDisplay?.map((message, index) => (
@@ -250,29 +250,30 @@ export const Chat = () => {
           ))}
           <span className="" ref={bottomChatRef}></span>
         </div>
-
-        <Select
-          value={""}
-          onValueChange={(trait) => {
-            changeTabs(undefined, trait, true);
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select Player or Global" />
-          </SelectTrigger>
-          <SelectContent>
-            {players &&
-              players.map((player, index) => (
-                <SelectItem className="flex justify-between" key={index} value={toHexString(player.address)}>
-                  {player.addressName}
-                </SelectItem>
-              ))}
-            <SelectItem className="flex justify-between" value="Global">
-              Global
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <InputField currentTab={currentTab} setCurrentTab={setCurrentTab} salt={salt} />
+        <div className="grid gap-2 grid-cols-2 mt-2">
+          <InputField currentTab={currentTab} setCurrentTab={setCurrentTab} salt={salt} />
+          <Select
+            value={""}
+            onValueChange={(trait) => {
+              changeTabs(undefined, trait, true);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Player or Global" />
+            </SelectTrigger>
+            <SelectContent>
+              {players &&
+                players.map((player, index) => (
+                  <SelectItem className="flex justify-between" key={index} value={toHexString(player.address)}>
+                    {player.addressName}
+                  </SelectItem>
+                ))}
+              <SelectItem className="flex justify-between" value="Global">
+                Global
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );

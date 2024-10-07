@@ -417,7 +417,11 @@ export class BattleManager {
     currentTroops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>,
   ): ComponentValue<ClientComponents["Army"]["schema"]["troops"]> => {
     if (health.current > health.lifetime) {
-      throw new Error("Current health shouldn't be bigger than lifetime");
+      return {
+        knight_count: 0n,
+        paladin_count: 0n,
+        crossbowman_count: 0n,
+      };
     }
 
     if (health.lifetime === 0n) {
