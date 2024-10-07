@@ -15,6 +15,8 @@ mod leveling_systems {
         HYPERSTRUCTURE_LEVELING_START_TIER
     };
     use eternum::models::config::{LevelingConfig};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::owner::{Owner};
     use eternum::models::realm::{Realm};
@@ -23,9 +25,12 @@ mod leveling_systems {
 
     use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
 
+
     #[abi(embed_v0)]
     impl LevelingSystemsImpl of super::ILevelingSystems<ContractState> {
         fn level_up_realm(ref world: IWorldDispatcher, realm_entity_id: ID,) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // check that entity is a realm
             let realm = get!(world, realm_entity_id, Realm);
             assert(realm.realm_id != 0, 'not a realm');

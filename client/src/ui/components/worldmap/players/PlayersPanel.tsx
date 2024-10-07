@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
+import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import useUIStore from "@/hooks/store/useUIStore";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress, toHexString } from "@/ui/utils/utils";
@@ -20,7 +20,7 @@ export const PlayersPanel = () => {
   const [searchInput, setSearchInput] = useState("");
 
   const { getEntityName } = getEntitiesUtils();
-  const getPlayers = useGetAllPlayers();
+  const getPlayers = useGetOtherPlayers();
 
   const playersWithStructures = useMemo(() => {
     const players = getPlayers();

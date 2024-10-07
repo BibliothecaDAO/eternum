@@ -20,7 +20,7 @@ use eternum::models::config::{
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
-    Progress, progress, Contribution, contribution, HyperstructureUpdate, hyperstructure_update
+    Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch, Season, season
 };
 use eternum::models::level::level;
 use eternum::models::map::tile;
@@ -116,6 +116,9 @@ fn spawn_eternum() -> IWorldDispatcher {
         contribution::TEST_CLASS_HASH,
         hyperstructure_resource_config::TEST_CLASS_HASH,
         hyperstructure_config::TEST_CLASS_HASH,
+        epoch::TEST_CLASS_HASH,
+        hyperstructure::TEST_CLASS_HASH,
+        season::TEST_CLASS_HASH,
         stamina_config::TEST_CLASS_HASH,
         stamina_refill_config::TEST_CLASS_HASH,
         tick_config::TEST_CLASS_HASH,

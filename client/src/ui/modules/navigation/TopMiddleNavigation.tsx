@@ -1,5 +1,8 @@
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
+import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
@@ -15,7 +18,9 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   CapacityConfigCategory,
+  ContractAddress,
   EternumGlobalConfig,
+  HYPERSTRUCTURE_POINTS_FOR_WIN,
   ID,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -42,15 +47,49 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const { setup } = useDojo();
+  const {
+    account: { account },
+    setup,
+  } = useDojo();
+
+  const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
+  const getEpochs = useGetPlayerEpochs();
+
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
   const { getEntityInfo } = getEntitiesUtils();
+
+  const percentageOfPoints = useMemo(() => {
+    const playersByRank = LeaderboardManager.instance().getPlayersByRank(useUIStore.getState().nextBlockTimestamp!);
+    const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
+    const playerPoints = player?.[1] ?? 0;
+
+    return Math.min((playerPoints / HYPERSTRUCTURE_POINTS_FOR_WIN) * 100, 100);
+  }, [structureEntityId, nextBlockTimestamp]);
+
+  const hasReachedFinalPoints = useMemo(() => {
+    return percentageOfPoints >= 100;
+  }, [percentageOfPoints]);
+
+  const endGame = useCallback(async () => {
+    if (!hasReachedFinalPoints) {
+      return;
+    }
+    const contributions = Array.from(getContributions());
+    const epochs = getEpochs();
+
+    await setup.systemCalls.end_game({
+      signer: account,
+      hyperstructure_contributed_to: contributions,
+      hyperstructure_shareholder_epochs: epochs,
+    });
+  }, [hasReachedFinalPoints, getContributions]);
 
   const structure = useMemo(() => {
     return getEntityInfo(structureEntityId);
@@ -101,13 +140,19 @@ export const TopMiddleNavigation = () => {
     );
   }, [structureEntityId]);
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
-
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
     const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
+
+  const gradient = useMemo(() => {
+    const filledPercentage = percentageOfPoints;
+    const emptyPercentage = 1 - percentageOfPoints;
+    return `linear-gradient(to right, #f3c99f80 ${filledPercentage}%, #f3c99f80 ${filledPercentage}%, #0000000d ${filledPercentage}%, #0000000d ${
+      filledPercentage + emptyPercentage
+    }%)`;
+  }, [percentageOfPoints]);
 
   return (
     <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
@@ -231,6 +276,30 @@ export const TopMiddleNavigation = () => {
           {isMapView && (
             <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
           )}
+          <Button
+            variant="outline"
+            size="xs"
+            className={clsx("self-center")}
+            onMouseOver={() => {
+              if (!hasReachedFinalPoints) {
+                setTooltip({
+                  position: "bottom",
+                  content: (
+                    <span className="whitespace-nowrap pointer-events-none">
+                      <span>Not enough points to end the season</span>
+                    </span>
+                  ),
+                });
+              }
+            }}
+            onMouseOut={() => {
+              setTooltip(null);
+            }}
+            style={{ background: gradient }}
+            onClick={endGame}
+          >
+            End season
+          </Button>
         </div>
       </motion.div>
       <SecondaryMenuItems />

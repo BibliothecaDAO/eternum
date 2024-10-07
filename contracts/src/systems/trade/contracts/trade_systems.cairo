@@ -37,6 +37,8 @@ mod trade_systems {
     use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigCustomImpl};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, PositionCustomTrait, Coord, TravelTrait};
@@ -112,6 +114,8 @@ mod trade_systems {
             mut taker_gives_resources: Span<(u8, u128)>,
             expires_at: u64
         ) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let caller = starknet::get_caller_address();
 
             let maker_owner = get!(world, maker_id, Owner);
@@ -236,6 +240,8 @@ mod trade_systems {
             mut maker_gives_resources: Span<(u8, u128)>,
             mut taker_gives_resources: Span<(u8, u128)>
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // check that caller is taker
             let caller = starknet::get_caller_address();
             let taker_owner = get!(world, taker_id, Owner);
@@ -255,6 +261,8 @@ mod trade_systems {
             mut taker_gives_resources: Span<(u8, u128)>,
             mut taker_gives_actual_amount: u128
         ) { // Ensure only one resource type is being traded and input lengths match
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             assert!(taker_gives_actual_amount.is_non_zero(), "amount taker gives must be greater than 0");
             assert!(maker_gives_resources.len() == 1, "only one resource type is supported for partial orders");
             assert!(maker_gives_resources.len() == taker_gives_resources.len(), "resources lengths must be equal");
@@ -427,6 +435,8 @@ mod trade_systems {
 
 
         fn cancel_order(ref world: IWorldDispatcher, trade_id: ID, mut return_resources: Span<(u8, u128)>,) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let (trade, trade_status) = get!(world, trade_id, (Trade, Status));
             let owner = get!(world, trade.maker_id, Owner);
 

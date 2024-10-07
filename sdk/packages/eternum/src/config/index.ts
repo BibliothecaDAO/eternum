@@ -25,7 +25,12 @@ import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
 import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
-import { EternumGlobalConfig as DefaultConfig } from "../constants/global";
+import {
+  EternumGlobalConfig as DefaultConfig,
+  HYPERSTRUCTURE_POINTS_FOR_WIN,
+  HYPERSTRUCTURE_POINTS_ON_COMPLETION,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+} from "../constants/global";
 
 interface Config {
   account: Account;
@@ -190,15 +195,13 @@ export const setBuildingConfig = async (config: Config) => {
 export const setResourceBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
-  for (const resourceId of Object.keys(
-    scaleResourceInputs(RESOURCE_BUILDING_COSTS, config.config.resources.resourceMultiplier),
-  ) as unknown as ResourcesIds[]) {
+  const scaledBuildingCosts = scaleResourceInputs(RESOURCE_BUILDING_COSTS, config.config.resources.resourceMultiplier);
+
+  for (const resourceId of Object.keys(scaledBuildingCosts) as unknown as ResourcesIds[]) {
     const calldata = {
       building_category: BuildingType.Resource,
       building_resource_type: resourceId,
-      cost_of_building: scaleResourceInputs(RESOURCE_BUILDING_COSTS, config.config.resources.resourceMultiplier)[
-        resourceId
-      ].map((cost) => {
+      cost_of_building: scaledBuildingCosts[resourceId].map((cost) => {
         return {
           ...cost,
           amount: cost.amount * config.config.resources.resourcePrecision,
@@ -366,7 +369,6 @@ export const setSpeedConfig = async (config: Config) => {
 export const setHyperstructureConfig = async (config: Config) => {
   const tx = await config.provider.set_hyperstructure_config({
     signer: config.account,
-    time_between_shares_change: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
     resources_for_completion: scaleResources(
       HYPERSTRUCTURE_TOTAL_COSTS,
       config.config.resources.resourceMultiplier,
@@ -374,6 +376,10 @@ export const setHyperstructureConfig = async (config: Config) => {
       ...resource,
       amount: resource.amount * config.config.resources.resourcePrecision,
     })),
+    time_between_shares_change: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
+    points_per_cycle: HYPERSTRUCTURE_POINTS_PER_CYCLE,
+    points_for_win: HYPERSTRUCTURE_POINTS_FOR_WIN,
+    points_on_completion: HYPERSTRUCTURE_POINTS_ON_COMPLETION,
   });
   console.log(`Configuring hyperstructure ${tx.statusReceipt}...`);
 };

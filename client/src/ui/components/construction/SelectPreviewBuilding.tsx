@@ -669,7 +669,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
     amount: number;
   }[] = [];
 
-  RESOURCE_BUILDING_COSTS_SCALED[Number(buildingType)].forEach((cost) => {
+  RESOURCE_BUILDING_COSTS_SCALED[Number(resourceId)].forEach((cost) => {
     const baseCost = cost.amount;
     const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
     const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
@@ -679,7 +679,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
   return updatedCosts;
 };
 
-const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory?: BuildingType) => {
+const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory: BuildingType) => {
   const buildingGeneralConfig = getComponentValue(
     dojo.setup.components.BuildingGeneralConfig,
     getEntityIdFromKeys([WORLD_CONFIG_ID]),
@@ -691,7 +691,7 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory?
 
   const buildingQuantity = getBuildingQuantity(
     realmEntityId,
-    buildingCategory ?? 0,
+    buildingCategory,
     dojo.setup.components.BuildingQuantityv2,
   );
 

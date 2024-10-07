@@ -7,10 +7,10 @@ use debug::PrintTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
-use eternum::models::hyperstructure::{Progress, Contribution};
+use eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
 use eternum::models::level::Level;
 use eternum::models::owner::Owner;
-use eternum::models::position::Position;
+use eternum::models::position::{Position, Coord};
 use eternum::models::resources::Resource;
 use eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
 
@@ -33,7 +33,10 @@ use eternum::utils::testing::{
 use starknet::contract_address_const;
 
 const TEST_AMOUNT: u128 = 1_000_000;
-const TIME_BETWEEN_SHARES_CHANGE: u64 = 1000;
+const TIME_BETWEEN_SHARES_CHANGE: u64 = 1_000;
+const POINTS_PER_CYCLE: u128 = 1_000;
+const POINTS_FOR_WIN: u128 = 3_000_000;
+const POINTS_ON_COMPLETION: u128 = 2_000_000;
 
 fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     let world = spawn_eternum();
@@ -54,7 +57,11 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
 
     set!(
         world,
-        (Resource { entity_id: realm_entity_id, resource_type: ResourceTypes::EARTHEN_SHARD, balance: TEST_AMOUNT, },)
+        (
+            Resource {
+                entity_id: realm_entity_id, resource_type: ResourceTypes::EARTHEN_SHARD, balance: TEST_AMOUNT * 10,
+            },
+        )
     );
 
     let resources_without_earthenshards = get_resources_without_earthenshards();
@@ -65,13 +72,19 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
 
         resources_for_completion.append((resource_type, TEST_AMOUNT));
 
-        set!(world, (Resource { entity_id: realm_entity_id, resource_type, balance: TEST_AMOUNT, },));
+        set!(world, (Resource { entity_id: realm_entity_id, resource_type, balance: TEST_AMOUNT * 10, },));
 
         i += 1;
     };
 
     hyperstructure_config_dispatcher
-        .set_hyperstructure_config(resources_for_completion.span(), TIME_BETWEEN_SHARES_CHANGE);
+        .set_hyperstructure_config(
+            resources_for_completion.span(),
+            TIME_BETWEEN_SHARES_CHANGE,
+            POINTS_PER_CYCLE,
+            POINTS_FOR_WIN,
+            POINTS_ON_COMPLETION
+        );
 
     (world, realm_entity_id, hyperstructure_systems_dispatcher)
 }
@@ -231,63 +244,140 @@ fn test_contribute_two_resources() {
     let wood_progress = get!(world, (hyperstructure_entity_id, ResourceTypes::STONE), Progress);
     assert(wood_progress.amount == stone_contribution_amount * 2, 'invalid wood progress');
 }
-// TODO: @loaf - this test is not working
-// #[test]
-// #[available_gas(3000000000000)]
-// fn test_finish_hyperstructure() {
-//     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
-//     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
-//     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
+#[test]
+#[available_gas(3000000000000)]
+fn test_finish_hyperstructure() {
+    let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
-//     let hyperstructure_entity_id = spawn_hyperstructure(
-//         world, hyperstructure_systems_dispatcher, realm_entity_id,
-//         get_default_hyperstructure_coord()
-//     );
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
-//     let resources_without_earthenshards = get_resources_without_earthenshards();
-//     let mut i = 0;
-//     let mut contributions = array![];
-//     while (i < resources_without_earthenshards.len()) {
-//         let resource_type = *resources_without_earthenshards.at(i);
-//         contributions.append((resource_type, TEST_AMOUNT));
-//         i += 1;
-//     };
+    let hyperstructure_entity_id = spawn_hyperstructure(
+        world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
+    );
 
-//     hyperstructure_systems_dispatcher
-//         .contribute_to_construction(hyperstructure_entity_id, realm_entity_id,
-//         contributions.span());
+    let resources_without_earthenshards = get_resources_without_earthenshards();
+    let mut i = 0;
+    let mut contributions = array![];
+    while (i < resources_without_earthenshards.len()) {
+        let resource_type = *resources_without_earthenshards.at(i);
+        contributions.append((resource_type, TEST_AMOUNT));
+        i += 1;
+    };
 
-//     let hyperstructure_finished_selector =
-//     0x10e79c3a2a9908c09d1b27bc9528744056ed39d0391b08fc6d21b482e4dbab;
+    hyperstructure_systems_dispatcher
+        .contribute_to_construction(hyperstructure_entity_id, realm_entity_id, contributions.span());
 
-//     let mut found = false;
-//     loop {
-//         let mut event_option = starknet::testing::pop_log_raw(world.contract_address);
-//         match event_option {
-//             Option::Some(val) => {
-//                 let (mut keys, mut data) = val;
+    let hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
+    assert(hyperstructure.completed, 'hyperstructure not completed');
+}
 
-//                 let event_selector = *keys.at(0);
-//                 if (event_selector != hyperstructure_finished_selector) {
-//                     continue;
-//                 }
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+fn test_end_game_failure() {
+    let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
-//                 found = true;
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
-//                 let event_hyperstructure_entity_id = (*data.at(0));
-//                 let timestamp = (*data.at(1));
+    let hyperstructure_entity_id = spawn_and_finish_hyperstructure(
+        world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
+    );
 
-//                 assert(event_hyperstructure_entity_id == hyperstructure_entity_id.into(), 'wrong
-//                 entity_id');
-//                 assert(timestamp == 0, 'wrong timestamp');
-
-//                 break;
-//             },
-//             Option::None => { break; },
-//         }
-//     };
-//     assert(found == true, 'HyperstructureFinished missing');
-// }
+    hyperstructure_systems_dispatcher.end_game(array![hyperstructure_entity_id].span(), array![].span());
+}
 
 
+#[test]
+#[available_gas(3000000000000)]
+fn test_end_game_success_completion_only() {
+    let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
+
+    let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
+        world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 }
+    );
+
+    let hyperstructure_entity_id_1 = spawn_and_finish_hyperstructure(
+        world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 1, y: 1 }
+    );
+
+    hyperstructure_systems_dispatcher
+        .end_game(array![hyperstructure_entity_id_0, hyperstructure_entity_id_1].span(), array![].span());
+}
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_end_game_success_completion_and_shares() {
+    let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
+
+    let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
+        world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 }
+    );
+
+    hyperstructure_systems_dispatcher
+        .set_co_owners(hyperstructure_entity_id_0, array![(contract_address_const::<'player1'>(), 10_000)].span());
+
+    starknet::testing::set_block_timestamp(1001);
+
+    hyperstructure_systems_dispatcher
+        .end_game(array![hyperstructure_entity_id_0].span(), array![(hyperstructure_entity_id_0, 0)].span());
+}
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+fn test_end_game_failure_completion_and_shares() {
+    let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
+
+    let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
+        world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 }
+    );
+
+    hyperstructure_systems_dispatcher
+        .set_co_owners(hyperstructure_entity_id_0, array![(contract_address_const::<'player1'>(), 10_000)].span());
+
+    starknet::testing::set_block_timestamp(1000);
+
+    hyperstructure_systems_dispatcher
+        .end_game(array![hyperstructure_entity_id_0].span(), array![(hyperstructure_entity_id_0, 0)].span());
+}
+
+fn spawn_and_finish_hyperstructure(
+    world: IWorldDispatcher,
+    hyperstructure_systems_dispatcher: IHyperstructureSystemsDispatcher,
+    realm_entity_id: ID,
+    coord: Coord
+) -> ID {
+    let hyperstructure_entity_id = spawn_hyperstructure(
+        world, hyperstructure_systems_dispatcher, realm_entity_id, coord
+    );
+
+    let resources_without_earthenshards = get_resources_without_earthenshards();
+    let mut i = 0;
+    let mut contributions = array![];
+    while (i < resources_without_earthenshards.len()) {
+        let resource_type = *resources_without_earthenshards.at(i);
+        contributions.append((resource_type, TEST_AMOUNT));
+        i += 1;
+    };
+
+    // + POINTS_ON_COMPLETION (2_000_000)
+    hyperstructure_systems_dispatcher
+        .contribute_to_construction(hyperstructure_entity_id, realm_entity_id, contributions.span());
+
+    let hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
+    assert(hyperstructure.completed, 'hyperstructure not completed');
+
+    hyperstructure_entity_id
+}

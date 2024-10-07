@@ -1,6 +1,6 @@
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
+import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -36,11 +36,11 @@ export const Chat = () => {
   } = useDojo();
 
   const [hideChat, setHideChat] = useState(false);
-  const getPlayers = useGetAllPlayers();
-  const players = useMemo(
-    () => getPlayers().filter((player) => ContractAddress(player.address) !== ContractAddress(account.address)),
-    [getPlayers, account.address],
-  );
+  const getPlayers = useGetOtherPlayers();
+
+  const players = useMemo(() => {
+    return getPlayers();
+  }, [getPlayers]);
 
   const currentTab = useUIStore((state) => state.currentTab);
   const setCurrentTab = useUIStore((state) => state.setCurrentTab);
