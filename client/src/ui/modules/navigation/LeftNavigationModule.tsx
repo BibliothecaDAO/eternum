@@ -22,6 +22,7 @@ import {
   worldStructures,
 } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
+import { Chat } from "../chat/Chat";
 import { EntityDetails } from "../entity-details/EntityDetails";
 import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
@@ -243,36 +244,38 @@ export const LeftNavigationModule = () => {
   };
 
   return (
-    <>
-      <div
-        className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-[600px] text-gold left-10 pointer-events-none pt-20 ${
-          isOffscreen(view) ? "-translate-x-[89%]" : ""
-        }`}
-      >
-        <BaseContainer
-          className={`w-full pointer-events-auto overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}
+    <div className="flex flex-col gap-8">
+      <div className="flex-grow overflow-hidden">
+        <div
+          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-[600px] text-gold left-10 pt-20 pointer-events-none ${
+            isOffscreen(view) ? "-translate-x-[88%]" : ""
+          }`}
         >
-          {view === View.EntityView && <EntityDetails />}
-          {view === View.MilitaryView && <Military entityId={structureEntityId} />}
-          {!isMapView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
-          {isMapView && view === View.ConstructionView && <StructureConstructionMenu />}
-          {view === View.WorldStructuresView && <WorldStructuresMenu />}
-          {view === View.ResourceArrivals && <AllResourceArrivals setNotificationLength={setNotificationLength} />}
-        </BaseContainer>
-        <motion.div
-          variants={slideLeft}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-col justify-center pointer-events-auto"
-        >
-          <div className="flex flex-col gap-2 mb-auto">
-            {navigation.map((a, index) => (
-              <div key={index}>{a.button}</div>
-            ))}
-          </div>
-        </motion.div>
+          <BaseContainer className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh]}`}>
+            {view === View.EntityView && <EntityDetails />}
+            {view === View.MilitaryView && <Military entityId={structureEntityId} />}
+            {!isMapView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
+            {isMapView && view === View.ConstructionView && <StructureConstructionMenu />}
+            {view === View.WorldStructuresView && <WorldStructuresMenu />}
+            {view === View.ResourceArrivals && <AllResourceArrivals setNotificationLength={setNotificationLength} />}
+          </BaseContainer>
+          <motion.div
+            variants={slideLeft}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col justify-center pointer-events-auto"
+          >
+            <div className="flex flex-col gap-2 mb-auto">
+              {navigation.map((item, index) => (
+                <div key={index}>{item.button}</div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </div>
-    </>
+
+      <Chat />
+    </div>
   );
 };
 

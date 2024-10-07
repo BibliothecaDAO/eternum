@@ -8,14 +8,12 @@ import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
-import { BottomLeftContainer } from "../containers/BottomLeftContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { Tooltip } from "../elements/Tooltip";
-import { Chat } from "../modules/chat/Chat";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
 import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
@@ -81,12 +79,12 @@ export const World = () => {
           </BottomMiddleContainer>
 
           <BottomRightContainer>
-            <Chat />
+            <EventStream />
           </BottomRightContainer>
 
-          <BottomLeftContainer>
-            <EventStream />
-          </BottomLeftContainer>
+          {/* <BottomLeftContainer>
+            <Chat />
+          </BottomLeftContainer> */}
 
           <RightMiddleContainer>
             <RightNavigationModule />
