@@ -17,6 +17,7 @@ trait IBuildingContract<TContractState> {
 #[dojo::contract]
 mod building_systems {
     use eternum::alias::ID;
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
         position::{Coord, CoordTrait, Position, PositionCustomTrait, Direction},
@@ -33,6 +34,8 @@ mod building_systems {
             building_category: BuildingCategory,
             produce_resource_type: Option<u8>,
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             assert!(directions.len() <= 4, "cannot build on selected tile");
             let mut building_coord: Coord = BuildingCustomImpl::center();
             loop {
@@ -53,22 +56,29 @@ mod building_systems {
             get!(world, entity_id, EntityOwner).assert_caller_owner(world);
 
             // todo: check that entity is a realm
-            let building: Building = BuildingCustomImpl::create(
+            let (building, building_quantity) = BuildingCustomImpl::create(
                 world, entity_id, building_category, produce_resource_type, building_coord
             );
 
-            // make payment for building
-            BuildingCustomImpl::make_payment(
-                world, building.outer_entity_id, building.category, building.produced_resource_type
-            );
+            // pay one time cost of the building
+            building.make_payment(building_quantity, world);
         }
+
         fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             BuildingCustomImpl::pause_production(world, entity_id, building_coord);
         }
+
         fn resume_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             BuildingCustomImpl::resume_production(world, entity_id, building_coord);
         }
+
         fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             BuildingCustomImpl::destroy(world, entity_id, building_coord);
         }
     }

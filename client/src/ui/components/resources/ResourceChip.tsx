@@ -13,10 +13,12 @@ export const ResourceChip = ({
   isLabor = false,
   resourceId,
   entityId,
+  maxBalance,
 }: {
   isLabor?: boolean;
   resourceId: ID;
   entityId: ID;
+  maxBalance: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
@@ -75,9 +77,9 @@ export const ResourceChip = ({
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
         if (Math.abs(netRate) > 0) {
-          return prevDisplayBalance + netRate;
+          return Math.min(maxBalance, Math.max(0, prevDisplayBalance + netRate));
         }
-        return prevDisplayBalance;
+        return Math.min(maxBalance, prevDisplayBalance);
       });
     }, 1000);
     return () => clearInterval(interval);
@@ -104,11 +106,10 @@ export const ResourceChip = ({
     }
   }, [netRate, showPerHour]);
 
+  const reachedMaxCap = maxBalance === displayBalance && Math.abs(netRate) > 0;
   return (
     <div
-      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
-        netRate && netRate < 0 ? "bg-red/5" : "bg-green/5"
-      } `}
+      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
       onMouseEnter={() => {
         setTooltip({
           position: "top",
@@ -131,7 +132,7 @@ export const ResourceChip = ({
             : ""}
         </div>
 
-        {netRate ? (
+        {netRate && !reachedMaxCap ? (
           <div
             className={`${
               Number(netRate) < 0 ? "text-light-red" : "text-green/80"
@@ -151,15 +152,21 @@ export const ResourceChip = ({
             onMouseEnter={() => {
               setTooltip({
                 position: "top",
-                content: <>Production has stopped because inputs have been depleted</>,
+                content: (
+                  <>
+                    {isConsumingInputsWithoutOutput
+                      ? "Production has stopped because inputs have been depleted"
+                      : "Production has stopped because the max balance has been reached"}
+                  </>
+                ),
               });
             }}
             onMouseLeave={() => {
               setTooltip(null);
             }}
-            className="self-center px-2"
+            className="self-center px-2 col-span-3 mx-auto"
           >
-            {isConsumingInputsWithoutOutput ? "⚠️" : ""}
+            {isConsumingInputsWithoutOutput || reachedMaxCap ? "⚠️" : ""}
           </div>
         )}
       </div>

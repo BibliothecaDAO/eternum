@@ -56,7 +56,12 @@ trait ITransportConfig {
 #[dojo::interface]
 trait IHyperstructureConfig {
     fn set_hyperstructure_config(
-        ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>, time_between_shares_change: u64
+        ref world: IWorldDispatcher,
+        resources_for_completion: Span<(u8, u128)>,
+        time_between_shares_change: u64,
+        points_per_cycle: u128,
+        points_for_win: u128,
+        points_on_completion: u128
     );
 }
 
@@ -107,6 +112,7 @@ trait ITroopConfig {
 
 #[dojo::interface]
 trait IBuildingConfig {
+    fn set_building_general_config(ref world: IWorldDispatcher, base_cost_percent_increase: u16);
     fn set_building_config(
         ref world: IWorldDispatcher,
         building_category: BuildingCategory,
@@ -149,12 +155,14 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, BuildingGeneralConfig
     };
+    use eternum::models::hyperstructure::SeasonCustomImpl;
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
+
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
         let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
@@ -460,7 +468,12 @@ mod config_systems {
     #[abi(embed_v0)]
     impl HyperstructureConfigCustomImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
-            ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>, time_between_shares_change: u64
+            ref world: IWorldDispatcher,
+            resources_for_completion: Span<(u8, u128)>,
+            time_between_shares_change: u64,
+            points_per_cycle: u128,
+            points_for_win: u128,
+            points_on_completion: u128
         ) {
             assert_caller_is_admin(world);
             let mut i = 0;
@@ -477,7 +490,16 @@ mod config_systems {
                 );
                 i += 1;
             };
-            set!(world, (HyperstructureConfig { config_id: HYPERSTRUCTURE_CONFIG_ID, time_between_shares_change }));
+            set!(
+                world,
+                (HyperstructureConfig {
+                    config_id: HYPERSTRUCTURE_CONFIG_ID,
+                    time_between_shares_change,
+                    points_per_cycle,
+                    points_for_win,
+                    points_on_completion
+                })
+            );
         }
     }
 
@@ -528,6 +550,12 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl BuildingConfigCustomImpl of super::IBuildingConfig<ContractState> {
+        fn set_building_general_config(ref world: IWorldDispatcher, base_cost_percent_increase: u16) {
+            assert_caller_is_admin(world);
+
+            set!(world, BuildingGeneralConfig { config_id: WORLD_CONFIG_ID, base_cost_percent_increase });
+        }
+
         fn set_building_config(
             ref world: IWorldDispatcher,
             building_category: BuildingCategory,

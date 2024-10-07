@@ -1,14 +1,16 @@
+import { DEFAULT_TAB, Tab } from "@/ui/modules/chat/ChatTab";
 import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
-import { createPopupsSlice, PopupsStore } from "./_popupsStore";
-import { createThreeStoreSlice, ThreeStore } from "./_threeStore";
+import { PopupsStore, createPopupsSlice } from "./_popupsStore";
+import { ThreeStore, createThreeStoreSlice } from "./_threeStore";
 import { BattleViewInfo } from "./types";
 import { BlockchainStore, createBlockchainStore } from "./useBlockchainStore";
-import { createRealmStoreSlice, RealmStore } from "./useRealmStore";
+import { RealmStore, createRealmStoreSlice } from "./useRealmStore";
 
 interface UIStore {
   theme: string;
@@ -53,6 +55,12 @@ interface UIStore {
   setRightNavigationView: (view: RightView) => void;
   showMinimap: boolean;
   setShowMinimap: (show: boolean) => void;
+  selectedPlayer: ContractAddress | null;
+  setSelectedPlayer: (player: ContractAddress | null) => void;
+  tabs: Tab[];
+  setTabs: (tabs: Tab[]) => void;
+  currentTab: Tab;
+  setCurrentTab: (tab: Tab) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore;
@@ -108,6 +116,12 @@ const useUIStore = create(
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
+    selectedPlayer: null,
+    setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
+    tabs: [],
+    setTabs: (tabs: Tab[]) => set({ tabs }),
+    currentTab: DEFAULT_TAB,
+    setCurrentTab: (tab: Tab) => set({ currentTab: tab }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

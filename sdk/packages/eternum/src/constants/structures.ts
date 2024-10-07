@@ -1,5 +1,7 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
+import { ResourceInputs } from "../types";
+import { HYPERSTRUCTURE_CREATION_COSTS } from "./hyperstructure";
 
 // Knip ignore tag
 /** @public */
@@ -29,37 +31,6 @@ export enum BuildingType {
   Bank = 14,
   FragmentMine = 15,
 }
-export const MAX_BUILDING_TYPE = 14;
-
-export enum ResourceBuildingType {
-  Wood = 1,
-  Stone = 2,
-  Coal = 3,
-  Copper = 4,
-  Obsidian = 5,
-  Silver = 6,
-  Ironwood = 7,
-  ColdIron = 8,
-  Gold = 9,
-  Hartwood = 10,
-  Diamonds = 11,
-  Sapphire = 12,
-  Ruby = 13,
-  DeepCrystal = 14,
-  Ignium = 15,
-  EtherealSilica = 16,
-  TrueIce = 17,
-  TwilightQuartz = 18,
-  AlchemicalSilver = 19,
-  Adamantine = 20,
-  Mithral = 21,
-  Dragonhide = 22,
-}
-
-export const CombinedBuildingTypes = {
-  ...BuildingType,
-  ...ResourceBuildingType,
-};
 
 export const BuildingEnumToString: { [index: number]: string } = {
   0: "None",
@@ -78,25 +49,6 @@ export const BuildingEnumToString: { [index: number]: string } = {
   13: "Storehouse",
   14: "Bank",
   15: "Shards Mine",
-};
-
-export const BuildingStringToEnum = {
-  None: 0,
-  Castle: 1,
-  Resource: 2,
-  Farm: 3,
-  FishingVillage: 4,
-  Barracks: 5,
-  Market: 6,
-  ArcheryRange: 7,
-  Stable: 8,
-  TradingPost: 9,
-  WorkersHut: 10,
-  WatchTower: 11,
-  Walls: 12,
-  Storehouse: 13,
-  Bank: 14,
-  FragmentMine: 15,
 };
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
@@ -181,7 +133,7 @@ export enum CapacityConfigCategory {
   Storehouse = 4,
 }
 
-export const CapacityConfigCategoryStringMap: { [key: string]: number } = {
+export const CAPACITY_CONFIG_CATEGORY_STRING_MAP: { [key: string]: number } = {
   None: 0,
   Structure: 1,
   Donkey: 2,
@@ -223,3 +175,12 @@ export function determineEntityState(
   }
   return EntityState.Idle; // Default state
 }
+
+export const STRUCTURE_COSTS: ResourceInputs = {
+  [StructureType.Hyperstructure]: HYPERSTRUCTURE_CREATION_COSTS,
+  [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
+  [StructureType.Settlement]: [
+    { resource: ResourcesIds.Wheat, amount: 100_000 },
+    { resource: ResourcesIds.Fish, amount: 100_000 },
+  ],
+};

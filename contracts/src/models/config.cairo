@@ -58,6 +58,9 @@ struct HyperstructureConfig {
     #[key]
     config_id: ID,
     time_between_shares_change: u64,
+    points_per_cycle: u128,
+    points_for_win: u128,
+    points_on_completion: u128,
 }
 
 // capacity
@@ -343,6 +346,15 @@ pub struct BankConfig {
     lp_fee_num: u128,
     lp_fee_denom: u128,
 }
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct BuildingGeneralConfig {
+    #[key]
+    config_id: ID,
+    base_cost_percent_increase: u16,
+}
+
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]

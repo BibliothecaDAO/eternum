@@ -13,6 +13,7 @@
     "BankConfig",
     "TroopConfig",
     "BuildingConfig",
+    "BuildingGeneralConfig",
     "BuildingCategoryPopConfig",
     "PopulationConfig",
     "HyperstructureResourceConfig",
@@ -178,7 +179,9 @@
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",
-    "HyperstructureUpdate"
+    "Hyperstructure",
+    "Epoch",
+    "Season"
   ],
   "BUILDINGS_SYSTEMS": [
     "Resource",

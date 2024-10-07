@@ -23,7 +23,7 @@ export const useStructureEntityId = () => {
 
   const { playerStructures } = useEntities();
 
-  const structures = useMemo(() => playerStructures(), [playerStructures]);
+  const structures = playerStructures();
 
   const defaultPlayerStructure = useMemo(() => {
     return structures[0];

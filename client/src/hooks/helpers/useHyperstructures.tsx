@@ -1,18 +1,20 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { toHexString } from "@/ui/utils/utils";
 import {
+  ContractAddress,
   EternumGlobalConfig,
+  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  HyperstructureResourceMultipliers,
   ID,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";
+import { useCallback } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { toHexString } from "@/ui/utils/utils";
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -85,19 +87,69 @@ export const useHyperstructures = () => {
   return { hyperstructures, useProgress, getHyperstructureProgress };
 };
 
-export const useUpdates = (hyperstructureEntityId: ID) => {
+export const useHyperstructureUpdates = (hyperstructureEntityId: ID) => {
   const {
     setup: {
-      components: { HyperstructureUpdate },
+      components: { Hyperstructure },
     },
   } = useDojo();
 
   const updates = useEntityQuery([
-    Has(HyperstructureUpdate),
-    HasValue(HyperstructureUpdate, { hyperstructure_entity_id: hyperstructureEntityId }),
+    Has(Hyperstructure),
+    HasValue(Hyperstructure, { entity_id: hyperstructureEntityId }),
   ]);
 
-  return updates.map((updateEntityId) => getComponentValue(HyperstructureUpdate, updateEntityId));
+  return updates.map((updateEntityId) => getComponentValue(Hyperstructure, updateEntityId));
+};
+
+interface ContractAddressAndAmount {
+  key: false;
+  type: "tuple";
+  type_name: "(ContractAddress, u16)";
+  value: [
+    {
+      key: false;
+      type: "primitive";
+      type_name: "ContractAddress";
+      value: string;
+    },
+    {
+      key: false;
+      type: "primitive";
+      type_name: "u16";
+      value: number;
+    },
+  ];
+}
+
+export const useGetPlayerEpochs = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { Epoch },
+    },
+  } = useDojo();
+
+  const getEpochs = useCallback(() => {
+    const entityIds = runQuery([Has(Epoch)]);
+    return Array.from(entityIds)
+      .map((entityId) => {
+        const epoch = getComponentValue(Epoch, entityId);
+        if (
+          epoch?.owners.find((arrayElem) => {
+            const owner = arrayElem as unknown as ContractAddressAndAmount;
+            if (ContractAddress(owner.value[0].value) === ContractAddress(account.address)) {
+              return true;
+            }
+          })
+        ) {
+          return { hyperstructure_entity_id: epoch?.hyperstructure_entity_id, epoch: epoch?.index };
+        }
+      })
+      .filter((epoch): epoch is { hyperstructure_entity_id: ID; epoch: number } => epoch !== undefined);
+  }, [account.address]);
+
+  return getEpochs;
 };
 
 const getContributions = (hyperstructureEntityId: ID, Contribution: Component) => {
@@ -128,7 +180,9 @@ const getAllProgressesAndTotalPercentage = (
     };
     percentage +=
       (progress.amount *
-        HyperstructureResourceMultipliers[progress.resource_type as keyof typeof HyperstructureResourceMultipliers]!) /
+        HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
+          progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
+        ]!) /
       TOTAL_CONTRIBUTABLE_AMOUNT;
     return progress;
   });

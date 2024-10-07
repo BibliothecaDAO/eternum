@@ -11,7 +11,7 @@ type DojoHtmlProps = {
 
 export const DojoHtml = ({ children, visible = true, ...rest }: DojoHtmlProps) => {
   const { setup } = useDojo();
-  console.log({ setup });
+
   return (
     <Html {...rest} style={{ opacity: visible ? 1 : 0 }}>
       <DojoProvider value={setup}>{children}</DojoProvider>

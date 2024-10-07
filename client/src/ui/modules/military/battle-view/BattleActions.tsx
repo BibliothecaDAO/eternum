@@ -16,10 +16,10 @@ import { ModalContainer } from "@/ui/components/ModalContainer";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useCallback, useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
+import { ID } from "@bibliothecadao/eternum";
 
 enum Loading {
   None,
@@ -39,7 +39,7 @@ export const BattleActions = ({
   battleAdjusted,
 }: {
   battleManager: BattleManager;
-  userArmiesInBattle: (ArmyInfo | undefined)[];
+  userArmiesInBattle: ArmyInfo[];
   ownArmyEntityId: ID | undefined;
   attackerArmies: (ArmyInfo | undefined)[];
   defenderArmies: (ArmyInfo | undefined)[];
@@ -70,7 +70,7 @@ export const BattleActions = ({
   const { getAliveArmy } = getArmyByEntityId();
 
   const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(
-    userArmiesInBattle?.[0]?.entity_id || ownArmyEntityId || 0,
+    userArmiesInBattle[0]?.entity_id || ownArmyEntityId || 0,
   );
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
@@ -157,7 +157,7 @@ export const BattleActions = ({
     setLoading(Loading.Leave);
     await battle_leave({
       signer: account,
-      army_id: selectedArmy!.entity_id,
+      army_ids: [selectedArmy!.entity_id],
       battle_id: battleManager?.battleEntityId || 0,
     }).then(() => {
       setLoading(Loading.None);

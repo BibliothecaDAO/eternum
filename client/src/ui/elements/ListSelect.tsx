@@ -26,7 +26,7 @@ function ListSelect(props: ListSelectProps) {
     [props.value],
   );
   return (
-    <div className={clsx("w-full", props.className, "z-50")}>
+    <div className={clsx("w-full", props.className, "z-100")}>
       <Listbox value={props.value} onChange={props.onChange}>
         {({ open }) => (
           <div className="relative  ">
@@ -60,7 +60,7 @@ function ListSelect(props: ListSelectProps) {
                 <Listbox.Options
                   className={clsx(
                     "z-50 mt-3 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
-                    props.style === "black" ? "bg-black" : " bg-black/90",
+                    props.style === "black" ? "bg-black" : " bg-black",
                   )}
                 >
                   {props.options.map((option) => (

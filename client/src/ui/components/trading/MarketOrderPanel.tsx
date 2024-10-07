@@ -1,4 +1,5 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
@@ -20,7 +21,7 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmationPopup } from "../bank/ConfirmationPopup";
 
 export const MarketResource = ({
@@ -154,6 +155,8 @@ const MarketOrders = ({
   offers: MarketInterface[];
   isOwnStructureInBattle: boolean;
 }) => {
+  const [updateBalance, setUpdateBalance] = useState(false);
+
   const lowestPrice = useMemo(() => {
     const price = offers.reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
     return price === Infinity ? 0 : price;
@@ -185,7 +188,14 @@ const MarketOrders = ({
           }`}
         >
           {offers.map((offer, index) => (
-            <OrderRow key={offer.tradeId} offer={offer} entityId={entityId} isBuy={isBuy} />
+            <OrderRow
+              key={offer.tradeId}
+              offer={offer}
+              entityId={entityId}
+              isBuy={isBuy}
+              updateBalance={updateBalance}
+              setUpdateBalance={setUpdateBalance}
+            />
           ))}
           {isOwnStructureInBattle && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xl text-bold">
@@ -221,15 +231,27 @@ const OrderRowHeader = ({ resourceId, isBuy }: { resourceId?: number; isBuy: boo
   );
 };
 
-const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: ID; isBuy: boolean }) => {
+const OrderRow = ({
+  offer,
+  entityId,
+  isBuy,
+  updateBalance,
+  setUpdateBalance,
+}: {
+  offer: MarketInterface;
+  entityId: ID;
+  isBuy: boolean;
+  updateBalance: boolean;
+  setUpdateBalance: (value: boolean) => void;
+}) => {
   const { computeTravelTime } = useTravel();
   const dojo = useDojo();
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { cancel_order, accept_partial_order },
-    },
-  } = useDojo();
+
+  const lordsManager = new ProductionManager(dojo.setup, entityId, ResourcesIds.Lords);
+  const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [updateBalance]);
+
+  const resourceManager = new ProductionManager(dojo.setup, entityId, offer.makerGets[0].resourceId);
+  const resourceBalance = useMemo(() => Number(resourceManager.getResource()?.balance || 0n), [updateBalance]);
 
   const { getRealmAddressName } = useRealm();
 
@@ -240,12 +262,6 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
     return battleManager.isBattleOngoing(nextBlockTimestamp!) && !battleManager.isSiege(nextBlockTimestamp!);
   }, [offer, nextBlockTimestamp]);
-
-  const [inputValue, setInputValue] = useState<number>(() => {
-    return isBuy
-      ? offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision
-      : offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision;
-  });
 
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
@@ -281,6 +297,28 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
   }, [entityId, offer.makerId, offer.tradeId, offer]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
+
+  const resourceBalanceRatio = useMemo(
+    () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
+    [resourceBalance, getsDisplayNumber],
+  );
+  const lordsBalanceRatio = useMemo(
+    () => (lordsBalance < getTotalLords ? lordsBalance / getTotalLords : 1),
+    [lordsBalance, getTotalLords],
+  );
+  const [inputValue, setInputValue] = useState<number>(() => {
+    return isBuy
+      ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
+      : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio;
+  });
+
+  useEffect(() => {
+    setInputValue(
+      isBuy
+        ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
+        : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio,
+    );
+  }, [resourceBalanceRatio, lordsBalanceRatio]);
 
   const calculatedResourceAmount = useMemo(() => {
     return inputValue * EternumGlobalConfig.resources.resourcePrecision;
@@ -325,8 +363,8 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
       setLoading(true);
       setConfirmOrderModal(false);
 
-      await accept_partial_order({
-        signer: account,
+      await dojo.setup.systemCalls.accept_partial_order({
+        signer: dojo.account.account,
         taker_id: entityId,
         trade_id: offer.tradeId,
         maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
@@ -336,6 +374,7 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
     } catch (error) {
       console.error("Failed to accept order", error);
     } finally {
+      setUpdateBalance(!updateBalance);
       setLoading(false);
     }
   };
@@ -382,8 +421,8 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
           <Button
             onClick={async () => {
               setLoading(true);
-              await cancel_order({
-                signer: account,
+              await dojo.setup.systemCalls.cancel_order({
+                signer: dojo.account.account,
                 trade_id: offer.tradeId,
                 return_resources: returnResources,
               });
@@ -418,11 +457,17 @@ const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId
                   value={inputValue}
                   className="w-full col-span-3"
                   onChange={setInputValue}
-                  max={getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision}
+                  max={
+                    (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
+                    (isBuy ? resourceBalanceRatio : lordsBalanceRatio)
+                  }
                 />
                 <Button
                   onClick={() => {
-                    setInputValue(getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision);
+                    setInputValue(
+                      (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
+                        (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
+                    );
                   }}
                 >
                   Max
@@ -458,6 +503,7 @@ const OrderCreation = ({
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
+  const [bid, setBid] = useState((lords / resource).toFixed(2));
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
@@ -465,6 +511,21 @@ const OrderCreation = ({
       systemCalls: { create_order },
     },
   } = useDojo();
+  useEffect(() => {
+    setBid((lords / resource).toFixed(2));
+  }, [resource, lords]);
+
+  const updateLords = useCallback((newBid: number, newResource: number) => {
+    setLords(Number((newBid * newResource).toFixed(2)));
+  }, []);
+
+  const handleBidChange = (newBid: number) => {
+    const numericBid = Number(newBid);
+    if (!isNaN(numericBid) && numericBid > 0) {
+      setBid(newBid.toString());
+      updateLords(numericBid, resource);
+    }
+  };
 
   const takerGives = useMemo(() => {
     return isBuy ? [resourceId, multiplyByPrecision(resource)] : [ResourcesIds.Lords, multiplyByPrecision(lords)];
@@ -489,10 +550,6 @@ const OrderCreation = ({
       setLoading(false);
     });
   };
-
-  const bid = useMemo(() => {
-    return (lords / resource).toFixed(2);
-  }, [resource, lords]);
 
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
@@ -570,7 +627,13 @@ const OrderCreation = ({
         </div>
         <div className="flex w-1/3 justify-center px-3 text-center font-bold self-center">
           <div className="uppercase text-2xl">
-            {bid.toString()}
+            <NumberInput
+              allowDecimals={true}
+              value={Number(bid)}
+              onChange={handleBidChange}
+              className="w-full text-center"
+              max={Infinity}
+            />
             <div className="uppercase text-xs flex gap-1 mt-1 ">
               <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
               per / <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />
