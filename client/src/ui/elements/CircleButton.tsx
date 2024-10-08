@@ -85,7 +85,7 @@ const CircleButton = ({
         {children}
         {image && (
           <div>
-            <img className="p-2" src={image} alt="icon" />
+            <img className="p-1" src={image} alt="icon" />
           </div>
         )}
         {disabled && <div className="absolute inset-0 bg-black opacity-50 rounded-full"></div>}

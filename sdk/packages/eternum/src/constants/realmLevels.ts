@@ -14,6 +14,8 @@ export enum RealmLevelNames {
   Empire = "Empire",
 }
 
+export const REALM_MAX_LEVEL = Object.keys(RealmLevels).length / 2;
+
 export const REALM_UPGRADE_COSTS = {
   [RealmLevels.Settlement]: [],
 
@@ -43,7 +45,7 @@ export const REALM_UPGRADE_COSTS = {
 
 export const LEVEL_DESCRIPTIONS = {
   [RealmLevels.Settlement]: "A small settlement with a few buildings. You have 6 buildable hexes.",
-  [RealmLevels.City]: "A city with a few districts and many buildings. You have 18 buildable hexes.",
-  [RealmLevels.Kingdom]: "A kingdom with many cities and districts.You have 36 buildable hexes.",
-  [RealmLevels.Empire]: "An empire with many kingdoms and cities. You have 60 buildable hexes.",
+  [RealmLevels.City]: "You will have 18 buildable hexes, and a glorious city with many districts.",
+  [RealmLevels.Kingdom]: "You  will have 36 buildable hexes, and a kingdom with many cities and towns.",
+  [RealmLevels.Empire]: "You will have 60 buildable hexes, and a vast empire with many kingdoms and cities.",
 };

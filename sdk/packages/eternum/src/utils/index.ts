@@ -5,6 +5,7 @@ import {
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TOTAL_COSTS,
   QUEST_RESOURCES,
+  REALM_UPGRADE_COSTS,
   RESOURCE_BUILDING_COSTS,
   RESOURCE_INPUTS,
   RESOURCE_OUTPUTS,
@@ -111,6 +112,10 @@ export const STRUCTURE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
   EternumGlobalConfig.resources.resourceMultiplier,
 );
 
+export const REALM_UPGRADE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
+  REALM_UPGRADE_COSTS,
+  EternumGlobalConfig.resources.resourceMultiplier,
+);
 export const HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
