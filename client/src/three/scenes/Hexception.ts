@@ -63,6 +63,8 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
   return positions;
 };
 
+type CastleLevel = 0 | 1 | 2 | 3;
+
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<
@@ -80,6 +82,7 @@ export default class HexceptionScene extends HexagonScene {
   private tileManager: TileManager;
   private subscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
+  private castleLevel: CastleLevel = 0;
 
   constructor(
     controls: MapControls,
@@ -178,7 +181,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+    Promise.all(this.modelLoadPromises).then(() => { });
   }
 
   setup() {
@@ -218,7 +221,7 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToURLLocation();
   }
 
-  onSwitchOff() {}
+  onSwitchOff() { }
 
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
@@ -271,8 +274,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
   }
-  protected onHexagonRightClick(): void {}
-  protected onHexagonDoubleClick(): void {}
+  protected onHexagonRightClick(): void { }
+  protected onHexagonDoubleClick(): void { }
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -383,7 +386,7 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
   ) => {
-    const biome = existingBuildings.length === 0 ? this.biome.getBiome(targetHex.col, targetHex.row) : "Grassland";
+    const biome = this.biome.getBiome(targetHex.col, targetHex.row);
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
     // reset buildings
