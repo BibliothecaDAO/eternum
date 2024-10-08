@@ -10,9 +10,8 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, formatTime } from "@/ui/utils/utils";
 import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { DepositResources } from "../resources/DepositResources";
-import { TravelEntityPopup } from "./TravelEntityPopup";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -35,7 +34,6 @@ type EntityProps = {
 export const Entity = ({ entityId, ...props }: EntityProps) => {
   const dojo = useDojo();
 
-  const [showTravel, setShowTravel] = useState(false);
   const { getEntityInfo } = getEntitiesUtils();
   const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
@@ -112,7 +110,6 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       className={clsx("flex flex-col p-2   text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
-      {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}
       <div className="flex items-center text-xs flex-wrap">
         <div className="w-full flex justify-between">
           <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
