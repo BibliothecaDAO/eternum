@@ -20,7 +20,7 @@ export const BattleContainer = ({ children }: { children: React.ReactNode }) => 
   return (
     <div
       className={`w-screen h-screen z-[200] bg-transparent top-0 left-0 absolute ${
-        battleView ? "pointer-events-auto" : "opacity-0 pointer-events-none"
+        battleView ? "pointer-events-auto opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
       {children}

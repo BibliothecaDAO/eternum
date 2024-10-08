@@ -84,12 +84,14 @@ export const World = () => {
         <RightMiddleContainer>
           <RightNavigationModule />
         </RightMiddleContainer>
+
+        <TopLeftContainer>
+          <TopMiddleNavigation />
+        </TopLeftContainer>
       </div>
 
       <PlayerId />
-      <TopLeftContainer>
-        <TopMiddleNavigation />
-      </TopLeftContainer>
+
       <Redirect to="/" />
       <Leva
         hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
