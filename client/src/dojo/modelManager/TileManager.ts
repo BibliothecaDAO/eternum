@@ -14,6 +14,7 @@ import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengin
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { SetupResult } from "../setup";
+import { CastleLevel } from "@/three/scenes/Hexception";
 
 export class TileManager {
   private col: number;
@@ -37,6 +38,12 @@ export class TileManager {
     this.col = hexCoords.col + FELT_CENTER;
     this.row = hexCoords.row + FELT_CENTER;
   }
+
+  getRealmLevel = (): CastleLevel => {
+    const realmEntityId = this._getOwnerEntityId() || 0;
+    const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return (realm?.level || 0) as CastleLevel;
+  };
 
   existingBuildings = () => {
     const builtBuildings = Array.from(
