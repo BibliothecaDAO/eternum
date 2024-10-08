@@ -44,7 +44,7 @@ export const createAdminBank = async () => {
 };
 
 export const AMMStartingLiquidity: { [key in ResourcesIds]?: number } = {
-  [ResourcesIds.Wood]: 10_000_000,
+  [ResourcesIds.Wood]: 3_000_000,
   [ResourcesIds.Stone]: 500_000,
   [ResourcesIds.Coal]: 500_000,
   [ResourcesIds.Copper]: 500_000,
@@ -67,9 +67,6 @@ export const AMMStartingLiquidity: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Mithral]: 100_000,
   [ResourcesIds.Dragonhide]: 100_000,
 
-  // [ResourcesIds.Paladin]: 100_000,
-  // [ResourcesIds.Crossbowman]: 100_000,
-  // [ResourcesIds.Knight]: 100_000,
   [ResourcesIds.Donkey]: 10_000,
 
   [ResourcesIds.Fish]: 10_000_000,

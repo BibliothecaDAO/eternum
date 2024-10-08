@@ -645,7 +645,9 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                         if to_army_lost_or_battle_not_ended {
                             // update army's subtracted weight
                             subtracted_resources_weight +=
-                                WeightConfigCustomImpl::get_weight(world, resource_type, to_army_resource.balance);
+                                WeightConfigCustomImpl::get_weight_grams(
+                                    world, resource_type, to_army_resource.balance
+                                );
 
                             // army forfeits resources
                             to_army_resource.burn((to_army_resource.balance));
