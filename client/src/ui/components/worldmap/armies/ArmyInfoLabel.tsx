@@ -1,5 +1,5 @@
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { currencyFormat, multiplyByPrecision } from "../../../utils/utils";
+import { computeExploreFoodCosts, currencyFormat, multiplyByPrecision } from "../../../utils/utils";
 
 import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
 import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
@@ -58,20 +58,11 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
 
   const food = armyManager.getFood(useUIStore.getState().currentDefaultTick);
 
-  const foodCost = useMemo(() => {
-    return {
-      wheat:
-        multiplyByPrecision(EternumGlobalConfig.exploration.travelWheatBurn) *
-        Number(army.quantity.value) *
-        EternumGlobalConfig.resources.resourceMultiplier,
-      fish:
-        multiplyByPrecision(EternumGlobalConfig.exploration.travelFishBurn) *
-        Number(army.quantity.value) *
-        EternumGlobalConfig.resources.resourceMultiplier,
-    };
-  }, [army]);
+  const exploreFoodCosts = useMemo(() => computeExploreFoodCosts(army.troops), [army]);
 
-  const notEnoughFood = food.wheat < foodCost.wheat || food.fish < foodCost.fish;
+  const notEnoughFood =
+    food.wheat < multiplyByPrecision(exploreFoodCosts.wheatPayAmount) ||
+    food.fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount);
 
   const stamina = useMemo(() => {
     const staminaManager = new StaminaManager(setup, army.entity_id);

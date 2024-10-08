@@ -251,12 +251,6 @@ export interface Config {
     workerHuts: number;
   };
   exploration: {
-    // Food burn amount per unit during exploration
-    exploreWheatBurn: number;
-    exploreFishBurn: number;
-    // Food burn amount per unit during travel
-    travelWheatBurn: number;
-    travelFishBurn: number;
     reward: number;
     shardsMinesFailProbability: number;
   };

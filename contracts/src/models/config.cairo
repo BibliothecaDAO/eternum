@@ -8,11 +8,11 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
-    split_resources_and_probs
+    split_resources_and_probs, ResourceTypes
 };
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
-use eternum::models::combat::{Troops};
+use eternum::models::combat::Troops;
 use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
 use eternum::models::position::{Coord};
 use eternum::models::quantity::Quantity;
@@ -161,10 +161,6 @@ pub struct SpeedConfig {
 pub struct MapConfig {
     #[key]
     config_id: ID,
-    explore_wheat_burn_amount: u128,
-    explore_fish_burn_amount: u128,
-    travel_wheat_burn_amount: u128,
-    travel_fish_burn_amount: u128,
     reward_resource_amount: u128,
     // weight of fail
     // the higher, the less likely to find a mine
@@ -264,28 +260,6 @@ impl MapConfigImpl of MapConfigTrait {
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
     }
-
-    fn pay_exploration_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity) {
-        let unit_owner_id = unit_entity_owner.entity_owner_id;
-        assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
-        let quantity_value = max(unit_quantity.value, 1);
-
-        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
-        let mut wheat_pay_amount = explore_config.explore_wheat_burn_amount * quantity_value;
-        let mut fish_pay_amount = explore_config.explore_fish_burn_amount * quantity_value;
-        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
-    }
-
-    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity, steps: usize) {
-        let unit_owner_id = unit_entity_owner.entity_owner_id;
-        assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
-        let quantity_value = max(unit_quantity.value, 1);
-
-        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
-        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount * quantity_value * steps.into();
-        let mut fish_pay_amount = explore_config.travel_fish_burn_amount * quantity_value * steps.into();
-        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
-    }
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -314,6 +288,102 @@ pub struct StaminaConfig {
     #[key]
     unit_type: u8,
     max_stamina: u16,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct TravelFoodCostConfig {
+    #[key]
+    config_id: ID,
+    #[key]
+    unit_type: u8,
+    explore_wheat_burn_amount: u128,
+    explore_fish_burn_amount: u128,
+    travel_wheat_burn_amount: u128,
+    travel_fish_burn_amount: u128,
+}
+
+#[generate_trait]
+impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
+    fn pay_exploration_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, troops: Troops) {
+        let unit_owner_id = unit_entity_owner.entity_owner_id;
+        assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
+
+        let knight_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), TravelFoodCostConfig
+        );
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), TravelFoodCostConfig
+        );
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), TravelFoodCostConfig
+        );
+
+        let knight_wheat_pay_amount = knight_travel_food_cost_config.explore_wheat_burn_amount
+            * troops.knight_count.into();
+        let knight_fish_pay_amount = knight_travel_food_cost_config.explore_fish_burn_amount
+            * troops.knight_count.into();
+
+        let paladin_wheat_pay_amount = paladin_travel_food_cost_config.explore_wheat_burn_amount
+            * troops.paladin_count.into();
+        let paladin_fish_pay_amount = paladin_travel_food_cost_config.explore_fish_burn_amount
+            * troops.paladin_count.into();
+
+        let crossbowman_wheat_pay_amount = crossbowman_travel_food_cost_config.explore_wheat_burn_amount
+            * troops.crossbowman_count.into();
+        let crossbowman_fish_pay_amount = crossbowman_travel_food_cost_config.explore_fish_burn_amount
+            * troops.crossbowman_count.into();
+
+        let mut wheat_pay_amount = knight_wheat_pay_amount + paladin_wheat_pay_amount + crossbowman_wheat_pay_amount;
+        let mut fish_pay_amount = knight_fish_pay_amount + paladin_fish_pay_amount + crossbowman_fish_pay_amount;
+        assert!(wheat_pay_amount != 0, "Cannot explore with 0 troops");
+        assert!(fish_pay_amount != 0, "Cannot explore with 0 troops");
+
+        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
+    }
+
+    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, troops: Troops, steps: usize) {
+        let unit_owner_id = unit_entity_owner.entity_owner_id;
+        assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
+
+        let knight_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), TravelFoodCostConfig
+        );
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), TravelFoodCostConfig
+        );
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), TravelFoodCostConfig
+        );
+
+        let knight_wheat_pay_amount = knight_travel_food_cost_config.travel_wheat_burn_amount
+            * troops.knight_count.into()
+            * steps.into();
+        let knight_fish_pay_amount = knight_travel_food_cost_config.travel_fish_burn_amount
+            * troops.knight_count.into()
+            * steps.into();
+
+        let paladin_wheat_pay_amount = paladin_travel_food_cost_config.travel_wheat_burn_amount
+            * troops.paladin_count.into()
+            * steps.into();
+        let paladin_fish_pay_amount = paladin_travel_food_cost_config.travel_fish_burn_amount
+            * troops.paladin_count.into()
+            * steps.into();
+
+        let crossbowman_wheat_pay_amount = crossbowman_travel_food_cost_config.travel_wheat_burn_amount
+            * troops.crossbowman_count.into()
+            * steps.into();
+        let crossbowman_fish_pay_amount = crossbowman_travel_food_cost_config.travel_fish_burn_amount
+            * troops.crossbowman_count.into()
+            * steps.into();
+
+        let mut wheat_pay_amount = knight_wheat_pay_amount + paladin_wheat_pay_amount + crossbowman_wheat_pay_amount;
+        let mut fish_pay_amount = knight_fish_pay_amount + paladin_fish_pay_amount + crossbowman_fish_pay_amount;
+        assert!(wheat_pay_amount != 0, "Cannot travel with 0 troops");
+        assert!(fish_pay_amount != 0, "Cannot travel with 0 troops");
+
+        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
+    }
 }
 
 #[derive(Copy, Drop, Serde)]

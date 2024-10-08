@@ -17,6 +17,7 @@ import {
   RESOURCE_OUTPUTS,
   ResourcesIds,
   STAMINA_REFILL_PER_TICK,
+  TROOPS_FOOD_CONSUMPTION,
   TROOPS_STAMINAS,
   WEIGHTS_GRAM,
 } from "../constants";
@@ -312,10 +313,6 @@ export const setupGlobals = async (config: Config) => {
   const txMap = await config.provider.set_map_config({
     signer: config.account,
     config_id: 0,
-    explore_wheat_burn_amount: config.config.exploration.exploreWheatBurn * config.config.resources.resourcePrecision,
-    explore_fish_burn_amount: config.config.exploration.exploreFishBurn * config.config.resources.resourcePrecision,
-    travel_wheat_burn_amount: config.config.exploration.travelWheatBurn * config.config.resources.resourcePrecision,
-    travel_fish_burn_amount: config.config.exploration.travelFishBurn * config.config.resources.resourcePrecision,
     reward_amount: config.config.exploration.reward * config.config.resources.resourcePrecision,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
   });
@@ -335,6 +332,19 @@ export const setupGlobals = async (config: Config) => {
   });
 
   console.log(`Configuring travel stamina cost config ${txTravelStaminaCost.statusReceipt}...`);
+
+  for (const [unit_type, costs] of Object.entries(TROOPS_FOOD_CONSUMPTION)) {
+    const tx = await config.provider.set_travel_food_cost_config({
+      signer: config.account,
+      config_id: 0,
+      unit_type: unit_type,
+      explore_wheat_burn_amount: costs.explore_wheat_burn_amount * config.config.resources.resourcePrecision,
+      explore_fish_burn_amount: costs.explore_fish_burn_amount * config.config.resources.resourcePrecision,
+      travel_wheat_burn_amount: costs.travel_wheat_burn_amount * config.config.resources.resourcePrecision,
+      travel_fish_burn_amount: costs.travel_fish_burn_amount * config.config.resources.resourcePrecision,
+    });
+    console.log(`Configuring travel costs for ${unit_type} ${tx.statusReceipt}...`);
+  }
 };
 
 export const setCapacityConfig = async (config: Config) => {

@@ -371,10 +371,6 @@ export interface SetMintConfigProps extends SystemSigner {
 
 export interface SetMapConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
-  explore_wheat_burn_amount: num.BigNumberish;
-  explore_fish_burn_amount: num.BigNumberish;
-  travel_wheat_burn_amount: num.BigNumberish;
-  travel_fish_burn_amount: num.BigNumberish;
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
 }
@@ -383,6 +379,16 @@ export interface SetTravelStaminaCostConfigProps extends SystemSigner {
   travel_type: num.BigNumberish;
   cost: num.BigNumberish;
 }
+
+export interface SetTravelFoodCostConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  unit_type: num.BigNumberish;
+  explore_wheat_burn_amount: num.BigNumberish;
+  explore_fish_burn_amount: num.BigNumberish;
+  travel_wheat_burn_amount: num.BigNumberish;
+  travel_fish_burn_amount: num.BigNumberish;
+}
+
 export interface SetCapacityConfigProps extends SystemSigner {
   category: num.BigNumberish;
   weight_gram: num.BigNumberish;
