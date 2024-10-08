@@ -8,7 +8,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
@@ -39,6 +39,15 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
     [setup, bankEntityId, resourceId, account.address],
   );
+
+  // recompute resource amount when resource id changes
+  useEffect(() => {
+    if (isBuyResource) {
+      handleResourceAmountChange(resourceAmount);
+    } else {
+      handleLordsAmountChange(lordsAmount);
+    }
+  }, [marketManager.resourceId]);
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
@@ -72,10 +81,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   // Dedicated handler for Lords Amount
   const handleLordsAmountChange = (amount: number) => {
-    console.log({ resourceId: marketManager.resourceId });
-    console.log("handleLordsAmountChange");
-    console.log("amount", amount);
-    console.log({ isBuyResource });
     setLordsAmount(amount);
     if (isBuyResource) {
       const calculatedResourceAmount = divideByPrecision(
@@ -98,10 +103,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   // Dedicated handler for Resource Amount
   const handleResourceAmountChange = (amount: number) => {
-    console.log({ resourceId: marketManager.resourceId });
-    console.log("handleResourceAmountChange");
-    console.log("amount", amount);
-    console.log({ isBuyResource });
     setResourceAmount(amount);
     if (isBuyResource) {
       const calculatedLordsAmount = divideByPrecision(
@@ -110,7 +111,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
           EternumGlobalConfig.banks.lpFeesNumerator,
         ),
       );
-      console.log({ calculatedLordsAmount });
       setLordsAmount(calculatedLordsAmount);
     } else {
       const calculatedLordsAmount = divideByPrecision(
@@ -186,12 +186,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
             <div className="flex items-center text-green">
               +{positiveAmount}
               <ResourceIcon resource={positiveResource} size="md" />
-            </div>
-            <div>
-              final balance:{" "}
-              {isBuyResource
-                ? divideByPrecision(getBalance(entityId, Number(253)).balance) - (lordsAmount + ownerFee)
-                : divideByPrecision(getBalance(entityId, Number(resourceId)).balance) - resourceAmount}
             </div>
           </div>
           <div className="bg-gold/10 p-2 h-auto">

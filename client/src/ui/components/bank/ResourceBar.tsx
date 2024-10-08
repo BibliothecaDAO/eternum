@@ -49,7 +49,6 @@ export const ResourceBar = ({
   };
 
   const handleAmountChange = (amount: number) => {
-    console.log("handleAmountChange", amount);
     setAmount(amount);
   };
 
