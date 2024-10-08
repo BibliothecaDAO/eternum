@@ -1,6 +1,7 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { getStructureByEntityId, isStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
@@ -160,6 +161,8 @@ export const BuildingEntityDetails = () => {
 };
 
 const CastleDetails = () => {
+  const { getBalance } = getResourceBalance();
+
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const dojo = useDojo();
@@ -182,6 +185,7 @@ const CastleDetails = () => {
 
   const address = toHexString(structure?.owner.address);
 
+  // TODO: Dummy Level
   const realmLevel = 1;
 
   const getNextRealmLevel = useMemo(() => {
@@ -189,9 +193,26 @@ const CastleDetails = () => {
     return nextLevel <= RealmLevels.Empire ? nextLevel : null;
   }, [realmLevel]);
 
+  const checkBalance = useMemo(() => {
+    const cost = scaleResources(
+      REALM_UPGRADE_COSTS[getNextRealmLevel as keyof typeof REALM_UPGRADE_COSTS],
+      EternumGlobalConfig.resources.resourceMultiplier,
+    );
+
+    return Object.keys(cost).every((resourceId) => {
+      const resourceCost = cost[Number(resourceId)];
+      const balance = getBalance(structureEntityId, resourceCost.resource);
+      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
+    });
+  }, [getBalance, structureEntityId]);
+
   return (
     <div className="w-full text-sm  p-3">
-      <h3 className="pb-2 text-4xl">{structure.name}</h3>
+      <div className="flex justify-between">
+        <h3 className="pb-2 text-4xl">{structure.name}</h3>
+        {isImmune && <div>Immune for: {formatTime(timer)}</div>}
+      </div>
+
       <div className="font-bold flex justify-between">
         <div>
           <div> {structure.ownerName}</div>
@@ -221,7 +242,10 @@ const CastleDetails = () => {
 
           {getNextRealmLevel && (
             <div>
+              <div className="mb-1 text-right font-semibold">Upgrade to {RealmLevels[realmLevel + 1]}</div>
               <Button
+                variant="outline"
+                disabled={!checkBalance}
                 onMouseEnter={() => {
                   setTooltip({
                     content: (
@@ -251,15 +275,13 @@ const CastleDetails = () => {
                   setTooltip(null);
                 }}
               >
-                Upgrade to {RealmLevels[realmLevel + 1]}{" "}
+                {checkBalance ? `Upgrade` : "Need Resources"}
               </Button>
             </div>
           )}
         </div>
 
         <hr />
-
-        {isImmune && <div>Immune for: {formatTime(timer)}</div>}
 
         <div className="my-3">
           {structure && structure.category === StructureType[StructureType.Realm] && (
