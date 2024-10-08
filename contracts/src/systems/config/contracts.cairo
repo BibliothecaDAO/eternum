@@ -684,6 +684,7 @@ mod config_systems {
         }
     }
 
+    #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
         fn set_settlement_config(
             ref world: IWorldDispatcher,
