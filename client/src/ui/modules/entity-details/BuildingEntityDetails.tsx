@@ -9,7 +9,7 @@ import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
-import { Headline } from "@/ui/elements/Headline";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 import {
   ResourceIdToMiningType,
   copyPlayerAddressToClipboard,
@@ -18,7 +18,17 @@ import {
   getEntityIdFromKeys,
   toHexString,
 } from "@/ui/utils/utils";
-import { BuildingType, EternumGlobalConfig, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  EternumGlobalConfig,
+  ID,
+  LEVEL_DESCRIPTIONS,
+  REALM_UPGRADE_COSTS,
+  RealmLevels,
+  ResourcesIds,
+  StructureType,
+  scaleResources,
+} from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "../navigation/LeftNavigationModule";
@@ -150,6 +160,8 @@ export const BuildingEntityDetails = () => {
 };
 
 const CastleDetails = () => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
@@ -170,13 +182,21 @@ const CastleDetails = () => {
 
   const address = toHexString(structure?.owner.address);
 
+  const realmLevel = 1;
+
+  const getNextRealmLevel = useMemo(() => {
+    const nextLevel = realmLevel + 1;
+    return nextLevel <= RealmLevels.Empire ? nextLevel : null;
+  }, [realmLevel]);
+
   return (
-    <div className="w-full text-sm  p-2">
-      <Headline className="pb-2">{structure.name}</Headline>
-      <div className="space-y-2">
-        <div className="text-xl">Lord: {structure.ownerName}</div>
+    <div className="w-full text-sm  p-3">
+      <h3 className="pb-2 text-4xl">{structure.name}</h3>
+      <div className="font-bold flex justify-between">
         <div>
-          Address:
+          <div> {structure.ownerName}</div>
+        </div>
+        <div>
           <span
             className="ml-1 hover:text-white cursor-pointer"
             onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
@@ -184,10 +204,68 @@ const CastleDetails = () => {
             {displayAddress(address)}
           </span>
         </div>
+      </div>
+      <hr />
+
+      <div className="my-3">
+        <div className="flex justify-between py-2 gap-4">
+          <div>
+            <div className="text-2xl">{RealmLevels[realmLevel]}</div>
+            {getNextRealmLevel && (
+              <div>
+                Next Level {RealmLevels[realmLevel + 1]}:{" "}
+                {LEVEL_DESCRIPTIONS[(realmLevel + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
+              </div>
+            )}
+          </div>
+
+          {getNextRealmLevel && (
+            <div>
+              <Button
+                onMouseEnter={() => {
+                  setTooltip({
+                    content: (
+                      <div className="flex gap-2">
+                        {" "}
+                        {scaleResources(
+                          REALM_UPGRADE_COSTS[(realmLevel + 1) as keyof typeof REALM_UPGRADE_COSTS],
+                          EternumGlobalConfig.resources.resourceMultiplier,
+                        )?.map((a) => {
+                          return (
+                            <ResourceCost
+                              key={a.resource}
+                              className="!text-gold"
+                              type="vertical"
+                              size="xs"
+                              resourceId={a.resource}
+                              amount={a.amount}
+                            />
+                          );
+                        })}
+                      </div>
+                    ),
+                    position: "right",
+                  });
+                }}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                }}
+              >
+                Upgrade to {RealmLevels[realmLevel + 1]}{" "}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <hr />
+
         {isImmune && <div>Immune for: {formatTime(timer)}</div>}
-        {structure && structure.category === StructureType[StructureType.Realm] && (
-          <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
-        )}
+
+        <div className="my-3">
+          {structure && structure.category === StructureType[StructureType.Realm] && (
+            <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
+          )}
+        </div>
       </div>
     </div>
   );
