@@ -5,7 +5,7 @@ original_class_hash = "0x6f4515274ee23404789c3351a77107d0ec07508530119822046600c
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x76ca3dfc3e96843716f882546f0db96b7da0cf988bdba284b469d0defb2f48f"
 transaction_hash = "0x73f424096734f925628f50730e27889506b6b9141efd4aed165165ef8367ce5"
-block_number = 63
+block_number = 66
 seed = "eternum"
 manifest_name = "dojo-world"
 

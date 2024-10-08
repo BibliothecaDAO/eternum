@@ -165,7 +165,10 @@ const CastleDetails = () => {
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const dojo = useDojo();
+  const {
+    setup: { configManager, components, systemCalls },
+    account: { account },
+  } = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
@@ -176,15 +179,14 @@ const CastleDetails = () => {
 
   const immunityEndTimestamp =
     Number(structure.created_at) +
-    dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp;
   }, [nextBlockTimestamp]);
 
-  const realmLevel =
-    useComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.level ?? 0;
+  const realmLevel = useComponentValue(components.Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.level ?? 0;
 
   const getNextRealmLevel = useMemo(() => {
     const nextLevel = realmLevel + 1;
@@ -246,6 +248,7 @@ const CastleDetails = () => {
               <Button
                 variant="outline"
                 disabled={!checkBalance}
+                onClick={() => systemCalls.upgrade_realm({ signer: account, realm_entity_id: structureEntityId })}
                 onMouseEnter={() => {
                   setTooltip({
                     content: (
