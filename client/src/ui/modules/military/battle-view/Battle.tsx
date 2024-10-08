@@ -45,6 +45,23 @@ export const Battle = ({
 }) => {
   const [showBattleDetails, setShowBattleDetails] = useState<boolean>(false);
 
+  console.log(
+    "Battle",
+    battleManager,
+    ownArmySide,
+    ownArmyEntityId,
+    battleAdjusted,
+    attackerArmies,
+    attackerHealth,
+    attackerTroops,
+    defenderArmies,
+    defenderHealth,
+    defenderTroops,
+    userArmiesInBattle,
+    structure,
+    showBattleDetails,
+  );
+
   return (
     <div>
       <TopScreenView />
