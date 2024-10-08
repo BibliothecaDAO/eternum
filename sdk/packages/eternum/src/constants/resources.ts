@@ -527,9 +527,9 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 0.025 },
-    { resource: ResourcesIds.Fish, amount: 0.025 },
-    { resource: ResourcesIds.Gold, amount: 0.001 },
+    { resource: ResourcesIds.Wood, amount: 0.025 },
     { resource: ResourcesIds.Diamonds, amount: 0.001 },
+    { resource: ResourcesIds.Sapphire, amount: 0.001 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 0.025 },
