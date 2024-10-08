@@ -7,6 +7,13 @@ export enum RealmLevels {
   Empire,
 }
 
+export enum RealmLevelNames {
+  Settlement = "Settlement",
+  City = "City",
+  Kingdom = "Kingdom",
+  Empire = "Empire",
+}
+
 export const REALM_UPGRADE_COSTS = {
   [RealmLevels.Settlement]: [],
 
@@ -32,4 +39,11 @@ export const REALM_UPGRADE_COSTS = {
     { resource: ResourcesIds.Wood, amount: 200 },
     { resource: ResourcesIds.Stone, amount: 200 },
   ],
+};
+
+export const LEVEL_DESCRIPTIONS = {
+  [RealmLevels.Settlement]: "A small settlement with a few buildings. You have 6 buildable hexes.",
+  [RealmLevels.City]: "A city with a few districts and many buildings. You have 18 buildable hexes.",
+  [RealmLevels.Kingdom]: "A kingdom with many cities and districts.You have 36 buildable hexes.",
+  [RealmLevels.Empire]: "An empire with many kingdoms and cities. You have 60 buildable hexes.",
 };

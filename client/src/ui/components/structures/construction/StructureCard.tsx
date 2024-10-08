@@ -1,9 +1,9 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
-import { STRUCTURE_IMAGE_PATHS } from "./StructureConstructionMenu";
-import clsx from "clsx";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
+import { STRUCTURE_IMAGE_PATHS } from "./StructureConstructionMenu";
 
 export const StructureCard = ({
   structureId,
@@ -26,32 +26,29 @@ export const StructureCard = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
   return (
     <div
-      style={{
-        backgroundImage: `url(${STRUCTURE_IMAGE_PATHS[structureId]})`,
-        backgroundSize: "contain",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
       onClick={onClick}
       className={clsx(
-        "border-transparent text-gold overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:border-gradient hover:border-2 hover:bg-gold/20",
+        "text-gold bg-black/30 overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded-xl",
         {
-          "!border-lightest border-gradient border-2": active,
+          "!border-lightest": active,
         },
         className,
       )}
     >
+      <img
+        src={STRUCTURE_IMAGE_PATHS[structureId]}
+        alt={name}
+        className="absolute inset-0 w-full h-full object-contain"
+      />
       {!canBuild && (
-        <div className="absolute w-full h-full bg-black/70 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient funds</div>
+        <div className="absolute w-full h-full bg-black/70 p-4 text-xs flex justify-center">
+          <div className="self-center flex items-center space-x-2">
+            <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />
+          </div>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/90 ">
+      <div className="absolute bottom-0 left-0 right-0 p-2">
         <div className="truncate">{name}</div>
-      </div>
-      <div className="flex relative flex-col items-start text-xs font-bold p-2">
-        <ResourceIcon resource={name} size="lg" />
-
         <InfoIcon
           onMouseEnter={() => {
             setTooltip({
@@ -64,6 +61,11 @@ export const StructureCard = ({
           }}
           className="w-4 h-4 absolute top-2 right-2"
         />
+      </div>
+      <div className="flex relative flex-col items-end p-2 rounded">
+        <div className="rounded p-1 bg-black/10">
+          <ResourceIcon withTooltip={false} resource={name} size="lg" />
+        </div>
       </div>
     </div>
   );

@@ -18,7 +18,8 @@ export const Entities = ({ position, ownArmy }: { position: Position; ownArmy: A
   return (
     <div className="py-2">
       <StructureCard position={position} ownArmySelected={ownArmy} />
-      <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy} position={position} />
+
+      {enemyArmies.length > 0 && <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy} position={position} />}
     </div>
   );
 };
