@@ -129,3 +129,23 @@ export const BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Sapphire, amount: 20 },
   ],
 };
+
+// Approx creation of a building per Realm
+
+export const BUILDING_DELTA_USAGE: { [key: number]: number } = {
+  [BuildingType.Castle]: 1,
+  [BuildingType.Bank]: 0,
+  [BuildingType.FragmentMine]: 0,
+  [BuildingType.Resource]: 0,
+  [BuildingType.Farm]: 6,
+  [BuildingType.FishingVillage]: 6,
+  [BuildingType.Barracks]: 3,
+  [BuildingType.Market]: 3,
+  [BuildingType.ArcheryRange]: 3,
+  [BuildingType.Stable]: 3,
+  [BuildingType.TradingPost]: 0,
+  [BuildingType.WorkersHut]: 0,
+  [BuildingType.WatchTower]: 0,
+  [BuildingType.Walls]: 0,
+  [BuildingType.Storehouse]: 3,
+};
