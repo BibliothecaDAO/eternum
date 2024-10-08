@@ -7,7 +7,9 @@ use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
 use eternum::models::combat::{Battle};
 use eternum::models::combat::{Health, Troops};
-use eternum::models::config::{TickConfig, TickImpl, StaminaConfig, TravelStaminaCostConfig};
+use eternum::models::config::{
+    TickConfig, TickImpl, StaminaConfig, TravelStaminaCostConfig, CapacityConfig, CapacityConfigCategory
+};
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{EntityOwner, Owner};
@@ -58,9 +60,11 @@ use eternum::utils::testing::{
 
 use starknet::contract_address_const;
 
-const INITIAL_WHEAT_BALANCE: u128 = 10_000_000;
-const INITIAL_FISH_BALANCE: u128 = 10_000_000;
+const INITIAL_WHEAT_BALANCE: u128 = 500_000_000;
+const INITIAL_FISH_BALANCE: u128 = 500_000_000;
 const INITIAL_KNIGHT_BALANCE: u128 = 10_000_000;
+const INITIAL_PALADIN_BALANCE: u128 = 10_000_000;
+const INITIAL_CROSSBOWMAN_BALANCE: u128 = 10_000_000;
 
 const TIMESTAMP: u64 = 10_000;
 
@@ -191,6 +195,8 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_mine_production_config(config_systems_address);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
 
+    set!(world, CapacityConfig { category: CapacityConfigCategory::Storehouse, weight_gram: 1_000_000_000 });
+
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
@@ -207,13 +213,17 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
             array![
                 (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE),
                 (ResourceTypes::FISH, INITIAL_FISH_BALANCE),
-                (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE)
+                (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE),
+                (ResourceTypes::PALADIN, INITIAL_PALADIN_BALANCE),
+                (ResourceTypes::CROSSBOWMAN, INITIAL_CROSSBOWMAN_BALANCE)
             ]
                 .span()
         );
 
     let troops = Troops {
-        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0
+        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(),
+        paladin_count: INITIAL_PALADIN_BALANCE.try_into().unwrap(),
+        crossbowman_count: INITIAL_CROSSBOWMAN_BALANCE.try_into().unwrap()
     };
     let realm_army_unit_id: ID = create_army_with_troops(
         world, combat_systems_dispatcher, realm_entity_id, troops, false
