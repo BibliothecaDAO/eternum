@@ -17,6 +17,8 @@ export class StructureManager {
   private scene: THREE.Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
   private labelManagers: Map<StructureType, LabelManager> = new Map();
+  //private labels: Map<number, THREE.Points> = new Map();
+  private labels: Map<number, THREE.Points> = new Map();
   private dummy: THREE.Object3D = new THREE.Object3D();
   modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
@@ -98,7 +100,7 @@ export class StructureManager {
     const key = StructureType[structureType] as unknown as StructureType;
 
     // Add the structure to the structures map
-    this.structures.addStructure(entityId, key, normalizedCoord, stage);
+    this.structures.addStructure(entityId, key, normalizedCoord, stage, isMine);
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -124,6 +126,12 @@ export class StructureManager {
 
         visibleStructures.forEach((structure) => {
           const position = getWorldPositionForHex(structure.hexCoords);
+          if (!this.labels.has(structure.entityId)) {
+            const labelManager = this.labelManagers.get(structureType)!;
+            const label = labelManager.createLabel(position, structure.isMine ? myColor : neutralColor);
+            this.labels.set(structure.entityId, label);
+            this.scene.add(label);
+          }
           this.dummy.position.copy(position);
           this.dummy.updateMatrix();
 
@@ -156,18 +164,26 @@ export class StructureManager {
 }
 
 interface StructureInfo {
+  entityId: ID;
   hexCoords: { col: number; row: number };
   stage: number;
+  isMine: boolean;
 }
 
 class Structures {
   private structures: Map<StructureType, Map<ID, StructureInfo>> = new Map();
 
-  addStructure(entityId: ID, structureType: StructureType, hexCoords: { col: number; row: number }, stage: number = 0) {
+  addStructure(
+    entityId: ID,
+    structureType: StructureType,
+    hexCoords: { col: number; row: number },
+    stage: number = 0,
+    isMine: boolean,
+  ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures.get(structureType)!.set(entityId, { hexCoords, stage });
+    this.structures.get(structureType)!.set(entityId, { entityId, hexCoords, stage, isMine });
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
