@@ -49,6 +49,7 @@ export const ResourceBar = ({
   };
 
   const handleAmountChange = (amount: number) => {
+    console.log("handleAmountChange", amount);
     setAmount(amount);
   };
 
@@ -124,7 +125,7 @@ export const ResourceBar = ({
           setSearchInput("");
         }}
       >
-        <SelectTrigger className="w-[140px]" disabled={disableInput}>
+        <SelectTrigger className="w-[140px]">
           <SelectValue placeholder={HintSection.Resources} />
         </SelectTrigger>
         <SelectContent className="bg-black/90 text-gold">
@@ -135,11 +136,10 @@ export const ResourceBar = ({
               placeholder="Filter resources..."
               className="w-full"
               onKeyDown={handleKeyDown}
-              disabled={disableInput}
             />
           )}
           {filteredResources.map((resource) => (
-            <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId || disableInput}>
+            <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
               <ResourceCost
                 resourceId={resource.id}
                 amount={divideByPrecision(getBalance(entityId, resource.id).balance)}

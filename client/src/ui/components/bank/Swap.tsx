@@ -72,15 +72,25 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   // Dedicated handler for Lords Amount
   const handleLordsAmountChange = (amount: number) => {
+    console.log({ resourceId: marketManager.resourceId });
+    console.log("handleLordsAmountChange");
+    console.log("amount", amount);
+    console.log({ isBuyResource });
     setLordsAmount(amount);
     if (isBuyResource) {
       const calculatedResourceAmount = divideByPrecision(
-        marketManager.buyResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateResourceOutputForLordsInput(
+          multiplyByPrecision(amount) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
       setResourceAmount(calculatedResourceAmount);
     } else {
       const calculatedResourceAmount = divideByPrecision(
-        marketManager.sellResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateResourceInputForLordsOutput(
+          multiplyByPrecision(amount / (1 - OWNER_FEE)) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
       setResourceAmount(calculatedResourceAmount);
     }
@@ -88,23 +98,35 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
 
   // Dedicated handler for Resource Amount
   const handleResourceAmountChange = (amount: number) => {
+    console.log({ resourceId: marketManager.resourceId });
+    console.log("handleResourceAmountChange");
+    console.log("amount", amount);
+    console.log({ isBuyResource });
     setResourceAmount(amount);
     if (isBuyResource) {
       const calculatedLordsAmount = divideByPrecision(
-        marketManager.buyResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateLordsInputForResourceOutput(
+          multiplyByPrecision(amount) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
+      console.log({ calculatedLordsAmount });
       setLordsAmount(calculatedLordsAmount);
     } else {
       const calculatedLordsAmount = divideByPrecision(
-        marketManager.sellResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateLordsOutputForResourceInput(
+          multiplyByPrecision(amount) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
-      setLordsAmount(calculatedLordsAmount);
+      const lordsAmountAfterFee = calculatedLordsAmount * (1 - OWNER_FEE);
+      setLordsAmount(lordsAmountAfterFee);
     }
   };
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
-      const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - ownerFee) : resourceAmount;
+      const amount = isLords ? lordsAmount : resourceAmount;
       const selectableResources = resources.filter((r) =>
         isLords ? r.id === ResourcesIds.Lords : r.id !== ResourcesIds.Lords,
       );
@@ -138,7 +160,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const renderConfirmationPopup = useMemo(() => {
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
     const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
-    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount - ownerFee;
+    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount;
     const negativeResource = isBuyResource ? "Lords" : chosenResourceName || "";
     const positiveResource = isBuyResource ? chosenResourceName || "" : "Lords";
     const resourcesToTransport = isBuyResource
@@ -164,6 +186,12 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
             <div className="flex items-center text-green">
               +{positiveAmount}
               <ResourceIcon resource={positiveResource} size="md" />
+            </div>
+            <div>
+              final balance:{" "}
+              {isBuyResource
+                ? divideByPrecision(getBalance(entityId, Number(253)).balance) - (lordsAmount + ownerFee)
+                : divideByPrecision(getBalance(entityId, Number(resourceId)).balance) - resourceAmount}
             </div>
           </div>
           <div className="bg-gold/10 p-2 h-auto">

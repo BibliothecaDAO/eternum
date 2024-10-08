@@ -1,8 +1,7 @@
-import { config } from "..";
 import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
-import { EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumConfig, EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -22,6 +21,7 @@ const nodeUrl = process.env.VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/
 
 const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
+const config = new EternumConfig();
 
 // entity ids
 const ADMIN_BANK_ENTITY_ID = 999999998n;

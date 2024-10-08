@@ -8,12 +8,7 @@ export class MarketManager {
   player: ContractAddress;
   resourceId: ResourcesIds;
 
-  constructor(
-    private setup: SetupResult,
-    bankEntityId: ID,
-    player: ContractAddress,
-    resourceId: ResourcesIds,
-  ) {
+  constructor(private setup: SetupResult, bankEntityId: ID, player: ContractAddress, resourceId: ResourcesIds) {
     this.bankEntityId = bankEntityId;
     this.resourceId = resourceId;
     this.player = player;
@@ -127,7 +122,7 @@ export class MarketManager {
     // Round down the result
     return numerator / denominator;
   }
-  public buyResource = (lordsAmount: number, feeRateNum: number) => {
+  public calculateResourceOutputForLordsInput = (lordsAmount: number, feeRateNum: number) => {
     const market = this.getMarket();
     if (!market) return 0;
 
@@ -135,7 +130,31 @@ export class MarketManager {
     return Number(outputAmount);
   };
 
-  public sellResource = (resourceAmount: number, feeRateNum: number) => {
+  public calculateLordsInputForResourceOutput = (resourceAmount: number, feeRateNum: number) => {
+    const market = this.getMarket();
+    if (!market) return 0;
+
+    // Calculate the input amount of Lords needed to buy the desired amount of resource
+    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const inputReserve = market.lords_amount;
+    const outputReserve = market.resource_amount;
+
+    // Using the inverse of the constant product formula:
+    // x' = x * y / (y - Δy) - x
+    // Where x is input reserve (Lords), y is output reserve (Resource),
+    // Δy is the desired output amount, and x' is the required input amount
+
+    const numerator = BigInt(inputReserve) * BigInt(outputReserve);
+    const denominator = BigInt(outputReserve) - BigInt(resourceAmount);
+    const inputAmount = numerator / denominator - BigInt(inputReserve);
+
+    // Adjust for fees
+    const inputAmountWithFee = (inputAmount * BigInt(feeRateDenom)) / BigInt(feeRateDenom - feeRateNum);
+
+    return Number(inputAmountWithFee);
+  };
+
+  public calculateLordsOutputForResourceInput = (resourceAmount: number, feeRateNum: number) => {
     const market = this.getMarket();
     if (!market) return 0;
 
@@ -143,10 +162,36 @@ export class MarketManager {
     return Number(inputPrice);
   };
 
+  public calculateResourceInputForLordsOutput = (lordsAmount: number, feeRateNum: number) => {
+    const market = this.getMarket();
+    if (!market) return 0;
+
+    // Calculate the input amount of Resource needed to get the desired amount of Lords
+    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const inputReserve = market.resource_amount;
+    const outputReserve = market.lords_amount;
+
+    // Using the inverse of the constant product formula:
+    // x' = x * y / (y - Δy) - x
+    // Where x is input reserve (Resource), y is output reserve (Lords),
+    // Δy is the desired output amount, and x' is the required input amount
+
+    const numerator = BigInt(inputReserve) * BigInt(outputReserve);
+    const denominator = BigInt(outputReserve) - BigInt(lordsAmount);
+    const inputAmount = numerator / denominator - BigInt(inputReserve);
+
+    // Adjust for fees
+    const inputAmountWithFee = (inputAmount * BigInt(feeRateDenom)) / BigInt(feeRateDenom - feeRateNum);
+
+    return Number(inputAmountWithFee);
+  };
+
   public slippage = (inputAmount: number, isBuyResource: boolean) => {
     const marketPrice = this.getMarketPrice();
 
-    const outputAmount = isBuyResource ? this.buyResource(inputAmount, 0) : this.sellResource(inputAmount, 0);
+    const outputAmount = isBuyResource
+      ? this.calculateResourceOutputForLordsInput(inputAmount, 0)
+      : this.calculateLordsOutputForResourceInput(inputAmount, 0);
 
     const marketPriceAmount = isBuyResource ? inputAmount / marketPrice : inputAmount * marketPrice;
 
