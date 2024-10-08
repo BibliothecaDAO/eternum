@@ -12,6 +12,8 @@ import {
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   HYPERSTRUCTURE_TOTAL_COSTS,
+  REALM_MAX_LEVEL,
+  REALM_UPGRADE_COSTS,
   RESOURCE_BUILDING_COSTS,
   RESOURCE_INPUTS,
   RESOURCE_OUTPUTS,
@@ -56,6 +58,8 @@ export class EternumConfig {
     await setWeightConfig(config);
     await setBattleConfig(config);
     await setCombatConfig(config);
+    await setRealmUpgradeConfig(config);
+    await setRealmMaxLevelConfig(config);
     await setupGlobals(config);
     await setCapacityConfig(config);
     await setSpeedConfig(config);
@@ -192,6 +196,42 @@ export const setBuildingConfig = async (config: Config) => {
   const tx = await config.provider.set_building_config({ signer: config.account, calls: calldataArray });
 
   console.log(`Configuring building cost config ${tx.statusReceipt}...`);
+};
+
+export const setRealmUpgradeConfig = async (config: Config) => {
+  const calldataArray = [];
+  const REALM_UPGRADE_COSTS_SCALED = scaleResourceInputs(
+    REALM_UPGRADE_COSTS,
+    config.config.resources.resourceMultiplier,
+  );
+  for (const level of Object.keys(REALM_UPGRADE_COSTS_SCALED) as unknown as number[]) {
+    if (REALM_UPGRADE_COSTS_SCALED[level].length !== 0) {
+      const calldata = {
+        level,
+        cost_of_level: REALM_UPGRADE_COSTS_SCALED[level].map((cost) => {
+          return {
+            ...cost,
+            amount: cost.amount * config.config.resources.resourcePrecision,
+          };
+        }),
+      };
+
+      calldataArray.push(calldata);
+    }
+  }
+
+  const tx = await config.provider.set_realm_level_config({ signer: config.account, calls: calldataArray });
+  console.log(`Configuring realm level cost config ${tx.statusReceipt}...`);
+};
+
+export const setRealmMaxLevelConfig = async (config: Config) => {
+  const new_max_level = REALM_MAX_LEVEL - 1;
+
+  const tx = await config.provider.set_realm_max_level_config({
+    signer: config.account,
+    new_max_level,
+  });
+  console.log(`Configuring realm max level config ${tx.statusReceipt}...`);
 };
 
 export const setResourceBuildingConfig = async (config: Config) => {

@@ -14,6 +14,8 @@ export enum RealmLevelNames {
   Empire = "Empire",
 }
 
+export const REALM_MAX_LEVEL = Object.keys(RealmLevels).length / 2;
+
 export const REALM_UPGRADE_COSTS = {
   [RealmLevels.Settlement]: [],
 

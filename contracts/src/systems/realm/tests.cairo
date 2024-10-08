@@ -7,7 +7,8 @@ use eternum::models::map::Tile;
 use eternum::models::owner::Owner;
 
 use eternum::models::position::{Position, Coord};
-use eternum::models::realm::Realm;
+use eternum::models::realm::{Realm, RealmCustomTrait};
+use eternum::models::resources::DetachedResource;
 use eternum::models::resources::Resource;
 
 use eternum::systems::config::contracts::{
@@ -23,7 +24,7 @@ use eternum::utils::testing::{
         spawn_realm, get_default_realm_pos, generate_realm_positions, spawn_hyperstructure,
         get_default_hyperstructure_coord
     },
-    config::{set_combat_config, set_capacity_config, set_settlement_config}
+    config::{set_combat_config, set_capacity_config, set_realm_level_config, set_settlement_config}
 };
 use starknet::contract_address_const;
 
@@ -45,6 +46,7 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     set_capacity_config(config_systems_address);
+    set_realm_level_config(config_systems_address);
     set_settlement_config(config_systems_address);
 
     // set initially minted resources
@@ -164,4 +166,151 @@ fn test_mint_starting_resources_as_not_realm() {
     );
 
     realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, hyperstructure_entity_id);
+}
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_upgrade_level_success() {
+    let (world, realm_systems_dispatcher) = setup();
+
+    // Spawn a realm
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+
+    // Add required resources for upgrade
+    let required_resources = array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100),];
+    for (resource_type, amount) in required_resources
+        .span() {
+            let mut resource = get!(world, (realm_entity_id, *resource_type), Resource);
+            resource.balance += *amount;
+            set!(world, (resource));
+        };
+
+    // Upgrade level
+    realm_systems_dispatcher.upgrade_level(realm_entity_id);
+
+    // Check if level increased
+    let realm = get!(world, realm_entity_id, Realm);
+    assert(realm.level == 1, 'Realm level should be 1');
+
+    // Check if resources were consumed
+    for (resource_type, _amount) in required_resources
+        .span() {
+            let resource = get!(world, (realm_entity_id, *resource_type), Resource);
+            assert(resource.balance == 0, 'Resource should be consumed');
+        }
+}
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+fn test_upgrade_level_not_owner() {
+    let (world, realm_systems_dispatcher) = setup();
+
+    // Spawn a realm
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+
+    // Set a different caller
+    starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
+
+    // Attempt to upgrade level
+    realm_systems_dispatcher.upgrade_level(realm_entity_id);
+}
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('Entity is not a realm', 'ENTRYPOINT_FAILED'))]
+fn test_upgrade_level_not_realm() {
+    let (_world, realm_systems_dispatcher) = setup();
+
+    // Use a non-existent entity ID
+    let non_realm_entity_id = 12345;
+
+    // Attempt to upgrade level
+    realm_systems_dispatcher.upgrade_level(non_realm_entity_id);
+}
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('realm is already at max level', 'ENTRYPOINT_FAILED'))]
+fn test_upgrade_level_max_level() {
+    let (world, realm_systems_dispatcher) = setup();
+
+    // Spawn a realm
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+
+    // Set realm to max level
+    let mut realm = get!(world, realm_entity_id, Realm);
+    realm.level = realm.max_level(world);
+    set!(world, (realm));
+
+    // Attempt to upgrade level
+    realm_systems_dispatcher.upgrade_level(realm_entity_id);
+}
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(
+    expected: (
+        "not enough resources, Resource (entity id: 5, resource type: WHEAT, balance: 0). deduction: 100",
+        'ENTRYPOINT_FAILED'
+    )
+)]
+fn test_upgrade_level_insufficient_resources() {
+    let (world, realm_systems_dispatcher) = setup();
+
+    // Spawn a realm
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+
+    // Attempt to upgrade level without adding resources
+    realm_systems_dispatcher.upgrade_level(realm_entity_id);
+}
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_upgrade_level_multiple_times() {
+    let (world, realm_systems_dispatcher) = setup();
+
+    // Spawn a realm
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+
+    // Add more than enough resources for multiple upgrades
+    let required_resources = array![
+        (ResourceTypes::WHEAT, 1000),
+        (ResourceTypes::WOOD, 1000),
+        (ResourceTypes::STONE, 1000),
+        (ResourceTypes::FISH, 1000),
+        (ResourceTypes::COAL, 1000),
+        (ResourceTypes::IRONWOOD, 1000),
+    ];
+    for (resource_type, amount) in required_resources
+        .span() {
+            let mut resource = get!(world, (realm_entity_id, *resource_type), Resource);
+            resource.balance += *amount;
+            set!(world, (resource));
+        };
+
+    // Upgrade level multiple times
+    realm_systems_dispatcher.upgrade_level(realm_entity_id);
+    realm_systems_dispatcher.upgrade_level(realm_entity_id);
+    realm_systems_dispatcher.upgrade_level(realm_entity_id);
+
+    // Check if level increased correctly
+    let realm = get!(world, realm_entity_id, Realm);
+    assert(realm.level == 3, 'Realm level should be 3');
+
+    // Check if resources were consumed correctly
+    let resource_types = array![
+        ResourceTypes::WHEAT,
+        ResourceTypes::WOOD,
+        ResourceTypes::STONE,
+        ResourceTypes::FISH,
+        ResourceTypes::COAL,
+        ResourceTypes::IRONWOOD
+    ];
+    for resource_type in resource_types
+        .span() {
+            let resource = get!(world, (realm_entity_id, *resource_type), Resource);
+            assert!(resource.balance < 1000, "Resource should be partially consumed");
+            assert!(resource.balance > 0, "Resource should not be fully consumed");
+        }
 }

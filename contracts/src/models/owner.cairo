@@ -71,6 +71,7 @@ mod tests {
                 regions: 0,
                 wonder: 0,
                 order: 0,
+                level: 0
             }
         );
 

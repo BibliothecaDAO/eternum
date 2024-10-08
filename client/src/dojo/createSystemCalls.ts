@@ -115,6 +115,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.create_realm(props);
   };
 
+  const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
+    await provider.upgrade_realm(props);
+  };
+
   const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     await provider.create_multiple_realms(props);
   };
@@ -336,6 +340,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     cancel_order: withQueueing(withErrorHandling(cancel_order)),
     accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
     create_realm: withQueueing(withErrorHandling(create_realm)),
+    upgrade_realm: withQueueing(withErrorHandling(upgrade_realm)),
     create_multiple_realms: withQueueing(withErrorHandling(create_multiple_realms)),
     transfer_resources: withQueueing(withErrorHandling(transfer_resources)),
     travel: withQueueing(withErrorHandling(travel)),

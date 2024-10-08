@@ -641,3 +641,21 @@ pub struct HasClaimedStartingResources {
     config_id: ID,
     claimed: bool,
 }
+
+// speed
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct RealmMaxLevelConfig {
+    #[key]
+    config_id: ID,
+    max_level: u8,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+struct RealmLevelConfig {
+    #[key]
+    level: u8,
+    required_resources_id: ID,
+    required_resource_count: u8,
+}

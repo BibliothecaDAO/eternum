@@ -207,6 +207,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
+  public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
+    const { realm_entity_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+      entrypoint: "upgrade_level",
+      calldata: [realm_entity_id],
+    });
+  }
+
   create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     let { realms, signer } = props;
 
@@ -898,6 +908,35 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_population_config",
       calldata: [base_population],
+    });
+  }
+
+  public async set_realm_level_config(props: SystemProps.setRealmUpgradeConfigProps) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+          entrypoint: "set_realm_level_config",
+          calldata: [
+            call.level,
+            call.cost_of_level.length,
+            ...call.cost_of_level.flatMap(({ resource, amount }) => [resource, amount]),
+          ],
+        };
+      }),
+    );
+  }
+
+  public async set_realm_max_level_config(props: SystemProps.SetRealmMaxLevelConfigProps) {
+    const { new_max_level, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_realm_max_level_config",
+      calldata: [new_max_level],
     });
   }
 

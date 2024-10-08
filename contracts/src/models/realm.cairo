@@ -1,5 +1,8 @@
 use array::SpanTrait;
+use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
+use eternum::constants::WORLD_CONFIG_ID;
+use eternum::models::config::RealmMaxLevelConfig;
 use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
@@ -21,15 +24,16 @@ pub struct Realm {
     regions: u8,
     wonder: u8,
     order: u8,
+    level: u8,
 }
 
 
-trait RealmCustomTrait {
-    fn has_resource(self: Realm, resource_type: u8) -> bool;
-    fn assert_is_set(self: Realm);
-}
-
+#[generate_trait]
 impl RealmCustomImpl of RealmCustomTrait {
+    fn max_level(self: Realm, world: IWorldDispatcher) -> u8 {
+        get!(world, WORLD_CONFIG_ID, RealmMaxLevelConfig).max_level
+    }
+
     fn has_resource(self: Realm, resource_type: u8) -> bool {
         let mut resource_types: Span<u8> = unpack_resource_types(self.resource_types_packed, self.resource_types_count);
         let mut has_resource = false;
