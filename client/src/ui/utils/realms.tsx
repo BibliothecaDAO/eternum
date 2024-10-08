@@ -2,13 +2,11 @@ import {
   BASE_POPULATION_CAPACITY,
   BUILDING_POPULATION,
   findResourceIdByTrait,
-  ID,
+  type ID,
   orders,
-  RealmInterface,
+  type RealmInterface,
 } from "@bibliothecadao/eternum";
-import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import realmsJson from "../../data/geodata/realms.json";
-import realmsOrdersJson from "../../data/geodata/realms_raw.json";
 import { packResources } from "./packedData";
 import { getPosition } from "./utils";
 
@@ -17,9 +15,7 @@ interface Attribute {
   value: any;
 }
 
-let realms: {
-  [key: string]: any;
-} = {};
+let realms: Record<string, any> = {};
 
 const loadRealms = async () => {
   const response = await fetch("/jsons/realms.json");
@@ -29,9 +25,9 @@ const loadRealms = async () => {
 loadRealms();
 
 export const getRealmNameById = (realmId: ID): string => {
-  const features = realmsJson["features"][realmId - 1];
+  const features = realmsJson.features[realmId - 1];
   if (!features) return "";
-  return features["name"];
+  return features.name;
 };
 
 export function getRealm(realmId: ID): RealmInterface | undefined {

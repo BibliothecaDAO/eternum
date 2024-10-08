@@ -34,6 +34,8 @@ mod realm_systems {
     use eternum::models::config::{CapacityConfigCategory, RealmLevelConfig};
     use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources};
     use eternum::models::event::{SettleRealmData, EventType};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::map::Tile;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::Movable;
@@ -46,13 +48,14 @@ mod realm_systems {
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-
     use starknet::ContractAddress;
 
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
         fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, (entity_id), Realm).assert_is_set();
 
             let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
@@ -102,6 +105,8 @@ mod realm_systems {
             order: u8,
             position: Position,
         ) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure that the coord is not occupied by any other structure
             let coord: Coord = position.into();
             let structure_count: StructureCount = get!(world, coord, StructureCount);
@@ -156,13 +161,15 @@ mod realm_systems {
                 InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![(1, 0)].span());
             }
 
+            let owner_address = starknet::get_caller_address();
             emit!(
                 world,
                 (SettleRealmData {
                     id: world.uuid(),
                     event_id: EventType::SettleRealm,
                     entity_id,
-                    owner_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    owner_address,
+                    owner_name: get!(world, owner_address, AddressName).name,
                     realm_name,
                     resource_types_packed,
                     resource_types_count,
@@ -191,7 +198,7 @@ mod realm_systems {
             realm.assert_is_set();
 
             // ensure realm is not already at max level
-            assert(realm.level < realm.max_level(), 'realm is already at max level');
+            assert(realm.level < realm.max_level(world), 'realm is already at max level');
 
             // make payment to upgrade to next level
             let next_level = realm.level + 1;

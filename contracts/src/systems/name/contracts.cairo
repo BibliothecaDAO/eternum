@@ -9,11 +9,15 @@ trait INameSystems {
 #[dojo::contract]
 mod name_systems {
     use eternum::alias::ID;
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::name::{AddressName, EntityName};
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
+
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {
         fn set_address_name(ref world: IWorldDispatcher, name: felt252) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let caller = starknet::get_caller_address();
 
             // assert that name not set
@@ -25,6 +29,8 @@ mod name_systems {
         }
 
         fn set_entity_name(ref world: IWorldDispatcher, entity_id: ID, name: felt252) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, entity_id, EntityOwner).assert_caller_owner(world);
 
             set!(world, (EntityName { entity_id, name }));

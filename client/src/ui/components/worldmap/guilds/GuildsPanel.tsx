@@ -34,7 +34,7 @@ export const GuildsPanel = () => {
         selectedIndex={selectedTab}
         onChange={(index: number) => setSelectedTab(index)}
         variant="default"
-        className="h-full"
+        className="h-full border-t"
       >
         <Tabs.List>
           {tabs.map((tab, index) => (

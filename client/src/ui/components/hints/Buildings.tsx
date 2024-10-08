@@ -43,6 +43,7 @@ export const Buildings = () => {
   return (
     <div>
       <Headline>Buildings</Headline>
+      <div className="mt-2 mb-2">Every time you build a construction, the cost of the next one grows exponentially</div>
 
       <table className="not-prose w-full p-2 border-gold/10">
         <thead>
@@ -54,19 +55,22 @@ export const Buildings = () => {
         </thead>
         <tbody>
           {buildingTable.map((building) => (
-            <tr className="border border-gold/10" key={building.building_category}>
+            <tr key={building.building_category}>
               <td className="p-2">
                 {" "}
                 <h5>{BuildingEnumToString[building.building_category]}</h5>
                 <img
-                  className="h-24 min-w-20 border m-1 "
+                  className="h-32 min-w-20 bg-black/40 rounded-xl m-1 p-2"
                   src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
                 />
               </td>
-              <td className="text text-left">
+              <td className="text text-center">
                 {building.building_capacity !== 0 && (
                   <>
-                    Housing: + {building.building_capacity} <br />
+                    <p>Max population capacity:</p>
+                    <p>
+                      + {building.building_capacity} <br />
+                    </p>
                   </>
                 )}
                 {building.building_population !== 0 && <>Population: +{building.building_population}</>}

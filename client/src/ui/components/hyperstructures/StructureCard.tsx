@@ -6,6 +6,7 @@ import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
@@ -14,6 +15,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
+import { ResourceExchange } from "./ResourceExchange";
 
 const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
@@ -98,7 +100,46 @@ const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; c
   };
 };
 
-export const TroopExchange = ({
+export const Exchange = ({
+  giverArmyName,
+  giverArmyEntityId,
+  structureEntityId,
+  takerArmy,
+  allowReverse,
+}: TroopsProps) => {
+  return (
+    <Tabs defaultValue="troops" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 gap-4">
+        <TabsTrigger value="troops" className="border hover:opacity-70">
+          Troops
+        </TabsTrigger>
+        <TabsTrigger value="resources" className="border hover:opacity-70">
+          Resources
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="troops">
+        <TroopExchange
+          giverArmyName={giverArmyName}
+          giverArmyEntityId={giverArmyEntityId}
+          structureEntityId={structureEntityId}
+          takerArmy={takerArmy}
+          allowReverse={allowReverse}
+        />
+      </TabsContent>
+      <TabsContent value="resources">
+        <ResourceExchange
+          giverArmyName={giverArmyName}
+          giverArmyEntityId={giverArmyEntityId}
+          structureEntityId={structureEntityId}
+          takerArmy={takerArmy}
+          allowReverse={allowReverse}
+        />
+      </TabsContent>
+    </Tabs>
+  );
+};
+
+const TroopExchange = ({
   giverArmyName,
   giverArmyEntityId,
   structureEntityId,
@@ -176,8 +217,8 @@ export const TroopExchange = ({
     };
     await army_merge_troops({
       signer: account,
-      from_army_id: fromArmy?.entity_id,
-      to_army_id: toArmy?.entity_id,
+      from_army_id: fromArmy?.entity_id ?? 0n,
+      to_army_id: toArmy?.entity_id ?? 0n,
       troops: transferedTroops,
     }).then(() => {
       if (

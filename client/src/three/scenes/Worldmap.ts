@@ -11,13 +11,14 @@ import { FELT_CENTER } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { BiomeType, ID, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { BiomeType, ID, NEIGHBOR_OFFSETS_EVEN, NEIGHBOR_OFFSETS_ODD } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
+import Minimap from "../components/Minimap";
 import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
 import { StructurePreview } from "../components/StructurePreview";
@@ -49,6 +50,7 @@ export default class WorldmapScene extends HexagonScene {
   private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
   private armySubscription: any;
   private selectedHexManager: SelectedHexManager;
+  private minimap!: Minimap;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -145,6 +147,15 @@ export default class WorldmapScene extends HexagonScene {
           this.onArmySelection(selectedEntityId);
         }
       },
+    );
+
+    this.minimap = new Minimap(
+      this,
+      this.exploredTiles,
+      this.camera,
+      this.structureManager,
+      this.armyManager,
+      this.biome,
     );
 
     // Add event listener for Escape key
@@ -278,6 +289,12 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
+    this.minimap.moveMinimapCenterToUrlLocation();
+    this.minimap.showMinimap();
+  }
+
+  onSwitchOff() {
+    this.minimap.hideMinimap();
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -335,7 +352,7 @@ export default class WorldmapScene extends HexagonScene {
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
-      const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+      const neighborOffsets = row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
 
       neighborOffsets.forEach(({ i, j }) => {
         const neighborCol = col + i;
@@ -426,7 +443,7 @@ export default class WorldmapScene extends HexagonScene {
         }
 
         if (!isExplored) {
-          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          const neighborOffsets = globalRow % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
             const neighborRow = globalRow + j;
@@ -538,5 +555,6 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.battleManager.update(deltaTime);
+    this.minimap.update();
   }
 }

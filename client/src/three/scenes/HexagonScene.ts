@@ -428,4 +428,5 @@ export abstract class HexagonScene {
   protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
   public abstract setup(): void;
   public abstract moveCameraToURLLocation(): void;
+  public abstract onSwitchOff(): void;
 }

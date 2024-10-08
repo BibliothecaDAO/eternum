@@ -17,11 +17,11 @@ use eternum::models::config::{
     stamina_refill_config, tick_config, map_config, realm_free_mint_config, mercenaries_config, leveling_config,
     production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
     population_config, has_claimed_starting_resources, hyperstructure_config, travel_stamina_cost_config,
-    realm_level_config
+    realm_level_config, realm_max_level_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
-    Progress, progress, Contribution, contribution, HyperstructureUpdate, hyperstructure_update
+    Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch, Season, season
 };
 use eternum::models::level::level;
 use eternum::models::map::tile;
@@ -117,6 +117,9 @@ fn spawn_eternum() -> IWorldDispatcher {
         contribution::TEST_CLASS_HASH,
         hyperstructure_resource_config::TEST_CLASS_HASH,
         hyperstructure_config::TEST_CLASS_HASH,
+        epoch::TEST_CLASS_HASH,
+        hyperstructure::TEST_CLASS_HASH,
+        season::TEST_CLASS_HASH,
         stamina_config::TEST_CLASS_HASH,
         stamina_refill_config::TEST_CLASS_HASH,
         tick_config::TEST_CLASS_HASH,
@@ -126,6 +129,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         production_deadline::TEST_CLASS_HASH,
         travel_stamina_cost_config::TEST_CLASS_HASH,
         realm_level_config::TEST_CLASS_HASH,
+        realm_max_level_config::TEST_CLASS_HASH
     ];
 
     let world = spawn_test_world(["eternum"].span(), models.span());

@@ -58,6 +58,9 @@ struct HyperstructureConfig {
     #[key]
     config_id: ID,
     time_between_shares_change: u64,
+    points_per_cycle: u128,
+    points_for_win: u128,
+    points_on_completion: u128,
 }
 
 // capacity
@@ -346,6 +349,15 @@ pub struct BankConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
+pub struct BuildingGeneralConfig {
+    #[key]
+    config_id: ID,
+    base_cost_percent_increase: u16,
+}
+
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 pub struct BuildingConfig {
     #[key]
     config_id: ID,
@@ -475,6 +487,14 @@ pub struct HasClaimedStartingResources {
     claimed: bool,
 }
 
+// speed
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct RealmMaxLevelConfig {
+    #[key]
+    config_id: ID,
+    max_level: u8,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

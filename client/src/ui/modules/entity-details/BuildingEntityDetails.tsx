@@ -11,11 +11,11 @@ import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import {
+  ResourceIdToMiningType,
   copyPlayerAddressToClipboard,
   displayAddress,
   formatTime,
   getEntityIdFromKeys,
-  ResourceIdToMiningType,
   toHexString,
 } from "@/ui/utils/utils";
 import { BuildingType, EternumGlobalConfig, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
@@ -54,8 +54,9 @@ export const BuildingEntityDetails = () => {
     getEntityIdFromKeys(Object.values(selectedBuildingHex).map((v) => BigInt(v))),
   );
 
+  const structures = playerStructures();
+
   useEffect(() => {
-    const structures = playerStructures();
     if (building) {
       setBuildingState({
         buildingType: BuildingType[building.category as keyof typeof BuildingType],
@@ -110,14 +111,14 @@ export const BuildingEntityDetails = () => {
       ) : (
         <>
           <div className="flex-grow w-full space-y-1 text-sm">
-            {buildingState.buildingType === BuildingType.Resource && buildingState.resource !== undefined && (
+            {buildingState.buildingType === BuildingType.Resource && buildingState.resource && (
               <ResourceInfo
                 isPaused={isPaused}
                 resourceId={buildingState.resource}
                 entityId={buildingState.ownerEntityId}
               />
             )}
-            {buildingState.buildingType !== undefined && buildingState.buildingType !== BuildingType.Resource && (
+            {buildingState.buildingType && buildingState.buildingType !== BuildingType.Resource && (
               <BuildingInfo
                 isPaused={isPaused}
                 buildingId={buildingState.buildingType}
@@ -126,7 +127,7 @@ export const BuildingEntityDetails = () => {
               />
             )}
           </div>
-          {buildingState.buildingType !== undefined && selectedBuildingHex && isOwnedByPlayer && (
+          {buildingState.buildingType && selectedBuildingHex && isOwnedByPlayer && (
             <div className="flex justify-center space-x-3">
               <Button
                 className="mb-4"
@@ -169,27 +170,22 @@ const CastleDetails = () => {
   const address = toHexString(structure?.owner.address);
 
   return (
-    <div className="w-full space-y-1 text-sm">
-      <Headline className="py-3">{structure.name}</Headline>
-      <div className="p-5">
-        <div>Owner: {structure.ownerName}</div>
-        <div className="mt-2">
-          address:
+    <div className="w-full text-sm  p-2">
+      <Headline className="pb-2">{structure.name}</Headline>
+      <div className="space-y-2">
+        <div className="text-xl">Lord: {structure.ownerName}</div>
+        <div>
+          Address:
           <span
-            className="ml-1 hover:text-white"
+            className="ml-1 hover:text-white cursor-pointer"
             onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
           >
             {displayAddress(address)}
           </span>
         </div>
-        {isImmune && <div className="mt-2">Immune for: {formatTime(timer)}</div>}
+        {isImmune && <div>Immune for: {formatTime(timer)}</div>}
         {structure && structure.category === StructureType[StructureType.Realm] && (
-          <RealmResourcesIO
-            className={"mt-2"}
-            size={"md"}
-            titleClassName={"uppercase"}
-            structureEntityId={structureEntityId}
-          />
+          <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
         )}
       </div>
     </div>

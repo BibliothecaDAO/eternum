@@ -17,6 +17,7 @@ trait IBuildingContract<TContractState> {
 #[dojo::contract]
 mod building_systems {
     use eternum::alias::ID;
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
         position::{Coord, CoordTrait, Position, PositionCustomTrait, Direction},
@@ -44,7 +45,7 @@ mod building_systems {
             // the range of what the realm level allows
             let directions_count = directions.len();
             assert!(directions_count > 0, "building cant be made at the center");
-            assert!(directions_count <= realm.max_level().into() + 1, "building outside of max bound");
+            assert!(directions_count <= realm.max_level(world).into() + 1, "building outside of max bound");
             assert!(directions_count <= realm.level.into() + 1, "building outside of what realm level allows");
 
             // ensure that the realm produces the resource
@@ -54,7 +55,9 @@ mod building_systems {
                 assert!(realm_produces_resource, "realm does not produce specified resource");
             }
 
-            // get the location of the building
+            // check if season is over
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let mut building_coord: Coord = BuildingCustomImpl::center();
             loop {
                 match directions.pop_front() {
@@ -63,23 +66,30 @@ mod building_systems {
                 }
             };
 
-            // create the building
-            let building: Building = BuildingCustomImpl::create(
+            // todo: check that entity is a realm
+            let (building, building_quantity) = BuildingCustomImpl::create(
                 world, entity_id, building_category, produce_resource_type, building_coord
             );
 
-            // make payment for building
-            BuildingCustomImpl::make_payment(
-                world, building.outer_entity_id, building.category, building.produced_resource_type
-            );
+            // pay one time cost of the building
+            building.make_payment(building_quantity, world);
         }
+
         fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             BuildingCustomImpl::pause_production(world, entity_id, building_coord);
         }
+
         fn resume_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             BuildingCustomImpl::resume_production(world, entity_id, building_coord);
         }
+
         fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             BuildingCustomImpl::destroy(world, entity_id, building_coord);
         }
     }

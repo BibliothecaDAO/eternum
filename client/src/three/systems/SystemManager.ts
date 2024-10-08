@@ -5,19 +5,19 @@ import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import {
   EternumGlobalConfig,
+  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  HyperstructureResourceMultipliers,
   ID,
   StructureType,
 } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
+  Has,
+  HasValue,
   defineComponentSystem,
   defineQuery,
   getComponentValue,
-  Has,
-  HasValue,
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
@@ -279,8 +279,8 @@ export class SystemManager {
       };
       percentage +=
         (progress.amount *
-          HyperstructureResourceMultipliers[
-            progress.resource_type as keyof typeof HyperstructureResourceMultipliers
+          HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
+            progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
           ]!) /
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;

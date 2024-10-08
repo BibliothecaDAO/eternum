@@ -25,9 +25,9 @@ export class StaminaManager {
     );
 
     return {
-      knightConfig: knightConfig!.max_stamina,
-      crossbowmanConfig: crossbowmanConfig!.max_stamina,
-      paladinConfig: paladinConfig!.max_stamina,
+      knightConfig: knightConfig?.max_stamina ?? 0,
+      crossbowmanConfig: crossbowmanConfig?.max_stamina ?? 0,
+      paladinConfig: paladinConfig?.max_stamina ?? 0,
     };
   }
 

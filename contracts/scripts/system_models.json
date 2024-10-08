@@ -13,6 +13,7 @@
     "BankConfig",
     "TroopConfig",
     "BuildingConfig",
+    "BuildingGeneralConfig",
     "BuildingCategoryPopConfig",
     "PopulationConfig",
     "HyperstructureResourceConfig",
@@ -26,7 +27,8 @@
     "DetachedResource",
     "ResourceCost",
     "TravelStaminaCostConfig",
-    "RealmLevelConfig"
+    "RealmLevelConfig",
+    "RealmMaxLevelConfig"
   ],
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker", "Production"],
   "DEV_BANK_SYSTEMS": ["Tile", "Position", "Owner", "Bank", "Structure", "StructureCount", "CapacityCategory"],
@@ -179,7 +181,9 @@
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",
-    "HyperstructureUpdate"
+    "Hyperstructure",
+    "Epoch",
+    "Season"
   ],
   "BUILDINGS_SYSTEMS": [
     "Resource",

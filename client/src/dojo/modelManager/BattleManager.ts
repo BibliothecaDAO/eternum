@@ -417,7 +417,11 @@ export class BattleManager {
     currentTroops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>,
   ): ComponentValue<ClientComponents["Army"]["schema"]["troops"]> => {
     if (health.current > health.lifetime) {
-      throw new Error("Current health shouldn't be bigger than lifetime");
+      return {
+        knight_count: 0n,
+        paladin_count: 0n,
+        crossbowman_count: 0n,
+      };
     }
 
     if (health.lifetime === 0n) {
@@ -482,10 +486,7 @@ export class BattleManager {
     durationPassed: number,
   ) {
     const damagesDone = this.damagesDone(delta, durationPassed);
-    const currentHealthAfterDamage = BigInt(
-      Math.min(Number(health.current), Number(this.getCurrentHealthAfterDamage(health, damagesDone))),
-    );
-    return currentHealthAfterDamage;
+    return this.getCurrentHealthAfterDamage(health, damagesDone);
   }
 
   private attackingDelta(battle: ComponentValue<Components["Battle"]["schema"]>) {

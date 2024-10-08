@@ -279,7 +279,7 @@ fn test_upgrade_level_max_level() {
 
     // Set realm to max level
     let mut realm = get!(world, realm_entity_id, Realm);
-    realm.level = realm.max_level();
+    realm.level = realm.max_level(world);
     set!(world, (realm));
 
     // Attempt to upgrade level

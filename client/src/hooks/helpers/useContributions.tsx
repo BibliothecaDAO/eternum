@@ -3,6 +3,7 @@ import { getTotalPointsPercentage } from "@/dojo/modelManager/utils/LeaderboardU
 import { ContractAddress, ID, Resource } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { useCallback } from "react";
 import { useDojo } from "../context/DojoContext";
 
 export const useContributions = () => {
@@ -41,4 +42,23 @@ export const useContributions = () => {
     useContributionsByPlayerAddress,
     getContributionsTotalPercentage,
   };
+};
+
+export const useGetHyperstructuresWithContributionsFromPlayer = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { Contribution },
+    },
+  } = useDojo();
+
+  const getContributions = useCallback(() => {
+    const entityIds = runQuery([HasValue(Contribution, { player_address: ContractAddress(account.address) })]);
+    const hyperstructureEntityIds = Array.from(entityIds).map(
+      (entityId) => getComponentValue(Contribution, entityId)?.hyperstructure_entity_id ?? 0,
+    );
+    return new Set(hyperstructureEntityIds);
+  }, [account.address]);
+
+  return getContributions;
 };

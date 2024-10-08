@@ -11,7 +11,7 @@ import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
-import { TroopExchange } from "../hyperstructures/StructureCard";
+import { Exchange } from "../hyperstructures/StructureCard";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
@@ -101,7 +101,7 @@ export const ArmyChip = ({
                                 }}
                                 onMouseEnter={() => {
                                   setTooltip({
-                                    content: "Swap troops (only possible on same hex)",
+                                    content: "Swap troops or resources (only possible on same hex)",
                                     position: "top",
                                   });
                                 }}
@@ -184,7 +184,7 @@ const ArmyMergeTroopsPanel = ({
         </Button>
       </div>
       {selectedReceiverArmy ? (
-        <TroopExchange
+        <Exchange
           giverArmyName={giverArmy.name}
           giverArmyEntityId={giverArmy.entity_id}
           takerArmy={selectedReceiverArmy}

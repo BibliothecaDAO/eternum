@@ -22,6 +22,7 @@ export const BattleSideView = ({
   ownSideTroopsUpdated,
   ownArmyEntityId,
   structure,
+  userArmiesOnThatSide,
 }: {
   battleManager: BattleManager;
   battleSide: BattleSide;
@@ -31,14 +32,17 @@ export const BattleSideView = ({
   ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
   ownArmyEntityId: ID | undefined;
   structure: Structure | undefined;
+  userArmiesOnThatSide: ArmyInfo[];
 }) => {
   const {
     account: { account },
 
     setup: {
-      systemCalls: { battle_join },
+      systemCalls: { battle_join, battle_leave },
     },
   } = useDojo();
+
+  const [confirmLeaveWithAllArmies, setConfirmLeaveWithAllArmies] = useState(false);
 
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
@@ -62,6 +66,21 @@ export const BattleSideView = ({
     }
   };
 
+  const leaveWithAllArmies = async () => {
+    if (!confirmLeaveWithAllArmies) {
+      setConfirmLeaveWithAllArmies(true);
+    } else {
+      setConfirmLeaveWithAllArmies(false);
+      setLoading(true);
+      await battle_leave({
+        signer: account,
+        battle_id: battleEntityId!,
+        army_ids: userArmiesOnThatSide.map((army) => army.entity_id),
+      });
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className={`flex col-span-5 -bottom-y bg-[#1b1a1a] mx-4 bg-hex-bg ${
@@ -74,7 +93,7 @@ export const BattleSideView = ({
           structure={structure}
           show={ownSideArmies.length > 0}
         />
-        <div className="flex flex-col gap-1 mb-2 max-h-36 overflow-y-auto">
+        <div className="flex flex-col gap-1 mb-2 max-h-24 overflow-y-auto">
           {React.Children.toArray(
             ownSideArmies.map((army) => {
               if (!army) return;
@@ -94,18 +113,28 @@ export const BattleSideView = ({
           )}
         </div>
 
-        {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (
-          <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full">
+          {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (
             <Button
               onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
               isLoading={loading}
-              className="size-xs h-10 self-center"
+              className="size-xs h-10 self-center w-full"
               variant="primary"
             >
               Join Side
             </Button>
-          </div>
-        )}
+          )}
+          {Boolean(battleEntityId) && isActive && userArmiesOnThatSide.length > 0 && (
+            <Button
+              onClick={leaveWithAllArmies}
+              isLoading={loading}
+              className="size-xs h-10 self-center w-full mt-2"
+              variant="danger"
+            >
+              {confirmLeaveWithAllArmies ? "Confirm Leave" : "Leave with all armies"}
+            </Button>
+          )}
+        </div>
       </div>
       {showBattleDetails && battleEntityId ? (
         <BattleHistory battleSide={battleSide} battleId={battleEntityId} />

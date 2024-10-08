@@ -1,5 +1,8 @@
 use array::SpanTrait;
+use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
+use eternum::constants::WORLD_CONFIG_ID;
+use eternum::models::config::RealmMaxLevelConfig;
 use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
@@ -27,8 +30,8 @@ pub struct Realm {
 
 #[generate_trait]
 impl RealmCustomImpl of RealmCustomTrait {
-    fn max_level(self: Realm) -> u8 {
-        3
+    fn max_level(self: Realm, world: IWorldDispatcher) -> u8 {
+        get!(world, WORLD_CONFIG_ID, RealmMaxLevelConfig).max_level
     }
 
     fn has_resource(self: Realm, resource_type: u8) -> bool {

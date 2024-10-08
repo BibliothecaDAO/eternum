@@ -1,21 +1,18 @@
 import {
   BUILDING_COSTS,
-  EXPLORATION_COSTS,
   EternumGlobalConfig,
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TOTAL_COSTS,
   QUEST_RESOURCES,
-  REALM_LEVEL_COSTS,
+  REALM_UPGRADE_COSTS,
   RESOURCE_BUILDING_COSTS,
   RESOURCE_INPUTS,
   RESOURCE_OUTPUTS,
-  ResourceInputs,
-  ResourceOutputs,
   ResourcesIds,
   STRUCTURE_COSTS,
 } from "../constants";
-import { Resource } from "../types";
+import { ResourceInputs, ResourceOutputs } from "../types";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   let multipliedCosts: ResourceOutputs = {};
@@ -105,18 +102,8 @@ export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
   EternumGlobalConfig.resources.resourceMultiplier,
 );
 
-export const REALM_LEVEL_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
-  REALM_LEVEL_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-
 export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(
   RESOURCE_INPUTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-
-export const EXPLORATION_COSTS_SCALED: Resource[] = scaleResources(
-  EXPLORATION_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
 
@@ -125,6 +112,10 @@ export const STRUCTURE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
   EternumGlobalConfig.resources.resourceMultiplier,
 );
 
+export const REALM_UPGRADE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
+  REALM_UPGRADE_COSTS,
+  EternumGlobalConfig.resources.resourceMultiplier,
+);
 export const HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   EternumGlobalConfig.resources.resourceMultiplier,
