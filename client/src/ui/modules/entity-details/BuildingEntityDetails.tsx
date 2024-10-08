@@ -22,13 +22,13 @@ import {
 import {
   BuildingType,
   EternumGlobalConfig,
-  type ID,
   LEVEL_DESCRIPTIONS,
   REALM_UPGRADE_COSTS,
   RealmLevels,
-  type ResourcesIds,
   StructureType,
   scaleResources,
+  type ID,
+  type ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -183,10 +183,8 @@ const CastleDetails = () => {
     return immunityEndTimestamp - nextBlockTimestamp;
   }, [nextBlockTimestamp]);
 
-  const address = toHexString(structure?.owner.address);
-
-  // TODO: Dummy Level
-  const realmLevel = 1;
+  const realmLevel =
+    useComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(structureEntityId)]))?.level ?? 0;
 
   const getNextRealmLevel = useMemo(() => {
     const nextLevel = realmLevel + 1;
@@ -224,7 +222,7 @@ const CastleDetails = () => {
               copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName);
             }}
           >
-            {displayAddress(address)}
+            {displayAddress(toHexString(structure?.owner.address))}
           </span>
         </div>
       </div>
