@@ -49,6 +49,7 @@ export class Navigator {
     this.target = null;
     if (this.arrowModel) {
       this.arrowModel.visible = false;
+      this.distanceDiv!.textContent = "";
     }
   }
 
@@ -58,6 +59,10 @@ export class Navigator {
       this.arrowModel.visible = true;
       this.updateArrowRotation();
     }
+  }
+
+  getNavigationTarget() {
+    return this.target;
   }
 
   private updateArrowRotation() {

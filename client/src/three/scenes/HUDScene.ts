@@ -1,3 +1,4 @@
+import useUIStore from "@/hooks/store/useUIStore";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { SceneManager } from "../SceneManager";
@@ -36,6 +37,18 @@ export default class HUDScene {
 
     this.addAmbientLight();
     this.addHemisphereLight(); // Add this line
+
+    useUIStore.subscribe(
+      (state) => state.navigationTarget,
+      (target) => {
+        const currentTarget = this.navigator.getNavigationTarget();
+        if (target && target.col !== currentTarget?.col && target.row !== currentTarget?.row) {
+          this.setNavigationTarget(target.col, target.row);
+        } else {
+          this.navigator.clearNavigationTarget();
+        }
+      },
+    );
   }
 
   private createOrthographicCamera(): THREE.OrthographicCamera {
