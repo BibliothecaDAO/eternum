@@ -26,7 +26,7 @@ import { Chat } from "../chat/Chat";
 import { EntityDetails } from "../entity-details/EntityDetails";
 import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
-import { MiniMapNavigation } from "./TopRightNavigation";
+import { MiniMapNavigation } from "./MiniMapNavigation";
 
 export enum View {
   None,

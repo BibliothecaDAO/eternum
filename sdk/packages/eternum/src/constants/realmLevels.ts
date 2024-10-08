@@ -1,7 +1,7 @@
 import { ResourcesIds } from ".";
 
 export enum RealmLevels {
-  Settlement = 1,
+  Settlement,
   City,
   Kingdom,
   Empire,

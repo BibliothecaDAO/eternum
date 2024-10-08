@@ -303,8 +303,8 @@ class Minimap {
   }
 
   private moveMapRange(direction: string) {
-    const colShift = (this.displayRange.maxCol - this.displayRange.minCol) / 4;
-    const rowShift = (this.displayRange.maxRow - this.displayRange.minRow) / 4;
+    const colShift = Math.round((this.displayRange.maxCol - this.displayRange.minCol) / 4);
+    const rowShift = Math.round((this.displayRange.maxRow - this.displayRange.minRow) / 4);
 
     switch (direction) {
       case "left":
