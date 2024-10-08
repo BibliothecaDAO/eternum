@@ -22,11 +22,11 @@ import {
 import {
   BuildingType,
   EternumGlobalConfig,
-  type ID,
+  ID,
   LEVEL_DESCRIPTIONS,
   REALM_UPGRADE_COSTS,
   RealmLevels,
-  type ResourcesIds,
+  ResourcesIds,
   StructureType,
   scaleResources,
 } from "@bibliothecadao/eternum";
@@ -57,7 +57,7 @@ export const BuildingEntityDetails = () => {
 
   const { playerStructures } = useEntities();
 
-  const isCastleSelected =
+  let isCastleSelected =
     selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] && selectedBuildingHex.innerRow === BUILDINGS_CENTER[1];
 
   const building = useComponentValue(
@@ -122,14 +122,14 @@ export const BuildingEntityDetails = () => {
       ) : (
         <>
           <div className="flex-grow w-full space-y-1 text-sm">
-            {buildingState.buildingType === BuildingType.Resource && buildingState.resource != null && (
+            {buildingState.buildingType === BuildingType.Resource && buildingState.resource && (
               <ResourceInfo
                 isPaused={isPaused}
                 resourceId={buildingState.resource}
                 entityId={buildingState.ownerEntityId}
               />
             )}
-            {buildingState.buildingType != null && buildingState.buildingType !== BuildingType.Resource && (
+            {buildingState.buildingType && buildingState.buildingType !== BuildingType.Resource && (
               <BuildingInfo
                 isPaused={isPaused}
                 buildingId={buildingState.buildingType}
@@ -138,7 +138,7 @@ export const BuildingEntityDetails = () => {
               />
             )}
           </div>
-          {buildingState.buildingType != null && selectedBuildingHex && isOwnedByPlayer && (
+          {buildingState.buildingType && selectedBuildingHex && isOwnedByPlayer && (
             <div className="flex justify-center space-x-3">
               <Button
                 className="mb-4"
@@ -180,7 +180,7 @@ const CastleDetails = () => {
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
-    return immunityEndTimestamp - nextBlockTimestamp;
+    return immunityEndTimestamp - nextBlockTimestamp!;
   }, [nextBlockTimestamp]);
 
   const address = toHexString(structure?.owner.address);
@@ -220,9 +220,7 @@ const CastleDetails = () => {
         <div>
           <span
             className="ml-1 hover:text-white cursor-pointer"
-            onClick={() => {
-              copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName);
-            }}
+            onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
           >
             {displayAddress(address)}
           </span>
@@ -277,7 +275,7 @@ const CastleDetails = () => {
                   setTooltip(null);
                 }}
               >
-                {checkBalance ? "Upgrade" : "Need Resources"}
+                {checkBalance ? `Upgrade` : "Need Resources"}
               </Button>
             </div>
           )}

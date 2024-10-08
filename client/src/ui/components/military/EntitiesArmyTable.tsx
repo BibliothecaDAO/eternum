@@ -1,8 +1,8 @@
-import { type ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { type ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/eternum";
 import { HintSection } from "../hints/HintModal";
 import { ArmyChip } from "./ArmyChip";
 

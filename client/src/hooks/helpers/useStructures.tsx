@@ -4,13 +4,12 @@ import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
-import { getEntitiesUtils } from "./useEntities";
 
 export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   isMine: boolean;

@@ -1,7 +1,7 @@
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
-import { type ID, RESOURCE_INPUTS_SCALED, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, RESOURCE_INPUTS_SCALED, ResourcesIds } from "@bibliothecadao/eternum";
 
 export const RealmResourcesIO = ({
   realmEntityId,
@@ -22,7 +22,7 @@ export const RealmResourcesIO = ({
     ...new Set(
       resourcesProduced.flatMap((resourceId) => {
         return RESOURCE_INPUTS_SCALED[resourceId]
-          .filter((input) => input.resource !== ResourcesIds.Wheat && input.resource !== ResourcesIds.Fish)
+          .filter((input) => input.resource !== ResourcesIds["Wheat"] && input.resource !== ResourcesIds["Fish"])
           .map((input) => input.resource);
       }),
     ),

@@ -16,10 +16,10 @@ import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useCallback, useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
-import { ID } from "@bibliothecadao/eternum";
 
 import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
