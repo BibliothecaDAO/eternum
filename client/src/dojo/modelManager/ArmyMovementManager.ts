@@ -10,12 +10,12 @@ import {
   CapacityConfigCategory,
   ContractAddress,
   EternumGlobalConfig,
+  ID,
   ResourcesIds,
   TravelTypes,
   WORLD_CONFIG_ID,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
-  type ID,
 } from "@bibliothecadao/eternum";
 import { getComponentValue, type ComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
