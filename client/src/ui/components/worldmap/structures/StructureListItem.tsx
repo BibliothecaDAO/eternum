@@ -5,7 +5,7 @@ import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import { isStructureImmune, Structure } from "@/hooks/helpers/useStructures";
+import { Structure, isStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { formatTime } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
@@ -53,7 +53,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
 
   const immunityEndTimestamp =
     Number(structure?.created_at) +
-    EternumGlobalConfig.battle.graceTickCount * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;

@@ -1209,7 +1209,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-TravelStaminaCostConfig",
+            namespace: "eternum",
+            name: "TravelStaminaCostConfig",
             types: ["u32", "u8", "u16"],
             customTypes: [],
           },

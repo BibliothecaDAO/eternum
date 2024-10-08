@@ -11,15 +11,20 @@ import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { ModalContainer } from "@/ui/components/ModalContainer";
+import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useCallback, useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
-import { ID } from "@bibliothecadao/eternum";
+
+import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
+import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
+import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
+import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
 
 enum Loading {
   None,
@@ -226,66 +231,78 @@ export const BattleActions = ({
   }, [claimStatus]);
 
   return (
-    <div className="col-span-2 flex justify-center flex-wrap -bottom-y p-2 bg-[#1b1a1a] bg-hex-bg">
-      <div className="grid grid-cols-2 gap-1 w-full">
+    <div className="col-span-2 flex justify-center flex-wrap -bottom-y p-2 my-10 ">
+      <div className="grid grid-cols-2 gap-4 w-full">
         <div
-          className="flex flex-col gap-2 h-full w-full"
+          className={`flex flex-col gap-2 h-full w-full bg-[#FF621F] rounded-xl border-red/30 border-4 ${
+            loading !== Loading.None || raidStatus !== RaidStatus.isRaidable ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           onMouseEnter={mouseEnterRaid}
           onMouseLeave={() => setTooltip(null)}
         >
           <Button
             variant="outline"
-            className="flex flex-col gap-2 h-full"
+            className="flex flex-col gap-2 h-full border-0 justify-center"
             isLoading={loading === Loading.Raid}
             onClick={handleRaid}
             disabled={loading !== Loading.None || raidStatus !== RaidStatus.isRaidable}
           >
-            <img className="w-10" src="/images/icons/raid.png" alt="coin" />
-            <div className={`text-wrap h-2 ${raidWarning ? "text-danger" : ""}`}>
+            <Burn className="w-10" />
+
+            <div className={`text-wrap text-xl text-white/80 ${raidWarning ? "text-danger" : ""}`}>
               {raidWarning ? "Leave & Raid ?" : "Raid"}
             </div>
           </Button>
         </div>
         <div
-          className="flex flex-col gap-2 h-full w-full"
+          className={`flex flex-col gap-2 h-full w-full bg-[#377D5B] rounded-xl border-[#377D5B] border-4 ${
+            loading !== Loading.None || claimStatus !== ClaimStatus.Claimable ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           onMouseEnter={mouseEnterClaim}
           onMouseLeave={() => setTooltip(null)}
         >
           <Button
             variant="outline"
-            className="flex flex-col gap-2 h-full"
+            className="flex flex-col gap-2 h-full border-0 justify-center"
             isLoading={loading === Loading.Claim}
             onClick={handleBattleClaim}
             disabled={loading !== Loading.None || claimStatus !== ClaimStatus.Claimable}
           >
-            <img className="w-10" src="/images/icons/claim.png" alt="coin" />
-            Claim
+            <Castle className="w-10" />
+            <div className="text-xl text-white/80">Claim</div>
           </Button>
         </div>
         <div
-          className="flex flex-col gap-2 h-full w-full"
+          className={`flex flex-col gap-2 h-full w-full bg-[#483B32] rounded-xl ${
+            loading !== Loading.None || leaveStatus !== LeaveStatus.Leave ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           onMouseEnter={mouseEnterLeave}
           onMouseLeave={() => setTooltip(null)}
         >
           <Button
             variant="outline"
-            className="flex flex-col gap-2 h-full"
+            className="flex flex-col gap-2 h-full border-0"
             isLoading={loading === Loading.Leave}
             onClick={handleLeaveBattle}
             disabled={loading !== Loading.None || leaveStatus !== LeaveStatus.Leave}
           >
-            <img className="w-10" src="/images/icons/leave-battle.png" alt="coin" />
-            Leave
+            <Flag className="w-10" />
+            <div className="text-xl text-white/80">Leave</div>
           </Button>
         </div>
         <div
-          className="flex flex-col gap-2 h-full w-full"
+          className={`flex flex-col gap-2 h-full w-full bg-[#FF1F1F] rounded-xl ${
+            loading !== Loading.None ||
+            (battleStartStatus !== BattleStartStatus.BattleStart && battleStartStatus !== BattleStartStatus.ForceStart)
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+          }`}
           onMouseEnter={mouseEnterBattle}
           onMouseLeave={() => setTooltip(null)}
         >
           <Button
             variant="outline"
-            className="flex flex-col gap-2 h-full"
+            className="flex flex-col gap-2 h-full border-0"
             isLoading={loading === Loading.Start}
             onClick={handleBattleStart}
             disabled={
@@ -294,8 +311,8 @@ export const BattleActions = ({
                 battleStartStatus !== BattleStartStatus.ForceStart)
             }
           >
-            <img className="w-10" src="/images/icons/attack.png" alt="coin" />
-            Battle
+            <Battle className="w-10" />
+            <div className="text-xl text-white/80">Battle</div>
           </Button>
         </div>
 

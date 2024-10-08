@@ -7,6 +7,8 @@ import {
   EternumGlobalConfig,
   ID,
   ResourcesIds,
+  TravelTypes,
+  WORLD_CONFIG_ID,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
@@ -93,7 +95,13 @@ export class ArmyMovementManager {
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
-    if (stamina.amount < EternumGlobalConfig.stamina.exploreCost) {
+    // TODO: move to a global Class which is initalised only once on load
+    const staminaConfig = getComponentValue(
+      this.setup.components.TravelStaminaCostConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Explore)]),
+    );
+
+    if (stamina.amount < this.setup.configManager.getStaminaExploreConfig()) {
       return false;
     }
     const { wheat, fish } = this.getFood(currentDefaultTick);
@@ -123,7 +131,7 @@ export class ArmyMovementManager {
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    const maxStaminaSteps = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+    const maxStaminaSteps = Math.floor((stamina.amount || 0) / this.setup.configManager.getStaminaTravelConfig());
 
     const travelWheatPayAmountPerStep =
       EternumGlobalConfig.exploration.travelWheatBurn *

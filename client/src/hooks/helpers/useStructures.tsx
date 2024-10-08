@@ -4,13 +4,12 @@ import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
-import { getEntitiesUtils } from "./useEntities";
 
 export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   isMine: boolean;
@@ -221,8 +220,12 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
 }
 
 export const isStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
+  const {
+    setup: { configManager },
+  } = useDojo();
+
   const tickCount = currentTickCount(currentTimestamp);
-  const allowAttackTick = currentTickCount(created_at) + EternumGlobalConfig.battle.graceTickCount;
+  const allowAttackTick = currentTickCount(created_at) + configManager.getBattleGraceTickCount();
 
   if (tickCount < allowAttackTick) {
     return true;

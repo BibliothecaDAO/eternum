@@ -15,7 +15,6 @@ export const BattleView = () => {
   const { getAliveArmy } = getArmyByEntityId();
 
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
   const battleView = useUIStore((state) => state.battleView);
   const selectedHex = useUIStore((state) => state.selectedHex);
 
@@ -48,8 +47,8 @@ export const BattleView = () => {
     : BattleSide[BattleSide.Attack];
 
   const ownArmyBattleStarter = useMemo(
-    () => getAliveArmy(battleView!.ownArmyEntityId || 0),
-    [battleView!.ownArmyEntityId],
+    () => getAliveArmy(battleView?.ownArmyEntityId || 0),
+    [battleView?.ownArmyEntityId || 0],
   );
 
   const attackerArmies =
@@ -91,16 +90,19 @@ export const BattleView = () => {
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
 
+  const structureFromPosition = getStructure({ x: battlePosition.x, y: battlePosition.y });
+  const structureId = getStructureByEntityId(
+    defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0,
+  );
+
   const structure =
-    battleView?.engage && !battleView?.battleEntityId && !battleView.targetArmy
-      ? getStructure({ x: battlePosition.x, y: battlePosition.y })
-      : getStructureByEntityId(defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0);
+    battleView?.engage && !battleView?.battleEntityId && !battleView.targetArmy ? structureFromPosition : structureId;
 
   return (
     <Battle
       battleManager={battleManager}
       ownArmySide={ownArmySide}
-      ownArmyEntityId={battleView?.ownArmyEntityId}
+      ownArmyEntityId={battleView?.ownArmyEntityId || 0}
       battleAdjusted={battleAdjusted}
       attackerArmies={attackerArmies}
       attackerHealth={attackerHealth}
