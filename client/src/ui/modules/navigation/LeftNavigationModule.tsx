@@ -26,7 +26,7 @@ import { Chat } from "../chat/Chat";
 import { EntityDetails } from "../entity-details/EntityDetails";
 import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
-import { MiniMapNavigation } from "./TopRightNavigation";
+import { MiniMapNavigation } from "./MiniMapNavigation";
 
 export enum View {
   None,
@@ -220,23 +220,23 @@ export const LeftNavigationModule = () => {
 
     return isMapView
       ? navigation.filter(
-          (item) =>
-            item.name === MenuEnum.entityDetails ||
-            item.name === MenuEnum.military ||
-            item.name === MenuEnum.construction ||
-            item.name === MenuEnum.worldStructures ||
-            item.name === MenuEnum.resourceArrivals ||
-            item.name === MenuEnum.trade,
-        )
+        (item) =>
+          item.name === MenuEnum.entityDetails ||
+          item.name === MenuEnum.military ||
+          item.name === MenuEnum.construction ||
+          item.name === MenuEnum.worldStructures ||
+          item.name === MenuEnum.resourceArrivals ||
+          item.name === MenuEnum.trade,
+      )
       : navigation.filter(
-          (item) =>
-            item.name === MenuEnum.entityDetails ||
-            item.name === MenuEnum.military ||
-            item.name === MenuEnum.construction ||
-            item.name === MenuEnum.worldStructures ||
-            item.name === MenuEnum.resourceArrivals ||
-            item.name === MenuEnum.trade,
-        );
+        (item) =>
+          item.name === MenuEnum.entityDetails ||
+          item.name === MenuEnum.military ||
+          item.name === MenuEnum.construction ||
+          item.name === MenuEnum.worldStructures ||
+          item.name === MenuEnum.resourceArrivals ||
+          item.name === MenuEnum.trade,
+      );
   }, [location, view, openedPopups, selectedQuest, questClaimStatus, structureEntityId]);
 
   const slideLeft = {
@@ -248,9 +248,8 @@ export const LeftNavigationModule = () => {
     <div className="flex flex-col gap-8">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-[600px] text-gold left-10 pt-20 pointer-events-none ${
-            isOffscreen(view) ? "-translate-x-[88%]" : ""
-          }`}
+          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-[600px] text-gold left-10 pt-20 pointer-events-none ${isOffscreen(view) ? "-translate-x-[88%]" : ""
+            }`}
         >
           <BaseContainer className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh]}`}>
             {view === View.EntityView && <EntityDetails />}

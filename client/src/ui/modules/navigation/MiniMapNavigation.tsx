@@ -6,16 +6,6 @@ export const MiniMapNavigation = () => {
 
   return (
     <div className=" bottom-[10px] left-[10px] z-[1001] text-xxs pointer-events-auto flex flex-col self-end ">
-      <canvas
-        id="minimap"
-        width={200}
-        height={112}
-        className="border border-gold/30 rounded-tr-xl bg-hex-bg "
-        style={{
-          backgroundColor: "rgba(0, 0, 0, 0.3)",
-          zIndex: 2,
-        }}
-      />
       <div className="flex justify-between ml-auto">
         {showMinimap && (
           <div
@@ -53,7 +43,7 @@ export const MiniMapNavigation = () => {
                     </div>
                   </div>
                 ),
-                position: "bottom",
+                position: "top",
               })
             }
             onMouseLeave={() => setTooltip(null)}
@@ -62,6 +52,16 @@ export const MiniMapNavigation = () => {
           </div>
         )}
       </div>
+      <canvas
+        id="minimap"
+        width={200}
+        height={112}
+        className="border border-gold/30 rounded-tr-xl bg-hex-bg "
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.3)",
+          zIndex: 2,
+        }}
+      />
     </div>
   );
 };
