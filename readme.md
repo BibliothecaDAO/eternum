@@ -10,22 +10,31 @@
 
 # Realms: Eternum
 
-Eternum is built on Cairo smart contracts and runs on the [Dojo game engine](https://dojoengine.org). It's open-source,
-licensed under both MIT for software freedom and CC0 for public domain use, ensuring wide accessibility and
-community-driven development.
+Eternum has been designed to be a foundational game for Realms World. It will freely evolve and grow as the game and
+world age. Think of it as a living, breathing digital ecosystem, constantly inviting endless exploration. It’s both a
+game and an open platform.
 
-Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the
-bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the
-backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far
-removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing
-digital ecosystem, constantly evolving and inviting endless exploration.
+### Eternum as a Game
+
+A unique, high-stakes game played over seasons. Players can pursue total victory or freely explore their own path,
+unconstrained by predetermined objectives.
+
+In Eternum, players forge alliances across an infinite hexagonal procedurally generated map during fully onchain,
+immutable seasons. They build resource stockpiles, train troops, trade, and strategically cooperate or deceive to
+achieve victory in this world of diplomacy, resource management, and tactical decision-making.
+
+Entry is via a Season ticket minted off the original Loot Realms NFTs. Using $LORDS, players trade in a free market
+within the world and on Starknet to gain competitive advantages. The open nature of the design allows players to extend
+the game world and introduce their own features if they choose.
+
+### Eternum as a Platform
+
+Eternum lays a robust scaffold on which to build higher-level structures and games. It establishes key functional
+systems in the Core layer while introducing fungible resources, serving as a foundation for future development and
+expansion.
 
 <details>
 <summary> Click to expand</summary>
-
-### L3 Network
-
-Eternum will exist on the Realms World L3 network. Read the documentation here: [dev](https://dev.realms.world/)
 
 ### Open World Philosophy
 

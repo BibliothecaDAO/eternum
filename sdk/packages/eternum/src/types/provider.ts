@@ -150,10 +150,6 @@ interface Realm {
   regions: num.BigNumberish;
   wonder: num.BigNumberish;
   order: num.BigNumberish;
-  position: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
@@ -378,10 +374,6 @@ export interface SetMintConfigProps extends SystemSigner {
 
 export interface SetMapConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
-  explore_wheat_burn_amount: num.BigNumberish;
-  explore_fish_burn_amount: num.BigNumberish;
-  travel_wheat_burn_amount: num.BigNumberish;
-  travel_fish_burn_amount: num.BigNumberish;
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
 }
@@ -390,6 +382,16 @@ export interface SetTravelStaminaCostConfigProps extends SystemSigner {
   travel_type: num.BigNumberish;
   cost: num.BigNumberish;
 }
+
+export interface SetTravelFoodCostConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  unit_type: num.BigNumberish;
+  explore_wheat_burn_amount: num.BigNumberish;
+  explore_fish_burn_amount: num.BigNumberish;
+  travel_wheat_burn_amount: num.BigNumberish;
+  travel_fish_burn_amount: num.BigNumberish;
+}
+
 export interface SetCapacityConfigProps extends SystemSigner {
   category: num.BigNumberish;
   weight_gram: num.BigNumberish;
@@ -532,4 +534,15 @@ export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 export interface SetMercenariesConfigProps extends SystemSigner {
   troops: Troops;
   rewards: { resource: number; amount: number }[];
+}
+
+export interface SetSettlementConfigProps extends SystemSigner {
+  radius: num.BigNumberish;
+  angle_scaled: num.BigNumberish;
+  center: num.BigNumberish;
+  min_distance: num.BigNumberish;
+  max_distance: num.BigNumberish;
+  min_scaling_factor_scaled: num.BigNumberish;
+  min_angle_increase: num.BigNumberish;
+  max_angle_increase: num.BigNumberish;
 }

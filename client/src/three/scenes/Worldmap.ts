@@ -1,20 +1,20 @@
 import * as THREE from "three";
-import { Raycaster } from "three";
+import { type Raycaster } from "three";
 
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { TileManager } from "@/dojo/modelManager/TileManager";
-import { SetupResult } from "@/dojo/setup";
+import { type SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
-import { HexPosition, SceneName } from "@/types";
+import { type HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { BiomeType, ID, NEIGHBOR_OFFSETS_EVEN, NEIGHBOR_OFFSETS_ODD } from "@bibliothecadao/eternum";
+import { BiomeType, getNeighborOffsets, type ID } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { SceneManager } from "../SceneManager";
+import { type MapControls } from "three/examples/jsm/controls/MapControls";
+import { type SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
 import { BattleManager } from "../components/BattleManager";
 import { Biome } from "../components/Biome";
@@ -23,15 +23,15 @@ import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
 import { StructurePreview } from "../components/StructurePreview";
 import { LocationManager } from "../helpers/LocationManager";
-import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
+import { type ArmySystemUpdate, type TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
 
 export default class WorldmapScene extends HexagonScene {
-  private biome!: Biome;
+  private readonly biome!: Biome;
 
-  private chunkSize = 10; // Size of each chunk
-  private renderChunkSize = {
+  private readonly chunkSize = 10; // Size of each chunk
+  private readonly renderChunkSize = {
     width: 40,
     height: 30,
   };
@@ -40,20 +40,22 @@ export default class WorldmapScene extends HexagonScene {
 
   private currentChunk: string = "null";
 
-  private armyManager: ArmyManager;
-  private structureManager: StructureManager;
-  private battleManager: BattleManager;
-  private exploredTiles: Map<number, Set<number>> = new Map();
-  private battles: Map<number, Set<number>> = new Map();
-  private tileManager: TileManager;
-  private structurePreview: StructurePreview | null = null;
+  private readonly armyManager: ArmyManager;
+  private readonly structureManager: StructureManager;
+  private readonly battleManager: BattleManager;
+  private readonly exploredTiles = new Map<number, Set<number>>();
+  private readonly battles = new Map<number, Set<number>>();
+  private readonly tileManager: TileManager;
+  private readonly structurePreview: StructurePreview | null = null;
   private structureEntityId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
-  private armySubscription: any;
-  private selectedHexManager: SelectedHexManager;
-  private minimap!: Minimap;
+  private readonly armySubscription: any;
+  private readonly selectedHexManager: SelectedHexManager;
+  private readonly minimap!: Minimap;
 
-  private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
-    new Map();
+  private readonly cachedMatrices = new Map<
+    string,
+    Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>
+  >();
 
   constructor(
     dojoContext: SetupResult,
@@ -100,12 +102,16 @@ export default class WorldmapScene extends HexagonScene {
     this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();
-    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) =>
-      this.armyManager.onUpdate(update),
-    );
+    this.armySubscription = this.systemManager.Army.onUpdate(async (update: ArmySystemUpdate) => {
+      await this.armyManager.onUpdate(update);
+    });
 
-    this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
-    this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
+    this.systemManager.Battle.onUpdate(async (value) => {
+      await this.battleManager.onUpdate(value);
+    });
+    this.systemManager.Tile.onUpdate(async (value) => {
+      await this.updateExploredHex(value);
+    });
     this.systemManager.Structure.onUpdate((value) => {
       this.structureManager.onUpdate(value);
       if (this.totalStructures !== this.structureManager.totalStructures) {
@@ -259,6 +265,7 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLeftNavigationView(View.EntityView);
     }
   }
+
   protected onHexagonRightClick(): void {}
 
   private onArmySelection(selectedEntityId: ID | undefined) {
@@ -352,7 +359,7 @@ export default class WorldmapScene extends HexagonScene {
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
-      const neighborOffsets = row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
+      const neighborOffsets = getNeighborOffsets(row);
 
       neighborOffsets.forEach(({ i, j }) => {
         const neighborCol = col + i;
@@ -443,7 +450,7 @@ export default class WorldmapScene extends HexagonScene {
         }
 
         if (!isExplored) {
-          const neighborOffsets = globalRow % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
+          const neighborOffsets = getNeighborOffsets(globalRow);
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
             const neighborRow = globalRow + j;
@@ -469,7 +476,7 @@ export default class WorldmapScene extends HexagonScene {
         if (isExplored) {
           biomeHexes[biome].push(dummy.matrix.clone());
         } else {
-          biomeHexes["Outline"].push(dummy.matrix.clone());
+          biomeHexes.Outline.push(dummy.matrix.clone());
         }
       }
 

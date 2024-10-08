@@ -14,7 +14,6 @@ trait IRealmSystems {
         regions: u8,
         wonder: u8,
         order: u8,
-        position: eternum::models::position::Position
     ) -> ID;
     fn upgrade_level(ref world: IWorldDispatcher, realm_id: ID);
     fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID;
@@ -31,7 +30,7 @@ mod realm_systems {
     use eternum::constants::REALM_ENTITY_TYPE;
     use eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, MAX_REALMS_PER_ADDRESS};
     use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::config::{CapacityConfigCategory, RealmLevelConfig};
+    use eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
     use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources};
     use eternum::models::event::{SettleRealmData, EventType};
 
@@ -103,14 +102,23 @@ mod realm_systems {
             regions: u8,
             wonder: u8,
             order: u8,
-            position: Position,
         ) -> ID {
             SeasonCustomImpl::assert_season_is_not_over(world);
 
             // ensure that the coord is not occupied by any other structure
-            let coord: Coord = position.into();
-            let structure_count: StructureCount = get!(world, coord, StructureCount);
-            structure_count.assert_none();
+            let timestamp = starknet::get_block_timestamp();
+            let mut found_coords = false;
+            let mut coord: Coord = Coord { x: 0, y: 0 };
+            let mut settlement_config = get!(world, WORLD_CONFIG_ID, SettlementConfig);
+            while (!found_coords) {
+                coord = settlement_config.get_next_settlement_coord(timestamp);
+                let structure_count: StructureCount = get!(world, coord, StructureCount);
+                if structure_count.is_none() {
+                    found_coords = true;
+                }
+            };
+            // save the new config
+            set!(world, (settlement_config));
 
             let entity_id = world.uuid();
             let caller = starknet::get_caller_address();
@@ -131,9 +139,7 @@ mod realm_systems {
                     Owner { entity_id: entity_id.into(), address: caller },
                     EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
                     Structure {
-                        entity_id: entity_id.into(),
-                        category: StructureCategory::Realm,
-                        created_at: starknet::get_block_timestamp()
+                        entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: timestamp,
                     },
                     StructureCount { coord, count: 1 },
                     CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure },
@@ -150,15 +156,15 @@ mod realm_systems {
                         order,
                         level: 0
                     },
-                    Position { entity_id: entity_id.into(), x: position.x, y: position.y, },
+                    Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
                     EntityMetadata { entity_id: entity_id.into(), entity_type: REALM_ENTITY_TYPE, }
                 )
             );
 
-            let mut tile: Tile = get!(world, (position.x, position.y), Tile);
+            let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
             if tile.explored_at == 0 {
                 // set realm's position tile to explored
-                InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![(1, 0)].span());
+                InternalMapSystemsImpl::explore(world, entity_id.into(), coord, array![(1, 0)].span());
             }
 
             let owner_address = starknet::get_caller_address();
@@ -179,9 +185,9 @@ mod realm_systems {
                     regions,
                     wonder,
                     order,
-                    x: position.x,
-                    y: position.y,
-                    timestamp: starknet::get_block_timestamp(),
+                    x: coord.x,
+                    y: coord.y,
+                    timestamp,
                 }),
             );
 

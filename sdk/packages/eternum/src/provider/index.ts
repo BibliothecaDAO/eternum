@@ -179,7 +179,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       regions,
       wonder,
       order,
-      position,
       signer,
     } = props;
 
@@ -200,9 +199,6 @@ export class EternumProvider extends EnhancedDojoProvider {
             regions,
             wonder,
             order,
-            2,
-            position.x,
-            position.y,
           ],
         },
       ],
@@ -236,7 +232,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         regions,
         wonder,
         order,
-        position,
       } = realm;
 
       let calldata = [
@@ -254,9 +249,6 @@ export class EternumProvider extends EnhancedDojoProvider {
             regions,
             wonder,
             order,
-            2, // entity ID in position struct
-            position.x,
-            position.y,
           ],
         },
       ];
@@ -714,29 +706,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
-    const {
-      config_id,
-      explore_wheat_burn_amount,
-      explore_fish_burn_amount,
-      travel_wheat_burn_amount,
-      travel_fish_burn_amount,
-      reward_amount,
-      shards_mines_fail_probability,
-      signer,
-    } = props;
+    const { config_id, reward_amount, shards_mines_fail_probability, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
-      calldata: [
-        config_id,
-        explore_wheat_burn_amount,
-        explore_fish_burn_amount,
-        travel_wheat_burn_amount,
-        travel_fish_burn_amount,
-        reward_amount,
-        shards_mines_fail_probability,
-      ],
+      calldata: [config_id, reward_amount, shards_mines_fail_probability],
     });
   }
 
@@ -747,6 +722,31 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_travel_stamina_cost_config",
       calldata: [travel_type, cost],
+    });
+  }
+
+  public async set_travel_food_cost_config(props: SystemProps.SetTravelFoodCostConfigProps) {
+    const {
+      config_id,
+      unit_type,
+      explore_wheat_burn_amount,
+      explore_fish_burn_amount,
+      travel_wheat_burn_amount,
+      travel_fish_burn_amount,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_travel_food_cost_config",
+      calldata: [
+        config_id,
+        unit_type,
+        explore_wheat_burn_amount,
+        explore_fish_burn_amount,
+        travel_wheat_burn_amount,
+        travel_fish_burn_amount,
+      ],
     });
   }
 
@@ -1051,6 +1051,34 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_config",
       calldata: [troops, rewards],
+    });
+  }
+
+  public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
+    const {
+      radius,
+      angle_scaled,
+      center,
+      min_distance,
+      max_distance,
+      min_scaling_factor_scaled,
+      min_angle_increase,
+      max_angle_increase,
+      signer,
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_settlement_config",
+      calldata: [
+        radius,
+        angle_scaled,
+        center,
+        min_distance,
+        max_distance,
+        min_scaling_factor_scaled,
+        min_angle_increase,
+        max_angle_increase,
+      ],
     });
   }
 }

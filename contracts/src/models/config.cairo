@@ -1,21 +1,25 @@
-use core::debug::PrintTrait;
 use core::integer::BoundedU128;
+use cubit::f128::math::comp::{max as fixed_max};
+use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
-    split_resources_and_probs
+    split_resources_and_probs, ResourceTypes
 };
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
-use eternum::models::combat::{Troops};
+use eternum::models::combat::Troops;
 use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
+use eternum::models::position::{Coord};
 use eternum::models::quantity::Quantity;
 
 use eternum::models::resources::{ResourceFoodImpl};
 use eternum::models::weight::Weight;
-use eternum::utils::math::{max};
+use eternum::utils::math::{max, min};
 use eternum::utils::random;
 
 use starknet::ContractAddress;
@@ -157,16 +161,93 @@ pub struct SpeedConfig {
 pub struct MapConfig {
     #[key]
     config_id: ID,
-    explore_wheat_burn_amount: u128,
-    explore_fish_burn_amount: u128,
-    travel_wheat_burn_amount: u128,
-    travel_fish_burn_amount: u128,
     reward_resource_amount: u128,
     // weight of fail
     // the higher, the less likely to find a mine
     // weight of sucess = 1000
     // ex: if set to 5000
     shards_mines_fail_probability: u128,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct SettlementConfig {
+    #[key]
+    config_id: ID,
+    // starting value radius
+    // starting value angle (precision 100)
+    angle_scaled: u128,
+    center: u32,
+    // always positive
+    min_scaling_factor_scaled: u128,
+    // initial radius in precision 100
+    radius: u32,
+    // min/max radius changes in precision 100
+    min_distance: u32,
+    max_distance: u32,
+    // radius incrase in precision 100
+    min_angle_increase: u64,
+    max_angle_increase: u64,
+}
+
+#[generate_trait]
+impl SettlementConfigImpl of SettlementConfigTrait {
+    fn get_scaling_factor(ref self: SettlementConfig) -> Fixed {
+        let max_radius_fixed = FixedTrait::new_unscaled(self.center.into() * 100, false);
+        let radius_fixed = FixedTrait::new_unscaled(self.radius.into(), false);
+        // very small at first and then grows
+        let scaling_factor_fixed = (max_radius_fixed - radius_fixed) / max_radius_fixed;
+        let min_scaling_factor_fixed = FixedTrait::new(self.min_scaling_factor_scaled, false);
+        fixed_max(scaling_factor_fixed, min_scaling_factor_fixed)
+    }
+
+    fn get_step_size(ref self: SettlementConfig, scaling_factor: Fixed) -> u32 {
+        let min_distance_fixed = FixedTrait::new_unscaled(self.min_distance.into(), false);
+        let max_distance_fixed = FixedTrait::new_unscaled(self.max_distance.into(), false);
+        let range = max_distance_fixed - min_distance_fixed;
+        let scaled_range = scaling_factor * range;
+        let step_size_fixed = min_distance_fixed + scaled_range;
+        step_size_fixed.try_into().unwrap() + 100
+    }
+
+    fn get_radius_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> u32 {
+        (block_timestamp % (step_size.into() / 100) * 100 + self.min_distance.into()).try_into().unwrap()
+    }
+
+    fn get_angle_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> Fixed {
+        FixedTrait::new_unscaled(
+            (block_timestamp % (self.max_angle_increase - self.min_angle_increase) + self.min_angle_increase).into(),
+            false
+        )
+            / FixedTrait::new_unscaled(100, false)
+    }
+
+    fn increase_angle(ref self: SettlementConfig, angle_increase: Fixed) -> Fixed {
+        self.angle_scaled += angle_increase.mag;
+        FixedTrait::new(self.angle_scaled, false)
+    }
+
+    fn compute_coords(ref self: SettlementConfig, angle: Fixed) -> Coord {
+        let cos = fixed_cos(angle);
+        let sin = fixed_sin(angle);
+
+        let x = FixedTrait::new_unscaled(self.center.into(), false)
+            + cos * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
+        let y = FixedTrait::new_unscaled(self.center.into(), false)
+            + sin * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
+
+        return Coord { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
+    }
+
+    fn get_next_settlement_coord(ref self: SettlementConfig, block_timestamp: u64) -> Coord {
+        let scaling_factor = Self::get_scaling_factor(ref self);
+        let step_size = Self::get_step_size(ref self, scaling_factor);
+        let radius_increase = Self::get_radius_increase(ref self, step_size, block_timestamp);
+        self.radius += radius_increase;
+        let angle_increase = Self::get_angle_increase(ref self, step_size, block_timestamp);
+        let new_angle_fixed = Self::increase_angle(ref self, angle_increase);
+        Self::compute_coords(ref self, new_angle_fixed)
+    }
 }
 
 #[generate_trait]
@@ -178,28 +259,6 @@ impl MapConfigImpl of MapConfigTrait {
         let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
-    }
-
-    fn pay_exploration_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity) {
-        let unit_owner_id = unit_entity_owner.entity_owner_id;
-        assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
-        let quantity_value = max(unit_quantity.value, 1);
-
-        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
-        let mut wheat_pay_amount = explore_config.explore_wheat_burn_amount * quantity_value;
-        let mut fish_pay_amount = explore_config.explore_fish_burn_amount * quantity_value;
-        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
-    }
-
-    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, unit_quantity: Quantity, steps: usize) {
-        let unit_owner_id = unit_entity_owner.entity_owner_id;
-        assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
-        let quantity_value = max(unit_quantity.value, 1);
-
-        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
-        let mut wheat_pay_amount = explore_config.travel_wheat_burn_amount * quantity_value * steps.into();
-        let mut fish_pay_amount = explore_config.travel_fish_burn_amount * quantity_value * steps.into();
-        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 }
 
@@ -229,6 +288,102 @@ pub struct StaminaConfig {
     #[key]
     unit_type: u8,
     max_stamina: u16,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct TravelFoodCostConfig {
+    #[key]
+    config_id: ID,
+    #[key]
+    unit_type: u8,
+    explore_wheat_burn_amount: u128,
+    explore_fish_burn_amount: u128,
+    travel_wheat_burn_amount: u128,
+    travel_fish_burn_amount: u128,
+}
+
+#[generate_trait]
+impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
+    fn pay_exploration_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, troops: Troops) {
+        let unit_owner_id = unit_entity_owner.entity_owner_id;
+        assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
+
+        let knight_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), TravelFoodCostConfig
+        );
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), TravelFoodCostConfig
+        );
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), TravelFoodCostConfig
+        );
+
+        let knight_wheat_pay_amount = knight_travel_food_cost_config.explore_wheat_burn_amount
+            * troops.knight_count.into();
+        let knight_fish_pay_amount = knight_travel_food_cost_config.explore_fish_burn_amount
+            * troops.knight_count.into();
+
+        let paladin_wheat_pay_amount = paladin_travel_food_cost_config.explore_wheat_burn_amount
+            * troops.paladin_count.into();
+        let paladin_fish_pay_amount = paladin_travel_food_cost_config.explore_fish_burn_amount
+            * troops.paladin_count.into();
+
+        let crossbowman_wheat_pay_amount = crossbowman_travel_food_cost_config.explore_wheat_burn_amount
+            * troops.crossbowman_count.into();
+        let crossbowman_fish_pay_amount = crossbowman_travel_food_cost_config.explore_fish_burn_amount
+            * troops.crossbowman_count.into();
+
+        let mut wheat_pay_amount = knight_wheat_pay_amount + paladin_wheat_pay_amount + crossbowman_wheat_pay_amount;
+        let mut fish_pay_amount = knight_fish_pay_amount + paladin_fish_pay_amount + crossbowman_fish_pay_amount;
+        assert!(wheat_pay_amount != 0, "Cannot explore with 0 troops");
+        assert!(fish_pay_amount != 0, "Cannot explore with 0 troops");
+
+        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
+    }
+
+    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, troops: Troops, steps: usize) {
+        let unit_owner_id = unit_entity_owner.entity_owner_id;
+        assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
+
+        let knight_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), TravelFoodCostConfig
+        );
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), TravelFoodCostConfig
+        );
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = get!(
+            world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), TravelFoodCostConfig
+        );
+
+        let knight_wheat_pay_amount = knight_travel_food_cost_config.travel_wheat_burn_amount
+            * troops.knight_count.into()
+            * steps.into();
+        let knight_fish_pay_amount = knight_travel_food_cost_config.travel_fish_burn_amount
+            * troops.knight_count.into()
+            * steps.into();
+
+        let paladin_wheat_pay_amount = paladin_travel_food_cost_config.travel_wheat_burn_amount
+            * troops.paladin_count.into()
+            * steps.into();
+        let paladin_fish_pay_amount = paladin_travel_food_cost_config.travel_fish_burn_amount
+            * troops.paladin_count.into()
+            * steps.into();
+
+        let crossbowman_wheat_pay_amount = crossbowman_travel_food_cost_config.travel_wheat_burn_amount
+            * troops.crossbowman_count.into()
+            * steps.into();
+        let crossbowman_fish_pay_amount = crossbowman_travel_food_cost_config.travel_fish_burn_amount
+            * troops.crossbowman_count.into()
+            * steps.into();
+
+        let mut wheat_pay_amount = knight_wheat_pay_amount + paladin_wheat_pay_amount + crossbowman_wheat_pay_amount;
+        let mut fish_pay_amount = knight_fish_pay_amount + paladin_fish_pay_amount + crossbowman_fish_pay_amount;
+        assert!(wheat_pay_amount != 0, "Cannot travel with 0 troops");
+        assert!(fish_pay_amount != 0, "Cannot travel with 0 troops");
+
+        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
+    }
 }
 
 #[derive(Copy, Drop, Serde)]

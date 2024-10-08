@@ -5,3 +5,24 @@ export const TROOPS_STAMINAS = {
   [ResourcesIds.Knight]: 80,
   [ResourcesIds.Crossbowman]: 80,
 };
+
+export const TROOPS_FOOD_CONSUMPTION = {
+  [ResourcesIds.Paladin]: {
+    explore_wheat_burn_amount: 0.006,
+    explore_fish_burn_amount: 0.006,
+    travel_wheat_burn_amount: 0.002,
+    travel_fish_burn_amount: 0.002,
+  },
+  [ResourcesIds.Knight]: {
+    explore_wheat_burn_amount: 0.006,
+    explore_fish_burn_amount: 0.006,
+    travel_wheat_burn_amount: 0.002,
+    travel_fish_burn_amount: 0.002,
+  },
+  [ResourcesIds.Crossbowman]: {
+    explore_wheat_burn_amount: 0.003,
+    explore_fish_burn_amount: 0.003,
+    travel_wheat_burn_amount: 0.001,
+    travel_fish_burn_amount: 0.001,
+  },
+};

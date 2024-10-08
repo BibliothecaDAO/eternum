@@ -2,7 +2,7 @@ import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ResourcesIds, TROOPS_FOOD_CONSUMPTION } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const TheMap = () => {
@@ -43,58 +43,136 @@ export const TheMap = () => {
 };
 
 const ExplorationTable = () => {
-  const exploreFishBurn = multiplyByPrecision(EternumGlobalConfig.exploration.exploreFishBurn);
-  const exploreWheatBurn = multiplyByPrecision(EternumGlobalConfig.exploration.exploreWheatBurn);
-
-  const travelFishBurn = multiplyByPrecision(EternumGlobalConfig.exploration.travelFishBurn);
-  const travelWheatBurn = multiplyByPrecision(EternumGlobalConfig.exploration.travelWheatBurn);
-
   return (
     <table className="not-prose w-full border-collapse border border-gold/10">
       <thead>
         <tr>
           <th className="border border-gold/10 p-2"></th>
           <th className="border border-gold/10 p-2">Stamina</th>
-          <th className="border border-gold/10 p-2">Resources</th>
+          <th className="border border-gold/10 p-2">Consumes per hex / unit:</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td className="border border-gold/10 p-2 font-bold">Exploration</td>
-          <td className="border border-gold/10 p-2">
-            <div className="flex flex-row items-center justify-around">
+          <td className="border border-gold/10 p-2 font-bold">
+            <div className="flex flex-row items-center justify-center">
               <Lightning className="fill-order-power/70 w-8"></Lightning>
-              <p>{EternumGlobalConfig.stamina.exploreCost}</p>
+              Travel
             </div>
           </td>
-          <td className="border border-gold/10 p-2">
-            <div className="flex flex-row items-center justify-around">
-              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Wheat]} />
-              <p>{exploreWheatBurn} / unit</p>
-            </div>
-            <div className="flex flex-row items-center justify-around">
-              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Fish]} />
-              <p>{exploreFishBurn} / unit</p>
-            </div>
+          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.travelCost}</td>
+          <td>
+            <table className="not-prose w-full p-2 border-gold/10 mt-2">
+              <thead>
+                <tr>
+                  <th className="border border-gold/10 p-2">
+                    <ResourceIcon
+                      className="mr-1 text-gold"
+                      size="sm"
+                      resource={ResourcesIds[ResourcesIds.Crossbowman]}
+                    />
+                  </th>
+                  <th className="border border-gold/10 p-2">
+                    <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds[ResourcesIds.Knight]} />
+                  </th>
+                  <th className="border border-gold/10 p-2">
+                    <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds[ResourcesIds.Paladin]} />
+                  </th>
+                  <th className="p-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_fish_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_fish_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_fish_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_wheat_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_wheat_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_wheat_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </td>
         </tr>
         <tr>
-          <td className="border border-gold/10 p-2 font-bold">Travel</td>
-          <td className="border border-gold/10 p-2">
-            <div className="flex flex-row items-center justify-around">
+          <td className="border border-gold/10 p-2 font-bold">
+            <div className="flex flex-row items-center justify-center">
               <Lightning className="fill-order-power/70 w-8"></Lightning>
-              <p>{EternumGlobalConfig.stamina.travelCost}</p>
+              Exploration
             </div>
           </td>
-          <td className="border border-gold/10 p-2">
-            <div className="flex flex-row items-center justify-around">
-              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Wheat]} />
-              <p>{travelWheatBurn} / unit</p>
-            </div>
-            <div className="flex flex-row items-center justify-around">
-              <ResourceIcon size="xl" resource={ResourcesIds[ResourcesIds.Fish]} />
-              <p>{travelFishBurn} / unit</p>
-            </div>
+          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.exploreCost}</td>
+          <td>
+            <table className="not-prose w-full p-2 border-gold/10 mt-2">
+              <thead>
+                <tr>
+                  <th className="border border-gold/10 p-2">
+                    <ResourceIcon
+                      className="mr-1 text-gold"
+                      size="sm"
+                      resource={ResourcesIds[ResourcesIds.Crossbowman]}
+                    />
+                  </th>
+                  <th className="border border-gold/10 p-2">
+                    <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds[ResourcesIds.Knight]} />
+                  </th>
+                  <th className="border border-gold/10 p-2">
+                    <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds[ResourcesIds.Paladin]} />
+                  </th>
+                  <th className="p-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_fish_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_fish_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_fish_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_wheat_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_wheat_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_wheat_burn_amount)}
+                  </td>
+                  <td className="border border-gold/10 p-2 text-center">
+                    <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </td>
         </tr>
       </tbody>

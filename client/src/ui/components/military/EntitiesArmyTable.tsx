@@ -1,8 +1,8 @@
-import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { type ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ID } from "@bibliothecadao/eternum";
+import { type ID } from "@bibliothecadao/eternum";
 import { HintSection } from "../hints/HintModal";
 import { ArmyChip } from "./ArmyChip";
 
@@ -11,7 +11,7 @@ export const EntitiesArmyTable = () => {
 
   return playerStructures().map((entity: any, index: number) => {
     return (
-      <div key={entity.entity_id} className="px-2">
+      <div key={entity.entity_id} className="p-2">
         <Headline>
           <div className="flex gap-2">
             <div className="self-center">{entity.name} </div>

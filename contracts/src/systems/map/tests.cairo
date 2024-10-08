@@ -47,7 +47,8 @@ use eternum::utils::testing::{
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
         set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
-        set_tick_config, set_map_config, set_weight_config, set_mine_production_config
+        set_settlement_config, set_tick_config, set_map_config, set_weight_config, set_mine_production_config,
+        set_travel_food_cost_config
     },
     constants::{
         MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
@@ -184,11 +185,13 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_stamina_config(config_systems_address);
     set_speed_config(config_systems_address);
     set_mercenaries_config(config_systems_address);
+    set_settlement_config(config_systems_address);
     set_tick_config(config_systems_address);
     set_map_config(config_systems_address);
     set_weight_config(config_systems_address);
     set_mine_production_config(config_systems_address);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
+    set_travel_food_cost_config(config_systems_address);
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());

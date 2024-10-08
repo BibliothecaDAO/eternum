@@ -6,18 +6,21 @@ use eternum::constants::{
 };
 
 use eternum::models::{
-    config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory}, combat::Troops, config::MapConfig
+    config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory, MapConfig, TravelFoodCostConfig},
+    combat::Troops,
 };
 
 use eternum::systems::config::contracts::{
     ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
     IStaminaRefillConfigDispatcher, IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher,
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
-    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
-    ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, IProductionConfigDispatcher,
-    IProductionConfigDispatcherTrait, ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait,
-    IBattleConfigDispatcher, IBattleConfigDispatcherTrait, IRealmLevelConfigDispatcher, IRealmLevelConfigDispatcherTrait
+    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait, ISettlementConfigDispatcher,
+    ISettlementConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait, ITickConfigDispatcher,
+    ITickConfigDispatcherTrait, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
+    IWeightConfigDispatcherTrait, IProductionConfigDispatcher, IProductionConfigDispatcherTrait,
+    ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait, IBattleConfigDispatcher,
+    IBattleConfigDispatcherTrait, ITravelFoodCostConfigDispatcher, ITravelFoodCostConfigDispatcherTrait,
+    IRealmLevelConfigDispatcher, IRealmLevelConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -33,6 +36,7 @@ fn setup_globals(config_systems_address: ContractAddress) {
     set_bank_config(config_systems_address);
     set_tick_config(config_systems_address);
     set_map_config(config_systems_address);
+    set_travel_food_cost_config(config_systems_address);
 }
 
 fn set_bank_config(config_systems_address: ContractAddress) {
@@ -48,15 +52,51 @@ fn set_tick_config(config_systems_address: ContractAddress) {
 fn set_map_config(config_systems_address: ContractAddress) {
     let map_config = MapConfig {
         config_id: WORLD_CONFIG_ID,
-        explore_wheat_burn_amount: MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT,
-        explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
-        travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
-        travel_fish_burn_amount: MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT,
         reward_resource_amount: MAP_EXPLORE_RANDOM_MINT_AMOUNT,
         shards_mines_fail_probability: SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
     };
 
     IMapConfigDispatcher { contract_address: config_systems_address }.set_map_config(map_config);
+}
+
+fn set_travel_food_cost_config(config_systems_address: ContractAddress) {
+    let travel_food_cost_config_dispatcher = ITravelFoodCostConfigDispatcher {
+        contract_address: config_systems_address
+    };
+
+    travel_food_cost_config_dispatcher
+        .set_travel_food_cost_config(
+            TravelFoodCostConfig {
+                config_id: WORLD_CONFIG_ID,
+                unit_type: ResourceTypes::KNIGHT,
+                explore_wheat_burn_amount: MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT,
+                explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
+                travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
+                travel_fish_burn_amount: 1,
+            }
+        );
+    travel_food_cost_config_dispatcher
+        .set_travel_food_cost_config(
+            TravelFoodCostConfig {
+                config_id: WORLD_CONFIG_ID,
+                unit_type: ResourceTypes::PALADIN,
+                explore_wheat_burn_amount: MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT,
+                explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
+                travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
+                travel_fish_burn_amount: MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT,
+            }
+        );
+    travel_food_cost_config_dispatcher
+        .set_travel_food_cost_config(
+            TravelFoodCostConfig {
+                config_id: WORLD_CONFIG_ID,
+                unit_type: ResourceTypes::CROSSBOWMAN,
+                explore_wheat_burn_amount: MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT,
+                explore_fish_burn_amount: MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
+                travel_wheat_burn_amount: MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT,
+                travel_fish_burn_amount: MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT,
+            }
+        );
 }
 
 fn get_combat_config() -> TroopConfig {
@@ -144,6 +184,20 @@ fn set_mercenaries_config(config_systems_address: ContractAddress) {
 
     IMercenariesConfigDispatcher { contract_address: config_systems_address }
         .set_mercenaries_config(mercenaries_troops, mercenaries_rewards);
+}
+
+fn set_settlement_config(config_systems_address: ContractAddress) {
+    ISettlementConfigDispatcher { contract_address: config_systems_address }
+        .set_settlement_config(
+            radius: 50,
+            angle_scaled: 0,
+            center: 2147483646,
+            min_distance: 1,
+            max_distance: 5,
+            min_scaling_factor_scaled: 1844674407370955161,
+            min_angle_increase: 30,
+            max_angle_increase: 100,
+        );
 }
 
 fn set_weight_config(config_systems_address: ContractAddress) {

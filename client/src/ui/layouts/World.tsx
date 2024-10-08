@@ -6,9 +6,9 @@ import { Redirect } from "wouter";
 import { HooksComponent } from "../components/HooksComponent";
 import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
-import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 
+import { BattleContainer } from "../containers/BattleContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
@@ -63,34 +63,35 @@ export const World = () => {
       <HooksComponent />
       <ActionInfo />
       <ArmyInfoLabel />
-      {battleView ? (
-        <BattleContainer>
-          <BattleView />
-        </BattleContainer>
-      ) : (
-        <>
-          <LeftMiddleContainer>
-            <LeftNavigationModule />
-          </LeftMiddleContainer>
 
-          <BottomMiddleContainer>
-            <BottomNavigation />
-          </BottomMiddleContainer>
+      <BattleContainer>
+        <BattleView />
+      </BattleContainer>
 
-          <BottomRightContainer>
-            <EventStream />
-          </BottomRightContainer>
+      <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
+        <LeftMiddleContainer>
+          <LeftNavigationModule />
+        </LeftMiddleContainer>
 
-          <RightMiddleContainer>
-            <RightNavigationModule />
-          </RightMiddleContainer>
-        </>
-      )}
+        <BottomMiddleContainer>
+          <BottomNavigation />
+        </BottomMiddleContainer>
+
+        <BottomRightContainer>
+          <EventStream />
+        </BottomRightContainer>
+
+        <RightMiddleContainer>
+          <RightNavigationModule />
+        </RightMiddleContainer>
+
+        <TopLeftContainer>
+          <TopMiddleNavigation />
+        </TopLeftContainer>
+      </div>
 
       <PlayerId />
-      <TopLeftContainer>
-        <TopMiddleNavigation />
-      </TopLeftContainer>
+
       <Redirect to="/" />
       <Leva
         hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}

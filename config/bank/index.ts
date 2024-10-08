@@ -1,8 +1,8 @@
-import { config } from "..";
+import { EternumConfig } from "@bibliothecadao/eternum";
 import devManifest from "../../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../../contracts/manifests/prod/deployment/manifest.json";
 
-import { EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumProvider, FELT_CENTER, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -16,6 +16,8 @@ if (
 const VITE_PUBLIC_MASTER_ADDRESS = process.env.VITE_PUBLIC_MASTER_ADDRESS;
 const VITE_PUBLIC_MASTER_PRIVATE_KEY = process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
 
+// default config
+const config = new EternumConfig();
 const manifest = process.env.VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 // Bug in bun we have to use http://127.0.0.1:5050/
 const nodeUrl = process.env.VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : process.env.VITE_PUBLIC_NODE_URL;
@@ -28,8 +30,8 @@ const ADMIN_BANK_ENTITY_ID = 999999998n;
 const LORDS_LIQUIDITY_PER_RESOURCE = 250000;
 
 // Banks
-const COORD_X = 2147483899;
-const COORD_Y = 2147483801;
+const COORD_X = FELT_CENTER;
+const COORD_Y = FELT_CENTER;
 
 export const createAdminBank = async () => {
   const tx = await provider.create_admin_bank({
@@ -65,10 +67,10 @@ export const AMMStartingLiquidity: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Mithral]: 100_000,
   [ResourcesIds.Dragonhide]: 100_000,
 
-  [ResourcesIds.Paladin]: 100_000,
-  [ResourcesIds.Crossbowman]: 100_000,
-  [ResourcesIds.Knight]: 100_000,
-  [ResourcesIds.Donkey]: 100_000,
+  // [ResourcesIds.Paladin]: 100_000,
+  // [ResourcesIds.Crossbowman]: 100_000,
+  // [ResourcesIds.Knight]: 100_000,
+  [ResourcesIds.Donkey]: 10_000,
 
   [ResourcesIds.Fish]: 10_000_000,
   [ResourcesIds.Wheat]: 10_000_000,

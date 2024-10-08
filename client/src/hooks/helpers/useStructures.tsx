@@ -181,7 +181,7 @@ export const getStructureByEntityId = (entityId: ID) => {
 export function useStructuresFromPosition({ position }: { position: Position }) {
   const {
     setup: {
-      components: { Realm, Owner },
+      components: { Realm, Owner, Position },
     },
   } = useDojo();
 
@@ -191,21 +191,22 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
     () =>
       allRealms.map((entityId) => {
         const realm = getComponentValue(Realm, entityId);
-        if (realm) {
+        const realmPosition = getComponentValue(Position, entityId);
+        if (realm && realmPosition) {
           const realmData = getRealm(realm.realm_id);
           if (!realmData) return undefined;
           const name = realmData.name;
           const owner = getComponentValue(Owner, entityId);
           const resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
 
-          const distanceFromPosition = calculateDistance(position, realmData.position) ?? 0;
+          const distanceFromPosition = calculateDistance(position, realmPosition) ?? 0;
 
           const timeToTravel = Math.floor(((distanceFromPosition / EternumGlobalConfig.speed.donkey) * 3600) / 60 / 60);
 
           return {
             ...realm,
             name,
-            position: realmData.position,
+            position: realmPosition,
             owner: owner?.address,
             resources,
             distanceFromPosition,
@@ -220,8 +221,12 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
 }
 
 export const isStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
+  const {
+    setup: { configManager },
+  } = useDojo();
+
   const tickCount = currentTickCount(currentTimestamp);
-  const allowAttackTick = currentTickCount(created_at) + EternumGlobalConfig.battle.graceTickCount;
+  const allowAttackTick = currentTickCount(created_at) + configManager.getBattleGraceTickCount();
 
   if (tickCount < allowAttackTick) {
     return true;

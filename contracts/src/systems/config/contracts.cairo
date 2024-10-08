@@ -2,7 +2,9 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
-use eternum::models::config::{TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig};
+use eternum::models::config::{
+    TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, TravelFoodCostConfig,
+};
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -49,6 +51,12 @@ trait ITickConfig {
 trait IStaminaConfig {
     fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16);
 }
+
+#[dojo::interface]
+trait ITravelFoodCostConfig {
+    fn set_travel_food_cost_config(ref world: IWorldDispatcher, travel_food_cost_config: TravelFoodCostConfig);
+}
+
 #[dojo::interface]
 trait IStaminaRefillConfig {
     fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16);
@@ -144,6 +152,21 @@ trait IMercenariesConfig {
     fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>);
 }
 
+#[dojo::interface]
+trait ISettlementConfig {
+    fn set_settlement_config(
+        ref world: IWorldDispatcher,
+        radius: u32,
+        angle_scaled: u128,
+        center: u32,
+        min_distance: u32,
+        max_distance: u32,
+        min_scaling_factor_scaled: u128,
+        min_angle_increase: u64,
+        max_angle_increase: u64,
+    );
+}
+
 
 #[dojo::contract]
 mod config_systems {
@@ -162,7 +185,7 @@ mod config_systems {
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, RealmLevelConfig, BuildingGeneralConfig,
-        RealmMaxLevelConfig
+        RealmMaxLevelConfig, SettlementConfig, TravelFoodCostConfig
     };
     use eternum::models::hyperstructure::SeasonCustomImpl;
 
@@ -301,6 +324,16 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl TravelFoodCostConfigCustomImpl of super::ITravelFoodCostConfig<ContractState> {
+        fn set_travel_food_cost_config(ref world: IWorldDispatcher, mut travel_food_cost_config: TravelFoodCostConfig) {
+            assert_caller_is_admin(world);
+
+            travel_food_cost_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (travel_food_cost_config));
         }
     }
 
@@ -646,6 +679,36 @@ mod config_systems {
                     level,
                     required_resources_id: detached_resource_id.into(),
                     required_resource_count: detached_resource_count.try_into().unwrap()
+                })
+            );
+        }
+    }
+
+    impl ISettlementConfig of super::ISettlementConfig<ContractState> {
+        fn set_settlement_config(
+            ref world: IWorldDispatcher,
+            radius: u32,
+            angle_scaled: u128,
+            center: u32,
+            min_distance: u32,
+            max_distance: u32,
+            min_scaling_factor_scaled: u128,
+            min_angle_increase: u64,
+            max_angle_increase: u64
+        ) {
+            assert_caller_is_admin(world);
+            set!(
+                world,
+                (SettlementConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    radius,
+                    angle_scaled,
+                    center,
+                    min_distance,
+                    max_distance,
+                    min_scaling_factor_scaled,
+                    min_angle_increase,
+                    max_angle_increase,
                 })
             );
         }

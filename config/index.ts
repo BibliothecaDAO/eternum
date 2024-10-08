@@ -1,7 +1,7 @@
 import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
 
-import { EternumConfig, EternumProvider } from "@bibliothecadao/eternum";
+import { EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -38,6 +38,20 @@ console.log("Provider set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 console.log("Account set up");
 
-export const config = new EternumConfig();
+const setupConfig = process.env.VITE_PUBLIC_DEV
+  ? {
+      ...EternumGlobalConfig,
+      stamina: {
+        travelCost: 0,
+        exploreCost: 0,
+      },
+      battle: {
+        graceTickCount: 0,
+        delaySeconds: 0,
+      },
+    }
+  : EternumGlobalConfig;
+
+export const config = new EternumConfig(setupConfig);
 
 await config.setup(account, provider);
