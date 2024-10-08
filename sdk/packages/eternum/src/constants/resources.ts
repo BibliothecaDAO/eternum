@@ -404,7 +404,7 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Adamantine]: 50,
   [ResourcesIds.Mithral]: 50,
   [ResourcesIds.Dragonhide]: 50,
-  [ResourcesIds.Donkey]: 2,
+  [ResourcesIds.Donkey]: 0.5,
   [ResourcesIds.Knight]: 0.05,
   [ResourcesIds.Crossbowman]: 0.05,
   [ResourcesIds.Paladin]: 0.05,
