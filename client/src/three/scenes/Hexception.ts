@@ -406,15 +406,12 @@ export default class HexceptionScene extends HexagonScene {
       radius,
     );
 
-
-
     const label = new THREE.Group();
     this.scene.add(label);
 
     if (isMainHex) {
       const buildablePositions = generateHexPositions({ col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] }, this.castleLevel + 1);
 
-      // exclude buildable positions from positions
       positions = positions.filter((position) => !buildablePositions.some((buildablePosition) => buildablePosition.col === position.col && buildablePosition.row === position.row));
 
       buildablePositions.forEach((position) => {
@@ -458,7 +455,6 @@ export default class HexceptionScene extends HexagonScene {
       dummy.updateMatrix();
       biomeHexes[biome].push(dummy.matrix.clone());
     });
-
 
   };
 
