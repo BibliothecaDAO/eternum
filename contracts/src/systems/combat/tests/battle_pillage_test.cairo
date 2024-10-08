@@ -14,8 +14,9 @@ use eternum::{
         world::spawn_eternum, general::{mint, teleport, spawn_realm, create_army_with_troops},
         systems::{deploy_system, deploy_realm_systems, deploy_combat_systems},
         config::{
-            set_combat_config, set_settlement_config, setup_globals, set_stamina_config, set_capacity_config,
-            set_speed_config, set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config
+            set_combat_config, setup_globals, set_stamina_config, set_capacity_config, set_speed_config,
+            set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config,
+            set_travel_food_cost_config, set_settlement_config
         }
     },
 };
@@ -44,6 +45,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     set_weight_config(config_systems_address);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
     set_battle_config(config_systems_address);
+    set_travel_food_cost_config(config_systems_address);
 
     let realm_system_dispatcher = deploy_realm_systems(world);
     let combat_system_dispatcher = deploy_combat_systems(world);
@@ -127,9 +129,9 @@ fn test_battle_pillage__near_max_capacity() {
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
-    let army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
+    let _army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
 
-    let capacity_config = get!(world, 3, CapacityConfig);
+    let _capacity_config = get!(world, 3, CapacityConfig);
 
     combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
@@ -154,9 +156,9 @@ fn test_simple_battle_pillage() {
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
-    let army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
+    let _army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
 
-    let capacity_config = get!(world, 3, CapacityConfig);
+    let _capacity_config = get!(world, 3, CapacityConfig);
 
     combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 

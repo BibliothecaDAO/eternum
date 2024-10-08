@@ -12,11 +12,14 @@ import {
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   HYPERSTRUCTURE_TOTAL_COSTS,
+  REALM_MAX_LEVEL,
+  REALM_UPGRADE_COSTS,
   RESOURCE_BUILDING_COSTS,
   RESOURCE_INPUTS,
   RESOURCE_OUTPUTS,
   ResourcesIds,
   STAMINA_REFILL_PER_TICK,
+  TROOPS_FOOD_CONSUMPTION,
   TROOPS_STAMINAS,
   WEIGHTS_GRAM,
 } from "../constants";
@@ -55,6 +58,8 @@ export class EternumConfig {
     await setWeightConfig(config);
     await setBattleConfig(config);
     await setCombatConfig(config);
+    await setRealmUpgradeConfig(config);
+    await setRealmMaxLevelConfig(config);
     await setupGlobals(config);
     await setCapacityConfig(config);
     await setSpeedConfig(config);
@@ -193,6 +198,42 @@ export const setBuildingConfig = async (config: Config) => {
   console.log(`Configuring building cost config ${tx.statusReceipt}...`);
 };
 
+export const setRealmUpgradeConfig = async (config: Config) => {
+  const calldataArray = [];
+  const REALM_UPGRADE_COSTS_SCALED = scaleResourceInputs(
+    REALM_UPGRADE_COSTS,
+    config.config.resources.resourceMultiplier,
+  );
+  for (const level of Object.keys(REALM_UPGRADE_COSTS_SCALED) as unknown as number[]) {
+    if (REALM_UPGRADE_COSTS_SCALED[level].length !== 0) {
+      const calldata = {
+        level,
+        cost_of_level: REALM_UPGRADE_COSTS_SCALED[level].map((cost) => {
+          return {
+            ...cost,
+            amount: cost.amount * config.config.resources.resourcePrecision,
+          };
+        }),
+      };
+
+      calldataArray.push(calldata);
+    }
+  }
+
+  const tx = await config.provider.set_realm_level_config({ signer: config.account, calls: calldataArray });
+  console.log(`Configuring realm level cost config ${tx.statusReceipt}...`);
+};
+
+export const setRealmMaxLevelConfig = async (config: Config) => {
+  const new_max_level = REALM_MAX_LEVEL - 1;
+
+  const tx = await config.provider.set_realm_max_level_config({
+    signer: config.account,
+    new_max_level,
+  });
+  console.log(`Configuring realm max level config ${tx.statusReceipt}...`);
+};
+
 export const setResourceBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
@@ -312,10 +353,6 @@ export const setupGlobals = async (config: Config) => {
   const txMap = await config.provider.set_map_config({
     signer: config.account,
     config_id: 0,
-    explore_wheat_burn_amount: config.config.exploration.exploreWheatBurn * config.config.resources.resourcePrecision,
-    explore_fish_burn_amount: config.config.exploration.exploreFishBurn * config.config.resources.resourcePrecision,
-    travel_wheat_burn_amount: config.config.exploration.travelWheatBurn * config.config.resources.resourcePrecision,
-    travel_fish_burn_amount: config.config.exploration.travelFishBurn * config.config.resources.resourcePrecision,
     reward_amount: config.config.exploration.reward * config.config.resources.resourcePrecision,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
   });
@@ -335,6 +372,19 @@ export const setupGlobals = async (config: Config) => {
   });
 
   console.log(`Configuring travel stamina cost config ${txTravelStaminaCost.statusReceipt}...`);
+
+  for (const [unit_type, costs] of Object.entries(TROOPS_FOOD_CONSUMPTION)) {
+    const tx = await config.provider.set_travel_food_cost_config({
+      signer: config.account,
+      config_id: 0,
+      unit_type: unit_type,
+      explore_wheat_burn_amount: costs.explore_wheat_burn_amount * config.config.resources.resourcePrecision,
+      explore_fish_burn_amount: costs.explore_fish_burn_amount * config.config.resources.resourcePrecision,
+      travel_wheat_burn_amount: costs.travel_wheat_burn_amount * config.config.resources.resourcePrecision,
+      travel_fish_burn_amount: costs.travel_fish_burn_amount * config.config.resources.resourcePrecision,
+    });
+    console.log(`Configuring travel costs for ${unit_type} ${tx.statusReceipt}...`);
+  }
 };
 
 export const setCapacityConfig = async (config: Config) => {

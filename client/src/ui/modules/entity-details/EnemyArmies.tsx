@@ -20,23 +20,24 @@ export const EnemyArmies = ({
   position: Position;
 }) => {
   const dojo = useDojo();
-
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
-  const setBattleView = useUIStore((state) => state.setBattleView);
-
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
+  const { getEntityInfo } = getEntitiesUtils();
   const structureAtPosition = getStructureAtPosition(position.getContract());
 
-  const { getEntityInfo } = getEntitiesUtils();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const setBattleView = useUIStore((state) => state.setBattleView);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const ownArmystructure = ownArmySelected
-    ? getEntityInfo(ownArmySelected.entityOwner.entity_owner_id).structure
-    : undefined;
-  const ownArmyIsImmune = ownArmystructure
-    ? isStructureImmune(Number(ownArmystructure?.created_at), nextBlockTimestamp!)
-    : false;
+  const entityInfo = getEntityInfo(ownArmySelected?.entityOwner.entity_owner_id!).structure;
+
+  const ownArmystructure = useMemo(() => {
+    return ownArmySelected ? entityInfo : undefined;
+  }, [ownArmySelected, entityInfo]);
+
+  const structureImmune = isStructureImmune(Number(ownArmystructure?.created_at), nextBlockTimestamp!);
+
+  const ownArmyIsImmune = useMemo(() => {
+    return ownArmystructure ? structureImmune : false;
+  }, [ownArmystructure, structureImmune]);
 
   const getArmyChip = useCallback(
     (army: ArmyInfo, index: number) => {
@@ -76,7 +77,7 @@ export const EnemyArmies = ({
         battleManager.isBattleOngoing(nextBlockTimestamp!) ||
         battleManager.getUpdatedArmy(army, battleManager.getUpdatedBattle(nextBlockTimestamp!))!.health.current <= 0
       ) {
-        return;
+        return null; // Changed to return null instead of undefined
       }
       return (
         <div className="flex justify-between" key={index}>
@@ -85,19 +86,27 @@ export const EnemyArmies = ({
         </div>
       );
     },
-    [nextBlockTimestamp, ownArmySelected, ownArmySelected?.entity_id, position],
+    [
+      nextBlockTimestamp,
+      ownArmySelected,
+      ownArmySelected?.entity_id,
+      position,
+      getEntityInfo,
+      isStructureImmune,
+      setBattleView,
+      setTooltip,
+      structureAtPosition,
+      ownArmyIsImmune,
+      dojo,
+    ],
   );
-
-  const armiesToDisplay = useMemo(() => {
-    return armies.map((army: ArmyInfo, index) => getArmyChip(army, index)).filter(Boolean);
-  }, [nextBlockTimestamp, getArmyChip]);
 
   return (
     <div className="flex flex-col mt-2 w-[31rem]">
       {armies.length !== 0 && (
         <React.Fragment>
           <div className="grid grid-cols-1 gap-2 p-2">
-            {armiesToDisplay.length > 0 && <>Enemy armies {armiesToDisplay}</>}
+            {armies.length > 0 && armies.map((army: ArmyInfo, index) => getArmyChip(army, index)).filter(Boolean)}
           </div>
         </React.Fragment>
       )}

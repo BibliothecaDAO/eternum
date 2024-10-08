@@ -15,6 +15,7 @@ trait IRealmSystems {
         wonder: u8,
         order: u8,
     ) -> ID;
+    fn upgrade_level(ref world: IWorldDispatcher, realm_id: ID);
     fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID;
 }
 
@@ -29,7 +30,7 @@ mod realm_systems {
     use eternum::constants::REALM_ENTITY_TYPE;
     use eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, MAX_REALMS_PER_ADDRESS};
     use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::config::{CapacityConfigCategory, SettlementConfig, SettlementConfigImpl};
+    use eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
     use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources};
     use eternum::models::event::{SettleRealmData, EventType};
 
@@ -38,10 +39,10 @@ mod realm_systems {
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::Movable;
     use eternum::models::name::{AddressName};
-    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
-    use eternum::models::realm::{Realm, RealmCustomTrait};
+    use eternum::models::realm::{Realm, RealmCustomTrait, RealmCustomImpl};
     use eternum::models::resources::{DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait};
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
@@ -153,6 +154,7 @@ mod realm_systems {
                         regions,
                         wonder,
                         order,
+                        level: 0
                     },
                     Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
                     EntityMetadata { entity_id: entity_id.into(), entity_type: REALM_ENTITY_TYPE, }
@@ -190,6 +192,43 @@ mod realm_systems {
             );
 
             entity_id.into()
+        }
+
+
+        fn upgrade_level(ref world: IWorldDispatcher, realm_id: ID) {
+            // ensure caller owns the realm
+            get!(world, realm_id, EntityOwner).assert_caller_owner(world);
+
+            // ensure entity is a realm
+            let mut realm = get!(world, realm_id, Realm);
+            realm.assert_is_set();
+
+            // ensure realm is not already at max level
+            assert(realm.level < realm.max_level(world), 'realm is already at max level');
+
+            // make payment to upgrade to next level
+            let next_level = realm.level + 1;
+            let realm_level_config = get!(world, next_level, RealmLevelConfig);
+            let required_resources_id = realm_level_config.required_resources_id;
+            let required_resource_count = realm_level_config.required_resource_count;
+            let mut index = 0;
+            loop {
+                if index == required_resource_count {
+                    break;
+                }
+
+                let mut required_resource = get!(world, (required_resources_id, index), DetachedResource);
+
+                // burn resource from realm
+                let mut realm_resource = ResourceCustomImpl::get(world, (realm_id, required_resource.resource_type));
+                realm_resource.burn(required_resource.resource_amount);
+                realm_resource.save(world);
+                index += 1;
+            };
+
+            // set new level
+            realm.level = next_level;
+            set!(world, (realm));
         }
     }
 }

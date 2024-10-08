@@ -22,12 +22,6 @@ export const EternumGlobalConfig = {
     workerHuts: 5,
   },
   exploration: {
-    // food burn amount per unit during exploration
-    exploreWheatBurn: 0.003,
-    exploreFishBurn: 0.003,
-    // food burn amount per unit during travel
-    travelWheatBurn: 0.001,
-    travelFishBurn: 0.001,
     reward: 750,
     shardsMinesFailProbability: 99000,
   },

@@ -29,7 +29,7 @@ use eternum::systems::transport::contracts::travel_systems::{
 use eternum::utils::testing::{
     world::spawn_eternum, systems::deploy_system,
     constants::{MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT},
-    config::set_travel_and_explore_stamina_cost_config
+    config::{set_travel_and_explore_stamina_cost_config, set_travel_food_cost_config}
 };
 use starknet::contract_address_const;
 
@@ -134,6 +134,7 @@ fn test_travel_with_realm_bonus() {
                 regions: 0,
                 wonder: 0,
                 order: 0,
+                level: 0
             },
             Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
             LevelingConfig {
@@ -208,6 +209,7 @@ fn test_travel_with_realm_and_order_bonus() {
                 regions: 0,
                 wonder: 0,
                 order: realm_order_id.into(),
+                level: 0
             },
             Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
             LevelingConfig {
@@ -359,6 +361,7 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
+    set_travel_food_cost_config(config_systems_address);
 
     // set tick config
     let tick_config = TickConfig {
@@ -384,16 +387,7 @@ fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatch
     );
 
     set!(
-        world,
-        (MapConfig {
-            config_id: WORLD_CONFIG_ID,
-            explore_wheat_burn_amount: 100,
-            explore_fish_burn_amount: 100,
-            travel_wheat_burn_amount: 1,
-            travel_fish_burn_amount: 1,
-            reward_resource_amount: 100,
-            shards_mines_fail_probability: 0
-        })
+        world, (MapConfig { config_id: WORLD_CONFIG_ID, reward_resource_amount: 100, shards_mines_fail_probability: 0 })
     );
     // change time such that we will be in the third tick
     starknet::testing::set_block_timestamp(tick_config.next_tick_timestamp());

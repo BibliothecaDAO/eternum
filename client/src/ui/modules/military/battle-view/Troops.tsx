@@ -11,7 +11,7 @@ export const TroopRow = ({
   defending?: boolean;
 }) => {
   return (
-    <div className="self-center m-auto grid grid-cols-3 gap-2 flex">
+    <div className="self-center m-auto grid grid-cols-3 gap-2">
       <TroopCard
         defending={defending}
         className={`${defending ? "order-last" : ""}`}

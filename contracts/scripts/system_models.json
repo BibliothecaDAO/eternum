@@ -30,7 +30,10 @@
     "TravelStaminaCostConfig",
     "ResourceBridgeConfig",
     "ResourceBridgeFeeSplitConfig",
-    "ResourceBridgeWhitelistConfig"
+    "ResourceBridgeWhitelistConfig",
+    "RealmLevelConfig",
+    "RealmMaxLevelConfig",
+    "TravelFoodCostConfig"
   ],
 
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker", "Production"],
