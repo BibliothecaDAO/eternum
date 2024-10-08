@@ -29,9 +29,7 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes, stri
   [BuildingType.Market]: "/models/buildings/market.glb",
   [BuildingType.Resource]: "/models/buildings/mine.glb",
   [BuildingType.Stable]: "/models/buildings/stable.glb",
-  // PLACEHOLDER STOREHOUSE
-  [BuildingType.Storehouse]: "/models/buildings/farm.glb",
-  // [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
+  [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
   [BuildingType.TradingPost]: "/models/buildings/market.glb",
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
