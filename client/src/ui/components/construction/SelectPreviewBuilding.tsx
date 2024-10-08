@@ -126,7 +126,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: !questClaimStatus[QuestId.BuildFarm],
+                    hidden: !questClaimStatus[QuestId.BuildFood],
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -192,9 +192,9 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !questClaimStatus[QuestId.BuildResource],
+                      hidden: !isFarm && !isFishingVillage && !questClaimStatus[QuestId.BuildResource],
                       "animate-pulse":
-                        (isFarm && selectedQuest?.id === QuestId.BuildFarm) ||
+                        ((isFarm || isFishingVillage) && selectedQuest?.id === QuestId.BuildFood) ||
                         (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
                         (isMarket && selectedQuest?.id === QuestId.Market),
                     })}
