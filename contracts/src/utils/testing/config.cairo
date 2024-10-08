@@ -225,4 +225,3 @@ fn set_realm_level_config(config_systems_address: ContractAddress) {
         .set_realm_level_config(3, array![(ResourceTypes::COAL, 300), (ResourceTypes::IRONWOOD, 300),].span());
 }
 
-
