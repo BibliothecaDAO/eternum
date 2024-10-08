@@ -8,7 +8,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
@@ -39,6 +39,15 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
     [setup, bankEntityId, resourceId, account.address],
   );
+
+  // recompute resource amount when resource id changes
+  useEffect(() => {
+    if (isBuyResource) {
+      handleResourceAmountChange(resourceAmount);
+    } else {
+      handleLordsAmountChange(lordsAmount);
+    }
+  }, [marketManager.resourceId]);
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
@@ -75,12 +84,18 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     setLordsAmount(amount);
     if (isBuyResource) {
       const calculatedResourceAmount = divideByPrecision(
-        marketManager.buyResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateResourceOutputForLordsInput(
+          multiplyByPrecision(amount) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
       setResourceAmount(calculatedResourceAmount);
     } else {
       const calculatedResourceAmount = divideByPrecision(
-        marketManager.sellResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateResourceInputForLordsOutput(
+          multiplyByPrecision(amount / (1 - OWNER_FEE)) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
       setResourceAmount(calculatedResourceAmount);
     }
@@ -91,20 +106,27 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     setResourceAmount(amount);
     if (isBuyResource) {
       const calculatedLordsAmount = divideByPrecision(
-        marketManager.buyResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateLordsInputForResourceOutput(
+          multiplyByPrecision(amount) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
       setLordsAmount(calculatedLordsAmount);
     } else {
       const calculatedLordsAmount = divideByPrecision(
-        marketManager.sellResource(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator),
+        marketManager.calculateLordsOutputForResourceInput(
+          multiplyByPrecision(amount) || 0,
+          EternumGlobalConfig.banks.lpFeesNumerator,
+        ),
       );
-      setLordsAmount(calculatedLordsAmount);
+      const lordsAmountAfterFee = calculatedLordsAmount * (1 - OWNER_FEE);
+      setLordsAmount(lordsAmountAfterFee);
     }
   };
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
-      const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - ownerFee) : resourceAmount;
+      const amount = isLords ? lordsAmount : resourceAmount;
       const selectableResources = resources.filter((r) =>
         isLords ? r.id === ResourcesIds.Lords : r.id !== ResourcesIds.Lords,
       );
@@ -138,7 +160,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
   const renderConfirmationPopup = useMemo(() => {
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
     const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
-    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount - ownerFee;
+    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount;
     const negativeResource = isBuyResource ? "Lords" : chosenResourceName || "";
     const positiveResource = isBuyResource ? chosenResourceName || "" : "Lords";
     const resourcesToTransport = isBuyResource
