@@ -27,7 +27,7 @@ export const EnemyArmies = ({
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const entityInfo = getEntityInfo(ownArmySelected?.entityOwner.entity_owner_id!).structure;
+  const entityInfo = getEntityInfo(ownArmySelected?.entityOwner.entity_owner_id ?? 0).structure;
 
   const ownArmystructure = useMemo(() => {
     return ownArmySelected ? entityInfo : undefined;

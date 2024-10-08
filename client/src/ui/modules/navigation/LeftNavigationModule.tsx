@@ -56,7 +56,7 @@ export const LeftNavigationModule = () => {
 
   const isBuildQuest = useMemo(() => {
     return (
-      selectedQuest?.id === QuestId.BuildFarm ||
+      selectedQuest?.id === QuestId.BuildFood ||
       selectedQuest?.id === QuestId.BuildResource ||
       selectedQuest?.id === QuestId.BuildWorkersHut ||
       selectedQuest?.id === QuestId.Market ||
