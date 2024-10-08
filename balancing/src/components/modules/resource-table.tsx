@@ -53,16 +53,19 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
     );
   };
   // Sum up how many times each resource is used as an input based on RESOURCE_INPUTS_SCALED and BUILDING_COSTS_SCALED
-  const resourceUsageCount = resources.reduce((acc, resource) => {
-    const inputUsageCount = Object.values(RESOURCE_INPUTS_SCALED).reduce((count, inputs) => {
-      return count + inputs.filter((input: any) => input.resource === resource.id).length;
-    }, 0);
-    const buildingUsageCount = Object.values(BUILDING_COSTS_SCALED).reduce((count, costs) => {
-      return count + costs.filter((cost: any) => cost.resource === resource.id).length;
-    }, 0);
-    acc[resource.id] = inputUsageCount + buildingUsageCount;
-    return acc;
-  }, {} as Record<number, number>);
+  const resourceUsageCount = resources.reduce(
+    (acc, resource) => {
+      const inputUsageCount = Object.values(RESOURCE_INPUTS_SCALED).reduce((count, inputs) => {
+        return count + inputs.filter((input: any) => input.resource === resource.id).length;
+      }, 0);
+      const buildingUsageCount = Object.values(BUILDING_COSTS_SCALED).reduce((count, costs) => {
+        return count + costs.filter((cost: any) => cost.resource === resource.id).length;
+      }, 0);
+      acc[resource.id] = inputUsageCount + buildingUsageCount;
+      return acc;
+    },
+    {} as Record<number, number>,
+  );
 
   console.log(resourceUsageCount);
 
@@ -74,11 +77,14 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
 
   // adjusted demand = count * adjusted value
 
-  const adjustedDemand = resources.reduce((acc, resource) => {
-    const adjustedValue: any = sumAdjustedInputs(resource.id);
-    acc[resource.id] = adjustedValue * resourceUsageCount[resource.id];
-    return acc;
-  }, {} as Record<number, number>);
+  const adjustedDemand = resources.reduce(
+    (acc, resource) => {
+      const adjustedValue: any = sumAdjustedInputs(resource.id);
+      acc[resource.id] = adjustedValue * resourceUsageCount[resource.id];
+      return acc;
+    },
+    {} as Record<number, number>,
+  );
 
   return (
     <Table className=" w-full">
