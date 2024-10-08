@@ -5,6 +5,7 @@ import { Combat } from "./Combat";
 import { GettingStarted } from "./GettingStarted";
 import { Guilds } from "./Guilds";
 import { Points } from "./Points";
+import { Realm } from "./Realm";
 import { Resources } from "./Resources";
 import { TheMap } from "./TheMap";
 import { TheWorld } from "./TheWorld";
@@ -24,6 +25,7 @@ export enum HintSection {
   WorldStructures = "World Structures",
   Points = "Points",
   Guilds = "Guilds",
+  Realm = "Realms",
 }
 
 type HintModalProps = {
@@ -40,7 +42,10 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
       name: HintSection.KeyConcepts,
       content: <GettingStarted />,
     },
-
+    {
+      name: HintSection.Realm,
+      content: <Realm />,
+    },
     {
       name: HintSection.Resources,
       content: <Resources />,
