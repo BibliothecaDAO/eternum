@@ -15,7 +15,7 @@ import { BuildingPreview } from "../components/BuildingPreview";
 import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { SceneManager } from "../SceneManager";
-import { BuildingSystemUpdate } from "../systems/types";
+import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { buildingModelPaths, BUILDINGS_CENTER, HEX_SIZE, structureTypeToBuildingType } from "./constants";
 import { HexagonScene } from "./HexagonScene";
 
@@ -63,7 +63,7 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
   return positions;
 };
 
-type CastleLevel = 0 | 1 | 2 | 3;
+export type CastleLevel = 0 | 1 | 2 | 3;
 
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
@@ -80,7 +80,8 @@ export default class HexceptionScene extends HexagonScene {
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
-  private subscription: any;
+  private buildingSubscription: any;
+  private realmSubscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
   private castleLevel: CastleLevel = 0;
 
@@ -187,7 +188,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => { });
+    Promise.all(this.modelLoadPromises).then(() => {});
   }
 
   setup() {
@@ -207,8 +208,8 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingInstances.clear();
 
     // subscribe to buiding updates (create and destroy)
-    this.subscription?.unsubscribe();
-    this.subscription = this.systemManager.Buildings.subscribeToHexUpdates(
+    this.buildingSubscription?.unsubscribe();
+    this.buildingSubscription = this.systemManager.Buildings.subscribeToHexUpdates(
       { col: this.centerColRow[0], row: this.centerColRow[1] },
       (update: BuildingSystemUpdate) => {
         const { innerCol, innerRow, buildingType } = update;
@@ -219,6 +220,14 @@ export default class HexceptionScene extends HexagonScene {
       },
     );
 
+    this.realmSubscription?.unsubscribe();
+    this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
+      this.castleLevel = update.level as CastleLevel;
+      this.updateHexceptionGrid(this.hexceptionRadius);
+    });
+
+    this.castleLevel = this.tileManager.getRealmLevel();
+
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = 18;
     this.controls.enablePan = false;
@@ -227,7 +236,7 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToURLLocation();
   }
 
-  onSwitchOff() { }
+  onSwitchOff() {}
 
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
@@ -280,8 +289,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
   }
-  protected onHexagonRightClick(): void { }
-  protected onHexagonDoubleClick(): void { }
+  protected onHexagonRightClick(): void {}
+  protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -410,9 +419,17 @@ export default class HexceptionScene extends HexagonScene {
     this.scene.add(label);
 
     if (isMainHex) {
-      const buildablePositions = generateHexPositions({ col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] }, this.castleLevel + 1);
+      const buildablePositions = generateHexPositions(
+        { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
+        this.castleLevel + 1,
+      );
 
-      positions = positions.filter((position) => !buildablePositions.some((buildablePosition) => buildablePosition.col === position.col && buildablePosition.row === position.row));
+      positions = positions.filter(
+        (position) =>
+          !buildablePositions.some(
+            (buildablePosition) => buildablePosition.col === position.col && buildablePosition.row === position.row,
+          ),
+      );
 
       buildablePositions.forEach((position) => {
         dummy.position.x = position.x;
@@ -444,7 +461,6 @@ export default class HexceptionScene extends HexagonScene {
           biomeHexes[buildableAreaBiome].push(dummy.matrix.clone());
         }
       });
-
     }
 
     positions.forEach((position) => {
@@ -455,7 +471,6 @@ export default class HexceptionScene extends HexagonScene {
       dummy.updateMatrix();
       biomeHexes[biome].push(dummy.matrix.clone());
     });
-
   };
 
   computeMainHexMatrices = (

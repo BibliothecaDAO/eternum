@@ -27,6 +27,7 @@ import {
   ArmySystemUpdate,
   BattleSystemUpdate,
   BuildingSystemUpdate,
+  RealmSystemUpdate,
   StructureSystemUpdate,
   TileSystemUpdate,
 } from "./types";
@@ -133,6 +134,21 @@ export class SystemManager {
             structureType: StructureType[categoryKey],
             isMine,
             stage,
+          };
+        });
+      },
+    };
+  }
+
+  public get Realm() {
+    return {
+      onUpdate: (callback: (value: RealmSystemUpdate) => void) => {
+        this.setupSystem(this.setup.components.Realm, callback, (update: any) => {
+          const realm = getComponentValue(this.setup.components.Realm, update.entity);
+          if (!realm) return;
+
+          return {
+            level: realm.level,
           };
         });
       },

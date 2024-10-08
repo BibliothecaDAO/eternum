@@ -33,6 +33,7 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "../navigation/LeftNavigationModule";
+import { useGetRealm } from "@/hooks/helpers/useRealm";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
@@ -161,13 +162,18 @@ export const BuildingEntityDetails = () => {
 };
 
 const CastleDetails = () => {
+  const dojo = useDojo();
+
   const { getBalance } = getResourceBalance();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const realm = useGetRealm(structureEntityId).realm;
 
   const structure = getStructureByEntityId(structureEntityId);
   if (!structure) return;
@@ -185,15 +191,14 @@ const CastleDetails = () => {
 
   const address = toHexString(structure?.owner.address);
 
-  // TODO: Dummy Level
-  const realmLevel = 1;
-
   const getNextRealmLevel = useMemo(() => {
-    const nextLevel = realmLevel + 1;
+    const nextLevel = realm.level + 1;
     return nextLevel <= RealmLevels.Empire ? nextLevel : null;
-  }, [realmLevel]);
+  }, [realm.level]);
 
   const checkBalance = useMemo(() => {
+    if (!getNextRealmLevel) return false;
+
     const cost = scaleResources(
       REALM_UPGRADE_COSTS[getNextRealmLevel as keyof typeof REALM_UPGRADE_COSTS],
       EternumGlobalConfig.resources.resourceMultiplier,
@@ -205,6 +210,16 @@ const CastleDetails = () => {
       return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);
+
+  const levelUpRealm = async () => {
+    setIsLoading(true);
+
+    await dojo.setup.systemCalls.upgrade_realm({
+      signer: dojo.account.account,
+      realm_entity_id: realm.entityId,
+    });
+    setIsLoading(false);
+  };
 
   return (
     <div className="w-full text-sm  p-3">
@@ -231,28 +246,29 @@ const CastleDetails = () => {
       <div className="my-3">
         <div className="flex justify-between py-2 gap-4">
           <div>
-            <div className="text-2xl">{RealmLevels[realmLevel]}</div>
+            <div className="text-2xl">{RealmLevels[realm.level]}</div>
             {getNextRealmLevel && (
               <div>
-                Next Level {RealmLevels[realmLevel + 1]}:{" "}
-                {LEVEL_DESCRIPTIONS[(realmLevel + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
+                Next Level {RealmLevels[realm.level + 1]}:{" "}
+                {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
               </div>
             )}
           </div>
 
           {getNextRealmLevel && (
             <div>
-              <div className="mb-1 text-right font-semibold">Upgrade to {RealmLevels[realmLevel + 1]}</div>
+              <div className="mb-1 text-right font-semibold">Upgrade to {RealmLevels[realm.level + 1]}</div>
               <Button
                 variant="outline"
                 disabled={!checkBalance}
+                isLoading={isLoading}
                 onMouseEnter={() => {
                   setTooltip({
                     content: (
                       <div className="flex gap-2">
                         {" "}
                         {scaleResources(
-                          REALM_UPGRADE_COSTS[(realmLevel + 1) as keyof typeof REALM_UPGRADE_COSTS],
+                          REALM_UPGRADE_COSTS[(realm.level + 1) as keyof typeof REALM_UPGRADE_COSTS],
                           EternumGlobalConfig.resources.resourceMultiplier,
                         )?.map((a) => {
                           return (
@@ -274,6 +290,7 @@ const CastleDetails = () => {
                 onMouseLeave={() => {
                   setTooltip(null);
                 }}
+                onClick={levelUpRealm}
               >
                 {checkBalance ? `Upgrade` : "Need Resources"}
               </Button>
