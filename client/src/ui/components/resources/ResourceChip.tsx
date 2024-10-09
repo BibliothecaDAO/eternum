@@ -1,10 +1,10 @@
-import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, currencyIntlFormat, formatTime, TimeFormat } from "../../utils/utils";
+import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "../../utils/utils";
 
 const DISPLAY_RATE_TIME_MS = 5_000;
 const TRANSITION_DURATION_MS = 400;
@@ -13,12 +13,12 @@ export const ResourceChip = ({
   isLabor = false,
   resourceId,
   entityId,
-  maxBalance,
+  maxStorehouseCapacityKg,
 }: {
   isLabor?: boolean;
   resourceId: ID;
   entityId: ID;
-  maxBalance: number;
+  maxStorehouseCapacityKg: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
@@ -34,7 +34,11 @@ export const ResourceChip = ({
 
   const balance = useMemo(() => {
     return productionManager.balance(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick]);
+  }, [productionManager, production, currentDefaultTick, maxStorehouseCapacityKg]);
+
+  const maxAmountStorable = useMemo(() => {
+    return maxStorehouseCapacityKg / gramToKg(WEIGHTS_GRAM[resourceId] || 1000);
+  }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {
     return productionManager.timeUntilValueReached(currentDefaultTick, 0);
@@ -77,13 +81,13 @@ export const ResourceChip = ({
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
         if (Math.abs(netRate) > 0) {
-          return Math.min(maxBalance, Math.max(0, prevDisplayBalance + netRate));
+          return Math.min(maxAmountStorable, Math.max(0, prevDisplayBalance + netRate));
         }
-        return Math.min(maxBalance, prevDisplayBalance);
+        return Math.min(maxAmountStorable, prevDisplayBalance);
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [balance, netRate, entityId]);
+  }, [balance, netRate, entityId, maxAmountStorable]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -106,7 +110,8 @@ export const ResourceChip = ({
     }
   }, [netRate, showPerHour]);
 
-  const reachedMaxCap = maxBalance === displayBalance && Math.abs(netRate) > 0;
+  const reachedMaxCap = maxAmountStorable === displayBalance && Math.abs(netRate) > 0;
+
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}

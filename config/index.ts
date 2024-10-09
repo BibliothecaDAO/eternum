@@ -12,17 +12,15 @@ if (
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
 
-const VITE_PUBLIC_MASTER_ADDRESS = process.env.VITE_PUBLIC_MASTER_ADDRESS;
-const VITE_PUBLIC_MASTER_PRIVATE_KEY = process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_DEV, VITE_PUBLIC_NODE_URL } =
+  process.env;
 
-const manifest = process.env.VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
+const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 
 // Bug in bun we have to use http://127.0.0.1:5050/
-const nodeUrl = process.env.VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : process.env.VITE_PUBLIC_NODE_URL;
+const nodeUrl = VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : VITE_PUBLIC_NODE_URL;
 
-const isDev = process.env.VITE_PUBLIC_DEV === "true";
-
-if (!isDev) {
+if (!VITE_PUBLIC_DEV) {
   const userConfirmation = prompt(
     "You are about to set the configuration for a non-development environment. Are you sure you want to proceed? (yes/no)",
   );
@@ -55,3 +53,10 @@ const setupConfig = process.env.VITE_PUBLIC_DEV
 export const config = new EternumConfig(setupConfig);
 
 await config.setup(account, provider);
+
+console.log("Waiting 30 seconds before proceeding...");
+await new Promise((resolve) => setTimeout(resolve, 30000));
+console.log("30 seconds have passed. Continuing...");
+
+// If liquidity doesn't work, run the above, then run this...
+await config.setupBank(account, provider);
