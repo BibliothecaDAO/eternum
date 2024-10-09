@@ -18,10 +18,11 @@ mod map_systems {
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig, MercenariesConfig,
-        TroopConfigCustomImpl, TickImpl, TickTrait, TravelStaminaCostConfig
+        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigCustomImpl,
+        TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl
     };
-    use eternum::models::level::{Level, LevelCustomTrait};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
@@ -35,7 +36,7 @@ mod map_systems {
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
     use eternum::utils::map::biomes::{Biome, get_biome};
     use eternum::utils::random;
@@ -78,6 +79,8 @@ mod map_systems {
     #[abi(embed_v0)]
     impl MapSystemsImpl of super::IMapSystems<ContractState> {
         fn explore(ref world: IWorldDispatcher, unit_id: ID, direction: Direction) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // check that caller owns unit
             get!(world, unit_id, EntityOwner).assert_caller_owner(world);
 
@@ -100,8 +103,10 @@ mod map_systems {
             let stamina_cost = get!(world, (WORLD_CONFIG_ID, TravelTypes::EXPLORE), TravelStaminaCostConfig).cost;
             StaminaCustomImpl::handle_stamina_costs(unit_id, stamina_cost, world);
 
+            let army = get!(world, unit_id, Army);
+
             // explore coordinate, pay food and mint reward
-            MapConfigImpl::pay_exploration_cost(world, unit_entity_owner, unit_quantity);
+            TravelFoodCostConfigImpl::pay_exploration_cost(world, unit_entity_owner, army.troops);
             let exploration_reward = MapConfigImpl::random_reward(world);
 
             InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward, 0, false, false);
@@ -163,7 +168,7 @@ mod map_systems {
             if is_shards_mine {
                 let mine_structure_entity_id = Self::create_shard_mine_structure(world, coord);
 
-                Self::add_mercenaries_to_shard_mine(world, mine_structure_entity_id, coord);
+                Self::add_mercenaries_to_structure(world, mine_structure_entity_id);
                 let deadline = Self::add_production_deadline(world, mine_structure_entity_id);
 
                 // create shards production building
@@ -206,6 +211,7 @@ mod map_systems {
             );
             entity_id
         }
+
         fn add_production_deadline(world: IWorldDispatcher, mine_entity_id: ID) -> u64 {
             let earthen_shard_production_config: ProductionConfig = get!(
                 world, ResourceTypes::EARTHEN_SHARD, ProductionConfig
@@ -232,19 +238,19 @@ mod map_systems {
             deadline_tick
         }
 
-        fn add_mercenaries_to_shard_mine(world: IWorldDispatcher, mine_entity_id: ID, mine_coords: Coord) -> ID {
+        fn add_mercenaries_to_structure(world: IWorldDispatcher, structure_entity_id: ID) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
             let troops = mercenaries_config.troops;
 
             let army_entity_id = InternalCombatImpl::create_defensive_army(
-                world, mine_entity_id, starknet::contract_address_const::<0x0>()
+                world, structure_entity_id, starknet::contract_address_const::<0x0>()
             );
 
             InternalCombatImpl::add_troops_to_army(world, troops, army_entity_id);
 
             InternalResourceSystemsImpl::transfer(
-                world, 0, mine_entity_id, mercenaries_config.rewards, 0, false, false
+                world, 0, structure_entity_id, mercenaries_config.rewards, 0, false, false
             );
 
             army_entity_id

@@ -24,7 +24,8 @@ use eternum::systems::trade::contracts::trade_systems::{
 
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
-    general::{spawn_realm, get_default_realm_pos}, config::set_capacity_config
+    general::{spawn_realm, get_default_realm_pos},
+    config::{set_capacity_config, set_settlement_config, set_weight_config}
 };
 use starknet::contract_address_const;
 
@@ -36,19 +37,9 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
     let dev_resource_systems = deploy_dev_resource_systems(world);
     let realm_systems_dispatcher = deploy_realm_systems(world);
 
+    set_settlement_config(config_systems_address);
     set_capacity_config(config_systems_address);
-
-    // set weight configuration for stone
-    IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::STONE.into(), 200);
-
-    // set weight configuration for gold
-    IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::GOLD.into(), 200);
-
-    // set donkey capacity weight_gram
-    ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000, });
+    set_weight_config(config_systems_address);
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
@@ -78,7 +69,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_create_order() {
+fn trade_test_create_order() {
     let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // create order
@@ -120,7 +111,7 @@ fn test_create_order() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('caller not maker', 'ENTRYPOINT_FAILED'))]
-fn test_caller_not_maker() {
+fn trade_test_caller_not_maker() {
     let (_, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // create order with a caller that isnt the owner of maker_id
@@ -145,7 +136,7 @@ fn test_caller_not_maker() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_transport_not_enough_capacity() {
+fn trade_test_transport_not_enough_capacity() {
     let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
@@ -165,7 +156,7 @@ fn test_transport_not_enough_capacity() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('maker resource amount is 0', 'ENTRYPOINT_FAILED'))]
-fn test_create_order_amount_give_0() {
+fn trade_test_create_order_amount_give_0() {
     let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     trade_systems_dispatcher
@@ -181,7 +172,7 @@ fn test_create_order_amount_give_0() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('taker resource amount is 0', 'ENTRYPOINT_FAILED'))]
-fn test_create_order_amount_take_0() {
+fn trade_test_create_order_amount_take_0() {
     let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     trade_systems_dispatcher

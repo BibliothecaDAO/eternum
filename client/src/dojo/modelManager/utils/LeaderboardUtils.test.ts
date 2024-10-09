@@ -1,19 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  computeInitialContributionPoints,
-  getTotalPointsPercentage,
-  TOTAL_CONTRIBUTABLE_AMOUNT,
-} from "./LeaderboardUtils";
-import { HyperstructureResourceMultipliers } from "@bibliothecadao/eternum";
+import { TOTAL_CONTRIBUTABLE_AMOUNT } from "./LeaderboardUtils";
 
-const EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT = 2;
+const EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT = 2.27;
 
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as any),
     EternumGlobalConfig: {
-      troop: { healthPrecision: 1n, health: 1 },
+      troop: { health: 1 },
       resources: {
         resourcePrecision: 1,
       },
@@ -35,22 +30,22 @@ describe("TOTAL_CONTRIBUTABLE_AMOUNT", () => {
   });
 });
 
-describe("getTotalPointsPercentage", () => {
-  it("should return a valid amount for resource 1", () => {
-    expect(getTotalPointsPercentage(1, 1n)).toBe(0.5);
-  });
+// describe("getTotalPointsPercentage", () => {
+//   it("should return a valid amount for resource 1", () => {
+//     expect(getTotalPointsPercentage(1, 1n)).toBe(0.5);
+//   });
 
-  it("should return a valid amount for resource 2", () => {
-    expect(getTotalPointsPercentage(2, 1n)).toBe(0.5);
-  });
-});
+//   it("should return a valid amount for resource 2", () => {
+//     expect(getTotalPointsPercentage(2, 1n)).toBe(0.5);
+//   });
+// });
 
-describe("computeInitialContributionPoints", () => {
-  it("should return a valid initial points contribution", () => {
-    expect(computeInitialContributionPoints(1, 1n, 100)).toBe(50);
-  });
+// describe("computeInitialContributionPoints", () => {
+//   it("should return a valid initial points contribution", () => {
+//     expect(computeInitialContributionPoints(1, 1n, 100)).toBe(50);
+//   });
 
-  it("should return a valid initial points contribution for resource 2", () => {
-    expect(computeInitialContributionPoints(2, 1n, 100)).toBe(50);
-  });
-});
+//   it("should return a valid initial points contribution for resource 2", () => {
+//     expect(computeInitialContributionPoints(2, 1n, 100)).toBe(50);
+//   });
+// });

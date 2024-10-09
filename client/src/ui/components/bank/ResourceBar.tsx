@@ -2,21 +2,11 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HintSection } from "../hints/HintModal";
-
-type ResourceBarProps = {
-  entityId: ID;
-  lordsFee: number;
-  resources: Resources[];
-  resourceId: ResourcesIds;
-  setResourceId: (resourceId: ResourcesIds) => void;
-  amount: number;
-  setAmount: (amount: number) => void;
-  disableInput?: boolean;
-};
 
 export const ResourceBar = ({
   entityId,
@@ -27,42 +17,91 @@ export const ResourceBar = ({
   amount,
   setAmount,
   disableInput = false,
-}: ResourceBarProps) => {
+  onFocus,
+  onBlur,
+}: {
+  entityId: ID;
+  lordsFee: number;
+  resources: Resources[];
+  resourceId: ResourcesIds;
+  setResourceId: (resourceId: ResourcesIds) => void;
+  amount: number;
+  setAmount: (amount: number) => void;
+  disableInput?: boolean;
+  onFocus?: () => void; // New prop
+  onBlur?: () => void; // New prop
+}) => {
   const { getBalance } = getResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
+  const [searchInput, setSearchInput] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSelectedResourceBalance(divideByPrecision(getBalance(entityId, Number(resourceId)).balance));
-  }, [resourceId]);
+  }, [resourceId, getBalance, entityId]);
 
   const handleResourceChange = (trait: string) => {
-    const resourceId = findResourceIdByTrait(trait);
-    setResourceId && setResourceId(resourceId);
+    const newResourceId = findResourceIdByTrait(trait);
+    setResourceId(newResourceId);
   };
 
   const handleAmountChange = (amount: number) => {
-    !disableInput && setAmount && setAmount(amount);
+    setAmount(amount);
   };
 
   const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
   const finalResourceBalance = hasLordsFees ? selectedResourceBalance - lordsFee : selectedResourceBalance;
 
+  const filteredResources = resources.filter(
+    (resource) => resource.trait.toLowerCase().startsWith(searchInput.toLowerCase()) || resource.id === resourceId,
+  );
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen && inputRef.current) {
+      setResourceId(ResourcesIds.Wood);
+      setSearchInput("");
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (filteredResources.length > 0) {
+        const selectedResource = filteredResources.find((resource) => resource.id !== resourceId);
+        if (selectedResource) {
+          setResourceId(selectedResource.id);
+          setOpen(false);
+        }
+      }
+      setSearchInput("");
+    } else {
+      e.stopPropagation();
+    }
+  };
+
   return (
-    <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap ">
+    <div className="w-full bg-gold/10 rounded-xl p-3 flex justify-between h-28 flex-wrap">
       <div className="self-center">
         <NumberInput
-          className="text-2xl border-transparent "
+          className="text-2xl border-transparent"
           value={amount}
-          onChange={(amount) => handleAmountChange(amount)}
+          onChange={handleAmountChange}
           max={Infinity}
           arrows={false}
           allowDecimals
+          onFocus={onFocus}
+          onBlur={onBlur}
         />
 
         {!disableInput && (
           <div
-            className="flex text-xs text-gold/70 mt-1 justify-center items-center relative text-center self-center mx-auto w-full"
+            className="flex text-xs text-gold/70 mt-1 justify-center items-center relative text-center self-center mx-auto w-full cursor-pointer"
             onClick={() => handleAmountChange(finalResourceBalance)}
           >
             Max: {isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}
@@ -76,15 +115,30 @@ export const ResourceBar = ({
       </div>
 
       <Select
-        value={findResourceById(Number(resourceId))!.trait}
-        onValueChange={(trait) => handleResourceChange(trait)}
+        open={open}
+        onOpenChange={handleOpenChange}
+        value={findResourceById(Number(resourceId))?.trait || ""}
+        onValueChange={(trait) => {
+          handleResourceChange(trait);
+          setOpen(false);
+          setSearchInput("");
+        }}
       >
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder={HintSection.Resources} />
         </SelectTrigger>
         <SelectContent className="bg-black/90 text-gold">
-          {resources.map((resource, index) => (
-            <SelectItem key={index} value={resource.trait}>
+          {resources.length > 1 && (
+            <TextInput
+              ref={inputRef}
+              onChange={setSearchInput}
+              placeholder="Filter resources..."
+              className="w-full"
+              onKeyDown={handleKeyDown}
+            />
+          )}
+          {filteredResources.map((resource) => (
+            <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
               <ResourceCost
                 resourceId={resource.id}
                 amount={divideByPrecision(getBalance(entityId, resource.id).balance)}

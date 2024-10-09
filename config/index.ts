@@ -1,25 +1,8 @@
+import type { Config } from "@bibliothecadao/eternum";
 import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
 
-import {
-  EternumProvider,
-  setBattleConfig,
-  setBuildingCategoryPopConfig,
-  setBuildingConfig,
-  setBuildingGeneralConfig,
-  setCapacityConfig,
-  setCombatConfig,
-  setHyperstructureConfig,
-  setMercenariesConfig,
-  setPopulationConfig,
-  setProductionConfig,
-  setResourceBuildingConfig,
-  setSpeedConfig,
-  setStaminaConfig,
-  setStaminaRefillConfig,
-  setupGlobals,
-  setWeightConfig,
-} from "@bibliothecadao/eternum";
+import { EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -30,15 +13,15 @@ if (
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
 
-const VITE_PUBLIC_MASTER_ADDRESS = process.env.VITE_PUBLIC_MASTER_ADDRESS;
-const VITE_PUBLIC_MASTER_PRIVATE_KEY = process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_DEV, VITE_PUBLIC_NODE_URL } =
+  process.env;
 
-const manifest = process.env.VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
+const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
+
 // Bug in bun we have to use http://127.0.0.1:5050/
-const nodeUrl = process.env.VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : process.env.VITE_PUBLIC_NODE_URL;
+const nodeUrl = VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/" : VITE_PUBLIC_NODE_URL;
 
-const isDev = process.env.VITE_PUBLIC_DEV === "true";
-if (!isDev) {
+if (!VITE_PUBLIC_DEV) {
   const userConfirmation = prompt(
     "You are about to set the configuration for a non-development environment. Are you sure you want to proceed? (yes/no)",
   );
@@ -48,25 +31,36 @@ if (!isDev) {
   }
 }
 
-console.log("Setting up config...");
-const provider = new EternumProvider(manifest, nodeUrl);
 console.log("Provider set up");
-const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
-console.log("Account set up");
+const provider = new EternumProvider(manifest, nodeUrl);
 
-await setBuildingCategoryPopConfig(account, provider);
-await setPopulationConfig(account, provider);
-await setBuildingConfig(account, provider);
-await setResourceBuildingConfig(account, provider);
-await setBuildingGeneralConfig(account, provider);
-await setWeightConfig(account, provider);
-await setCombatConfig(account, provider);
-await setBattleConfig(account, provider);
-await setCapacityConfig(account, provider);
-await setSpeedConfig(account, provider);
-await setupGlobals(account, provider);
-await setHyperstructureConfig(account, provider);
-await setStaminaConfig(account, provider);
-await setStaminaRefillConfig(account, provider);
-await setMercenariesConfig(account, provider);
-await setProductionConfig(account, provider);
+console.log("Account set up");
+const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
+
+const setupConfig: Config =
+  VITE_PUBLIC_DEV === "true"
+    ? {
+        ...EternumGlobalConfig,
+        stamina: {
+          travelCost: 0,
+          exploreCost: 0,
+        },
+        battle: {
+          graceTickCount: 0,
+          delaySeconds: 0,
+        },
+      }
+    : EternumGlobalConfig;
+
+export const config = new EternumConfig(setupConfig);
+
+console.log("Setting up config...");
+await config.setup(account, provider);
+
+// Add a 20-second delay before setting up the bank
+console.log("Waiting for 15 seconds before setting up the bank...");
+await new Promise((resolve) => setTimeout(resolve, 20000));
+
+console.log("Setting up bank...");
+
+await config.setupBank(account, provider);

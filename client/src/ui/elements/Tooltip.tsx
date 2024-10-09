@@ -33,8 +33,8 @@ export const Tooltip = ({ className }: TooltipProps) => {
           ref={ref}
           className={clsx(
             "fixed z-[250] inline-flex border-gradient border  text-xxs -translate-x-1/2 px-4 py-1 bg-black/90 flex-col justify-start items-center text-gold leading-loose  shadow-3xl",
-            position == "top" && "-translate-y-[150%]",
-            position == "bottom" && "translate-y-full",
+            position == "top" && "-translate-y-[110%]",
+            position == "bottom" && "translate-y-[10%]",
             position == "left" && "-translate-x-[110%] -translate-y-1/2",
             position == "right" && "translate-x-[30%] -translate-y-1/2",
             className,

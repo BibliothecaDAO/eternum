@@ -10,6 +10,7 @@ import {
   EternumGlobalConfig,
   QuestType,
   ResourcesIds,
+  TROOPS_FOOD_CONSUMPTION,
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ResourceWeight } from "../resources/ResourceWeight";
@@ -41,7 +42,7 @@ const navigationStep = (imgPath: string) => {
 
 export enum QuestId {
   Settle,
-  BuildFarm,
+  BuildFood,
   BuildResource,
   PauseProduction,
   CreateTrade,
@@ -68,10 +69,11 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     },
   ],
   [
-    QuestId.BuildFarm,
+    QuestId.BuildFood,
     {
-      name: "Build a Farm",
-      description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm",
+      name: "Build a Farm or a Fishing Village",
+      description:
+        "Wheat and Fish are the lifeblood of your people. Go to the construction menu and build a Farm or a Fishing Village",
       steps: [
         navigationStep(BuildingThumbs.construction),
         <div className="flex flex-row items-center">
@@ -79,6 +81,16 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
           <div
             style={{
               backgroundImage: `url(${BUILDING_IMAGES_PATH[BuildingType.Farm]})`,
+              backgroundSize: "contain",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+            className={clsx("text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-24 w-16")}
+          ></div>
+          <p>or</p>
+          <div
+            style={{
+              backgroundImage: `url(${BUILDING_IMAGES_PATH[BuildingType.FishingVillage]})`,
               backgroundSize: "contain",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
@@ -201,23 +213,69 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                 </li>
                 <li>
                   <span className="mr-2">🍖</span>
-                  Consumes per hex:
-                  <ul className="ml-6 mt-2 space-y-2">
-                    <li className="flex items-center">
-                      <span className="font-semibold text-brilliance mr-2">
-                        {multiplyByPrecision(EternumGlobalConfig.exploration.travelFishBurn)}
-                      </span>
-                      <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
-                      <span>per troop</span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="font-semibold text-brilliance mr-2">
-                        {multiplyByPrecision(EternumGlobalConfig.exploration.travelWheatBurn)}
-                      </span>
-                      <ResourceIcon className="mr-1" size="md" resource={ResourcesIds[ResourcesIds.Wheat]} />
-                      <span>per troop</span>
-                    </li>
-                  </ul>
+                  Consumes per hex / unit:
+                  <table className="not-prose w-full p-2 border-gold/10 mt-2">
+                    <thead>
+                      <tr>
+                        <th className="border border-gold/10 p-2">
+                          <ResourceIcon
+                            className="mr-1 text-gold"
+                            size="sm"
+                            resource={ResourcesIds[ResourcesIds.Crossbowman]}
+                          />
+                        </th>
+                        <th className="border border-gold/10 p-2">
+                          <ResourceIcon
+                            className="mr-1 text-gold"
+                            size="sm"
+                            resource={ResourcesIds[ResourcesIds.Knight]}
+                          />
+                        </th>
+                        <th className="border border-gold/10 p-2">
+                          <ResourceIcon
+                            className="mr-1 text-gold"
+                            size="sm"
+                            resource={ResourcesIds[ResourcesIds.Paladin]}
+                          />
+                        </th>
+                        <th className="p-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(
+                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_fish_burn_amount,
+                          )}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_fish_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_fish_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(
+                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_wheat_burn_amount,
+                          )}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_wheat_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_wheat_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </li>
               </ul>
             </div>
@@ -235,23 +293,69 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                 </li>
                 <li>
                   <span className="mr-2">🍖</span>
-                  Consumes per hex:
-                  <ul className="ml-6 mt-2 space-y-2">
-                    <li className="flex items-center">
-                      <span className="font-semibold text-brilliance mr-2">
-                        {multiplyByPrecision(EternumGlobalConfig.exploration.exploreFishBurn)}
-                      </span>
-                      <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
-                      <span>per troop</span>
-                    </li>
-                    <li className="flex items-center">
-                      <span className="font-semibold text-brilliance mr-2">
-                        {multiplyByPrecision(EternumGlobalConfig.exploration.exploreWheatBurn)}
-                      </span>
-                      <ResourceIcon className="mr-1" size="md" resource={ResourcesIds[ResourcesIds.Wheat]} />
-                      <span>per troop</span>
-                    </li>
-                  </ul>
+                  Consumes per hex / unit:
+                  <table className="not-prose w-full p-2 border-gold/10 mt-2">
+                    <thead>
+                      <tr>
+                        <th className="border border-gold/10 p-2">
+                          <ResourceIcon
+                            className="mr-1 text-gold"
+                            size="sm"
+                            resource={ResourcesIds[ResourcesIds.Crossbowman]}
+                          />
+                        </th>
+                        <th className="border border-gold/10 p-2">
+                          <ResourceIcon
+                            className="mr-1 text-gold"
+                            size="sm"
+                            resource={ResourcesIds[ResourcesIds.Knight]}
+                          />
+                        </th>
+                        <th className="border border-gold/10 p-2">
+                          <ResourceIcon
+                            className="mr-1 text-gold"
+                            size="sm"
+                            resource={ResourcesIds[ResourcesIds.Paladin]}
+                          />
+                        </th>
+                        <th className="p-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(
+                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_fish_burn_amount,
+                          )}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_fish_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_fish_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(
+                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_wheat_burn_amount,
+                          )}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_wheat_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_wheat_burn_amount)}
+                        </td>
+                        <td className="border border-gold/10 p-2 text-center">
+                          <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </li>
               </ul>
             </div>
@@ -334,9 +438,14 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
   [
     QuestId.Mine,
     {
-      name: "Discover an Fragment mine",
-      description: "Explore the world, find Fragment mines",
-      steps: ["1. Go to world view", "2. Right click on your army", "3. Explore with your army to find Fragment mines"],
+      name: "Claim a Fragment mine",
+      description: "Explore the world, find Fragment mines and battle bandits for its ownership",
+      steps: [
+        "1. Go to world view",
+        "2. Right click on your army",
+        "3. Explore with your army to find Fragment mines",
+        "4. Defeat the defending bandits or player to claim the mine",
+      ],
       prizes: [{ id: QuestType.Mine, title: "Mine" }],
       depth: 6,
     },

@@ -6,6 +6,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
+import { computeExploreFoodCosts, computeTravelFoodCosts } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -18,16 +19,20 @@ export const ActionInfo = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const {
     setup: {
-      components: { Quantity },
+      components: { Army },
     },
   } = useDojo();
 
-  const selectedEntityQuantity = useMemo(() => {
+  const selectedEntityTroops = useMemo(() => {
     if (selectedEntityId) {
-      const quantity = getComponentValue(Quantity, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-      return Number(quantity?.value);
+      const army = getComponentValue(Army, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+      return army?.troops;
     }
-    return 0;
+    return {
+      knight_count: 0n,
+      paladin_count: 0n,
+      crossbowman_count: 0n,
+    };
   }, [selectedEntityId]);
 
   const travelPath = useMemo(() => {
@@ -46,6 +51,9 @@ export const ActionInfo = () => {
 
   if (!travelPath) return;
 
+  const travelFoodCosts = computeTravelFoodCosts(selectedEntityTroops);
+  const exploreFoodCosts = computeExploreFoodCosts(selectedEntityTroops);
+
   return (
     <>
       {showTooltip && (
@@ -55,20 +63,12 @@ export const ActionInfo = () => {
           {isExplored ? (
             <div>
               <ResourceCost
-                amount={
-                  -EternumGlobalConfig.exploration.travelWheatBurn *
-                  selectedEntityQuantity *
-                  (travelPath.path.length - 1)
-                }
+                amount={-travelFoodCosts.wheatPayAmount * (travelPath.path.length - 1)}
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={
-                  -EternumGlobalConfig.exploration.travelFishBurn *
-                  selectedEntityQuantity *
-                  (travelPath.path.length - 1)
-                }
+                amount={-travelFoodCosts.fishPayAmount * (travelPath.path.length - 1)}
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
@@ -76,12 +76,12 @@ export const ActionInfo = () => {
           ) : (
             <div>
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.exploreWheatBurn * selectedEntityQuantity}
+                amount={-exploreFoodCosts.wheatPayAmount}
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={-EternumGlobalConfig.exploration.exploreFishBurn * selectedEntityQuantity}
+                amount={-exploreFoodCosts.fishPayAmount}
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />

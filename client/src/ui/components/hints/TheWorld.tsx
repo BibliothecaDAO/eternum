@@ -3,15 +3,22 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 export const TheWorld = () => {
   const chapters = [
     {
-      title: "Awakening the Ancients",
+      title: "Time to Build",
       icon: <ResourceIcon size="xl" resource="Ancient Fragment" />,
+      content:
+        "You have been chosen to lead your people to greatness. You must build your empire, forge alliances, and conquer your enemies. Only the strong will survive.",
+    },
+    {
+      title: "The Hyperstructures",
       content:
         "Long before recorded history, the Ancients constructed vast hyperstructures to harness the energies of the cosmos. These colossal edifices, buried and forgotten, hold the key to untold power. As the world awakens, it becomes clear that the fragments of these hyperstructures are scattered across the land, each containing a piece of their ancient might. ",
     },
+
     {
-      title: "Time to Build",
+      title: "Your Mission",
+
       content:
-        "You, a visionary leader, must embark on a quest to gather these fragments. Through exploration, cunning, and strength, you will uncover these relics of the past. Each fragment you collect brings you closer to rebuilding the magnificent hyperstructures in their entirety.",
+        "Your mission is to explore the world, uncover the fragments, and harness their power to build your empire. As you build, you will attract the attention of other players, who will seek to ally with you or challenge your rule. The world is vast and full of danger, but with the right strategy, you can rise to the top and become the most powerful ruler in Eternum.",
     },
   ];
 

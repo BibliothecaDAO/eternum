@@ -61,7 +61,7 @@ fn setup(
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let bank_entity_id = bank_systems_dispatcher
-        .create_bank(BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom);
+        .create_bank(BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0);
 
     let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher { contract_address: liquidity_systems_address };
@@ -96,7 +96,7 @@ fn setup(
 }
 
 #[test]
-fn test_swap_buy_without_fees() {
+fn bank_test_swap_buy_without_fees() {
     let (
         world,
         bank_entity_id,
@@ -143,7 +143,7 @@ fn test_swap_buy_without_fees() {
 }
 
 #[test]
-fn test_swap_buy_with_fees() {
+fn bank_test_swap_buy_with_fees() {
     let (
         world,
         bank_entity_id,
@@ -193,7 +193,7 @@ fn test_swap_buy_with_fees() {
 }
 
 #[test]
-fn test_swap_sell_without_fees() {
+fn bank_test_swap_sell_without_fees() {
     let (
         world,
         bank_entity_id,
@@ -240,7 +240,7 @@ fn test_swap_sell_without_fees() {
 }
 
 #[test]
-fn test_swap_sell_with_fees() {
+fn bank_test_swap_sell_with_fees() {
     let (
         world,
         bank_entity_id,

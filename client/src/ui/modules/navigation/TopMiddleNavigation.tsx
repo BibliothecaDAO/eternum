@@ -24,7 +24,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -42,12 +43,14 @@ const structureIcons: Record<string, JSX.Element> = {
 
 export const TopMiddleNavigation = () => {
   const { setup } = useDojo();
+
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
   const { getEntityInfo } = getEntitiesUtils();
 
@@ -98,9 +101,7 @@ export const TopMiddleNavigation = () => {
       quantity * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
       gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])
     );
-  }, [structureEntityId]);
-
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
@@ -109,9 +110,50 @@ export const TopMiddleNavigation = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <div className="pointer-events-auto mt-1 ">
-      <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
-        <div className=" bg-black/90 rounded-l-xl my-1 border-white/5 border flex gap-1">
+    <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
+      <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
+        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-black border-gold/10 relative">
+          <div className="self-center flex justify-between w-full">
+            {structure.isMine ? (
+              <Select
+                value={structureEntityId.toString()}
+                onValueChange={(a: string) => {
+                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Structure" />
+                </SelectTrigger>
+                <SelectContent className="bg-black/90">
+                  {structures.map((structure, index) => (
+                    <SelectItem
+                      className="flex justify-between"
+                      key={index}
+                      value={structure.entity_id?.toString() || ""}
+                    >
+                      <h5 className="self-center flex gap-4">
+                        {structureIcons[structure.category]}
+                        {structure.name}
+                      </h5>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div>
+                <div className="self-center flex gap-4">
+                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
+                  {structure.owner ? structure.name : "Unsettled"}
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        <div className=" bg-black/90 bg-hex-bg   rounded-b-xl   flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -119,7 +161,7 @@ export const TopMiddleNavigation = () => {
                   position: "bottom",
                   content: (
                     <div className="whitespace-nowrap pointer-events-none text-sm capitalize">
-                      <span>This is the max per resource you can store</span>
+                      <span>This is the max kg per resource you can store</span>
 
                       <br />
                       <span>Build Storehouses to increase this.</span>
@@ -165,48 +207,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
 
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded bg-black/90 border-gold/10 relative">
-          <div className="self-center flex justify-between w-full">
-            {structure.isMine ? (
-              <Select
-                value={structureEntityId.toString()}
-                onValueChange={(a: string) => {
-                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Structure" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90">
-                  {structures.map((structure, index) => (
-                    <SelectItem
-                      className="flex justify-between"
-                      key={index}
-                      value={structure.entity_id?.toString() || ""}
-                    >
-                      <h5 className="self-center flex gap-4">
-                        {structureIcons[structure.category]}
-                        {structure.name}
-                      </h5>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div>
-                <div className="self-center flex gap-4">
-                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
-                  {structure.owner ? structure.name : "Unsettled"}
-                </div>
-              </div>
-            )}
-          </div>
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-        <div className=" bg-black/90 rounded-r-xl my-1 border border-gold/5 flex gap-1 justify-between p-1">
+        <div className=" bg-black/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"
@@ -232,33 +233,70 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
       </motion.div>
+      <SecondaryMenuItems />
     </div>
   );
 };
 
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
-  const progress = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    return (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+  const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+
+  let cycleTime = EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+
+  useEffect(() => {
+    const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);
+    setTimeUntilNextCycle(initialTime);
+
+    const interval = setInterval(() => {
+      setTimeUntilNextCycle((prevTime) => {
+        if (prevTime <= 1) {
+          return initialTime;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [nextBlockTimestamp]);
+
+  const progress = useMemo(() => {
+    return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
+  }, [timeUntilNextCycle]);
+
+  const updateTooltip = useCallback(() => {
+    if (isTooltipOpen) {
+      setTooltip({
+        position: "bottom",
+        content: (
+          <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
+            <div>
+              A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+            </div>
+            <div>
+              Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
+            </div>
+          </div>
+        ),
+      });
+    }
+  }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
+
+  useEffect(() => {
+    updateTooltip();
+  }, [updateTooltip]);
 
   return (
     <div
       onMouseEnter={() => {
-        setTooltip({
-          position: "bottom",
-          content: (
-            <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {formatTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)}</span>
-            </span>
-          ),
-        });
+        setIsTooltipOpen(true);
+        updateTooltip();
       }}
       onMouseLeave={() => {
+        setIsTooltipOpen(false);
         setTooltip(null);
       }}
       className="self-center text-center px-1 py-1 flex gap-1"

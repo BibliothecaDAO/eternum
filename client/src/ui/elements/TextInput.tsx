@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import React from "react";
 
 interface TextInputProps {
   disabled?: boolean;
@@ -11,7 +12,7 @@ interface TextInputProps {
   onKeyDown?: (e: any) => void;
 }
 
-const TextInput = (props: TextInputProps) => {
+const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref) => {
   const { disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } = props;
 
   return (
@@ -22,13 +23,15 @@ const TextInput = (props: TextInputProps) => {
         (e.target as any).reset();
       }}
       className={clsx(
-        "w-full p-2 transition-all duration-300 focus:outline-none  border-opacity-50 focus:border-opacity-100  placeholder-white/25 flex-grow  bg-transparent border border-gold/40 rounded-sm font-bold",
+        "w-full p-2 transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent border border-gold/40 rounded-sm font-bold",
         className,
       )}
     >
       <input
+        ref={ref}
+        autoFocus={true}
         className={clsx(
-          "w-full h-full transition-all duration-300 focus:outline-none  border-opacity-50 focus:border-opacity-100  placeholder-white/25 flex-grow  bg-transparent rounded-sm font-bold",
+          "w-full h-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent rounded-sm font-bold",
         )}
         disabled={disabled || false}
         type="text"
@@ -42,6 +45,6 @@ const TextInput = (props: TextInputProps) => {
       />
     </form>
   );
-};
+});
 
 export default TextInput;

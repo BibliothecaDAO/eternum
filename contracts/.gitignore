@@ -10,3 +10,8 @@ manifests/prod/deployment/base/*
 manifests/prod/abis/*
 manifests/prod/base/*
 .DS_Store
+
+torii.db-wal
+torii.db-shm
+
+dojo_prod.toml

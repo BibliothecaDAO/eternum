@@ -8,11 +8,11 @@ import {
   type Position,
   type Resource,
   ResourcesIds,
+  TROOPS_FOOD_CONSUMPTION,
   WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
-import { default as realmsHexPositions } from "../../data/geodata/hex/realmHexPositions.json";
 import { type SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
@@ -47,12 +47,6 @@ export function multiplyByPrecision(value: number): number {
 
 export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
-}
-
-export function getPosition(realm_id: ID): { x: number; y: number } {
-  const realmPositions = realmsHexPositions as Record<number, Array<{ col: number; row: number }>>;
-  const position = realmPositions[Number(realm_id)][0];
-  return { x: position.col, y: position.row };
 }
 
 export function addressToNumber(address: string) {
@@ -109,7 +103,8 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
 
   const col = hexCoords.col;
   const row = hexCoords.row;
-  const x = col * horizDist - ((row % 2) * horizDist) / 2;
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
   return new THREE.Vector3(x, y, z);
@@ -124,7 +119,8 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
 
   const row = Math.round(worldPosition.z / vertDist);
   // hexception offsets hack
-  const col = Math.round((worldPosition.x + ((row % 2) * horizDist) / 2) / horizDist);
+  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+  const col = Math.round((worldPosition.x + rowOffset) / horizDist);
 
   return {
     col,
@@ -354,4 +350,56 @@ const accentsToAscii = (str: string) => {
 export const toValidAscii = (str: string) => {
   const intermediateString = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   return accentsToAscii(intermediateString);
+};
+
+export const computeTravelFoodCosts = (troops: any) => {
+  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
+  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
+  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+
+  const paladinCount = Number(troops.paladin_count);
+  const knightCount = Number(troops.knight_count);
+  const crossbowmanCount = Number(troops.crossbowman_count);
+
+  const paladinWheatConsumption = paladinFoodConsumption.travel_wheat_burn_amount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.travel_wheat_burn_amount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travel_wheat_burn_amount * crossbowmanCount;
+
+  const paladinFishConsumption = paladinFoodConsumption.travel_fish_burn_amount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.travel_fish_burn_amount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travel_fish_burn_amount * crossbowmanCount;
+
+  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
+  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+
+  return {
+    wheatPayAmount,
+    fishPayAmount,
+  };
+};
+
+export const computeExploreFoodCosts = (troops: any) => {
+  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
+  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
+  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+
+  const paladinCount = Number(troops.paladin_count);
+  const knightCount = Number(troops.knight_count);
+  const crossbowmanCount = Number(troops.crossbowman_count);
+
+  const paladinWheatConsumption = paladinFoodConsumption.explore_wheat_burn_amount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.explore_wheat_burn_amount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.explore_wheat_burn_amount * crossbowmanCount;
+
+  const paladinFishConsumption = paladinFoodConsumption.explore_fish_burn_amount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.explore_fish_burn_amount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.explore_fish_burn_amount * crossbowmanCount;
+
+  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
+  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+
+  return {
+    wheatPayAmount,
+    fishPayAmount,
+  };
 };

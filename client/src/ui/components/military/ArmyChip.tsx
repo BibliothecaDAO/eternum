@@ -1,20 +1,58 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
+import { ReactComponent as Compass } from "@/assets/icons/Compass.svg";
 
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { armyHasTroops } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position as PositionInterface } from "@/types/Position";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { Position } from "@bibliothecadao/eternum";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
-import { TroopExchange } from "../hyperstructures/StructureCard";
+import { useLocation } from "wouter";
+import { Exchange } from "../hyperstructures/StructureCard";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
+
+export const NavigateToArmyIcon = ({
+  position,
+  hideTooltip = false,
+}: {
+  position: Position;
+  hideTooltip?: boolean;
+}) => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
+
+  return (
+    <Compass
+      className="w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300"
+      onClick={() => {
+        const { x, y } = new PositionInterface(position).getNormalized();
+        setNavigationTarget({
+          col: x,
+          row: y,
+        });
+      }}
+      onMouseEnter={() => {
+        if (hideTooltip) return;
+        setTooltip({
+          content: "Navigate to Army",
+          position: "top",
+        });
+      }}
+      onMouseLeave={() => {
+        setTooltip(null);
+      }}
+    />
+  );
+};
 
 export const ArmyChip = ({
   army,
@@ -42,6 +80,9 @@ export const ArmyChip = ({
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
     return updatedArmy;
   }, [nextBlockTimestamp]);
+
+  const [location] = useLocation();
+  const isOnMap = useMemo(() => location.includes("map"), [location]);
 
   return (
     <div
@@ -93,6 +134,7 @@ export const ArmyChip = ({
                                 className="w-5 h-5 hover:scale-110 transition-all duration-300"
                                 position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
                               />
+                              {isOnMap && <NavigateToArmyIcon position={updatedArmy!.position} />}
                               <Swap
                                 className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                                 onClick={() => {
@@ -101,7 +143,7 @@ export const ArmyChip = ({
                                 }}
                                 onMouseEnter={() => {
                                   setTooltip({
-                                    content: "Swap troops (only possible on same hex)",
+                                    content: "Swap troops or resources (only possible on same hex)",
                                     position: "top",
                                   });
                                 }}
@@ -184,7 +226,7 @@ const ArmyMergeTroopsPanel = ({
         </Button>
       </div>
       {selectedReceiverArmy ? (
-        <TroopExchange
+        <Exchange
           giverArmyName={giverArmy.name}
           giverArmyEntityId={giverArmy.entity_id}
           takerArmy={selectedReceiverArmy}

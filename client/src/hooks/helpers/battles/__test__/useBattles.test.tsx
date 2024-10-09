@@ -28,8 +28,7 @@ describe("getBattle", () => {
     vi.mocked(getComponentValue).mockReturnValueOnce(mockBattle);
 
     const expectedBattle = structuredClone(mockBattle);
-    const precisionFactor =
-      BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision;
+    const precisionFactor = BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
     const adjustHealth = (health: { current: bigint; lifetime: bigint }) => {
       health.current = health.current / precisionFactor;

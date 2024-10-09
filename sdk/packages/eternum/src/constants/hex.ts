@@ -46,7 +46,7 @@ export enum Direction {
 }
 
 // if row is even
-export const neighborOffsetsEven = [
+export const NEIGHBOR_OFFSETS_EVEN = [
   { i: 1, j: 0, direction: Direction.EAST },
   { i: 1, j: 1, direction: Direction.NORTH_EAST },
   { i: 0, j: 1, direction: Direction.NORTH_WEST },
@@ -56,7 +56,7 @@ export const neighborOffsetsEven = [
 ];
 
 // if row is odd
-export const neighborOffsetsOdd = [
+export const NEIGHBOR_OFFSETS_ODD = [
   { i: 1, j: 0, direction: Direction.EAST },
   { i: 0, j: 1, direction: Direction.NORTH_EAST },
   { i: -1, j: 1, direction: Direction.NORTH_WEST },
@@ -66,10 +66,22 @@ export const neighborOffsetsOdd = [
 ];
 
 export const getNeighborHexes = (col: number, row: number) => {
-  const offsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  const offsets = getNeighborOffsets(row);
   return offsets.map((offset) => ({
     col: col + offset.i,
     row: row + offset.j,
     direction: offset.direction,
   }));
+};
+
+export const getNeighborOffsets = (row: number) => {
+  return row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
+};
+
+export const getDirectionBetweenAdjacentHexes = (
+  from: { col: number; row: number },
+  to: { col: number; row: number },
+): Direction | null => {
+  const neighbors = getNeighborHexes(from.col, from.row);
+  return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 };

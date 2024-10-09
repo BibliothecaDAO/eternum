@@ -1,5 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getAddressNameFromEntityIds, getEntitiesUtils, useGetAllPlayers } from "@/hooks/helpers/useEntities";
+import { getAddressNameFromEntityIds, getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { HasValue, runQuery } from "@dojoengine/recs";

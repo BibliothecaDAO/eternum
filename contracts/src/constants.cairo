@@ -21,8 +21,10 @@ const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
 const HYPERSTRUCTURE_LEVELING_START_TIER: u64 = 0;
 const REALM_LEVELING_START_TIER: u64 = 1;
 
+const GRAMS_PER_KG: u128 = 1_000;
+
 // max realms per user
-const MAX_REALMS_PER_ADDRESS: u8 = 5;
+const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 
 // resource precision
 const RESOURCE_PRECISION: u128 = 1_000;
@@ -218,6 +220,35 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         .span();
 }
 
+fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
+    return array![
+        (ResourceTypes::WOOD, 100),
+        (ResourceTypes::STONE, 127),
+        (ResourceTypes::COAL, 131),
+        (ResourceTypes::COPPER, 190),
+        (ResourceTypes::OBSIDIAN, 226),
+        (ResourceTypes::SILVER, 288),
+        (ResourceTypes::IRONWOOD, 425),
+        (ResourceTypes::COLD_IRON, 524),
+        (ResourceTypes::GOLD, 549),
+        (ResourceTypes::HARTWOOD, 844),
+        (ResourceTypes::DIAMONDS, 1672),
+        (ResourceTypes::SAPPHIRE, 2030),
+        (ResourceTypes::RUBY, 2098),
+        (ResourceTypes::DEEP_CRYSTAL, 2098),
+        (ResourceTypes::IGNIUM, 2915),
+        (ResourceTypes::ETHEREAL_SILICA, 3095),
+        (ResourceTypes::TRUE_ICE, 3606),
+        (ResourceTypes::TWILIGHT_QUARTZ, 4518),
+        (ResourceTypes::ALCHEMICAL_SILVER, 5392),
+        (ResourceTypes::ADAMANTINE, 9120),
+        (ResourceTypes::MITHRAL, 13553),
+        (ResourceTypes::DRAGONHIDE, 21792),
+        (ResourceTypes::EARTHEN_SHARD, 2098)
+    ]
+        .span();
+}
+
 fn get_resources_without_earthenshards_probs() -> Span<u128> {
     // 35
     return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span();
@@ -276,8 +307,9 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
-// DISCUSS: register each new entity_type to the system by creating an entity containing the config components
-// Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
+// DISCUSS: register each new entity_type to the system by creating an entity containing the config
+// components Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when
+// creating it
 const DONKEY_ENTITY_TYPE: u32 = 256;
 const REALM_ENTITY_TYPE: u32 = 257;
 const ARMY_ENTITY_TYPE: u32 = 258;

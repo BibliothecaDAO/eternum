@@ -1,5 +1,6 @@
+import { ResourcesIds } from ".";
+import { ResourceInputs } from "../types";
 import { BuildingType } from "./structures";
-import { ResourcesIds } from "./resources";
 
 export const BUILDING_INFORMATION: {
   [key: number]: string;
@@ -74,4 +75,77 @@ export const BUILDING_RESOURCE_PRODUCED: { [key: number]: number } = {
   [BuildingType.WatchTower]: 0,
   [BuildingType.Walls]: 0,
   [BuildingType.Storehouse]: 0,
+};
+
+export const BUILDING_COSTS: ResourceInputs = {
+  [BuildingType.Castle]: [],
+  [BuildingType.Bank]: [],
+  [BuildingType.FragmentMine]: [],
+  [BuildingType.Resource]: [],
+  [BuildingType.Farm]: [{ resource: ResourcesIds.Fish, amount: 450 }],
+  [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 450 }],
+
+  [BuildingType.Market]: [
+    { resource: ResourcesIds.Fish, amount: 750 },
+    { resource: ResourcesIds.Stone, amount: 125 },
+    { resource: ResourcesIds.Obsidian, amount: 50 },
+    { resource: ResourcesIds.Ruby, amount: 25 },
+    { resource: ResourcesIds.DeepCrystal, amount: 5 },
+  ],
+  [BuildingType.Barracks]: [
+    { resource: ResourcesIds.Wheat, amount: 1000 },
+    { resource: ResourcesIds.Wood, amount: 75 },
+    { resource: ResourcesIds.Coal, amount: 75 },
+    { resource: ResourcesIds.Silver, amount: 50 },
+    { resource: ResourcesIds.Gold, amount: 45 },
+  ],
+  [BuildingType.ArcheryRange]: [
+    { resource: ResourcesIds.Fish, amount: 1000 },
+    { resource: ResourcesIds.Wood, amount: 75 },
+    { resource: ResourcesIds.Obsidian, amount: 75 },
+    { resource: ResourcesIds.Gold, amount: 25 },
+    { resource: ResourcesIds.Hartwood, amount: 25 },
+  ],
+  [BuildingType.Stable]: [
+    { resource: ResourcesIds.Wheat, amount: 1000 },
+    { resource: ResourcesIds.Wood, amount: 75 },
+    { resource: ResourcesIds.Silver, amount: 75 },
+    { resource: ResourcesIds.Ironwood, amount: 35 },
+    { resource: ResourcesIds.Gold, amount: 25 },
+  ],
+  [BuildingType.TradingPost]: [],
+  [BuildingType.WorkersHut]: [
+    { resource: ResourcesIds.Wheat, amount: 300 },
+    { resource: ResourcesIds.Stone, amount: 75 },
+    { resource: ResourcesIds.Wood, amount: 75 },
+    { resource: ResourcesIds.Coal, amount: 75 },
+  ],
+  [BuildingType.WatchTower]: [],
+  [BuildingType.Walls]: [],
+  [BuildingType.Storehouse]: [
+    { resource: ResourcesIds.Fish, amount: 1000 },
+    { resource: ResourcesIds.Coal, amount: 75 },
+    { resource: ResourcesIds.Stone, amount: 75 },
+    { resource: ResourcesIds.Sapphire, amount: 10 },
+  ],
+};
+
+// Approx creation of a building per Realm
+
+export const BUILDING_DELTA_USAGE: { [key: number]: number } = {
+  [BuildingType.Castle]: 1,
+  [BuildingType.Bank]: 0,
+  [BuildingType.FragmentMine]: 0,
+  [BuildingType.Resource]: 0,
+  [BuildingType.Farm]: 6,
+  [BuildingType.FishingVillage]: 6,
+  [BuildingType.Barracks]: 3,
+  [BuildingType.Market]: 3,
+  [BuildingType.ArcheryRange]: 3,
+  [BuildingType.Stable]: 3,
+  [BuildingType.TradingPost]: 0,
+  [BuildingType.WorkersHut]: 0,
+  [BuildingType.WatchTower]: 0,
+  [BuildingType.Walls]: 0,
+  [BuildingType.Storehouse]: 3,
 };

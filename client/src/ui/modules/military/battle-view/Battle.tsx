@@ -32,7 +32,7 @@ export const Battle = ({
 }: {
   battleManager: BattleManager;
   ownArmySide: string;
-  ownArmyEntityId: ID | undefined;
+  ownArmyEntityId: ID;
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
   attackerArmies: ArmyInfo[];
   attackerHealth: Health;
@@ -40,7 +40,7 @@ export const Battle = ({
   defenderArmies: (ArmyInfo | undefined)[];
   defenderHealth: Health | undefined;
   defenderTroops: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
-  userArmiesInBattle: (ArmyInfo | undefined)[];
+  userArmiesInBattle: ArmyInfo[];
   structure: Structure | undefined;
 }) => {
   const [showBattleDetails, setShowBattleDetails] = useState<boolean>(false);
@@ -87,6 +87,9 @@ export const Battle = ({
               ownSideTroopsUpdated={attackerTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={undefined}
+              userArmiesOnThatSide={userArmiesInBattle.filter(
+                (army) => army.battle_side === BattleSide[BattleSide.Attack],
+              )}
             />
             {showBattleDetails && battleAdjusted ? (
               <LockedResources
@@ -113,6 +116,9 @@ export const Battle = ({
               ownSideTroopsUpdated={defenderTroops}
               ownArmyEntityId={ownArmyEntityId}
               structure={structure}
+              userArmiesOnThatSide={userArmiesInBattle.filter(
+                (army) => army.battle_side === BattleSide[BattleSide.Defence],
+              )}
             />
           </div>
         </div>

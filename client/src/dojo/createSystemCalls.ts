@@ -6,10 +6,15 @@ class PromiseQueue {
   private readonly queue: Array<() => Promise<any>> = [];
   private processing = false;
 
-  async enqueue(task: () => Promise<any>) {
-    return await new Promise((resolve, reject) => {
+  async enqueue<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
       this.queue.push(async () => {
-        await task().then(resolve).catch(reject);
+        try {
+          const result = await task();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
       });
       this.processQueue();
     });
@@ -51,12 +56,14 @@ const withErrorHandling =
 export function createSystemCalls({ provider }: SetupNetworkResult) {
   const promiseQueue = new PromiseQueue();
 
-  const withQueueing = (fn: (...args: any[]) => Promise<any>) => {
-    return async (...args: any[]) => await promiseQueue.enqueue(async () => await fn(...args));
+  const withQueueing = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
+    return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+      return await promiseQueue.enqueue(async () => await fn(...args));
+    };
   };
 
-  const withErrorHandling = (fn: (...args: any[]) => Promise<any>) => {
-    return async (...args: any[]) => {
+  const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(fn: T) => {
+    return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
       try {
         return await fn(...args);
       } catch (error: any) {
@@ -108,6 +115,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.create_realm(props);
   };
 
+  const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
+    await provider.upgrade_realm(props);
+  };
+
   const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     await provider.create_multiple_realms(props);
   };
@@ -130,10 +141,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const travel_hex = async (props: SystemProps.TravelHexProps) => {
     await provider.travel_hex(props);
-  };
-
-  const level_up_realm = async (props: SystemProps.LevelUpRealmProps) => {
-    await provider.level_up_realm(props);
   };
 
   const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
@@ -228,6 +235,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.contribute_to_construction(props);
   };
 
+  const set_private = async (props: SystemProps.SetPrivateProps) => {
+    await provider.set_private(props);
+  };
+
+  const end_game = async (props: SystemProps.EndGameProps) => {
+    await provider.end_game(props);
+  };
+
   const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
     await provider.set_co_owners(props);
   };
@@ -314,13 +329,13 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     explore: withQueueing(withErrorHandling(explore)),
     set_address_name: withQueueing(withErrorHandling(set_address_name)),
     set_entity_name: withQueueing(withErrorHandling(set_entity_name)),
-    level_up_realm: withQueueing(withErrorHandling(level_up_realm)),
     isLive: withQueueing(withErrorHandling(isLive)),
     create_order: withQueueing(withErrorHandling(create_order)),
     accept_order: withQueueing(withErrorHandling(accept_order)),
     cancel_order: withQueueing(withErrorHandling(cancel_order)),
     accept_partial_order: withQueueing(withErrorHandling(accept_partial_order)),
     create_realm: withQueueing(withErrorHandling(create_realm)),
+    upgrade_realm: withQueueing(withErrorHandling(upgrade_realm)),
     create_multiple_realms: withQueueing(withErrorHandling(create_multiple_realms)),
     transfer_resources: withQueueing(withErrorHandling(transfer_resources)),
     travel: withQueueing(withErrorHandling(travel)),
@@ -332,9 +347,12 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_army: withQueueing(withErrorHandling(create_army)),
     delete_army: withQueueing(withErrorHandling(delete_army)),
     uuid: withQueueing(withErrorHandling(uuid)),
+
     create_hyperstructure: withQueueing(withErrorHandling(create_hyperstructure)),
     contribute_to_construction: withQueueing(withErrorHandling(contribute_to_construction)),
+    set_private: withQueueing(withErrorHandling(set_private)),
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
+    end_game: withQueueing(withErrorHandling(end_game)),
 
     mint_resources: withQueueing(withErrorHandling(mint_resources)),
     mint_starting_resources: withQueueing(withErrorHandling(mint_starting_resources)),

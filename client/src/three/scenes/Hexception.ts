@@ -6,18 +6,24 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
-import { getHexForWorldPosition, getWorldPositionForHex, ResourceIdToMiningType } from "@/ui/utils/utils";
-import { BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
+import { BuildingType, RealmLevels, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Biome, BIOME_COLORS, BiomeType } from "../components/Biome";
+import { SceneManager } from "../SceneManager";
+import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
-import { SceneManager } from "../SceneManager";
-import { BuildingSystemUpdate } from "../systems/types";
-import { buildingModelPaths, BUILDINGS_CENTER, HEX_SIZE, structureTypeToBuildingType } from "./constants";
+import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
+import {
+  BUILDINGS_CENTER,
+  HEX_SIZE,
+  buildingModelPaths,
+  castleLevelToRealmCastle,
+  structureTypeToBuildingType,
+} from "./constants";
 
 const loader = new GLTFLoader();
 
@@ -78,8 +84,10 @@ export default class HexceptionScene extends HexagonScene {
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
-  private subscription: any;
+  private buildingSubscription: any;
+  private realmSubscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
+  private castleLevel: RealmLevels = RealmLevels.Settlement;
 
   constructor(
     controls: MapControls,
@@ -112,6 +120,13 @@ export default class HexceptionScene extends HexagonScene {
     });
 
     this.state = useUIStore.getState();
+
+    // add gui to change castle level
+    this.GUIFolder.add(this, "castleLevel", 0, 3).onFinishChange((value: RealmLevels) => {
+      this.castleLevel = value;
+      this.removeCastleFromScene();
+      this.updateHexceptionGrid(this.hexceptionRadius);
+    });
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -198,8 +213,8 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingInstances.clear();
 
     // subscribe to buiding updates (create and destroy)
-    this.subscription?.unsubscribe();
-    this.subscription = this.systemManager.Buildings.subscribeToHexUpdates(
+    this.buildingSubscription?.unsubscribe();
+    this.buildingSubscription = this.systemManager.Buildings.subscribeToHexUpdates(
       { col: this.centerColRow[0], row: this.centerColRow[1] },
       (update: BuildingSystemUpdate) => {
         const { innerCol, innerRow, buildingType } = update;
@@ -210,6 +225,15 @@ export default class HexceptionScene extends HexagonScene {
       },
     );
 
+    this.realmSubscription?.unsubscribe();
+    this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
+      this.castleLevel = update.level as RealmLevels;
+      this.removeCastleFromScene();
+      this.updateHexceptionGrid(this.hexceptionRadius);
+    });
+
+    this.castleLevel = this.tileManager.getRealmLevel();
+    this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = 18;
     this.controls.enablePan = false;
@@ -217,6 +241,8 @@ export default class HexceptionScene extends HexagonScene {
 
     this.moveCameraToURLLocation();
   }
+
+  onSwitchOff() {}
 
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
@@ -326,10 +352,14 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          const buildingType =
+          let buildingType =
             building.resource && building.resource < 254
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
+
+          if (parseInt(buildingType) === BuildingType.Castle) {
+            buildingType = castleLevelToRealmCastle[this.castleLevel];
+          }
           const buildingData = this.buildingModels.get(buildingType);
 
           if (buildingData) {
@@ -372,6 +402,15 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
+  removeCastleFromScene() {
+    const key = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
+    const instance = this.buildingInstances.get(key);
+    if (instance) {
+      this.scene.remove(instance);
+      this.buildingInstances.delete(key);
+    }
+  }
+
   computeHexMatrices = (
     radius: number,
     dummy: THREE.Object3D,
@@ -381,7 +420,8 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
   ) => {
-    const biome = existingBuildings.length === 0 ? this.biome.getBiome(targetHex.col, targetHex.row) : "Grassland";
+    const biome = this.biome.getBiome(targetHex.col, targetHex.row);
+    const buildableAreaBiome = "Grassland";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
     // reset buildings
@@ -389,7 +429,7 @@ export default class HexceptionScene extends HexagonScene {
       this.buildings = [];
     }
 
-    const positions = generateHexPositions(
+    let positions = generateHexPositions(
       { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
       radius,
     );
@@ -397,35 +437,58 @@ export default class HexceptionScene extends HexagonScene {
     const label = new THREE.Group();
     this.scene.add(label);
 
+    if (isMainHex) {
+      const buildablePositions = generateHexPositions(
+        { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
+        this.castleLevel + 1,
+      );
+
+      positions = positions.filter(
+        (position) =>
+          !buildablePositions.some(
+            (buildablePosition) => buildablePosition.col === position.col && buildablePosition.row === position.row,
+          ),
+      );
+
+      buildablePositions.forEach((position) => {
+        dummy.position.x = position.x;
+        dummy.position.z = position.z;
+        dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
+        dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+        dummy.updateMatrix();
+
+        this.interactiveHexManager.addHex({ col: position.col, row: position.row });
+
+        let withBuilding = false;
+        const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+        if (building) {
+          withBuilding = true;
+          const buildingObj = dummy.clone();
+          const rotation = Math.PI / 3;
+          if (building.category === BuildingType[BuildingType.Castle]) {
+            buildingObj.rotation.y = rotation * 2;
+          } else {
+            buildingObj.rotation.y = rotation * 4;
+          }
+          buildingObj.updateMatrix();
+          this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
+        } else if (isMainHex) {
+          this.highlights.push(getHexForWorldPosition(dummy.position));
+        }
+
+        if (!withBuilding) {
+          biomeHexes[buildableAreaBiome].push(dummy.matrix.clone());
+        }
+      });
+    }
+
     positions.forEach((position) => {
       dummy.position.x = position.x;
       dummy.position.z = position.z;
       dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
       dummy.updateMatrix();
-      if (isMainHex) {
-        this.interactiveHexManager.addHex({ col: position.col, row: position.row });
-      }
-      let withBuilding = false;
-      const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
-      if (building) {
-        withBuilding = true;
-        const buildingObj = dummy.clone();
-        const rotation = Math.PI / 3;
-        if (building.category === BuildingType[BuildingType.Castle]) {
-          buildingObj.rotation.y = rotation * 2;
-        } else {
-          buildingObj.rotation.y = rotation * 4;
-        }
-        buildingObj.updateMatrix();
-        this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
-      } else if (isMainHex) {
-        this.highlights.push(getHexForWorldPosition(dummy.position));
-      }
-
-      if (!withBuilding) {
-        biomeHexes[biome].push(dummy.matrix.clone());
-      }
+      biomeHexes[biome].push(dummy.matrix.clone());
     });
   };
 

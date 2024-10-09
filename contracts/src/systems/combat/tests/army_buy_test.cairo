@@ -3,7 +3,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
-use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory};
+use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, CapacityConfigCategory, SettlementConfig};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
@@ -39,7 +39,18 @@ fn set_configurations(world: IWorldDispatcher) {
         world,
         (
             get_combat_config(),
-            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
+            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
+            SettlementConfig {
+                config_id: WORLD_CONFIG_ID,
+                radius: 50,
+                angle_scaled: 0,
+                center: 2147483646,
+                min_distance: 1,
+                max_distance: 5,
+                min_scaling_factor_scaled: 1844674407370955161,
+                min_angle_increase: 30,
+                max_angle_increase: 100,
+            }
         )
     )
 }
@@ -57,8 +68,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
-    let realm_id = realm_system_dispatcher
-        .create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1, Position { entity_id: 0, x: REALM_COORD_X, y: REALM_COORD_Y });
+    let realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1);
     mint(
         world,
         realm_id,
@@ -76,7 +86,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
 
 
 #[test]
-fn test_army_buy() {
+fn combat_test_army_buy() {
     let (world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
@@ -109,7 +119,7 @@ fn test_army_buy() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_army_buy__not_enough_resources() {
+fn combat_test_army_buy__not_enough_resources() {
     let (_world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());

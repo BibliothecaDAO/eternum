@@ -408,6 +408,8 @@ mod combat_systems {
         BattlePillageData
     };
 
+    use eternum::models::hyperstructure::SeasonCustomImpl;
+
     use eternum::models::movable::{Movable, MovableCustomTrait};
 
     use eternum::models::name::{AddressName, EntityName};
@@ -430,17 +432,21 @@ mod combat_systems {
             AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
 
     use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
     use eternum::utils::math::{min, max};
     use eternum::utils::random;
+
     use super::ICombatContract;
+
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
         fn army_create(ref world: IWorldDispatcher, army_owner_id: ID, is_defensive_army: bool) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
@@ -460,6 +466,8 @@ mod combat_systems {
         }
 
         fn army_delete(ref world: IWorldDispatcher, army_id: ID) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure caller owns the entity paying
             let mut entity_owner: EntityOwner = get!(world, army_id, EntityOwner);
             entity_owner.assert_caller_owner(world);
@@ -485,6 +493,8 @@ mod combat_systems {
 
 
         fn army_buy_troops(ref world: IWorldDispatcher, army_id: ID, payer_id: ID, mut troops: Troops) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure troop values are normalized
             troops.assert_normalized();
 
@@ -528,6 +538,8 @@ mod combat_systems {
 
 
         fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops,) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure troop values are normalized
             troops.assert_normalized();
 
@@ -588,6 +600,8 @@ mod combat_systems {
 
 
         fn battle_start(ref world: IWorldDispatcher, attacking_army_id: ID, defending_army_id: ID) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
@@ -736,6 +750,8 @@ mod combat_systems {
         }
 
         fn battle_force_start(ref world: IWorldDispatcher, battle_id: ID, defending_army_id: ID) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, defending_army_id, EntityOwner).assert_caller_owner(world);
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
@@ -757,6 +773,8 @@ mod combat_systems {
         }
 
         fn battle_join(ref world: IWorldDispatcher, battle_id: ID, battle_side: BattleSide, army_id: ID) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
             // ensure caller owns army
@@ -831,6 +849,8 @@ mod combat_systems {
 
 
         fn battle_leave(ref world: IWorldDispatcher, battle_id: ID, army_id: ID) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -897,6 +917,8 @@ mod combat_systems {
 
 
         fn battle_claim(ref world: IWorldDispatcher, army_id: ID, structure_id: ID) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -959,6 +981,8 @@ mod combat_systems {
 
 
         fn battle_pillage(ref world: IWorldDispatcher, army_id: ID, structure_id: ID,) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -1060,7 +1084,9 @@ mod combat_systems {
                                 let army_weight: Weight = get!(world, army_id, Weight);
 
                                 let max_carriable = (army_total_capacity - (army_weight.value))
-                                    / max((WeightConfigCustomImpl::get_weight(world, *chosen_resource_type, 1)), 1);
+                                    / max(
+                                        (WeightConfigCustomImpl::get_weight_grams(world, *chosen_resource_type, 1)), 1
+                                    );
 
                                 if max_carriable > 0 {
                                     let max_resource_amount_stolen: u128 = attacking_army.troops.count().into()

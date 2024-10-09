@@ -262,7 +262,7 @@ mod tests {
     use traits::TryInto;
 
     #[test]
-    fn test_position_into_cube_0_0() {
+    fn position_test_position_into_cube_0_0() {
         let pos = Position { entity_id: 0, x: 0, y: 0 };
 
         let cube: Cube = pos.into();
@@ -272,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    fn test_position_into_cube_1_2() {
+    fn position_test_position_into_cube_1_2() {
         let pos = Position { entity_id: 0, x: 1, y: 2 };
 
         let cube: Cube = pos.into();
@@ -283,7 +283,7 @@ mod tests {
 
 
     #[test]
-    fn test_position_into_cube_2_1() {
+    fn position_test_position_into_cube_2_1() {
         let pos = Position { entity_id: 0, x: 2, y: 1 };
 
         let cube: Cube = pos.into();
@@ -294,7 +294,7 @@ mod tests {
 
 
     #[test]
-    fn test_position_into_cube_2_2() {
+    fn position_test_position_into_cube_2_2() {
         let pos = Position { entity_id: 0, x: 2, y: 2 };
 
         let cube: Cube = pos.into();
@@ -306,7 +306,7 @@ mod tests {
 
     #[test]
     #[available_gas(30000000)]
-    fn test_calculate_distance() {
+    fn position_test_calculate_distance() {
         let start = Position { entity_id: 0, x: 2, y: 1 };
         let end = Position { entity_id: 0, x: 1, y: 3 };
         let distance = start.calculate_distance(end);
@@ -317,7 +317,7 @@ mod tests {
 
     #[test]
     #[available_gas(30000000)]
-    fn test_calculate_distance_large_values() {
+    fn position_test_calculate_distance_large_values() {
         let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
         let end = Position { entity_id: 0, x: 81839812, y: 318939024 };
         let distance = start.calculate_distance(end);
@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     #[available_gas(30000000)]
-    fn test_calculate_travel_time() {
+    fn position_test_calculate_travel_time() {
         let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
         let end = Position { entity_id: 0, x: 81839812, y: 318939024 };
 
@@ -338,7 +338,7 @@ mod tests {
 
 
     // #[test]
-    // fn test_get_zone() {
+    // fn position_test_get_zone() {
     //     let a = Position { entity_id: 0, x: 1333333, y: 200000 };
     //     let zone = a.get_zone();
     //     assert(zone == 4, 'zone should be 4');
@@ -360,28 +360,28 @@ mod tests {
         //- Even row
 
         #[test]
-        fn test_neighbor_even_row_east() {
+        fn position_test_neighbor_even_row_east() {
             let start = even_row_coord();
 
             assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
         }
 
         #[test]
-        fn test_neighbor_even_row_north_east() {
+        fn position_test_neighbor_even_row_north_east() {
             let start = even_row_coord();
 
             assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 });
         }
 
         #[test]
-        fn test_neighbor_even_row_north_west() {
+        fn position_test_neighbor_even_row_north_west() {
             let start = even_row_coord();
 
             assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x, y: start.y + 1 });
         }
 
         #[test]
-        fn test_neighbor_even_row_west() {
+        fn position_test_neighbor_even_row_west() {
             let start = even_row_coord();
 
             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
@@ -389,7 +389,7 @@ mod tests {
 
 
         #[test]
-        fn test_neighbor_even_row_south_west() {
+        fn position_test_neighbor_even_row_south_west() {
             let start = even_row_coord();
 
             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x, y: start.y - 1 });
@@ -397,7 +397,7 @@ mod tests {
 
 
         #[test]
-        fn test_neighbor_even_row_south_east() {
+        fn position_test_neighbor_even_row_south_east() {
             let start = even_row_coord();
 
             assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
@@ -407,28 +407,28 @@ mod tests {
         //- Odd row
 
         #[test]
-        fn test_neighbor_odd_row_east() {
+        fn position_test_neighbor_odd_row_east() {
             let start = odd_row_coord();
 
             assert_eq!(start.neighbor(Direction::East), Coord { x: start.x + 1, y: start.y });
         }
 
         #[test]
-        fn test_neighbor_odd_row_north_east() {
+        fn position_test_neighbor_odd_row_north_east() {
             let start = odd_row_coord();
 
             assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x, y: start.y + 1 });
         }
 
         #[test]
-        fn test_neighbor_odd_row_north_west() {
+        fn position_test_neighbor_odd_row_north_west() {
             let start = odd_row_coord();
 
             assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 });
         }
 
         #[test]
-        fn test_neighbor_odd_row_west() {
+        fn position_test_neighbor_odd_row_west() {
             let start = odd_row_coord();
 
             assert_eq!(start.neighbor(Direction::West), Coord { x: start.x - 1, y: start.y });
@@ -436,7 +436,7 @@ mod tests {
 
 
         #[test]
-        fn test_neighbor_odd_row_south_west() {
+        fn position_test_neighbor_odd_row_south_west() {
             let start = odd_row_coord();
 
             assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
@@ -444,7 +444,7 @@ mod tests {
 
 
         #[test]
-        fn test_neighbor_odd_row_south_east() {
+        fn position_test_neighbor_odd_row_south_east() {
             let start = odd_row_coord();
 
             assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x, y: start.y - 1 });

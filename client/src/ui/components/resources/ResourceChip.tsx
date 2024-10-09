@@ -1,10 +1,10 @@
-import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
 
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, currencyIntlFormat, formatTime, TimeFormat } from "../../utils/utils";
+import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "../../utils/utils";
 
 const DISPLAY_RATE_TIME_MS = 5_000;
 const TRANSITION_DURATION_MS = 400;
@@ -13,10 +13,12 @@ export const ResourceChip = ({
   isLabor = false,
   resourceId,
   entityId,
+  maxStorehouseCapacityKg,
 }: {
   isLabor?: boolean;
   resourceId: ID;
   entityId: ID;
+  maxStorehouseCapacityKg: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
@@ -32,7 +34,11 @@ export const ResourceChip = ({
 
   const balance = useMemo(() => {
     return productionManager.balance(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick]);
+  }, [productionManager, production, currentDefaultTick, maxStorehouseCapacityKg]);
+
+  const maxAmountStorable = useMemo(() => {
+    return maxStorehouseCapacityKg / gramToKg(WEIGHTS_GRAM[resourceId] || 1000);
+  }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {
     return productionManager.timeUntilValueReached(currentDefaultTick, 0);
@@ -75,13 +81,13 @@ export const ResourceChip = ({
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
         if (Math.abs(netRate) > 0) {
-          return prevDisplayBalance + netRate;
+          return Math.min(maxAmountStorable, Math.max(0, prevDisplayBalance + netRate));
         }
-        return prevDisplayBalance;
+        return Math.min(maxAmountStorable, prevDisplayBalance);
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [balance, netRate, entityId]);
+  }, [balance, netRate, entityId, maxAmountStorable]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -104,11 +110,11 @@ export const ResourceChip = ({
     }
   }, [netRate, showPerHour]);
 
+  const reachedMaxCap = maxAmountStorable === displayBalance && Math.abs(netRate) > 0;
+
   return (
     <div
-      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
-        netRate && netRate < 0 ? "bg-red/5" : "bg-green/5"
-      } `}
+      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
       onMouseEnter={() => {
         setTooltip({
           position: "top",
@@ -131,7 +137,7 @@ export const ResourceChip = ({
             : ""}
         </div>
 
-        {netRate ? (
+        {netRate && !reachedMaxCap ? (
           <div
             className={`${
               Number(netRate) < 0 ? "text-light-red" : "text-green/80"
@@ -151,15 +157,21 @@ export const ResourceChip = ({
             onMouseEnter={() => {
               setTooltip({
                 position: "top",
-                content: <>Production has stopped because inputs have been depleted</>,
+                content: (
+                  <>
+                    {isConsumingInputsWithoutOutput
+                      ? "Production has stopped because inputs have been depleted"
+                      : "Production has stopped because the max balance has been reached"}
+                  </>
+                ),
               });
             }}
             onMouseLeave={() => {
               setTooltip(null);
             }}
-            className="self-center px-2"
+            className="self-center px-2 col-span-3 mx-auto"
           >
-            {isConsumingInputsWithoutOutput ? "⚠️" : ""}
+            {isConsumingInputsWithoutOutput || reachedMaxCap ? "⚠️" : ""}
           </div>
         )}
       </div>

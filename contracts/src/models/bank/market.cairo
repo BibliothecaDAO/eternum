@@ -317,7 +317,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: ("Output amount exceeds reserve, amount: 10, reserve: 1",))]
-    fn test_market_not_enough_quantity() {
+    fn bank_test_market_not_enough_quantity() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
@@ -329,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn test_market_buy_no_fee() {
+    fn bank_test_market_buy_no_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
@@ -353,7 +353,7 @@ mod tests {
     }
 
     #[test]
-    fn test_market_buy_with_lp_fee() {
+    fn bank_test_market_buy_with_lp_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
@@ -379,7 +379,7 @@ mod tests {
 
 
     #[test]
-    fn test_market_sell_no_fee() {
+    fn bank_test_market_sell_no_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
@@ -403,7 +403,7 @@ mod tests {
     }
 
     #[test]
-    fn test_market_sell_with_fee() {
+    fn bank_test_market_sell_with_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
@@ -427,7 +427,7 @@ mod tests {
     }
 
     #[test]
-    fn test_market_add_liquidity_no_initial() {
+    fn bank_test_market_add_liquidity_no_initial() {
         // Without initial liquidity
         let market = Market {
             bank_entity_id: 1,
@@ -454,7 +454,7 @@ mod tests {
     }
 
     #[test]
-    fn test_market_add_liquidity_optimal() {
+    fn bank_test_market_add_liquidity_optimal() {
         // With initial liquidity
         let market = Market {
             bank_entity_id: 1,
@@ -480,7 +480,7 @@ mod tests {
     }
 
     #[test]
-    fn test_market_add_liquidity_not_optimal() {
+    fn bank_test_market_add_liquidity_not_optimal() {
         // With initial liquidity
         let market = Market {
             bank_entity_id: 1,
@@ -507,7 +507,7 @@ mod tests {
     }
 
     #[test]
-    fn test_market_remove_liquidity() {
+    fn bank_test_market_remove_liquidity() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
@@ -541,7 +541,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: ('insufficient liquidity',))]
-    fn test_market_remove_liquidity_no_initial() {
+    fn bank_test_market_remove_liquidity_no_initial() {
         // Without initial liquidity
         let market = Market {
             bank_entity_id: 1,
@@ -559,7 +559,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: ('insufficient liquidity',))]
-    fn test_market_remove_liquidity_more_than_available() {
+    fn bank_test_market_remove_liquidity_more_than_available() {
         // With initial liquidity
         let market = Market {
             bank_entity_id: 1,

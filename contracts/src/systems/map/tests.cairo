@@ -7,7 +7,9 @@ use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
 use eternum::models::combat::{Battle};
 use eternum::models::combat::{Health, Troops};
-use eternum::models::config::{TickConfig, TickImpl, StaminaConfig, TravelStaminaCostConfig};
+use eternum::models::config::{
+    TickConfig, TickImpl, StaminaConfig, TravelStaminaCostConfig, CapacityConfig, CapacityConfigCategory
+};
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{EntityOwner, Owner};
@@ -47,7 +49,8 @@ use eternum::utils::testing::{
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
         set_combat_config, set_stamina_config, set_capacity_config, set_speed_config, set_mercenaries_config,
-        set_tick_config, set_map_config, set_weight_config, set_mine_production_config
+        set_settlement_config, set_tick_config, set_map_config, set_weight_config, set_mine_production_config,
+        set_travel_food_cost_config
     },
     constants::{
         MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
@@ -58,16 +61,18 @@ use eternum::utils::testing::{
 
 use starknet::contract_address_const;
 
-const INITIAL_WHEAT_BALANCE: u128 = 10_000_000;
-const INITIAL_FISH_BALANCE: u128 = 10_000_000;
+const INITIAL_WHEAT_BALANCE: u128 = 500_000_000;
+const INITIAL_FISH_BALANCE: u128 = 500_000_000;
 const INITIAL_KNIGHT_BALANCE: u128 = 10_000_000;
+const INITIAL_PALADIN_BALANCE: u128 = 10_000_000;
+const INITIAL_CROSSBOWMAN_BALANCE: u128 = 10_000_000;
 
 const TIMESTAMP: u64 = 10_000;
 
 const TICK_INTERVAL_IN_SECONDS: u64 = 7_200;
 
 #[test]
-fn test_map_explore() {
+fn map_test_map_explore() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
@@ -95,9 +100,11 @@ fn test_map_explore() {
 
     // ensure that the right amount of food was burnt
     let expected_wheat_balance = INITIAL_WHEAT_BALANCE
-        - (MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT * INITIAL_KNIGHT_BALANCE);
+        - (MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT
+            * (INITIAL_KNIGHT_BALANCE + INITIAL_PALADIN_BALANCE + INITIAL_CROSSBOWMAN_BALANCE));
     let expected_fish_balance = INITIAL_FISH_BALANCE
-        - (MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT * INITIAL_KNIGHT_BALANCE);
+        - (MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT
+            * (INITIAL_KNIGHT_BALANCE + INITIAL_PALADIN_BALANCE + INITIAL_CROSSBOWMAN_BALANCE));
     let (realm_wheat, realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
     assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
@@ -107,7 +114,7 @@ fn test_map_explore() {
 }
 
 #[test]
-fn test_map_explore__mine_mercenaries_protector() {
+fn map_test_map_explore__mine_mercenaries_protector() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
@@ -130,13 +137,12 @@ fn test_map_explore__mine_mercenaries_protector() {
     let mine_entity_owner = get!(world, mine_entity_id, EntityOwner);
     assert_eq!(mine_entity_owner.entity_owner_id, mine_entity_id, "wrong initial owner");
 
-    let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_shard_mine(
-        world, mine_entity_id, army_position
-    );
+    let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_structure(world, mine_entity_id);
 
     let battle_entity_id = combat_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
-
-    starknet::testing::set_block_timestamp(99999);
+    let battle = get!(world, battle_entity_id, Battle);
+    let current_ts = starknet::get_block_timestamp();
+    starknet::testing::set_block_timestamp(current_ts + battle.duration_left);
 
     combat_systems_dispatcher.battle_leave(battle_entity_id, realm_army_unit_id);
     combat_systems_dispatcher.battle_claim(realm_army_unit_id, mine_entity_id);
@@ -147,7 +153,7 @@ fn test_map_explore__mine_mercenaries_protector() {
 }
 
 #[test]
-fn test_map_explore__mine_production_deadline() {
+fn map_test_map_explore__mine_production_deadline() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _combat_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
@@ -184,11 +190,15 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     set_stamina_config(config_systems_address);
     set_speed_config(config_systems_address);
     set_mercenaries_config(config_systems_address);
+    set_settlement_config(config_systems_address);
     set_tick_config(config_systems_address);
     set_map_config(config_systems_address);
     set_weight_config(config_systems_address);
     set_mine_production_config(config_systems_address);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
+    set_travel_food_cost_config(config_systems_address);
+
+    set!(world, CapacityConfig { category: CapacityConfigCategory::Storehouse, weight_gram: 1_000_000_000 });
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
@@ -206,13 +216,17 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
             array![
                 (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE),
                 (ResourceTypes::FISH, INITIAL_FISH_BALANCE),
-                (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE)
+                (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE),
+                (ResourceTypes::PALADIN, INITIAL_PALADIN_BALANCE),
+                (ResourceTypes::CROSSBOWMAN, INITIAL_CROSSBOWMAN_BALANCE)
             ]
                 .span()
         );
 
     let troops = Troops {
-        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0
+        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(),
+        paladin_count: INITIAL_PALADIN_BALANCE.try_into().unwrap(),
+        crossbowman_count: INITIAL_CROSSBOWMAN_BALANCE.try_into().unwrap()
     };
     let realm_army_unit_id: ID = create_army_with_troops(
         world, combat_systems_dispatcher, realm_entity_id, troops, false

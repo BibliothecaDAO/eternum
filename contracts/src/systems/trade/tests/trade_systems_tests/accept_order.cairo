@@ -6,8 +6,7 @@ use eternum::alias::ID;
 
 use eternum::constants::ResourceTypes;
 use eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
-use eternum::models::config::{LevelingConfig, CapacityConfig, CapacityConfigCategory};
-use eternum::models::level::{Level};
+use eternum::models::config::{CapacityConfig, CapacityConfigCategory};
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::order::{Orders, OrdersCustomTrait};
@@ -25,12 +24,14 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
 };
 
+use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+
 use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 use eternum::utils::testing::{
-    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
-    config::set_capacity_config
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
+    general::{spawn_realm}, config::{set_capacity_config, set_settlement_config}
 };
 
 use starknet::contract_address_const;
@@ -40,7 +41,9 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let dev_resource_systems = deploy_dev_resource_systems(world);
 
+    set_settlement_config(config_systems_address);
     set_capacity_config(config_systems_address);
 
     // set speed configuration
@@ -80,13 +83,17 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
     set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }));
 
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 }));
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 }));
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
+    dev_resource_systems
+        .mint(
+            maker_id,
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100), (ResourceTypes::DONKEY, 20_000)].span()
+        );
+    dev_resource_systems
+        .mint(
+            taker_id,
+            array![(ResourceTypes::WOOD, 500), (ResourceTypes::SILVER, 500), (ResourceTypes::DONKEY, 20_000)].span()
+        );
 
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 }));
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }));
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
@@ -96,11 +103,6 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
-    if direct_trade {
-        taker_id
-    } else {
-        0
-    };
 
     // trade 100 stone and 100 gold for 200 wood and 200 silver
     // let trade_id = 0;
@@ -121,7 +123,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_accept_order_free_trade() {
+fn trade_test_accept_order_free_trade() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(false);
 
     // accept order
@@ -149,7 +151,7 @@ fn test_accept_order_free_trade() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_accept_order_direct_trade() {
+fn trade_test_accept_order_direct_trade() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
     // accept order
@@ -178,7 +180,7 @@ fn test_accept_order_direct_trade() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not the taker', 'ENTRYPOINT_FAILED'))]
-fn test_not_trade_taker_id() {
+fn trade_test_not_trade_taker_id() {
     let (world, trade_id, _, _, trade_systems_dispatcher) = setup(true);
 
     // the setup states the trade is a direct offer
@@ -205,7 +207,7 @@ fn test_not_trade_taker_id() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not owned by caller', 'ENTRYPOINT_FAILED'))]
-fn test_caller_not_taker() {
+fn trade_test_caller_not_taker() {
     let (_, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
     // create order with a caller that isnt the owner of taker_id
@@ -230,7 +232,7 @@ fn test_caller_not_taker() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_transport_not_enough_donkey_capacity() {
+fn trade_test_transport_not_enough_donkey_capacity() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
     set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));

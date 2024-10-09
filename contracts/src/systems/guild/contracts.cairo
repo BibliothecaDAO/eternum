@@ -18,6 +18,8 @@ trait IGuildSystems {
 mod guild_systems {
     use eternum::alias::ID;
     use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
+
+    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
@@ -27,6 +29,8 @@ mod guild_systems {
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
         fn create_guild(ref world: IWorldDispatcher, is_public: bool, guild_name: felt252) -> ID {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let caller_address = starknet::get_caller_address();
 
             get!(world, caller_address, GuildMember).assert_has_no_guild();
@@ -51,6 +55,8 @@ mod guild_systems {
         }
 
         fn join_guild(ref world: IWorldDispatcher, guild_entity_id: ID) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let caller_address = starknet::get_caller_address();
 
             get!(world, caller_address, GuildMember).assert_has_no_guild();
@@ -69,6 +75,8 @@ mod guild_systems {
         fn whitelist_player(
             ref world: IWorldDispatcher, player_address_to_whitelist: ContractAddress, guild_entity_id: ID
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, guild_entity_id, Owner).assert_caller_owner();
 
             assert((get!(world, player_address_to_whitelist, AddressName).name) != 0, 'Address given is not a player');
@@ -82,6 +90,8 @@ mod guild_systems {
         }
 
         fn leave_guild(ref world: IWorldDispatcher) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let caller_address = starknet::get_caller_address();
 
             let mut guild_member = get!(world, caller_address, GuildMember);
@@ -110,6 +120,8 @@ mod guild_systems {
         fn transfer_guild_ownership(
             ref world: IWorldDispatcher, guild_entity_id: ID, to_player_address: ContractAddress
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, guild_entity_id, Owner).assert_caller_owner();
 
             let to_player_guild_member_info = get!(world, to_player_address, GuildMember);
@@ -123,6 +135,8 @@ mod guild_systems {
         }
 
         fn remove_guild_member(ref world: IWorldDispatcher, player_address_to_remove: ContractAddress) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             let guild_entity_id = get!(world, starknet::get_caller_address(), GuildMember).guild_entity_id;
             get!(world, guild_entity_id, Owner).assert_caller_owner();
 
@@ -140,6 +154,8 @@ mod guild_systems {
         fn remove_player_from_whitelist(
             ref world: IWorldDispatcher, player_address_to_remove: ContractAddress, guild_entity_id: ID
         ) {
+            SeasonCustomImpl::assert_season_is_not_over(world);
+
             get!(world, (player_address_to_remove, guild_entity_id), GuildWhitelist).assert_is_whitelisted();
 
             let caller_address = starknet::get_caller_address();

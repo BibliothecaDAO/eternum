@@ -58,18 +58,21 @@ export function defineContractComponents(world: World) {
           entity_id: RecsType.Number,
           owner_fee_num: RecsType.BigInt,
           owner_fee_denom: RecsType.BigInt,
+          owner_bridge_fee_dpt_percent: RecsType.Number,
+          owner_bridge_fee_wtdr_percent: RecsType.Number,
           exists: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Bank",
-            types: ["u32", "u128", "u128", "bool"],
+            types: ["u32", "u128", "u128", "u16", "u16", "bool"],
             customTypes: [],
           },
         },
       );
     })(),
+
     BankConfig: (() => {
       return defineComponent(
         world,
@@ -272,6 +275,23 @@ export function defineContractComponents(world: World) {
             name: "BuildingConfig",
             types: ["u32", "enum", "u8", "u32", "u32"],
             customTypes: ["BuildingCategory"],
+          },
+        },
+      );
+    })(),
+    BuildingGeneralConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          base_cost_percent_increase: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "BuildingGeneralConfig",
+            types: ["u32", "u16"],
+            customTypes: [],
           },
         },
       );
@@ -485,10 +505,51 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Hyperstructure: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.Number,
+          current_epoch: RecsType.Number,
+          completed: RecsType.Boolean,
+          last_updated_by: RecsType.BigInt,
+          last_updated_timestamp: RecsType.Number,
+          private: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "Hyperstructure",
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Epoch: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.Number,
+          index: RecsType.Number,
+          start_timestamp: RecsType.Number,
+          owners: RecsType.BigIntArray,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "Epoch",
+            types: ["u32", "u16", "u64", "array"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     HyperstructureConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, time_between_shares_change: RecsType.BigInt },
+        { config_id: RecsType.Number, time_between_shares_change: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
@@ -508,24 +569,6 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "HyperstructureResourceConfig",
             types: ["u32", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    HyperstructureUpdate: (() => {
-      return defineComponent(
-        world,
-        {
-          hyperstructure_entity_id: RecsType.Number,
-          last_updated_timestamp: RecsType.BigInt,
-          last_updated_by: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "HyperstructureUpdate",
-            types: ["u32", "u64", "contractaddress"],
             customTypes: [],
           },
         },
@@ -909,12 +952,13 @@ export function defineContractComponents(world: World) {
           regions: RecsType.Number,
           wonder: RecsType.Number,
           order: RecsType.Number,
+          level: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
             customTypes: [],
           },
         },
@@ -1169,7 +1213,8 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "eternum-TravelStaminaCostConfig",
+            namespace: "eternum",
+            name: "TravelStaminaCostConfig",
             types: ["u32", "u8", "u16"],
             customTypes: [],
           },
@@ -1193,12 +1238,13 @@ export function defineContractComponents(world: World) {
           army_max_per_structure: RecsType.Number,
           battle_leave_slash_num: RecsType.Number,
           battle_leave_slash_denom: RecsType.Number,
+          battle_time_scale: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
             customTypes: [],
           },
         },

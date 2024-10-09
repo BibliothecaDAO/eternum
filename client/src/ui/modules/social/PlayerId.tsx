@@ -1,4 +1,4 @@
-import { ReactComponent as Message } from "@/assets/icons/common/message.svg";
+import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -7,14 +7,47 @@ import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import { formatTime, toHexString } from "@/ui/utils/utils";
-import { StructureType } from "@bibliothecadao/eternum";
+import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { addNewTab } from "../chat/Chat";
 
-export const PlayerId = () => {
+export const MessageIcon = ({
+  playerName,
+  selectedPlayer,
+}: {
+  playerName: string | undefined;
+  selectedPlayer: ContractAddress;
+}) => {
   const {
     account: { account },
+  } = useDojo();
+
+  const tabs = useUIStore((state) => state.tabs);
+  const setTabs = useUIStore((state) => state.setTabs);
+  const setCurrentTab = useUIStore((state) => state.setCurrentTab);
+
+  const handleClick = () => {
+    if (!playerName) return;
+    addNewTab(
+      tabs,
+      { name: playerName, address: toHexString(selectedPlayer), displayed: true },
+      setCurrentTab,
+      account.address,
+      setTabs,
+    );
+  };
+
+  return (
+    <MessageSvg
+      onClick={handleClick}
+      className="h-4 w-4 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all"
+    />
+  );
+};
+
+export const PlayerId = () => {
+  const {
     setup: {
       components: {
         Owner,
@@ -29,10 +62,6 @@ export const PlayerId = () => {
 
   const selectedPlayer = useUIStore((state) => state.selectedPlayer);
   const setSelectedPlayer = useUIStore((state) => state.setSelectedPlayer);
-
-  const tabs = useUIStore((state) => state.tabs);
-  const setTabs = useUIStore((state) => state.setTabs);
-  const setCurrentTab = useUIStore((state) => state.setCurrentTab);
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
@@ -96,21 +125,13 @@ export const PlayerId = () => {
             <AvatarImage address={toHexString(selectedPlayer!)} />
             <div className="flex flex-row">
               <div className="flex flex-col mr-6">
-                <div className="text-xl font-bold flex flex-row">
-                  {playerName ? playerName : "No player selected"}
-                  <Message
-                    onClick={() => {
-                      if (!playerName) return;
-                      addNewTab(
-                        tabs,
-                        { name: playerName, address: toHexString(selectedPlayer), displayed: true },
-                        setCurrentTab,
-                        account.address,
-                        setTabs,
-                      );
-                    }}
-                    className="w-4 h-4 fill-gold ml-3 self-center"
-                  />
+                <div className="text-2xl font-bold flex flex-row items-center space-x-1 bg-black/20 p-2 rounded-lg shadow-md">
+                  <span className="text-gold">{playerName || "No player selected"}</span>
+                  {playerName && (
+                    <div className="flex items-center justify-center p-1">
+                      <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />
+                    </div>
+                  )}
                 </div>
                 <div className="text-xs italic">
                   {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "No player selected"}
@@ -128,7 +149,7 @@ export const PlayerId = () => {
                         <RealmResourcesIO
                           className="w-full overflow-x-auto no-scrollbar font-normal"
                           titleClassName="font-normal text-sm"
-                          structureEntityId={structure.entity_id}
+                          realmEntityId={structure.entity_id}
                         />
                       </div>
                     );

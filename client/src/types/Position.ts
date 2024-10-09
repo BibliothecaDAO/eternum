@@ -9,7 +9,10 @@ export class Position {
   constructor({ x, y }: { x: number; y: number }) {
     this.x = x;
     this.y = y;
-    this.normalized = x < FELT_CENTER && y < FELT_CENTER;
+    // if outide of square 1_000_000 x 1_000_000 around the center, it's already normalized
+    const squareSize = 1_000_000;
+    const halfSquareSize = squareSize / 2;
+    this.normalized = Math.abs(x - FELT_CENTER) > halfSquareSize || Math.abs(y - FELT_CENTER) > halfSquareSize;
   }
 
   public getContract() {

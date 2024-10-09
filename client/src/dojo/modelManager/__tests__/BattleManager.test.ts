@@ -30,7 +30,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   return {
     ...(actual as any),
     EternumGlobalConfig: {
-      troop: { healthPrecision: 1n, health: 1 },
+      troop: { health: 1 },
       resources: {
         resourceMultiplier: 1,
       },
@@ -269,8 +269,8 @@ describe("getUpdatedTroops", () => {
       crossbowman_count: 10n,
     };
 
-    const updatedTroops = battleManager["getUpdatedTroops"](currentHealth, currentTroops);
-    expect(updatedTroops).toStrictEqual({
+    const ret = battleManager["getUpdatedTroops"](currentHealth, currentTroops);
+    expect(ret).toStrictEqual({
       knight_count: 0n,
       paladin_count: 0n,
       crossbowman_count: 0n,

@@ -7,12 +7,12 @@ import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
+import { SceneManager } from "./SceneManager";
 import { TransitionManager } from "./components/TransitionManager";
 import { GUIManager } from "./helpers/GUIManager";
 import { LocationManager } from "./helpers/LocationManager";
-import { SceneManager } from "./SceneManager";
-import HexceptionScene from "./scenes/Hexception";
 import HUDScene from "./scenes/HUDScene";
+import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
 import { SystemManager } from "./systems/SystemManager";
 
@@ -138,7 +138,7 @@ export default class GameRenderer {
 
   initStats() {
     this.stats = new (Stats as any)();
-    if (import.meta.env.PROD) {
+    if (import.meta.env.VITE_PUBLIC_SHOW_FPS) {
       this.stats.dom.style.left = "";
       this.stats.dom.style.right = "0";
       this.stats.dom.style.overflow = "hidden";
@@ -214,7 +214,6 @@ export default class GameRenderer {
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
 
     this.renderModels();
-
     // Init animation
     this.animate();
   }
@@ -321,6 +320,7 @@ export default class GameRenderer {
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
 
+    // Update the minimap
     requestAnimationFrame(() => {
       this.animate();
     });

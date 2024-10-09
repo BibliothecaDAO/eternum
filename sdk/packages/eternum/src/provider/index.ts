@@ -179,7 +179,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       regions,
       wonder,
       order,
-      position,
       signer,
     } = props;
 
@@ -200,15 +199,22 @@ export class EternumProvider extends EnhancedDojoProvider {
             regions,
             wonder,
             order,
-            2,
-            position.x,
-            position.y,
           ],
         },
       ],
       NAMESPACE,
     );
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
+    const { realm_entity_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+      entrypoint: "upgrade_level",
+      calldata: [realm_entity_id],
+    });
   }
 
   create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
@@ -226,7 +232,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         regions,
         wonder,
         order,
-        position,
       } = realm;
 
       let calldata = [
@@ -244,9 +249,6 @@ export class EternumProvider extends EnhancedDojoProvider {
             regions,
             wonder,
             order,
-            2, // entity ID in position struct
-            position.x,
-            position.y,
           ],
         },
       ];
@@ -311,16 +313,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
       entrypoint: "travel_hex",
       calldata: [travelling_entity_id, directions],
-    });
-  }
-
-  public async level_up_realm(props: SystemProps.LevelUpRealmProps) {
-    const { realm_entity_id, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-leveling_systems`),
-      entrypoint: "level_up_realm",
-      calldata: [realm_entity_id],
     });
   }
 
@@ -395,22 +387,44 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_bank(props: SystemProps.CreateBankProps) {
-    const { realm_entity_id, coord, owner_fee_num, owner_fee_denom, signer } = props;
+    const {
+      realm_entity_id,
+      coord,
+      owner_fee_num,
+      owner_fee_denom,
+      owner_bridge_fee_dpt_percent,
+      owner_bridge_fee_wtdr_percent,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "create_bank",
-      calldata: [realm_entity_id, coord, owner_fee_num, owner_fee_denom],
+      calldata: [
+        realm_entity_id,
+        coord,
+        owner_fee_num,
+        owner_fee_denom,
+        owner_bridge_fee_dpt_percent,
+        owner_bridge_fee_wtdr_percent,
+      ],
     });
   }
 
   public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
-    const { coord, owner_fee_num, owner_fee_denom, signer } = props;
+    const {
+      coord,
+      owner_fee_num,
+      owner_fee_denom,
+      owner_bridge_fee_dpt_percent,
+      owner_bridge_fee_wtdr_percent,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
       entrypoint: "create_admin_bank",
-      calldata: [coord, owner_fee_num, owner_fee_denom],
+      calldata: [coord, owner_fee_num, owner_fee_denom, owner_bridge_fee_dpt_percent, owner_bridge_fee_wtdr_percent],
     });
   }
 
@@ -429,8 +443,18 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
-      entrypoint: "change_owner_fee",
+      entrypoint: "change_owner_amm_fee",
       calldata: [bank_entity_id, new_swap_fee_num, new_swap_fee_denom],
+    });
+  }
+
+  public async change_bank_bridge_fee(props: SystemProps.ChangeBankBridgeFeeProps) {
+    const { bank_entity_id, new_bridge_fee_dpt_percent, new_bridge_fee_wtdr_percent, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
+      entrypoint: "change_owner_bridge_fee",
+      calldata: [bank_entity_id, new_bridge_fee_dpt_percent, new_bridge_fee_wtdr_percent],
     });
   }
 
@@ -455,13 +479,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async add_liquidity(props: SystemProps.AddLiquidityProps) {
-    const { bank_entity_id, entity_id, resource_type, resource_amount, lords_amount, signer } = props;
+    const { bank_entity_id, entity_id, calls, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
-      entrypoint: "add",
-      calldata: [bank_entity_id, entity_id, resource_type, resource_amount, lords_amount],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => ({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
+        entrypoint: "add",
+        calldata: [bank_entity_id, entity_id, call.resource_type, call.resource_amount, call.lords_amount],
+      })),
+    );
   }
 
   public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
@@ -544,13 +571,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async battle_leave(props: SystemProps.BattleLeaveProps) {
-    const { battle_id, army_id, signer } = props;
+    const { battle_id, army_ids, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
-      entrypoint: "battle_leave",
-      calldata: [battle_id, army_id],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      army_ids.map((army_id) => ({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        entrypoint: "battle_leave",
+        calldata: [battle_id, army_id],
+      })),
+    );
   }
 
   public async battle_pillage(props: SystemProps.BattlePillageProps) {
@@ -701,29 +731,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
-    const {
-      config_id,
-      explore_wheat_burn_amount,
-      explore_fish_burn_amount,
-      travel_wheat_burn_amount,
-      travel_fish_burn_amount,
-      reward_amount,
-      shards_mines_fail_probability,
-      signer,
-    } = props;
+    const { config_id, reward_amount, shards_mines_fail_probability, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
-      calldata: [
-        config_id,
-        explore_wheat_burn_amount,
-        explore_fish_burn_amount,
-        travel_wheat_burn_amount,
-        travel_fish_burn_amount,
-        reward_amount,
-        shards_mines_fail_probability,
-      ],
+      calldata: [config_id, reward_amount, shards_mines_fail_probability],
     });
   }
 
@@ -734,6 +747,31 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_travel_stamina_cost_config",
       calldata: [travel_type, cost],
+    });
+  }
+
+  public async set_travel_food_cost_config(props: SystemProps.SetTravelFoodCostConfigProps) {
+    const {
+      config_id,
+      unit_type,
+      explore_wheat_burn_amount,
+      explore_fish_burn_amount,
+      travel_wheat_burn_amount,
+      travel_fish_burn_amount,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_travel_food_cost_config",
+      calldata: [
+        config_id,
+        unit_type,
+        explore_wheat_burn_amount,
+        explore_fish_burn_amount,
+        travel_wheat_burn_amount,
+        travel_fish_burn_amount,
+      ],
     });
   }
 
@@ -829,6 +867,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       army_max_per_structure,
       battle_leave_slash_num,
       battle_leave_slash_denom,
+      battle_time_scale,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -849,6 +888,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         army_max_per_structure,
         battle_leave_slash_num,
         battle_leave_slash_denom,
+        battle_time_scale,
       ],
     });
   }
@@ -898,6 +938,35 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_realm_level_config(props: SystemProps.setRealmUpgradeConfigProps) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+          entrypoint: "set_realm_level_config",
+          calldata: [
+            call.level,
+            call.cost_of_level.length,
+            ...call.cost_of_level.flatMap(({ resource, amount }) => [resource, amount]),
+          ],
+        };
+      }),
+    );
+  }
+
+  public async set_realm_max_level_config(props: SystemProps.SetRealmMaxLevelConfigProps) {
+    const { new_max_level, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_realm_max_level_config",
+      calldata: [new_max_level],
+    });
+  }
+
   public async set_building_config(props: SystemProps.SetBuildingConfigProps) {
     const { calls, signer } = props;
 
@@ -919,11 +988,24 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
-    const { resources_for_completion, time_between_shares_change, signer } = props;
+    const {
+      resources_for_completion,
+      time_between_shares_change,
+      points_per_cycle,
+      points_for_win,
+      points_on_completion,
+      signer,
+    } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_hyperstructure_config",
-      calldata: [resources_for_completion, time_between_shares_change],
+      calldata: [
+        resources_for_completion,
+        time_between_shares_change,
+        points_per_cycle,
+        points_for_win,
+        points_on_completion,
+      ],
     });
   }
 
@@ -942,6 +1024,24 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "contribute_to_construction",
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
+    });
+  }
+
+  public async set_private(props: SystemProps.SetPrivateProps) {
+    const { hyperstructure_entity_id, to_private, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "set_private",
+      calldata: [hyperstructure_entity_id, to_private],
+    });
+  }
+
+  public async end_game(props: SystemProps.EndGameProps) {
+    const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "end_game",
+      calldata: [hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
     });
   }
 
@@ -978,6 +1078,34 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_config",
       calldata: [troops, rewards],
+    });
+  }
+
+  public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
+    const {
+      radius,
+      angle_scaled,
+      center,
+      min_distance,
+      max_distance,
+      min_scaling_factor_scaled,
+      min_angle_increase,
+      max_angle_increase,
+      signer,
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_settlement_config",
+      calldata: [
+        radius,
+        angle_scaled,
+        center,
+        min_distance,
+        max_distance,
+        min_scaling_factor_scaled,
+        min_angle_increase,
+        max_angle_increase,
+      ],
     });
   }
 }

@@ -347,6 +347,10 @@ export class ArmyManager {
     this.cachedChunks.clear();
   }
 
+  public getArmies() {
+    return Array.from(this.armies.values());
+  }
+
   update(deltaTime: number) {
     let needsBoundingUpdate = false;
     const movementSpeed = 1.25; // Constant movement speed

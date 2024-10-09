@@ -1,24 +1,38 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
+import { useGetRealm } from "@/hooks/helpers/useRealm";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { getStructureByEntityId, isStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
-import { Headline } from "@/ui/elements/Headline";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 import {
+  ResourceIdToMiningType,
   copyPlayerAddressToClipboard,
   displayAddress,
   formatTime,
   getEntityIdFromKeys,
-  ResourceIdToMiningType,
   toHexString,
 } from "@/ui/utils/utils";
-import { BuildingType, EternumGlobalConfig, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  EternumGlobalConfig,
+  ID,
+  LEVEL_DESCRIPTIONS,
+  REALM_UPGRADE_COSTS,
+  RealmLevels,
+  ResourcesIds,
+  StructureType,
+  scaleResources,
+} from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "../navigation/LeftNavigationModule";
@@ -38,6 +52,10 @@ export const BuildingEntityDetails = () => {
   });
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isOwnedByPlayer, setIsOwnedByPlayer] = useState<boolean>(false);
+
+  const { getEntityInfo } = getEntitiesUtils();
+
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -46,16 +64,24 @@ export const BuildingEntityDetails = () => {
 
   const { playerStructures } = useEntities();
 
-  let isCastleSelected =
-    selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] && selectedBuildingHex.innerRow === BUILDINGS_CENTER[1];
+  const selectedStructureInfo = getEntityInfo(structureEntityId);
+
+  let isCastleSelected = useMemo(
+    () =>
+      selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
+      selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&
+      selectedStructureInfo?.structureCategory === StructureType[StructureType.Realm],
+    [selectedBuildingHex.innerCol, selectedBuildingHex.innerRow],
+  );
 
   const building = useComponentValue(
     dojo.setup.components.Building,
     getEntityIdFromKeys(Object.values(selectedBuildingHex).map((v) => BigInt(v))),
   );
 
+  const structures = playerStructures();
+
   useEffect(() => {
-    const structures = playerStructures();
     if (building) {
       setBuildingState({
         buildingType: BuildingType[building.category as keyof typeof BuildingType],
@@ -110,14 +136,15 @@ export const BuildingEntityDetails = () => {
       ) : (
         <>
           <div className="flex-grow w-full space-y-1 text-sm">
-            {buildingState.buildingType === BuildingType.Resource && buildingState.resource !== undefined && (
+            {buildingState.buildingType === BuildingType.Resource && buildingState.resource && (
               <ResourceInfo
                 isPaused={isPaused}
                 resourceId={buildingState.resource}
                 entityId={buildingState.ownerEntityId}
+                hintModal
               />
             )}
-            {buildingState.buildingType !== undefined && buildingState.buildingType !== BuildingType.Resource && (
+            {buildingState.buildingType && buildingState.buildingType !== BuildingType.Resource && (
               <BuildingInfo
                 isPaused={isPaused}
                 buildingId={buildingState.buildingType}
@@ -126,7 +153,7 @@ export const BuildingEntityDetails = () => {
               />
             )}
           </div>
-          {buildingState.buildingType !== undefined && selectedBuildingHex && isOwnedByPlayer && (
+          {buildingState.buildingType && selectedBuildingHex && isOwnedByPlayer && (
             <div className="flex justify-center space-x-3">
               <Button
                 className="mb-4"
@@ -149,8 +176,16 @@ export const BuildingEntityDetails = () => {
 };
 
 const CastleDetails = () => {
+  const dojo = useDojo();
+
+  const { getBalance } = getResourceBalance();
+
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const realm = useGetRealm(structureEntityId).realm;
 
   const structure = getStructureByEntityId(structureEntityId);
   if (!structure) return;
@@ -159,7 +194,7 @@ const CastleDetails = () => {
 
   const immunityEndTimestamp =
     Number(structure.created_at) +
-    EternumGlobalConfig.battle.graceTickCount * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
@@ -168,29 +203,110 @@ const CastleDetails = () => {
 
   const address = toHexString(structure?.owner.address);
 
+  const getNextRealmLevel = useMemo(() => {
+    const nextLevel = realm.level + 1;
+    return nextLevel <= RealmLevels.Empire ? nextLevel : null;
+  }, [realm.level]);
+
+  const checkBalance = useMemo(() => {
+    if (!getNextRealmLevel) return false;
+
+    const cost = scaleResources(
+      REALM_UPGRADE_COSTS[getNextRealmLevel as keyof typeof REALM_UPGRADE_COSTS],
+      EternumGlobalConfig.resources.resourceMultiplier,
+    );
+
+    return Object.keys(cost).every((resourceId) => {
+      const resourceCost = cost[Number(resourceId)];
+      const balance = getBalance(structureEntityId, resourceCost.resource);
+      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
+    });
+  }, [getBalance, structureEntityId]);
+
+  const levelUpRealm = async () => {
+    setIsLoading(true);
+
+    await dojo.setup.systemCalls.upgrade_realm({
+      signer: dojo.account.account,
+      realm_entity_id: realm.entityId,
+    });
+    setIsLoading(false);
+  };
+
   return (
-    <div className="w-full space-y-1 text-sm">
-      <Headline className="py-3">{structure.name}</Headline>
-      <div className="p-5">
-        <div>Owner: {structure.ownerName}</div>
-        <div className="mt-2">
-          address:
+    <div className="w-full text-sm  p-3">
+      <div className="flex justify-between">
+        <h3 className="pb-2 text-4xl flex justify-between">
+          {structure.name} <HintModalButton section={HintSection.Realm} />
+        </h3>
+        {isImmune && <div>Immune for: {formatTime(timer)}</div>}
+      </div>
+
+      <div className="font-bold flex justify-between">
+        <div>
+          <div> {structure.ownerName}</div>
+        </div>
+        <div>
           <span
-            className="ml-1 hover:text-white"
+            className="ml-1 hover:text-white cursor-pointer"
             onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
           >
             {displayAddress(address)}
           </span>
         </div>
-        {isImmune && <div className="mt-2">Immune for: {formatTime(timer)}</div>}
-        {structure && structure.category === StructureType[StructureType.Realm] && (
-          <RealmResourcesIO
-            className={"mt-2"}
-            size={"md"}
-            titleClassName={"uppercase"}
-            structureEntityId={structureEntityId}
-          />
-        )}
+      </div>
+      <hr />
+
+      <div className="my-3">
+        <div className="flex justify-between py-2 gap-4">
+          <div>
+            <div className="flex gap-4">
+              <div className="text-2xl">{RealmLevels[realm.level]}</div>
+              {getNextRealmLevel && (
+                <div>
+                  <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
+                    {checkBalance ? `Upgrade to ${RealmLevels[realm.level]}` : "Need Resources"}
+                  </Button>
+                </div>
+              )}
+            </div>
+            {getNextRealmLevel && (
+              <div>
+                <p>
+                  {" "}
+                  Next Level: {RealmLevels[realm.level + 1]},{" "}
+                  {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
+                </p>
+                <div className="my-4 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
+                <div className="flex gap-2">
+                  {scaleResources(
+                    REALM_UPGRADE_COSTS[(realm.level + 1) as keyof typeof REALM_UPGRADE_COSTS],
+                    EternumGlobalConfig.resources.resourceMultiplier,
+                  )?.map((a) => {
+                    return (
+                      <ResourceCost
+                        key={a.resource}
+                        className="!text-gold"
+                        type="vertical"
+                        size="xs"
+                        resourceId={a.resource}
+                        amount={a.amount}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <hr />
+
+        <div className="my-3">
+          {structure && structure.category === StructureType[StructureType.Realm] && (
+            <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
+          )}
+        </div>
       </div>
     </div>
   );

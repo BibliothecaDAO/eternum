@@ -11,7 +11,7 @@ export const TroopRow = ({
   defending?: boolean;
 }) => {
   return (
-    <div className="self-center m-auto grid grid-cols-3 gap-2 flex">
+    <div className="self-center m-auto grid grid-cols-3 gap-2">
       <TroopCard
         defending={defending}
         className={`${defending ? "order-last" : ""}`}
@@ -50,7 +50,7 @@ const TroopCard = ({
         src={`/images/icons/${id}.png`}
         alt={ResourcesIds[id]}
       />
-      <div> {ResourcesIds[id]}</div>
+      <div className="truncate"> {ResourcesIds[id]}</div>
       <div className="text-green">x {currencyFormat(count, 0)}</div>
     </div>
   );

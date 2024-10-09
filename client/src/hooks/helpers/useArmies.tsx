@@ -78,12 +78,8 @@ const formatArmies = (
 
       let health = structuredClone(getComponentValue(Health, armyEntityId));
       if (health) {
-        health.current =
-          health.current /
-          (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
-        health.lifetime =
-          health.lifetime /
-          (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
+        health.current = health.current / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+        health.lifetime = health.lifetime / BigInt(EternumGlobalConfig.resources.resourcePrecision);
       } else {
         health = {
           entity_id: army.entity_id,
@@ -246,7 +242,7 @@ export const getArmiesByBattleId = () => {
   return armiesByBattleId;
 };
 
-export const useArmyByArmyEntityId = (entityId: ID) => {
+export const useArmyByArmyEntityId = (entityId: ID): ArmyInfo | undefined => {
   const {
     setup: {
       components: {

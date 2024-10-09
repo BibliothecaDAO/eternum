@@ -16,13 +16,14 @@ use eternum::models::config::{
     world_config, speed_config, capacity_config, weight_config, hyperstructure_resource_config, stamina_config,
     stamina_refill_config, tick_config, map_config, realm_free_mint_config, mercenaries_config, leveling_config,
     production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
-    population_config, has_claimed_starting_resources, hyperstructure_config, travel_stamina_cost_config
+    population_config, has_claimed_starting_resources, hyperstructure_config, travel_stamina_cost_config,
+    resource_bridge_config, resource_bridge_fee_split_config, resource_bridge_whitelist_config, settlement_config,
+    realm_level_config, realm_max_level_config, travel_food_cost_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
-    Progress, progress, Contribution, contribution, HyperstructureUpdate, hyperstructure_update
+    Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch, Season, season
 };
-use eternum::models::level::level;
 use eternum::models::map::tile;
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
@@ -63,7 +64,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         battle::TEST_CLASS_HASH,
         guild::TEST_CLASS_HASH,
         building_quantityv_2::TEST_CLASS_HASH,
-        level::TEST_CLASS_HASH,
         tile::TEST_CLASS_HASH,
         orders::TEST_CLASS_HASH,
         entity_owner::TEST_CLASS_HASH,
@@ -86,6 +86,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         map_config::TEST_CLASS_HASH,
         realm_free_mint_config::TEST_CLASS_HASH,
         mercenaries_config::TEST_CLASS_HASH,
+        settlement_config::TEST_CLASS_HASH,
         leveling_config::TEST_CLASS_HASH,
         production_config::TEST_CLASS_HASH,
         bank_config::TEST_CLASS_HASH,
@@ -116,6 +117,9 @@ fn spawn_eternum() -> IWorldDispatcher {
         contribution::TEST_CLASS_HASH,
         hyperstructure_resource_config::TEST_CLASS_HASH,
         hyperstructure_config::TEST_CLASS_HASH,
+        epoch::TEST_CLASS_HASH,
+        hyperstructure::TEST_CLASS_HASH,
+        season::TEST_CLASS_HASH,
         stamina_config::TEST_CLASS_HASH,
         stamina_refill_config::TEST_CLASS_HASH,
         tick_config::TEST_CLASS_HASH,
@@ -124,6 +128,12 @@ fn spawn_eternum() -> IWorldDispatcher {
         capacity_category::TEST_CLASS_HASH,
         production_deadline::TEST_CLASS_HASH,
         travel_stamina_cost_config::TEST_CLASS_HASH,
+        resource_bridge_config::TEST_CLASS_HASH,
+        resource_bridge_fee_split_config::TEST_CLASS_HASH,
+        resource_bridge_whitelist_config::TEST_CLASS_HASH,
+        realm_level_config::TEST_CLASS_HASH,
+        realm_max_level_config::TEST_CLASS_HASH,
+        travel_food_cost_config::TEST_CLASS_HASH,
     ];
 
     let world = spawn_test_world(["eternum"].span(), models.span());

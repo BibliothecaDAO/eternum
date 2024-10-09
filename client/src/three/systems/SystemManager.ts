@@ -5,19 +5,19 @@ import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import {
   EternumGlobalConfig,
+  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  HyperstructureResourceMultipliers,
   ID,
   StructureType,
 } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
+  Has,
+  HasValue,
   defineComponentSystem,
   defineQuery,
   getComponentValue,
-  Has,
-  HasValue,
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
@@ -27,6 +27,7 @@ import {
   ArmySystemUpdate,
   BattleSystemUpdate,
   BuildingSystemUpdate,
+  RealmSystemUpdate,
   StructureSystemUpdate,
   TileSystemUpdate,
 } from "./types";
@@ -80,8 +81,7 @@ export class SystemManager {
             const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
             if (protectee) return;
 
-            const healthMultiplier =
-              EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+            const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
             const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
             if (!entityOwner) return;
@@ -97,6 +97,8 @@ export class SystemManager {
               getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
             );
             const isMine = this.isOwner(owner);
+
+            console.log({ health });
 
             callback({
               entityId: army.entity_id,
@@ -139,6 +141,21 @@ export class SystemManager {
     };
   }
 
+  public get Realm() {
+    return {
+      onUpdate: (callback: (value: RealmSystemUpdate) => void) => {
+        this.setupSystem(this.setup.components.Realm, callback, (update: any) => {
+          const realm = getComponentValue(this.setup.components.Realm, update.entity);
+          if (!realm) return;
+
+          return {
+            level: realm.level,
+          };
+        });
+      },
+    };
+  }
+
   public get Battle() {
     return {
       onUpdate: (callback: (value: BattleSystemUpdate) => void) => {
@@ -157,8 +174,7 @@ export class SystemManager {
           const position = getComponentValue(this.setup.components.Position, update.entity);
           if (!position) return;
 
-          const healthMultiplier =
-            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
           const isEmpty =
             battle.attack_army_health.current < healthMultiplier &&
             battle.defence_army_health.current < healthMultiplier;
@@ -279,8 +295,8 @@ export class SystemManager {
       };
       percentage +=
         (progress.amount *
-          HyperstructureResourceMultipliers[
-            progress.resource_type as keyof typeof HyperstructureResourceMultipliers
+          HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
+            progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
           ]!) /
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;

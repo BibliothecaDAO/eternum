@@ -349,7 +349,15 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   );
 };
 
-export const ViewOnMapIcon = ({ position, className }: { position: Position; className?: string }) => {
+export const ViewOnMapIcon = ({
+  position,
+  hideTooltip = false,
+  className,
+}: {
+  position: Position;
+  hideTooltip?: boolean;
+  className?: string;
+}) => {
   const { handleUrlChange, isMapView } = useQuery();
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
@@ -371,9 +379,10 @@ export const ViewOnMapIcon = ({ position, className }: { position: Position; cla
         }
       }}
       onMouseEnter={() => {
+        if (hideTooltip) return;
         setTooltip({
           content: "View on Map",
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {

@@ -15,6 +15,7 @@ import {
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
+  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
@@ -23,6 +24,8 @@ import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -33,14 +36,17 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
+import { Component, getComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 export const SelectPreviewBuildingMenu = () => {
+  const dojo = useDojo();
+
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -100,11 +106,13 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-3 gap-2 p-2">
+          <div className="grid grid-cols-2 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const cost = [...RESOURCE_BUILDING_COSTS_SCALED[resourceId], ...RESOURCE_INPUTS_SCALED[resourceId]];
+              const buildingCosts = getResourceBuildingCosts(structureEntityId, dojo, resourceId);
+              if (!buildingCosts) return;
+              const cost = [...buildingCosts, ...RESOURCE_INPUTS_SCALED[resourceId]];
 
               const hasBalance = checkBalance(cost);
 
@@ -118,7 +126,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: !questClaimStatus[QuestId.BuildFarm],
+                    hidden: !questClaimStatus[QuestId.BuildFood],
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -154,13 +162,21 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-3 gap-2 p-2">
+          <div className="grid grid-cols-2 gap-2 p-2">
             {buildingTypes
-              .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
+              .filter(
+                (a) =>
+                  a !== BuildingType[BuildingType.Barracks] &&
+                  a !== BuildingType[BuildingType.ArcheryRange] &&
+                  a !== BuildingType[BuildingType.Stable],
+              )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-                const cost = BUILDING_COSTS_SCALED[building];
-                const hasBalance = checkBalance(cost);
+
+                const buildingCosts = getBuildingCosts(structureEntityId, dojo, building);
+                if (!buildingCosts) return;
+
+                const hasBalance = checkBalance(buildingCosts);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
@@ -176,9 +192,9 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !questClaimStatus[QuestId.BuildResource],
+                      hidden: !isFarm && !isFishingVillage && !questClaimStatus[QuestId.BuildResource],
                       "animate-pulse":
-                        (isFarm && selectedQuest?.id === QuestId.BuildFarm) ||
+                        ((isFarm || isFishingVillage) && selectedQuest?.id === QuestId.BuildFood) ||
                         (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
                         (isMarket && selectedQuest?.id === QuestId.Market),
                     })}
@@ -220,22 +236,27 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-3 gap-2 p-2">
+          <div className="grid grid-cols-2 gap-2 p-2">
             {" "}
             {buildingTypes
-              .filter((a) => a === "Barracks" || a === "ArcheryRange" || a === "Stable")
+              .filter(
+                (a) =>
+                  a === BuildingType[BuildingType.Barracks] ||
+                  a === BuildingType[BuildingType.ArcheryRange] ||
+                  a === BuildingType[BuildingType.Stable],
+              )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
+                const buildingCost = getBuildingCosts(structureEntityId, dojo, building);
 
-                const cost = BUILDING_COSTS_SCALED[building];
-                const hasBalance = checkBalance(cost);
+                const hasBalance = checkBalance(buildingCost);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
-                const isBarracks = building === BuildingType["Barracks"];
-                const isArcheryRange = building === BuildingType["ArcheryRange"];
-                const isStable = building === BuildingType["Stable"];
+                const isBarracks = building === BuildingType.Barracks;
+                const isArcheryRange = building === BuildingType.ArcheryRange;
+                const isStable = building === BuildingType.Stable;
 
                 return (
                   <BuildingCard
@@ -324,39 +345,34 @@ const BuildingCard = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
   return (
     <div
-      style={{
-        backgroundImage: `url(${
-          resourceId
-            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
-            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
-        })`,
-        backgroundSize: "contain",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
       onClick={onClick}
       className={clsx(
-        "text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-36 min-w-20  hover:border-gradient hover:border-2 hover:bg-gold/20",
+        "text-gold bg-black/30 overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded-xl",
         {
           "!border-lightest": active,
         },
         className,
       )}
     >
+      <img
+        src={
+          resourceId
+            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
+            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
+        }
+        alt={buildingName}
+        className="absolute inset-0 w-full h-full object-contain"
+      />
       {(!hasFunds || !hasPopulation) && (
-        <div className="absolute w-full h-full bg-black/70 text-white/60 p-4 text-xs flex justify-center">
+        <div className="absolute w-full h-full bg-black/70 p-4 text-xs flex justify-center">
           <div className="self-center flex items-center space-x-2">
             {!hasFunds && <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />}
             {!hasPopulation && <ResourceIcon tooltipText="Need More Housing" resource="House" size="lg" />}
           </div>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/90 ">
+      <div className="absolute bottom-0 left-0 right-0 p-2">
         <div className="truncate">{buildingName}</div>
-      </div>
-      <div className="flex relative flex-col items-start text-xs font-bold p-2">
-        {isResourceProductionBuilding(buildingId) && resourceName && <ResourceIcon resource={resourceName} size="lg" />}
-
         <InfoIcon
           onMouseEnter={() => {
             setTooltip({
@@ -370,6 +386,13 @@ const BuildingCard = ({
           className="w-4 h-4 absolute top-2 right-2"
         />
       </div>
+      <div className="flex relative flex-col items-end p-2 rounded">
+        <div className="rounded p-1 bg-black/10">
+          {isResourceProductionBuilding(buildingId) && resourceName && (
+            <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -378,15 +401,17 @@ export const ResourceInfo = ({
   resourceId,
   entityId,
   isPaused,
+  hintModal = false,
 }: {
   resourceId: number;
   entityId: ID | undefined;
   isPaused?: boolean;
+  hintModal?: boolean;
 }) => {
+  const dojo = useDojo();
   const cost = RESOURCE_INPUTS_SCALED[resourceId];
 
-  const buildingCost = RESOURCE_BUILDING_COSTS_SCALED[resourceId];
-
+  const buildingCost = getResourceBuildingCosts(entityId ?? 0, dojo, resourceId) ?? [];
   const population = BUILDING_POPULATION[BuildingType.Resource];
 
   const capacity = BUILDING_CAPACITY[BuildingType.Resource];
@@ -399,9 +424,18 @@ export const ResourceInfo = ({
     return getConsumedBy(resourceId);
   }, [resourceId]);
 
+  const resourceById = useMemo(() => {
+    return findResourceById(resourceId)?.trait;
+  }, [resourceId]);
+
   return (
     <div className="flex flex-col text-gold text-sm p-2 space-y-1">
-      <Headline className="py-3">Resource Building </Headline>
+      <Headline className="pb-3">
+        <div className=" flex gap-4">
+          <ResourceIcon className="self-center" resource={resourceById || ""} size="md" /> <div>Building </div>
+          {hintModal && <HintModalButton section={HintSection.Buildings} />}
+        </div>{" "}
+      </Headline>
 
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
@@ -415,20 +449,20 @@ export const ResourceInfo = ({
 
           {capacity !== 0 && (
             <div className="pt-3 uppercase">
-              <span className="font-bold">Capacity </span>
+              <span className="font-bold">Max population capacity </span>
               <br /> +{capacity}
             </div>
           )}
         </div>
 
-        {findResourceById(resourceId)?.trait && (
+        {resourceById && (
           <div className="uppercase">
             <div className="w-full font-bold">Produces</div>
 
             <div className="flex gap-2">
               + {amountProducedPerTick}
-              <ResourceIcon className="self-center" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-              {findResourceById(resourceId)?.trait || ""} per/s
+              <ResourceIcon className="self-center" resource={resourceById || ""} size="md" />
+              {resourceById || ""} per/s
             </div>
           </div>
         )}
@@ -494,7 +528,9 @@ export const BuildingInfo = ({
   hintModal?: boolean;
   isPaused?: boolean;
 }) => {
-  const cost = BUILDING_COSTS_SCALED[buildingId] || [];
+  const dojo = useDojo();
+
+  const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
 
   const population = BUILDING_POPULATION[buildingId] || 0;
   const capacity = BUILDING_CAPACITY[buildingId] || 0;
@@ -510,36 +546,34 @@ export const BuildingInfo = ({
   }, [resourceProduced]);
 
   return (
-    <div className="p-2 text-sm text-gold">
+    <div className="flex flex-col text-gold text-sm p-2 space-y-1">
       <Headline className="pb-3">
         <div className="flex gap-2">
-          <div className="self-center">{name} </div>
+          <div className="self-center">{name}</div>
           {hintModal && <HintModalButton section={HintSection.Buildings} />}
         </div>
       </Headline>
 
-      {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
+      {isPaused && <div className="py-3 font-bold">⚠️ Building Production Paused</div>}
 
       <div className="grid grid-cols-2 gap-4">
         <div>
           {population !== 0 && (
             <div className="font-bold uppercase">
-              <span className="font-bold">Population </span> <br />+{population}{" "}
+              <span className="font-bold">Population</span>
+              <br />+{population}
             </div>
           )}
-
           {capacity !== 0 && (
             <div className="pt-3 uppercase">
-              <span className="font-bold">Capacity </span>
-              <br /> +{capacity}
+              <span className="font-bold">Max population capacity</span>
+              <br />+{capacity}
             </div>
           )}
         </div>
-
         {resourceProduced !== 0 && (
           <div className="uppercase">
             <div className="w-full font-bold">Produces</div>
-
             <div className="flex gap-2">
               +{perTick}
               <ResourceIcon
@@ -561,7 +595,6 @@ export const BuildingInfo = ({
               ongoingCost &&
               Object.keys(ongoingCost).map((resourceId, index) => {
                 const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
-
                 return (
                   <ResourceCost
                     key={`ongoing-cost-${index}`}
@@ -574,22 +607,20 @@ export const BuildingInfo = ({
               })}
           </div>
         </>
-      ) : (
-        ""
-      )}
+      ) : null}
 
-      {cost.length != 0 && (
+      {buildingCost.length !== 0 && (
         <>
           <div className="pt-2 font-bold uppercase">One Time Cost</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            {Object.keys(cost).map((resourceId, index) => {
-              const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
+            {Object.keys(buildingCost).map((resourceId, index) => {
+              const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource);
               return (
                 <ResourceCost
                   key={`fixed-cost-${index}`}
                   type="horizontal"
-                  resourceId={cost[Number(resourceId)].resource}
-                  amount={cost[Number(resourceId)].amount}
+                  resourceId={buildingCost[Number(resourceId)].resource}
+                  amount={buildingCost[Number(resourceId)].amount}
                   balance={balance.balance}
                 />
               );
@@ -597,9 +628,10 @@ export const BuildingInfo = ({
           </div>
         </>
       )}
+
       {usedIn.length > 0 && (
         <>
-          <div className="pt-3 pb-1 font-bold uppercase ">Consumed by</div>
+          <div className="pt-3 pb-1 font-bold uppercase">Consumed by</div>
           <div className="flex flex-row">
             {React.Children.toArray(
               usedIn.map((resourceId) => (
@@ -624,4 +656,104 @@ const getConsumedBy = (resourceProduced: ResourcesIds) => {
       }
     })
     .filter(Boolean);
+};
+
+const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceId: ResourcesIds) => {
+  const buildingGeneralConfig = getComponentValue(
+    dojo.setup.components.BuildingGeneralConfig,
+    getEntityIdFromKeys([WORLD_CONFIG_ID]),
+  );
+
+  if (!buildingGeneralConfig) {
+    return;
+  }
+  const buildingType = resourceIdToBuildingCategory(resourceId);
+
+  const buildingQuantity = getBuildingQuantity(
+    realmEntityId,
+    buildingType ?? 0,
+    dojo.setup.components.BuildingQuantityv2,
+  );
+
+  let updatedCosts: {
+    resource: ResourcesIds;
+    amount: number;
+  }[] = [];
+
+  RESOURCE_BUILDING_COSTS_SCALED[Number(resourceId)].forEach((cost) => {
+    const baseCost = cost.amount;
+    const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
+    const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
+    const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
+    updatedCosts.push({ resource: cost.resource, amount: totalCost });
+  });
+  return updatedCosts;
+};
+
+const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory: BuildingType) => {
+  const buildingGeneralConfig = getComponentValue(
+    dojo.setup.components.BuildingGeneralConfig,
+    getEntityIdFromKeys([WORLD_CONFIG_ID]),
+  );
+
+  if (!buildingGeneralConfig) {
+    return;
+  }
+
+  const buildingQuantity = getBuildingQuantity(
+    realmEntityId,
+    buildingCategory,
+    dojo.setup.components.BuildingQuantityv2,
+  );
+
+  let updatedCosts: {
+    resource: ResourcesIds;
+    amount: number;
+  }[] = [];
+
+  BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
+    const baseCost = cost.amount;
+    const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
+    const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
+    const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
+    updatedCosts.push({ resource: cost.resource, amount: totalCost });
+  });
+  return updatedCosts;
+};
+
+const getBuildingQuantity = (
+  outerEntityId: ID,
+  buildingCategory: BuildingType,
+  buildingQuantityComponent: Component<ClientComponents["BuildingQuantityv2"]["schema"]>,
+) => {
+  const buildingQuantity = getComponentValue(
+    buildingQuantityComponent,
+    getEntityIdFromKeys([BigInt(outerEntityId), BigInt(buildingCategory)]),
+  );
+  return buildingQuantity?.value;
+};
+
+const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType => {
+  if (resourceId === ResourcesIds.Wheat) {
+    return BuildingType.Farm;
+  }
+  if (resourceId === ResourcesIds.Fish) {
+    return BuildingType.FishingVillage;
+  }
+  if (resourceId > 0 && resourceId < 22) {
+    return BuildingType.Resource;
+  }
+  if (resourceId === ResourcesIds.Donkey) {
+    return BuildingType.Market;
+  }
+  if (resourceId === ResourcesIds.Knight) {
+    return BuildingType.Barracks;
+  }
+  if (resourceId === ResourcesIds.Crossbowman) {
+    return BuildingType.ArcheryRange;
+  }
+  if (resourceId === ResourcesIds.Paladin) {
+    return BuildingType.Stable;
+  }
+  return BuildingType.None;
 };

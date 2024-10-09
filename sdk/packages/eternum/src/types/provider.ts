@@ -51,10 +51,6 @@ export interface StealProps extends SystemSigner {
   target_id: num.BigNumberish;
 }
 
-export interface LevelUpRealmProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-}
-
 export interface TravelProps extends SystemSigner {
   travelling_entity_id: num.BigNumberish;
   destination_coord_x: num.BigNumberish;
@@ -150,10 +146,6 @@ interface Realm {
   regions: num.BigNumberish;
   wonder: num.BigNumberish;
   order: num.BigNumberish;
-  position: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
@@ -161,6 +153,9 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
 }
 
 export interface CreateRealmProps extends Realm, SystemSigner {}
+export interface UpgradeRealmProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+}
 
 export interface TransferItemsProps extends SystemSigner {
   sender_id: num.BigNumberish;
@@ -215,6 +210,8 @@ export interface CreateBankProps extends SystemSigner {
   };
   owner_fee_num: num.BigNumberish;
   owner_fee_denom: num.BigNumberish;
+  owner_bridge_fee_dpt_percent: num.BigNumberish;
+  owner_bridge_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface CreateAdminBankProps extends SystemSigner {
@@ -224,6 +221,8 @@ export interface CreateAdminBankProps extends SystemSigner {
   };
   owner_fee_num: num.BigNumberish;
   owner_fee_denom: num.BigNumberish;
+  owner_bridge_fee_dpt_percent: num.BigNumberish;
+  owner_bridge_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface OpenAccountProps extends SystemSigner {
@@ -235,6 +234,12 @@ export interface ChangeBankOwnerFeeProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
   new_swap_fee_num: num.BigNumberish;
   new_swap_fee_denom: num.BigNumberish;
+}
+
+export interface ChangeBankBridgeFeeProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+  new_bridge_fee_dpt_percent: num.BigNumberish;
+  new_bridge_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface BuyResourcesProps extends SystemSigner {
@@ -254,9 +259,11 @@ export interface SellResourcesProps extends SystemSigner {
 export interface AddLiquidityProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
   entity_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  resource_amount: num.BigNumberish;
-  lords_amount: num.BigNumberish;
+  calls: {
+    resource_type: num.BigNumberish;
+    resource_amount: num.BigNumberish;
+    lords_amount: num.BigNumberish;
+  }[];
 }
 
 export interface RemoveLiquidityProps extends SystemSigner {
@@ -311,7 +318,7 @@ export interface BattleJoinProps extends SystemSigner {
 
 export interface BattleLeaveProps extends SystemSigner {
   battle_id: num.BigNumberish;
-  army_id: num.BigNumberish;
+  army_ids: num.BigNumberish[];
 }
 
 export interface BattlePillageProps extends SystemSigner {
@@ -325,10 +332,10 @@ export interface BattleClaimProps extends SystemSigner {
 }
 
 type BattleClaimAndLeave = BattleClaimProps & BattleLeaveProps;
-export interface BattleClaimAndLeaveProps extends SystemSigner, BattleClaimAndLeave {}
+export interface BattleClaimAndLeaveProps extends SystemSigner, Omit<BattleClaimAndLeave, "army_ids"> {}
 
 type BattleLeaveAndRaid = BattlePillageProps & BattleLeaveProps;
-export interface BattleLeaveAndRaidProps extends SystemSigner, BattleLeaveAndRaid {}
+export interface BattleLeaveAndRaidProps extends SystemSigner, Omit<BattleLeaveAndRaid, "army_ids"> {}
 
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;
@@ -375,10 +382,6 @@ export interface SetMintConfigProps extends SystemSigner {
 
 export interface SetMapConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
-  explore_wheat_burn_amount: num.BigNumberish;
-  explore_fish_burn_amount: num.BigNumberish;
-  travel_wheat_burn_amount: num.BigNumberish;
-  travel_fish_burn_amount: num.BigNumberish;
   reward_amount: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
 }
@@ -387,6 +390,16 @@ export interface SetTravelStaminaCostConfigProps extends SystemSigner {
   travel_type: num.BigNumberish;
   cost: num.BigNumberish;
 }
+
+export interface SetTravelFoodCostConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  unit_type: num.BigNumberish;
+  explore_wheat_burn_amount: num.BigNumberish;
+  explore_fish_burn_amount: num.BigNumberish;
+  travel_wheat_burn_amount: num.BigNumberish;
+  travel_fish_burn_amount: num.BigNumberish;
+}
+
 export interface SetCapacityConfigProps extends SystemSigner {
   category: num.BigNumberish;
   weight_gram: num.BigNumberish;
@@ -438,6 +451,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   army_max_per_structure: num.BigNumberish;
   battle_leave_slash_num: num.BigNumberish;
   battle_leave_slash_denom: num.BigNumberish;
+  battle_time_scale: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
@@ -460,6 +474,17 @@ export interface SetBuildingConfigProps extends SystemSigner {
   }[];
 }
 
+export interface setRealmUpgradeConfigProps extends SystemSigner {
+  calls: {
+    level: num.BigNumberish;
+    cost_of_level: ResourceCosts[];
+  }[];
+}
+
+export interface SetRealmMaxLevelConfigProps extends SystemSigner {
+  new_max_level: num.BigNumberish;
+}
+
 export interface SetWorldConfigProps extends SystemSigner {
   admin_address: num.BigNumberish;
   realm_l2_contract: num.BigNumberish;
@@ -473,6 +498,9 @@ export interface SetSpeedConfigProps extends SystemSigner {
 export interface SetHyperstructureConfig extends SystemSigner {
   resources_for_completion: { resource: number; amount: number }[];
   time_between_shares_change: num.BigNumberish;
+  points_per_cycle: num.BigNumberish;
+  points_for_win: num.BigNumberish;
+  points_on_completion: num.BigNumberish;
 }
 
 export interface CreateHyperstructureProps extends SystemSigner {
@@ -484,6 +512,16 @@ export interface ContributeToConstructionProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
   contributor_entity_id: num.BigNumberish;
   contributions: { resource: number; amount: number }[];
+}
+
+export interface SetPrivateProps extends SystemSigner {
+  hyperstructure_entity_id: num.BigNumberish;
+  to_private: boolean;
+}
+
+export interface EndGameProps extends SystemSigner {
+  hyperstructure_contributed_to: number[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
 }
 
 export interface SetCoOwnersProps extends SystemSigner {
@@ -505,4 +543,15 @@ export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 export interface SetMercenariesConfigProps extends SystemSigner {
   troops: Troops;
   rewards: { resource: number; amount: number }[];
+}
+
+export interface SetSettlementConfigProps extends SystemSigner {
+  radius: num.BigNumberish;
+  angle_scaled: num.BigNumberish;
+  center: num.BigNumberish;
+  min_distance: num.BigNumberish;
+  max_distance: num.BigNumberish;
+  min_scaling_factor_scaled: num.BigNumberish;
+  min_angle_increase: num.BigNumberish;
+  max_angle_increase: num.BigNumberish;
 }

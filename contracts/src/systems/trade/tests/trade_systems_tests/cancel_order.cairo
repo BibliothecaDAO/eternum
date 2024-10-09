@@ -26,7 +26,7 @@ use eternum::systems::trade::contracts::trade_systems::{
 
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
-    config::set_capacity_config
+    config::{set_capacity_config, set_settlement_config}
 };
 use starknet::contract_address_const;
 
@@ -37,6 +37,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
+    set_settlement_config(config_systems_address);
     set_capacity_config(config_systems_address);
 
     // set speed configuration
@@ -110,7 +111,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_cancel() {
+fn trade_test_cancel() {
     let (world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
 
     let _trade = get!(world, trade_id, Trade);
@@ -137,7 +138,7 @@ fn test_cancel() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED'))]
-fn test_cancel_after_acceptance() {
+fn trade_test_cancel_after_acceptance() {
     let (world, trade_id, _, _, trade_systems_dispatcher) = setup();
 
     // accept order
@@ -155,7 +156,7 @@ fn test_cancel_after_acceptance() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('caller must be trade maker', 'ENTRYPOINT_FAILED'))]
-fn test_cancel_caller_not_maker() {
+fn trade_test_cancel_caller_not_maker() {
     let (_, trade_id, _, _, trade_systems_dispatcher) = setup();
 
     // set caller to an unknown address

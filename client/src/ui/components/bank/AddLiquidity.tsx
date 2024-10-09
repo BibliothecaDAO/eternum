@@ -7,9 +7,9 @@ import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmationPopup } from "./ConfirmationPopup";
-import { ResourceBar } from "./ResourceBar";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
 import { LiquidityTableHeader } from "./LiquidityTable";
+import { ResourceBar } from "./ResourceBar";
 
 const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entityId: ID }) => {
   const {
@@ -55,12 +55,16 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
     setIsLoading(true);
     setup.systemCalls
       .add_liquidity({
+        signer: account,
         bank_entity_id,
         entity_id: entityId,
-        lords_amount: multiplyByPrecision(lordsAmount),
-        resource_type: resourceId,
-        resource_amount: multiplyByPrecision(resourceAmount),
-        signer: account,
+        calls: [
+          {
+            resource_type: resourceId,
+            resource_amount: multiplyByPrecision(resourceAmount),
+            lords_amount: multiplyByPrecision(lordsAmount),
+          },
+        ],
       })
       .finally(() => {
         setIsLoading(false);

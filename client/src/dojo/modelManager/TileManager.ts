@@ -2,7 +2,15 @@ import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BuildingType, Direction, getNeighborHexes, ID, StructureType } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  Direction,
+  getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
+  ID,
+  RealmLevels,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
@@ -30,6 +38,12 @@ export class TileManager {
     this.col = hexCoords.col + FELT_CENTER;
     this.row = hexCoords.row + FELT_CENTER;
   }
+
+  getRealmLevel = (): RealmLevels => {
+    const realmEntityId = this._getOwnerEntityId() || 0;
+    const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return (realm?.level || RealmLevels.Settlement) as RealmLevels;
+  };
 
   existingBuildings = () => {
     const builtBuildings = Array.from(
@@ -270,14 +284,6 @@ export class TileManager {
       });
     }
   };
-}
-
-function getDirectionBetweenAdjacentHexes(
-  from: { col: number; row: number },
-  to: { col: number; row: number },
-): Direction | null {
-  const neighbors = getNeighborHexes(from.col, from.row);
-  return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 }
 
 function getDirectionsArray(start: [number, number], end: [number, number]): Direction[] {

@@ -11,8 +11,8 @@ export const EntitiesArmyTable = () => {
 
   return playerStructures().map((entity: any, index: number) => {
     return (
-      <div key={entity.entity_id} className="px-2">
-        <Headline className="my-3">
+      <div key={entity.entity_id} className="p-2">
+        <Headline>
           <div className="flex gap-2">
             <div className="self-center">{entity.name} </div>
             {index === 0 && <HintModalButton section={HintSection.Buildings} />}

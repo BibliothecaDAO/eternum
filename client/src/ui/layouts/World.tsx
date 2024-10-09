@@ -6,22 +6,19 @@ import { Redirect } from "wouter";
 import { HooksComponent } from "../components/HooksComponent";
 import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
-import { BattleContainer } from "../containers/BattleContainer";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
-import { BottomLeftContainer } from "../containers/BottomLeftContainer";
+
+import { BattleContainer } from "../containers/BattleContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import TopLeftContainer from "../containers/TopLeftContainer";
-import TopMiddleContainer from "../containers/TopMiddleContainer";
 import { Tooltip } from "../elements/Tooltip";
-import { Chat } from "../modules/chat/Chat";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
 import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
-import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { PlayerId } from "../modules/social/PlayerId";
 import { EventStream } from "../modules/stream/EventStream";
@@ -66,42 +63,35 @@ export const World = () => {
       <HooksComponent />
       <ActionInfo />
       <ArmyInfoLabel />
-      {battleView ? (
-        <BattleContainer>
-          <BattleView />
-        </BattleContainer>
-      ) : (
-        <>
-          <TopMiddleContainer>
-            <TopMiddleNavigation />
-          </TopMiddleContainer>
 
-          <LeftMiddleContainer>
-            <LeftNavigationModule />
-          </LeftMiddleContainer>
+      <BattleContainer>
+        <BattleView />
+      </BattleContainer>
 
-          <BottomMiddleContainer>
-            <BottomNavigation />
-          </BottomMiddleContainer>
+      <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
+        <LeftMiddleContainer>
+          <LeftNavigationModule />
+        </LeftMiddleContainer>
 
-          <BottomRightContainer>
-            <Chat />
-          </BottomRightContainer>
+        <BottomMiddleContainer>
+          <BottomNavigation />
+        </BottomMiddleContainer>
 
-          <BottomLeftContainer>
-            <EventStream />
-          </BottomLeftContainer>
+        <BottomRightContainer>
+          <EventStream />
+        </BottomRightContainer>
 
-          <RightMiddleContainer>
-            <RightNavigationModule />
-          </RightMiddleContainer>
-        </>
-      )}
+        <RightMiddleContainer>
+          <RightNavigationModule />
+        </RightMiddleContainer>
+
+        <TopLeftContainer>
+          <TopMiddleNavigation />
+        </TopLeftContainer>
+      </div>
 
       <PlayerId />
-      <TopLeftContainer>
-        <TopLeftNavigation />
-      </TopLeftContainer>
+
       <Redirect to="/" />
       <Leva
         hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}

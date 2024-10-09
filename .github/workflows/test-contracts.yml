@@ -31,19 +31,19 @@ jobs:
       matrix:
         test:
           [
-            combat,
-            buildings,
-            config,
-            hyperstructure,
-            bank,
-            map,
-            name,
-            resources,
-            trade,
-            realm,
-            guild,
-            transport,
-            models,
+            combat_test,
+            owner_test,
+            position_test,
+            resources_test,
+            config_test,
+            hyperstructure_test,
+            bank_test,
+            map_test,
+            resources_test,
+            trade_test,
+            realm_test,
+            guild_test,
+            transport_test,
           ]
       fail-fast: false
     steps:

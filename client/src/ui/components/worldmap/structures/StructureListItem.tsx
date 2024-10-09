@@ -4,8 +4,8 @@ import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
-import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import { isStructureImmune, Structure } from "@/hooks/helpers/useStructures";
+import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures";
+import { Structure, isStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { formatTime } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
@@ -32,7 +32,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const { getRealmAddressName } = useRealm();
   const addressName = getRealmAddressName(structure.entity_id);
 
-  const { getHyperstructureProgress } = useHyperstructures();
+  const getHyperstructureProgress = useGetHyperstructureProgress();
 
   const progress =
     structure.category === StructureType[StructureType.Hyperstructure]
@@ -53,7 +53,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
 
   const immunityEndTimestamp =
     Number(structure?.created_at) +
-    EternumGlobalConfig.battle.graceTickCount * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;
@@ -176,7 +176,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
             {isImmune && <div>Immune for: {formatTime(timer)}</div>}
 
             {structure.category === StructureType[StructureType.Realm] && (
-              <RealmResourcesIO structureEntityId={structure.entity_id} />
+              <RealmResourcesIO realmEntityId={structure.entity_id} />
             )}
           </div>
           <div className="flex flex-col content-center w-[55%]">
