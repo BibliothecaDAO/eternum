@@ -70,7 +70,8 @@ mod dev_bank_systems {
                         exists: true
                     },
                     Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },
-                    Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin }
+                    Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin },
+                    EntityOwner { entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID },
                 )
             );
 
