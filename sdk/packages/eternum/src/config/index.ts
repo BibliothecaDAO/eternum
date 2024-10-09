@@ -73,6 +73,10 @@ export class EternumConfig {
     await setMercenariesConfig(config);
     await setBuildingGeneralConfig(config);
     await setSettlementConfig(config);
+  }
+
+  async setupBank(account: Account, provider: EternumProvider) {
+    const config = { account, provider, config: this.globalConfig };
     await createAdminBank(config);
     await mintResources(config);
     await addLiquidity(config);
