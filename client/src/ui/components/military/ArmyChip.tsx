@@ -8,16 +8,51 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { armyHasTroops } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
-import { Position } from "@/types/Position";
+import { Position as PositionInterface } from "@/types/Position";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { Position } from "@bibliothecadao/eternum";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Exchange } from "../hyperstructures/StructureCard";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
+
+export const NavigateToArmyIcon = ({
+  position,
+  hideTooltip = false,
+}: {
+  position: Position;
+  hideTooltip?: boolean;
+}) => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
+
+  return (
+    <Compass
+      className="w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300"
+      onClick={() => {
+        const { x, y } = new PositionInterface(position).getNormalized();
+        setNavigationTarget({
+          col: x,
+          row: y,
+        });
+      }}
+      onMouseEnter={() => {
+        if (hideTooltip) return;
+        setTooltip({
+          content: "Navigate to Army",
+          position: "top",
+        });
+      }}
+      onMouseLeave={() => {
+        setTooltip(null);
+      }}
+    />
+  );
+};
 
 export const ArmyChip = ({
   army,
@@ -30,7 +65,6 @@ export const ArmyChip = ({
 }) => {
   const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
 
   const [showInventory, setShowInventory] = useState(false);
   const [showTroopSwap, setShowTroopSwap] = useState(false);
@@ -100,27 +134,7 @@ export const ArmyChip = ({
                                 className="w-5 h-5 hover:scale-110 transition-all duration-300"
                                 position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
                               />
-                              {isOnMap && (
-                                <Compass
-                                  className="w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300"
-                                  onClick={() => {
-                                    const { x, y } = new Position(updatedArmy!.position).getNormalized();
-                                    setNavigationTarget({
-                                      col: x,
-                                      row: y,
-                                    });
-                                  }}
-                                  onMouseEnter={() => {
-                                    setTooltip({
-                                      content: "Navigate to Army",
-                                      position: "top",
-                                    });
-                                  }}
-                                  onMouseLeave={() => {
-                                    setTooltip(null);
-                                  }}
-                                />
-                              )}
+                              {isOnMap && <NavigateToArmyIcon position={updatedArmy!.position} />}
                               <Swap
                                 className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                                 onClick={() => {
