@@ -7,11 +7,11 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 export const StructureInfoLabel = () => {
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
-  const { getStructure } = useStructures();
+  const { getStructureByEntityId } = useStructures();
 
   const structure = useMemo(() => {
     if (hoveredStructure) {
-      const structure = getStructure(hoveredStructure.entityId);
+      const structure = getStructureByEntityId(hoveredStructure.entityId);
       return structure;
     }
     return undefined;

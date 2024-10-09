@@ -186,7 +186,7 @@ export const useStructures = () => {
 
   const { getAliveArmy } = getArmyByEntityId();
 
-  const getStructure = (entityId: ID) => {
+  const getStructureByEntityId = (entityId: ID) => {
     const structureEntityId = getEntityIdFromKeys([BigInt(entityId)]);
     const structure = getComponentValue(Structure, structureEntityId);
     if (!structure) return;
@@ -229,7 +229,7 @@ export const useStructures = () => {
     };
   };
 
-  return { getStructure };
+  return { getStructureByEntityId };
 };
 
 // TODO: Make Generic
