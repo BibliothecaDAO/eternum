@@ -261,7 +261,7 @@ describe("getUpdatedTroops", () => {
     });
   });
 
-  it("should throw an error if current is bigger than lifetime", () => {
+  it("should return 0 troops if current is bigger than lifetime", () => {
     const currentHealth = { current: 500n, lifetime: 10n };
     const currentTroops = {
       knight_count: 10n,
@@ -270,7 +270,6 @@ describe("getUpdatedTroops", () => {
     };
 
     const ret = battleManager["getUpdatedTroops"](currentHealth, currentTroops);
-
     expect(ret).toStrictEqual({
       knight_count: 0n,
       paladin_count: 0n,

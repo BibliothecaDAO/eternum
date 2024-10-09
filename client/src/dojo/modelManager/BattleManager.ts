@@ -105,7 +105,13 @@ export class BattleManager {
 
     if (!battle) return 0;
 
-    const durationSinceLastUpdate = currentTimestamp - Number(battle.last_updated);
+    if (this.isSiege(currentTimestamp)) {
+      return 0;
+    }
+
+    const lastUpdated = battle.last_updated < battle.start_at ? Number(battle.start_at) : Number(battle.last_updated);
+
+    const durationSinceLastUpdate = currentTimestamp - lastUpdated;
     if (Number(battle.duration_left) >= durationSinceLastUpdate) {
       return durationSinceLastUpdate;
     } else {
@@ -118,6 +124,10 @@ export class BattleManager {
 
     if (!battle) {
       return undefined;
+    }
+
+    if (this.isSiege(currentTimestamp)) {
+      return new Date(Number(battle.start_at) - currentTimestamp + Number(battle.duration_left));
     }
 
     const date = new Date(0);
