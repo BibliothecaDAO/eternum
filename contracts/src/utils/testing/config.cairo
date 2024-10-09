@@ -27,7 +27,7 @@ use eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
     MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
     SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
-    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
+    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, REALM_MAX_LEVEL
 };
 
 use starknet::{ContractAddress};
@@ -102,7 +102,7 @@ fn set_travel_food_cost_config(config_systems_address: ContractAddress) {
 fn get_combat_config() -> TroopConfig {
     return TroopConfig {
         config_id: WORLD_CONFIG_ID,
-        health: 7_200,
+        health: 1,
         knight_strength: 1,
         paladin_strength: 1,
         crossbowman_strength: 1,
@@ -114,7 +114,8 @@ fn get_combat_config() -> TroopConfig {
         army_extra_per_building: 100,
         army_max_per_structure: 200,
         battle_leave_slash_num: 25,
-        battle_leave_slash_denom: 100
+        battle_leave_slash_denom: 100,
+        battle_time_scale: 1000,
     };
 }
 
@@ -212,6 +213,9 @@ fn set_weight_config(config_systems_address: ContractAddress) {
 }
 
 fn set_realm_level_config(config_systems_address: ContractAddress) {
+    IRealmLevelConfigDispatcher { contract_address: config_systems_address }
+        .set_realm_max_level_config(REALM_MAX_LEVEL);
+
     IRealmLevelConfigDispatcher { contract_address: config_systems_address }
         .set_realm_level_config(1, array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100),].span());
 

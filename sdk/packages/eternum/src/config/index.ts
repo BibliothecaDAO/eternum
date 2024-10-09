@@ -308,6 +308,7 @@ export const setCombatConfig = async (config: Config) => {
     maxArmiesPerStructure: max_armies_per_structure,
     battleLeaveSlashNum: battle_leave_slash_num,
     battleLeaveSlashDenom: battle_leave_slash_denom,
+    battleTimeReductionScale: battle_time_scale,
   } = config.config.troop;
 
   const tx = await config.provider.set_troop_config({
@@ -326,6 +327,7 @@ export const setCombatConfig = async (config: Config) => {
     army_max_per_structure: max_armies_per_structure,
     battle_leave_slash_num,
     battle_leave_slash_denom,
+    battle_time_scale,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);

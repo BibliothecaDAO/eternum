@@ -5,7 +5,7 @@ original_class_hash = "0x6f4515274ee23404789c3351a77107d0ec07508530119822046600c
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x76ca3dfc3e96843716f882546f0db96b7da0cf988bdba284b469d0defb2f48f"
 transaction_hash = "0x73f424096734f925628f50730e27889506b6b9141efd4aed165165ef8367ce5"
-block_number = 67
+block_number = 60
 seed = "eternum"
 manifest_name = "dojo-world"
 
@@ -46,12 +46,7 @@ reads = []
 writes = []
 init_calldata = []
 tag = "eternum-building_systems"
-systems = [
-    "create",
-    "pause_production",
-    "resume_production",
-    "destroy",
-]
+systems = ["create", "pause_production", "resume_production", "destroy"]
 manifest_name = "eternum-building_systems-4b0f3026"
 
 [[contracts]]
@@ -252,10 +247,7 @@ reads = []
 writes = []
 init_calldata = []
 tag = "eternum-name_systems"
-systems = [
-    "set_address_name",
-    "set_entity_name",
-]
+systems = ["set_address_name", "set_entity_name"]
 manifest_name = "eternum-name_systems-bbb2e543"
 
 [[contracts]]
@@ -283,11 +275,7 @@ reads = []
 writes = []
 init_calldata = []
 tag = "eternum-resource_systems"
-systems = [
-    "approve",
-    "send",
-    "pickup",
-]
+systems = ["approve", "send", "pickup"]
 manifest_name = "eternum-resource_systems-59b73d5a"
 
 [[contracts]]
@@ -315,11 +303,7 @@ reads = []
 writes = []
 init_calldata = []
 tag = "eternum-trade_systems"
-systems = [
-    "accept_order",
-    "accept_partial_order",
-    "cancel_order",
-]
+systems = ["accept_order", "accept_partial_order", "cancel_order"]
 manifest_name = "eternum-trade_systems-7f6765dd"
 
 [[contracts]]
@@ -333,10 +317,7 @@ reads = []
 writes = []
 init_calldata = []
 tag = "eternum-travel_systems"
-systems = [
-    "travel",
-    "travel_hex",
-]
+systems = ["travel", "travel_hex"]
 manifest_name = "eternum-travel_systems-4ec72d4c"
 
 [[models]]

@@ -570,7 +570,10 @@ pub struct TroopConfig {
     // percentage to slash army by if they leave early
     // e.g num = 25, denom = 100 // represents 25%
     battle_leave_slash_num: u8,
-    battle_leave_slash_denom: u8
+    battle_leave_slash_denom: u8,
+    // 1_000. multiply this number by 2 to reduce battle time by 2x,
+    // and reduce by 2x to increase battle time by 2x, etc
+    battle_time_scale: u16
 }
 
 
