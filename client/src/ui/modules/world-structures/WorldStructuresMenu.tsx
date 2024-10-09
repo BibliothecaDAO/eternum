@@ -8,7 +8,7 @@ import { Tabs } from "../../elements/tab";
 import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { ShardMinePanel } from "@/ui/components/shardMines/ShardMinePanel";
 
-import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useShardMines } from "@/hooks/helpers/useShardMines";
 
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
@@ -130,8 +130,8 @@ const HyperStructureExtraContent = ({
   const {
     account: { account },
   } = useDojo();
-  const { useProgress } = useHyperstructures();
-  const progress = useProgress(hyperstructureEntityId);
+
+  const progress = useHyperstructureProgress(hyperstructureEntityId);
 
   return (
     <div className="flex space-x-5 items-center text-xs">
