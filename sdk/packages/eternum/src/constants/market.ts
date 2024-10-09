@@ -1,7 +1,7 @@
 import { ResourcesIds } from ".";
 
 export const ADMIN_BANK_ENTITY_ID = 999999998n;
-export const LORDS_LIQUIDITY_PER_RESOURCE = 250_000;
+export const LORDS_LIQUIDITY_PER_RESOURCE = 5_000;
 
 export const AMM_STARTING_LIQUIDITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Wood]: 500_000,
