@@ -27,7 +27,7 @@ use eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
     MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
     SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,
-    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK
+    EARTHEN_SHARD_PRODUCTION_AMOUNT_PER_TICK, REALM_MAX_LEVEL
 };
 
 use starknet::{ContractAddress};
@@ -212,6 +212,9 @@ fn set_weight_config(config_systems_address: ContractAddress) {
 }
 
 fn set_realm_level_config(config_systems_address: ContractAddress) {
+    IRealmLevelConfigDispatcher { contract_address: config_systems_address }
+        .set_realm_max_level_config(REALM_MAX_LEVEL);
+
     IRealmLevelConfigDispatcher { contract_address: config_systems_address }
         .set_realm_level_config(1, array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100),].span());
 
