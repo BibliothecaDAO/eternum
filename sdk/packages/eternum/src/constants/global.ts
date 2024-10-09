@@ -17,6 +17,8 @@ export const EternumGlobalConfig = {
     lpFeesDenominator: 100, // %
     ownerFeesNumerator: 15,
     ownerFeesDenominator: 100, // %
+    ownerBridgeFeeOnDepositPercent: 1000, // 10 % using scale of 10_000
+    ownerBridgeFeeOnWithdrawalPercent: 1000, // 10 % using scale of 10_000
   },
   populationCapacity: {
     workerHuts: 5,

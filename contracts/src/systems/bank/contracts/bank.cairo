@@ -5,10 +5,22 @@ use eternum::models::position::{Coord};
 #[dojo::interface]
 trait IBankSystems {
     fn create_bank(
-        ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128,
+        ref world: IWorldDispatcher,
+        realm_entity_id: ID,
+        coord: Coord,
+        owner_fee_num: u128,
+        owner_fee_denom: u128,
+        owner_bridge_fee_dpt_percent: u16,
+        owner_bridge_fee_wtdr_percent: u16
     ) -> ID;
-    fn change_owner_fee(
+    fn change_owner_amm_fee(
         ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
+    );
+    fn change_owner_bridge_fee(
+        ref world: IWorldDispatcher,
+        bank_entity_id: ID,
+        owner_bridge_fee_dpt_percent: u16,
+        owner_bridge_fee_wtdr_percent: u16,
     );
 }
 
@@ -24,14 +36,20 @@ mod bank_systems {
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
     use traits::Into;
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_bank(
-            ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128,
+            ref world: IWorldDispatcher,
+            realm_entity_id: ID,
+            coord: Coord,
+            owner_fee_num: u128,
+            owner_fee_denom: u128,
+            owner_bridge_fee_dpt_percent: u16,
+            owner_bridge_fee_wtdr_percent: u16
         ) -> ID {
             SeasonCustomImpl::assert_season_is_not_over(world);
 
@@ -61,7 +79,14 @@ mod bank_systems {
                     },
                     StructureCount { coord, count: 1 },
                     CapacityCategory { entity_id: bank_entity_id, category: CapacityConfigCategory::Structure },
-                    Bank { entity_id: bank_entity_id, owner_fee_num, owner_fee_denom, exists: true },
+                    Bank {
+                        entity_id: bank_entity_id,
+                        owner_fee_num,
+                        owner_fee_denom,
+                        owner_bridge_fee_dpt_percent,
+                        owner_bridge_fee_wtdr_percent,
+                        exists: true
+                    },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
                     Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
                 )
@@ -70,7 +95,7 @@ mod bank_systems {
             bank_entity_id
         }
 
-        fn change_owner_fee(
+        fn change_owner_amm_fee(
             ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
         ) {
             SeasonCustomImpl::assert_season_is_not_over(world);
@@ -83,6 +108,24 @@ mod bank_systems {
             let mut bank = get!(world, bank_entity_id, Bank);
             bank.owner_fee_num = new_owner_fee_num;
             bank.owner_fee_denom = new_owner_fee_denom;
+            set!(world, (bank));
+        }
+
+
+        fn change_owner_bridge_fee(
+            ref world: IWorldDispatcher,
+            bank_entity_id: ID,
+            owner_bridge_fee_dpt_percent: u16,
+            owner_bridge_fee_wtdr_percent: u16
+        ) {
+            let player = starknet::get_caller_address();
+
+            let owner = get!(world, bank_entity_id, Owner);
+            assert(owner.address == player, 'Only owner can change fee');
+
+            let mut bank = get!(world, bank_entity_id, Bank);
+            bank.owner_bridge_fee_dpt_percent = owner_bridge_fee_dpt_percent;
+            bank.owner_bridge_fee_wtdr_percent = owner_bridge_fee_wtdr_percent;
             set!(world, (bank));
         }
     }

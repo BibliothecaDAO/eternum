@@ -24,7 +24,7 @@ use eternum::models::resources::{
 use eternum::models::structure::{Structure, StructureCustomImpl};
 use eternum::models::weight::Weight;
 use eternum::models::weight::WeightCustomTrait;
-use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max, cap_minus};
 use eternum::utils::number::NumberTrait;
 

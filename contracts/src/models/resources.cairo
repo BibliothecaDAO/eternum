@@ -167,9 +167,8 @@ impl ResourceFoodImpl of ResourceFoodTrait {
 impl ResourceCustomImpl of ResourceCustomTrait {
     fn get(world: IWorldDispatcher, key: (ID, u8)) -> Resource {
         let mut resource: Resource = get!(world, key, Resource);
-        if resource.entity_id == 0 {
-            return resource;
-        };
+        assert!(resource.resource_type.is_non_zero(), "resource type not found");
+        assert!(resource.entity_id.is_non_zero(), "entity id not found");
 
         resource.harvest(world);
         return resource;
@@ -299,37 +298,6 @@ impl OwnedResourcesTrackerCustomImpl of OwnedResourcesTrackerCustomTrait {
     fn set_resource_ownership(ref self: OwnedResourcesTracker, resource_type: u8, value: bool) {
         let pos = resource_type - 1;
         self.resource_types = set_u256_bit(self.resource_types, pos.into(), value);
-    }
-
-
-    /// Get all the resources an entity owns and their probability of occurence
-    ///
-    /// # Returns
-    ///
-    /// * `Span<u8>` - The resource types
-    /// * `Span<u128>` - The resource probabilities
-    ///
-    ///    resource_types.length == resource_probabilities.length
-    ///
-    fn get_owned_resources_and_probs(self: @OwnedResourcesTracker) -> (Span<u8>, Span<u128>) {
-        let zipped = get_resource_probabilities();
-        let mut owned_resource_types = array![];
-        let mut owned_resource_probabilities = array![];
-        let mut index = 0;
-        loop {
-            if index == zipped.len() {
-                break;
-            }
-
-            let (resource_type, probability) = *zipped.at(index);
-            if self.owns_resource_type(resource_type) {
-                owned_resource_types.append(resource_type);
-                owned_resource_probabilities.append(probability);
-            }
-            index += 1;
-        };
-
-        return (owned_resource_types.span(), owned_resource_probabilities.span());
     }
 }
 

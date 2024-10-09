@@ -397,22 +397,44 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_bank(props: SystemProps.CreateBankProps) {
-    const { realm_entity_id, coord, owner_fee_num, owner_fee_denom, signer } = props;
+    const {
+      realm_entity_id,
+      coord,
+      owner_fee_num,
+      owner_fee_denom,
+      owner_bridge_fee_dpt_percent,
+      owner_bridge_fee_wtdr_percent,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "create_bank",
-      calldata: [realm_entity_id, coord, owner_fee_num, owner_fee_denom],
+      calldata: [
+        realm_entity_id,
+        coord,
+        owner_fee_num,
+        owner_fee_denom,
+        owner_bridge_fee_dpt_percent,
+        owner_bridge_fee_wtdr_percent,
+      ],
     });
   }
 
   public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
-    const { coord, owner_fee_num, owner_fee_denom, signer } = props;
+    const {
+      coord,
+      owner_fee_num,
+      owner_fee_denom,
+      owner_bridge_fee_dpt_percent,
+      owner_bridge_fee_wtdr_percent,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
       entrypoint: "create_admin_bank",
-      calldata: [coord, owner_fee_num, owner_fee_denom],
+      calldata: [coord, owner_fee_num, owner_fee_denom, owner_bridge_fee_dpt_percent, owner_bridge_fee_wtdr_percent],
     });
   }
 
@@ -431,8 +453,18 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
-      entrypoint: "change_owner_fee",
+      entrypoint: "change_owner_amm_fee",
       calldata: [bank_entity_id, new_swap_fee_num, new_swap_fee_denom],
+    });
+  }
+
+  public async change_bank_bridge_fee(props: SystemProps.ChangeBankBridgeFeeProps) {
+    const { bank_entity_id, new_bridge_fee_dpt_percent, new_bridge_fee_wtdr_percent, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
+      entrypoint: "change_owner_bridge_fee",
+      calldata: [bank_entity_id, new_bridge_fee_dpt_percent, new_bridge_fee_wtdr_percent],
     });
   }
 

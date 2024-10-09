@@ -645,6 +645,48 @@ pub struct HasClaimedStartingResources {
     claimed: bool,
 }
 
+
+#[dojo::model]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+struct ResourceBridgeConfig {
+    #[key]
+    config_id: ID,
+    deposit_paused: bool,
+    withdraw_paused: bool,
+}
+
+#[dojo::model]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+struct ResourceBridgeFeeSplitConfig {
+    #[key]
+    config_id: ID,
+    // the percentage of the deposit and withdrawal amount that the velords addr will receive
+    velords_fee_on_dpt_percent: u16,
+    velords_fee_on_wtdr_percent: u16,
+    // the percentage of the deposit and withdrawal amount that the season pool will receive
+    season_pool_fee_on_dpt_percent: u16,
+    season_pool_fee_on_wtdr_percent: u16,
+    // the percentage of the deposit and withdrawal amount that the frontend provider will receive
+    client_fee_on_dpt_percent: u16,
+    client_fee_on_wtdr_percent: u16,
+    // the address that will receive the velords fee percentage
+    velords_fee_recipient: ContractAddress,
+    // the address that will receive the season pool fee
+    season_pool_fee_recipient: ContractAddress,
+    // max bank fee amount
+    max_bank_fee_dpt_percent: u16,
+    max_bank_fee_wtdr_percent: u16,
+}
+
+
+#[dojo::model]
+#[derive(Copy, Drop, Serde)]
+struct ResourceBridgeWhitelistConfig {
+    #[key]
+    token: ContractAddress,
+    resource_type: u8
+}
+
 // speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
