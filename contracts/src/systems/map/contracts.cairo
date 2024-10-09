@@ -18,13 +18,11 @@ mod map_systems {
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, LevelingConfig, MercenariesConfig,
-        TroopConfigCustomImpl, TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig,
-        TravelFoodCostConfigImpl
+        ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigCustomImpl,
+        TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl
     };
 
     use eternum::models::hyperstructure::SeasonCustomImpl;
-    use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};

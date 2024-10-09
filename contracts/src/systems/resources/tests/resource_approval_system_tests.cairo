@@ -61,7 +61,7 @@ mod resource_approval_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    fn test_approve() {
+    fn resources_test_approve() {
         let (world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id: ID = 11;
@@ -101,7 +101,7 @@ mod resource_approval_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    fn test_approve__infinite_approval() {
+    fn resources_test_approve__infinite_approval() {
         let (world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id: ID = 11;
@@ -142,7 +142,7 @@ mod resource_approval_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-    fn test_approve__not_owner() {
+    fn resources_test_approve__not_owner() {
         let (world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id: ID = 11;

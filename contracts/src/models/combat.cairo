@@ -1118,7 +1118,7 @@ mod health_model_tests {
     }
 
     #[test]
-    fn test_health_steps_to_die__deduction_equal_single_troop() {
+    fn combat_test_health_steps_to_die__deduction_equal_single_troop() {
         let troop_config = mock_troop_config();
         let troop_count = 4;
         let current = ONE_TROOP_HEALTH() * troop_count;
@@ -1129,7 +1129,7 @@ mod health_model_tests {
     }
 
     #[test]
-    fn test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_has_remainder() {
+    fn combat_test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_has_remainder() {
         let troop_config = mock_troop_config();
         let current = ONE_TROOP_HEALTH() * 3;
         let deduction = ONE_TROOP_HEALTH() * 2; // 21_000 / 14_000 = 1.xx i.e has no remainder
@@ -1139,7 +1139,7 @@ mod health_model_tests {
     }
 
     #[test]
-    fn test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_no_remainder() {
+    fn combat_test_health_steps_to_die__deduction_greater_than_single_troop__with_deduction_no_remainder() {
         let troop_config = mock_troop_config();
         let current = ONE_TROOP_HEALTH() * 4;
         let deduction = ONE_TROOP_HEALTH() * 2; // 28_000 / 14_000 = 2 i.e has no remainder
@@ -1149,7 +1149,7 @@ mod health_model_tests {
     }
 
     #[test]
-    fn test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_has_remainder() {
+    fn combat_test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_has_remainder() {
         let troop_config = mock_troop_config();
         let current = ONE_TROOP_HEALTH() * 3;
         let deduction = 81; // 14_000 / 81 = 172.xx i.e has remainder
@@ -1158,7 +1158,7 @@ mod health_model_tests {
         assert_eq!(steps_to_die, ((current - ONE_TROOP_HEALTH()) / deduction) + 1);
     }
     #[test]
-    fn test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_no_remainder() {
+    fn combat_test_health_steps_to_die__deduction_less_than_single_troop__with_deduction_no_remainder() {
         let troop_config = mock_troop_config();
         let current = ONE_TROOP_HEALTH() * 3;
         let deduction = 80; // 14_000 / 80 = 175 i.e has no remainder
@@ -1252,7 +1252,7 @@ mod tests {
     }
 
     #[test]
-    fn test_battle_reset_delta() {
+    fn combat_test_battle_reset_delta() {
         let attack_troop_each = 10_000;
         let defence_troop_each = 10_000;
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
@@ -1283,7 +1283,7 @@ mod tests {
 
 
     #[test]
-    fn test_battle_update_state_before_battle_end() {
+    fn combat_test_battle_update_state_before_battle_end() {
         let attack_troop_each = 10_000;
         let defence_troop_each = 10_000;
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
@@ -1298,7 +1298,7 @@ mod tests {
 
 
     #[test]
-    fn test_battle_update_state_after_battle_end() {
+    fn combat_test_battle_update_state_after_battle_end() {
         let attack_troop_each = 10_000;
         let defence_troop_each = 10_000;
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
@@ -1313,7 +1313,7 @@ mod tests {
 
 
     #[test]
-    fn test_battle_deposit_balance() {
+    fn combat_test_battle_deposit_balance() {
         // set block timestamp to 1
         starknet::testing::set_block_timestamp(1);
 
@@ -1361,7 +1361,7 @@ mod tests {
 
 
     #[test]
-    fn test_battle_deposit_balance_for_structure_army() {
+    fn combat_test_battle_deposit_balance_for_structure_army() {
         // set block timestamp to 1
         starknet::testing::set_block_timestamp(1);
 
@@ -1413,7 +1413,7 @@ mod tests {
 
 
     #[test]
-    fn test_battle_withdraw_balance_and_reward__when_you_lose() {
+    fn combat_test_battle_withdraw_balance_and_reward__when_you_lose() {
         // set block timestamp to 1
         starknet::testing::set_block_timestamp(1);
 
@@ -1502,7 +1502,7 @@ mod tests {
 
 
     #[test]
-    fn test_battle_withdraw_balance_and_reward__when_you_draw() {
+    fn combat_test_battle_withdraw_balance_and_reward__when_you_draw() {
         // set block timestamp to 1
         starknet::testing::set_block_timestamp(1);
 
@@ -1591,7 +1591,7 @@ mod tests {
 
 
     #[test]
-    fn test_battle_withdraw_balance_and_reward__when_you_win() {
+    fn combat_test_battle_withdraw_balance_and_reward__when_you_win() {
         // set block timestamp to 1
         starknet::testing::set_block_timestamp(1);
 
@@ -1691,7 +1691,7 @@ mod tests {
         assert_eq!(attack_army_stone.balance, defence_army_stone_resource.balance);
     }
     // #[test]
-// fn test_show_battle() {
+// fn combat_test_show_battle() {
 //     let attack_troop_each = 240_000;
 //     let defence_troop_each = 10_000;
 //     let mut battle = mock_battle(attack_troop_each, defence_troop_each);

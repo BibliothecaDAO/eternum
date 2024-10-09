@@ -128,7 +128,7 @@ fn setup() -> (
 }
 
 #[test]
-fn test_liquidity_add() {
+fn bank_test_liquidity_add() {
     let (
         world,
         bank_entity_id,
@@ -161,7 +161,7 @@ fn test_liquidity_add() {
 }
 
 #[test]
-fn test_liquidity_remove() {
+fn bank_test_liquidity_remove() {
     let (
         world,
         bank_entity_id,
@@ -202,7 +202,7 @@ fn test_liquidity_remove() {
 }
 
 #[test]
-fn test_liquidity_buy() {
+fn bank_test_liquidity_buy() {
     let (
         world,
         bank_entity_id,
@@ -286,7 +286,7 @@ fn test_liquidity_buy() {
 
 
 #[test]
-fn test_liquidity_sell() {
+fn bank_test_liquidity_sell() {
     let (
         world,
         bank_entity_id,
@@ -358,7 +358,7 @@ fn test_liquidity_sell() {
 }
 
 #[test]
-fn test_liquidity_no_drain() {
+fn bank_test_liquidity_no_drain() {
     let (
         world,
         bank_entity_id,

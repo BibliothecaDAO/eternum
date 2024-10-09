@@ -5,7 +5,7 @@ mod tests {
     const RADIUS_PRECISION: u8 = 100;
 
     #[test]
-    fn test_get_next_settlement_coord() {
+    fn config_test_get_next_settlement_coord() {
         // starting values
         let mut settlement_config = SettlementConfig {
             config_id: 0,

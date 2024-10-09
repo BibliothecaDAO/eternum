@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     #[available_gas(300000000)]
-    fn test_entity_owner_get_realm_id() {
+    fn owner_test_entity_owner_get_realm_id() {
         let world = spawn_eternum();
 
         set!(

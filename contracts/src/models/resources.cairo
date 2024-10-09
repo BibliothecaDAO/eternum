@@ -396,7 +396,7 @@ mod tests_resource_traits {
     }
 
     #[test]
-    fn test_resource_get_while_gold_is_available() {
+    fn resources_test_resource_get_while_gold_is_available() {
         // Ensure production is harvested and added to the
         // resource's balance when ResourceCustomImpl::get is called
         //
@@ -423,7 +423,7 @@ mod tests_resource_traits {
 
 
     #[test]
-    fn test_resource_get_after_gold_has_finished() {
+    fn resources_test_resource_get_after_gold_has_finished() {
         // Ensure production is harvested and added to the
         // resource's balance when ResourceCustomImpl::get is called
         //
@@ -440,7 +440,7 @@ mod tests_resource_traits {
 
 
     #[test]
-    fn test_resource_save() {
+    fn resources_test_resource_save() {
         // Ensure wood production end tick is reset after
         // gold's balance gets updated
         //
@@ -472,7 +472,7 @@ mod owned_resources_tracker_tests {
 
 
     #[test]
-    fn test_get_and_set_resource_ownership() {
+    fn resources_test_get_and_set_resource_ownership() {
         let mut ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
         ort.set_resource_ownership(ResourceTypes::WOOD, true);
         ort.set_resource_ownership(ResourceTypes::COAL, true);
@@ -490,7 +490,7 @@ mod owned_resources_tracker_tests {
 
 
     #[test]
-    fn test_get_and_set_resource_ownership_after_resource_save() {
+    fn resources_test_get_and_set_resource_ownership_after_resource_save() {
         let world = spawn_eternum();
 
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);

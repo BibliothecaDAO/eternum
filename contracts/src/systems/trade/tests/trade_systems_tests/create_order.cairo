@@ -69,7 +69,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_create_order() {
+fn trade_test_create_order() {
     let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // create order
@@ -111,7 +111,7 @@ fn test_create_order() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('caller not maker', 'ENTRYPOINT_FAILED'))]
-fn test_caller_not_maker() {
+fn trade_test_caller_not_maker() {
     let (_, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // create order with a caller that isnt the owner of maker_id
@@ -136,7 +136,7 @@ fn test_caller_not_maker() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_transport_not_enough_capacity() {
+fn trade_test_transport_not_enough_capacity() {
     let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
@@ -156,7 +156,7 @@ fn test_transport_not_enough_capacity() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('maker resource amount is 0', 'ENTRYPOINT_FAILED'))]
-fn test_create_order_amount_give_0() {
+fn trade_test_create_order_amount_give_0() {
     let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     trade_systems_dispatcher
@@ -172,7 +172,7 @@ fn test_create_order_amount_give_0() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('taker resource amount is 0', 'ENTRYPOINT_FAILED'))]
-fn test_create_order_amount_take_0() {
+fn trade_test_create_order_amount_take_0() {
     let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     trade_systems_dispatcher

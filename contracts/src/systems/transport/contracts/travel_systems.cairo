@@ -16,12 +16,11 @@ trait ITravelSystems {
 mod travel_systems {
     use eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
+    use eternum::constants::{WORLD_CONFIG_ID, TravelTypes};
     use eternum::models::combat::Army;
-    use eternum::models::config::{LevelingConfig, MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
+    use eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
 
     use eternum::models::hyperstructure::SeasonCustomImpl;
-    use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::order::{Orders, OrdersCustomTrait};
@@ -31,8 +30,6 @@ mod travel_systems {
     use eternum::models::realm::Realm;
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
-
-    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
 
     use starknet::ContractAddress;
 
@@ -130,31 +127,6 @@ mod travel_systems {
             assert(tile.explored_by_id != 0, 'tile not explored');
         }
 
-
-        fn use_travel_bonus(
-            world: IWorldDispatcher, realm: @Realm, entity_owner: @EntityOwner, travel_time: u64
-        ) -> u64 {
-            // get realm level bonus
-            let realm_level_bonus = leveling::get_realm_level_bonus(
-                world, (*entity_owner).entity_owner_id, LevelIndex::TRAVEL
-            )
-                .try_into()
-                .unwrap();
-
-            // get order hyperstructure bonus
-            let realm_order = get!(world, (*realm).order, Orders);
-            let realm_order_bonus = realm_order.get_bonus_multiplier().try_into().unwrap();
-
-            // apply bonuses
-
-            let new_travel_time = ((travel_time
-                * 100
-                * realm_order.get_bonus_denominator().try_into().unwrap()
-                / (realm_level_bonus * (100 + realm_order_bonus))));
-
-            return new_travel_time;
-        }
-
         fn travel_hex(world: IWorldDispatcher, transport_id: ID, from_coord: Coord, mut directions: Span<Direction>) {
             // get destination coordinate
             let mut travel_path = array![from_coord];
@@ -215,14 +187,6 @@ mod travel_systems {
             Self::assert_tile_explored(world, to_coord);
 
             let mut travel_time = from_coord.calculate_travel_time(to_coord, transport_movable.sec_per_km);
-
-            // check if entity owner is a realm and apply bonuses if it is
-            let entity_owner = get!(world, (transport_id), EntityOwner);
-            let realm = get!(world, entity_owner.entity_owner_id, Realm);
-
-            if realm.cities > 0 {
-                travel_time = Self::use_travel_bonus(world, @realm, @entity_owner, travel_time);
-            }
 
             let current_position = get!(world, transport_id, Position);
 

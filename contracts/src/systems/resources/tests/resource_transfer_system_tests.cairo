@@ -95,7 +95,7 @@ mod resource_transfer_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    fn test_transfer() {
+    fn resources_test_transfer() {
         let (world, resource_systems_dispatcher) = setup();
 
         let sender_entity_id: ID = 11;
@@ -128,7 +128,7 @@ mod resource_transfer_system_tests {
             'ENTRYPOINT_FAILED'
         )
     )]
-    fn test_transfer__not_enough_donkey() {
+    fn resources_test_transfer__not_enough_donkey() {
         let (world, resource_systems_dispatcher) = setup();
 
         let sender_entity_id = 11;
@@ -176,7 +176,7 @@ mod resource_transfer_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-    fn test_transfer__not_owner() {
+    fn resources_test_transfer__not_owner() {
         let (_, resource_systems_dispatcher) = setup();
 
         // transfer resources
@@ -194,7 +194,7 @@ mod resource_transfer_system_tests {
             'ENTRYPOINT_FAILED'
         )
     )]
-    fn test_transfer__insufficient_balance() {
+    fn resources_test_transfer__insufficient_balance() {
         let (world, resource_systems_dispatcher) = setup();
 
         let sender_entity_id = 11;
@@ -220,7 +220,7 @@ mod resource_transfer_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    fn test_transfer_from() {
+    fn resources_test_transfer_from() {
         let (world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id = 11;
@@ -275,7 +275,7 @@ mod resource_transfer_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    fn test_transfer_from__with_infinite_approval() {
+    fn resources_test_transfer_from__with_infinite_approval() {
         let (world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id = 11;

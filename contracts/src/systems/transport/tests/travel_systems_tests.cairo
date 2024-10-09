@@ -10,7 +10,6 @@ use eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 use eternum::constants::{ResourceTypes, TickIds};
 use eternum::models::combat::{Army, BattleSide, Troops};
 use eternum::models::config::{TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
-use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::order::{Orders, OrdersCustomTrait};
@@ -79,7 +78,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatch
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel() {
+fn transport_test_travel() {
     let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
@@ -112,170 +111,8 @@ fn test_travel() {
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel_with_realm_bonus() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
-
-    ///////////////////////////////
-    // create realm and set level
-    ///////////////////////////////
-
-    set!(
-        world,
-        (
-            EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id },
-            Realm {
-                entity_id: realm_entity_id,
-                realm_id: 0,
-                resource_types_packed: 0,
-                resource_types_count: 0,
-                cities: 76,
-                harbors: 0,
-                rivers: 0,
-                regions: 0,
-                wonder: 0,
-                order: 0,
-                level: 0
-            },
-            Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
-            LevelingConfig {
-                config_id: REALM_LEVELING_CONFIG_ID,
-                decay_interval: 0,
-                max_level: 1000,
-                wheat_base_amount: 0,
-                fish_base_amount: 0,
-                resource_1_cost_id: 0,
-                resource_1_cost_count: 0,
-                resource_2_cost_id: 0,
-                resource_2_cost_count: 0,
-                resource_3_cost_id: 0,
-                resource_3_cost_count: 0,
-                decay_scaled: 1844674407370955161,
-                cost_percentage_scaled: 0,
-                base_multiplier: 25
-            }
-        )
-    );
-
-    set!(
-        world,
-        (Movable {
-            entity_id: travelling_entity_id.into(),
-            sec_per_km: 10,
-            blocked: false,
-            round_trip: false,
-            start_coord_x: 0,
-            start_coord_y: 0,
-            intermediate_coord_x: 0,
-            intermediate_coord_y: 0,
-        })
-    );
-
-    // travelling entity travels
-    starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
-
-    // verify arrival time and position of travelling_entity
-    let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
-    let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
-    assert(travelling_entity_arrival_time.arrives_at == 6800000, 'arrival time not correct');
-
-    assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
-    assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
-}
-
-#[test]
-#[available_gas(30000000000000)]
-fn test_travel_with_realm_and_order_bonus() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
-
-    ///////////////////////////////
-    // create realm and set level
-    ///////////////////////////////
-
-    let realm_order_id: u8 = 1;
-
-    set!(
-        world,
-        (
-            EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id },
-            Realm {
-                entity_id: realm_entity_id,
-                realm_id: 0,
-                resource_types_packed: 0,
-                resource_types_count: 0,
-                cities: 76,
-                harbors: 0,
-                rivers: 0,
-                regions: 0,
-                wonder: 0,
-                order: realm_order_id.into(),
-                level: 0
-            },
-            Level { entity_id: realm_entity_id, level: LevelIndex::TRAVEL.into() + 4, valid_until: 10000000, },
-            LevelingConfig {
-                config_id: REALM_LEVELING_CONFIG_ID,
-                decay_interval: 0,
-                max_level: 1000,
-                wheat_base_amount: 0,
-                fish_base_amount: 0,
-                resource_1_cost_id: 0,
-                resource_1_cost_count: 0,
-                resource_2_cost_id: 0,
-                resource_2_cost_count: 0,
-                resource_3_cost_id: 0,
-                resource_3_cost_count: 0,
-                decay_scaled: 1844674407370955161,
-                cost_percentage_scaled: 0,
-                base_multiplier: 25
-            }
-        )
-    );
-
-    ///////////////////////////////////////
-    //  set order level
-    ///////////////////////////////////////
-
-    set!(
-        world,
-        (
-            EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id },
-            Orders { order_id: realm_order_id.into(), hyperstructure_count: 1 }
-        )
-    );
-
-    set!(
-        world,
-        (Movable {
-            entity_id: travelling_entity_id.into(),
-            sec_per_km: 10,
-            blocked: false,
-            round_trip: false,
-            start_coord_x: 0,
-            start_coord_y: 0,
-            intermediate_coord_x: 0,
-            intermediate_coord_y: 0,
-        })
-    );
-
-    // travelling entity travels
-    starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
-
-    // verify arrival time and position of travelling_entity
-    let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
-    let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
-
-    assert(travelling_entity_arrival_time.arrives_at == 5440000, 'arrival time not correct');
-
-    assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
-    assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
-}
-
-
-#[test]
-#[available_gas(30000000000000)]
 #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-fn test_not_owner() {
+fn transport_test_not_owner() {
     let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
@@ -286,7 +123,7 @@ fn test_not_owner() {
 #[test]
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity has no speed', 'ENTRYPOINT_FAILED'))]
-fn test_no_speed() {
+fn transport_test_no_speed() {
     let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
@@ -297,7 +134,7 @@ fn test_no_speed() {
 #[test]
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
-fn test_blocked() {
+fn transport_test_blocked() {
     let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
@@ -322,7 +159,7 @@ fn test_blocked() {
 #[test]
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
-fn test_in_transit() {
+fn transport_test_in_transit() {
     let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
@@ -469,7 +306,7 @@ fn get_and_explore_destination_tiles(
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel_hex() {
+fn transport_test_travel_hex() {
     let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // make destination tile explored
@@ -501,7 +338,7 @@ fn test_travel_hex() {
 
 #[test]
 #[should_panic(expected: ('tile not explored', 'ENTRYPOINT_FAILED'))]
-fn test_travel_hex__destination_tile_not_explored() {
+fn transport_test_travel_hex__destination_tile_not_explored() {
     let (_, travelling_entity_id, _, travel_systems_dispatcher) = setup_hex_travel();
 
     let travel_directions = array![Direction::East].span();
@@ -512,7 +349,7 @@ fn test_travel_hex__destination_tile_not_explored() {
 
 #[test]
 #[should_panic(expected: ('not enough stamina', 'ENTRYPOINT_FAILED'))]
-fn test_travel_hex__exceed_max_stamina() {
+fn transport_test_travel_hex__exceed_max_stamina() {
     let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // max hex moves per tick is 30 /5 = 6 so we try to travel 7 hexes

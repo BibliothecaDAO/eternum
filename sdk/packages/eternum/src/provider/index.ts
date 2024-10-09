@@ -316,16 +316,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async level_up_realm(props: SystemProps.LevelUpRealmProps) {
-    const { realm_entity_id, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-leveling_systems`),
-      entrypoint: "level_up_realm",
-      calldata: [realm_entity_id],
-    });
-  }
-
   public async set_address_name(props: SystemProps.SetAddressNameProps) {
     const { name, signer } = props;
 

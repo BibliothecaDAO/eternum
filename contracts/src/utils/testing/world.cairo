@@ -24,7 +24,6 @@ use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
     Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch, Season, season
 };
-use eternum::models::level::level;
 use eternum::models::map::tile;
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
@@ -65,7 +64,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         battle::TEST_CLASS_HASH,
         guild::TEST_CLASS_HASH,
         building_quantityv_2::TEST_CLASS_HASH,
-        level::TEST_CLASS_HASH,
         tile::TEST_CLASS_HASH,
         orders::TEST_CLASS_HASH,
         entity_owner::TEST_CLASS_HASH,

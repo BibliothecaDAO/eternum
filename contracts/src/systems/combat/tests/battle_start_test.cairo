@@ -203,7 +203,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
 
 #[test]
-fn test_battle_start() {
+fn combat_test_battle_start() {
     let (
         world,
         combat_system_dispatcher,

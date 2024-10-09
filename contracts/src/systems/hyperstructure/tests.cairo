@@ -8,7 +8,6 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
 use eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
-use eternum::models::level::Level;
 use eternum::models::owner::Owner;
 use eternum::models::position::{Position, Coord};
 use eternum::models::resources::Resource;
@@ -91,7 +90,7 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_create_hyperstructure() {
+fn hyperstructure_test_create_hyperstructure() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -136,7 +135,7 @@ fn test_create_hyperstructure() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_create_hyperstructure_not_enough_eartenshards() {
+fn hyperstructure_test_create_hyperstructure_not_enough_eartenshards() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -150,7 +149,7 @@ fn test_create_hyperstructure_not_enough_eartenshards() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_contribute_one_resource() {
+fn hyperstructure_test_contribute_one_resource() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
     let contribution_amount = 100_000;
 
@@ -187,7 +186,7 @@ fn test_contribute_one_resource() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_contribute_two_resources() {
+fn hyperstructure_test_contribute_two_resources() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
     let wood_contribution_amount = 100_000;
     let stone_contribution_amount = 200_000;
@@ -247,7 +246,7 @@ fn test_contribute_two_resources() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_finish_hyperstructure() {
+fn hyperstructure_test_finish_hyperstructure() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
@@ -276,7 +275,7 @@ fn test_finish_hyperstructure() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
-fn test_end_game_failure() {
+fn hyperstructure_test_end_game_failure() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
@@ -292,7 +291,7 @@ fn test_end_game_failure() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_end_game_success_completion_only() {
+fn hyperstructure_test_end_game_success_completion_only() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
@@ -312,7 +311,7 @@ fn test_end_game_success_completion_only() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_end_game_success_completion_and_shares() {
+fn hyperstructure_test_end_game_success_completion_and_shares() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
@@ -334,7 +333,7 @@ fn test_end_game_success_completion_and_shares() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
-fn test_end_game_failure_completion_and_shares() {
+fn hyperstructure_test_end_game_failure_completion_and_shares() {
     let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
