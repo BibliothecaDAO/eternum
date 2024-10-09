@@ -92,7 +92,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     dev_resource_systems
         .mint(
             taker_id,
-            array![(ResourceTypes::STONE, 500), (ResourceTypes::GOLD, 500), (ResourceTypes::DONKEY, 20_000)].span()
+            array![(ResourceTypes::WOOD, 500), (ResourceTypes::SILVER, 500), (ResourceTypes::DONKEY, 20_000)].span()
         );
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -104,11 +104,6 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
-    if direct_trade {
-        taker_id
-    } else {
-        0
-    };
 
     // trade 100 stone and 100 gold for 200 wood and 200 silver
     // let trade_id = 0;
