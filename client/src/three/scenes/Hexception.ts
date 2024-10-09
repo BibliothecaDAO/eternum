@@ -6,18 +6,18 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
-import { getHexForWorldPosition, getWorldPositionForHex, ResourceIdToMiningType } from "@/ui/utils/utils";
-import { BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
+import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Biome, BIOME_COLORS, BiomeType } from "../components/Biome";
+import { SceneManager } from "../SceneManager";
+import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
-import { SceneManager } from "../SceneManager";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
-import { buildingModelPaths, BUILDINGS_CENTER, HEX_SIZE, structureTypeToBuildingType } from "./constants";
 import { HexagonScene } from "./HexagonScene";
+import { BUILDINGS_CENTER, HEX_SIZE, buildingModelPaths, structureTypeToBuildingType } from "./constants";
 
 const loader = new GLTFLoader();
 
