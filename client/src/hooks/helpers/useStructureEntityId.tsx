@@ -36,8 +36,8 @@ export const useStructureEntityId = () => {
 
     const getEntityValue = (component: any, entity: Entity) => getComponentValue(component, entity ?? ("0" as Entity));
 
-    const structure = getEntityValue(Structure, structureEntity);
-    const structureOwner = getEntityValue(Owner, structureEntity);
+    const structure = getEntityValue(Structure, structureEntity as Entity);
+    const structureOwner = getEntityValue(Owner, structureEntity as Entity);
 
     const isOwner = structureOwner?.address === BigInt(address);
 
