@@ -32,7 +32,7 @@ export const Battle = ({
 }: {
   battleManager: BattleManager;
   ownArmySide: string;
-  ownArmyEntityId: ID | undefined;
+  ownArmyEntityId: ID;
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
   attackerArmies: ArmyInfo[];
   attackerHealth: Health;

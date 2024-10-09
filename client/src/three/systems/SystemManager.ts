@@ -81,8 +81,7 @@ export class SystemManager {
             const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
             if (protectee) return;
 
-            const healthMultiplier =
-              EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+            const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
 
             const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
             if (!entityOwner) return;
@@ -98,6 +97,8 @@ export class SystemManager {
               getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
             );
             const isMine = this.isOwner(owner);
+
+            console.log({ health });
 
             callback({
               entityId: army.entity_id,
@@ -173,8 +174,7 @@ export class SystemManager {
           const position = getComponentValue(this.setup.components.Position, update.entity);
           if (!position) return;
 
-          const healthMultiplier =
-            EternumGlobalConfig.troop.healthPrecision * BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
           const isEmpty =
             battle.attack_army_health.current < healthMultiplier &&
             battle.defence_army_health.current < healthMultiplier;

@@ -407,7 +407,7 @@ export class BattleManager {
     return BigInt(
       Math.floor(
         (total_knight_health + total_paladin_health + total_crossbowman_health) /
-          (EternumGlobalConfig.resources.resourceMultiplier * Number(EternumGlobalConfig.troop.healthPrecision)),
+          EternumGlobalConfig.resources.resourceMultiplier,
       ),
     );
   }

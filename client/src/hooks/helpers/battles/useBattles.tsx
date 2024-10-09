@@ -29,8 +29,7 @@ export const getBattle = (
   let battle = getComponentValue(Battle, battleEntityId);
   let battleClone = structuredClone(battle);
   if (!battleClone) return;
-  const multiplier =
-    BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision;
+  const multiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
   battleClone.attack_army_health.current = battleClone.attack_army_health.current / multiplier;
   battleClone.attack_army_health.lifetime = battleClone.attack_army_health.lifetime / multiplier;
   battleClone.defence_army_health.current = battleClone.defence_army_health.current / multiplier;
