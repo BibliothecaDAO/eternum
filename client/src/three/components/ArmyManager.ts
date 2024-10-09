@@ -129,7 +129,6 @@ export class ArmyManager {
     console.debug("onUpdate called with update:", update);
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, isMine, battleId, currentHealth, order } = update;
-    console.log({ entityId, hexCoords, isMine, battleId, currentHealth, order });
 
     if (currentHealth <= 0) {
       console.debug(`Army with entityId ${entityId} has currentHealth <= 0`);
