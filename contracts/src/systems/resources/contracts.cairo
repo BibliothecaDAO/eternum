@@ -235,7 +235,7 @@ mod resource_systems {
 
                         // update total weight
                         total_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
+                            WeightConfigCustomImpl::get_weight_grams(world, resource_type, resource_amount);
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());
@@ -298,7 +298,7 @@ mod resource_systems {
             // only add to balance if receiver can carry weight
             let (resource_type, resource_amount) = resource;
             let mut total_resources_weight = 0;
-            total_resources_weight += WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
+            total_resources_weight += WeightConfigCustomImpl::get_weight_grams(world, resource_type, resource_amount);
             let mut recipient_weight: Weight = get!(world, recipient_id, Weight);
             let recipient_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(world, recipient_id);
             let recipient_quantity: Quantity = get!(world, recipient_id, Quantity);
