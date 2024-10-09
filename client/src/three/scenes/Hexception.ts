@@ -17,7 +17,13 @@ import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
-import { BUILDINGS_CENTER, HEX_SIZE, buildingModelPaths, castleLevelToRealmCastle, structureTypeToBuildingType } from "./constants";
+import {
+  BUILDINGS_CENTER,
+  HEX_SIZE,
+  buildingModelPaths,
+  castleLevelToRealmCastle,
+  structureTypeToBuildingType,
+} from "./constants";
 
 const loader = new GLTFLoader();
 
@@ -187,7 +193,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => { });
+    Promise.all(this.modelLoadPromises).then(() => {});
   }
 
   setup() {
@@ -236,7 +242,7 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToURLLocation();
   }
 
-  onSwitchOff() { }
+  onSwitchOff() {}
 
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
@@ -289,8 +295,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
   }
-  protected onHexagonRightClick(): void { }
-  protected onHexagonDoubleClick(): void { }
+  protected onHexagonRightClick(): void {}
+  protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -352,7 +358,7 @@ export default class HexceptionScene extends HexagonScene {
               : (BuildingType[building.category].toString() as any);
 
           if (parseInt(buildingType) === BuildingType.Castle) {
-            buildingType = castleLevelToRealmCastle[this.castleLevel]
+            buildingType = castleLevelToRealmCastle[this.castleLevel];
           }
           const buildingData = this.buildingModels.get(buildingType);
 
