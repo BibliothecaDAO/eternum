@@ -1,6 +1,6 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { getStructureByEntityId, isStructureImmune } from "@/hooks/helpers/useStructures";
@@ -52,6 +52,10 @@ export const BuildingEntityDetails = () => {
   });
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isOwnedByPlayer, setIsOwnedByPlayer] = useState<boolean>(false);
+
+  const { getEntityInfo } = getEntitiesUtils();
+
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -60,8 +64,13 @@ export const BuildingEntityDetails = () => {
 
   const { playerStructures } = useEntities();
 
-  const isCastleSelected = useMemo(
-    () => selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] && selectedBuildingHex.innerRow === BUILDINGS_CENTER[1],
+  const selectedStructureInfo = getEntityInfo(structureEntityId);
+
+  let isCastleSelected = useMemo(
+    () =>
+      selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
+      selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&
+      selectedStructureInfo?.structureCategory === StructureType[StructureType.Realm],
     [selectedBuildingHex.innerCol, selectedBuildingHex.innerRow],
   );
 

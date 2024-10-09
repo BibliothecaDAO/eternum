@@ -168,7 +168,7 @@ mod map_systems {
             if is_shards_mine {
                 let mine_structure_entity_id = Self::create_shard_mine_structure(world, coord);
 
-                Self::add_mercenaries_to_shard_mine(world, mine_structure_entity_id, coord);
+                Self::add_mercenaries_to_structure(world, mine_structure_entity_id);
                 let deadline = Self::add_production_deadline(world, mine_structure_entity_id);
 
                 // create shards production building
@@ -238,19 +238,19 @@ mod map_systems {
             deadline_tick
         }
 
-        fn add_mercenaries_to_shard_mine(world: IWorldDispatcher, mine_entity_id: ID, mine_coords: Coord) -> ID {
+        fn add_mercenaries_to_structure(world: IWorldDispatcher, structure_entity_id: ID) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
             let troops = mercenaries_config.troops;
 
             let army_entity_id = InternalCombatImpl::create_defensive_army(
-                world, mine_entity_id, starknet::contract_address_const::<0x0>()
+                world, structure_entity_id, starknet::contract_address_const::<0x0>()
             );
 
             InternalCombatImpl::add_troops_to_army(world, troops, army_entity_id);
 
             InternalResourceSystemsImpl::transfer(
-                world, 0, mine_entity_id, mercenaries_config.rewards, 0, false, false
+                world, 0, structure_entity_id, mercenaries_config.rewards, 0, false, false
             );
 
             army_entity_id

@@ -124,7 +124,7 @@ mod travel_systems {
     pub impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
         fn assert_tile_explored(world: IWorldDispatcher, coord: Coord) {
             let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
-            assert(tile.explored_by_id != 0, 'tile not explored');
+            assert(tile.explored_at != 0, 'tile not explored');
         }
 
         fn travel_hex(world: IWorldDispatcher, transport_id: ID, from_coord: Coord, mut directions: Span<Direction>) {

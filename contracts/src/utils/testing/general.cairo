@@ -89,7 +89,7 @@ fn get_default_hyperstructure_coord() -> Coord {
 
 fn explore_tile(world: IWorldDispatcher, explorer_id: ID, coords: Coord) {
     set!(
-        world, Tile { col: coords.x, row: coords.y, explored_by_id: explorer_id, explored_at: 0, biome: Biome::Beach }
+        world, Tile { col: coords.x, row: coords.y, explored_by_id: explorer_id, explored_at: 1, biome: Biome::Beach }
     );
 }
 
