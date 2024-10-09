@@ -20,10 +20,8 @@ export const REALM_UPGRADE_COSTS = {
   [RealmLevels.Settlement]: [],
 
   [RealmLevels.City]: [
-    { resource: ResourcesIds.Wood, amount: 2000 },
-    { resource: ResourcesIds.Stone, amount: 2000 },
-    { resource: ResourcesIds.Coal, amount: 1200 },
-    { resource: ResourcesIds.Silver, amount: 1200 },
+    { resource: ResourcesIds.Wheat, amount: 3000 },
+    { resource: ResourcesIds.Fish, amount: 3000 },
   ],
 
   [RealmLevels.Kingdom]: [
@@ -32,14 +30,17 @@ export const REALM_UPGRADE_COSTS = {
     { resource: ResourcesIds.Diamonds, amount: 750 },
     { resource: ResourcesIds.Sapphire, amount: 750 },
     { resource: ResourcesIds.DeepCrystal, amount: 750 },
+    { resource: ResourcesIds.Wheat, amount: 5000 },
+    { resource: ResourcesIds.Fish, amount: 5000 },
   ],
 
   [RealmLevels.Empire]: [
+    { resource: ResourcesIds.AlchemicalSilver, amount: 100 },
     { resource: ResourcesIds.Adamantine, amount: 100 },
     { resource: ResourcesIds.Mithral, amount: 100 },
     { resource: ResourcesIds.Dragonhide, amount: 100 },
-    { resource: ResourcesIds.Wood, amount: 200 },
-    { resource: ResourcesIds.Stone, amount: 200 },
+    { resource: ResourcesIds.Wheat, amount: 10000 },
+    { resource: ResourcesIds.Fish, amount: 10000 },
   ],
 };
 

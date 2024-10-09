@@ -164,61 +164,61 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   return (
     <StepContainer>
       <div className="flex flex-col items-center p-3 relative z-50">
-        <h3>Select Account</h3>
-        <div className="flex space-x-6 pt-4 w-full justify-center">
-          <div>
-            <div className="w-full text-2xl">
-              {loading ? (
-                <div className="p-2">Loading...</div>
-              ) : addressName ? (
-                <div className="p-2">{addressName}</div>
-              ) : (
-                <div className="flex w-full h-full z-1000">
-                  <TextInput
-                    placeholder="Your Name... (Max 31 characters)"
-                    maxLength={MAX_NAME_LENGTH}
-                    onChange={(value) => {
-                      input.current = value;
-                      setCanSetName(input.current.length > 0);
-                    }}
-                  />
-                  <Button
-                    isLoading={loading || !account}
-                    onClick={onSetName}
-                    variant="primary"
-                    disabled={loading || !canSetName}
-                  >
-                    Set Name
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="flex space-x-2 py-2">
-              <ListSelect
-                title="Active Account: "
-                options={list().map((account) => {
-                  const addressName = getAddressName(ContractAddress(account.address));
-                  return {
-                    id: account.address,
-                    label: (
-                      <div className="w-[225px]">{`${addressName || "unknown"} (${displayAddress(
-                        account.address,
-                      )})`}</div>
-                    ),
-                  };
-                })}
-                value={account.address}
-                onChange={select}
-              />
-              <Button variant={"default"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
-                {isDeploying ? "" : "Create New"}
-              </Button>
-            </div>
+        <h3 className="mb-4">Select Account</h3>
+        <div className="w-full max-w-md">
+          <div className="mb-4">
+            {loading ? (
+              <div className="p-2">Loading...</div>
+            ) : addressName ? (
+              <div className="p-2 text-2xl">{addressName}</div>
+            ) : (
+              <div className="flex w-full">
+                <TextInput
+                  className="flex-grow mr-2"
+                  placeholder="Your Name... (Max 31 characters)"
+                  maxLength={MAX_NAME_LENGTH}
+                  onChange={(value) => {
+                    input.current = value;
+                    setCanSetName(input.current.length > 0);
+                  }}
+                />
+                <Button
+                  isLoading={loading || !account}
+                  onClick={onSetName}
+                  variant="primary"
+                  disabled={loading || !canSetName}
+                >
+                  Set Name
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center mb-4">
+            <ListSelect
+              className="flex-grow mr-2"
+              title="Active Account: "
+              options={list().map((account) => {
+                const addressName = getAddressName(ContractAddress(account.address));
+                return {
+                  id: account.address,
+                  label: (
+                    <div className="w-full truncate">{`${addressName || "unknown"} (${displayAddress(
+                      account.address,
+                    )})`}</div>
+                  ),
+                };
+              })}
+              value={account.address}
+              onChange={select}
+            />
+            <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
+              {isDeploying ? "" : "Create New"}
+            </Button>
           </div>
         </div>
-        <div className="flex items-center space-x-2 opacity-60">
+        <div className="flex items-center space-x-4 mt-2">
           <Cross
-            className="cursor-pointer text-gold fill-gold stroke-gold"
+            className="cursor-pointer text-gold fill-gold stroke-gold hover:opacity-80"
             onMouseLeave={() => {
               setTooltip(null);
               setCopyMessage(null);
@@ -226,11 +226,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
             onMouseEnter={() =>
               setTooltip({
                 position: "top",
-                content: (
-                  <>
-                    <p className="whitespace-nowrap">Delete Accounts</p>
-                  </>
-                ),
+                content: <p className="whitespace-nowrap">Delete Accounts</p>,
               })
             }
             onClick={() => {
@@ -245,25 +241,21 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               setTooltip(null);
               setCopyMessage(null);
             }}
-            className="cursor-pointer text-gold"
+            className="cursor-pointer text-gold hover:opacity-80"
           />
           <Import
             onClick={onImportAccount}
             onMouseEnter={() =>
               setTooltip({
                 position: "top",
-                content: (
-                  <>
-                    <p className="whitespace-nowrap">Import Account</p>
-                  </>
-                ),
+                content: <p className="whitespace-nowrap">Import Account</p>,
               })
             }
             onMouseLeave={() => {
               setTooltip(null);
               setImportMessage(null);
             }}
-            className="cursor-pointer text-gold"
+            className="cursor-pointer text-gold hover:opacity-80"
           />
         </div>
       </div>
