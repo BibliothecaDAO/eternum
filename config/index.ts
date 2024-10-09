@@ -1,3 +1,4 @@
+import type { Config } from "@bibliothecadao/eternum";
 import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
 import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
 
@@ -30,28 +31,30 @@ if (!VITE_PUBLIC_DEV) {
   }
 }
 
-console.log("Setting up config...");
-const provider = new EternumProvider(manifest, nodeUrl);
 console.log("Provider set up");
-const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
-console.log("Account set up");
+const provider = new EternumProvider(manifest, nodeUrl);
 
-const setupConfig = process.env.VITE_PUBLIC_DEV
-  ? {
-      ...EternumGlobalConfig,
-      stamina: {
-        travelCost: 0,
-        exploreCost: 0,
-      },
-      battle: {
-        graceTickCount: 0,
-        delaySeconds: 0,
-      },
-    }
-  : EternumGlobalConfig;
+console.log("Account set up");
+const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
+
+const setupConfig: Config =
+  VITE_PUBLIC_DEV === "true"
+    ? {
+        ...EternumGlobalConfig,
+        stamina: {
+          travelCost: 0,
+          exploreCost: 0,
+        },
+        battle: {
+          graceTickCount: 0,
+          delaySeconds: 0,
+        },
+      }
+    : EternumGlobalConfig;
 
 export const config = new EternumConfig(setupConfig);
 
+console.log("Setting up config...");
 await config.setup(account, provider);
 
 console.log("Waiting 30 seconds before proceeding...");
