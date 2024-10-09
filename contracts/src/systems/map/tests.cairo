@@ -137,9 +137,7 @@ fn map_test_map_explore__mine_mercenaries_protector() {
     let mine_entity_owner = get!(world, mine_entity_id, EntityOwner);
     assert_eq!(mine_entity_owner.entity_owner_id, mine_entity_id, "wrong initial owner");
 
-    let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_shard_mine(
-        world, mine_entity_id, army_position
-    );
+    let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_structure(world, mine_entity_id);
 
     let battle_entity_id = combat_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
     let battle = get!(world, battle_entity_id, Battle);
