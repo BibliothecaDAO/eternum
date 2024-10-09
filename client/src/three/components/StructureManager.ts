@@ -26,6 +26,7 @@ export class StructureManager {
   totalStructures: number = 0;
   private currentChunk: string = "";
   private renderChunkSize: { width: number; height: number };
+  private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
 
   constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
@@ -122,7 +123,12 @@ export class StructureManager {
 
       if (models && models.length > 0) {
         // Reset all models for this structure type
-        models.forEach((model) => model.setCount(0));
+        models.forEach((model) => {
+          model.setCount(0);
+        });
+
+        // Clear the entityIdMap for this structure type
+        this.entityIdMaps.set(structureType, new Map());
 
         visibleStructures.forEach((structure) => {
           const position = getWorldPositionForHex(structure.hexCoords);
@@ -139,6 +145,9 @@ export class StructureManager {
           const currentCount = modelType.getCount();
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
           modelType.setCount(currentCount + 1);
+
+          // Add the entityId to the map for this instance
+          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
         });
 
         // Update all models
@@ -160,6 +169,22 @@ export class StructureManager {
       hexCoords.row >= chunkRow - this.renderChunkSize.height / 2 &&
       hexCoords.row < chunkRow + this.renderChunkSize.height / 2
     );
+  }
+
+  public getEntityIdFromInstance(structureType: StructureType, instanceId: number): ID | undefined {
+    const map = this.entityIdMaps.get(structureType);
+    return map ? map.get(instanceId) : undefined;
+  }
+
+  public getInstanceIdFromEntityId(structureType: StructureType, entityId: ID): number | undefined {
+    const map = this.entityIdMaps.get(structureType);
+    if (!map) return undefined;
+    for (const [instanceId, id] of map.entries()) {
+      if (id === entityId) {
+        return instanceId;
+      }
+    }
+    return undefined;
   }
 }
 
