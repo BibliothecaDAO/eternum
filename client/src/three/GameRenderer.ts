@@ -18,6 +18,7 @@ import { SystemManager } from "./systems/SystemManager";
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
+  private labelRendererElement!: HTMLDivElement;
   private renderer!: THREE.WebGLRenderer;
   private camera!: THREE.PerspectiveCamera;
   private raycaster!: THREE.Raycaster;
@@ -109,14 +110,30 @@ export default class GameRenderer {
       "move",
     );
     moveCameraFolder.close();
-    // Create an instance of CSS2DRenderer
-    this.labelRenderer = new CSS2DRenderer();
+
+    this.waitForLabelRendererElement().then((labelRendererElement) => {
+      this.labelRendererElement = labelRendererElement;
+      this.initializeLabelRenderer();
+    });
+  }
+
+  private initializeLabelRenderer() {
+    this.labelRenderer = new CSS2DRenderer({ element: this.labelRendererElement });
     this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
-    this.labelRenderer.domElement.style.position = "absolute";
-    this.labelRenderer.domElement.style.top = "0px";
-    this.labelRenderer.domElement.style.pointerEvents = "none";
-    this.labelRenderer.domElement.style.zIndex = "10";
-    document.body.appendChild(this.labelRenderer.domElement);
+  }
+
+  private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
+    return new Promise((resolve) => {
+      const checkElement = () => {
+        const element = document.getElementById("labelrenderer") as HTMLDivElement;
+        if (element) {
+          resolve(element);
+        } else {
+          requestAnimationFrame(checkElement);
+        }
+      };
+      checkElement();
+    });
   }
 
   private initializeRenderer() {
@@ -291,6 +308,12 @@ export default class GameRenderer {
   }
 
   animate() {
+    if (!this.labelRenderer) {
+      requestAnimationFrame(() => {
+        this.animate();
+      });
+      return;
+    }
     const currentTime = performance.now();
     const deltaTime = (currentTime - this.lastTime) / 1000; // Convert to seconds
     this.lastTime = currentTime;
@@ -299,7 +322,6 @@ export default class GameRenderer {
     if (this.controls) {
       this.controls.update();
     }
-
     // Clear the renderer at the start of each frame
     this.renderer.clear();
 

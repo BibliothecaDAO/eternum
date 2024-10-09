@@ -8,6 +8,7 @@ import { Position } from "@/types/Position";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
+import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SceneManager } from "../SceneManager";
@@ -15,6 +16,7 @@ import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
+import { createPausedLabel } from "../helpers/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { BUILDINGS_CENTER, HEX_SIZE, buildingModelPaths, structureTypeToBuildingType } from "./constants";
@@ -84,6 +86,7 @@ export default class HexceptionScene extends HexagonScene {
   private realmSubscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
   private castleLevel: CastleLevel = 0;
+  private labels: CSS2DObject[] = [];
 
   constructor(
     controls: MapControls,
@@ -192,6 +195,11 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
+    this.labels.forEach((label) => {
+      this.scene.remove(label);
+    });
+    this.labels = [];
+
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
 
@@ -236,7 +244,11 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToURLLocation();
   }
 
-  onSwitchOff() {}
+  onSwitchOff() {
+    this.labels.forEach((label) => {
+      this.scene.remove(label);
+    });
+  }
 
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
@@ -355,6 +367,15 @@ export default class HexceptionScene extends HexagonScene {
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
+            if (building.paused) {
+              const pausedDiv = createPausedLabel();
+              const pausedLabel = new CSS2DObject(pausedDiv);
+              pausedLabel.position.setFromMatrixPosition(building.matrix);
+              pausedLabel.position.y += 1;
+              this.scene.add(pausedLabel);
+              this.labels.push(pausedLabel);
+            }
+
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
 
@@ -414,9 +435,6 @@ export default class HexceptionScene extends HexagonScene {
       { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
       radius,
     );
-
-    const label = new THREE.Group();
-    this.scene.add(label);
 
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
