@@ -5,7 +5,6 @@ mod config;
 mod event;
 mod guild;
 mod hyperstructure;
-mod level;
 mod map;
 mod message;
 mod metadata;

@@ -8,7 +8,6 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
 use eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
-use eternum::models::level::Level;
 use eternum::models::owner::Owner;
 use eternum::models::position::{Position, Coord};
 use eternum::models::resources::Resource;

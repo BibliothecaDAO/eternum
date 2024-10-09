@@ -143,10 +143,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.travel_hex(props);
   };
 
-  const level_up_realm = async (props: SystemProps.LevelUpRealmProps) => {
-    await provider.level_up_realm(props);
-  };
-
   const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
     await provider.set_address_name(props);
   };
@@ -333,7 +329,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     explore: withQueueing(withErrorHandling(explore)),
     set_address_name: withQueueing(withErrorHandling(set_address_name)),
     set_entity_name: withQueueing(withErrorHandling(set_entity_name)),
-    level_up_realm: withQueueing(withErrorHandling(level_up_realm)),
     isLive: withQueueing(withErrorHandling(isLive)),
     create_order: withQueueing(withErrorHandling(create_order)),
     accept_order: withQueueing(withErrorHandling(accept_order)),
