@@ -27,7 +27,7 @@ const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_
 
 // entity ids
 const ADMIN_BANK_ENTITY_ID = 999999998n;
-const LORDS_LIQUIDITY_PER_RESOURCE = 250000;
+const LORDS_LIQUIDITY_PER_RESOURCE = 250_000;
 
 // Banks
 const COORD_X = FELT_CENTER;

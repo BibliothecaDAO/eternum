@@ -34,7 +34,7 @@ export const EternumGlobalConfig = {
     [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
     [CapacityConfigCategory.Donkey]: 100_000,
     [CapacityConfigCategory.Army]: 10_000,
-    [CapacityConfigCategory.Storehouse]: 3_000_000_000,
+    [CapacityConfigCategory.Storehouse]: 10_000_000_000,
   },
   speed: {
     donkey: 6,
@@ -45,11 +45,7 @@ export const EternumGlobalConfig = {
     delaySeconds: 8 * 60 * 60,
   },
   troop: {
-    // The 7,200 health value makes battles last up to 20hours at a maximum.
-    // This max will be reached if both armies are very similar in strength and health
-    // To reduce max battle time by 4x for example, change the health to (7,200 / 4)
-    // which will make the max battle time = 5 hours.
-    health: 7_200,
+    health: 1,
     knightStrength: 1,
     paladinStrength: 1,
     crossbowmanStrength: 1,
@@ -73,6 +69,9 @@ export const EternumGlobalConfig = {
     // 25%
     battleLeaveSlashNum: 25,
     battleLeaveSlashDenom: 100,
+    // 1_000. multiply this number by 2 to reduce battle time by 2x,
+    // and reduce by 2x to increase battle time by 2x, etc
+    battleTimeReductionScale: 1_000,
   },
   mercenaries: {
     troops: {

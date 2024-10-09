@@ -59,21 +59,17 @@ export const BattleActions = ({
     },
   } = dojo;
 
+  const { toggleModal } = useModalStore();
+  const { getAliveArmy } = getArmyByEntityId();
+
   const setTooltip = useUIStore((state) => state.setTooltip);
-
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
   const [loading, setLoading] = useState<Loading>(Loading.None);
   const [raidWarning, setRaidWarning] = useState(false);
-
-  const { toggleModal } = useModalStore();
-
-  const { getAliveArmy } = getArmyByEntityId();
-
   const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(
     userArmiesInBattle[0]?.entity_id || ownArmyEntityId || 0,
   );
@@ -88,7 +84,7 @@ export const BattleActions = ({
     const defender = structure?.protector ? structure.protector : defenderArmies[0];
     const battleManager = new BattleManager(defender?.battle_id || 0, dojo);
     return battleManager.getUpdatedArmy(defender, battleManager.getUpdatedBattle(currentTimestamp!));
-  }, [defenderArmies]);
+  }, [defenderArmies, localSelectedUnit, isActive]);
 
   const handleRaid = async () => {
     if (selectedArmy?.battle_id !== 0 && !raidWarning) {

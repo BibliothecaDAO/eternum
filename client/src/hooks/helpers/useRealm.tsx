@@ -198,6 +198,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
       if (realm && owner && position) {
         const {
           realm_id,
+          entity_id,
           cities,
           rivers,
           wonder,
@@ -206,6 +207,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
           resource_types_count,
           resource_types_packed,
           order,
+          level,
         } = realm;
 
         const name = getRealmNameById(realm_id);
@@ -214,12 +216,14 @@ export function useGetRealm(realmEntityId: ID | undefined) {
 
         return {
           realmId: realm_id,
+          entityId: entity_id,
           name,
           cities,
           rivers,
           wonder,
           harbors,
           regions,
+          level,
           resourceTypesCount: resource_types_count,
           resourceTypesPacked: resource_types_packed,
           order,

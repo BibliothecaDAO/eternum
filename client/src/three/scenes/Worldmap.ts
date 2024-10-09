@@ -300,12 +300,19 @@ export default class WorldmapScene extends HexagonScene {
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored } = update;
 
+    const col = hexCoords.col - FELT_CENTER;
+    const row = hexCoords.row - FELT_CENTER;
+
     if (removeExplored) {
+      const chunkRow = parseInt(this.currentChunk.split(",")[0]);
+      const chunkCol = parseInt(this.currentChunk.split(",")[1]);
+      this.exploredTiles.get(col)?.delete(row);
+      this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+      this.currentChunk = "null"; // reset the current chunk to force a recomputation
+      this.updateVisibleChunks();
       return;
     }
 
-    const col = hexCoords.col - FELT_CENTER;
-    const row = hexCoords.row - FELT_CENTER;
     if (!this.exploredTiles.has(col)) {
       this.exploredTiles.set(col, new Set());
     }
@@ -395,6 +402,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    this.interactiveHexManager.clearHexes();
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
       Ocean: [],

@@ -39,3 +39,7 @@ export type BuildingSystemUpdate = {
   innerCol: number;
   innerRow: number;
 };
+
+export type RealmSystemUpdate = {
+  level: number;
+};

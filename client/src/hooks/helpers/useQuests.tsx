@@ -1,8 +1,8 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
-import { BuildingType, ContractAddress, ID, QuestType, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, ContractAddress, ID, QuestType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
@@ -49,7 +49,7 @@ export const useQuests = () => {
 
   const quests = [
     createQuest(QuestId.Settle),
-    createQuest(QuestId.BuildFarm),
+    createQuest(QuestId.BuildFood),
     createQuest(QuestId.BuildResource),
     createQuest(QuestId.PauseProduction),
     createQuest(QuestId.CreateTrade),
@@ -128,17 +128,20 @@ const useQuestDependencies = () => {
 
   const fragmentMines = useMemo(
     () => countStructuresByCategory(StructureType[StructureType.FragmentMine]),
-    [structureEntityId],
+    [structureEntityId, structures],
   );
 
   const hyperstructures = useMemo(
     () => countStructuresByCategory(StructureType[StructureType.Hyperstructure]),
-    [structureEntityId],
+    [structureEntityId, structures],
   );
 
   const hyperstructureContributions = useMemo(
     () =>
-      runQuery([HasValue(setup.components.Contribution, { player_address: ContractAddress(account.address) })]).size,
+      runQuery([
+        HasValue(setup.components.Contribution, { player_address: ContractAddress(account.address) }),
+        NotValue(setup.components.Contribution, { resource_type: ResourcesIds["Earthenshard"] }),
+      ]).size,
     [structureEntityId],
   );
 
@@ -151,11 +154,11 @@ const useQuestDependencies = () => {
         value: true,
         status: questClaimStatus[QuestId.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
       },
-      [QuestId.BuildFarm]: {
-        value: questClaimStatus[QuestId.BuildFarm] ? null : buildingQuantities.farms,
-        status: questClaimStatus[QuestId.BuildFarm]
+      [QuestId.BuildFood]: {
+        value: questClaimStatus[QuestId.BuildFood] ? null : buildingQuantities.food,
+        status: questClaimStatus[QuestId.BuildFood]
           ? QuestStatus.Claimed
-          : buildingQuantities.farms > 0
+          : buildingQuantities.food > 0
             ? QuestStatus.Completed
             : QuestStatus.InProgress,
       },
@@ -325,7 +328,7 @@ const useBuildingQuantities = (structureEntityId: ID | undefined) => {
 
   return useMemo(
     () => ({
-      farms: getBuildingQuantity(BuildingType.Farm),
+      food: getBuildingQuantity(BuildingType.Farm) + getBuildingQuantity(BuildingType.FishingVillage),
       resource: getBuildingQuantity(BuildingType.Resource),
       workersHut: getBuildingQuantity(BuildingType.WorkersHut),
       markets: getBuildingQuantity(BuildingType.Market),

@@ -126,7 +126,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: !questClaimStatus[QuestId.BuildFarm],
+                    hidden: !questClaimStatus[QuestId.BuildFood],
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -192,9 +192,9 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !questClaimStatus[QuestId.BuildResource],
+                      hidden: !isFarm && !isFishingVillage && !questClaimStatus[QuestId.BuildResource],
                       "animate-pulse":
-                        (isFarm && selectedQuest?.id === QuestId.BuildFarm) ||
+                        ((isFarm || isFishingVillage) && selectedQuest?.id === QuestId.BuildFood) ||
                         (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
                         (isMarket && selectedQuest?.id === QuestId.Market),
                     })}
@@ -401,10 +401,12 @@ export const ResourceInfo = ({
   resourceId,
   entityId,
   isPaused,
+  hintModal = false,
 }: {
   resourceId: number;
   entityId: ID | undefined;
   isPaused?: boolean;
+  hintModal?: boolean;
 }) => {
   const dojo = useDojo();
   const cost = RESOURCE_INPUTS_SCALED[resourceId];
@@ -422,9 +424,18 @@ export const ResourceInfo = ({
     return getConsumedBy(resourceId);
   }, [resourceId]);
 
+  const resourceById = useMemo(() => {
+    return findResourceById(resourceId)?.trait;
+  }, [resourceId]);
+
   return (
     <div className="flex flex-col text-gold text-sm p-2 space-y-1">
-      <Headline className="py-3">Resource Building </Headline>
+      <Headline className="pb-3">
+        <div className=" flex gap-4">
+          <ResourceIcon className="self-center" resource={resourceById || ""} size="md" /> <div>Building </div>
+          {hintModal && <HintModalButton section={HintSection.Buildings} />}
+        </div>{" "}
+      </Headline>
 
       {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
 
@@ -444,14 +455,14 @@ export const ResourceInfo = ({
           )}
         </div>
 
-        {findResourceById(resourceId)?.trait && (
+        {resourceById && (
           <div className="uppercase">
             <div className="w-full font-bold">Produces</div>
 
             <div className="flex gap-2">
               + {amountProducedPerTick}
-              <ResourceIcon className="self-center" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-              {findResourceById(resourceId)?.trait || ""} per/s
+              <ResourceIcon className="self-center" resource={resourceById || ""} size="md" />
+              {resourceById || ""} per/s
             </div>
           </div>
         )}
@@ -535,7 +546,7 @@ export const BuildingInfo = ({
   }, [resourceProduced]);
 
   return (
-    <div className="p-2 text-sm">
+    <div className="flex flex-col text-gold text-sm p-2 space-y-1">
       <Headline className="pb-3">
         <div className="flex gap-2">
           <div className="self-center">{name}</div>

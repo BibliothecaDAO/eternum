@@ -1,7 +1,9 @@
 import { HexPosition } from "@/types";
-import { BuildingType, ID, Position } from "@bibliothecadao/eternum";
+import { BuildingType, ID } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
+  navigationTarget: HexPosition | null;
+  setNavigationTarget: (hex: HexPosition | null) => void;
   armyActions: ArmyActions;
   setArmyActions: (armyActions: ArmyActions) => void;
   updateHoveredHex: (hoveredHex: HexPosition | null) => void;
@@ -36,6 +38,8 @@ interface ArmyActions {
 }
 
 export const createThreeStoreSlice = (set: any, get: any) => ({
+  navigationTarget: null,
+  setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
   armyActions: {
     hoveredHex: null,
     travelPaths: new Map(),
