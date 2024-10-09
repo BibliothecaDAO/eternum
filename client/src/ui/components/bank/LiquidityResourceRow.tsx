@@ -37,6 +37,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
     () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
     [bankEntityId, resourceId],
   );
+
   const liquidityEntityId = useMemo(
     () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
     [bankEntityId, resourceId],

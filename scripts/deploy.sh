@@ -23,7 +23,3 @@ echo "Setting up config..."
 ./scripts/set_writer.sh --interval 1 --mode prod
 
 bun --env-file=../client/.env.production ../config/index.ts
-
-
-echo "Setting up bank..."
-bun --env-file=../client/.env.production ../config/bank/index.ts
