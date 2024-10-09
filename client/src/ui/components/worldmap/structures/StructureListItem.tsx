@@ -4,7 +4,7 @@ import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
-import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures";
 import { Structure, isStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { formatTime } from "@/ui/utils/utils";
@@ -32,7 +32,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const { getRealmAddressName } = useRealm();
   const addressName = getRealmAddressName(structure.entity_id);
 
-  const { getHyperstructureProgress } = useHyperstructures();
+  const getHyperstructureProgress = useGetHyperstructureProgress();
 
   const progress =
     structure.category === StructureType[StructureType.Hyperstructure]

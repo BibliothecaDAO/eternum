@@ -556,15 +556,10 @@ export const mintResources = async (config: Config) => {
 };
 
 export const addLiquidity = async (config: Config) => {
-  for (const [resourceId, amount] of Object.entries(AMM_STARTING_LIQUIDITY)) {
-    if (resourceId === ResourcesIds[ResourcesIds.Lords]) {
-      continue;
-    }
+  let calls = [];
 
-    await config.provider.add_liquidity({
-      signer: config.account,
-      bank_entity_id: ADMIN_BANK_ENTITY_ID,
-      entity_id: ADMIN_BANK_ENTITY_ID,
+  for (const [resourceId, amount] of Object.entries(AMM_STARTING_LIQUIDITY)) {
+    calls.push({
       resource_type: resourceId,
       resource_amount: amount * config.config.resources.resourcePrecision,
       lords_amount: LORDS_LIQUIDITY_PER_RESOURCE * config.config.resources.resourcePrecision,
@@ -575,5 +570,17 @@ export const addLiquidity = async (config: Config) => {
         LORDS_LIQUIDITY_PER_RESOURCE * config.config.resources.resourcePrecision
       }, ` + `${resourceId} ${amount * config.config.resources.resourcePrecision}`,
     );
+  }
+
+  try {
+    await config.provider.add_liquidity({
+      signer: config.account,
+      bank_entity_id: ADMIN_BANK_ENTITY_ID,
+      entity_id: ADMIN_BANK_ENTITY_ID,
+      calls,
+    });
+    console.log("Successfully added liquidity");
+  } catch (e) {
+    console.log(e);
   }
 };

@@ -259,9 +259,11 @@ export interface SellResourcesProps extends SystemSigner {
 export interface AddLiquidityProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
   entity_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  resource_amount: num.BigNumberish;
-  lords_amount: num.BigNumberish;
+  calls: {
+    resource_type: num.BigNumberish;
+    resource_amount: num.BigNumberish;
+    lords_amount: num.BigNumberish;
+  }[];
 }
 
 export interface RemoveLiquidityProps extends SystemSigner {

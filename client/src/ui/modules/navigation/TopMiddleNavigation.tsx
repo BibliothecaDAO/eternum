@@ -1,8 +1,5 @@
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
-import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
@@ -18,9 +15,7 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   CapacityConfigCategory,
-  ContractAddress,
   EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_FOR_WIN,
   ID,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";

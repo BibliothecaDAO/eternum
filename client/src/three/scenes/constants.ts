@@ -1,5 +1,5 @@
 import { ResourceMiningTypes } from "@/types";
-import { BuildingType, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevelNames, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import { BiomeType } from "../components/Biome";
 
 export const HEX_SIZE = 1;
@@ -16,13 +16,20 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Hyperstructure]: BuildingType.Castle,
 };
 
-export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes, string> = {
+export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
+  [RealmLevels.Settlement]: RealmLevelNames.Settlement,
+  [RealmLevels.City]: RealmLevelNames.City,
+  [RealmLevels.Kingdom]: RealmLevelNames.Kingdom,
+  [RealmLevels.Empire]: RealmLevelNames.Empire,
+};
+
+export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | RealmLevelNames, string> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
   [BuildingType.Bank]: "/models/buildings/market.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
-  [BuildingType.Castle]: "/models/buildings/castle2.glb",
+  [BuildingType.Castle]: "/models/buildings/castle1.glb",
   [BuildingType.Farm]: "/models/buildings/farm.glb",
   [BuildingType.FishingVillage]: "/models/buildings/fishery.glb",
   [BuildingType.FragmentMine]: "/models/buildings/mine.glb",
@@ -38,6 +45,10 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes, stri
   [ResourceMiningTypes.Mine]: "/models/buildings/mine.glb",
   [ResourceMiningTypes.LumberMill]: "/models/buildings/lumber_mill.glb",
   [ResourceMiningTypes.Dragonhide]: "/models/buildings/dragonhide.glb",
+  [RealmLevelNames.Settlement]: "/models/buildings/castle0.glb",
+  [RealmLevelNames.City]: "/models/buildings/castle1.glb",
+  [RealmLevelNames.Kingdom]: "/models/buildings/castle2.glb",
+  [RealmLevelNames.Empire]: "/models/buildings/castle3.glb",
 };
 
 const BASE_PATH = "/models/bevel-biomes/";

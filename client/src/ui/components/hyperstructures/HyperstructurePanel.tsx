@@ -5,7 +5,7 @@ import { useContributions } from "@/hooks/helpers/useContributions";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import {
   ProgressWithPercentage,
-  useHyperstructures,
+  useHyperstructureProgress,
   useHyperstructureUpdates,
 } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -48,10 +48,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const [resetContributions, setResetContributions] = useState(false);
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const { useProgress } = useHyperstructures();
+
+  const progresses = useHyperstructureProgress(entity.entity_id);
+
   const { useContributionsByPlayerAddress } = useContributions();
 
-  const progresses = useProgress(entity.entity_id);
   const myContributions = useContributionsByPlayerAddress(BigInt(account.address), entity.entity_id);
 
   const updates = useHyperstructureUpdates(entity.entity_id);
@@ -127,7 +128,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       setResetContributions(false);
     }
   };
-  console.log(hyperstructure);
+
   return (
     <div className="flex flex-col justify-between h-full">
       <div className="grid grid-cols-5 text-xxs bg-blueish/10 p-1">
