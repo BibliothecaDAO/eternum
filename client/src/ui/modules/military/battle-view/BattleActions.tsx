@@ -18,7 +18,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
 
 import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
@@ -70,9 +70,11 @@ export const BattleActions = ({
 
   const [loading, setLoading] = useState<Loading>(Loading.None);
   const [raidWarning, setRaidWarning] = useState(false);
-  const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(
-    userArmiesInBattle[0]?.entity_id || ownArmyEntityId || 0,
-  );
+  const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>();
+
+  useEffect(() => {
+    setLocalSelectedUnit(userArmiesInBattle[0]?.entity_id || ownArmyEntityId || 0);
+  }, [userArmiesInBattle, ownArmyEntityId]);
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 

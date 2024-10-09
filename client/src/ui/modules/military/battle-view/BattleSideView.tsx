@@ -30,7 +30,7 @@ export const BattleSideView = ({
   showBattleDetails: boolean;
   ownSideArmies: (ArmyInfo | undefined)[];
   ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
-  ownArmyEntityId: ID | undefined;
+  ownArmyEntityId: ID;
   structure: Structure | undefined;
   userArmiesOnThatSide: ArmyInfo[];
 }) => {
@@ -51,7 +51,7 @@ export const BattleSideView = ({
   const { getAddressNameFromEntity } = getEntitiesUtils();
   const [loading, setLoading] = useState<boolean>(false);
 
-  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId || 0);
+  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId);
 
   const joinBattle = async (side: BattleSide, armyId: ID) => {
     if (ownArmyEntityId) {
@@ -114,7 +114,7 @@ export const BattleSideView = ({
         </div>
 
         <div className="flex flex-col w-full">
-          {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (
+          {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy?.battle_id === 0 && (
             <Button
               onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
               isLoading={loading}

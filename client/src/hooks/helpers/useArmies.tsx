@@ -242,7 +242,7 @@ export const getArmiesByBattleId = () => {
   return armiesByBattleId;
 };
 
-export const useArmyByArmyEntityId = (entityId: ID) => {
+export const useArmyByArmyEntityId = (entityId: ID): ArmyInfo | undefined => {
   const {
     setup: {
       components: {
