@@ -2,6 +2,7 @@ export * from "./buildings";
 export * from "./global";
 export * from "./hex";
 export * from "./hyperstructure";
+export * from "./market";
 export * from "./orders";
 export * from "./quests";
 export * from "./realmLevels";
