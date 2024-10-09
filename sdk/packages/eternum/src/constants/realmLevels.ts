@@ -22,8 +22,6 @@ export const REALM_UPGRADE_COSTS = {
   [RealmLevels.City]: [
     { resource: ResourcesIds.Wheat, amount: 3000 },
     { resource: ResourcesIds.Fish, amount: 3000 },
-    { resource: ResourcesIds.Wood, amount: 1000 },
-    { resource: ResourcesIds.Stone, amount: 1000 },
   ],
 
   [RealmLevels.Kingdom]: [
