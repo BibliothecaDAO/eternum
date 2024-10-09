@@ -50,7 +50,7 @@ const TroopCard = ({
         src={`/images/icons/${id}.png`}
         alt={ResourcesIds[id]}
       />
-      <div> {ResourcesIds[id]}</div>
+      <div className="truncate"> {ResourcesIds[id]}</div>
       <div className="text-green">x {currencyFormat(count, 0)}</div>
     </div>
   );
