@@ -15,3 +15,10 @@ export enum ResourceMiningTypes {
   LumberMill = "lumber_mill",
   Dragonhide = "dragonhide",
 }
+
+export enum RealmCastles {
+  Castle0 = "castle0",
+  Castle1 = "castle1",
+  Castle2 = "castle2",
+  Castle3 = "castle3",
+}

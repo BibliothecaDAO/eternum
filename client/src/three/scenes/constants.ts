@@ -1,6 +1,7 @@
-import { ResourceMiningTypes } from "@/types";
+import { RealmCastles, ResourceMiningTypes } from "@/types";
 import { BuildingType, StructureType } from "@bibliothecadao/eternum";
 import { BiomeType } from "../components/Biome";
+import { CastleLevel } from "./Hexception";
 
 export const HEX_SIZE = 1;
 export const BUILDINGS_CENTER = [10, 10];
@@ -16,13 +17,20 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Hyperstructure]: BuildingType.Castle,
 };
 
-export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes, string> = {
+export const castleLevelToRealmCastle: Record<CastleLevel, RealmCastles> = {
+  0: RealmCastles.Castle0,
+  1: RealmCastles.Castle1,
+  2: RealmCastles.Castle2,
+  3: RealmCastles.Castle3,
+};
+
+export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | RealmCastles, string> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
   [BuildingType.Bank]: "/models/buildings/market.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
-  [BuildingType.Castle]: "/models/buildings/castle2.glb",
+  [BuildingType.Castle]: "/models/buildings/castle1.glb",
   [BuildingType.Farm]: "/models/buildings/farm.glb",
   [BuildingType.FishingVillage]: "/models/buildings/fishery.glb",
   [BuildingType.FragmentMine]: "/models/buildings/mine.glb",
@@ -38,6 +46,10 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes, stri
   [ResourceMiningTypes.Mine]: "/models/buildings/mine.glb",
   [ResourceMiningTypes.LumberMill]: "/models/buildings/lumber_mill.glb",
   [ResourceMiningTypes.Dragonhide]: "/models/buildings/dragonhide.glb",
+  [RealmCastles.Castle0]: "/models/buildings/castle0.glb",
+  [RealmCastles.Castle1]: "/models/buildings/castle1.glb",
+  [RealmCastles.Castle2]: "/models/buildings/castle2.glb",
+  [RealmCastles.Castle3]: "/models/buildings/castle3.glb",
 };
 
 const BASE_PATH = "/models/bevel-biomes/";

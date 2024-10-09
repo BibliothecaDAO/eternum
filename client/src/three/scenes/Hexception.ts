@@ -17,7 +17,7 @@ import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
-import { BUILDINGS_CENTER, HEX_SIZE, buildingModelPaths, structureTypeToBuildingType } from "./constants";
+import { BUILDINGS_CENTER, HEX_SIZE, buildingModelPaths, castleLevelToRealmCastle, structureTypeToBuildingType } from "./constants";
 
 const loader = new GLTFLoader();
 
@@ -120,6 +120,7 @@ export default class HexceptionScene extends HexagonScene {
     // add gui to change castle level
     this.GUIFolder.add(this, "castleLevel", 0, 3).onFinishChange((value: CastleLevel) => {
       this.castleLevel = value;
+      this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
 
@@ -188,7 +189,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+    Promise.all(this.modelLoadPromises).then(() => { });
   }
 
   setup() {
@@ -223,11 +224,12 @@ export default class HexceptionScene extends HexagonScene {
     this.realmSubscription?.unsubscribe();
     this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
       this.castleLevel = update.level as CastleLevel;
+      this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
 
     this.castleLevel = this.tileManager.getRealmLevel();
-
+    this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = 18;
     this.controls.enablePan = false;
@@ -236,7 +238,7 @@ export default class HexceptionScene extends HexagonScene {
     this.moveCameraToURLLocation();
   }
 
-  onSwitchOff() {}
+  onSwitchOff() { }
 
   protected onHexagonClick(hexCoords: HexPosition | null): void {
     if (hexCoords === null) return;
@@ -289,8 +291,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
   }
-  protected onHexagonRightClick(): void {}
-  protected onHexagonDoubleClick(): void {}
+  protected onHexagonRightClick(): void { }
+  protected onHexagonDoubleClick(): void { }
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -346,10 +348,14 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          const buildingType =
+          let buildingType =
             building.resource && building.resource < 254
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
+
+          if (parseInt(buildingType) === BuildingType.Castle) {
+            buildingType = castleLevelToRealmCastle[this.castleLevel]
+          }
           const buildingData = this.buildingModels.get(buildingType);
 
           if (buildingData) {
@@ -390,6 +396,15 @@ export default class HexceptionScene extends HexagonScene {
       this.pillars!.instanceColor!.needsUpdate = true;
       this.interactiveHexManager.renderHexes();
     });
+  }
+
+  removeCastleFromScene() {
+    const key = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
+    const instance = this.buildingInstances.get(key);
+    if (instance) {
+      this.scene.remove(instance);
+      this.buildingInstances.delete(key);
+    }
   }
 
   computeHexMatrices = (
