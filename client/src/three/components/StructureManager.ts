@@ -116,6 +116,20 @@ export class StructureManager {
     }
   }
 
+  getStructureByHexCoords(hexCoords: { col: number; row: number }) {
+    const allStructures = this.structures.getStructures();
+
+    for (const [_, structures] of allStructures) {
+      const structure = Array.from(structures.values()).find(
+        (structure) => structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row,
+      );
+      if (structure) {
+        return structure;
+      }
+    }
+    return undefined;
+  }
+
   private updateVisibleStructures() {
     for (const [structureType, structures] of this.structures.getStructures()) {
       const visibleStructures = this.getVisibleStructures(structures);
@@ -188,7 +202,7 @@ export class StructureManager {
   }
 }
 
-interface StructureInfo {
+export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
   stage: number;

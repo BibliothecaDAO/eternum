@@ -8,6 +8,7 @@ import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 
+import { StructureInfoLabel } from "../components/worldmap/structures/StructureLabel";
 import { BattleContainer } from "../containers/BattleContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
@@ -63,6 +64,7 @@ export const World = () => {
       <HooksComponent />
       <ActionInfo />
       <ArmyInfoLabel />
+      <StructureInfoLabel />
 
       <BattleContainer>
         <BattleView />

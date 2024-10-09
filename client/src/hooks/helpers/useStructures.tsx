@@ -51,10 +51,10 @@ export const getStructureAtPosition = ({ x, y }: Position): Structure | undefine
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,
@@ -101,10 +101,10 @@ export const getStructureByPosition = () => {
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,
@@ -153,10 +153,10 @@ export const getStructureByEntityId = (entityId: ID) => {
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     const position = getComponentValue(Position, structureEntityId);
 
@@ -174,6 +174,62 @@ export const getStructureByEntityId = (entityId: ID) => {
   }, [entityId]);
 
   return structure;
+};
+
+export const useStructures = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm, Position, AddressName },
+    },
+  } = useDojo();
+
+  const { getAliveArmy } = getArmyByEntityId();
+
+  const getStructure = (entityId: ID) => {
+    const structureEntityId = getEntityIdFromKeys([BigInt(entityId)]);
+    const structure = getComponentValue(Structure, structureEntityId);
+    if (!structure) return;
+
+    const entityOwner = getComponentValue(EntityOwner, structureEntityId);
+    if (!entityOwner) return;
+
+    const ownerOnChain = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
+    const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
+
+    const protectorArmy = getComponentValue(Protector, structureEntityId);
+    const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
+
+    const onChainName = getComponentValue(EntityName, structureEntityId);
+
+    const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
+    const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
+
+    const name =
+      structure.category === StructureType[StructureType.Realm]
+        ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
+        : onChainName
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
+
+    const position = getComponentValue(Position, structureEntityId);
+
+    return {
+      ...structure,
+      entityOwner,
+      owner,
+      name,
+      position,
+      protector,
+      isMine: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
+      isMercenary: owner.address === 0n,
+      ownerName,
+    };
+  };
+
+  return { getStructure };
 };
 
 // TODO: Make Generic
