@@ -254,9 +254,9 @@ impl ResourceCustomImpl of ResourceCustomTrait {
 
         let max_weight_grams = min(resource_weight_grams, storehouse_capacity_grams);
 
-        let max_balance = max_weight_grams / resource_weight_config.weight_gram;
+        let max_balance = max_weight_grams * RESOURCE_PRECISION / resource_weight_config.weight_gram;
 
-        self.balance = max_balance * RESOURCE_PRECISION
+        self.balance = max_balance
     }
 
     fn harvest(ref self: Resource, world: IWorldDispatcher) {
