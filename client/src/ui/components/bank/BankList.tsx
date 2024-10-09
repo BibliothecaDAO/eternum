@@ -1,12 +1,12 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Tabs } from "@/ui/elements/tab";
+import { ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
 import AddLiquidity from "./AddLiquidity";
 import { LiquidityTable } from "./LiquidityTable";
 import { ResourceSwap } from "./Swap";
-import { ID } from "@bibliothecadao/eternum";
 
 type BankListProps = {
   bankEntityId: ID;
