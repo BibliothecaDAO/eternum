@@ -7,7 +7,7 @@ import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
-import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevels, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SceneManager } from "../SceneManager";
@@ -63,8 +63,6 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
   return positions;
 };
 
-export type CastleLevel = 0 | 1 | 2 | 3;
-
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<
@@ -83,7 +81,7 @@ export default class HexceptionScene extends HexagonScene {
   private buildingSubscription: any;
   private realmSubscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
-  private castleLevel: CastleLevel = 0;
+  private castleLevel: RealmLevels = RealmLevels.Settlement;
 
   constructor(
     controls: MapControls,
@@ -118,7 +116,7 @@ export default class HexceptionScene extends HexagonScene {
     this.state = useUIStore.getState();
 
     // add gui to change castle level
-    this.GUIFolder.add(this, "castleLevel", 0, 3).onFinishChange((value: CastleLevel) => {
+    this.GUIFolder.add(this, "castleLevel", 0, 3).onFinishChange((value: RealmLevels) => {
       this.castleLevel = value;
       this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
@@ -223,7 +221,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.realmSubscription?.unsubscribe();
     this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
-      this.castleLevel = update.level as CastleLevel;
+      this.castleLevel = update.level as RealmLevels;
       this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
