@@ -7,7 +7,7 @@ import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
-import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevels, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SceneManager } from "../SceneManager";
@@ -17,7 +17,13 @@ import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
-import { BUILDINGS_CENTER, HEX_SIZE, buildingModelPaths, structureTypeToBuildingType } from "./constants";
+import {
+  BUILDINGS_CENTER,
+  HEX_SIZE,
+  buildingModelPaths,
+  castleLevelToRealmCastle,
+  structureTypeToBuildingType,
+} from "./constants";
 
 const loader = new GLTFLoader();
 
@@ -63,8 +69,6 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
   return positions;
 };
 
-export type CastleLevel = 0 | 1 | 2 | 3;
-
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<
@@ -83,7 +87,7 @@ export default class HexceptionScene extends HexagonScene {
   private buildingSubscription: any;
   private realmSubscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
-  private castleLevel: CastleLevel = 0;
+  private castleLevel: RealmLevels = RealmLevels.Settlement;
 
   constructor(
     controls: MapControls,
@@ -118,8 +122,9 @@ export default class HexceptionScene extends HexagonScene {
     this.state = useUIStore.getState();
 
     // add gui to change castle level
-    this.GUIFolder.add(this, "castleLevel", 0, 3).onFinishChange((value: CastleLevel) => {
+    this.GUIFolder.add(this, "castleLevel", 0, 3).onFinishChange((value: RealmLevels) => {
       this.castleLevel = value;
+      this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
 
@@ -222,12 +227,13 @@ export default class HexceptionScene extends HexagonScene {
 
     this.realmSubscription?.unsubscribe();
     this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
-      this.castleLevel = update.level as CastleLevel;
+      this.castleLevel = update.level as RealmLevels;
+      this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
 
     this.castleLevel = this.tileManager.getRealmLevel();
-
+    this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = 18;
     this.controls.enablePan = false;
@@ -346,10 +352,14 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          const buildingType =
+          let buildingType =
             building.resource && building.resource < 254
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
+
+          if (parseInt(buildingType) === BuildingType.Castle) {
+            buildingType = castleLevelToRealmCastle[this.castleLevel];
+          }
           const buildingData = this.buildingModels.get(buildingType);
 
           if (buildingData) {
@@ -390,6 +400,15 @@ export default class HexceptionScene extends HexagonScene {
       this.pillars!.instanceColor!.needsUpdate = true;
       this.interactiveHexManager.renderHexes();
     });
+  }
+
+  removeCastleFromScene() {
+    const key = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
+    const instance = this.buildingInstances.get(key);
+    if (instance) {
+      this.scene.remove(instance);
+      this.buildingInstances.delete(key);
+    }
   }
 
   computeHexMatrices = (
