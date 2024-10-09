@@ -443,6 +443,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   army_max_per_structure: num.BigNumberish;
   battle_leave_slash_num: num.BigNumberish;
   battle_leave_slash_denom: num.BigNumberish;
+  battle_time_scale: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
