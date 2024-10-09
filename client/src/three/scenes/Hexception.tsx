@@ -5,9 +5,11 @@ import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
-import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds, findResourceById, getNeighborHexes } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -285,7 +287,10 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
   protected onHexagonMouseMove(hex: { position: THREE.Vector3; hexCoords: HexPosition } | null): void {
-    if (hex === null) return;
+    if (hex === null) {
+      this.state.setTooltip(null);
+      return;
+    }
     const { position, hexCoords } = hex;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
@@ -299,6 +304,27 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.setBuildingColor(new THREE.Color(0xff0000));
     } else {
       this.buildingPreview?.resetBuildingColor();
+    }
+    const building = this.tileManager.getBuilding(normalizedCoords);
+    if (building) {
+      this.state.setTooltip({
+        content: (
+          <div className="flex space-x-1 items-center">
+            <ResourceIcon
+              size="sm"
+              resource={findResourceById(building.produced_resource_type as ResourcesIds)!.trait}
+            />
+            <div>Producing {findResourceById(building.produced_resource_type as ResourcesIds)?.trait}</div>
+            <div>—</div>
+            <div className={clsx(building.paused ? "text-order-giants" : "text-order-brilliance")}>
+              {building.paused ? "Paused" : "Active"}
+            </div>
+          </div>
+        ),
+        position: "top",
+      });
+    } else {
+      this.state.setTooltip(null);
     }
   }
   protected onHexagonRightClick(): void {}

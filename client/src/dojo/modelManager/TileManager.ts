@@ -1,4 +1,5 @@
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
+import { CastleLevel } from "@/three/scenes/Hexception";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -14,17 +15,13 @@ import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengin
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { SetupResult } from "../setup";
-import { CastleLevel } from "@/three/scenes/Hexception";
 
 export class TileManager {
   private col: number;
   private row: number;
   private address: bigint;
 
-  constructor(
-    private setup: SetupResult,
-    hexCoords: HexPosition,
-  ) {
+  constructor(private setup: SetupResult, hexCoords: HexPosition) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
     this.address = BigInt(this.setup.network.burnerManager.account?.address || 0n);
@@ -68,6 +65,14 @@ export class TileManager {
     });
 
     return buildings;
+  };
+
+  getBuilding = (hexCoords: HexPosition) => {
+    const building = getComponentValue(
+      this.setup.components.Building,
+      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+    );
+    return building;
   };
 
   isHexOccupied = (hexCoords: HexPosition) => {
