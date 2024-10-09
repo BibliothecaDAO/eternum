@@ -96,7 +96,7 @@ fn setup(
 }
 
 #[test]
-fn test_swap_buy_without_fees() {
+fn bank_test_swap_buy_without_fees() {
     let (
         world,
         bank_entity_id,
@@ -143,7 +143,7 @@ fn test_swap_buy_without_fees() {
 }
 
 #[test]
-fn test_swap_buy_with_fees() {
+fn bank_test_swap_buy_with_fees() {
     let (
         world,
         bank_entity_id,
@@ -193,7 +193,7 @@ fn test_swap_buy_with_fees() {
 }
 
 #[test]
-fn test_swap_sell_without_fees() {
+fn bank_test_swap_sell_without_fees() {
     let (
         world,
         bank_entity_id,
@@ -240,7 +240,7 @@ fn test_swap_sell_without_fees() {
 }
 
 #[test]
-fn test_swap_sell_with_fees() {
+fn bank_test_swap_sell_with_fees() {
     let (
         world,
         bank_entity_id,

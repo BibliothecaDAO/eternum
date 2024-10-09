@@ -86,7 +86,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
 
 
 #[test]
-fn test_army_buy() {
+fn combat_test_army_buy() {
     let (world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
@@ -119,7 +119,7 @@ fn test_army_buy() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_army_buy__not_enough_resources() {
+fn combat_test_army_buy__not_enough_resources() {
     let (_world, combat_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());

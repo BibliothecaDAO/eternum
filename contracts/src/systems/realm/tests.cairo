@@ -66,7 +66,7 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_realm_create() {
+fn realm_test_realm_create() {
     let (world, realm_systems_dispatcher) = setup();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
@@ -116,7 +116,7 @@ fn test_realm_create() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_mint_starting_resources() {
+fn realm_test_mint_starting_resources() {
     let (world, realm_systems_dispatcher) = setup();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
@@ -136,7 +136,7 @@ fn test_mint_starting_resources() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('already claimed', 'ENTRYPOINT_FAILED'))]
-fn test_mint_starting_resources_twice() {
+fn realm_test_mint_starting_resources_twice() {
     let (world, realm_systems_dispatcher) = setup();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
@@ -151,7 +151,7 @@ fn test_mint_starting_resources_twice() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Entity is not a realm', 'ENTRYPOINT_FAILED'))]
-fn test_mint_starting_resources_as_not_realm() {
+fn realm_test_mint_starting_resources_as_not_realm() {
     let (world, realm_systems_dispatcher) = setup();
 
     let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
@@ -170,7 +170,7 @@ fn test_mint_starting_resources_as_not_realm() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_upgrade_level_success() {
+fn realm_test_upgrade_level_success() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
@@ -203,7 +203,7 @@ fn test_upgrade_level_success() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-fn test_upgrade_level_not_owner() {
+fn realm_test_upgrade_level_not_owner() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
@@ -219,7 +219,7 @@ fn test_upgrade_level_not_owner() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Entity is not a realm', 'ENTRYPOINT_FAILED'))]
-fn test_upgrade_level_not_realm() {
+fn realm_test_upgrade_level_not_realm() {
     let (_world, realm_systems_dispatcher) = setup();
 
     // Use a non-existent entity ID
@@ -232,7 +232,7 @@ fn test_upgrade_level_not_realm() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('realm is already at max level', 'ENTRYPOINT_FAILED'))]
-fn test_upgrade_level_max_level() {
+fn realm_test_upgrade_level_max_level() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
@@ -255,7 +255,7 @@ fn test_upgrade_level_max_level() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_upgrade_level_insufficient_resources() {
+fn realm_test_upgrade_level_insufficient_resources() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
@@ -267,7 +267,7 @@ fn test_upgrade_level_insufficient_resources() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_upgrade_level_multiple_times() {
+fn realm_test_upgrade_level_multiple_times() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm

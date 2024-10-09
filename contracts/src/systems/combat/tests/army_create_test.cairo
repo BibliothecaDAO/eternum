@@ -78,7 +78,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID,) {
 
 
 #[test]
-fn test_army_create___attacking_army() {
+fn combat_test_army_create___attacking_army() {
     let (world, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
@@ -108,7 +108,7 @@ fn test_army_create___attacking_army() {
 
 #[test]
 #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-fn test_army_create_not_owner() {
+fn combat_test_army_create_not_owner() {
     let (_, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<'someone_else'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'someone_else'>());
@@ -118,7 +118,7 @@ fn test_army_create_not_owner() {
 
 #[test]
 #[should_panic(expected: ("entity 900 is not a structure", 'ENTRYPOINT_FAILED'))]
-fn test_army_create__only_structure_can_create_army() {
+fn combat_test_army_create__only_structure_can_create_army() {
     let (_, combat_systems_dispatcher, _realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<0>());
     starknet::testing::set_account_contract_address(contract_address_const::<0>());
@@ -127,7 +127,7 @@ fn test_army_create__only_structure_can_create_army() {
 
 
 #[test]
-fn test_army_create___defending_army() {
+fn combat_test_army_create___defending_army() {
     let (world, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
@@ -164,7 +164,7 @@ fn test_army_create___defending_army() {
 
 #[test]
 #[should_panic(expected: ("Structure 1 already has a defensive army", 'ENTRYPOINT_FAILED'))]
-fn test_army_create_defensive_army__only_one_defensive_army() {
+fn combat_test_army_create_defensive_army__only_one_defensive_army() {
     let (_, combat_systems_dispatcher, realm_id,) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());

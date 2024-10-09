@@ -79,7 +79,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatch
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel() {
+fn transport_test_travel() {
     let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
@@ -112,7 +112,7 @@ fn test_travel() {
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel_with_realm_bonus() {
+fn transport_test_travel_with_realm_bonus() {
     let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     ///////////////////////////////
@@ -185,7 +185,7 @@ fn test_travel_with_realm_bonus() {
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel_with_realm_and_order_bonus() {
+fn transport_test_travel_with_realm_and_order_bonus() {
     let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     ///////////////////////////////
@@ -275,7 +275,7 @@ fn test_travel_with_realm_and_order_bonus() {
 #[test]
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-fn test_not_owner() {
+fn transport_test_not_owner() {
     let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
@@ -286,7 +286,7 @@ fn test_not_owner() {
 #[test]
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity has no speed', 'ENTRYPOINT_FAILED'))]
-fn test_no_speed() {
+fn transport_test_no_speed() {
     let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
@@ -297,7 +297,7 @@ fn test_no_speed() {
 #[test]
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
-fn test_blocked() {
+fn transport_test_blocked() {
     let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
@@ -322,7 +322,7 @@ fn test_blocked() {
 #[test]
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
-fn test_in_transit() {
+fn transport_test_in_transit() {
     let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
@@ -469,7 +469,7 @@ fn get_and_explore_destination_tiles(
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel_hex() {
+fn transport_test_travel_hex() {
     let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // make destination tile explored
@@ -501,7 +501,7 @@ fn test_travel_hex() {
 
 #[test]
 #[should_panic(expected: ('tile not explored', 'ENTRYPOINT_FAILED'))]
-fn test_travel_hex__destination_tile_not_explored() {
+fn transport_test_travel_hex__destination_tile_not_explored() {
     let (_, travelling_entity_id, _, travel_systems_dispatcher) = setup_hex_travel();
 
     let travel_directions = array![Direction::East].span();
@@ -512,7 +512,7 @@ fn test_travel_hex__destination_tile_not_explored() {
 
 #[test]
 #[should_panic(expected: ('not enough stamina', 'ENTRYPOINT_FAILED'))]
-fn test_travel_hex__exceed_max_stamina() {
+fn transport_test_travel_hex__exceed_max_stamina() {
     let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // max hex moves per tick is 30 /5 = 6 so we try to travel 7 hexes

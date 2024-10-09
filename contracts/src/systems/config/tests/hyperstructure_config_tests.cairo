@@ -29,7 +29,7 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 }
 // #[test]
 // #[available_gas(3000000000000)]
-// fn test_create_hyperstructure() {
+// fn config_test_create_hyperstructure() {
 //     // let (world, _) = setup();
 
 //     // starknet::testing::set_contract_address(contract_address_const::<'entity'>());

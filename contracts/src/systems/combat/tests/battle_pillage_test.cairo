@@ -112,7 +112,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
 }
 
 #[test]
-fn test_battle_pillage__near_max_capacity() {
+fn combat_test_battle_pillage__near_max_capacity() {
     let (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
@@ -141,7 +141,7 @@ fn test_battle_pillage__near_max_capacity() {
 }
 
 #[test]
-fn test_simple_battle_pillage() {
+fn combat_test_simple_battle_pillage() {
     let (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());

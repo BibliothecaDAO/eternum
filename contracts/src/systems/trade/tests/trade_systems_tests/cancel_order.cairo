@@ -111,7 +111,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_cancel() {
+fn trade_test_cancel() {
     let (world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
 
     let _trade = get!(world, trade_id, Trade);
@@ -138,7 +138,7 @@ fn test_cancel() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED'))]
-fn test_cancel_after_acceptance() {
+fn trade_test_cancel_after_acceptance() {
     let (world, trade_id, _, _, trade_systems_dispatcher) = setup();
 
     // accept order
@@ -156,7 +156,7 @@ fn test_cancel_after_acceptance() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('caller must be trade maker', 'ENTRYPOINT_FAILED'))]
-fn test_cancel_caller_not_maker() {
+fn trade_test_cancel_caller_not_maker() {
     let (_, trade_id, _, _, trade_systems_dispatcher) = setup();
 
     // set caller to an unknown address

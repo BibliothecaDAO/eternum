@@ -122,7 +122,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_accept_order_free_trade() {
+fn trade_test_accept_order_free_trade() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(false);
 
     // accept order
@@ -150,7 +150,7 @@ fn test_accept_order_free_trade() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_accept_order_direct_trade() {
+fn trade_test_accept_order_direct_trade() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
     // accept order
@@ -179,7 +179,7 @@ fn test_accept_order_direct_trade() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not the taker', 'ENTRYPOINT_FAILED'))]
-fn test_not_trade_taker_id() {
+fn trade_test_not_trade_taker_id() {
     let (world, trade_id, _, _, trade_systems_dispatcher) = setup(true);
 
     // the setup states the trade is a direct offer
@@ -206,7 +206,7 @@ fn test_not_trade_taker_id() {
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not owned by caller', 'ENTRYPOINT_FAILED'))]
-fn test_caller_not_taker() {
+fn trade_test_caller_not_taker() {
     let (_, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
     // create order with a caller that isnt the owner of taker_id
@@ -231,7 +231,7 @@ fn test_caller_not_taker() {
         'ENTRYPOINT_FAILED'
     )
 )]
-fn test_transport_not_enough_donkey_capacity() {
+fn trade_test_transport_not_enough_donkey_capacity() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
     set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));

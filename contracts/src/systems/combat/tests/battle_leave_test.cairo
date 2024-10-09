@@ -206,7 +206,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
 
 #[test]
-fn test_battle_leave_by_winner() {
+fn combat_test_battle_leave_by_winner() {
     let (
         world,
         combat_system_dispatcher,
@@ -269,7 +269,7 @@ fn test_battle_leave_by_winner() {
 
 
 #[test]
-fn test_battle_leave_by_loser() {
+fn combat_test_battle_leave_by_loser() {
     let (
         world,
         combat_system_dispatcher,

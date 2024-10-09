@@ -68,7 +68,7 @@ const TIMESTAMP: u64 = 10_000;
 const TICK_INTERVAL_IN_SECONDS: u64 = 7_200;
 
 #[test]
-fn test_map_explore() {
+fn map_test_map_explore() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
@@ -108,7 +108,7 @@ fn test_map_explore() {
 }
 
 #[test]
-fn test_map_explore__mine_mercenaries_protector() {
+fn map_test_map_explore__mine_mercenaries_protector() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
@@ -148,7 +148,7 @@ fn test_map_explore__mine_mercenaries_protector() {
 }
 
 #[test]
-fn test_map_explore__mine_production_deadline() {
+fn map_test_map_explore__mine_production_deadline() {
     let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _combat_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
