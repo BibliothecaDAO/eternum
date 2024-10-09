@@ -58,18 +58,21 @@ export function defineContractComponents(world: World) {
           entity_id: RecsType.Number,
           owner_fee_num: RecsType.BigInt,
           owner_fee_denom: RecsType.BigInt,
+          owner_bridge_fee_dpt_percent: RecsType.Number,
+          owner_bridge_fee_wtdr_percent: RecsType.Number,
           exists: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Bank",
-            types: ["u32", "u128", "u128", "bool"],
+            types: ["u32", "u128", "u128", "u16", "u16", "bool"],
             customTypes: [],
           },
         },
       );
     })(),
+
     BankConfig: (() => {
       return defineComponent(
         world,

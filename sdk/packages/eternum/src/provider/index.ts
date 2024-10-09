@@ -479,13 +479,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async add_liquidity(props: SystemProps.AddLiquidityProps) {
-    const { bank_entity_id, entity_id, resource_type, resource_amount, lords_amount, signer } = props;
+    const { bank_entity_id, entity_id, calls, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
-      entrypoint: "add",
-      calldata: [bank_entity_id, entity_id, resource_type, resource_amount, lords_amount],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => ({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
+        entrypoint: "add",
+        calldata: [bank_entity_id, entity_id, call.resource_type, call.resource_amount, call.lords_amount],
+      })),
+    );
   }
 
   public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {

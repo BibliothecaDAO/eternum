@@ -26,9 +26,7 @@ export const AMM_STARTING_LIQUIDITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Adamantine]: 50_000,
   [ResourcesIds.Mithral]: 50_000,
   [ResourcesIds.Dragonhide]: 50_000,
-  // [ResourcesIds.Paladin]: 100_000,
-  // [ResourcesIds.Crossbowman]: 100_000,
-  // [ResourcesIds.Knight]: 100_000,
+
   [ResourcesIds.Donkey]: 100_000,
   [ResourcesIds.Fish]: 10_000_000,
   [ResourcesIds.Wheat]: 10_000_000,

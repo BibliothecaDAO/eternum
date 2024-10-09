@@ -1,10 +1,8 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { toHexString } from "@/ui/utils/utils";
 import {
   ContractAddress,
   EternumGlobalConfig,
-  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   ID,
   ResourcesIds,
@@ -12,7 +10,7 @@ import {
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 
@@ -32,7 +30,7 @@ type Progress = {
 export const useHyperstructures = () => {
   const {
     setup: {
-      components: { Structure, Contribution, Progress, Position, Owner, EntityName },
+      components: { Structure, Contribution, Position, Owner, EntityName },
     },
   } = useDojo();
 
@@ -60,19 +58,17 @@ export const useHyperstructures = () => {
     },
   );
 
-  const useProgress = (hyperstructureEntityId: ID): Progress => {
-    let progressQueryResult = useEntityQuery([
-      Has(Progress),
-      HasValue(Progress, { hyperstructure_entity_id: hyperstructureEntityId }),
-    ]);
-    let progresses = progressQueryResult.map((progressEntityId) => {
-      return getComponentValue(Progress, progressEntityId);
-    });
-    const { percentage, allProgresses } = getAllProgressesAndTotalPercentage(progresses, hyperstructureEntityId);
-    return { percentage: toInteger(percentage * 100), progresses: allProgresses };
-  };
+  return { hyperstructures };
+};
 
-  const getHyperstructureProgress = (hyperstructureEntityId: ID) => {
+export const useGetHyperstructureProgress = () => {
+  const {
+    setup: {
+      components: { Progress },
+    },
+  } = useDojo();
+
+  return (hyperstructureEntityId: ID) => {
     let progressQueryResult = runQuery([
       Has(Progress),
       HasValue(Progress, { hyperstructure_entity_id: hyperstructureEntityId }),
@@ -81,10 +77,28 @@ export const useHyperstructures = () => {
       return getComponentValue(Progress, progressEntityId);
     });
     const { percentage, allProgresses } = getAllProgressesAndTotalPercentage(progresses, hyperstructureEntityId);
-    return { percentage: toInteger(percentage * 100), progresses: allProgresses };
+    return { percentage: toInteger(percentage), progresses: allProgresses };
   };
+};
 
-  return { hyperstructures, useProgress, getHyperstructureProgress };
+export const useHyperstructureProgress = (hyperstructureEntityId: ID) => {
+  const {
+    setup: {
+      components: { Progress },
+    },
+  } = useDojo();
+
+  let progressQueryResult = useEntityQuery([
+    Has(Progress),
+    HasValue(Progress, { hyperstructure_entity_id: hyperstructureEntityId }),
+  ]);
+  return useMemo(() => {
+    let progresses = progressQueryResult.map((progressEntityId) => {
+      return getComponentValue(Progress, progressEntityId);
+    });
+    const { percentage, allProgresses } = getAllProgressesAndTotalPercentage(progresses, hyperstructureEntityId);
+    return { percentage: toInteger(percentage), progresses: allProgresses };
+  }, [progressQueryResult, hyperstructureEntityId]);
 };
 
 export const useHyperstructureUpdates = (hyperstructureEntityId: ID) => {
@@ -167,24 +181,21 @@ const getAllProgressesAndTotalPercentage = (
   let percentage = 0;
   const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
     let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+    const resourcePercentage = !foundProgress
+      ? 0
+      : Math.floor(
+          (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
+        );
     let progress = {
       hyperstructure_entity_id: hyperstructureEntityId,
       resource_type: resource,
       amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
-      percentage: !foundProgress
-        ? 0
-        : Math.floor(
-            (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-          ),
+      percentage: resourcePercentage,
       costNeeded: resourceCost,
     };
-    percentage +=
-      (progress.amount *
-        HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
-          progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
-        ]!) /
-      TOTAL_CONTRIBUTABLE_AMOUNT;
+    percentage += resourcePercentage;
     return progress;
   });
-  return { allProgresses, percentage };
+  const totalPercentage = percentage / allProgresses.length;
+  return { allProgresses, percentage: totalPercentage };
 };
