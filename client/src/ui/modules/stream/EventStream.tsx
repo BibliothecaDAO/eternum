@@ -92,7 +92,7 @@ export const EventStream = () => {
   const [eventList, setEventList] = useState<EventData[]>([]);
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
-  const createEvent = (entity: any, component: any, eventType: EventType): EventData => {
+  const createEvent = (entity: any, component: any, eventType: EventType): EventData | undefined => {
     const componentValue = getComponentValue(component, entity);
     const armyEntityId =
       componentValue?.joiner_army_entity_id ||
@@ -107,6 +107,9 @@ export const EventStream = () => {
       componentValue?.taker_id ||
       componentValue?.contributor_entity_id ||
       0;
+
+    if (entityId === 0 && !entityOwner) return;
+
     const name = entityOwner
       ? getAddressNameFromEntity(entityOwner?.entity_owner_id)
       : getAddressNameFromEntity(entityId);
@@ -124,6 +127,7 @@ export const EventStream = () => {
       component,
       (update) => {
         const event = createEvent(update.entity, component, eventType);
+        if (!event) return;
         setEventList((prev) => [event, ...prev]);
       },
       { runOnInit: true },
