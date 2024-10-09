@@ -57,5 +57,10 @@ export const config = new EternumConfig(setupConfig);
 console.log("Setting up config...");
 await config.setup(account, provider);
 
-// If liquidity doesn't work, run the above, then run this...
+// Add a 20-second delay before setting up the bank
+console.log("Waiting for 15 seconds before setting up the bank...");
+await new Promise((resolve) => setTimeout(resolve, 20000));
+
+console.log("Setting up bank...");
+
 await config.setupBank(account, provider);
