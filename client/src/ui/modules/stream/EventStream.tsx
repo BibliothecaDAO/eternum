@@ -12,9 +12,13 @@ import { ReactComponent as Wrench } from "@/assets/icons/Wrench.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { NavigateToArmyIcon } from "@/ui/components/military/ArmyChip";
+import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
+import { ContractAddress, Position } from "@bibliothecadao/eternum";
 import { Component, defineComponentSystem, getComponentValue, World } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useState } from "react";
+import { MessageIcon } from "../social/PlayerId";
 
 const EVENT_STREAM_SIZE = 8;
 
@@ -81,6 +85,8 @@ interface EventData {
   name: string | undefined;
   eventType: EventType;
   timestamp: number;
+  position: Position | undefined;
+  address: ContractAddress | undefined;
 }
 
 export const EventStream = () => {
@@ -92,9 +98,10 @@ export const EventStream = () => {
   const [eventList, setEventList] = useState<EventData[]>([]);
   const { getAddressNameFromEntity } = getEntitiesUtils();
 
-  const createEvent = (entity: any, component: any, eventType: EventType): EventData => {
+  const createEvent = (entity: any, component: any, eventType: EventType): EventData | undefined => {
     const componentValue = getComponentValue(component, entity);
     const armyEntityId =
+      componentValue?.entity_id ||
       componentValue?.joiner_army_entity_id ||
       componentValue?.leaver_army_entity_id ||
       componentValue?.claimer_army_entity_id ||
@@ -107,14 +114,27 @@ export const EventStream = () => {
       componentValue?.taker_id ||
       componentValue?.contributor_entity_id ||
       0;
+
+    if (entityId === 0 && !entityOwner) return;
+
+    const position = armyEntityId
+      ? getComponentValue(components.Position, getEntityIdFromKeys([BigInt(armyEntityId)]))
+      : getComponentValue(components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+
     const name = entityOwner
       ? getAddressNameFromEntity(entityOwner?.entity_owner_id)
       : getAddressNameFromEntity(entityId);
+
+    const owner = entityOwner
+      ? getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
+      : getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityId)]));
 
     return {
       name,
       eventType,
       timestamp: componentValue?.timestamp || 0,
+      position,
+      address: owner?.address,
     };
   };
 
@@ -124,6 +144,7 @@ export const EventStream = () => {
       component,
       (update) => {
         const event = createEvent(update.entity, component, eventType);
+        if (!event) return;
         setEventList((prev) => [event, ...prev]);
       },
       { runOnInit: true },
@@ -164,9 +185,16 @@ export const EventStream = () => {
             .map((event, index) => {
               const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
               return (
-                <div className="hover:bg-black/20 rounded flex gap-1" key={index}>
-                  {emoji} [{event.name || "Unknown"}]: {action}{" "}
-                  <span className="opacity-50">[{new Date(event.timestamp * 1000).toLocaleString()}]</span>
+                <div className="hover:bg-black/20 rounded flex gap-1 justify-between" key={index}>
+                  <div className="flex gap-1">
+                    {emoji} [{event.name || "Unknown"}]: {action}{" "}
+                    <span className="opacity-50">[{new Date(event.timestamp * 1000).toLocaleString()}]</span>
+                  </div>
+                  <div className="flex flex-row items-center space-x-2 mr-2">
+                    <MessageIcon playerName={event.name} selectedPlayer={event.address ?? BigInt(0)} />
+                    {event.position && <NavigateToArmyIcon hideTooltip={true} position={event.position} />}
+                    {event.position && <ViewOnMapIcon hideTooltip={true} position={event.position} />}
+                  </div>
                 </div>
               );
             })}
