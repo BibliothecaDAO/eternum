@@ -106,7 +106,7 @@ export const TopMiddleNavigation = () => {
       quantity * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
       gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])
     );
-  }, [structureEntityId]);
+  }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
@@ -166,7 +166,7 @@ export const TopMiddleNavigation = () => {
                   position: "bottom",
                   content: (
                     <div className="whitespace-nowrap pointer-events-none text-sm capitalize">
-                      <span>This is the max per resource you can store</span>
+                      <span>This is the max kg per resource you can store</span>
 
                       <br />
                       <span>Build Storehouses to increase this.</span>

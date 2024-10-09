@@ -24,7 +24,8 @@ use eternum::systems::trade::contracts::trade_systems::{
 
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
-    general::{spawn_realm, get_default_realm_pos}, config::{set_capacity_config, set_settlement_config}
+    general::{spawn_realm, get_default_realm_pos},
+    config::{set_capacity_config, set_settlement_config, set_weight_config}
 };
 use starknet::contract_address_const;
 
@@ -38,18 +39,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
 
     set_settlement_config(config_systems_address);
     set_capacity_config(config_systems_address);
-
-    // set weight configuration for stone
-    IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::STONE.into(), 200);
-
-    // set weight configuration for gold
-    IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::GOLD.into(), 200);
-
-    // set donkey capacity weight_gram
-    ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000, });
+    set_weight_config(config_systems_address);
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 

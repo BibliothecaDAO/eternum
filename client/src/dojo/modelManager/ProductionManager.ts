@@ -5,7 +5,8 @@ import {
   EternumGlobalConfig,
   type ID,
   RESOURCE_INPUTS_SCALED,
-  type ResourcesIds,
+  ResourcesIds,
+  WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { type SetupResult } from "../setup";
@@ -110,7 +111,9 @@ export class ProductionManager {
         const productionDuration = this._productionDuration(currentTick, resourceId);
         const balance = Number(resource?.balance || 0n) + productionDuration * rate;
         const storeCapacity = this.getStoreCapacity();
-        const result = Math.min(balance, storeCapacity);
+        const maxAmountStorable =
+          (storeCapacity / (WEIGHTS_GRAM[resourceId] || 1000)) * EternumGlobalConfig.resources.resourcePrecision;
+        const result = Math.min(balance, maxAmountStorable);
         return result;
       } else {
         // Negative net rate, decrease balance but not below zero

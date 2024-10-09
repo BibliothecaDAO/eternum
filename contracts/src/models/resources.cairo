@@ -4,12 +4,14 @@ use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
-use eternum::constants::{ResourceTypes, resource_type_name, WORLD_CONFIG_ID};
-use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION};
+use eternum::constants::{
+    get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
+};
 use eternum::models::buildings::{Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2};
 use eternum::models::config::{
     ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigCustomTrait
 };
+use eternum::models::config::{WeightConfigCustomImpl, WeightConfig};
 
 use eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
 use eternum::models::realm::Realm;
@@ -234,14 +236,27 @@ impl ResourceCustomImpl of ResourceCustomTrait {
     }
 
     fn limit_balance_by_storehouse_capacity(ref self: Resource, world: IWorldDispatcher) {
+        let resource_weight_config = get!(world, (WORLD_CONFIG_ID, self.resource_type), WeightConfig);
+
         let storehouse_building_quantity: BuildingQuantityv2 = get!(
             world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantityv2
         );
-        let storehouse_capacity_gram = get!(world, CapacityConfigCategory::Storehouse, CapacityConfig).weight_gram;
+        let storehouse_capacity_grams = get!(world, CapacityConfigCategory::Storehouse, CapacityConfig).weight_gram;
+        let storehouse_capacity_grams = storehouse_capacity_grams
+            + (storehouse_building_quantity.value.into() * storehouse_capacity_grams);
 
-        let max_resource_balance = storehouse_capacity_gram
-            + (storehouse_building_quantity.value.into() * storehouse_capacity_gram);
-        self.balance = min(self.balance, max_resource_balance);
+        if (resource_weight_config.weight_gram == 0) {
+            self.balance = min(self.balance, storehouse_capacity_grams);
+            return;
+        }
+
+        let resource_weight_grams = WeightConfigCustomImpl::get_weight_grams(world, self.resource_type, self.balance);
+
+        let max_weight_grams = min(resource_weight_grams, storehouse_capacity_grams);
+
+        let max_balance = max_weight_grams * RESOURCE_PRECISION / resource_weight_config.weight_gram;
+
+        self.balance = max_balance
     }
 
     fn harvest(ref self: Resource, world: IWorldDispatcher) {

@@ -448,7 +448,7 @@ pub struct WeightConfig {
 
 #[generate_trait]
 impl WeightConfigCustomImpl of WeightConfigCustomTrait {
-    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
+    fn get_weight_grams(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
 
         (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
