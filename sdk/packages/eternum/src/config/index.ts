@@ -517,6 +517,8 @@ export const createAdminBank = async (config: Config) => {
     coord: { x: FELT_CENTER, y: FELT_CENTER },
     owner_fee_num: config.config.banks.ownerFeesNumerator,
     owner_fee_denom: config.config.banks.ownerFeesDenominator,
+    owner_bridge_fee_dpt_percent: config.config.banks.ownerBridgeFeeOnDepositPercent,
+    owner_bridge_fee_wtdr_percent: config.config.banks.ownerBridgeFeeOnWithdrawalPercent,
   });
   console.log(`Creating admin bank ${tx.statusReceipt}...`);
 };
