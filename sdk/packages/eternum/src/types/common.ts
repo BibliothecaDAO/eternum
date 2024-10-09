@@ -291,7 +291,6 @@ export interface Config {
     // they lose a small percentage (closer to 0% health loss) while the
     // weak army's loss is closer to 12.5%.
     pillageHealthDivisor: number;
-    healthPrecision: bigint;
 
     // 25%
     battleLeaveSlashNum: number;

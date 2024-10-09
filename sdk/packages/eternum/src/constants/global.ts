@@ -64,7 +64,6 @@ export const EternumGlobalConfig = {
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
-    healthPrecision: 1000n,
 
     // 25%
     battleLeaveSlashNum: 25,

@@ -8,7 +8,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   return {
     ...(actual as any),
     EternumGlobalConfig: {
-      troop: { healthPrecision: 1n, health: 1 },
+      troop: { health: 1 },
       resources: {
         resourcePrecision: 1,
       },
