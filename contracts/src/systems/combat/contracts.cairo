@@ -432,7 +432,7 @@ mod combat_systems {
             AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
 
     use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
@@ -1084,7 +1084,9 @@ mod combat_systems {
                                 let army_weight: Weight = get!(world, army_id, Weight);
 
                                 let max_carriable = (army_total_capacity - (army_weight.value))
-                                    / max((WeightConfigCustomImpl::get_weight(world, *chosen_resource_type, 1)), 1);
+                                    / max(
+                                        (WeightConfigCustomImpl::get_weight_grams(world, *chosen_resource_type, 1)), 1
+                                    );
 
                                 if max_carriable > 0 {
                                     let max_resource_amount_stolen: u128 = attacking_army.troops.count().into()

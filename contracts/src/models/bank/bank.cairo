@@ -10,6 +10,8 @@ pub struct Bank {
     entity_id: ID,
     owner_fee_num: u128,
     owner_fee_denom: u128,
+    owner_bridge_fee_dpt_percent: u16,
+    owner_bridge_fee_wtdr_percent: u16,
     exists: bool,
 }
 

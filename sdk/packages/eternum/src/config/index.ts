@@ -1,5 +1,7 @@
 import { Account } from "starknet";
 import {
+  ADMIN_BANK_ENTITY_ID,
+  AMM_STARTING_LIQUIDITY,
   ARMY_ENTITY_TYPE,
   BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
@@ -12,6 +14,7 @@ import {
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
   HYPERSTRUCTURE_TOTAL_COSTS,
+  LORDS_LIQUIDITY_PER_RESOURCE,
   REALM_MAX_LEVEL,
   REALM_UPGRADE_COSTS,
   RESOURCE_BUILDING_COSTS,
@@ -30,6 +33,7 @@ import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../ut
 
 import {
   EternumGlobalConfig as DefaultConfig,
+  FELT_CENTER,
   HYPERSTRUCTURE_POINTS_FOR_WIN,
   HYPERSTRUCTURE_POINTS_ON_COMPLETION,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
@@ -69,6 +73,13 @@ export class EternumConfig {
     await setMercenariesConfig(config);
     await setBuildingGeneralConfig(config);
     await setSettlementConfig(config);
+  }
+
+  async setupBank(account: Account, provider: EternumProvider) {
+    const config = { account, provider, config: this.globalConfig };
+    await createAdminBank(config);
+    await mintResources(config);
+    await addLiquidity(config);
   }
 
   getResourceBuildingCostsScaled(): ResourceInputs {
@@ -301,6 +312,7 @@ export const setCombatConfig = async (config: Config) => {
     maxArmiesPerStructure: max_armies_per_structure,
     battleLeaveSlashNum: battle_leave_slash_num,
     battleLeaveSlashDenom: battle_leave_slash_denom,
+    battleTimeReductionScale: battle_time_scale,
   } = config.config.troop;
 
   const tx = await config.provider.set_troop_config({
@@ -319,6 +331,7 @@ export const setCombatConfig = async (config: Config) => {
     army_max_per_structure: max_armies_per_structure,
     battle_leave_slash_num,
     battle_leave_slash_denom,
+    battle_time_scale,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);
@@ -496,4 +509,71 @@ export const setSettlementConfig = async (config: Config) => {
     max_angle_increase,
   });
   console.log(`Configuring settlement ${tx.statusReceipt}...`);
+};
+
+export const createAdminBank = async (config: Config) => {
+  const tx = await config.provider.create_admin_bank({
+    signer: config.account,
+    coord: { x: FELT_CENTER, y: FELT_CENTER },
+    owner_fee_num: config.config.banks.ownerFeesNumerator,
+    owner_fee_denom: config.config.banks.ownerFeesDenominator,
+    owner_bridge_fee_dpt_percent: config.config.banks.ownerBridgeFeeOnDepositPercent,
+    owner_bridge_fee_wtdr_percent: config.config.banks.ownerBridgeFeeOnWithdrawalPercent,
+  });
+  console.log(`Creating admin bank ${tx.statusReceipt}...`);
+};
+
+export const mintResources = async (config: Config) => {
+  const ammResourceIds = Object.keys(AMM_STARTING_LIQUIDITY).map(Number);
+
+  const totalResourceCount = ammResourceIds.length;
+  // mint lords
+  const lordsTx = await config.provider.mint_resources({
+    signer: config.account,
+    receiver_id: ADMIN_BANK_ENTITY_ID,
+    resources: [
+      ResourcesIds.Lords,
+      config.config.resources.resourcePrecision * LORDS_LIQUIDITY_PER_RESOURCE * totalResourceCount,
+    ],
+  });
+  console.log(`Minting lords ${lordsTx.statusReceipt}...`);
+
+  // mint all other resources
+  const resources = ammResourceIds.flatMap((resourceId) => {
+    return [
+      resourceId,
+      AMM_STARTING_LIQUIDITY[resourceId as keyof typeof AMM_STARTING_LIQUIDITY]! *
+        config.config.resources.resourcePrecision,
+    ];
+  });
+
+  const resourcesTx = await config.provider.mint_resources({
+    signer: config.account,
+    receiver_id: ADMIN_BANK_ENTITY_ID,
+    resources,
+  });
+  console.log(`Minting resources ${resourcesTx.statusReceipt}...`);
+};
+
+export const addLiquidity = async (config: Config) => {
+  for (const [resourceId, amount] of Object.entries(AMM_STARTING_LIQUIDITY)) {
+    if (resourceId === ResourcesIds[ResourcesIds.Lords]) {
+      continue;
+    }
+
+    await config.provider.add_liquidity({
+      signer: config.account,
+      bank_entity_id: ADMIN_BANK_ENTITY_ID,
+      entity_id: ADMIN_BANK_ENTITY_ID,
+      resource_type: resourceId,
+      resource_amount: amount * config.config.resources.resourcePrecision,
+      lords_amount: LORDS_LIQUIDITY_PER_RESOURCE * config.config.resources.resourcePrecision,
+    });
+
+    console.log(
+      `Adding liquidity for ${resourceId}: Lords ${
+        LORDS_LIQUIDITY_PER_RESOURCE * config.config.resources.resourcePrecision
+      }, ` + `${resourceId} ${amount * config.config.resources.resourcePrecision}`,
+    );
+  }
 };

@@ -18,10 +18,13 @@ export const BattleView = () => {
   const battleView = useUIStore((state) => state.battleView);
   const selectedHex = useUIStore((state) => state.selectedHex);
 
-  const battlePosition = { x: selectedHex.col, y: selectedHex.row };
-
   // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
   const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0);
+
+  const battlePosition = useMemo(
+    () => ({ x: selectedHex.col, y: selectedHex.row }),
+    [selectedHex.col, selectedHex.row],
+  );
 
   const targetArmy = useMemo(() => {
     const tempBattleManager = new BattleManager(updatedTarget?.battle_id || 0, dojo);
@@ -38,65 +41,95 @@ export const BattleView = () => {
       return { armiesInBattle: [], userArmiesInBattle: [] };
     }
     const armiesInBattle = armiesByBattleId(battleManager?.battleEntityId || 0);
+
     const userArmiesInBattle = armiesInBattle.filter((army) => army.isMine);
     return { armiesInBattle, userArmiesInBattle };
-  }, [battleManager]);
+  }, [battleManager, battleView]);
 
-  const ownArmySide = battleManager.isBattle()
-    ? armies.userArmiesInBattle?.[0]?.battle_side || BattleSide[BattleSide.None]
-    : BattleSide[BattleSide.Attack];
+  const ownArmySide = useMemo(
+    () =>
+      battleManager.isBattle()
+        ? armies.userArmiesInBattle?.[0]?.battle_side || BattleSide[BattleSide.None]
+        : BattleSide[BattleSide.Attack],
+    [battleManager, armies.userArmiesInBattle],
+  );
 
   const ownArmyBattleStarter = useMemo(
     () => getAliveArmy(battleView?.ownArmyEntityId || 0),
     [battleView?.ownArmyEntityId || 0],
   );
 
-  const attackerArmies =
-    armies.armiesInBattle.length > 0
-      ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Attack])
-      : [ownArmyBattleStarter!];
+  const attackerArmies = useMemo(
+    () =>
+      armies.armiesInBattle.length > 0
+        ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Attack])
+        : [ownArmyBattleStarter!],
+    [armies.armiesInBattle, ownArmyBattleStarter],
+  );
 
-  const defenderArmies =
-    armies.armiesInBattle.length > 0
-      ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Defence])
-      : [targetArmy];
+  const defenderArmies = useMemo(
+    () =>
+      armies.armiesInBattle.length > 0
+        ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Defence])
+        : [targetArmy],
+    [armies.armiesInBattle, targetArmy],
+  );
 
   const battleAdjusted = useMemo(() => {
     if (!battleManager) return undefined;
     return battleManager!.getUpdatedBattle(currentTimestamp!);
   }, [currentTimestamp, battleManager, battleManager?.battleEntityId, armies.armiesInBattle, battleView]);
 
-  const attackerHealth = battleAdjusted
-    ? {
-        current: battleAdjusted!.attack_army_health.current,
-        lifetime: battleAdjusted!.attack_army_health.lifetime,
-      }
-    : {
+  const attackerHealth = useMemo(() => {
+    if (battleAdjusted) {
+      return {
+        current: battleAdjusted.attack_army_health.current,
+        lifetime: battleAdjusted.attack_army_health.lifetime,
+      };
+    } else {
+      return {
         current: ownArmyBattleStarter?.health.current || 0n,
         lifetime: ownArmyBattleStarter?.health.lifetime || 0n,
       };
-  const defenderHealth = battleAdjusted
-    ? {
-        current: battleAdjusted!.defence_army_health.current,
-        lifetime: battleAdjusted!.defence_army_health.lifetime,
-      }
-    : targetArmy
-      ? {
-          current: targetArmy.health.current || 0n,
-          lifetime: targetArmy.health.lifetime || 0n,
-        }
-      : undefined;
+    }
+  }, [battleAdjusted, ownArmyBattleStarter]);
 
-  const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
-  const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
+  const defenderHealth = useMemo(() => {
+    if (battleAdjusted) {
+      return {
+        current: battleAdjusted.defence_army_health.current,
+        lifetime: battleAdjusted.defence_army_health.lifetime,
+      };
+    } else if (targetArmy) {
+      return {
+        current: targetArmy.health.current || 0n,
+        lifetime: targetArmy.health.lifetime || 0n,
+      };
+    }
+    return undefined;
+  }, [battleAdjusted, targetArmy]);
+
+  const attackerTroops = useMemo(
+    () => (battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops),
+    [battleAdjusted, ownArmyBattleStarter],
+  );
+
+  const defenderTroops = useMemo(
+    () => (battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops),
+    [battleAdjusted, targetArmy],
+  );
 
   const structureFromPosition = getStructure({ x: battlePosition.x, y: battlePosition.y });
+
   const structureId = getStructureByEntityId(
     defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0,
   );
 
-  const structure =
-    battleView?.engage && !battleView?.battleEntityId && !battleView.targetArmy ? structureFromPosition : structureId;
+  const structure = useMemo(() => {
+    return battleView?.engage && !battleView?.battleEntityId && !battleView.targetArmy
+      ? structureFromPosition
+      : structureId;
+  }, [battleView?.engage, battleView?.battleEntityId, battleView?.targetArmy, structureFromPosition, structureId]);
 
   return (
     <Battle

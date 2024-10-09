@@ -36,6 +36,7 @@ export const MarketModal = () => {
   const { toggleModal } = useModalStore();
 
   const banks = useGetBanks();
+
   const bank = banks.length === 1 ? banks[0] : null;
 
   const { bidOffers, askOffers } = useSetMarket();

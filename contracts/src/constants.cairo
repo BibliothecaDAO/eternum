@@ -21,6 +21,8 @@ const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
 const HYPERSTRUCTURE_LEVELING_START_TIER: u64 = 0;
 const REALM_LEVELING_START_TIER: u64 = 1;
 
+const GRAMS_PER_KG: u128 = 1_000;
+
 // max realms per user
 const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 

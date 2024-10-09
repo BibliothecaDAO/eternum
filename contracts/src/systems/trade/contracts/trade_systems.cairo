@@ -49,7 +49,9 @@ mod trade_systems {
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::trade::{Trade, Status, TradeStatus};
     use eternum::models::weight::{Weight, WeightCustomTrait};
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl as internal_resources,};
+    use eternum::systems::resources::contracts::resource_systems::resource_systems::{
+        InternalResourceSystemsImpl as internal_resources,
+    };
 
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
 
@@ -151,7 +153,7 @@ mod trade_systems {
 
                         // update maker resources weight
                         maker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
+                            WeightConfigCustomImpl::get_weight_grams(world, *resource_type, *resource_amount);
 
                         maker_gives_resources_felt_arr.append((*resource_type).into());
                         maker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -192,7 +194,7 @@ mod trade_systems {
 
                         // update taker resources weight
                         taker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
+                            WeightConfigCustomImpl::get_weight_grams(world, *resource_type, *resource_amount);
 
                         taker_gives_resources_felt_arr.append((*resource_type).into());
                         taker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -315,11 +317,11 @@ mod trade_systems {
                 * taker_gives_actual_amount
                 / taker_gives_resource_amount;
             let maker_gives_resources_actual = array![(maker_gives_resource_type, maker_gives_actual_amount)].span();
-            let maker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight(
+            let maker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight_grams(
                 world, maker_gives_resource_type, maker_gives_actual_amount
             );
             let taker_gives_resources_actual = array![(taker_gives_resource_type, taker_gives_actual_amount)].span();
-            let taker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight(
+            let taker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight_grams(
                 world, taker_gives_resource_type, taker_gives_actual_amount
             );
 

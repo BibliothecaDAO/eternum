@@ -17,7 +17,8 @@ use eternum::models::config::{
     stamina_refill_config, tick_config, map_config, realm_free_mint_config, mercenaries_config, leveling_config,
     production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
     population_config, has_claimed_starting_resources, hyperstructure_config, travel_stamina_cost_config,
-    realm_level_config, realm_max_level_config, travel_food_cost_config, settlement_config
+    resource_bridge_config, resource_bridge_fee_split_config, resource_bridge_whitelist_config, settlement_config,
+    realm_level_config, realm_max_level_config, travel_food_cost_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
@@ -127,6 +128,9 @@ fn spawn_eternum() -> IWorldDispatcher {
         capacity_category::TEST_CLASS_HASH,
         production_deadline::TEST_CLASS_HASH,
         travel_stamina_cost_config::TEST_CLASS_HASH,
+        resource_bridge_config::TEST_CLASS_HASH,
+        resource_bridge_fee_split_config::TEST_CLASS_HASH,
+        resource_bridge_whitelist_config::TEST_CLASS_HASH,
         realm_level_config::TEST_CLASS_HASH,
         realm_max_level_config::TEST_CLASS_HASH,
         travel_food_cost_config::TEST_CLASS_HASH,

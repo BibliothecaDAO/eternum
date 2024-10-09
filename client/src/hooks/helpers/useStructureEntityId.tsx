@@ -18,16 +18,11 @@ export const useStructureEntityId = () => {
   } = useDojo();
 
   const { hexPosition, isMapView } = useQuery();
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-
+  const { setStructureEntityId } = useUIStore();
   const { playerStructures } = useEntities();
 
   const structures = playerStructures();
-
-  const defaultPlayerStructure = useMemo(() => {
-    return structures[0];
-  }, [structureEntityId, structures]);
+  const defaultPlayerStructure = useMemo(() => structures[0], [structures]);
 
   useEffect(() => {
     const { x, y } = new PositionInterface({
@@ -39,17 +34,19 @@ export const useStructureEntityId = () => {
       .values()
       .next().value;
 
-    const structure = getComponentValue(Structure, structureEntity ?? ("0" as Entity));
-    const structureOwner = getComponentValue(Owner, structureEntity ?? ("0" as Entity));
+    const getEntityValue = (component: any, entity: Entity) => getComponentValue(component, entity ?? ("0" as Entity));
+
+    const structure = getEntityValue(Structure, structureEntity as Entity);
+    const structureOwner = getEntityValue(Owner, structureEntity as Entity);
 
     const isOwner = structureOwner?.address === BigInt(address);
 
-    if (isMapView) {
-      setStructureEntityId(
-        isOwner ? structureOwner.entity_id : defaultPlayerStructure?.entity_id || UNDEFINED_STRUCTURE_ENTITY_ID,
-      );
-    } else {
-      setStructureEntityId(structure?.entity_id || UNDEFINED_STRUCTURE_ENTITY_ID);
-    }
-  }, [defaultPlayerStructure, isMapView, hexPosition, address]);
+    const newStructureEntityId = isMapView
+      ? isOwner
+        ? structureOwner.entity_id
+        : defaultPlayerStructure?.entity_id
+      : structure?.entity_id;
+
+    setStructureEntityId(newStructureEntityId || UNDEFINED_STRUCTURE_ENTITY_ID);
+  }, [defaultPlayerStructure, isMapView, hexPosition, address, setStructureEntityId]);
 };

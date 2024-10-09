@@ -448,7 +448,7 @@ pub struct WeightConfig {
 
 #[generate_trait]
 impl WeightConfigCustomImpl of WeightConfigCustomTrait {
-    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
+    fn get_weight_grams(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
 
         (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
@@ -570,7 +570,10 @@ pub struct TroopConfig {
     // percentage to slash army by if they leave early
     // e.g num = 25, denom = 100 // represents 25%
     battle_leave_slash_num: u8,
-    battle_leave_slash_denom: u8
+    battle_leave_slash_denom: u8,
+    // 1_000. multiply this number by 2 to reduce battle time by 2x,
+    // and reduce by 2x to increase battle time by 2x, etc
+    battle_time_scale: u16
 }
 
 
@@ -640,6 +643,48 @@ pub struct HasClaimedStartingResources {
     #[key]
     config_id: ID,
     claimed: bool,
+}
+
+
+#[dojo::model]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+struct ResourceBridgeConfig {
+    #[key]
+    config_id: ID,
+    deposit_paused: bool,
+    withdraw_paused: bool,
+}
+
+#[dojo::model]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+struct ResourceBridgeFeeSplitConfig {
+    #[key]
+    config_id: ID,
+    // the percentage of the deposit and withdrawal amount that the velords addr will receive
+    velords_fee_on_dpt_percent: u16,
+    velords_fee_on_wtdr_percent: u16,
+    // the percentage of the deposit and withdrawal amount that the season pool will receive
+    season_pool_fee_on_dpt_percent: u16,
+    season_pool_fee_on_wtdr_percent: u16,
+    // the percentage of the deposit and withdrawal amount that the frontend provider will receive
+    client_fee_on_dpt_percent: u16,
+    client_fee_on_wtdr_percent: u16,
+    // the address that will receive the velords fee percentage
+    velords_fee_recipient: ContractAddress,
+    // the address that will receive the season pool fee
+    season_pool_fee_recipient: ContractAddress,
+    // max bank fee amount
+    max_bank_fee_dpt_percent: u16,
+    max_bank_fee_wtdr_percent: u16,
+}
+
+
+#[dojo::model]
+#[derive(Copy, Drop, Serde)]
+struct ResourceBridgeWhitelistConfig {
+    #[key]
+    token: ContractAddress,
+    resource_type: u8
 }
 
 // speed

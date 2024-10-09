@@ -6,6 +6,11 @@ export const TheWorld = () => {
       title: "Time to Build",
       icon: <ResourceIcon size="xl" resource="Ancient Fragment" />,
       content:
+        "You have been chosen to lead your people to greatness. You must build your empire, forge alliances, and conquer your enemies. Only the strong will survive.",
+    },
+    {
+      title: "The Hyperstructures",
+      content:
         "Long before recorded history, the Ancients constructed vast hyperstructures to harness the energies of the cosmos. These colossal edifices, buried and forgotten, hold the key to untold power. As the world awakens, it becomes clear that the fragments of these hyperstructures are scattered across the land, each containing a piece of their ancient might. ",
     },
 

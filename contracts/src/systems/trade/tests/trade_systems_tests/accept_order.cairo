@@ -24,12 +24,14 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
 };
 
+use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+
 use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 use eternum::utils::testing::{
-    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
-    config::{set_capacity_config, set_settlement_config}
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
+    general::{spawn_realm}, config::{set_capacity_config, set_settlement_config}
 };
 
 use starknet::contract_address_const;
@@ -39,6 +41,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let dev_resource_systems = deploy_dev_resource_systems(world);
 
     set_settlement_config(config_systems_address);
     set_capacity_config(config_systems_address);
@@ -80,13 +83,17 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
     set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }));
 
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 }));
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 }));
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
+    dev_resource_systems
+        .mint(
+            maker_id,
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100), (ResourceTypes::DONKEY, 20_000)].span()
+        );
+    dev_resource_systems
+        .mint(
+            taker_id,
+            array![(ResourceTypes::WOOD, 500), (ResourceTypes::SILVER, 500), (ResourceTypes::DONKEY, 20_000)].span()
+        );
 
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 }));
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }));
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
@@ -96,11 +103,6 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
-    if direct_trade {
-        taker_id
-    } else {
-        0
-    };
 
     // trade 100 stone and 100 gold for 200 wood and 200 silver
     // let trade_id = 0;

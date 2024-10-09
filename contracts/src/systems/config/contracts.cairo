@@ -3,7 +3,8 @@ use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
 use eternum::models::config::{
-    TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, TravelFoodCostConfig,
+    TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig
 };
 use eternum::models::position::Coord;
 
@@ -153,6 +154,17 @@ trait IMercenariesConfig {
 }
 
 #[dojo::interface]
+trait IResourceBridgeConfig {
+    fn set_resource_bridge_config(ref world: IWorldDispatcher, resource_bridge_config: ResourceBridgeConfig);
+    fn set_resource_bridge_fee_split_config(
+        ref world: IWorldDispatcher, resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
+    );
+    fn set_resource_bridge_whitelist_config(
+        ref world: IWorldDispatcher, resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
+    );
+}
+
+#[dojo::interface]
 trait ISettlementConfig {
     fn set_settlement_config(
         ref world: IWorldDispatcher,
@@ -184,8 +196,9 @@ mod config_systems {
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
         TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
-        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, RealmLevelConfig, BuildingGeneralConfig,
-        RealmMaxLevelConfig, SettlementConfig, TravelFoodCostConfig
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
+        MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
+        RealmMaxLevelConfig, TravelFoodCostConfig
     };
     use eternum::models::hyperstructure::SeasonCustomImpl;
 
@@ -636,6 +649,43 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, (MercenariesConfig { config_id: WORLD_CONFIG_ID, troops, rewards }));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IResourceBridgeConfig of super::IResourceBridgeConfig<ContractState> {
+        fn set_resource_bridge_config(ref world: IWorldDispatcher, mut resource_bridge_config: ResourceBridgeConfig) {
+            assert_caller_is_admin(world);
+
+            resource_bridge_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (resource_bridge_config));
+        }
+
+        fn set_resource_bridge_fee_split_config(
+            ref world: IWorldDispatcher, mut resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
+        ) {
+            assert_caller_is_admin(world);
+
+            resource_bridge_fee_split_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (resource_bridge_fee_split_config));
+        }
+
+        fn set_resource_bridge_whitelist_config(
+            ref world: IWorldDispatcher, mut resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
+        ) {
+            assert_caller_is_admin(world);
+
+            // note: if we are whitelisting a NEW resource type, we WILL need to
+            // update several functions related to resources in `eternum::constants`
+            // so the new resource type is recognized throughout the contract.
+
+            assert!(resource_bridge_whitelist_config.resource_type > 0, "resource type should be non zero");
+            assert!(
+                resource_bridge_whitelist_config.resource_type <= 255,
+                "the system only supports at most 255 resource types"
+            );
+
+            set!(world, (resource_bridge_whitelist_config));
         }
     }
 
