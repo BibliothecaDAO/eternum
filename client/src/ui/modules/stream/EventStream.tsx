@@ -1,8 +1,14 @@
+import { ReactComponent as Check } from "@/assets/icons/Check.svg";
+import { ReactComponent as Chest } from "@/assets/icons/Chest.svg";
+import { ReactComponent as Coins } from "@/assets/icons/Coins.svg";
 import { ReactComponent as Combat } from "@/assets/icons/Combat.svg";
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { ReactComponent as Compass } from "@/assets/icons/Compass.svg";
 import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
+import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
+import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
+import { ReactComponent as Wrench } from "@/assets/icons/Wrench.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
@@ -34,21 +40,41 @@ const EVENT_CONFIG = {
   },
   [EventType.MapExplored]: {
     action: "explored a tile",
-    emoji: <Compass className="w-6 self-center" />,
-    color: "#A5D6A7",
+    emoji: <Compass className="w-6 self-center fill-[#ED9733]" />,
+    color: "#ED9733",
   },
   [EventType.BattleJoin]: {
     action: "joined a battle",
     emoji: <Combat className="w-6 self-center" />,
     color: "#EF9A9A",
   },
-  [EventType.BattleLeave]: { action: "left a battle", emoji: "🏃", color: "#90CAF9" },
-  [EventType.BattleClaim]: { action: "claimed a structure", emoji: "🏴", color: "#FFCC80" },
-  [EventType.BattlePillage]: { action: "pillaged a structure", emoji: "💰", color: "#CE93D8" },
+  [EventType.BattleLeave]: { action: "left a battle", emoji: <Scroll className="w-6 self-center" />, color: "#90CAF9" },
+  [EventType.BattleClaim]: {
+    action: "claimed a structure",
+    emoji: <Chest className="w-6 self-center" />,
+    color: "#FFCC80",
+  },
+  [EventType.BattlePillage]: {
+    action: "pillaged a structure",
+    emoji: <Coins className="w-6 self-center" />,
+    color: "#CE93D8",
+  },
   [EventType.Swap]: { action: "made a swap", emoji: <Swap className="w-6 self-center" />, color: "#80DEEA" },
-  [EventType.HyperstructureFinished]: { action: "finished a hyperstructure", emoji: "⭐", color: "#FFF59D" },
-  [EventType.HyperstructureContribution]: { action: "contributed to a hyperstructure", emoji: "🏗️", color: "#FFD54F" },
-  [EventType.AcceptOrder]: { action: "accepted an order", emoji: "✅", color: "#C5E1A5" },
+  [EventType.HyperstructureFinished]: {
+    action: "finished a hyperstructure",
+    emoji: <Sparkles className="w-6 self-center" />,
+    color: "#FFF59D",
+  },
+  [EventType.HyperstructureContribution]: {
+    action: "contributed to a hyperstructure",
+    emoji: <Wrench className="w-6 self-center" />,
+    color: "#FFD54F",
+  },
+  [EventType.AcceptOrder]: {
+    action: "accepted an order",
+    emoji: <Check className="w-6 self-center" />,
+    color: "#C5E1A5",
+  },
 };
 
 interface EventData {

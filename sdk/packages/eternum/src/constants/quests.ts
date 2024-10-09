@@ -24,8 +24,8 @@ export enum QuestType {
 
 export const QUEST_RESOURCES = {
   [QuestType.Food]: [
-    { resource: ResourcesIds.Wheat, amount: 1500 },
-    { resource: ResourcesIds.Fish, amount: 1500 },
+    { resource: ResourcesIds.Wheat, amount: 1000 },
+    { resource: ResourcesIds.Fish, amount: 1000 },
   ],
   [QuestType.CommonResources]: [
     { resource: ResourcesIds.Wood, amount: 5 },
@@ -63,7 +63,7 @@ export const QUEST_RESOURCES = {
   ],
   [QuestType.Trade]: [
     { resource: ResourcesIds.Donkey, amount: 3 },
-    { resource: ResourcesIds.Lords, amount: 100 },
+    { resource: ResourcesIds.Lords, amount: 10 },
   ],
   [QuestType.Military]: [
     { resource: ResourcesIds.Knight, amount: 3 },

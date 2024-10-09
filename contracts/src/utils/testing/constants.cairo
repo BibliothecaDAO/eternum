@@ -18,6 +18,8 @@ const LP_FEE_DENOM: u128 = 100;
 
 const STOREHOUSE_CAPACITY_GRAMS: u128 = 10_000_000_000;
 
+const REALM_MAX_LEVEL: u8 = 3;
+
 fn get_resource_weights() -> Span<(u8, u128)> {
     array![
         (ResourceTypes::WOOD.into(), 1_000),

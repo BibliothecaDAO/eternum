@@ -43,20 +43,21 @@ export const Buildings = () => {
   return (
     <div>
       <Headline>Buildings</Headline>
-      <div className="mt-2 mb-2">Every time you build a construction, the cost of the next one grows exponentially</div>
-
-      <table className="not-prose w-full p-2 border-gold/10">
+      <div className="mt-2 mb-2 text-2xl">
+        Every time you build a construction, the cost of the next one grows exponentially.
+      </div>
+      <table className="not-prose w-full p-2 border-gold/10 border">
         <thead>
-          <tr>
-            <th>Building</th>
-            <th>Population</th>
-            <th>One Time Cost</th>
+          <tr className="border-b border-gold/10">
+            <th className="border-r border-gold/10 p-2">Building</th>
+            <th className="border-r border-gold/10 p-2">Population</th>
+            <th className="p-2">One Time Cost</th>
           </tr>
         </thead>
         <tbody>
           {buildingTable.map((building) => (
-            <tr key={building.building_category}>
-              <td className="p-2">
+            <tr key={building.building_category} className="border-b border-gold/10">
+              <td className="p-2 border-r border-gold/10">
                 {" "}
                 <h5>{BuildingEnumToString[building.building_category]}</h5>
                 <img
@@ -64,7 +65,7 @@ export const Buildings = () => {
                   src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
                 />
               </td>
-              <td className="text text-center">
+              <td className="text text-center border-r border-gold/10 p-2">
                 {building.building_capacity !== 0 && (
                   <>
                     <p>Max population capacity:</p>
@@ -75,7 +76,7 @@ export const Buildings = () => {
                 )}
                 {building.building_population !== 0 && <>Population: +{building.building_population}</>}
               </td>
-              <td className="gap-1 flex flex-col  p-2">
+              <td className="gap-1 flex flex-col p-2">
                 {building.cost_of_building.map((cost, index) => (
                   <div key={index}>
                     <ResourceCost resourceId={cost.resource} amount={cost.amount} size="lg" />

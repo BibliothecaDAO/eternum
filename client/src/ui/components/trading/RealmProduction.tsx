@@ -52,14 +52,15 @@ export const RealmProduction = () => {
             return (
               <div
                 key={index}
-                className="mb-5 border p-1 hover:opacity-70"
+                className="mb-5 border border-gold/40 rounded-xl p-3 hover:opacity-70"
                 onClick={() => {
                   toggleModal(null);
                   setSelectedPlayer(realm.owner);
                 }}
               >
-                <p className="text-md font-bold">{realm.ownerName}</p>
-                <p className="text-sm mb-1">{realm.name}</p>
+                <p className="text-md">{realm.ownerName}</p>
+                <p className="text-md mb-1 font-bold">{realm.name}</p>
+                <hr />
                 {realm.realmId && <RealmResourcesIO realmEntityId={realm.entityId} />}
               </div>
             );

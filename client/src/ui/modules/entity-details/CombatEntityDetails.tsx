@@ -92,6 +92,12 @@ export const CombatEntityDetails = () => {
 
   const [selectedTab, setSelectedTab] = useState(0);
 
+  useEffect(() => {
+    if (battles.length > 0) {
+      setSelectedTab(1);
+    }
+  }, []);
+
   return (
     hexPosition && (
       <div className="px-2 h-full">

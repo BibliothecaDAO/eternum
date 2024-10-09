@@ -52,11 +52,12 @@ export const MiniMapNavigation = () => {
           </div>
         )}
       </div>
+
       <canvas
         id="minimap"
         width={200}
         height={112}
-        className="border border-gold/30 rounded-tr-xl bg-hex-bg "
+        className={`${showMinimap ? "block" : "hidden"} border border-gold/30 rounded-tr-xl bg-hex-bg`}
         style={{
           backgroundColor: "rgba(0, 0, 0, 0.3)",
           zIndex: 2,

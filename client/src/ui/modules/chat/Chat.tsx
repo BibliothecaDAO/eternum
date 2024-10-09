@@ -222,11 +222,13 @@ export const Chat = () => {
         </div>
       </div>
       <div
-        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-black/40 p-1 border-gold/40 bg-hex-bg bottom-0 rounded-b pointer-events-auto flex-grow`}
+        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-black/40 border-gold/40 bg-hex-bg bottom-0 rounded-b pointer-events-auto flex-grow ${
+          hideChat ? "p-0" : "p-1"
+        }`}
       >
         <div
-          className={`border p-2 border-gold/40 rounded text-xs overflow-y-auto transition-all duration-300 flex-grow ${
-            hideChat ? "h-0 hidden" : "block h-[20vh]"
+          className={`border border-gold/40 rounded text-xs overflow-y-auto transition-all duration-300 flex-grow ${
+            hideChat ? "h-0 hidden" : "block h-[20vh] p-2"
           }`}
         >
           {messagesToDisplay?.map((message, index) => (
@@ -250,7 +252,7 @@ export const Chat = () => {
           ))}
           <span className="" ref={bottomChatRef}></span>
         </div>
-        <div className="grid gap-2 grid-cols-2 mt-2">
+        <div className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}>
           <InputField currentTab={currentTab} setCurrentTab={setCurrentTab} salt={salt} />
           <Select
             value={""}
@@ -278,7 +280,6 @@ export const Chat = () => {
     </div>
   );
 };
-
 const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
   setTimeout(() => {
     if (ref.current) {
