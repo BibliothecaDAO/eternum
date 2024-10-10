@@ -453,6 +453,11 @@ impl WeightConfigCustomImpl of WeightConfigCustomTrait {
 
         (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
     }
+
+    fn get_weight_grams_with_precision(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
+        let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
+        (resource_weight_config.weight_gram * amount)
+    }
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

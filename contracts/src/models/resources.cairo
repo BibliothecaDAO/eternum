@@ -15,8 +15,8 @@ use eternum::models::config::{WeightConfigCustomImpl, WeightConfig};
 
 use eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
 use eternum::models::realm::Realm;
-use eternum::models::structure::Structure;
 use eternum::models::structure::StructureCustomTrait;
+use eternum::models::structure::{Structure, StructureCategory};
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -235,6 +235,11 @@ impl ResourceCustomImpl of ResourceCustomTrait {
     }
 
     fn limit_balance_by_storehouse_capacity(ref self: Resource, world: IWorldDispatcher) {
+        let entity_structure: Structure = get!(world, self.entity_id, Structure);
+        if entity_structure.category != StructureCategory::Realm {
+            return;
+        }
+
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, self.resource_type), WeightConfig);
 
         let storehouse_building_quantity: BuildingQuantityv2 = get!(
@@ -249,11 +254,15 @@ impl ResourceCustomImpl of ResourceCustomTrait {
             return;
         }
 
-        let resource_weight_grams = WeightConfigCustomImpl::get_weight_grams(world, self.resource_type, self.balance);
+        let resource_weight_grams_with_precision = WeightConfigCustomImpl::get_weight_grams_with_precision(
+            world, self.resource_type, self.balance
+        );
 
-        let max_weight_grams = min(resource_weight_grams, storehouse_capacity_grams);
+        let storehouse_capacity_grams_with_precision = storehouse_capacity_grams * RESOURCE_PRECISION;
 
-        let max_balance = max_weight_grams * RESOURCE_PRECISION / resource_weight_config.weight_gram;
+        let max_weight_grams = min(resource_weight_grams_with_precision, storehouse_capacity_grams_with_precision);
+
+        let max_balance = max_weight_grams / resource_weight_config.weight_gram;
 
         self.balance = max_balance
     }
