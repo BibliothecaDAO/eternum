@@ -2,7 +2,7 @@ import { ResourcesIds } from ".";
 
 export const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
   {
-    resource: ResourcesIds.Earthenshard,
+    resource: ResourcesIds.AncientFragment,
     amount: 1000,
   },
 ];
@@ -61,5 +61,5 @@ export const HYPERSTRUCTURE_RESOURCE_MULTIPLIERS: { [key in ResourcesIds]?: numb
   [ResourcesIds.Adamantine]: 91.2,
   [ResourcesIds.Mithral]: 135.53,
   [ResourcesIds.Dragonhide]: 217.92,
-  [ResourcesIds.Earthenshard]: 20.98,
+  [ResourcesIds.AncientFragment]: 20.98,
 };

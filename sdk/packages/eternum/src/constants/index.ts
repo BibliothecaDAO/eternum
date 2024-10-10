@@ -34,7 +34,7 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
-  Earthenshard = 29,
+  AncientFragment = 29,
   Donkey = 249,
   Knight = 250,
   Crossbowman = 251,

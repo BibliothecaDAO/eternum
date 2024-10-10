@@ -1,11 +1,11 @@
-import { useState } from "react";
-import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useState } from "react";
 
-export const ShardMinePanel = ({ entity }: any) => {
+export const FragmentMinePanel = ({ entity }: any) => {
   const {
     account: { account },
     network: { provider },

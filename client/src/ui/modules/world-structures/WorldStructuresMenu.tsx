@@ -5,11 +5,11 @@ import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 
+import { FragmentMinePanel } from "@/ui/components/fragmentMines/FragmentMinePanel";
 import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
-import { ShardMinePanel } from "@/ui/components/shardMines/ShardMinePanel";
 
+import { useFragmentMines } from "@/hooks/helpers/useFragmentMines";
 import { useHyperstructureProgress, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import { useShardMines } from "@/hooks/helpers/useShardMines";
 
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
@@ -24,7 +24,7 @@ export const WorldStructuresMenu = ({}: any) => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { hyperstructures } = useHyperstructures();
-  const { shardMines } = useShardMines();
+  const { fragmentMines } = useFragmentMines();
 
   const hyperstructureExtraContent = (entityId: any) => {
     const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === entityId);
@@ -38,13 +38,13 @@ export const WorldStructuresMenu = ({}: any) => {
     );
   };
 
-  const shardMineExtraContent = (entityId: any) => {
-    const shardMine = shardMines.find((shardMine) => shardMine.entity_id === entityId);
-    if (!shardMine) return null;
+  const fragmentMineExtraContent = (entityId: any) => {
+    const fragmentMine = fragmentMines.find((fragmentMine) => fragmentMine.entity_id === entityId);
+    if (!fragmentMine) return null;
 
-    shardMine.production_rate;
+    fragmentMine.production_rate;
 
-    return <ShardMineExtraContent x={Number(shardMine.x!)} y={Number(shardMine.y!)} entityId={entityId!} />;
+    return <FragmentMineExtraContent x={Number(fragmentMine.x!)} y={Number(fragmentMine.y!)} entityId={entityId!} />;
   };
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -80,18 +80,18 @@ export const WorldStructuresMenu = ({}: any) => {
         ),
         component: (
           <EntityList
-            title="ShardMines"
-            panel={({ entity }) => <ShardMinePanel entity={entity} />}
-            entityContent={shardMineExtraContent}
-            list={shardMines.map((shardMine) => ({
-              id: shardMine.entity_id,
-              ...shardMine,
+            title="FragmentMines"
+            panel={({ entity }) => <FragmentMinePanel entity={entity} />}
+            entityContent={fragmentMineExtraContent}
+            list={fragmentMines.map((fragmentMine) => ({
+              id: fragmentMine.entity_id,
+              ...fragmentMine,
             }))}
           />
         ),
       },
     ],
-    [selectedTab, hyperstructures, shardMines],
+    [selectedTab, hyperstructures, fragmentMines],
   );
 
   return (
@@ -151,11 +151,11 @@ const HyperStructureExtraContent = ({
   );
 };
 
-const ShardMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
+const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
   const { getBalance } = getResourceBalance();
-  const dynamicResources = getBalance(entityId, ResourcesIds.Earthenshard);
+  const dynamicResources = getBalance(entityId, ResourcesIds.AncientFragment);
 
-  const trait = useMemo(() => findResourceById(ResourcesIds.Earthenshard)?.trait, []);
+  const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
 
   return (
     <div className="flex space-x-5 items-center text-xs">

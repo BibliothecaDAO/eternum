@@ -31,7 +31,7 @@ export const WorldStructures = () => {
         content: (
           <div>
             Naturally occurring structures discovered during exploration, enabling players to harvest precious{" "}
-            <span className="font-bold">{findResourceById(Number(ResourcesIds.Earthenshard))?.trait}</span> from the
+            <span className="font-bold">{findResourceById(Number(ResourcesIds.AncientFragment))?.trait}</span> from the
             world. Be weary of the bandits that inhabit these mines!
           </div>
         ),
@@ -110,7 +110,7 @@ const HyperstructureCreationTable = () => {
 
 const HyperstructureConstructionTable = () => {
   const constructionCost = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.filter(
-    (cost) => cost.resource !== ResourcesIds["Earthenshard"],
+    (cost) => cost.resource !== ResourcesIds["AncientFragment"],
   ).map((cost) => ({ ...cost }));
 
   return (

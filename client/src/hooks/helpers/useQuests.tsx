@@ -140,7 +140,7 @@ const useQuestDependencies = () => {
     () =>
       runQuery([
         HasValue(setup.components.Contribution, { player_address: ContractAddress(account.address) }),
-        NotValue(setup.components.Contribution, { resource_type: ResourcesIds["Earthenshard"] }),
+        NotValue(setup.components.Contribution, { resource_type: ResourcesIds["AncientFragment"] }),
       ]).size,
     [structureEntityId],
   );

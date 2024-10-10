@@ -316,7 +316,7 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Adamantine]: 91.2,
   [ResourcesIds.Mithral]: 135.53,
   [ResourcesIds.Dragonhide]: 217.92,
-  [ResourcesIds.Earthenshard]: 20.98,
+  [ResourcesIds.AncientFragment]: 20.98,
   [ResourcesIds.Donkey]: 1,
   [ResourcesIds.Knight]: 1,
   [ResourcesIds.Crossbowman]: 1,
@@ -352,7 +352,7 @@ export const WEIGHTS_GRAM: {
   [ResourcesIds.Adamantine]: 1000,
   [ResourcesIds.Mithral]: 1000,
   [ResourcesIds.Dragonhide]: 1000,
-  [ResourcesIds.Earthenshard]: 1000,
+  [ResourcesIds.AncientFragment]: 1000,
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 0,
   [ResourcesIds.Crossbowman]: 0,
@@ -363,7 +363,7 @@ export const WEIGHTS_GRAM: {
 };
 
 export const RESOURCE_TIERS = {
-  lords: [ResourcesIds.Lords, ResourcesIds.Earthenshard],
+  lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
   military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
   transport: [ResourcesIds.Donkey],
   food: [ResourcesIds.Fish, ResourcesIds.Wheat],
@@ -411,7 +411,7 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Lords]: 5,
   [ResourcesIds.Wheat]: 75,
   [ResourcesIds.Fish]: 75,
-  [ResourcesIds.Earthenshard]: 15,
+  [ResourcesIds.AncientFragment]: 15,
 };
 
 export const RESOURCE_INPUTS: ResourceInputs = {
@@ -552,7 +552,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Wheat]: [],
   [ResourcesIds.Fish]: [],
   [ResourcesIds.Lords]: [],
-  [ResourcesIds.Earthenshard]: [],
+  [ResourcesIds.AncientFragment]: [],
 };
 
 export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
@@ -585,5 +585,5 @@ export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Wheat]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
   [ResourcesIds.Fish]: [{ resource: ResourcesIds.Fish, amount: 750 }],
   [ResourcesIds.Lords]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
-  [ResourcesIds.Earthenshard]: [{ resource: ResourcesIds.Fish, amount: 750 }],
+  [ResourcesIds.AncientFragment]: [{ resource: ResourcesIds.Fish, amount: 750 }],
 };
