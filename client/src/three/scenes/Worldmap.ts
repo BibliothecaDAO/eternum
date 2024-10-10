@@ -268,7 +268,7 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLeftNavigationView(View.EntityView);
     }
   }
-  protected onHexagonRightClick(): void { }
+  protected onHexagonRightClick(): void {}
 
   private onArmySelection(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {

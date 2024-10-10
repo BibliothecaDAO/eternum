@@ -198,7 +198,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => { });
+    Promise.all(this.modelLoadPromises).then(() => {});
   }
 
   setup() {
@@ -335,8 +335,8 @@ export default class HexceptionScene extends HexagonScene {
       this.state.setTooltip(null);
     }
   }
-  protected onHexagonRightClick(): void { }
-  protected onHexagonDoubleClick(): void { }
+  protected onHexagonRightClick(): void {}
+  protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
