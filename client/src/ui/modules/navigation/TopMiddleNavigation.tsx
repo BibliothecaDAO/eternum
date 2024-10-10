@@ -25,7 +25,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
+import { ArrowLeft, Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
@@ -103,6 +103,11 @@ export const TopMiddleNavigation = () => {
   }, [structure]);
 
   const structures = playerStructures();
+
+  const pointToWorldButton =
+    (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
+    selectedQuest.status !== QuestStatus.Completed &&
+    !isMapView;
 
   const goToHexView = (entityId: ID) => {
     const structure = structures.find((structure) => structure.entity_id === entityId);
@@ -231,17 +236,13 @@ export const TopMiddleNavigation = () => {
             </div>
           )}
         </div>
-
         <div className=" bg-black/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"
             size="xs"
             className={clsx("self-center", {
-              "animate-pulse":
-                (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
-                selectedQuest.status !== QuestStatus.Completed &&
-                !isMapView,
+              "animate-pulse": pointToWorldButton,
             })}
             onClick={() => {
               if (!isMapView) {
@@ -257,6 +258,12 @@ export const TopMiddleNavigation = () => {
             <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
           )}
         </div>
+        {pointToWorldButton && (
+          <div className="bg-black/90 text-gold border border-gold/30 rounded-md shadow-lg left-1/2 transform p-3 flex flex-row items-center animate-pulse">
+            <ArrowLeft className="text-gold w-5 h-5 mb-2" />
+            <div className="text-sm font-semibold mb-2 text-center leading-tight">Explore the map</div>
+          </div>
+        )}
       </motion.div>
       <SecondaryMenuItems />
     </div>
