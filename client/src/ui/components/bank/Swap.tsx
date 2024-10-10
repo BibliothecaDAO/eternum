@@ -70,7 +70,8 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
       bank_entity_id: bankEntityId,
       entity_id: entityId,
       resource_type: resourceId,
-      amount: multiplyByPrecision(resourceAmount),
+      // todo: rounding error in contracts
+      amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
     }).finally(() => {
       setIsLoading(false);
       setOpenConfirmation(false);
