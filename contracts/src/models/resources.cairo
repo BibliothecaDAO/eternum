@@ -249,11 +249,15 @@ impl ResourceCustomImpl of ResourceCustomTrait {
             return;
         }
 
-        let resource_weight_grams = WeightConfigCustomImpl::get_weight_grams(world, self.resource_type, self.balance);
+        let resource_weight_grams_with_precision = WeightConfigCustomImpl::get_weight_grams_with_precision(
+            world, self.resource_type, self.balance
+        );
 
-        let max_weight_grams = min(resource_weight_grams, storehouse_capacity_grams);
+        let storehouse_capacity_grams_with_precision = storehouse_capacity_grams * RESOURCE_PRECISION;
 
-        let max_balance = max_weight_grams * RESOURCE_PRECISION / resource_weight_config.weight_gram;
+        let max_weight_grams = min(resource_weight_grams_with_precision, storehouse_capacity_grams_with_precision);
+
+        let max_balance = max_weight_grams / resource_weight_config.weight_gram;
 
         self.balance = max_balance
     }
