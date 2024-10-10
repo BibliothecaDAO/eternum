@@ -55,7 +55,7 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
 
       <div className="p-4 grid grid-cols-1  gap-4">
         {Object.entries(groupedQuests)
-          .sort(([a], [b]) => Number(a) - Number(b))
+          .sort(([a], [b]) => Number(b) - Number(a))
           .map(([depth, depthQuests]) => {
             if (Number(depth) > maxDepthToShow) return null;
             const shownQuests = depthQuests.filter(
@@ -70,13 +70,22 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
 };
 
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
-  <>{depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}</>
+  <>
+    {depthQuests
+      ?.slice()
+      .reverse()
+      .map((quest: Quest) => (
+        <QuestCard quest={quest} key={quest.name} />
+      ))}
+  </>
 );
 
 const QuestCard = ({ quest }: { quest: Quest }) => {
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
 
   const { getQuestResources } = useRealm();
+
+  const isClaimed = quest.status === QuestStatus.Claimed;
 
   return (
     <div
@@ -98,12 +107,8 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
         ))}
 
       <div className="my-4">
-        <Button variant="primary" onClick={() => setSelectedQuest(quest)}>
-          {quest.status === QuestStatus.Claimed
-            ? "Claimed"
-            : quest.status === QuestStatus.Completed
-              ? "Claim"
-              : "Start"}
+        <Button isPulsing={!isClaimed} disabled={isClaimed} variant="primary" onClick={() => setSelectedQuest(quest)}>
+          {isClaimed ? "Claimed" : quest.status === QuestStatus.Completed ? "Claim" : "Start"}
         </Button>
       </div>
     </div>
