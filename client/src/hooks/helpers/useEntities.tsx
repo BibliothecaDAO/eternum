@@ -273,7 +273,23 @@ export const getEntitiesUtils = () => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(entityId)]));
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(entityId)]));
-    return getStructureName(entityName, structure, realm, abbreviate);
+
+    if (structure?.category === StructureType[StructureType.Realm]) {
+      return getRealmNameById(realm!.realm_id);
+    } else if (entityName) {
+      return shortString.decodeShortString(entityName.name.toString());
+    } else {
+      if (abbreviate) {
+        if (structure?.category === StructureType[StructureType.FragmentMine]) {
+          return `FM ${structure.entity_id}`;
+        } else if (structure?.category === StructureType[StructureType.Hyperstructure]) {
+          return `HS ${structure.entity_id}`;
+        } else if (structure?.category === StructureType[StructureType.Bank]) {
+          return `BK ${structure.entity_id}`;
+        }
+      }
+      return `${structure?.category} ${structure?.entity_id}`;
+    }
   };
 
   const getAddressNameFromEntity = (entityId: ID) => {
@@ -341,34 +357,4 @@ const formatStructures = (
     })
     .filter((structure): structure is PlayerStructure => structure !== undefined)
     .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
-};
-
-const getStructureName = (
-  entityName: ComponentValue<ClientComponents["EntityName"]["schema"]> | undefined,
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined,
-  realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined,
-  abbreviate: boolean = false,
-) => {
-  if (!structure) return "Unknown";
-
-  let name = "";
-  if (structure.category === StructureType[StructureType.Realm]) {
-    name = getRealmNameById(realm!.realm_id);
-  } else if (entityName) {
-    name = shortString.decodeShortString(entityName.name.toString());
-  } else {
-    name = `${structure.category} ${structure.entity_id}`;
-
-    if (abbreviate) {
-      if (structure.category === StructureType[StructureType.FragmentMine]) {
-        name = `FM ${structure.entity_id}`;
-      } else if (structure.category === StructureType[StructureType.Hyperstructure]) {
-        name = `HS ${structure.entity_id}`;
-      } else if (structure.category === StructureType[StructureType.Bank]) {
-        name = `BK ${structure.entity_id}`;
-      }
-    }
-  }
-
-  return name;
 };
