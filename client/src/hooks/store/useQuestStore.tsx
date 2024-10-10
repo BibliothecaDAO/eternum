@@ -11,6 +11,6 @@ interface QuestStore {
 export const useQuestStore = create<QuestStore>((set) => ({
   selectedQuest: null,
   setSelectedQuest: (selectedQuest: Quest | null) => set({ selectedQuest }),
-  showCompletedQuests: true,
+  showCompletedQuests: false,
   setShowCompletedQuests: (showCompletedQuests: boolean) => set({ showCompletedQuests }),
 }));

@@ -37,7 +37,7 @@ export const SecondaryMenuItems = () => {
   const { playerStructures } = useEntities();
   const structures = playerStructures();
 
-  const questToClaim = quests?.find((quest: any) => quest.status === QuestStatus.Completed);
+  const completedQuests = quests?.filter((quest: any) => quest.status === QuestStatus.Claimed);
 
   const realmSelected = useMemo(() => {
     return isRealmSelected(structureEntityId, structures) ? true : false;
@@ -60,10 +60,12 @@ export const SecondaryMenuItems = () => {
               disabled={!realmSelected}
             />
 
-            {questToClaim && !isMapView && realmSelected && (
-              <div className="absolute bg-black/90 text-gold border-gradient border top-20 w-32 px-1 py-1 flex uppercase">
-                <ArrowUp className="text-gold w-4 mr-3" />
-                <div className="text-xs">Claim your reward</div>
+            {completedQuests.length < 8 && !isMapView && realmSelected && (
+              <div className="absolute bg-black/90 text-gold border border-gold/30 mt-3 rounded-md shadow-lg left-1/2 transform -translate-x-1/2 w-48 p-3 flex flex-col items-center animate-pulse">
+                <ArrowUp className="text-gold w-5 h-5 mb-2" />
+                <div className="text-sm font-semibold mb-2 text-center leading-tight">
+                  Complete quests to master the game mechanics
+                </div>
               </div>
             )}
           </div>
