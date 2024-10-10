@@ -198,7 +198,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+    Promise.all(this.modelLoadPromises).then(() => { });
   }
 
   setup() {
@@ -237,9 +237,11 @@ export default class HexceptionScene extends HexagonScene {
 
     this.realmSubscription?.unsubscribe();
     this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
-      this.castleLevel = update.level as RealmLevels;
-      this.removeCastleFromScene();
-      this.updateHexceptionGrid(this.hexceptionRadius);
+      if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
+        this.castleLevel = update.level as RealmLevels;
+        this.removeCastleFromScene();
+        this.updateHexceptionGrid(this.hexceptionRadius);
+      }
     });
 
     this.castleLevel = this.tileManager.getRealmLevel();
@@ -315,7 +317,7 @@ export default class HexceptionScene extends HexagonScene {
     if (building) {
       this.state.setTooltip({
         content: (
-          <div className="flex space-x-1 items-center">
+          <div className="flex items-center space-x-1">
             <ResourceIcon
               size="sm"
               resource={findResourceById(building.produced_resource_type as ResourcesIds)!.trait}
@@ -333,8 +335,8 @@ export default class HexceptionScene extends HexagonScene {
       this.state.setTooltip(null);
     }
   }
-  protected onHexagonRightClick(): void {}
-  protected onHexagonDoubleClick(): void {}
+  protected onHexagonRightClick(): void { }
+  protected onHexagonDoubleClick(): void { }
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
