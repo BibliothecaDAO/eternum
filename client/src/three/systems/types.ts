@@ -42,4 +42,5 @@ export type BuildingSystemUpdate = {
 
 export type RealmSystemUpdate = {
   level: number;
+  hexCoords: HexPosition;
 };

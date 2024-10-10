@@ -35,7 +35,7 @@ import {
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  constructor(private setup: SetupResult) {}
+  constructor(private setup: SetupResult) { }
 
   private setupSystem<T>(
     component: Component,
@@ -146,10 +146,12 @@ export class SystemManager {
       onUpdate: (callback: (value: RealmSystemUpdate) => void) => {
         this.setupSystem(this.setup.components.Realm, callback, (update: any) => {
           const realm = getComponentValue(this.setup.components.Realm, update.entity);
-          if (!realm) return;
+          const position = getComponentValue(this.setup.components.Position, update.entity);
+          if (!realm || !position) return;
 
           return {
             level: realm.level,
+            hexCoords: { col: position.x, row: position.y },
           };
         });
       },
@@ -289,14 +291,14 @@ export class SystemManager {
         percentage: !foundProgress
           ? 0
           : Math.floor(
-              (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-            ),
+            (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
+          ),
         costNeeded: resourceCost,
       };
       percentage +=
         (progress.amount *
           HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
-            progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
+          progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
           ]!) /
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;
