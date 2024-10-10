@@ -283,10 +283,6 @@ export const isStructureImmune = (created_at: number, currentTimestamp: number):
   const tickCount = currentTickCount(currentTimestamp);
   const allowAttackTick = currentTickCount(created_at) + configManager.getBattleGraceTickCount();
 
-  console.log(configManager);
-
-  console.log("tickCount", tickCount, configManager.getBattleGraceTickCount());
-
   if (tickCount < allowAttackTick) {
     return true;
   }
