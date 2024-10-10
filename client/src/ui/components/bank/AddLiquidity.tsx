@@ -11,7 +11,15 @@ import { LiquidityResourceRow } from "./LiquidityResourceRow";
 import { LiquidityTableHeader } from "./LiquidityTable";
 import { ResourceBar } from "./ResourceBar";
 
-const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entityId: ID }) => {
+const AddLiquidity = ({
+  bank_entity_id,
+  entityId,
+  listResourceId,
+}: {
+  bank_entity_id: ID;
+  entityId: ID;
+  listResourceId: number;
+}) => {
   const {
     account: { account },
     setup,
@@ -29,6 +37,10 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entity
     () => new MarketManager(setup, bank_entity_id, ContractAddress(account.address), resourceId),
     [setup, bank_entity_id, resourceId, account.address],
   );
+
+  useEffect(() => {
+    setResourceId(listResourceId);
+  }, [listResourceId]);
 
   useEffect(() => {
     const optimalResourceAmout = marketManager.quoteResource(lordsAmount);

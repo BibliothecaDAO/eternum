@@ -11,9 +11,10 @@ import { ResourceSwap } from "./Swap";
 type BankListProps = {
   bankEntityId: ID;
   structureEntityId: ID;
+  selectedResource: number;
 };
 
-export const BankPanel = ({ bankEntityId, structureEntityId }: BankListProps) => {
+export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }: BankListProps) => {
   const {
     setup: {
       components: { Position },
@@ -33,7 +34,9 @@ export const BankPanel = ({ bankEntityId, structureEntityId }: BankListProps) =>
             <div>Swap</div>
           </div>
         ),
-        component: <ResourceSwap bankEntityId={bankEntityId} entityId={structureEntityId} />,
+        component: (
+          <ResourceSwap bankEntityId={bankEntityId} entityId={structureEntityId} listResourceId={selectedResource} />
+        ),
       },
       {
         key: "all",
@@ -44,7 +47,11 @@ export const BankPanel = ({ bankEntityId, structureEntityId }: BankListProps) =>
         ),
         component: (
           <div>
-            <AddLiquidity bank_entity_id={bankEntityId} entityId={structureEntityId!} />
+            <AddLiquidity
+              bank_entity_id={bankEntityId}
+              entityId={structureEntityId!}
+              listResourceId={selectedResource}
+            />
           </div>
         ),
       },

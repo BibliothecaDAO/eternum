@@ -15,7 +15,15 @@ import { ConfirmationPopup } from "./ConfirmationPopup";
 const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
 const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.banks.lpFeesDenominator;
 
-export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; entityId: ID }) => {
+export const ResourceSwap = ({
+  bankEntityId,
+  entityId,
+  listResourceId,
+}: {
+  bankEntityId: ID;
+  entityId: ID;
+  listResourceId: number;
+}) => {
   const {
     account: { account },
     setup,
@@ -39,6 +47,10 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: ID; ent
     () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
     [setup, bankEntityId, resourceId, account.address],
   );
+
+  useEffect(() => {
+    setResourceId(listResourceId);
+  }, [listResourceId]);
 
   // recompute resource amount when resource id changes
   useEffect(() => {
