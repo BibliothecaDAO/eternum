@@ -15,8 +15,8 @@ use eternum::models::config::{WeightConfigCustomImpl, WeightConfig};
 
 use eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
 use eternum::models::realm::Realm;
-use eternum::models::structure::Structure;
 use eternum::models::structure::StructureCustomTrait;
+use eternum::models::structure::{Structure, StructureCategory};
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -235,6 +235,11 @@ impl ResourceCustomImpl of ResourceCustomTrait {
     }
 
     fn limit_balance_by_storehouse_capacity(ref self: Resource, world: IWorldDispatcher) {
+        let entity_structure: Structure = get!(world, self.entity_id, Structure);
+        if entity_structure.category != StructureCategory::Realm {
+            return;
+        }
+
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, self.resource_type), WeightConfig);
 
         let storehouse_building_quantity: BuildingQuantityv2 = get!(
