@@ -292,6 +292,10 @@ export function gramToKg(grams: number): number {
   return Number(grams) / 1000;
 }
 
+export function kgToGram(kg: number): number {
+  return Number(kg) * 1000;
+}
+
 export const formatResources = (resources: any[]): Resource[] => {
   return resources
     .map((resource) => ({

@@ -10,13 +10,15 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { formatTime, gramToKg } from "@/ui/utils/utils";
+import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
 import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   CapacityConfigCategory,
   EternumGlobalConfig,
   ID,
+  ResourcesIds,
+  WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -39,6 +41,44 @@ const structureIcons: Record<string, JSX.Element> = {
   Bank: <Landmark />,
   Hyperstructure: <Sparkles />,
   FragmentMine: <Pickaxe />,
+};
+
+const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
+  const capacity = kgToGram(storehouseCapacity);
+  return (
+    <div className="text-xs text-gray-200 p-2 max-w-xs">
+      <p className="font-semibold">Max Storage Capacity</p>
+      <ul className="list-none my-1">
+        <li className="flex items-center">
+          <ResourceIcon resource="Lords" size="xs" className="mr-1" />
+          {(capacity / WEIGHTS_GRAM[ResourcesIds.Lords]).toLocaleString()} Lords
+        </li>
+        <li className="flex items-center">
+          <ResourceIcon resource="Wheat" size="xs" className="mr-1" />
+          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wheat]).toLocaleString()} Food
+        </li>
+        <li className="flex items-center">
+          <ResourceIcon resource="Wood" size="xs" className="mr-1" />
+          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wood]).toLocaleString()} Other
+        </li>
+      </ul>
+      <p className="italic text-xs">Build Storehouses to increase capacity.</p>
+    </div>
+  );
+};
+
+const WorkersHutTooltipContent = () => {
+  const capacity = EternumGlobalConfig.populationCapacity.workerHuts;
+  return (
+    <div className="text-xs text-gray-200 p-2 max-w-xs">
+      <p className="font-semibold">Population Capacity</p>
+      <ul className="list-disc list-inside my-1">
+        <li>{BASE_POPULATION_CAPACITY} Base Capacity</li>
+        <li>+{capacity} per Workers Hut</li>
+      </ul>
+      <p className="italic text-xs">Build Workers Huts to increase population capacity.</p>
+    </div>
+  );
 };
 
 export const TopMiddleNavigation = () => {
@@ -159,14 +199,7 @@ export const TopMiddleNavigation = () => {
               onMouseEnter={() => {
                 setTooltip({
                   position: "bottom",
-                  content: (
-                    <div className="whitespace-nowrap pointer-events-none text-sm capitalize">
-                      <span>This is the max kg per resource you can store</span>
-
-                      <br />
-                      <span>Build Storehouses to increase this.</span>
-                    </div>
-                  ),
+                  content: <StorehouseTooltipContent storehouseCapacity={storehouses} />,
                 });
               }}
               onMouseLeave={() => {
@@ -183,15 +216,7 @@ export const TopMiddleNavigation = () => {
               onMouseEnter={() => {
                 setTooltip({
                   position: "bottom",
-                  content: (
-                    <span className="whitespace-nowrap pointer-events-none text-sm capitalize">
-                      <span>
-                        {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
-                      </span>
-                      <br />
-                      <span>Build Workers huts to expand population</span>
-                    </span>
-                  ),
+                  content: <WorkersHutTooltipContent />,
                 });
               }}
               onMouseLeave={() => {
