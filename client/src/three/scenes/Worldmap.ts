@@ -181,7 +181,7 @@ export default class WorldmapScene extends HexagonScene {
   private onArmyMouseMove(entityId: ID | undefined) {
     if (entityId) {
       this.state.setHoveredArmyEntityId(entityId);
-    } else {
+    } else if (this.state.hoveredArmyEntityId) {
       this.state.setHoveredArmyEntityId(null);
     }
   }
@@ -203,6 +203,15 @@ export default class WorldmapScene extends HexagonScene {
       this.structurePreview?.setStructureColor(new THREE.Color(PREVIEW_BUILD_COLOR_INVALID));
     } else {
       this.structurePreview?.resetStructureColor();
+    }
+
+    if (this.state.hoveredArmyEntityId) return;
+
+    const structure = this.structureManager.getStructureByHexCoords(hexCoords);
+    if (structure) {
+      this.state.setHoveredStructure(structure);
+    } else if (this.state.hoveredStructure) {
+      this.state.setHoveredStructure(null);
     }
   }
 

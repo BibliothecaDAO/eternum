@@ -1,7 +1,6 @@
-import React, { useEffect, useRef } from "react";
-import { DojoHtml } from "./DojoHtml";
 import clsx from "clsx";
 import { throttle } from "lodash";
+import React, { useEffect, useRef } from "react";
 
 type BaseThreeTooltipProps = {
   children?: React.ReactNode;
@@ -54,7 +53,7 @@ export const BaseThreeTooltip = ({
   return (
     <div
       ref={ref}
-      className={clsx("min-w-[215px]  relative p-2 bg-black/90 text-gold", position, className, {
+      className={clsx("min-w-[215px] ml-3 mt-3 rounded-xl relative p-2 bg-black/90 text-gold", position, className, {
         hidden: !visible,
       })}
     >

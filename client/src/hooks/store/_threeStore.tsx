@@ -1,3 +1,4 @@
+import { StructureInfo } from "@/three/components/StructureManager";
 import { HexPosition } from "@/types";
 import { BuildingType, ID } from "@bibliothecadao/eternum";
 
@@ -13,6 +14,8 @@ export interface ThreeStore {
   setSelectedHex: (hex: HexPosition) => void;
   hoveredArmyEntityId: ID | null;
   setHoveredArmyEntityId: (id: ID | null) => void;
+  hoveredStructure: StructureInfo | null;
+  setHoveredStructure: (structure: StructureInfo | null) => void;
   selectedBuilding: BuildingType;
   setSelectedBuilding: (building: BuildingType) => void;
   selectedBuildingEntityId: ID | null;
@@ -56,6 +59,8 @@ export const createThreeStoreSlice = (set: any, get: any) => ({
   setSelectedHex: (hex: HexPosition) => set({ selectedHex: hex }),
   hoveredArmyEntityId: null,
   setHoveredArmyEntityId: (id: ID | null) => set({ hoveredArmyEntityId: id }),
+  hoveredStructure: null,
+  setHoveredStructure: (structure: StructureInfo | null) => set({ hoveredStructure: structure }),
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building: BuildingType) => set({ selectedBuilding: building }),
   selectedBuildingEntityId: null,

@@ -70,6 +70,14 @@ export class TileManager {
     return buildings;
   };
 
+  getBuilding = (hexCoords: HexPosition) => {
+    const building = getComponentValue(
+      this.setup.components.Building,
+      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+    );
+    return building;
+  };
+
   isHexOccupied = (hexCoords: HexPosition) => {
     const building = getComponentValue(
       this.setup.components.Building,
