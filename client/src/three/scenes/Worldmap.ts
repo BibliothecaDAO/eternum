@@ -119,8 +119,8 @@ export default class WorldmapScene extends HexagonScene {
 
         this.totalStructures = this.structureManager.totalStructures;
 
-        this.removeCachedMatricesForChunk(startRow, startCol);
-        this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+        this.removeCachedMatricesAroundColRow(startCol, startRow);
+        this.updateVisibleChunks();
       }
     });
 
@@ -268,7 +268,7 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLeftNavigationView(View.EntityView);
     }
   }
-  protected onHexagonRightClick(): void {}
+  protected onHexagonRightClick(): void { }
 
   private onArmySelection(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {
@@ -394,13 +394,16 @@ export default class WorldmapScene extends HexagonScene {
       this.interactiveHexManager.renderHexes();
     }
 
-    // remove the cached matrices for the explored hexes that are not in the visible chunk
+    this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+  }
+
+  removeCachedMatricesAroundColRow(col: number, row: number) {
     for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
       for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
         if (i === 0 && j === 0) {
           continue;
         }
-        this.removeCachedMatricesForChunk(renderedChunkCenterRow + i, renderedChunkCenterCol + j);
+        this.removeCachedMatricesForChunk(row + i, col + j);
       }
     }
   }
