@@ -1,4 +1,4 @@
-import { TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
@@ -35,14 +35,16 @@ export class ClientConfigManager {
   }
 
   getBattleGraceTickCount() {
-    const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    //  TODO: This is not working for some reason // sync issue
+    const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([999999999n]));
 
-    return battleConfig?.battle_grace_tick_count!;
+    return EternumGlobalConfig.battle.graceTickCount;
   }
 
   getBattleDelay() {
+    //  TODO: This is not working for some reason
     const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
-    return battleConfig?.battle_delay_seconds!;
+    return EternumGlobalConfig.battle.delaySeconds;
   }
 }

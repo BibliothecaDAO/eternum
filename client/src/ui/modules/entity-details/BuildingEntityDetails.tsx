@@ -192,9 +192,12 @@ const CastleDetails = () => {
 
   const isImmune = isStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
 
-  const immunityEndTimestamp =
-    Number(structure.created_at) +
-    dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+  const immunityEndTimestamp = useMemo(() => {
+    return (
+      Number(structure.created_at) +
+      dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+    );
+  }, [structure.created_at, dojo.setup.configManager]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
