@@ -121,9 +121,9 @@ export const Chat = () => {
     return messages.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
   }, [messages, currentTab.address, tabs]);
 
-  useEffect(() => {
-    scrollToElement(bottomChatRef);
-  }, [messagesToDisplay]);
+  // useEffect(() => {
+  //   scrollToElement(bottomChatRef);
+  // }, [messagesToDisplay]);
 
   useEffect(() => {
     const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
