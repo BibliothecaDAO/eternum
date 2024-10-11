@@ -74,9 +74,7 @@ const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
     {depthQuests
       ?.slice()
       .reverse()
-      .map((quest: Quest) => (
-        <QuestCard quest={quest} key={quest.name} />
-      ))}
+      .map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
   </>
 );
 
