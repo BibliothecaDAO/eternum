@@ -259,7 +259,7 @@ const CastleDetails = () => {
               });
             }}
             onMouseLeave={() => setTooltip(null)}
-            className="font-bold text-lg animate-pulse"
+            className="font-bold text-lg animate-pulse text-white"
           >
             Immune for: {formatTime(timer)}
           </div>

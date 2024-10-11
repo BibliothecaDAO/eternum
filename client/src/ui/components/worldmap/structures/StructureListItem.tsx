@@ -200,7 +200,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
                   });
                 }}
                 onMouseLeave={() => setTooltip(null)}
-                className="font-bold text-sm animate-pulse"
+                className="font-bold text-sm animate-pulse text-white"
               >
                 Immune for: {formatTime(timer)}
               </div>
