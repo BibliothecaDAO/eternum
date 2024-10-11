@@ -214,7 +214,7 @@ export const TopMiddleNavigation = () => {
               className="px-3 flex gap-2 self-center text-xs"
             >
               <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-              <div className="self-center">{storehouses.toLocaleString()}</div>
+              <div className="self-center">{storehouses.toLocaleString() + " kg"}</div>
             </div>
           )}
           {population && (
