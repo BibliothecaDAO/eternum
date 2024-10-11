@@ -18,7 +18,7 @@ export const useStructureEntityId = () => {
   } = useDojo();
 
   const { hexPosition, isMapView } = useQuery();
-  const { setStructureEntityId } = useUIStore();
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const { playerStructures } = useEntities();
 
   const structures = playerStructures();

@@ -187,6 +187,8 @@ const CastleDetails = () => {
 
   const realm = useGetRealm(structureEntityId).realm;
 
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
   const structure = getStructureByEntityId(structureEntityId);
   if (!structure) return;
 
@@ -242,7 +244,26 @@ const CastleDetails = () => {
         <h3 className="pb-2 text-4xl flex justify-between">
           {structure.name} <HintModalButton section={HintSection.Realm} />
         </h3>
-        {isImmune && <div>Immune for: {formatTime(timer)}</div>}
+        {isImmune && (
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                content: (
+                  <>
+                    This structure is currently immune to attacks.
+                    <br />
+                    During this period, you are also unable to attack other players.
+                  </>
+                ),
+                position: "top",
+              });
+            }}
+            onMouseLeave={() => setTooltip(null)}
+            className="font-bold text-lg animate-pulse"
+          >
+            Immune for: {formatTime(timer)}
+          </div>
+        )}
       </div>
 
       <div className="font-bold flex justify-between">
