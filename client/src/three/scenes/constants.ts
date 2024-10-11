@@ -98,9 +98,9 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
 export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Realm]: "textures/realm_label.png",
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
-  [StructureType.FragmentMine]: "textures/shard_label.png",
+  [StructureType.FragmentMine]: "textures/fragment_mine_label.png",
   // placeholder for now
   [StructureType.Bank]: "",
   // placeholder for now
-  [StructureType.Settlement]: "textures/shard_label.png",
+  [StructureType.Settlement]: "textures/fragment_mine_label.png",
 };
