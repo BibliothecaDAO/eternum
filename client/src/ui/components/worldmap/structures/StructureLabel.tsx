@@ -33,9 +33,9 @@ export const StructureInfoLabel = () => {
     return undefined;
   }, [hoveredStructure]);
 
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const isImmune = isStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp!);
+  const isImmune = isStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
 
   const immunityEndTimestamp = useMemo(() => {
     return (

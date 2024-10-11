@@ -22,6 +22,14 @@ type StructureListItemProps = {
   ownArmySelected: ArmyInfo | undefined;
 };
 
+const immuneTooltipContent = (
+  <>
+    This structure is currently immune to attacks.
+    <br />
+    During this period, you are also unable to attack other players.
+  </>
+);
+
 export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmySelected }: StructureListItemProps) => {
   const dojo = useDojo();
 
@@ -102,13 +110,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         onMouseEnter={() => {
           if (isImmune) {
             setTooltip({
-              content: (
-                <>
-                  This structure is currently immune to attacks.
-                  <br />
-                  During this period, you are also unable to attack other players.
-                </>
-              ),
+              content: immuneTooltipContent,
               position: "top",
             });
           }
@@ -150,13 +152,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
           onMouseEnter={() => {
             if (isImmune) {
               setTooltip({
-                content: (
-                  <>
-                    This structure is currently immune to attacks.
-                    <br />
-                    During this period, you are also unable to attack other players.
-                  </>
-                ),
+                content: immuneTooltipContent,
                 position: "top",
               });
             }
@@ -189,13 +185,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
               <div
                 onMouseEnter={() => {
                   setTooltip({
-                    content: (
-                      <>
-                        This structure is currently immune to attacks.
-                        <br />
-                        During this period, you are also unable to attack other players.
-                      </>
-                    ),
+                    content: immuneTooltipContent,
                     position: "top",
                   });
                 }}

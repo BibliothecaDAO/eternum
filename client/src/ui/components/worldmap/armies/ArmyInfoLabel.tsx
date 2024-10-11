@@ -69,15 +69,13 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
 
   const structure = useMemo(() => {
     if (entityOwner.entity_owner_id) {
-      const structure = getStructureByEntityId(entityOwner.entity_owner_id);
-      return structure;
+      return getStructureByEntityId(entityOwner.entity_owner_id);
     }
-    return undefined;
   }, [entityOwner.entity_owner_id]);
 
-  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const isImmune = isStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp!);
+  const isImmune = isStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
 
   const immunityEndTimestamp = useMemo(() => {
     return (
