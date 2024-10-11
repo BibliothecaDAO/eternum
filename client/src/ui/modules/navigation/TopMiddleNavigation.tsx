@@ -5,6 +5,7 @@ import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
+import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
@@ -213,7 +214,7 @@ export const TopMiddleNavigation = () => {
               className="px-3 flex gap-2 self-center text-xs"
             >
               <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-              <div className="self-center">{storehouses.toLocaleString()}</div>
+              <div className="self-center">{storehouses.toLocaleString() + " kg"}</div>
             </div>
           )}
           {population && (
@@ -255,7 +256,13 @@ export const TopMiddleNavigation = () => {
             {isMapView ? "Realm" : "World"}
           </Button>
           {isMapView && (
-            <ViewOnMapIcon className="my-auto h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
+            <div className="flex flex-row items-center ">
+              <NavigateToPositionIcon
+                className="h-8 w-8"
+                position={{ x: structurePosition.x, y: structurePosition.y }}
+              />
+              <ViewOnMapIcon className="h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
+            </div>
           )}
         </div>
         {pointToWorldButton && (

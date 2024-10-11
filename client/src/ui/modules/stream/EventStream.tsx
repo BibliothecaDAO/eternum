@@ -12,7 +12,7 @@ import { ReactComponent as Wrench } from "@/assets/icons/Wrench.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { NavigateToArmyIcon } from "@/ui/components/military/ArmyChip";
+import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { ContractAddress, Position } from "@bibliothecadao/eternum";
 import { Component, defineComponentSystem, getComponentValue, World } from "@dojoengine/recs";
@@ -192,7 +192,7 @@ export const EventStream = () => {
                   </div>
                   <div className="flex flex-row items-center space-x-2 mr-2">
                     <MessageIcon playerName={event.name} selectedPlayer={event.address ?? BigInt(0)} />
-                    {event.position && <NavigateToArmyIcon hideTooltip={true} position={event.position} />}
+                    {event.position && <NavigateToPositionIcon hideTooltip={true} position={event.position} />}
                     {event.position && <ViewOnMapIcon hideTooltip={true} position={event.position} />}
                   </div>
                 </div>

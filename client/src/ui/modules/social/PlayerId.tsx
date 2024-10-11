@@ -3,6 +3,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position as PositionType } from "@/types/Position";
+import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
@@ -159,9 +160,12 @@ export const PlayerId = () => {
 
                   return (
                     <div className="flex flex-col gap-2 border-2 border-gold/10 p-2 rounded-md w-24">
-                      <div className="flex flex-row justify-between text-sm font-bold">
+                      <div className="flex flex-col justify-between text-sm font-bold">
                         {structure.structureName}
-                        <ViewOnMapIcon position={structure.position.getNormalized()} />
+                        <div className="flex flex-row items-center">
+                          <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position.getNormalized()} />
+                          <ViewOnMapIcon className="!w-4 !h-4" position={structure.position.getNormalized()} />
+                        </div>
                       </div>
                       {structureSpecificElement}
                     </div>
