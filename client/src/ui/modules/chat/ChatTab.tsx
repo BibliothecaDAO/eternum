@@ -3,6 +3,13 @@ import { useMemo } from "react";
 
 export const DEFAULT_TAB: Tab = { name: "Global", address: "0x0", displayed: true };
 
+export interface Tab {
+  name: string;
+  address: string;
+  numberOfMessages?: number;
+  displayed: boolean;
+}
+
 export const getMessageKey = (addressOne: string | bigint, addressTwo: string | bigint) => {
   if (typeof addressOne === "string") {
     addressOne = BigInt(addressOne);
@@ -16,12 +23,6 @@ export const getMessageKey = (addressOne: string | bigint, addressTwo: string | 
 
   return starknetKeccak(Buffer.from(sortedAddresses.join("")));
 };
-
-export interface Tab {
-  name: string;
-  address: string;
-  displayed: boolean;
-}
 
 export const ChatTab = ({
   tab,
@@ -40,7 +41,7 @@ export const ChatTab = ({
   }, [tab]);
 
   return (
-    <div className="relative inline-block flex" style={{ zIndex: 1 }}>
+    <div className="relative flex" style={{ zIndex: 1 }}>
       <div
         className={`text-sm h-6 w-24 px-2 text-center self-center rounded-t bg-hex-bg ${
           selected ? "bg-black/70" : "bg-black/5"

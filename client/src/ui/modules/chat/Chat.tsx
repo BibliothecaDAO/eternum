@@ -25,6 +25,7 @@ interface ChatMessage {
 
 export const GLOBAL_CHANNEL = shortString.encodeShortString("global");
 const CHAT_STORAGE_KEY = "chat_tabs";
+const GLOBAL_CHANNEL_KEY = "global";
 
 export const Chat = () => {
   const {
@@ -55,17 +56,12 @@ export const Chat = () => {
   useEffect(() => {
     if (account.address === masterAccount.address) return;
 
-    if (storedTabs.length === 0) {
-      setNewTabs([DEFAULT_TAB], account.address, setTabs);
-    } else {
-      setNewTabs([...storedTabs], account.address, setTabs);
-    }
-  }, [storedTabs, account.address]);
+    const initialTabs = storedTabs.length === 0 ? [DEFAULT_TAB] : [...storedTabs];
+    setNewTabs(initialTabs, account.address, setTabs);
+  }, [storedTabs, account.address, masterAccount.address, setTabs]);
 
   const bottomChatRef = useRef<HTMLDivElement>(null);
-
   const [salt, setSalt] = useState<bigint>(0n);
-
   const allMessageEntities = useEntityQuery([Has(Message)]);
 
   const messages = useMemo(() => {
@@ -73,49 +69,47 @@ export const Chat = () => {
 
     allMessageEntities.forEach((entity) => {
       const message = getComponentValue(Message, entity);
-      if (!message) return undefined;
+      if (!message) return;
 
       const address = toHexString(message.identity);
       const addressName = getComponentValue(AddressName, getEntityIdFromKeys([ContractAddress(address)]));
-      if (!addressName) return undefined;
+      if (!addressName) return;
 
-      const fromSelf = message?.identity === BigInt(account.address);
-
-      const shouldKeep =
+      const fromSelf = message.identity === BigInt(account.address);
+      const isRelevantMessage =
         fromSelf ||
         BigInt(message.channel) === BigInt(account.address) ||
         BigInt(message.channel) === BigInt(GLOBAL_CHANNEL);
-      if (!shouldKeep) {
-        return undefined;
-      }
 
-      const senderAddress = toHexString(message.identity);
+      if (!isRelevantMessage) return;
 
-      const senderName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(senderAddress)]));
+      const senderName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
       const name = shortString.decodeShortString(senderName?.name.toString() || "") || "Unknown";
-      const content = !!message.content ? message.content : "";
+      const content = message.content || "";
       const timestamp = new Date(Number(message.timestamp));
 
-      const sortedAddressesHash = getMessageKey(message.identity, BigInt(message.channel));
-
-      const key = BigInt(message.channel) === BigInt(GLOBAL_CHANNEL) ? GLOBAL_CHANNEL : sortedAddressesHash;
+      const key =
+        BigInt(message.channel) === BigInt(GLOBAL_CHANNEL)
+          ? GLOBAL_CHANNEL
+          : getMessageKey(message.identity, BigInt(message.channel));
 
       if (!messageMap.has(ContractAddress(key))) {
         messageMap.set(ContractAddress(key), []);
       }
 
       messageMap.get(ContractAddress(key))?.push({
-        address: senderAddress,
+        address,
         name,
         content,
-        fromSelf: message.identity === BigInt(account.address),
+        fromSelf,
         timestamp,
       });
     });
 
-    messageMap.forEach((messages, _) => {
+    messageMap.forEach((messages) => {
       messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     });
+
     return messageMap;
   }, [allMessageEntities, account.address]);
 
@@ -124,9 +118,8 @@ export const Chat = () => {
       return messages.get(BigInt(GLOBAL_CHANNEL));
     }
 
-    const sortedAddressesHash = getMessageKey(currentTab.address, account.address);
-    return messages.get(ContractAddress(sortedAddressesHash));
-  }, [messages, currentTab.address]);
+    return messages.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
+  }, [messages, currentTab.address, tabs]);
 
   useEffect(() => {
     scrollToElement(bottomChatRef);
@@ -134,13 +127,38 @@ export const Chat = () => {
 
   useEffect(() => {
     const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
-    const salts = Array.from(selfMessageEntities).map((entity) => {
-      const message = getComponentValue(Message, entity);
-      return message?.salt || 0n;
+
+    const salts = Array.from(selfMessageEntities)
+      .map((entity) => getComponentValue(Message, entity)?.salt ?? 0n)
+      .sort((a, b) => Number(b) - Number(a));
+
+    if (salts.length > 0) {
+      setSalt(salts[0] + 1n);
+    }
+  }, [account.address]);
+
+  useEffect(() => {
+    messages.forEach((chatMessages, key) => {
+      // Skip the Global channel
+      if (key.toString() === GLOBAL_CHANNEL_KEY) return;
+
+      // Check if a tab for this sender already exists
+      const existingTab = tabs.find((tab) => tab.address === key.toString());
+
+      // If no existing tab, create a new one
+      if (!existingTab) {
+        const latestMessage = chatMessages[chatMessages.length - 1];
+        const newTab: Tab = {
+          name: latestMessage.name,
+          address: key.toString(), // Ensure the address matches the key in the messages map
+          numberOfMessages: chatMessages.filter((msg) => !msg.fromSelf).length,
+          displayed: true,
+        };
+
+        addNewTab(tabs, newTab, setCurrentTab, account.address, setTabs);
+      }
     });
-    if (!salts.length) return;
-    setSalt(salts.sort((a, b) => Number(b) - Number(a))[0] + 1n);
-  }, [salt, messagesToDisplay]);
+  }, [messages, tabs, setCurrentTab, account.address, setTabs]);
 
   const changeTabs = (tab: string | undefined, address: string, fromSelector: boolean = false) => {
     if (address === "Global") {
@@ -152,17 +170,16 @@ export const Chat = () => {
       return;
     }
 
-    if (fromSelector) {
-      tab = shortString.decodeShortString(
-        getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
-      );
-    }
+    const tabName = fromSelector
+      ? shortString.decodeShortString(
+          getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
+        )
+      : tab!;
 
-    const numberOfMessages =
-      messages.get(ContractAddress(address))?.filter((message) => message.fromSelf === false).length || 0;
+    const numberOfMessages = messages.get(ContractAddress(address))?.filter((message) => !message.fromSelf).length || 0;
 
-    const currentTab = {
-      name: tab!,
+    const currentTab: Tab = {
+      name: tabName,
       address,
       numberOfMessages,
       displayed: true,
@@ -170,19 +187,15 @@ export const Chat = () => {
 
     setCurrentTab(currentTab);
 
-    const selectedTab = tabs.find((tab) => ContractAddress(tab.address) === ContractAddress(address));
     const newTabs = [...tabs];
+    const existingTabIndex = newTabs.findIndex((tab) => ContractAddress(tab.address) === ContractAddress(address));
 
-    if (!selectedTab) {
+    if (existingTabIndex === -1) {
       newTabs.push(currentTab);
-    } else if (!selectedTab?.displayed) {
-      newTabs.map((tab) => {
-        if (tab.address === address) {
-          tab.displayed = true;
-        }
-        return tab;
-      });
+    } else if (!newTabs[existingTabIndex].displayed) {
+      newTabs[existingTabIndex].displayed = true;
     }
+
     setNewTabs(newTabs, account.address, setTabs);
   };
 
@@ -190,7 +203,6 @@ export const Chat = () => {
     const newTabs = tabs.map((tab) => (tab.address === address ? { ...tab, displayed: false } : tab));
 
     setCurrentTab(DEFAULT_TAB);
-
     setNewTabs(newTabs, account.address, setTabs);
   };
 
@@ -280,6 +292,7 @@ export const Chat = () => {
     </div>
   );
 };
+
 const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
   setTimeout(() => {
     if (ref.current) {
