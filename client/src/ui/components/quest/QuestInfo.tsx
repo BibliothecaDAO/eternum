@@ -79,7 +79,7 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
         <div className="my-2 grid grid-cols-3 gap-2">
           {quest.status !== QuestStatus.Claimed ? (
             quest.status === QuestStatus.Completed && (
-              <Button isLoading={isLoading} variant="primary" onClick={handleAllClaims}>
+              <Button isPulsing={true} isLoading={isLoading} variant="primary" onClick={handleAllClaims}>
                 Claim Rewards
               </Button>
             )
