@@ -186,7 +186,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
               className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
               resourcesIconSize="xs"
               dynamic={
-                structure.category === StructureType[StructureType.FragmentMine] ? [ResourcesIds.Earthenshard] : []
+                structure.category === StructureType[StructureType.FragmentMine] ? [ResourcesIds.AncientFragment] : []
               }
             />
           </div>

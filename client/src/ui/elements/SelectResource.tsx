@@ -19,7 +19,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
   const inputRef = useRef<HTMLInputElement>(null);
 
   const resourceIds = Object.values(ResourcesIds)
-    .filter((resource) => resource !== ResourcesIds.Earthenshard && resource !== ResourcesIds.Lords)
+    .filter((resource) => resource !== ResourcesIds.AncientFragment && resource !== ResourcesIds.Lords)
     .filter((resource) => typeof resource === "number");
 
   const filteredResourceIds = resourceIds.filter((resourceId) =>

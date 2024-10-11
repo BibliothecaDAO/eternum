@@ -185,7 +185,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
         "2. Create an attacking army",
         "3. Assign troops to it to conquer the map",
       ],
-      prizes: [{ id: QuestType.Earthenshard, title: "Claim Earthen Shard" }],
+      prizes: [{ id: QuestType.FragmentMine, title: "Claim Ancient Fragments" }],
       depth: 4,
     },
   ],
@@ -424,7 +424,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     {
       name: "Pillage a structure",
       description:
-        "Pillage a realm, hyperstructure or earthenshard mine. To pillage a structure, travel with your army to your target first, then pillage it.",
+        "Pillage a realm, hyperstructure or fragment mine. To pillage a structure, travel with your army to your target first, then pillage it.",
       steps: [
         "1. Go to world view",
         "2. Right click on your army",
