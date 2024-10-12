@@ -272,8 +272,6 @@ export function useOwnedEntitiesOnPosition() {
       HasValue(Owner, { address }),
       Not(Movable),
       Not(Army),
-      // don't want bank but bank accounts
-      Not(Bank),
       // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there
       HasValue(Position, { x, y }),
     ]);

@@ -34,6 +34,10 @@ export const TransferView = () => {
           name: "Your Fragment Mines",
         },
         {
+          entities: playerStructures().filter((structure) => structure.category === "Bank"),
+          name: "Your Banks",
+        },
+        {
           entities: otherRealms((a) =>
             guildOnly
               ? playersInPlayersGuildAddress.includes(a.owner.address)
