@@ -54,7 +54,9 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     }
     const currentTimestamp = useUIStore.getState().nextBlockTimestamp;
     const battleManager = new BattleManager(structureAtPosition.protector.battle_id, dojo);
-    return battleManager.isBattleOngoing(currentTimestamp!);
+
+    const battleOngoing = battleManager.isBattleOngoing(currentTimestamp!);
+    return battleOngoing && !battleManager.isSiege(currentTimestamp!);
   }, [entity?.position?.x, entity?.position?.y]);
 
   const army = useMemo(() => getArmy(entityId), [entityId, entity.resources]);
