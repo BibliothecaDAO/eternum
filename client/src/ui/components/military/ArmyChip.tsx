@@ -20,19 +20,21 @@ import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
 
-export const NavigateToArmyIcon = ({
+export const NavigateToPositionIcon = ({
   position,
   hideTooltip = false,
+  className = "",
 }: {
   position: Position;
   hideTooltip?: boolean;
+  className?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
 
   return (
     <Compass
-      className="w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300"
+      className={`w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {
         const { x, y } = new PositionInterface(position).getNormalized();
         setNavigationTarget({
@@ -44,7 +46,7 @@ export const NavigateToArmyIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: "Navigate to Army",
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {
@@ -134,7 +136,7 @@ export const ArmyChip = ({
                                 className="w-5 h-5 hover:scale-110 transition-all duration-300"
                                 position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
                               />
-                              {isOnMap && <NavigateToArmyIcon position={updatedArmy!.position} />}
+                              {isOnMap && <NavigateToPositionIcon position={updatedArmy!.position} />}
                               <Swap
                                 className="w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300"
                                 onClick={() => {

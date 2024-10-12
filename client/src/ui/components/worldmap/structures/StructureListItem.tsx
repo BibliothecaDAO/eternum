@@ -22,6 +22,14 @@ type StructureListItemProps = {
   ownArmySelected: ArmyInfo | undefined;
 };
 
+const immuneTooltipContent = (
+  <>
+    This structure is currently immune to attacks.
+    <br />
+    During this period, you are also unable to attack other players.
+  </>
+);
+
 export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmySelected }: StructureListItemProps) => {
   const dojo = useDojo();
 
@@ -102,7 +110,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         onMouseEnter={() => {
           if (isImmune) {
             setTooltip({
-              content: "This structure is currently immune to attacks.",
+              content: immuneTooltipContent,
               position: "top",
             });
           }
@@ -144,7 +152,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
           onMouseEnter={() => {
             if (isImmune) {
               setTooltip({
-                content: `This structure is currently immune to attacks.`,
+                content: immuneTooltipContent,
                 position: "top",
               });
             }
@@ -173,7 +181,20 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
             <div className="flex flex-row font-bold text-xs">
               <div className="font-bold">Owner: {addressName === "" ? "Bandits" : addressName}</div>
             </div>
-            {isImmune && <div>Immune for: {formatTime(timer)}</div>}
+            {isImmune && (
+              <div
+                onMouseEnter={() => {
+                  setTooltip({
+                    content: immuneTooltipContent,
+                    position: "top",
+                  });
+                }}
+                onMouseLeave={() => setTooltip(null)}
+                className="font-bold text-sm animate-pulse text-white"
+              >
+                Immune for: {formatTime(timer)}
+              </div>
+            )}
 
             {structure.category === StructureType[StructureType.Realm] && (
               <RealmResourcesIO realmEntityId={structure.entity_id} />

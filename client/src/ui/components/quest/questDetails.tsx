@@ -62,7 +62,15 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Settle,
     {
       name: "Settle",
-      description: "A gift of food from the gods",
+      description: (
+        <div className="space-y-2">
+          <p>A gift of food from the gods.</p>
+
+          <p>No action required to finish the quest.</p>
+
+          <p>Simply claim your rewards.</p>
+        </div>
+      ),
       steps: [],
       prizes: [{ id: QuestType.Food, title: "Common Resources" }],
       depth: 0,

@@ -277,11 +277,13 @@ export const Chat = () => {
             </SelectTrigger>
             <SelectContent>
               {players &&
-                players.map((player, index) => (
-                  <SelectItem className="flex justify-between" key={index} value={toHexString(player.address)}>
-                    {player.addressName}
-                  </SelectItem>
-                ))}
+                players
+                  .sort((a, b) => a.addressName.localeCompare(b.addressName))
+                  .map((player, index) => (
+                    <SelectItem className="flex justify-between" key={index} value={toHexString(player.address)}>
+                      {player.addressName}
+                    </SelectItem>
+                  ))}
               <SelectItem className="flex justify-between" value="Global">
                 Global
               </SelectItem>
