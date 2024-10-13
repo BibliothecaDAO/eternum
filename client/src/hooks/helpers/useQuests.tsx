@@ -159,16 +159,16 @@ const useQuestDependencies = () => {
         status: questClaimStatus[QuestId.BuildFood]
           ? QuestStatus.Claimed
           : buildingQuantities.food > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.BuildResource]: {
         value: questClaimStatus[QuestId.BuildResource] ? null : buildingQuantities.resource,
         status: questClaimStatus[QuestId.BuildResource]
           ? QuestStatus.Claimed
           : buildingQuantities.resource > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
 
       [QuestId.PauseProduction]: {
@@ -176,8 +176,8 @@ const useQuestDependencies = () => {
         status: questClaimStatus[QuestId.PauseProduction]
           ? QuestStatus.Claimed
           : hasAnyPausedBuilding
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
 
       [QuestId.CreateTrade]: {
@@ -185,8 +185,8 @@ const useQuestDependencies = () => {
         status: questClaimStatus[QuestId.CreateTrade]
           ? QuestStatus.Claimed
           : orders.length > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
 
       [QuestId.CreateDefenseArmy]: {
@@ -194,72 +194,72 @@ const useQuestDependencies = () => {
         status: questClaimStatus[QuestId.CreateDefenseArmy]
           ? QuestStatus.Claimed
           : hasDefensiveArmy
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.CreateAttackArmy]: {
         value: questClaimStatus[QuestId.CreateAttackArmy] ? null : hasAttackingArmy,
         status: questClaimStatus[QuestId.CreateAttackArmy]
           ? QuestStatus.Claimed
           : hasAttackingArmy
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Travel]: {
         value: questClaimStatus[QuestId.Travel] ? null : hasTraveled,
         status: questClaimStatus[QuestId.Travel]
           ? QuestStatus.Claimed
           : hasTraveled
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.BuildWorkersHut]: {
         value: questClaimStatus[QuestId.BuildWorkersHut] ? null : buildingQuantities.workersHut,
         status: questClaimStatus[QuestId.BuildWorkersHut]
           ? QuestStatus.Claimed
           : buildingQuantities.workersHut > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Market]: {
         value: questClaimStatus[QuestId.Market] ? null : buildingQuantities.markets,
         status: questClaimStatus[QuestId.Market]
           ? QuestStatus.Claimed
           : buildingQuantities.markets > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Pillage]: {
         value: questClaimStatus[QuestId.Pillage] ? null : playerPillages.length,
         status: questClaimStatus[QuestId.Pillage]
           ? QuestStatus.Claimed
           : playerPillages.length > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Mine]: {
         value: questClaimStatus[QuestId.Mine] ? null : fragmentMines,
         status: questClaimStatus[QuestId.Mine]
           ? QuestStatus.Claimed
           : fragmentMines > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Contribution]: {
         value: questClaimStatus[QuestId.Contribution] ? null : hyperstructureContributions,
         status: questClaimStatus[QuestId.Contribution]
           ? QuestStatus.Claimed
           : hyperstructureContributions > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Hyperstructure]: {
         value: questClaimStatus[QuestId.Hyperstructure] ? null : hyperstructures,
         status: questClaimStatus[QuestId.Hyperstructure]
           ? QuestStatus.Claimed
           : hyperstructures > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
     }),
     [

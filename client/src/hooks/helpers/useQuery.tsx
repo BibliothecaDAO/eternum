@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useSearch } from "wouter/use-location";
 
@@ -6,23 +6,28 @@ export const useQuery = () => {
   const searchString = useSearch();
   const [location, setLocation] = useLocation();
 
-  const handleUrlChange = (url: string) => {
-    setLocation(url);
-    window.dispatchEvent(new Event("urlChanged"));
-  };
+  const handleUrlChange = useCallback(
+    (url: string) => {
+      setLocation(url);
+      window.dispatchEvent(new Event("urlChanged"));
+    },
+    [setLocation],
+  );
 
-  const isMapView = location.includes(`/map`);
+  const isMapView = useMemo(() => location.includes("/map"), [location]);
 
   const hexPosition = useMemo(() => {
     const params = new URLSearchParams(searchString);
-    const x = params.get("col");
-    const y = params.get("row");
-    return { col: Number(x), row: Number(y) };
+    return {
+      col: Number(params.get("col")),
+      row: Number(params.get("row")),
+    };
   }, [searchString]);
 
-  const isLocation = (col: number, row: number) => {
-    return hexPosition.col === col && hexPosition.row === row;
-  };
+  const isLocation = useCallback(
+    (col: number, row: number) => hexPosition.col === col && hexPosition.row === row,
+    [hexPosition],
+  );
 
   return {
     isLocation,

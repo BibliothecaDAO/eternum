@@ -6,7 +6,7 @@ import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
 import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
-export const Military = ({ entityId }: { entityId: ID | undefined }) => {
+export const Military = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const {
     account: { account },
   } = useDojo();
@@ -19,7 +19,7 @@ export const Military = ({ entityId }: { entityId: ID | undefined }) => {
   }, [getStructures, entityId]);
 
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       {isMapView ? <EntitiesArmyTable /> : selectedStructure && <EntityArmyList structure={selectedStructure} />}
     </div>
   );

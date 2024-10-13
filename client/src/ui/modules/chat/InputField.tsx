@@ -1,23 +1,14 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
-import useUIStore from "@/hooks/store/useUIStore";
 import TextInput from "@/ui/elements/TextInput";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo, useRef } from "react";
 import { Signature, TypedData, WeierstrassSignatureType } from "starknet";
-import { GLOBAL_CHANNEL, addNewTab } from "./Chat";
-import { Tab } from "./ChatTab";
+import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
+import { Tab } from "./types";
 
-export const InputField = ({
-  currentTab,
-  setCurrentTab,
-  salt,
-}: {
-  currentTab: Tab;
-  setCurrentTab: (tab: Tab) => void;
-  salt: bigint;
-}) => {
+export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint }) => {
   const {
     account: { account },
     setup: {
@@ -26,41 +17,34 @@ export const InputField = ({
     network: { toriiClient },
   } = useDojo();
 
-  const tabs = useUIStore((state) => state.tabs);
-  const setTabs = useUIStore((state) => state.setTabs);
-
   const getPlayers = useGetOtherPlayers();
   const players = useMemo(() => getPlayers(), [getPlayers]);
 
-  const input = useRef<string>("");
+  const inputRef = useRef<string>("");
 
   const handleKeyPress = useCallback(
-    (event: any) => {
-      if (event.key !== "Enter") {
-        return;
-      }
-
-      if (input.current.length === 0) return;
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== "Enter" || inputRef.current.length === 0) return;
 
       const contentParser = new ContentParser();
-      if (contentParser.isWhisper(input.current)) {
-        const whisperDestination = contentParser.getWhisperDest(input.current);
-
+      if (contentParser.isWhisper(inputRef.current)) {
+        const whisperDestination = contentParser.getWhisperDest(inputRef.current);
         const player = players.find((player) => player.addressName === whisperDestination);
-        if (!player) return;
-
-        const newTab = {
-          name: player.addressName!,
-          address: toHexString(player.address),
-          displayed: true,
-        };
-
-        addNewTab(tabs, newTab, setCurrentTab, account.address, setTabs);
+        if (player) {
+          const newTab = {
+            name: player.addressName!,
+            address: toHexString(player.address),
+            displayed: true,
+          };
+          // TODO: Implement addNewTab functionality
+          // addNewTab(newTab);
+        }
       } else {
-        publish(input.current);
+        publish(inputRef.current);
       }
+      inputRef.current = "";
     },
-    [input.current, players, setCurrentTab],
+    [players],
   );
 
   const publish = useCallback(
@@ -69,11 +53,11 @@ export const InputField = ({
         runQuery([Has(AddressName), HasValue(AddressName, { name: BigInt("0x0") })]),
       );
 
-      const recipientAddress = !!recipientEntities.length
+      const recipientAddress = recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
-        : currentTab.name === "Global"
-          ? undefined
-          : BigInt(currentTab.address);
+        : currentTab.name === GLOBAL_CHANNEL_KEY
+        ? undefined
+        : BigInt(currentTab.address);
 
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 
@@ -87,19 +71,18 @@ export const InputField = ({
         toHexString((signature as WeierstrassSignatureType).s),
       ]);
     },
-    [account, salt, toriiClient, currentTab.address],
+    [account, salt, toriiClient, currentTab],
   );
+
   return (
     <TextInput
-      key={"chat-input"}
-      className="border border-gold/40  !w-auto  text-gold"
+      key="chat-input"
+      className="border border-gold/40 !w-auto text-gold"
       placeholder="Message"
       onChange={(value) => {
-        input.current = value;
+        inputRef.current = value;
       }}
-      onKeyDown={(e) => {
-        handleKeyPress(e);
-      }}
+      onKeyDown={handleKeyPress}
     />
   );
 };

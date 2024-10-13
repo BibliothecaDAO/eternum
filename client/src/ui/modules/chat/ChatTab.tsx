@@ -1,67 +1,72 @@
-import { starknetKeccak } from "@dojoengine/torii-client";
+import { AnimatePresence, motion } from "framer-motion";
+import { X } from "lucide-react";
 import { useMemo } from "react";
+import { useChatStore } from "./ChatState";
+import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
 
-export const DEFAULT_TAB: Tab = { name: "Global", address: "0x0", displayed: true };
+export const DEFAULT_TAB: Tab = {
+  name: GLOBAL_CHANNEL_KEY,
+  address: "0x0",
+  key: GLOBAL_CHANNEL,
+  displayed: true,
+  visible: true,
+  lastSeen: new Date(),
+};
 
 export interface Tab {
   name: string;
+  key: string;
   address: string;
   numberOfMessages?: number;
   displayed: boolean;
+  visible: boolean;
+  lastSeen: Date;
 }
 
-export const getMessageKey = (addressOne: string | bigint, addressTwo: string | bigint) => {
-  if (typeof addressOne === "string") {
-    addressOne = BigInt(addressOne);
-  }
+export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
+  const setCurrentTab = useChatStore((state) => state.setCurrentTab);
 
-  if (typeof addressTwo === "string") {
-    addressTwo = BigInt(addressTwo);
-  }
+  const hideTab = useChatStore((state) => state.hideTab);
 
-  const sortedAddresses = [addressOne, addressTwo].sort((a, b) => Number(a) - Number(b));
-
-  return starknetKeccak(Buffer.from(sortedAddresses.join("")));
-};
-
-export const ChatTab = ({
-  tab,
-  changeTabs,
-  selected,
-  removeTab,
-}: {
-  tab: Tab;
-  changeTabs: (tab: string | undefined, address: string, fromSelector: boolean) => void;
-  selected: boolean;
-  removeTab: (address: string) => void;
-}) => {
   const userName = useMemo(() => {
     if (tab.name.length > 8) return `${tab.name.slice(0, 8)}...`;
     return tab.name;
   }, [tab]);
 
   return (
-    <div className="relative flex" style={{ zIndex: 1 }}>
-      <div
-        className={`text-sm h-6 w-24 px-2 text-center self-center rounded-t bg-hex-bg ${
-          selected ? "bg-black/70" : "bg-black/5"
-        } mr-1 flex flex-row justify-between items-center relative`}
-        style={{ zIndex: 2 }}
-        onClick={() => changeTabs(tab.name, tab.address, false)}
+    <AnimatePresence>
+      <motion.div
+        className="relative flex flex-grow"
+        style={{ zIndex: 1 }}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.3 }}
       >
-        {userName}
-        {tab.name !== "Global" && (
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              removeTab(tab.address);
-            }}
-            className="self-center text-xs font-bold w-4"
-          >
-            X
+        <div
+          className={`text-sm px-2 text-center self-center rounded bg-hex-bg border border-gold/30 ${
+            selected ? "bg-black/70" : "bg-black/10"
+          } flex flex-row gap-2 justify-between items-center relative`}
+          style={{ zIndex: 2 }}
+          onClick={() => setCurrentTab({ ...tab, displayed: true })}
+        >
+          <span>{userName}</span>
+
+          <div>
+            {tab.name !== GLOBAL_CHANNEL_KEY && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  hideTab({ ...tab, displayed: false });
+                }}
+                className="hover:bg-black/40 rounded-full"
+              >
+                <X className="w-2" />
+              </button>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 };

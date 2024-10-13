@@ -9,9 +9,10 @@ import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import { formatTime, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { addNewTab } from "../chat/Chat";
+import { useChatStore } from "../chat/ChatState";
+// import { addNewTab } from "../chat/utils";
 
 export const MessageIcon = ({
   playerName,
@@ -24,19 +25,19 @@ export const MessageIcon = ({
     account: { account },
   } = useDojo();
 
-  const tabs = useUIStore((state) => state.tabs);
-  const setTabs = useUIStore((state) => state.setTabs);
-  const setCurrentTab = useUIStore((state) => state.setCurrentTab);
+  const tabs = useChatStore((state) => state.tabs);
+  const setTabs = useChatStore((state) => state.setTabs);
+  const setCurrentTab = useChatStore((state) => state.setCurrentTab);
 
   const handleClick = () => {
     if (!playerName) return;
-    addNewTab(
-      tabs,
-      { name: playerName, address: toHexString(selectedPlayer), displayed: true },
-      setCurrentTab,
-      account.address,
-      setTabs,
-    );
+    // addNewTab(
+    //   tabs,
+    //   { name: playerName, address: toHexString(selectedPlayer), displayed: true },
+    //   setCurrentTab,
+    //   account.address,
+    //   setTabs,
+    // );
   };
 
   return (

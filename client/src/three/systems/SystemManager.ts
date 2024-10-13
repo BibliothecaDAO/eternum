@@ -98,8 +98,6 @@ export class SystemManager {
             );
             const isMine = this.isOwner(owner);
 
-            console.log({ health });
-
             callback({
               entityId: army.entity_id,
               hexCoords: { col: position.x, row: position.y },
