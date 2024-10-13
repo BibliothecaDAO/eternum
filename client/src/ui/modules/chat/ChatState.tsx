@@ -3,7 +3,8 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_TAB } from "./ChatTab";
 import { CHAT_STORAGE_KEY } from "./constants";
 import { Tab } from "./types";
-export interface ChatState {
+
+interface ChatState {
   tabs: Tab[];
   currentTab: Tab;
   setCurrentTab: (tab: Tab) => void;

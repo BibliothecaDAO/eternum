@@ -56,8 +56,8 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
       const recipientAddress = recipientEntities.length
         ? getComponentValue(AddressName, recipientEntities[0])?.address
         : currentTab.name === GLOBAL_CHANNEL_KEY
-        ? undefined
-        : BigInt(currentTab.address);
+          ? undefined
+          : BigInt(currentTab.address);
 
       const channel = recipientAddress !== undefined ? toHexString(recipientAddress) : GLOBAL_CHANNEL;
 
