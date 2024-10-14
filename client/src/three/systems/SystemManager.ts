@@ -228,11 +228,13 @@ export class SystemManager {
             const innerCol = building.inner_col;
             const innerRow = building.inner_row;
             const buildingType = building.category;
+            const paused = building.paused;
 
             callback({
               buildingType,
               innerCol,
               innerRow,
+              paused,
             });
           }
         });
