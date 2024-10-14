@@ -90,10 +90,10 @@ export const EternumGlobalConfig = {
     radius: 2000,
     angle_scaled: 0,
     center: 2147483646,
-    min_distance: 10,
-    max_distance: 30,
+    min_distance: 30,
+    max_distance: 50,
     min_scaling_factor_scaled: 1844674407370955161n,
-    min_angle_increase: 10,
+    min_angle_increase: 20,
     max_angle_increase: 40,
   },
 };
