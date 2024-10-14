@@ -49,7 +49,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  // const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(entityId);
