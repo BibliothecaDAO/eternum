@@ -12,6 +12,7 @@ import { TheWorld } from "./TheWorld";
 import { Trading } from "./Trading";
 import { Transfers } from "./Transfers";
 import { WorldStructures } from "./WorldStructures";
+import { useDojo } from "@/hooks/context/DojoContext";
 
 export enum HintSection {
   TheWorld = "The World",
@@ -33,6 +34,10 @@ type HintModalProps = {
 };
 
 export const HintModal = ({ initialActiveSection }: HintModalProps) => {
+  const {
+    setup: { configManager },
+  } = useDojo();
+
   const sections = [
     {
       name: HintSection.TheWorld,
@@ -56,7 +61,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
     },
     {
       name: HintSection.TheMap,
-      content: <TheMap />,
+      content: <TheMap configManager={configManager} />,
     },
     {
       name: HintSection.Buildings,

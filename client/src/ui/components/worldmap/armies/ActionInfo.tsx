@@ -19,6 +19,7 @@ export const ActionInfo = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const {
     setup: {
+      configManager,
       components: { Army },
     },
   } = useDojo();
@@ -91,6 +92,7 @@ export const ActionInfo = () => {
             travelingEntityId={selectedEntityId!}
             isExplored={isExplored}
             travelLength={travelPath!.path.length - 1}
+            configManager={configManager}
           />
           {!isExplored && (
             <div className="flex flex-row text-xs ml-1">

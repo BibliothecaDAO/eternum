@@ -100,12 +100,12 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
         </Headline>
 
         <div>
-          {stamina.amount < EternumGlobalConfig.stamina.travelCost ? (
+          {stamina.amount < setup.configManager.getTravelStaminaCost() ? (
             <div className="text-xxs font-semibold items-center text-center">
               ⚠️ Not enough stamina to explore or travel
             </div>
           ) : (
-            stamina.amount < EternumGlobalConfig.stamina.exploreCost && (
+            stamina.amount < setup.configManager.getExploreStaminaCost() && (
               <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough stamina to explore</div>
             )
           )}

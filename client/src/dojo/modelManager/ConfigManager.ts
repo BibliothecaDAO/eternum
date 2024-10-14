@@ -1,4 +1,4 @@
-import { EternumGlobalConfig, TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
@@ -18,7 +18,7 @@ export class ClientConfigManager {
     return ClientConfigManager._instance;
   }
 
-  getStaminaTravelConfig() {
+  getTravelStaminaCost() {
     const staminaConfig = getComponentValue(
       this.components.TravelStaminaCostConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Travel)]),
@@ -26,7 +26,7 @@ export class ClientConfigManager {
     return staminaConfig?.cost!;
   }
 
-  getStaminaExploreConfig() {
+  getExploreStaminaCost() {
     const staminaConfig = getComponentValue(
       this.components.TravelStaminaCostConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Explore)]),

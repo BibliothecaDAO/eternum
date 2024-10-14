@@ -27,7 +27,7 @@ export const StaminaResource = ({ entityId, className }: { entityId: ID | undefi
   const staminaPercentage = useMemo(() => (staminaAmount / maxStamina) * 100, [staminaAmount, maxStamina]);
 
   const staminaColor = useMemo(
-    () => (staminaAmount < EternumGlobalConfig.stamina.travelCost ? "bg-red" : "bg-yellow"),
+    () => (staminaAmount < setup.configManager.getTravelStaminaCost() ? "bg-red" : "bg-yellow"),
     [staminaAmount],
   );
 

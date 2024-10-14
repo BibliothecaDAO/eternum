@@ -1,11 +1,12 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds, TROOPS_FOOD_CONSUMPTION } from "@bibliothecadao/eternum";
+import { ResourcesIds, TROOPS_FOOD_CONSUMPTION } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
-export const TheMap = () => {
+export const TheMap = ({ configManager }: { configManager: ClientConfigManager }) => {
   const chapters = [
     {
       title: "Exploration",
@@ -15,7 +16,7 @@ export const TheMap = () => {
             The world map starts unexplored, except for Realms. Exploring new tiles with your armies costs food and
             reveals hidden lands, potentially yielding random resources or uncovering valuable fragment mines.
           </p>
-          <ExplorationTable />
+          <ExplorationTable configManager={configManager} />
         </>
       ),
     },
@@ -42,7 +43,10 @@ export const TheMap = () => {
   );
 };
 
-const ExplorationTable = () => {
+const ExplorationTable = ({ configManager }: { configManager: ClientConfigManager }) => {
+  const travelStaminaCost = configManager.getTravelStaminaCost();
+  const exploreStaminaCost = configManager.getExploreStaminaCost();
+
   return (
     <table className="not-prose w-full border-collapse border border-gold/10">
       <thead>
@@ -60,7 +64,7 @@ const ExplorationTable = () => {
               Travel
             </div>
           </td>
-          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.travelCost}</td>
+          <td className="border border-gold/10 p-2">{travelStaminaCost}</td>
           <td>
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>
@@ -121,7 +125,7 @@ const ExplorationTable = () => {
               Exploration
             </div>
           </td>
-          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.exploreCost}</td>
+          <td className="border border-gold/10 p-2">{exploreStaminaCost}</td>
           <td>
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>

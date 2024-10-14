@@ -1,3 +1,4 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { type HexPosition, ResourceMiningTypes } from "@/types";
 import {
@@ -11,6 +12,7 @@ import {
   TROOPS_FOOD_CONSUMPTION,
   WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { type SortInterface } from "../elements/SortButton";
@@ -382,14 +384,16 @@ export const computeTravelFoodCosts = (troops: any) => {
   };
 };
 
-export const computeExploreFoodCosts = (troops: any) => {
+export const computeExploreFoodCosts = (
+  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
+) => {
   const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
   const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
   const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
 
-  const paladinCount = Number(troops.paladin_count);
-  const knightCount = Number(troops.knight_count);
-  const crossbowmanCount = Number(troops.crossbowman_count);
+  const paladinCount = Number(troops?.paladin_count);
+  const knightCount = Number(troops?.knight_count);
+  const crossbowmanCount = Number(troops?.crossbowman_count);
 
   const paladinWheatConsumption = paladinFoodConsumption.explore_wheat_burn_amount * paladinCount;
   const knightWheatConsumption = knightFoodConsumption.explore_wheat_burn_amount * knightCount;

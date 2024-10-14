@@ -1,10 +1,12 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
-import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
+import { SetupResult } from "@/dojo/setup";
+import { QuestId, getQuestDetails } from "@/ui/components/quest/questDetails";
 import { BuildingType, ContractAddress, ID, QuestType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useMemo } from "react";
+import { Account, AccountInterface } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
@@ -33,7 +35,11 @@ export enum QuestStatus {
 }
 
 export const useQuests = () => {
-  const questDependencies = useQuestDependencies();
+  const { setup, account } = useDojo();
+
+  const questDependencies = useQuestDependencies(setup, account.account);
+
+  const questDetails = getQuestDetails(setup.configManager);
 
   const createQuest = (questId: QuestId) => {
     const dependency = questDependencies[questId];
@@ -67,13 +73,20 @@ export const useQuests = () => {
   return { quests };
 };
 
-const useQuestDependencies = () => {
-  const {
-    setup,
-    account: { account },
-  } = useDojo();
-
+const useQuestDependencies = (setup: SetupResult, account: Account | AccountInterface) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const entityUpdate = useEntityQuery([
+    HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
+  ]);
+  const playerPillages = useEntityQuery([
+    HasValue(setup.components.events.BattlePillageData, { pillager: BigInt(account.address) }),
+  ]);
+  const buildingQuantities = useBuildingQuantities(structureEntityId);
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
+  const orders = useGetMyOffers();
+  const { playerStructures } = useEntities();
+  const structures = playerStructures();
 
   const { getEntityInfo } = getEntitiesUtils();
   const structurePosition = getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 };
@@ -89,13 +102,6 @@ const useQuestDependencies = () => {
     [existingBuildings],
   );
 
-  const entityUpdate = useEntityQuery([
-    HasValue(setup.components.EntityOwner, { entity_owner_id: structureEntityId || 0 }),
-  ]);
-
-  const buildingQuantities = useBuildingQuantities(structureEntityId);
-
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structureEntityId || 0 });
   const hasDefensiveArmy = useMemo(
     () => entityArmies.some((army) => army.protectee?.protectee_id === structureEntityId && army.quantity.value > 0n),
     [entityArmies],
@@ -105,19 +111,10 @@ const useQuestDependencies = () => {
     [entityArmies],
   );
 
-  const orders = useGetMyOffers();
-
   const hasTraveled = useMemo(
     () => armyHasTraveled(entityArmies, structurePosition),
     [entityArmies, structurePosition],
   );
-
-  const playerPillages = useEntityQuery([
-    HasValue(setup.components.events.BattlePillageData, { pillager: BigInt(account.address) }),
-  ]);
-
-  const { playerStructures } = useEntities();
-  const structures = playerStructures();
 
   const countStructuresByCategory = useCallback(
     (category: string) => {
@@ -274,6 +271,7 @@ const useQuestDependencies = () => {
 export const useQuestClaimStatus = () => {
   const {
     setup: {
+      configManager,
       components: { HasClaimedStartingResources },
     },
   } = useDojo();
@@ -292,6 +290,8 @@ export const useQuestClaimStatus = () => {
   };
 
   const questClaimStatus = useMemo(() => {
+    const questDetails = getQuestDetails(configManager);
+
     return Array.from(questDetails.keys()).reduce(
       (acc, questName) => ({
         ...acc,
