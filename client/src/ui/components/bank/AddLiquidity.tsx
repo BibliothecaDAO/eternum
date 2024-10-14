@@ -1,6 +1,7 @@
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
@@ -12,11 +13,11 @@ import { LiquidityTableHeader } from "./LiquidityTable";
 import { ResourceBar } from "./ResourceBar";
 
 const AddLiquidity = ({
-  bank_entity_id,
+  bankEntityId,
   entityId,
   listResourceId,
 }: {
-  bank_entity_id: ID;
+  bankEntityId: ID;
   entityId: ID;
   listResourceId: number;
 }) => {
@@ -34,8 +35,8 @@ const AddLiquidity = ({
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
-    () => new MarketManager(setup, bank_entity_id, ContractAddress(account.address), resourceId),
-    [setup, bank_entity_id, resourceId, account.address],
+    () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
+    [setup, bankEntityId, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -60,15 +61,17 @@ const AddLiquidity = ({
     getBalance(entityId, Number(ResourcesIds.Lords)).balance >= multiplyByPrecision(lordsAmount) &&
     getBalance(entityId, Number(resourceId)).balance >= multiplyByPrecision(resourceAmount);
 
+  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsResourcesLocked(entityId);
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
-  const canAdd = hasEnough && isNotZero;
+  const canAdd = hasEnough && isNotZero && !isBankResourcesLocked && !isMyResourcesLocked;
 
   const onAddLiquidity = () => {
     setIsLoading(true);
     setup.systemCalls
       .add_liquidity({
         signer: account,
-        bank_entity_id,
+        bank_entity_id: bankEntityId,
         entity_id: entityId,
         calls: [
           {
@@ -134,7 +137,7 @@ const AddLiquidity = ({
         </div>
         <div className="p-2">
           <LiquidityTableHeader />
-          <LiquidityResourceRow bankEntityId={bank_entity_id} entityId={entityId} resourceId={resourceId} />
+          <LiquidityResourceRow bankEntityId={bankEntityId} entityId={entityId} resourceId={resourceId} />
           <div className="w-full flex flex-col justify-center mt-4">
             <Button
               variant="primary"
@@ -147,7 +150,10 @@ const AddLiquidity = ({
             </Button>
             {!canAdd && (
               <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
-                Not enough resources or amount is zero
+                {!isNotZero && <div>Warning: Amount must be greater than zero</div>}
+                {!hasEnough && <div>Warning: Not enough resources for this operation</div>}
+                {isBankResourcesLocked && <div>Warning: Bank resources are currently locked</div>}
+                {isMyResourcesLocked && <div>Warning: Your resources are currently locked</div>}
               </div>
             )}
           </div>
