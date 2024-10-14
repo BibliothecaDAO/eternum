@@ -203,7 +203,7 @@ export const LeftNavigationModule = () => {
       ].includes(item.name as MenuEnum),
     );
 
-    return isMapView ? filteredNavigation : filteredNavigation;
+    return filteredNavigation;
   }, [
     view,
     openedPopups,
