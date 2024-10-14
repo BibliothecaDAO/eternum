@@ -162,11 +162,12 @@ export const useStructures = () => {
   const {
     account: { account },
     setup: {
-      components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm, Position, AddressName },
+      components: { Structure, EntityOwner, Owner, Protector, Position, AddressName },
     },
   } = useDojo();
 
   const { getAliveArmy } = getArmyByEntityId();
+  const { getEntityName } = useEntitiesUtils();
 
   const getStructureByEntityId = (entityId: ID) => {
     const structureEntityId = getEntityIdFromKeys([BigInt(entityId)]);
@@ -184,8 +185,6 @@ export const useStructures = () => {
 
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
-
-    const { getEntityName } = useEntitiesUtils();
 
     const name = getEntityName(entityId);
 
