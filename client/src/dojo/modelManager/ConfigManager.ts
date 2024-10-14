@@ -1,7 +1,8 @@
-import { TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
+import { divideByPrecision } from "@/ui/utils/utils";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -32,6 +33,12 @@ export class ClientConfigManager {
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Explore)]),
     );
     return staminaConfig?.cost!;
+  }
+
+  getExploreReward() {
+    const exploreConfig = getComponentValue(this.components.MapConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+    return divideByPrecision(Number(exploreConfig?.reward_resource_amount ?? 0));
   }
 
   getBattleGraceTickCount() {

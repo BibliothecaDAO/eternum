@@ -181,7 +181,7 @@ export const ArmyChip = ({
                 {!army.protectee && armyHasTroops([updatedArmy]) && (
                   <div className="flex flex-col font-bold items-end text-xs mr-2">
                     <StaminaResource entityId={updatedArmy!.entity_id} />
-                    <ArmyCapacity army={updatedArmy} />
+                    <ArmyCapacity army={updatedArmy} configManager={dojo.setup.configManager} />
                   </div>
                 )}
               </div>

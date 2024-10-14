@@ -109,7 +109,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
               <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough stamina to explore</div>
             )
           )}
-          {remainingCapacity < EternumGlobalConfig.exploration.reward && (
+          {remainingCapacity < setup.configManager.getExploreReward() && (
             <div className="text-xxs font-semibold items-center text-center">⚠️ Too heavy to explore</div>
           )}
           {notEnoughFood && (
@@ -124,7 +124,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
           </div>
           <div className="flex flex-col items-end">
             <StaminaResource entityId={entity_id} />
-            <ArmyCapacity army={army} className="mt-1" />
+            <ArmyCapacity army={army} configManager={setup.configManager} className="mt-1" />
           </div>
         </div>
         <div className="w-full flex flex-col mt-2 space-y-2">

@@ -117,7 +117,9 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
         </div>
       </div>
-      {entity.entityType === EntityType.TROOP && <ArmyCapacity army={army} className="my-2 ml-5" />}
+      {entity.entityType === EntityType.TROOP && (
+        <ArmyCapacity army={army} configManager={dojo.setup.configManager} className="my-2 ml-5" />
+      )}
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
       <div className="flex justify-between items-center gap-8">
         {entityState !== EntityState.Traveling && (

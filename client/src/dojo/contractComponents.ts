@@ -598,10 +598,6 @@ export function defineContractComponents(world: World) {
         world,
         {
           config_id: RecsType.Number,
-          explore_wheat_burn_amount: RecsType.BigInt,
-          explore_fish_burn_amount: RecsType.BigInt,
-          travel_wheat_burn_amount: RecsType.BigInt,
-          travel_fish_burn_amount: RecsType.BigInt,
           reward_resource_amount: RecsType.BigInt,
           shards_mines_fail_probability: RecsType.BigInt,
         },
@@ -609,7 +605,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "MapConfig",
-            types: ["u32", "u128", "u128", "u128", "u128", "u128", "u128"],
+            types: ["u32", "u128", "u128"],
             customTypes: [],
           },
         },

@@ -110,7 +110,7 @@ export class ArmyMovementManager {
       return false;
     }
 
-    if (this._getArmyRemainingCapacity() < EternumGlobalConfig.exploration.reward) {
+    if (this._getArmyRemainingCapacity() < this.setup.configManager.getExploreReward()) {
       return false;
     }
 

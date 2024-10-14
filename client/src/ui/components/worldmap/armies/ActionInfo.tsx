@@ -7,7 +7,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
@@ -98,7 +98,7 @@ export const ActionInfo = () => {
             <div className="flex flex-row text-xs ml-1">
               <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
               <div className="flex flex-col p-1 text-xs">
-                <div>+{EternumGlobalConfig.exploration.reward} Random resource</div>
+                <div>+{configManager.getExploreReward()} Random resource</div>
               </div>
             </div>
           )}

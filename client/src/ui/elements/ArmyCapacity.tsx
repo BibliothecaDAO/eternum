@@ -1,7 +1,7 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
+import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { formatNumber } from "../utils/utils";
 
@@ -11,7 +11,15 @@ enum CapacityColor {
   HEAVY = "bg-red",
 }
 
-export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; className?: string }) => {
+export const ArmyCapacity = ({
+  army,
+  className,
+  configManager,
+}: {
+  army: ArmyInfo | undefined;
+  className?: string;
+  configManager: ClientConfigManager;
+}) => {
   if (!army) return null;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -19,7 +27,7 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
 
   const capacityColor = useMemo(() => {
     if (army.weight >= army.totalCapacity) return CapacityColor.HEAVY;
-    if (remainingCapacity < BigInt(EternumGlobalConfig.exploration.reward)) return CapacityColor.MEDIUM;
+    if (remainingCapacity < BigInt(configManager.getExploreReward())) return CapacityColor.MEDIUM;
     return CapacityColor.LIGHT;
   }, [remainingCapacity]);
 
