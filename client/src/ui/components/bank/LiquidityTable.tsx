@@ -3,7 +3,7 @@ import { useState } from "react";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
 
 type LiquidityTableProps = {
-  bank_entity_id: ID | undefined;
+  bankEntityId: ID | undefined;
   entity_id: ID;
 };
 
@@ -18,10 +18,10 @@ export const LiquidityTableHeader = () => (
   </div>
 );
 
-export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProps) => {
+export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  if (!bank_entity_id) {
+  if (!bankEntityId) {
     return <div>Entity not found</div>;
   }
 
@@ -50,7 +50,7 @@ export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProp
           {filteredResources.map((resourceId, index) => (
             <LiquidityResourceRow
               key={resourceId}
-              bankEntityId={bank_entity_id!}
+              bankEntityId={bankEntityId!}
               entityId={entity_id}
               resourceId={resourceId}
               isFirst={index === 0 ? true : false}
