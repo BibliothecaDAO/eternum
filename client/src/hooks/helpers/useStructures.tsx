@@ -268,6 +268,7 @@ export const useIsResourcesLocked = (structureEntityId: ID) => {
   const dojo = useDojo();
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
+  const { getStructureByEntityId } = useStructures();
   const structure = getStructureByEntityId(structureEntityId);
 
   return useMemo(() => {
