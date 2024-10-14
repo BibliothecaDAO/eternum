@@ -92,18 +92,23 @@ mod realm_systems {
 
         fn create(
             ref world: IWorldDispatcher,
-            realm_name: felt252,
+            // realm_name: felt252,
             realm_id: ID,
-            resource_types_packed: u128,
-            resource_types_count: u8,
-            cities: u8,
-            harbors: u8,
-            rivers: u8,
-            regions: u8,
-            wonder: u8,
-            order: u8,
+            // resource_types_packed: u128,
+            // resource_types_count: u8,
+            // cities: u8,
+            // harbors: u8,
+            // rivers: u8,
+            // regions: u8,
+            // wonder: u8,
+            // order: u8,
         ) -> ID {
             SeasonCustomImpl::assert_season_is_not_over(world);
+
+            // ensure that the realm does not already exist
+            let realm_minted = get!(world, realm_id, RealmIdCreated);
+            assert(!realm_minted, 'realm already exists');
+
 
             // ensure that the coord is not occupied by any other structure
             let timestamp = starknet::get_block_timestamp();
@@ -132,6 +137,12 @@ mod realm_systems {
 
             caller_realms_quantity.count += 1;
             set!(world, (caller_realms_quantity));
+
+
+            let (name, region, cities, harbors, rivers, wonder, order, resources) 
+                = ISeasonPassMetadata::metadata(realm_id);     
+            let resource_types_count = resources.len();
+
 
             set!(
                 world,
@@ -176,7 +187,7 @@ mod realm_systems {
                     entity_id,
                     owner_address,
                     owner_name: get!(world, owner_address, AddressName).name,
-                    realm_name,
+                    realm_name: name,
                     resource_types_packed,
                     resource_types_count,
                     cities,
