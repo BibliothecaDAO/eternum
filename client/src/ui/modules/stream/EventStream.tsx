@@ -11,7 +11,7 @@ import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
 import { ReactComponent as Wrench } from "@/assets/icons/Wrench.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { ContractAddress, Position } from "@bibliothecadao/eternum";
@@ -96,7 +96,7 @@ export const EventStream = () => {
 
   const [hideEventStream, setHideEventStream] = useState(false);
   const [eventList, setEventList] = useState<EventData[]>([]);
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const createEvent = (entity: any, component: any, eventType: EventType): EventData | undefined => {
     const componentValue = getComponentValue(component, entity);

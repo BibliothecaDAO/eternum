@@ -1,9 +1,9 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { unpackResources } from "@/ui/utils/packedData";
-import { getRealm, getRealmNameById } from "@/ui/utils/realms";
+import { getRealm } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, Position, StructureType } from "@bibliothecadao/eternum";
+import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -12,6 +12,7 @@ import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
+import { useEntitiesUtils } from "./useEntities";
 
 export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   isMine: boolean;
@@ -22,15 +23,17 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
 };
 
-export const getStructureAtPosition = ({ x, y }: Position): Structure | undefined => {
+export const useStructureAtPosition = ({ x, y }: Position): Structure | undefined => {
   const {
     account: { account },
     setup: {
-      components: { Position, Structure, EntityOwner, Owner, Protector, EntityName, Realm },
+      components: { Position, Structure, EntityOwner, Owner, Protector },
     },
   } = useDojo();
 
   const { getAliveArmy } = getArmyByEntityId();
+
+  const { getEntityName } = useEntitiesUtils();
 
   const structure = useMemo(() => {
     const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
@@ -47,16 +50,7 @@ export const getStructureAtPosition = ({ x, y }: Position): Structure | undefine
     const protectorArmy = getComponentValue(Protector, structureEntityId);
     const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
 
-    const onChainName = getComponentValue(EntityName, structureEntityId);
-
-    const name =
-      structure.category === StructureType[StructureType.Realm]
-        ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
-        : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+    const name = getEntityName(structure.entity_id);
 
     return {
       ...structure,
@@ -72,7 +66,7 @@ export const getStructureAtPosition = ({ x, y }: Position): Structure | undefine
   return structure;
 };
 
-export const getStructureByPosition = () => {
+export const useStructureByPosition = () => {
   const {
     account: { account },
     setup: {
@@ -81,6 +75,8 @@ export const getStructureByPosition = () => {
   } = useDojo();
 
   const { getAliveArmy } = getArmyByEntityId();
+
+  const { getEntityName } = useEntitiesUtils();
 
   const structureAtPosition = ({ x, y }: Position) => {
     const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
@@ -97,16 +93,7 @@ export const getStructureByPosition = () => {
     const protectorArmy = getComponentValue(Protector, structureEntityId);
     const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
 
-    const onChainName = getComponentValue(EntityName, structureEntityId);
-
-    const name =
-      structure.category === StructureType[StructureType.Realm]
-        ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
-        : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+    const name = getEntityName(structure.entity_id);
 
     return {
       ...structure,
@@ -122,13 +109,15 @@ export const getStructureByPosition = () => {
   return structureAtPosition;
 };
 
-export const getStructureByEntityId = (entityId: ID) => {
+export const useStructureByEntityId = (entityId: ID) => {
   const {
     account: { account },
     setup: {
       components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm, Position, AddressName },
     },
   } = useDojo();
+
+  const { getEntityName } = useEntitiesUtils();
 
   const { getAliveArmy } = getArmyByEntityId();
 
@@ -146,19 +135,10 @@ export const getStructureByEntityId = (entityId: ID) => {
     const protectorArmy = getComponentValue(Protector, structureEntityId);
     const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
 
-    const onChainName = getComponentValue(EntityName, structureEntityId);
-
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
 
-    const name =
-      structure.category === StructureType[StructureType.Realm]
-        ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
-        : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+    const name = getEntityName(entityId);
 
     const position = getComponentValue(Position, structureEntityId);
 
@@ -202,19 +182,12 @@ export const useStructures = () => {
     const protectorArmy = getComponentValue(Protector, structureEntityId);
     const protector = protectorArmy ? getAliveArmy(protectorArmy.army_id) : undefined;
 
-    const onChainName = getComponentValue(EntityName, structureEntityId);
-
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
     const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
 
-    const name =
-      structure.category === StructureType[StructureType.Realm]
-        ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
-        : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+    const { getEntityName } = useEntitiesUtils();
+
+    const name = getEntityName(entityId);
 
     const position = getComponentValue(Position, structureEntityId);
 
@@ -277,7 +250,7 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
   return { realms };
 }
 
-export const isStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
+export const useIsStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
   const {
     setup: { configManager },
   } = useDojo();
@@ -295,6 +268,7 @@ export const useIsResourcesLocked = (structureEntityId: ID) => {
   const dojo = useDojo();
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
+  const { getStructureByEntityId } = useStructures();
   const structure = getStructureByEntityId(structureEntityId);
 
   return useMemo(() => {

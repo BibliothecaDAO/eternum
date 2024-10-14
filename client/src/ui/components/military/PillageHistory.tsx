@@ -1,6 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, formatResources, formatTime } from "@/ui/utils/utils";
 import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
@@ -61,7 +61,7 @@ export const PillageHistory = ({ structureId }: { structureId: ID }) => {
 
   const [pillageHistory, setPillageHistory] = useState<PillageEvent[]>([]);
 
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   useEffect(() => {
     const query = defineQuery([HasValue(events.BattlePillageData, { pillaged_structure_entity_id: structureId })], {

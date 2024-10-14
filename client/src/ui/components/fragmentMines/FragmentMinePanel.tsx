@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
@@ -15,7 +15,7 @@ export const FragmentMinePanel = ({ entity }: any) => {
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
 
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
   const ownerName = getAddressNameFromEntity(entity.entity_id);
 
   return (

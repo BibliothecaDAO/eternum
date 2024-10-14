@@ -2,7 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import { getPlayerStructures } from "@/hooks/helpers/useEntities";
-import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
+import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { HintSection } from "@/ui/components/hints/HintModal";
@@ -50,7 +50,7 @@ export const CombatEntityDetails = () => {
     return ownArmiesAtPosition.find((army) => army.entity_id === selectedArmyEntityId);
   }, [ownArmiesAtPosition, selectedArmyEntityId]);
 
-  const structure = getStructureAtPosition(hexPosition.getContract());
+  const structure = useStructureAtPosition(hexPosition.getContract());
   const battles = useBattlesByPosition(hexPosition.getContract());
 
   const tabs = useMemo(

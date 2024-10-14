@@ -1,4 +1,4 @@
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
@@ -67,8 +67,7 @@ export const LeftNavigationModule = () => {
       (selectedQuest?.id === QuestId.Hyperstructure && isMapView)
     );
   }, [selectedQuest, isMapView]);
-
-  const { getEntityInfo } = getEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
   const structureInfo = getEntityInfo(structureEntityId);
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 

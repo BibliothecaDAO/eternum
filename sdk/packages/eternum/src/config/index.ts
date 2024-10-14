@@ -514,6 +514,7 @@ export const setSettlementConfig = async (config: Config) => {
 export const createAdminBank = async (config: Config) => {
   const tx = await config.provider.create_admin_bank({
     signer: config.account,
+    name: config.config.banks.name,
     coord: { x: FELT_CENTER, y: FELT_CENTER },
     owner_fee_num: config.config.banks.ownerFeesNumerator,
     owner_fee_denom: config.config.banks.ownerFeesDenominator,

@@ -2,7 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -48,7 +48,7 @@ export const BattleSideView = ({
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
   const [loading, setLoading] = useState<boolean>(false);
 
   const ownArmy = useArmyByArmyEntityId(ownArmyEntityId);
