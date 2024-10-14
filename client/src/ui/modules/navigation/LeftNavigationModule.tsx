@@ -13,7 +13,7 @@ import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import {
   construction,
   military,
@@ -23,10 +23,13 @@ import {
 } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Chat } from "../chat/Chat";
-import { EntityDetails } from "../entity-details/EntityDetails";
 import { Military } from "../military/Military";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MiniMapNavigation } from "./MiniMapNavigation";
+
+const EntityDetails = lazy(() =>
+  import("../entity-details/EntityDetails").then((module) => ({ default: module.EntityDetails })),
+);
 
 export enum View {
   None,
@@ -38,21 +41,22 @@ export enum View {
 }
 
 export const LeftNavigationModule = () => {
-  const view = useUIStore((state) => state.leftNavigationView);
-  const setView = useUIStore((state) => state.setLeftNavigationView);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const openedPopups = useUIStore((state) => state.openedPopups);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-
   const [notificationLength, setNotificationLength] = useState(0);
 
-  const { toggleModal } = useModalStore();
+  const view = useUIStore((state) => state.leftNavigationView);
+  const setView = useUIStore((state) => state.setLeftNavigationView);
+
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const openedPopups = useUIStore((state) => state.openedPopups);
+
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { questClaimStatus } = useQuestClaimStatus();
-
+  const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
+
+  const { questClaimStatus } = useQuestClaimStatus();
 
   const isBuildQuest = useMemo(() => {
     return (
@@ -63,41 +67,39 @@ export const LeftNavigationModule = () => {
       (selectedQuest?.id === QuestId.Hyperstructure && isMapView)
     );
   }, [selectedQuest, isMapView]);
+
   const { getEntityInfo } = getEntitiesUtils();
   const structureInfo = getEntityInfo(structureEntityId);
-  const structureIsMine = structureInfo.isMine;
+  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
-  const isRealm = Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm";
+  const isRealm = useMemo(
+    () => Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm",
+    [structureInfo],
+  );
 
   const navigation = useMemo(() => {
-    const navigation = [
+    const baseNavigation = [
       {
-        name: "entityDetails",
+        name: MenuEnum.entityDetails,
         button: (
           <CircleButton
             image={BuildingThumbs.hex}
             tooltipLocation="top"
-            label={"Details"}
+            label="Details"
             active={view === View.EntityView}
             size="xl"
-            onClick={() => {
-              if (view === View.EntityView) {
-                setView(View.None);
-              } else {
-                setView(View.EntityView);
-              }
-            }}
+            onClick={() => setView(view === View.EntityView ? View.None : View.EntityView)}
           />
         ),
       },
       {
-        name: "military",
+        name: MenuEnum.military,
         button: (
           <CircleButton
             disabled={!structureIsMine}
             className={clsx({
               "animate-pulse":
-                view != View.ConstructionView &&
+                view !== View.ConstructionView &&
                 selectedQuest?.id === QuestId.CreateAttackArmy &&
                 isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm,
@@ -107,23 +109,17 @@ export const LeftNavigationModule = () => {
             label={military}
             active={view === View.MilitaryView}
             size="xl"
-            onClick={() => {
-              if (view === View.MilitaryView) {
-                setView(View.None);
-              } else {
-                setView(View.MilitaryView);
-              }
-            }}
+            onClick={() => setView(view === View.MilitaryView ? View.None : View.MilitaryView)}
           />
         ),
       },
       {
-        name: "construction",
+        name: MenuEnum.construction,
         button: (
           <CircleButton
             disabled={!structureIsMine || !isRealm}
             className={clsx({
-              "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
+              "animate-pulse": view !== View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.Settle] && isRealm,
             })}
             image={BuildingThumbs.construction}
@@ -131,66 +127,50 @@ export const LeftNavigationModule = () => {
             label={construction}
             active={view === View.ConstructionView}
             size="xl"
-            onClick={() => {
-              if (view === View.ConstructionView) {
-                setView(View.None);
-              } else {
-                setView(View.ConstructionView);
-              }
-            }}
+            onClick={() => setView(view === View.ConstructionView ? View.None : View.ConstructionView)}
           />
         ),
       },
       {
-        name: "resourceArrivals",
+        name: MenuEnum.resourceArrivals,
         button: (
           <CircleButton
             disabled={!structureIsMine}
             className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
-            label={"Resource Arrivals"}
+            label="Resource Arrivals"
             active={view === View.ResourceArrivals}
             size="xl"
-            onClick={() => {
-              if (view === View.ResourceArrivals) {
-                setView(View.None);
-              } else {
-                setView(View.ResourceArrivals);
-              }
-            }}
+            onClick={() => setView(view === View.ResourceArrivals ? View.None : View.ResourceArrivals)}
             notification={notificationLength}
             notificationLocation="topleft"
           />
         ),
       },
       {
-        name: "worldStructures",
+        name: MenuEnum.worldStructures,
         button: (
           <CircleButton
             disabled={!structureIsMine}
             className={clsx({
               hidden: !questClaimStatus[QuestId.CreateAttackArmy] && isRealm,
               "animate-pulse":
-                view != View.ConstructionView && selectedQuest?.id === QuestId.Contribution && isPopupOpen(questsPopup),
+                view !== View.ConstructionView &&
+                selectedQuest?.id === QuestId.Contribution &&
+                isPopupOpen(questsPopup),
             })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
             label={worldStructures}
             active={view === View.WorldStructuresView}
             size="xl"
-            onClick={() => {
-              if (view === View.WorldStructuresView) {
-                setView(View.None);
-              } else {
-                setView(View.WorldStructuresView);
-              }
-            }}
+            onClick={() => setView(view === View.WorldStructuresView ? View.None : View.WorldStructuresView)}
           />
         ),
       },
       {
-        name: "trade",
+        name: MenuEnum.trade,
         button: (
           <CircleButton
             disabled={!structureIsMine}
@@ -206,38 +186,35 @@ export const LeftNavigationModule = () => {
             label={trade}
             active={isPopupOpen(trade)}
             size="xl"
-            onClick={() => {
-              if (isPopupOpen(trade)) {
-                toggleModal(null);
-              } else {
-                toggleModal(<MarketModal />);
-              }
-            }}
+            onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
           />
         ),
       },
     ];
 
-    return isMapView
-      ? navigation.filter(
-          (item) =>
-            item.name === MenuEnum.entityDetails ||
-            item.name === MenuEnum.military ||
-            item.name === MenuEnum.construction ||
-            item.name === MenuEnum.worldStructures ||
-            item.name === MenuEnum.resourceArrivals ||
-            item.name === MenuEnum.trade,
-        )
-      : navigation.filter(
-          (item) =>
-            item.name === MenuEnum.entityDetails ||
-            item.name === MenuEnum.military ||
-            item.name === MenuEnum.construction ||
-            item.name === MenuEnum.worldStructures ||
-            item.name === MenuEnum.resourceArrivals ||
-            item.name === MenuEnum.trade,
-        );
-  }, [location, view, openedPopups, selectedQuest, questClaimStatus, structureEntityId]);
+    const filteredNavigation = baseNavigation.filter((item) =>
+      [
+        MenuEnum.entityDetails,
+        MenuEnum.military,
+        MenuEnum.construction,
+        MenuEnum.worldStructures,
+        MenuEnum.resourceArrivals,
+        MenuEnum.trade,
+      ].includes(item.name as MenuEnum),
+    );
+
+    return filteredNavigation;
+  }, [
+    view,
+    openedPopups,
+    selectedQuest,
+    questClaimStatus,
+    structureEntityId,
+    isMapView,
+    structureIsMine,
+    isRealm,
+    notificationLength,
+  ]);
 
   const slideLeft = {
     hidden: { x: "-100%" },
@@ -253,12 +230,18 @@ export const LeftNavigationModule = () => {
           }`}
         >
           <BaseContainer className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh]}`}>
-            {view === View.EntityView && <EntityDetails />}
-            {view === View.MilitaryView && <Military entityId={structureEntityId} />}
-            {!isMapView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
-            {isMapView && view === View.ConstructionView && <StructureConstructionMenu />}
-            {view === View.WorldStructuresView && <WorldStructuresMenu />}
-            {view === View.ResourceArrivals && <AllResourceArrivals setNotificationLength={setNotificationLength} />}
+            <Suspense fallback={<div>Loading...</div>}>
+              {view === View.EntityView && <EntityDetails />}
+              {view === View.MilitaryView && <Military entityId={structureEntityId} />}
+              {!isMapView && view === View.ConstructionView && (
+                <SelectPreviewBuildingMenu entityId={structureEntityId} />
+              )}
+              {isMapView && view === View.ConstructionView && (
+                <StructureConstructionMenu entityId={structureEntityId} />
+              )}
+              {view === View.WorldStructuresView && <WorldStructuresMenu />}
+              {view === View.ResourceArrivals && <AllResourceArrivals setNotificationLength={setNotificationLength} />}
+            </Suspense>
           </BaseContainer>
           <motion.div
             variants={slideLeft}

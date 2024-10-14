@@ -44,15 +44,14 @@ import { HintSection } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
-export const SelectPreviewBuildingMenu = () => {
+export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realm } = useGetRealm(structureEntityId);
+  const { realm } = useGetRealm(entityId);
 
   const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
@@ -84,7 +83,7 @@ export const SelectPreviewBuildingMenu = () => {
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource);
+      const balance = getBalance(entityId, resourceCost.resource);
       return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
     });
 
@@ -110,7 +109,7 @@ export const SelectPreviewBuildingMenu = () => {
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const buildingCosts = getResourceBuildingCosts(structureEntityId, dojo, resourceId);
+              const buildingCosts = getResourceBuildingCosts(entityId, dojo, resourceId);
               if (!buildingCosts) return;
               const cost = [...buildingCosts, ...RESOURCE_INPUTS_SCALED[resourceId]];
 
@@ -145,7 +144,7 @@ export const SelectPreviewBuildingMenu = () => {
                   active={previewBuilding?.resource === resourceId}
                   buildingName={resource?.trait}
                   resourceName={resource?.trait}
-                  toolTip={<ResourceInfo resourceId={resourceId} entityId={structureEntityId} />}
+                  toolTip={<ResourceInfo resourceId={resourceId} entityId={entityId} />}
                   hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
                 />
@@ -173,7 +172,7 @@ export const SelectPreviewBuildingMenu = () => {
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
-                const buildingCosts = getBuildingCosts(structureEntityId, dojo, building);
+                const buildingCosts = getBuildingCosts(entityId, dojo, building);
                 if (!buildingCosts) return;
 
                 const hasBalance = checkBalance(buildingCosts);
@@ -219,7 +218,7 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     buildingName={BuildingEnumToString[building]}
                     resourceName={isFishingVillage ? "Fish" : isFarm ? "Wheat" : undefined}
-                    toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
+                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
                   />
@@ -247,7 +246,7 @@ export const SelectPreviewBuildingMenu = () => {
               )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-                const buildingCost = getBuildingCosts(structureEntityId, dojo, building);
+                const buildingCost = getBuildingCosts(entityId, dojo, building);
 
                 const hasBalance = checkBalance(buildingCost);
 
@@ -280,7 +279,7 @@ export const SelectPreviewBuildingMenu = () => {
                     resourceName={
                       isBarracks ? "Knight" : isArcheryRange ? "Crossbowman" : isStable ? "Paladin" : undefined
                     }
-                    toolTip={<BuildingInfo buildingId={building} entityId={structureEntityId} />}
+                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
                   />
@@ -290,11 +289,11 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
     ],
-    [realm, structureEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (
-    <>
+    <div className={`${className}`}>
       <HintModalButton className="absolute top-1 right-1" section={HintSection.Buildings} />
       <Tabs
         selectedIndex={selectedTab}
@@ -315,7 +314,7 @@ export const SelectPreviewBuildingMenu = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-    </>
+    </div>
   );
 };
 

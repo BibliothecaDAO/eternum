@@ -1,4 +1,9 @@
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { QuestId } from "@/ui/components/quest/questDetails";
+import { Headline } from "@/ui/elements/Headline";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 import {
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
@@ -6,11 +11,6 @@ import {
   STRUCTURE_COSTS_SCALED,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
-import { QuestId } from "@/ui/components/quest/questDetails";
-import { Headline } from "@/ui/elements/Headline";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
 import clsx from "clsx";
 import React from "react";
 import { StructureCard } from "./StructureCard";
@@ -24,11 +24,10 @@ export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.FragmentMine]: STRUCTURE_IMAGE_PREFIX + "mine.png",
 };
 
-export const StructureConstructionMenu = () => {
+export const StructureConstructionMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getBalance } = getResourceBalance();
@@ -42,12 +41,12 @@ export const StructureConstructionMenu = () => {
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource);
+      const balance = getBalance(entityId, resourceCost.resource);
       return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
   return (
-    <div className="grid grid-cols-2 gap-2 p-2">
+    <div className={`${className} grid grid-cols-2 gap-2 p-2`}>
       {buildingTypes.map((structureType, index) => {
         const building = StructureType[structureType as keyof typeof StructureType];
         const cost = STRUCTURE_COSTS_SCALED[building];
@@ -72,7 +71,7 @@ export const StructureConstructionMenu = () => {
             }}
             active={previewBuilding !== null && previewBuilding.type === building}
             name={StructureType[building]}
-            toolTip={<StructureInfo structureId={building} entityId={structureEntityId} />}
+            toolTip={<StructureInfo structureId={building} entityId={entityId} />}
             canBuild={hasBalance}
           />
         );

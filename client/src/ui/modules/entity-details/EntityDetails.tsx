@@ -1,8 +1,8 @@
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingEntityDetails } from "./BuildingEntityDetails";
 import { CombatEntityDetails } from "./CombatEntityDetails";
-import { useQuery } from "@/hooks/helpers/useQuery";
 
-export const EntityDetails = () => {
+export const EntityDetails = ({ className }: { className?: string }) => {
   const { isMapView } = useQuery();
-  return <div className="h-full">{isMapView ? <CombatEntityDetails /> : <BuildingEntityDetails />}</div>;
+  return <div className={`h-full ${className}`}>{isMapView ? <CombatEntityDetails /> : <BuildingEntityDetails />}</div>;
 };

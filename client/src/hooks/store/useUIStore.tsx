@@ -1,4 +1,3 @@
-import { DEFAULT_TAB, Tab } from "@/ui/modules/chat/ChatTab";
 import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { ContractAddress } from "@bibliothecadao/eternum";
@@ -57,10 +56,6 @@ interface UIStore {
   setShowMinimap: (show: boolean) => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
-  tabs: Tab[];
-  setTabs: (tabs: Tab[]) => void;
-  currentTab: Tab;
-  setCurrentTab: (tab: Tab) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore;
@@ -118,10 +113,6 @@ const useUIStore = create(
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
-    tabs: [],
-    setTabs: (tabs: Tab[]) => set({ tabs }),
-    currentTab: DEFAULT_TAB,
-    setCurrentTab: (tab: Tab) => set({ currentTab: tab }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
