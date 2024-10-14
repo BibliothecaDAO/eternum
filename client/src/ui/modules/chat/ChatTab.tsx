@@ -9,7 +9,6 @@ export const DEFAULT_TAB: Tab = {
   address: "0x0",
   key: GLOBAL_CHANNEL,
   displayed: true,
-  visible: true,
   lastSeen: new Date(),
 };
 
@@ -19,7 +18,6 @@ export interface Tab {
   address: string;
   numberOfMessages?: number;
   displayed: boolean;
-  visible: boolean;
   lastSeen: Date;
 }
 
