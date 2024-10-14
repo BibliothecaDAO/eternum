@@ -70,11 +70,14 @@ export const BattleActions = ({
 
   const [loading, setLoading] = useState<Loading>(Loading.None);
   const [raidWarning, setRaidWarning] = useState(false);
-  const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>();
+  const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(ownArmyEntityId || 0);
 
   useEffect(() => {
-    setLocalSelectedUnit(userArmiesInBattle[0]?.entity_id || ownArmyEntityId || 0);
-  }, [userArmiesInBattle, ownArmyEntityId]);
+    if (localSelectedUnit === 0 || !userArmiesInBattle.some((army) => army.entity_id === localSelectedUnit)) {
+      const newLocalSelectedUnit = userArmiesInBattle?.[0]?.entity_id ?? 0;
+      setLocalSelectedUnit(newLocalSelectedUnit);
+    }
+  }, [userArmiesInBattle]);
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
@@ -245,7 +248,7 @@ export const BattleActions = ({
             onClick={handleRaid}
             disabled={loading !== Loading.None || raidStatus !== RaidStatus.isRaidable}
           >
-            <Burn className="w-10" />
+            <Burn className="w-12 h-12" />
 
             <div className={`text-wrap text-xl text-white/80 ${raidWarning ? "text-danger" : ""}`}>
               {raidWarning ? "Leave & Raid ?" : "Raid"}
@@ -266,7 +269,7 @@ export const BattleActions = ({
             onClick={handleBattleClaim}
             disabled={loading !== Loading.None || claimStatus !== ClaimStatus.Claimable}
           >
-            <Castle className="w-10" />
+            <Castle className="w-12 h-12" />
             <div className="text-xl text-white/80">Claim</div>
           </Button>
         </div>
@@ -284,7 +287,7 @@ export const BattleActions = ({
             onClick={handleLeaveBattle}
             disabled={loading !== Loading.None || leaveStatus !== LeaveStatus.Leave}
           >
-            <Flag className="w-10" />
+            <Flag className="w-12 h-12" />
             <div className="text-xl text-white/80">Leave</div>
           </Button>
         </div>
@@ -309,7 +312,7 @@ export const BattleActions = ({
                 battleStartStatus !== BattleStartStatus.ForceStart)
             }
           >
-            <Battle className="w-10" />
+            <Battle className="w-12 h-12" />
             <div className="text-xl text-white/80">Battle</div>
           </Button>
         </div>
