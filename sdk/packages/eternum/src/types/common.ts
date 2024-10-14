@@ -241,6 +241,7 @@ export interface Config {
     startingResourcesInputProductionFactor: number;
   };
   banks: {
+    name: string;
     lordsCost: number;
     lpFeesNumerator: number;
     lpFeesDenominator: number; // %

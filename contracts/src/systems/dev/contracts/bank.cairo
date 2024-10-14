@@ -6,6 +6,7 @@ use eternum::models::position::{Coord};
 trait IBankSystems {
     fn create_admin_bank(
         ref world: IWorldDispatcher,
+        name: felt252,
         coord: Coord,
         owner_fee_num: u128,
         owner_fee_denom: u128,
@@ -18,13 +19,16 @@ trait IBankSystems {
 mod dev_bank_systems {
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
+    use eternum::models::name::{EntityName};
     use eternum::models::bank::bank::{Bank};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl};
-    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use eternum::models::structure::{
+        Structure, StructureCategory, StructureCount, StructureCountCustomTrait
+    };
     use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
@@ -38,6 +42,7 @@ mod dev_bank_systems {
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_admin_bank(
             ref world: IWorldDispatcher,
+            name: felt252,
             coord: Coord,
             owner_fee_num: u128,
             owner_fee_denom: u128,
@@ -54,13 +59,16 @@ mod dev_bank_systems {
             set!(
                 world,
                 (
+                    EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, },
                     Structure {
                         entity_id: ADMIN_BANK_ENTITY_ID,
                         category: StructureCategory::Bank,
                         created_at: starknet::get_block_timestamp()
                     },
                     StructureCount { coord, count: 1 },
-                    CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure },
+                    CapacityCategory {
+                        entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure
+                    },
                     Bank {
                         entity_id: ADMIN_BANK_ENTITY_ID,
                         owner_fee_num,
@@ -71,7 +79,9 @@ mod dev_bank_systems {
                     },
                     Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },
                     Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin },
-                    EntityOwner { entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID },
+                    EntityOwner {
+                        entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID
+                    },
                 )
             );
 

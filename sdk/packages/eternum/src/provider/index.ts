@@ -413,6 +413,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
     const {
+      name,
       coord,
       owner_fee_num,
       owner_fee_denom,
@@ -424,7 +425,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
       entrypoint: "create_admin_bank",
-      calldata: [coord, owner_fee_num, owner_fee_denom, owner_bridge_fee_dpt_percent, owner_bridge_fee_wtdr_percent],
+      calldata: [
+        name,
+        coord,
+        owner_fee_num,
+        owner_fee_denom,
+        owner_bridge_fee_dpt_percent,
+        owner_bridge_fee_wtdr_percent,
+      ],
     });
   }
 

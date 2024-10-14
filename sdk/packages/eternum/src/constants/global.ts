@@ -12,6 +12,7 @@ export const EternumGlobalConfig = {
     startingResourcesInputProductionFactor: 4,
   },
   banks: {
+    name: "Central Bank",
     lordsCost: 1000,
     lpFeesNumerator: 15,
     lpFeesDenominator: 100, // %
