@@ -1,9 +1,8 @@
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
+import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -116,12 +115,7 @@ export const MarketOrderPanel = ({
       .sort((a, b) => b.ratio - a.ratio);
   }, [resourceAskOffers, resourceId]);
 
-  const structure = getStructureByEntityId(entityId);
-
-  const isOwnStructureInBattle = useMemo(() => {
-    const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
-    return battleManager.isBattleOngoing(nextBlockTimestamp!) && !battleManager.isSiege(nextBlockTimestamp!);
-  }, [entityId, nextBlockTimestamp]);
+  const isResourcesLocked = useIsResourcesLocked(entityId);
 
   return (
     <div className="grid grid-cols-2 gap-4 p-4 h-full">
@@ -129,13 +123,13 @@ export const MarketOrderPanel = ({
         offers={selectedResourceAskOffers}
         resourceId={resourceId}
         entityId={entityId}
-        isOwnStructureInBattle={isOwnStructureInBattle}
+        isResourcesLocked={isResourcesLocked}
       />
       <MarketOrders
         offers={selectedResourceBidOffers}
         resourceId={resourceId}
         entityId={entityId}
-        isOwnStructureInBattle={isOwnStructureInBattle}
+        isResourcesLocked={isResourcesLocked}
         isBuy
       />
     </div>
@@ -147,13 +141,13 @@ const MarketOrders = ({
   entityId,
   isBuy = false,
   offers,
-  isOwnStructureInBattle,
+  isResourcesLocked,
 }: {
   resourceId: ResourcesIds;
   entityId: ID;
   isBuy?: boolean;
   offers: MarketInterface[];
-  isOwnStructureInBattle: boolean;
+  isResourcesLocked: boolean;
 }) => {
   const [updateBalance, setUpdateBalance] = useState(false);
 
@@ -184,7 +178,7 @@ const MarketOrders = ({
 
         <div
           className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative ${
-            isOwnStructureInBattle ? "opacity-50" : ""
+            isResourcesLocked ? "opacity-50" : ""
           }`}
         >
           {offers.map((offer, index) => (
@@ -197,7 +191,7 @@ const MarketOrders = ({
               setUpdateBalance={setUpdateBalance}
             />
           ))}
-          {isOwnStructureInBattle && (
+          {isResourcesLocked && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xl text-bold">
               Resources locked in battle
             </div>
@@ -255,13 +249,7 @@ const OrderRow = ({
 
   const { getRealmAddressName } = useRealm();
 
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
-  const structure = getStructureByEntityId(offer.makerId);
-  const isMakerInBattle = useMemo(() => {
-    const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
-    return battleManager.isBattleOngoing(nextBlockTimestamp!) && !battleManager.isSiege(nextBlockTimestamp!);
-  }, [offer, nextBlockTimestamp]);
+  const isMakerResourcesLocked = useIsResourcesLocked(offer.makerId);
 
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
@@ -384,9 +372,9 @@ const OrderRow = ({
       key={offer.tradeId}
       className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border text-xs relative ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
-      } ${isMakerInBattle ? "opacity-50" : ""}`}
+      } ${isMakerResourcesLocked ? "opacity-50" : ""}`}
     >
-      {isMakerInBattle && (
+      {isMakerResourcesLocked && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
           Resources locked in battle
         </div>
@@ -413,7 +401,7 @@ const OrderRow = ({
               setConfirmOrderModal(true);
             }}
             size="xs"
-            className={`self-center flex flex-grow ${isMakerInBattle ? "pointer-events-none" : ""}`}
+            className={`self-center flex flex-grow ${isMakerResourcesLocked ? "pointer-events-none" : ""}`}
           >
             {!isBuy ? "Buy" : "Sell"}
           </Button>
@@ -430,7 +418,7 @@ const OrderRow = ({
             }}
             variant="danger"
             size="xs"
-            className={clsx("self-center", { disable: isMakerInBattle })}
+            className={clsx("self-center", { disable: isMakerResourcesLocked })}
           >
             {loading ? "cancelling" : "cancel"}
           </Button>

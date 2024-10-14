@@ -2,6 +2,7 @@ import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
@@ -67,9 +68,13 @@ export const ResourceSwap = ({
     return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
   }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId, ownerFee]);
 
+  const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
+  const isMyResourcesLocked = useIsResourcesLocked(entityId);
+  const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
+
   const canSwap = useMemo(
-    () => lordsAmount > 0 && resourceAmount > 0 && hasEnough,
-    [lordsAmount, resourceAmount, hasEnough],
+    () => amountsBiggerThanZero && hasEnough && !isBankResourcesLocked && !isMyResourcesLocked,
+    [lordsAmount, resourceAmount, hasEnough, isBankResourcesLocked, isMyResourcesLocked],
   );
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
@@ -307,7 +312,10 @@ export const ResourceSwap = ({
             </Button>
             {!canSwap && (
               <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
-                Warning: not enough resources or amount is zero
+                {!amountsBiggerThanZero && <div>Warning: Amount must be greater than zero</div>}
+                {!hasEnough && <div>Warning: Not enough resources for this swap</div>}
+                {isBankResourcesLocked && <div>Warning: Bank resources are currently locked</div>}
+                {isMyResourcesLocked && <div>Warning: Your resources are currently locked</div>}
               </div>
             )}
           </div>

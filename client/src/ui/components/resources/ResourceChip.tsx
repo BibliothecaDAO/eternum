@@ -80,7 +80,7 @@ export const ResourceChip = ({
 
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
-        if (Math.abs(netRate) > 0) {
+        if (Math.abs(netRate) > 0 && !isConsumingInputsWithoutOutput) {
           return Math.min(maxAmountStorable, Math.max(0, prevDisplayBalance + netRate));
         }
         return Math.min(maxAmountStorable, prevDisplayBalance);
@@ -137,7 +137,7 @@ export const ResourceChip = ({
             : ""}
         </div>
 
-        {netRate && !reachedMaxCap ? (
+        {netRate && !reachedMaxCap && !isConsumingInputsWithoutOutput && displayBalance > 0 ? (
           <div
             className={`${
               Number(netRate) < 0 ? "text-light-red" : "text-green/80"

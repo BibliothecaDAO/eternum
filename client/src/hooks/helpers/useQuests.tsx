@@ -8,7 +8,7 @@ import { useCallback, useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
-import { getEntitiesUtils, useEntities } from "./useEntities";
+import { useEntities, useEntitiesUtils } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
 
 export interface Quest {
@@ -75,7 +75,7 @@ const useQuestDependencies = () => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { getEntityInfo } = getEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
   const structurePosition = getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 };
 
   const tileManager = new TileManager(setup, {

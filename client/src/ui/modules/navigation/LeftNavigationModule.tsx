@@ -1,4 +1,3 @@
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
@@ -7,6 +6,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 
 import { QuestId } from "@/ui/components/quest/questDetails";
 
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
@@ -22,7 +22,6 @@ import {
 } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Chat } from "../chat/Chat";
-
 import { MiniMapNavigation } from "./MiniMapNavigation";
 
 const EntityDetails = lazy(() =>
@@ -84,7 +83,8 @@ export const LeftNavigationModule = () => {
     );
   }, [selectedQuest, isMapView]);
 
-  const { getEntityInfo } = getEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
+
   const structureInfo = getEntityInfo(structureEntityId);
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 

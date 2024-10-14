@@ -1,9 +1,9 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
+import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { getStructureByEntityId, isStructureImmune } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
@@ -53,7 +53,7 @@ export const BuildingEntityDetails = () => {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isOwnedByPlayer, setIsOwnedByPlayer] = useState<boolean>(false);
 
-  const { getEntityInfo } = getEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
@@ -189,10 +189,10 @@ const CastleDetails = () => {
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const structure = getStructureByEntityId(structureEntityId);
+  const structure = useStructureByEntityId(structureEntityId);
   if (!structure) return;
 
-  const isImmune = isStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
+  const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
 
   const immunityEndTimestamp = useMemo(() => {
     return (

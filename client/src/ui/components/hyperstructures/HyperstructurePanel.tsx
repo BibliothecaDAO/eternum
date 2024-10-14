@@ -2,7 +2,7 @@ import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { calculateCompletionPoints } from "@/dojo/modelManager/utils/LeaderboardUtils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import {
   ProgressWithPercentage,
   useHyperstructureProgress,
@@ -59,7 +59,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const [newContributions, setNewContributions] = useState<Record<number, number>>({});
 
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
   const ownerName = getAddressNameFromEntity(entity.entity_id);
 
   const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));

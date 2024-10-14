@@ -2,8 +2,8 @@ import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { getStructureAtPosition, isStructureImmune } from "@/hooks/helpers/useStructures";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
@@ -20,8 +20,8 @@ export const EnemyArmies = ({
   position: Position;
 }) => {
   const dojo = useDojo();
-  const { getEntityInfo } = getEntitiesUtils();
-  const structureAtPosition = getStructureAtPosition(position.getContract());
+  const { getEntityInfo } = useEntitiesUtils();
+  const structureAtPosition = useStructureAtPosition(position.getContract());
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const setBattleView = useUIStore((state) => state.setBattleView);
@@ -33,7 +33,7 @@ export const EnemyArmies = ({
     return ownArmySelected ? entityInfo : undefined;
   }, [ownArmySelected, entityInfo]);
 
-  const structureImmune = isStructureImmune(Number(ownArmystructure?.created_at), nextBlockTimestamp!);
+  const structureImmune = useIsStructureImmune(Number(ownArmystructure?.created_at), nextBlockTimestamp!);
 
   const ownArmyIsImmune = useMemo(() => {
     return ownArmystructure ? structureImmune : false;
@@ -42,7 +42,7 @@ export const EnemyArmies = ({
   const getArmyChip = useCallback(
     (army: ArmyInfo, index: number) => {
       const structure = getEntityInfo(army.entityOwner.entity_owner_id).structure;
-      const isImmune = isStructureImmune(Number(structure?.created_at), nextBlockTimestamp!) || ownArmyIsImmune;
+      const isImmune = useIsStructureImmune(Number(structure?.created_at), nextBlockTimestamp!) || ownArmyIsImmune;
 
       const button = ownArmySelected && (
         <Swords
@@ -92,7 +92,7 @@ export const EnemyArmies = ({
       ownArmySelected?.entity_id,
       position,
       getEntityInfo,
-      isStructureImmune,
+      useIsStructureImmune,
       setBattleView,
       setTooltip,
       structureAtPosition,

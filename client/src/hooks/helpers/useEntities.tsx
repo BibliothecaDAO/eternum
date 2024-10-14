@@ -44,7 +44,7 @@ export const useEntities = () => {
     },
   } = useDojo();
 
-  const { getEntityName } = getEntitiesUtils();
+  const { getEntityName } = useEntitiesUtils();
 
   // Get all realms
   const allRealms = useEntityQuery([Has(Realm)]);
@@ -185,7 +185,7 @@ export const getPlayerStructures = () => {
       components: { Structure, Owner, Realm, Position },
     },
   } = useDojo();
-  const { getEntityName } = getEntitiesUtils();
+  const { getEntityName } = useEntitiesUtils();
 
   const getStructures = (playerAddress: ContractAddress) => {
     const playerStructures = runQuery([Has(Structure), HasValue(Owner, { address: playerAddress })]);
@@ -195,7 +195,7 @@ export const getPlayerStructures = () => {
   return getStructures;
 };
 
-export const getEntitiesUtils = () => {
+export const useEntitiesUtils = () => {
   const {
     account: { account },
     setup: {

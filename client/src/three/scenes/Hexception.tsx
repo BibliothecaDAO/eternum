@@ -73,6 +73,11 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
   return positions;
 };
 
+interface Building {
+  matrix: THREE.Matrix4;
+  buildingType: BuildingType;
+}
+
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<
@@ -91,7 +96,11 @@ export default class HexceptionScene extends HexagonScene {
   private buildingSubscription: any;
   private realmSubscription: any;
   private buildingInstanceIds: Map<string, { index: number; category: string }> = new Map();
-  private labels: CSS2DObject[] = [];
+  private labels: {
+    col: number;
+    row: number;
+    label: CSS2DObject;
+  }[] = [];
   private castleLevel: RealmLevels = RealmLevels.Settlement;
 
   constructor(
@@ -203,7 +212,7 @@ export default class HexceptionScene extends HexagonScene {
 
   setup() {
     this.labels.forEach((label) => {
-      this.scene.remove(label);
+      this.scene.remove(label.label);
     });
     this.labels = [];
 
@@ -256,7 +265,7 @@ export default class HexceptionScene extends HexagonScene {
 
   onSwitchOff() {
     this.labels.forEach((label) => {
-      this.scene.remove(label);
+      this.scene.remove(label.label);
     });
   }
 
@@ -405,14 +414,6 @@ export default class HexceptionScene extends HexagonScene {
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
-            if (building.paused) {
-              const pausedDiv = createPausedLabel();
-              const pausedLabel = new CSS2DObject(pausedDiv);
-              pausedLabel.position.setFromMatrixPosition(building.matrix);
-              pausedLabel.position.y += 1;
-              this.scene.add(pausedLabel);
-              this.labels.push(pausedLabel);
-            }
 
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
@@ -428,6 +429,14 @@ export default class HexceptionScene extends HexagonScene {
               this.buildingMixers.set(key, mixer);
             }
           }
+        }
+        const needPausedLabel =
+          building.paused &&
+          this.labels.findIndex((label) => label.col === building.col && label.row === building.row) < 0;
+        if (needPausedLabel) {
+          this.addPausedLabelToBuilding(building);
+        } else if (!building.paused) {
+          this.removePausedLabelFromBuilding(building);
         }
       }
 
@@ -449,6 +458,23 @@ export default class HexceptionScene extends HexagonScene {
       this.pillars!.instanceColor!.needsUpdate = true;
       this.interactiveHexManager.renderHexes();
     });
+  }
+
+  addPausedLabelToBuilding(building: { col: number; row: number; matrix: any }) {
+    const pausedDiv = createPausedLabel();
+    const pausedLabel = new CSS2DObject(pausedDiv);
+    pausedLabel.position.setFromMatrixPosition(building.matrix);
+    pausedLabel.position.y += 1;
+    this.scene.add(pausedLabel);
+    this.labels.push({ col: building.col, row: building.row, label: pausedLabel });
+  }
+
+  removePausedLabelFromBuilding(building: { col: number; row: number }) {
+    const index = this.labels.findIndex((label) => label.col === building.col && label.row === building.row);
+    if (index >= 0) {
+      this.scene.remove(this.labels[index].label);
+      this.labels.splice(index, 1);
+    }
   }
 
   removeCastleFromScene() {

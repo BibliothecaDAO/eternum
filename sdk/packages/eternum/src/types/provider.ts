@@ -215,6 +215,7 @@ export interface CreateBankProps extends SystemSigner {
 }
 
 export interface CreateAdminBankProps extends SystemSigner {
+  name: string;
   coord: {
     x: num.BigNumberish;
     y: num.BigNumberish;

@@ -7,6 +7,16 @@ import { Health } from "@/types";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
+function formatTimeDifference(time: Date) {
+  const diffInMs = Number(time) - Number(new Date(0));
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  if (days > 0) {
+    return `${days}D, ${time.toISOString().substring(11, 19)}`;
+  } else {
+    return `${time.toISOString().substring(11, 19)}`;
+  }
+}
+
 export const BattleProgressBar = ({
   battleManager,
   ownArmySide,
@@ -158,10 +168,10 @@ export const BattleProgressBar = ({
           {time
             ? `${
                 battleManager?.isSiege(currentTimestamp!) && battleType === BattleType.Structure
-                  ? `Siege ongoing: ${time.toISOString().substring(11, 19)} left`
+                  ? `Siege ongoing: ${formatTimeDifference(time)} left`
                   : battleManager?.isSiege(currentTimestamp!)
                     ? "Loading..."
-                    : `${time.toISOString().substring(11, 19)} left`
+                    : `${formatTimeDifference(time)} left`
               }`
             : battleStatus}
         </div>

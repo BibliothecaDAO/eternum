@@ -1,9 +1,9 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
-import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
+import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -34,7 +34,7 @@ type EntityProps = {
 export const Entity = ({ entityId, ...props }: EntityProps) => {
   const dojo = useDojo();
 
-  const { getEntityInfo } = getEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
   const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
@@ -46,7 +46,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  const structureAtPosition = getStructureByEntityId(depositEntityId || 0);
+  const structureAtPosition = useStructureByEntityId(depositEntityId || 0);
 
   const battleInProgress = useMemo(() => {
     if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0) {
@@ -54,7 +54,9 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     }
     const currentTimestamp = useUIStore.getState().nextBlockTimestamp;
     const battleManager = new BattleManager(structureAtPosition.protector.battle_id, dojo);
-    return battleManager.isBattleOngoing(currentTimestamp!);
+
+    const battleOngoing = battleManager.isBattleOngoing(currentTimestamp!);
+    return battleOngoing && !battleManager.isSiege(currentTimestamp!);
   }, [entity?.position?.x, entity?.position?.y]);
 
   const army = useMemo(() => getArmy(entityId), [entityId, entity.resources]);

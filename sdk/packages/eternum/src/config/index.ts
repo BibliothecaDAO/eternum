@@ -353,7 +353,7 @@ export const setupGlobals = async (config: Config) => {
     tick_id: TickIds.Default,
     tick_interval_in_seconds: config.config.tick.defaultTickIntervalInSeconds,
   });
-  console.log(`Configuring  tick config ${txDefaultTick.statusReceipt}...`);
+  console.log(`Configuring default tick config ${txDefaultTick.statusReceipt}...`);
 
   const txArmiesTick = await config.provider.set_tick_config({
     signer: config.account,
@@ -514,6 +514,7 @@ export const setSettlementConfig = async (config: Config) => {
 export const createAdminBank = async (config: Config) => {
   const tx = await config.provider.create_admin_bank({
     signer: config.account,
+    name: config.config.banks.name,
     coord: { x: FELT_CENTER, y: FELT_CENTER },
     owner_fee_num: config.config.banks.ownerFeesNumerator,
     owner_fee_denom: config.config.banks.ownerFeesDenominator,

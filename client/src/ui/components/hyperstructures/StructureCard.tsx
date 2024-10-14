@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
+import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import Button from "@/ui/elements/Button";
@@ -27,7 +27,7 @@ export const StructureCard = ({
   ownArmySelected: ArmyInfo | undefined;
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
-  const structure = getStructureAtPosition(position.getContract());
+  const structure = useStructureAtPosition(position.getContract());
 
   return (
     Boolean(structure) && (
