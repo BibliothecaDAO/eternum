@@ -2,7 +2,7 @@ import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
 import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
-import { getStructureByEntityId, getStructureByPosition } from "@/hooks/helpers/useStructures";
+import { useStructureByEntityId, useStructureByPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -10,7 +10,7 @@ import { Battle } from "./Battle";
 
 export const BattleView = () => {
   const dojo = useDojo();
-  const getStructure = getStructureByPosition();
+  const getStructure = useStructureByPosition();
   const armiesByBattleId = getArmiesByBattleId();
   const { getAliveArmy } = getArmyByEntityId();
 
@@ -121,7 +121,7 @@ export const BattleView = () => {
 
   const structureFromPosition = getStructure({ x: battlePosition.x, y: battlePosition.y });
 
-  const structureId = getStructureByEntityId(
+  const structureId = useStructureByEntityId(
     defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0,
   );
 

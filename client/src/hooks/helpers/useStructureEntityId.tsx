@@ -47,6 +47,8 @@ export const useStructureEntityId = () => {
         : defaultPlayerStructure?.entity_id
       : structure?.entity_id;
 
+    console.debug("player structure entity_id", newStructureEntityId);
+
     setStructureEntityId(newStructureEntityId || UNDEFINED_STRUCTURE_ENTITY_ID);
   }, [defaultPlayerStructure, isMapView, hexPosition, address, setStructureEntityId]);
 };

@@ -3,7 +3,7 @@ import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
+import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -116,7 +116,7 @@ export const MarketOrderPanel = ({
       .sort((a, b) => b.ratio - a.ratio);
   }, [resourceAskOffers, resourceId]);
 
-  const structure = getStructureByEntityId(entityId);
+  const structure = useStructureByEntityId(entityId);
 
   const isOwnStructureInBattle = useMemo(() => {
     const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
@@ -257,7 +257,7 @@ const OrderRow = ({
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const structure = getStructureByEntityId(offer.makerId);
+  const structure = useStructureByEntityId(offer.makerId);
   const isMakerInBattle = useMemo(() => {
     const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
     return battleManager.isBattleOngoing(nextBlockTimestamp!) && !battleManager.isSiege(nextBlockTimestamp!);

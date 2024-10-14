@@ -5,7 +5,7 @@ import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
@@ -22,7 +22,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   const dojo = useDojo();
 
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState(false);
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 

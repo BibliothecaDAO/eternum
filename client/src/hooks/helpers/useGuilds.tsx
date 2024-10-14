@@ -16,7 +16,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { getEntitiesUtils } from "./useEntities";
+import { useEntitiesUtils } from "./useEntities";
 import { useRealm } from "./useRealm";
 
 export type GuildAndName = {
@@ -55,7 +55,7 @@ export const useGuilds = () => {
     },
   } = useDojo();
 
-  const { getEntityName } = getEntitiesUtils();
+  const { getEntityName } = useEntitiesUtils();
   const { getAddressName } = useRealm();
 
   const getPlayerList = (guild_entity_id: ID) => {

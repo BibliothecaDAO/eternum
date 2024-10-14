@@ -1,4 +1,4 @@
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { EternumGlobalConfig, Resource, ResourcesIds } from "@bibliothecadao/eternum";
@@ -25,7 +25,7 @@ export const TradeHistoryRowHeader = () => {
 };
 
 export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
   const price = getLordsPricePerResource(trade.event.resourceGiven, trade.event.resourceTaken);
   const taker = getAddressNameFromEntity(trade.event.takerId);
 

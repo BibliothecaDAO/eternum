@@ -6,7 +6,7 @@ import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { isStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
@@ -75,7 +75,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const isImmune = isStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
+  const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
 
   const immunityEndTimestamp = useMemo(() => {
     return (

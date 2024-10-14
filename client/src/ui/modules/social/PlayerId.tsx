@@ -1,6 +1,6 @@
 import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position as PositionType } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
@@ -59,12 +59,12 @@ export const PlayerId = () => {
     },
   } = useDojo();
 
-  const { getEntityName } = getEntitiesUtils();
+  const { getEntityName } = useEntitiesUtils();
 
   const selectedPlayer = useUIStore((state) => state.selectedPlayer);
   const setSelectedPlayer = useUIStore((state) => state.setSelectedPlayer);
 
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const playerEntityId = useMemo(() => {
     if (!selectedPlayer) return;
