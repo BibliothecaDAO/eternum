@@ -35,7 +35,7 @@ export const NumberInput = ({
     if (num >= 1000) {
       return num.toLocaleString("en-US");
     }
-    return num.toString();
+    return String(num);
   };
 
   const { play: playClick } = useUiSounds(soundSelector.click);
@@ -74,9 +74,9 @@ export const NumberInput = ({
           if (allowDecimals) {
             const match = inputValue.match(/[+-]?([0-9,]+([.][0-9]*)?|[.][0-9]+)/);
             if (match) {
-              const parsedValue = parseNumber(match[0]);
-              setDisplayValue(formatNumber(parsedValue));
-              onChange(parsedValue);
+              const parsedNumber = parseNumber(match[0]);
+              setDisplayValue(match[0]);
+              onChange(parsedNumber);
             } else {
               setDisplayValue(formatNumber(min));
               onChange(min);
