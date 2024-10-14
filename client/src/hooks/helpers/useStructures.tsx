@@ -1,4 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
@@ -9,6 +10,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import useUIStore from "../store/useUIStore";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 import { useEntitiesUtils } from "./useEntities";
 
@@ -260,4 +262,16 @@ export const useIsStructureImmune = (created_at: number, currentTimestamp: numbe
     return true;
   }
   return false;
+};
+
+export const useIsResourcesLocked = (structureEntityId: ID) => {
+  const dojo = useDojo();
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+
+  const structure = getStructureByEntityId(structureEntityId);
+
+  return useMemo(() => {
+    const battleManager = new BattleManager(structure?.protector?.battle_id || 0, dojo);
+    return battleManager.isResourcesLocked(nextBlockTimestamp!);
+  }, [structure, nextBlockTimestamp]);
 };

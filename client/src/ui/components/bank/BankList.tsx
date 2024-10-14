@@ -47,11 +47,7 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
         ),
         component: (
           <div>
-            <AddLiquidity
-              bank_entity_id={bankEntityId}
-              entityId={structureEntityId!}
-              listResourceId={selectedResource}
-            />
+            <AddLiquidity bankEntityId={bankEntityId} entityId={structureEntityId!} listResourceId={selectedResource} />
           </div>
         ),
       },
@@ -62,7 +58,7 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
   const liquidityTable = useMemo(() => {
     return (
       <div className="mt-4 text-xs">
-        <LiquidityTable bank_entity_id={bankEntityId} entity_id={structureEntityId} />
+        <LiquidityTable bankEntityId={bankEntityId} entity_id={structureEntityId} />
       </div>
     );
   }, [bankEntityId, structureEntityId]);
