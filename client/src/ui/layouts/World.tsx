@@ -3,11 +3,13 @@ import useUIStore from "../../hooks/store/useUIStore";
 
 import clsx from "clsx";
 import { Redirect } from "wouter";
-import { HooksComponent } from "../components/HooksComponent";
 import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
 import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 
+import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
+import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
+import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
 import { StructureInfoLabel } from "../components/worldmap/structures/StructureLabel";
 import { BattleContainer } from "../containers/BattleContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
@@ -33,6 +35,11 @@ export const World = () => {
   const modalContent = useUIStore((state) => state.modalContent);
 
   const battleView = useUIStore((state) => state.battleView);
+
+  // Setup hooks
+  useFetchBlockchainData();
+  useSubscriptionToHyperstructureEvents();
+  useStructureEntityId();
 
   return (
     <div
@@ -61,7 +68,6 @@ export const World = () => {
       <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
       </BlankOverlayContainer>
-      <HooksComponent />
       <ActionInfo />
       <ArmyInfoLabel />
       <StructureInfoLabel />

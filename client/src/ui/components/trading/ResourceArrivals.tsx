@@ -5,7 +5,13 @@ import { useEffect } from "react";
 import { Entity } from "../entities/Entity";
 import { HintSection } from "../hints/HintModal";
 
-export const AllResourceArrivals = ({ setNotificationLength }: { setNotificationLength: (len: number) => void }) => {
+export const AllResourceArrivals = ({
+  setNotificationLength,
+  className,
+}: {
+  setNotificationLength: (len: number) => void;
+  className?: string;
+}) => {
   const arrivals = usePlayerArrivals();
 
   useEffect(() => {
@@ -23,7 +29,7 @@ export const AllResourceArrivals = ({ setNotificationLength }: { setNotification
   }, [arrivals]);
 
   return (
-    <div className="p-2 flex flex-col space-y-1 overflow-y-auto">
+    <div className={`p-2 flex flex-col space-y-1 overflow-y-auto ${className}`}>
       <Headline>
         {" "}
         <div className="flex gap-2">

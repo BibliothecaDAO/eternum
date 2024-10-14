@@ -20,7 +20,9 @@ import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ContractAddress, findResourceById, ID, ResourcesIds } from "@bibliothecadao/eternum";
 
-export const WorldStructuresMenu = ({}: any) => {
+export const WorldStructuresMenu = ({ className }: { className?: string }) => {
+  const [selectedTab, setSelectedTab] = useState(0);
+
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { hyperstructures } = useHyperstructures();
@@ -46,8 +48,6 @@ export const WorldStructuresMenu = ({}: any) => {
 
     return <FragmentMineExtraContent x={Number(fragmentMine.x!)} y={Number(fragmentMine.y!)} entityId={entityId!} />;
   };
-
-  const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(
     () => [
