@@ -1,4 +1,3 @@
-import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
@@ -8,20 +7,34 @@ import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
+import { LoadingAnimation } from "@/ui/elements/LoadingAnimation";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ID, MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import { ModalContainer } from "../ModalContainer";
-import { BankPanel } from "../bank/BankList";
 import { HintModal } from "../hints/HintModal";
-import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
-import { MarketTradingHistory } from "./MarketTradingHistory";
-import { RealmProduction } from "./RealmProduction";
-import { TransferView } from "./TransferView";
+
+const MarketResourceSidebar = lazy(() =>
+  import("./MarketResourceSideBar").then((module) => ({ default: module.MarketResourceSidebar })),
+);
+
+const MarketOrderPanel = lazy(() =>
+  import("./MarketOrderPanel").then((module) => ({ default: module.MarketOrderPanel })),
+);
+
+const BankPanel = lazy(() => import("../bank/BankList").then((module) => ({ default: module.BankPanel })));
+
+const MarketTradingHistory = lazy(() =>
+  import("./MarketTradingHistory").then((module) => ({ default: module.MarketTradingHistory })),
+);
+
+const RealmProduction = lazy(() => import("./RealmProduction").then((module) => ({ default: module.RealmProduction })));
+
+const TransferView = lazy(() => import("./TransferView").then((module) => ({ default: module.TransferView })));
 
 export const MarketModal = () => {
   const {
@@ -64,12 +77,14 @@ export const MarketModal = () => {
           </div>
         ),
         component: (
-          <MarketOrderPanel
-            resourceId={selectedResource}
-            entityId={structureEntityId}
-            resourceAskOffers={askOffers}
-            resourceBidOffers={bidOffers}
-          />
+          <Suspense fallback={<LoadingAnimation />}>
+            <MarketOrderPanel
+              resourceId={selectedResource}
+              entityId={structureEntityId}
+              resourceAskOffers={askOffers}
+              resourceBidOffers={bidOffers}
+            />
+          </Suspense>
         ),
       },
       {
@@ -80,11 +95,13 @@ export const MarketModal = () => {
           </div>
         ),
         component: bank && (
-          <BankPanel
-            bankEntityId={bank.entityId}
-            structureEntityId={structureEntityId}
-            selectedResource={selectedResource}
-          />
+          <Suspense fallback={<LoadingAnimation />}>
+            <BankPanel
+              bankEntityId={bank.entityId}
+              structureEntityId={structureEntityId}
+              selectedResource={selectedResource}
+            />
+          </Suspense>
         ),
       },
       {
@@ -94,7 +111,11 @@ export const MarketModal = () => {
             <div>History</div>
           </div>
         ),
-        component: <MarketTradingHistory />,
+        component: (
+          <Suspense fallback={<LoadingAnimation />}>
+            <MarketTradingHistory />
+          </Suspense>
+        ),
       },
       {
         key: "all",
@@ -103,7 +124,11 @@ export const MarketModal = () => {
             <div>Transfer</div>
           </div>
         ),
-        component: <TransferView />,
+        component: (
+          <Suspense fallback={<LoadingAnimation />}>
+            <TransferView />
+          </Suspense>
+        ),
       },
       {
         key: "resourceProd",
@@ -112,7 +137,11 @@ export const MarketModal = () => {
             <div>Realm Production</div>
           </div>
         ),
-        component: <RealmProduction />,
+        component: (
+          <Suspense fallback={<LoadingAnimation />}>
+            <RealmProduction />
+          </Suspense>
+        ),
       },
     ],
     [selectedResource, structureEntityId, askOffers, bidOffers],
@@ -163,15 +192,17 @@ export const MarketModal = () => {
         </div>
 
         <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
-          <MarketResourceSidebar
-            entityId={structureEntityId}
-            bankEntityId={bank?.entityId}
-            search={""}
-            onClick={(value) => setSelectedResource(value)}
-            selectedResource={selectedResource}
-            resourceAskOffers={askOffers}
-            resourceBidOffers={bidOffers}
-          />
+          <Suspense fallback={<LoadingAnimation />}>
+            <MarketResourceSidebar
+              entityId={structureEntityId}
+              bankEntityId={bank?.entityId}
+              search={""}
+              onClick={(value) => setSelectedResource(value)}
+              selectedResource={selectedResource}
+              resourceAskOffers={askOffers}
+              resourceBidOffers={bidOffers}
+            />
+          </Suspense>
         </div>
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
           <Tabs
@@ -197,75 +228,5 @@ export const MarketModal = () => {
         </div>
       </div>
     </ModalContainer>
-  );
-};
-
-const MarketResourceSidebar = ({
-  entityId,
-  bankEntityId,
-  search,
-  onClick,
-  selectedResource,
-  resourceAskOffers,
-  resourceBidOffers,
-}: {
-  entityId: ID;
-  bankEntityId: ID | undefined;
-  search: string;
-  onClick: (value: number) => void;
-  selectedResource: number;
-  resourceAskOffers: MarketInterface[];
-  resourceBidOffers: MarketInterface[];
-}) => {
-  const { setup } = useDojo();
-
-  const filteredResources = useMemo(() => {
-    return resources.filter((resource) => {
-      return resource.trait.toLowerCase().includes(search.toLowerCase());
-    });
-  }, []);
-
-  return (
-    <div className=" px-1 ">
-      <div className="w-full mb-1">
-        <div className="grid grid-cols-5 text-xs font-bold uppercase">
-          <div className="col-span-2"></div>
-          <div className="flex items-center justify-center">Buy</div>
-          <div className="flex items-center justify-center">Sell</div>
-          <div className="flex items-center justify-center">AMM</div>
-        </div>
-      </div>
-
-      <div className="flex flex-col h-full gap-[0.1]">
-        {filteredResources
-          .filter((resource) => resource.id !== ResourcesIds.Lords)
-          .map((resource) => {
-            const marketManager = bankEntityId ? new MarketManager(setup, bankEntityId, 0n, resource.id) : undefined;
-
-            const askPrice = resourceBidOffers
-              .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
-              .reduce((acc, offer) => (offer.perLords > acc ? offer.perLords : acc), 0);
-
-            const bidPrice = resourceAskOffers
-              .filter((offer) => offer.takerGets[0].resourceId === resource.id)
-              .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
-
-            const ammPrice = marketManager?.getMarketPrice() || 0;
-
-            return (
-              <MarketResource
-                key={resource.id}
-                entityId={entityId || 0}
-                resource={resource}
-                active={selectedResource == resource.id}
-                onClick={onClick}
-                askPrice={askPrice === Infinity ? "0" : askPrice.toFixed(2)}
-                bidPrice={bidPrice === Infinity ? "0" : bidPrice.toFixed(2)}
-                ammPrice={ammPrice}
-              />
-            );
-          })}
-      </div>
-    </div>
   );
 };
