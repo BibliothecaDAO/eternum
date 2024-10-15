@@ -1,19 +1,6 @@
 import { Account } from "starknet";
-import {
-  ADMIN_BANK_ENTITY_ID,
-  ARMY_ENTITY_TYPE,
-  BUILDING_COSTS,
-  DONKEY_ENTITY_TYPE,
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  HYPERSTRUCTURE_CREATION_COSTS,
-  HYPERSTRUCTURE_TOTAL_COSTS,
-  RESOURCE_BUILDING_COSTS,
-  RESOURCE_INPUTS,
-  RESOURCE_OUTPUTS,
-  ResourcesIds,
-  TROOPS_FOOD_CONSUMPTION,
-} from "../constants";
-import { BuildingType, STRUCTURE_COSTS } from "../constants/structures";
+import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, ResourcesIds } from "../constants";
+import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
 import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
@@ -64,35 +51,52 @@ export class EternumConfig {
   }
 
   getResourceBuildingCostsScaled(): ResourceInputs {
-    return scaleResourceInputs(RESOURCE_BUILDING_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceInputs(
+      this.globalConfig.resources.resourceBuildingCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getResourceOutputsScaled(): ResourceOutputs {
-    return scaleResourceOutputs(RESOURCE_OUTPUTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceOutputs(
+      this.globalConfig.resources.resourceOutputs,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getBuildingCostsScaled(): ResourceInputs {
-    return scaleResourceInputs(BUILDING_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceInputs(
+      this.globalConfig.buildings.buildingCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getResourceInputsScaled(): ResourceInputs {
-    return scaleResourceInputs(RESOURCE_INPUTS, this.globalConfig.resources.resourceMultiplier);
-  }
-
-  getStructureCostsScaled(): ResourceInputs {
-    return scaleResourceInputs(STRUCTURE_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceInputs(
+      this.globalConfig.resources.resourceInputs,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getHyperstructureConstructionCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(HYPERSTRUCTURE_CONSTRUCTION_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResources(
+      this.globalConfig.hyperstructures.hyperstructureConstructionCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getHyperstructureCreationCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(HYPERSTRUCTURE_CREATION_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResources(
+      this.globalConfig.hyperstructures.hyperstructureCreationCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getHyperstructureTotalCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(HYPERSTRUCTURE_TOTAL_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResources(
+      this.globalConfig.hyperstructures.hyperstructureTotalCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 }
 
@@ -384,7 +388,7 @@ export const setupGlobals = async (config: Config) => {
 
   console.log(`Configuring travel stamina cost config ${txTravelStaminaCost.statusReceipt}...`);
 
-  for (const [unit_type, costs] of Object.entries(TROOPS_FOOD_CONSUMPTION)) {
+  for (const [unit_type, costs] of Object.entries(config.config.troop.troopFoodConsumption)) {
     const tx = await config.provider.set_travel_food_cost_config({
       signer: config.account,
       config_id: 0,
