@@ -1,4 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { type HexPosition, ResourceMiningTypes } from "@/types";
 import {
@@ -17,7 +18,6 @@ import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { type SortInterface } from "../elements/SortButton";
-import { configManager } from "@/dojo/setup";
 
 export { getEntityIdFromKeys };
 
@@ -288,6 +288,7 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
 };
 
 export const currentTickCount = (time: number) => {
+  const configManager = ClientConfigManager.instance();
   const tickIntervalInSeconds = configManager.getTick(TickIds.Armies) || 1;
   return Number(time / tickIntervalInSeconds);
 };

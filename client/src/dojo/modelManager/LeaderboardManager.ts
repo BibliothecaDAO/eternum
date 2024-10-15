@@ -8,7 +8,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
-import { configManager } from "../setup";
+import { ClientConfigManager } from "./ConfigManager";
 import { computeInitialContributionPoints } from "./utils/LeaderboardUtils";
 
 export interface HyperstructureFinishedEvent {
@@ -29,8 +29,11 @@ export class LeaderboardManager {
 
   private pointsOnCompletionPerPlayer;
 
+  private configManager: ClientConfigManager;
+
   private constructor() {
     this.pointsOnCompletionPerPlayer = new Map<ContractAddress, Map<ID, number>>();
+    this.configManager = ClientConfigManager.instance();
   }
 
   public static instance() {
@@ -183,7 +186,7 @@ export class LeaderboardManager {
 
       const timePeriod = nextChange ? nextChange.timestamp - event.timestamp : currentTimestamp - event.timestamp;
 
-      const nbOfCycles = timePeriod / configManager.getTick(TickIds.Default);
+      const nbOfCycles = timePeriod / this.configManager.getTick(TickIds.Default);
 
       const totalPoints = nbOfCycles * HYPERSTRUCTURE_POINTS_PER_CYCLE;
 

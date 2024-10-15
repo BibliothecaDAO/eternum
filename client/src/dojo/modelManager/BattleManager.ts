@@ -2,7 +2,7 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { multiplyByPrecision } from "@/ui/utils/utils";
 import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import {
   ComponentValue,
@@ -15,7 +15,7 @@ import {
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
-import { configManager } from "../setup";
+import { ClientConfigManager } from "./ConfigManager";
 import { StaminaManager } from "./StaminaManager";
 
 export enum BattleType {
@@ -68,10 +68,12 @@ export class BattleManager {
   dojo: DojoResult;
   battleType: BattleType | undefined;
   private battleIsClaimable: ClaimStatus | undefined;
+  private configManager: ClientConfigManager;
 
   constructor(battleEntityId: ID, dojo: DojoResult) {
     this.battleEntityId = battleEntityId;
     this.dojo = dojo;
+    this.configManager = ClientConfigManager.instance();
   }
 
   public getUpdatedBattle(currentTimestamp: number) {
@@ -414,13 +416,18 @@ export class BattleManager {
   }
 
   private getTroopFullHealth(troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>): bigint {
-    const troopHealth = configManager.getTroopConfig().health;
+    const troopHealth = this.configManager.getTroopConfig().health;
 
     let totalKnightHealth = troopHealth * Number(troops.knight_count);
     let totalPaladinHealth = troopHealth * Number(troops.paladin_count);
     let totalCrossbowmanHealth = troopHealth * Number(troops.crossbowman_count);
 
-    return BigInt(Math.floor(divideByPrecision(totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth)));
+    return BigInt(
+      Math.floor(
+        (totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth) /
+          EternumGlobalConfig.resources.resourceMultiplier,
+      ),
+    );
   }
 
   private getUpdatedTroops = (
@@ -467,7 +474,7 @@ export class BattleManager {
   private updateHealth(battle: ComponentValue<ClientComponents["Battle"]["schema"]>, currentTimestamp: number) {
     const durationPassed: number = this.getElapsedTime(currentTimestamp);
 
-    const troopHealth = configManager.getTroopConfig().health;
+    const troopHealth = this.configManager.getTroopConfig().health;
 
     const attackDelta = this.attackingDelta(battle);
     const defenceDelta = this.defendingDelta(battle);

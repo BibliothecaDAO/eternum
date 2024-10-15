@@ -9,7 +9,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-
 import { ContractComponents } from "../contractComponents";
 
 export class ClientConfigManager {
