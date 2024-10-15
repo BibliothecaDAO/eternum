@@ -99,6 +99,8 @@ export class EternumConfig {
 export const setProductionConfig = async (config: Config) => {
   const calldataArray = [];
 
+  console.log(config.config.resources);
+
   for (const resourceId of Object.keys(
     scaleResourceInputs(config.config.resources.resourceInputs, config.config.resources.resourceMultiplier),
   ) as unknown as ResourcesIds[]) {
@@ -208,6 +210,8 @@ export const setRealmUpgradeConfig = async (config: Config) => {
     config.config.resources.resourceMultiplier,
   );
 
+  console.log(REALM_UPGRADE_COSTS_SCALED);
+
   for (const level of Object.keys(REALM_UPGRADE_COSTS_SCALED) as unknown as number[]) {
     if (REALM_UPGRADE_COSTS_SCALED[level].length !== 0) {
       const calldata = {
@@ -267,6 +271,8 @@ export const setResourceBuildingConfig = async (config: Config) => {
 };
 
 export const setWeightConfig = async (config: Config) => {
+  console.log(config.config.resources);
+
   const calldataArray = Object.entries(config.config.resources.resourceWeightsGrams).map(([resourceId, weight]) => ({
     entity_type: resourceId,
     weight_gram: weight,
