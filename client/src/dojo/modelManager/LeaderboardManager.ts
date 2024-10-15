@@ -1,13 +1,14 @@
 import { GuildFromPlayerAddress } from "@/hooks/helpers/useGuilds";
 import {
   ContractAddress,
-  EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_ON_COMPLETION,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   ID,
+  TickIds,
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
+import { configManager } from "../setup";
 import { computeInitialContributionPoints } from "./utils/LeaderboardUtils";
 
 export interface HyperstructureFinishedEvent {
@@ -182,7 +183,7 @@ export class LeaderboardManager {
 
       const timePeriod = nextChange ? nextChange.timestamp - event.timestamp : currentTimestamp - event.timestamp;
 
-      const nbOfCycles = timePeriod / EternumGlobalConfig.tick.defaultTickIntervalInSeconds;
+      const nbOfCycles = timePeriod / configManager.getTick(TickIds.Default);
 
       const totalPoints = nbOfCycles * HYPERSTRUCTURE_POINTS_PER_CYCLE;
 

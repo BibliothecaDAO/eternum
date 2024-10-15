@@ -32,6 +32,7 @@ import {
   RealmLevels,
   ResourcesIds,
   StructureType,
+  TickIds,
   scaleResources,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -198,7 +199,7 @@ const CastleDetails = () => {
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure.created_at) +
-      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
   }, [structure.created_at, configManager]);
 

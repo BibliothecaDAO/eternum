@@ -13,7 +13,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { TickIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
@@ -81,7 +81,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure?.created_at || 0) +
-      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
   }, [structure?.created_at]);
 

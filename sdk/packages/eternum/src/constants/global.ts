@@ -18,6 +18,7 @@ import { ResourcesIds } from ".";
 export const FELT_CENTER = 2147483646;
 export const WORLD_CONFIG_ID = 999999999n;
 export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
+export const BUILDING_CATEGORY_POPULATION_CONFIG_ID = 999999990n;
 export const U32_MAX = 4294967295;
 export const MAX_NAME_LENGTH = 31;
 export const ONE_MONTH = 2628000;

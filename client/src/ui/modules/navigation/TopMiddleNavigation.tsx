@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -16,9 +17,9 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   CapacityConfigCategory,
-  EternumGlobalConfig,
   ID,
   ResourcesIds,
+  TickIds,
   WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -69,7 +70,7 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
 };
 
 const WorkersHutTooltipContent = () => {
-  const capacity = EternumGlobalConfig.populationCapacity.workerHuts;
+  const capacity = configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity;
   return (
     <div className="text-xs text-gray-200 p-2 max-w-xs">
       <p className="font-semibold">Population Capacity</p>
@@ -143,15 +144,14 @@ export const TopMiddleNavigation = () => {
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 
-    return (
-      quantity * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
-      gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))
-    );
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
+
+    return quantity * gramToKg(storehouseCapacity) + gramToKg(storehouseCapacity);
   }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % configManager.getTick(TickIds.Armies);
+    const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -284,7 +284,7 @@ const TickProgress = () => {
   const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
-  let cycleTime = EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+  let cycleTime = configManager.getTick(TickIds.Armies);
 
   useEffect(() => {
     const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);

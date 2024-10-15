@@ -1,14 +1,8 @@
+import { configManager } from "@/dojo/setup";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import {
-  CapacityConfigCategory,
-  EternumGlobalConfig,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-  type ID,
-  type Resource,
-} from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, ResourcesIds, WEIGHTS_GRAM, type ID, type Resource } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
 export const TravelInfo = ({
@@ -27,7 +21,7 @@ export const TravelInfo = ({
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = Math.ceil(
-    divideByPrecision(resourceWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
+    divideByPrecision(resourceWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey),
   );
 
   const { getBalance } = getResourceBalance();

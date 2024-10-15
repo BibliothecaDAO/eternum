@@ -8,7 +8,13 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, formatNumber, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  currencyFormat,
+  formatNumber,
+  formatSecondsInHoursMinutes,
+  getEntityIdFromKeys,
+  multiplyByPrecision,
+} from "@/ui/utils/utils";
 import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -134,9 +140,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       army_id: army?.entity_id || 0n,
       payer_id: owner_entity,
       troops: {
-        knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        paladin_count: troopCounts[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        crossbowman_count: troopCounts[ResourcesIds.Crossbowman] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        knight_count: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
+        paladin_count: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
+        crossbowman_count: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
       },
     }).finally(() => setIsLoading(false));
 

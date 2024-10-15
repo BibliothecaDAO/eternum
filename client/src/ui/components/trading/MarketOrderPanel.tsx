@@ -1,4 +1,5 @@
 import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
@@ -11,6 +12,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
+  DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
   ONE_MONTH,
   ResourcesIds,
@@ -254,7 +256,7 @@ const OrderRow = ({
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
   const travelTime = useMemo(
-    () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
+    () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), true),
     [entityId, offer],
   );
 
@@ -327,9 +329,7 @@ const OrderRow = ({
   }, [entityId, calculatedResourceAmount, calculatedLords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(
-      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
-    );
+    return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -547,9 +547,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(
-      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
-    );
+    return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);

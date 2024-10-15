@@ -1,4 +1,5 @@
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import Button from "@/ui/elements/Button";
@@ -7,12 +8,12 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   ContractAddress,
-  EternumGlobalConfig,
+  DONKEY_ENTITY_TYPE,
   ID,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
-  resources,
+  resources
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -127,7 +128,12 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
               <TravelInfo
                 entityId={entityId}
                 resources={travelResources}
-                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey, true)}
+                travelTime={computeTravelTime(
+                  bankEntityId,
+                  entityId,
+                  configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+                  true,
+                )}
                 setCanCarry={setCanCarry}
               />
             </div>

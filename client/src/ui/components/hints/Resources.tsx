@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -40,7 +41,7 @@ export const Resources = () => {
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
           <span className="font-bold">
             {` ${
-              gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) /
+              gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse)) /
               (EternumGlobalConfig.resources.resourceMultiplier * EternumGlobalConfig.resources.resourcePrecision)
             }M capacity per resource type`}
           </span>

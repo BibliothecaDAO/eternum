@@ -9,6 +9,7 @@ import {
   type Position,
   type Resource,
   ResourcesIds,
+  TickIds,
   TROOPS_FOOD_CONSUMPTION,
   WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
@@ -16,6 +17,7 @@ import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { type SortInterface } from "../elements/SortButton";
+import { configManager } from "@/dojo/setup";
 
 export { getEntityIdFromKeys };
 
@@ -286,7 +288,7 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
 };
 
 export const currentTickCount = (time: number) => {
-  const tickIntervalInSeconds = EternumGlobalConfig.tick.armiesTickIntervalInSeconds || 1;
+  const tickIntervalInSeconds = configManager.getTick(TickIds.Armies) || 1;
   return Number(time / tickIntervalInSeconds);
 };
 

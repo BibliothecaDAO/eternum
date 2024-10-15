@@ -9,7 +9,7 @@ import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures
 import { Structure, useIsStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { formatTime } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType, TickIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
@@ -62,7 +62,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
 
   const immunityEndTimestamp =
     Number(structure?.created_at) +
-    configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies);
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;

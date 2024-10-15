@@ -1,4 +1,4 @@
-import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
+import { configManager } from "@/dojo/setup";
 import { Prize } from "@/hooks/helpers/useQuests";
 import { BUILDING_IMAGES_PATH, BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
@@ -8,14 +8,12 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   CapacityConfigCategory,
-  EternumGlobalConfig,
   QuestType,
   ResourcesIds,
   TROOPS_FOOD_CONSUMPTION,
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ResourceWeight } from "../resources/ResourceWeight";
-import { configManager } from "@/dojo/setup";
 
 interface StaticQuestInfo {
   name: string;
@@ -392,7 +390,9 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     {
       name: "Build a workers hut",
       description: `Each building takes up population in your realm. You realm starts with a population of ${BASE_POPULATION_CAPACITY}. 
-      Build worker huts to extend your population capacity by ${EternumGlobalConfig.populationCapacity.workerHuts}.`,
+      Build worker huts to extend your population capacity by ${configManager.getBuildingPopConfig(
+        BuildingType.WorkersHut,
+      ).capacity}.`,
       steps: [
         navigationStep(BuildingThumbs.construction),
         "2. Select the worker hut building",
@@ -411,11 +411,8 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
           <div className="mt-2">Build a market to produce donkeys. Donkeys are a resource used to transport goods.</div>{" "}
           <div className="flex flex-row mt-2">
             <ResourceIcon size="sm" resource={ResourcesIds[ResourcesIds.Donkey]} />
-            <div>
-              {" "}
-              Donkeys can transport{" "}
-              {Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]) / 1000} kg{" "}
-            </div>
+            <div> Donkeys can transport </div>
+            {configManager.getCapacityConfig(CapacityConfigCategory.Donkey) / 1000} kg{" "}
           </div>
           <ResourceWeight className="mt-2" />
         </div>
