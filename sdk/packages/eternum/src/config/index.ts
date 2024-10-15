@@ -136,8 +136,8 @@ export const setBuildingCategoryPopConfig = async (config: Config) => {
     if (buildingPopulation[buildingId] !== 0 || buildingCapacity[buildingId] !== 0) {
       const callData = {
         building_category: buildingId,
-        population: buildingPopulation[buildingId],
-        capacity: buildingCapacity[buildingId],
+        population: buildingPopulation[buildingId] ?? 0,
+        capacity: buildingCapacity[buildingId] ?? 0,
       };
 
       calldataArray.push(callData);
@@ -180,7 +180,7 @@ export const setBuildingConfig = async (config: Config) => {
     if (scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier)[buildingId].length !== 0) {
       const calldata = {
         building_category: buildingId,
-        building_resource_type: buildingResourceProduced[buildingId],
+        building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,
         cost_of_building: scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier)[
           buildingId
         ].map((cost) => {

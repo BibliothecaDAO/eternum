@@ -1,4 +1,11 @@
-import { CapacityConfigCategory, QuestType, RealmLevels, ResourcesIds, TroopFoodConsumption } from "../constants";
+import {
+  BuildingType,
+  CapacityConfigCategory,
+  QuestType,
+  RealmLevels,
+  ResourcesIds,
+  TroopFoodConsumption,
+} from "../constants";
 
 export enum Winner {
   Attacker = "Attacker",
@@ -339,9 +346,9 @@ export interface Config {
   };
 
   buildings: {
-    buildingCapacity: { [key: number]: number };
-    buildingPopulation: { [key: number]: number };
-    buildingResourceProduced: { [key: number]: number };
+    buildingCapacity: Partial<{ [key in BuildingType]: number }>;
+    buildingPopulation: Partial<{ [key in BuildingType]: number }>;
+    buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
     buildingCosts: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };

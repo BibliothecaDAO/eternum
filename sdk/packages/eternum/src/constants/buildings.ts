@@ -23,7 +23,8 @@ export const BUILDING_INFORMATION: {
   [BuildingType.Storehouse]: "Storehouses, where abundance flows, swell with the wealth of the land.",
 };
 
-export const BUILDING_CAPACITY: { [key: number]: number } = {
+export const BUILDING_CAPACITY: { [key in BuildingType]: number } = {
+  [BuildingType.None]: 0,
   [BuildingType.Castle]: 5,
   [BuildingType.Bank]: 0,
   [BuildingType.FragmentMine]: 0,
@@ -41,7 +42,8 @@ export const BUILDING_CAPACITY: { [key: number]: number } = {
   [BuildingType.Storehouse]: 0,
 };
 
-export const BUILDING_POPULATION: { [key: number]: number } = {
+export const BUILDING_POPULATION: { [key in BuildingType]: number } = {
+  [BuildingType.None]: 0,
   [BuildingType.Castle]: 0,
   [BuildingType.Bank]: 0,
   [BuildingType.FragmentMine]: 0,
@@ -59,7 +61,8 @@ export const BUILDING_POPULATION: { [key: number]: number } = {
   [BuildingType.Storehouse]: 2,
 };
 
-export const BUILDING_RESOURCE_PRODUCED: { [key: number]: number } = {
+export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
+  [BuildingType.None]: 0,
   [BuildingType.Castle]: 0,
   [BuildingType.Bank]: 0,
   [BuildingType.FragmentMine]: ResourcesIds.AncientFragment,
