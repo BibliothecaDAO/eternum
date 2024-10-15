@@ -81,7 +81,10 @@ export class ArmyMovementManager {
   private readonly staminaManager: StaminaManager;
   private readonly entityArmy: ComponentValue<ClientComponents["Army"]["schema"]>;
 
-  constructor(private readonly setup: SetupResult, entityId: ID) {
+  constructor(
+    private readonly setup: SetupResult,
+    entityId: ID,
+  ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
