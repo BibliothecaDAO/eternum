@@ -206,7 +206,7 @@ export function defineContractComponents(world: World) {
     BattleConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.BigInt },
+        { config_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
