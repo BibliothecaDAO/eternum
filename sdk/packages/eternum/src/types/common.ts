@@ -1,4 +1,4 @@
-import { CapacityConfigCategory, ResourcesIds } from "../constants";
+import { CapacityConfigCategory, QuestType, RealmLevels, ResourcesIds, TroopFoodConsumption } from "../constants";
 
 export enum Winner {
   Attacker = "Attacker",
@@ -221,8 +221,13 @@ export function ContractAddress(address: string | bigint): ContractAddress {
   return BigInt(address);
 }
 
+export interface ResourceCost {
+  resource: ResourcesIds;
+  amount: number;
+}
+
 export interface ResourceInputs {
-  [key: number]: { resource: ResourcesIds; amount: number }[];
+  [key: number]: ResourceCost[];
 }
 
 export interface ResourceOutputs {
@@ -233,12 +238,17 @@ export interface Config {
   stamina: {
     travelCost: number;
     exploreCost: number;
+    refillPerTick: number;
   };
   resources: {
     resourcePrecision: number;
     resourceMultiplier: number;
     resourceAmountPerTick: number;
     startingResourcesInputProductionFactor: number;
+    resourceInputs: ResourceInputs;
+    resourceOutputs: ResourceOutputs;
+    resourceWeightsGrams: { [key in ResourcesIds]?: number };
+    resourceBuildingCosts: ResourceInputs;
   };
   banks: {
     name: string;
@@ -249,9 +259,12 @@ export interface Config {
     ownerFeesDenominator: number; // %
     ownerBridgeFeeOnDepositPercent: number;
     ownerBridgeFeeOnWithdrawalPercent: number;
+    ammStartingLiquidity: { [key in ResourcesIds]?: number };
+    lordsLiquidityPerResource: number;
   };
   populationCapacity: {
     workerHuts: number;
+    basePopulation: number;
   };
   exploration: {
     reward: number;
@@ -300,6 +313,8 @@ export interface Config {
     battleLeaveSlashDenom: number;
     // 1_000. multiply this number by 2 to reduce battle time by 2x, etc.
     battleTimeReductionScale: number;
+    troopStaminas: { [key: number]: number };
+    troopFoodConsumption: Record<number, TroopFoodConsumption>;
   };
   mercenaries: {
     troops: {
@@ -322,4 +337,26 @@ export interface Config {
     min_angle_increase: number;
     max_angle_increase: number;
   };
+
+  buildings: {
+    buildingCapacity: { [key: number]: number };
+    buildingPopulation: { [key: number]: number };
+    buildingResourceProduced: { [key: number]: number };
+    buildingCosts: ResourceInputs;
+    buildingFixedCostScalePercent: number;
+  };
+
+  hyperstructures: {
+    hyperstructureCreationCosts: ResourceCost[];
+    hyperstructureConstructionCosts: ResourceCost[];
+    hyperstructureTotalCosts: ResourceCost[];
+    hyperstructureResourceMultipliers: { [key in ResourcesIds]?: number };
+    hyperstructurePointsPerCycle: number;
+    hyperstructurePointsOnCompletion: number;
+    hyperstructureTimeBetweenSharesChangeSeconds: number;
+    hyperstructurePointsForWin: number;
+  };
+  questResources: { [key in QuestType]: ResourceCost[] };
+  realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
+  realmMaxLevel: number;
 }
