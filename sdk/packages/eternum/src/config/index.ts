@@ -26,11 +26,6 @@ import {
   TROOPS_STAMINAS,
   WEIGHTS_GRAM,
 } from "../constants";
-import { BuildingType, STRUCTURE_COSTS } from "../constants/structures";
-import { EternumProvider } from "../provider";
-import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
-import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
-
 import {
   EternumGlobalConfig as DefaultConfig,
   FELT_CENTER,
@@ -38,6 +33,10 @@ import {
   HYPERSTRUCTURE_POINTS_ON_COMPLETION,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
 } from "../constants/global";
+import { BuildingType, STRUCTURE_COSTS } from "../constants/structures";
+import { EternumProvider } from "../provider";
+import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
+import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
 interface Config {
   account: Account;
@@ -55,6 +54,7 @@ export class EternumConfig {
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setProductionConfig(config);
+    await setSeasonConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
     await setBuildingConfig(config);
@@ -410,6 +410,15 @@ export const setCapacityConfig = async (config: Config) => {
 
     console.log(`Configuring capacity ${category} config ${tx.statusReceipt} max capacity: ${weight_gram}...`);
   }
+};
+
+export const setSeasonConfig = async (config: Config) => {
+  const tx = await config.provider.set_season_config({
+    signer: config.account,
+    season_pass_address: config.config.season.seasonPassAddress,
+  });
+
+  console.log(`Configuring season config ${tx.statusReceipt}`);
 };
 
 export const setSpeedConfig = async (config: Config) => {

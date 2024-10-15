@@ -93,12 +93,12 @@ mod realm_systems {
 
             // collect season pass
             let season: SeasonConfig = get!(world, WORLD_CONFIG_ID, SeasonConfig);
-            InternalRealmLogicImpl::collect_season_pass(season.nft_address, realm_id);
+            InternalRealmLogicImpl::collect_season_pass(season.season_pass_address, realm_id);
 
             // retrieve realm metadata
             let (realm_name, regions, cities, harbors, rivers, wonder, order, resources) =
                 InternalRealmLogicImpl::retrieve_realm_metadata(
-                season.nft_address, realm_id
+                season.season_pass_address, realm_id
             );
 
             // create realm
@@ -121,6 +121,7 @@ mod realm_systems {
                         entity_id: entity_id.into(),
                         realm_id,
                         produced_resources: realm_produced_resources_packed,
+                        order,
                         level: 0
                     },
                     Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },

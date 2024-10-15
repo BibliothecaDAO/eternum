@@ -21,12 +21,6 @@ type RealmInfo = {
   realmId: ID;
   entityId: ID;
   name: string;
-  cities: number;
-  rivers: number;
-  wonder: number;
-  harbors: number;
-  regions: number;
-  resourceTypesCount: number;
   resourceTypesPacked: bigint;
   order: number;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -47,7 +41,7 @@ export function useRealm() {
 
   const getQuestResources = () => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
-    const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
+    const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
     return getStartingResources(resourcesProduced);
   };
 
@@ -196,19 +190,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
       const population = getComponentValue(Population, entityId);
 
       if (realm && owner && position) {
-        const {
-          realm_id,
-          entity_id,
-          cities,
-          rivers,
-          wonder,
-          harbors,
-          regions,
-          resource_types_count,
-          resource_types_packed,
-          order,
-          level,
-        } = realm;
+        const { realm_id, entity_id, produced_resources, order, level } = realm;
 
         const name = getRealmNameById(realm_id);
 
@@ -218,14 +200,8 @@ export function useGetRealm(realmEntityId: ID | undefined) {
           realmId: realm_id,
           entityId: entity_id,
           name,
-          cities,
-          rivers,
-          wonder,
-          harbors,
-          regions,
           level,
-          resourceTypesCount: resource_types_count,
-          resourceTypesPacked: resource_types_packed,
+          resourceTypesPacked: produced_resources,
           order,
           position,
           ...population,
@@ -259,18 +235,7 @@ export function getRealms(): RealmInfo[] {
 
       if (!realm || !owner || !position) return;
 
-      const {
-        realm_id,
-        entity_id,
-        cities,
-        rivers,
-        wonder,
-        harbors,
-        regions,
-        resource_types_count,
-        resource_types_packed,
-        order,
-      } = realm;
+      const { realm_id, entity_id, produced_resources, order } = realm;
 
       const name = getRealmNameById(realm_id);
 
@@ -283,13 +248,7 @@ export function getRealms(): RealmInfo[] {
         realmId: realm_id,
         entityId: entity_id,
         name,
-        cities,
-        rivers,
-        wonder,
-        harbors,
-        regions,
-        resourceTypesCount: resource_types_count,
-        resourceTypesPacked: resource_types_packed,
+        resourceTypesPacked: produced_resources,
         order,
         position,
         ...population,

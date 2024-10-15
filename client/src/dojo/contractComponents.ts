@@ -379,20 +379,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    EntityMetadata: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, entity_type: RecsType.Number },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "EntityMetadata",
-            types: ["u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     EntityName: (() => {
       return defineComponent(
         world,
@@ -944,13 +930,7 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.Number,
           realm_id: RecsType.Number,
-          resource_types_packed: RecsType.BigInt,
-          resource_types_count: RecsType.Number,
-          cities: RecsType.Number,
-          harbors: RecsType.Number,
-          rivers: RecsType.Number,
-          regions: RecsType.Number,
-          wonder: RecsType.Number,
+          produced_resources: RecsType.BigInt,
           order: RecsType.Number,
           level: RecsType.Number,
         },
@@ -958,7 +938,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u128", "u8", "u8"],
             customTypes: [],
           },
         },
@@ -1656,8 +1636,7 @@ const eventsComponents = (world: World) => {
             owner_address: RecsType.BigInt,
             owner_name: RecsType.BigInt,
             realm_name: RecsType.BigInt,
-            resource_types_packed: RecsType.BigInt,
-            resource_types_count: RecsType.Number,
+            produced_resources: RecsType.BigInt,
             cities: RecsType.Number,
             harbors: RecsType.Number,
             rivers: RecsType.Number,
@@ -1680,7 +1659,6 @@ const eventsComponents = (world: World) => {
                 "felt252",
                 "felt252",
                 "u128",
-                "u8",
                 "u8",
                 "u8",
                 "u8",

@@ -322,4 +322,8 @@ export interface Config {
     min_angle_increase: number;
     max_angle_increase: number;
   };
+  season: {
+    seasonPassAddress: string;
+    realmsAddress: string;
+  };
 }

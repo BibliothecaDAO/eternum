@@ -116,15 +116,9 @@ export const generateMockArmyInfo = (
     realm: {
       entity_id: ARMY_ENTITY_ID,
       realm_id: 1,
-      resource_types_packed: 1n,
-      resource_types_count: 1,
-      cities: 1,
-      harbors: 1,
-      rivers: 1,
-      regions: 1,
-      wonder: 1,
-      order: 1,
+      produced_resources: 1n,
       level: 1,
+      order: 1,
     },
     homePosition: { entity_id: ARMY_ENTITY_ID, x: 0, y: 0 },
   };

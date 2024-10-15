@@ -42,7 +42,7 @@ pub struct WorldConfig {
 pub struct SeasonConfig {
     #[key]
     config_id: ID,
-    nft_address: ContractAddress,
+    season_pass_address: ContractAddress,
 }
 
 

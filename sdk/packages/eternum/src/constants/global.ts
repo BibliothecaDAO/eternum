@@ -96,6 +96,10 @@ export const EternumGlobalConfig = {
     min_angle_increase: 10,
     max_angle_increase: 40,
   },
+  season: {
+    seasonPassAddress: "0x0",
+    realmsAddress: "0x0",
+  },
 };
 
 export const FELT_CENTER = 2147483646;

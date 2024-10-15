@@ -1,0 +1,18 @@
+[package]
+name = "esp"
+version = "1.0.0"
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
+openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.15.0"}
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120

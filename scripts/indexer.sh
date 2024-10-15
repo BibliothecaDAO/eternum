@@ -16,6 +16,16 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
+if [[ "$setConfig" == "true" ]]; then
+    echo "----- Building Eternum Season Pass Contract ----- "
+    # build and deploy season pass contract
+    cd season_pass/contracts && scarb --release build
+    cd ../scripts/deployment && npm run deploy && cd ../../../
+    echo "\n\n"
+fi
+
+
+# build and deploy world contracts
 cd contracts
 
 echo "----- Building World -----"

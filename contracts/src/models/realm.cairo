@@ -14,8 +14,9 @@ pub struct Realm {
     #[key]
     entity_id: ID,
     realm_id: ID,
-    level: u8,
-    produced_resources: u128
+    produced_resources: u128,
+    order: u8,
+    level: u8
 }
 
 
@@ -83,6 +84,124 @@ impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
         };
 
         return res.span();
+    }
+}
+
+
+/// References to what each id maps to.
+/// These exactly match what is in the Realms L2 contracts (bibliothecadao/lordship repository).
+///
+#[generate_trait]
+impl RealmReferenceImpl of RealmReferenceTrait {
+    fn resource_mapping(num: felt252) -> ByteArray {
+        match num {
+            0 => panic!("zero resource"),
+            1 => "Stone",
+            2 => "Coal",
+            3 => "Wood",
+            4 => "Copper",
+            5 => "Ironwood",
+            6 => "Obsidian",
+            7 => "Gold",
+            8 => "Silver",
+            9 => "Mithral",
+            10 => "Alchemical Silver",
+            11 => "Cold Iron",
+            12 => "Deep Crystal",
+            13 => "Ruby",
+            14 => "Diamonds",
+            15 => "Hartwood",
+            16 => "Ignium",
+            17 => "Twilight Quartz",
+            18 => "True Ice",
+            19 => "Adamantine",
+            20 => "Sapphire",
+            21 => "Ethereal Silica",
+            22 => "Dragonhide",
+            _ => panic!("max resource num exceeded")
+        }
+    }
+
+    fn order_mapping(num: felt252) -> ByteArray {
+        match num {
+            0 => panic!("zero order"),
+            1 => "The Order of Giants",
+            2 => "The Order of Perfection",
+            3 => "The Order of Rage",
+            4 => "The Order of the Fox",
+            5 => "The Order of the Twins",
+            6 => "The Order of Fury",
+            7 => "The Order of Reflection",
+            8 => "The Order of Detection",
+            9 => "The Order of Skill",
+            10 => "The Order of Brilliance",
+            11 => "The Order of Protection",
+            12 => "The Order of Power",
+            13 => "The Order of Titans",
+            14 => "The Order of Vitriol",
+            15 => "The Order of Anger",
+            16 => "The Order of Enlightenment",
+            _ => panic!("max order num exceeded")
+        }
+    }
+
+
+    fn wonder_mapping(num: felt252) -> ByteArray {
+        match num {
+            0 => panic!("zero wonder"),
+            1 => "None",
+            2 => "The Eternal Orchard",
+            3 => "The Glowing Geyser",
+            4 => "The Pearl Summit",
+            5 => "The Pearl River",
+            6 => "Altar Of Divine Will",
+            7 => "The Fading Yew",
+            8 => "Pantheon Of Chaos",
+            9 => "The Ancient Lagoon",
+            10 => "The Exalted Basin",
+            11 => "The Amaranthine Rock",
+            12 => "The Pale Pillar",
+            13 => "The Mythic Trees",
+            14 => "Sanctum Of The Oracle",
+            15 => "The Ancestral Willow",
+            16 => "The Pale Vertex",
+            17 => "Cathedral Of Agony",
+            18 => "The Omen Graves",
+            19 => "The Crying Oak",
+            20 => "The Perpetual Ridge",
+            21 => "The Sanctified Fjord",
+            22 => "Altar Of Perfection",
+            23 => "The Argent Catacombs",
+            24 => "The Mirror Grotto",
+            25 => "The Mother Grove",
+            26 => "The Dark Mountain",
+            27 => "The Origin Oasis",
+            28 => "The Cerulean Reliquary",
+            29 => "Sanctum Of Purpose",
+            30 => "Altar Of The Void",
+            31 => "Pagoda Of Fortune",
+            32 => "The Weeping Willow",
+            33 => "Synagogue Of Collapse",
+            34 => "Mosque Of Mercy",
+            35 => "The Perpetual Fjord",
+            36 => "The Ethereal Isle",
+            37 => "The Azure Lake",
+            38 => "The Celestial Vertex",
+            39 => "The Exalted Maple",
+            40 => "The Oracle Pool",
+            41 => "Infinity Spire",
+            42 => "The Exalted Geyser",
+            43 => "The Glowing Pinnacle",
+            44 => "The Ancestral Trees",
+            45 => "The Immortal Hot Spring",
+            46 => "The Pure Stone",
+            47 => "The Cerulean Chamber",
+            48 => "Sanctuary Of The Ancients",
+            49 => "The Solemn Catacombs",
+            50 => "The Devout Summit",
+            51 => "Sky Mast",
+            _ => panic!("max wonder num exceeded")
+        }
     }
 }
 
@@ -165,7 +284,7 @@ mod tests {
     use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
 
     fn test_realm() -> Realm {
-        Realm { entity_id: 1, realm_id: 1, level: 0, produced_resources: 0, }
+        Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, }
     }
 
 
