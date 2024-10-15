@@ -3,6 +3,7 @@ import { computeExploreFoodCosts, currencyFormat, multiplyByPrecision } from "..
 
 import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
 import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -80,9 +81,9 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure?.created_at || 0) +
-      setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
     );
-  }, [structure?.created_at, setup.configManager]);
+  }, [structure?.created_at]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;

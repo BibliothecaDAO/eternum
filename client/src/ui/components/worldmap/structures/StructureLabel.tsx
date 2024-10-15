@@ -1,4 +1,4 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { configManager } from "@/dojo/setup";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
@@ -20,7 +20,6 @@ export const ImmunityTimer = ({ isImmune, timer }: { isImmune: boolean; timer: n
 };
 
 export const StructureInfoLabel = () => {
-  const dojo = useDojo();
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
   const { getStructureByEntityId } = useStructures();
@@ -40,9 +39,9 @@ export const StructureInfoLabel = () => {
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure?.created_at || 0) +
-      dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
     );
-  }, [structure?.created_at, dojo.setup.configManager]);
+  }, [structure?.created_at]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;

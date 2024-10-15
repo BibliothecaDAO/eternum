@@ -27,7 +27,9 @@ export const Transfers = () => {
           </p>
           <p>
             Donkey carry capacity:{" "}
-            <strong>{EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey] / GRAMS_PER_KG} kg</strong>
+            <strong>
+              {Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]) / GRAMS_PER_KG} kg
+            </strong>
           </p>
           <div className="flex mt-4 justify-center w-full gap-8 font-bold border p-2">
             <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords] / GRAMS_PER_KG} kg/unit`}</div>

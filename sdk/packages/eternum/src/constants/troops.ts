@@ -6,7 +6,14 @@ export const TROOPS_STAMINAS = {
   [ResourcesIds.Crossbowman]: 80,
 };
 
-export const TROOPS_FOOD_CONSUMPTION = {
+export type TroopFoodConsumption = {
+  explore_wheat_burn_amount: number;
+  explore_fish_burn_amount: number;
+  travel_wheat_burn_amount: number;
+  travel_fish_burn_amount: number;
+};
+
+export const TROOPS_FOOD_CONSUMPTION: Record<number, TroopFoodConsumption> = {
   [ResourcesIds.Paladin]: {
     explore_wheat_burn_amount: 0.006,
     explore_fish_burn_amount: 0.006,

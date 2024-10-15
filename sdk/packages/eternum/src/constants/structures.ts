@@ -23,32 +23,35 @@ export enum BuildingType {
   Market = 6,
   ArcheryRange = 7,
   Stable = 8,
+  // unused
   TradingPost = 9,
   WorkersHut = 10,
+  // unused
   WatchTower = 11,
+  // unused
   Walls = 12,
   Storehouse = 13,
   Bank = 14,
   FragmentMine = 15,
 }
 
-export const BuildingEnumToString: { [index: number]: string } = {
-  0: "None",
-  1: "Castle",
-  2: "Resource",
-  3: "Farm",
-  4: "Fishing Village",
-  5: "Barracks",
-  6: "Market",
-  7: "Archery Range",
-  8: "Stable",
-  9: "Trading Post",
-  10: "Workers Hut",
-  11: "Watch Tower",
-  12: "Walls",
-  13: "Storehouse",
-  14: "Bank",
-  15: "Shards Mine",
+export const BuildingEnumToString: Record<BuildingType, string> = {
+  [BuildingType.None]: "None",
+  [BuildingType.Castle]: "Castle",
+  [BuildingType.Resource]: "Resource",
+  [BuildingType.Farm]: "Farm",
+  [BuildingType.FishingVillage]: "Fishing Village",
+  [BuildingType.Barracks]: "Barracks",
+  [BuildingType.Market]: "Market",
+  [BuildingType.ArcheryRange]: "Archery Range",
+  [BuildingType.Stable]: "Stable",
+  [BuildingType.TradingPost]: "Trading Post",
+  [BuildingType.WorkersHut]: "Workers Hut",
+  [BuildingType.WatchTower]: "Watch Tower",
+  [BuildingType.Walls]: "Walls",
+  [BuildingType.Storehouse]: "Storehouse",
+  [BuildingType.Bank]: "Bank",
+  [BuildingType.FragmentMine]: "Fragment Mine",
 };
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
