@@ -204,7 +204,7 @@ export function defineContractComponents(world: World) {
     BattleConfig: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.BigInt },
+        { config_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.BigInt },
         {
           metadata: {
             namespace: "eternum",
@@ -1228,6 +1228,7 @@ export function defineContractComponents(world: World) {
           crossbowman_strength: RecsType.Number,
           advantage_percent: RecsType.Number,
           disadvantage_percent: RecsType.Number,
+          max_troop_count: RecsType.Number,
           pillage_health_divisor: RecsType.Number,
           army_free_per_structure: RecsType.Number,
           army_extra_per_building: RecsType.Number,
@@ -1240,7 +1241,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
+            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u64", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
             customTypes: [],
           },
         },

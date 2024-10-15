@@ -9,11 +9,10 @@ import {
 import {
   CapacityConfigCategory,
   ContractAddress,
-  EternumGlobalConfig,
   ID,
   ResourcesIds,
   getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
+  getNeighborHexes
 } from "@bibliothecadao/eternum";
 import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";

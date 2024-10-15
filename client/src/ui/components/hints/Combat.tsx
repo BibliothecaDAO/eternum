@@ -1,9 +1,12 @@
+import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { EternumGlobalConfig, ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
+import { ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
-export const Combat = () => {
+export const Combat = ({ configManager }: { configManager: ClientConfigManager }) => {
+  const troopConfig = configManager.getTroopConfig();
+
   const chapter = [
     {
       title: "Protecting your Structures",
@@ -12,7 +15,7 @@ export const Combat = () => {
     },
     {
       title: "Exploration",
-      content: `An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions. You can only have a certain number of attacking armies per Realm. You start at ${EternumGlobalConfig.troop.baseArmyNumberForStructure} and get ${EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding} per military building.`,
+      content: `An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions. You can only have a certain number of attacking armies per Realm. You start at ${troopConfig.baseArmyNumberForStructure} and get ${troopConfig.armyExtraPerMilitaryBuilding} per military building.`,
     },
     {
       title: "Battles",
@@ -26,7 +29,7 @@ export const Combat = () => {
 
     {
       title: "Troops",
-      content: <Troops />,
+      content: <Troops configManager={configManager} />,
     },
   ];
 
@@ -91,8 +94,10 @@ const Battles = () => {
   );
 };
 
-const Troops = () => {
-  const troopHealth = EternumGlobalConfig.troop.health;
+const Troops = ({ configManager }: { configManager: ClientConfigManager }) => {
+  const troopConfig = configManager.getTroopConfig();
+  const advantagePercent = (troopConfig.advantagePercent / 10000) * 100;
+  const disadvantagePercent = (troopConfig.disadvantagePercent / 10000) * 100;
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">
@@ -110,36 +115,42 @@ const Troops = () => {
           resourceId={ResourcesIds.Knight}
           strength={
             <Strength
-              strength={EternumGlobalConfig.troop.knightStrength}
+              strength={troopConfig.knightStrength}
               strongAgainst="Paladin"
               weakAgainst="Crossbowman"
+              advantagePercent={advantagePercent}
+              disadvantagePercent={disadvantagePercent}
             />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
         <TroopRow
           type="Crossbowman"
           resourceId={ResourcesIds.Crossbowman}
           strength={
             <Strength
-              strength={EternumGlobalConfig.troop.crossbowmanStrength}
+              strength={troopConfig.crossbowmanStrength}
               strongAgainst="Knight"
               weakAgainst="Paladin"
+              advantagePercent={advantagePercent}
+              disadvantagePercent={disadvantagePercent}
             />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
         <TroopRow
           type="Paladin"
           resourceId={ResourcesIds.Paladin}
           strength={
             <Strength
-              strength={EternumGlobalConfig.troop.paladinStrength}
+              strength={troopConfig.paladinStrength}
               strongAgainst="Crossbowman"
               weakAgainst="Knight"
+              advantagePercent={advantagePercent}
+              disadvantagePercent={disadvantagePercent}
             />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
       </tbody>
     </table>
@@ -175,14 +186,15 @@ const Strength = ({
   strength,
   strongAgainst,
   weakAgainst,
+  advantagePercent,
+  disadvantagePercent,
 }: {
   strength: number;
   strongAgainst: string;
   weakAgainst: string;
+  advantagePercent: number;
+  disadvantagePercent: number;
 }) => {
-  const advantagePercent = (EternumGlobalConfig.troop.advantagePercent / 10000) * 100;
-  const disadvantagePercent = (EternumGlobalConfig.troop.disadvantagePercent / 10000) * 100;
-
   return (
     <div className="flex flex-col">
       {/* <div>{strength}</div> */}

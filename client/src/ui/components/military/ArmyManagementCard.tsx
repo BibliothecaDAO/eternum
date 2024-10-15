@@ -23,8 +23,6 @@ import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { LucideArrowRight } from "lucide-react";
 
-const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
-
 type ArmyManagementCardProps = {
   owner_entity: ID;
   army: ArmyInfo | undefined;
@@ -39,10 +37,13 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     setup: {
       systemCalls: { army_buy_troops },
       components: { Position },
+      configManager,
     },
   } = useDojo();
 
   const dojo = useDojo();
+
+  const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
   const isDefendingArmy = Boolean(army?.protectee);
 
@@ -88,7 +89,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const remainingTroops = useMemo(() => {
     return (
-      Math.max(0, MAX_TROOPS_PER_ARMY - Object.values(troopCounts).reduce((a, b) => a + b, 0)) -
+      Math.max(0, maxTroopCountPerArmy - Object.values(troopCounts).reduce((a, b) => a + b, 0)) -
       Number(army?.quantity.value)
     );
   }, [troopCounts]);
@@ -297,7 +298,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           {!isDefendingArmy && (
             <div className="text-xs text-yellow-500 mb-2">
-              ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
+              ⚠️ Maximum troops per attacking army is {formatNumber(maxTroopCountPerArmy, 0)}
             </div>
           )}
 

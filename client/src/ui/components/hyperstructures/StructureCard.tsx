@@ -17,7 +17,6 @@ import { useMemo, useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
 import { ResourceExchange } from "./ResourceExchange";
 
-const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
 export const StructureCard = ({
   position,
@@ -152,10 +151,13 @@ const TroopExchange = ({
       components: { Army, Protector },
       systemCalls: { army_merge_troops, create_army },
       network: { world },
+      configManager
     },
   } = useDojo();
 
   const { getArmy } = getArmyByEntityId();
+
+  const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -185,7 +187,7 @@ const TroopExchange = ({
   const remainingTroops = useMemo(() => {
     const totalTroopsGiven = Object.values(troopsGiven).reduce((a, b) => a + b, 0n);
     const totalTroops = totalTroopsGiven + totalTroopsReceiver;
-    return BigInt(MAX_TROOPS_PER_ARMY) > totalTroops ? BigInt(MAX_TROOPS_PER_ARMY) - totalTroops : 0n;
+    return BigInt(maxTroopCountPerArmy) > totalTroops ? BigInt(maxTroopCountPerArmy) - totalTroops : 0n;
   }, [troopsGiven, totalTroopsReceiver]);
 
   const getMaxTroopCountForAttackingArmy = (amount: bigint, troopId: string) => {
@@ -246,7 +248,7 @@ const TroopExchange = ({
       {transferDirection === "from" && (
         <>
           <div className="text-xs text-yellow-500 mb-2">
-            ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
+            ⚠️ Maximum troops per attacking army is {formatNumber(maxTroopCountPerArmy, 0)}
           </div>
           <div className="text-xs mb-2">Total troops in attacking army: {Number(totalTroopsReceiver)}</div>
         </>

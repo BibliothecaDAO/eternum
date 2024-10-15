@@ -44,7 +44,7 @@ export const EternumGlobalConfig = {
   },
   battle: {
     graceTickCount: 24,
-    delaySeconds: 8 * 60 * 60,
+    delaySeconds: 28800, // 8 * 60 * 60
   },
   troop: {
     health: 1,

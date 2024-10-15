@@ -39,23 +39,26 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     account: { account },
     setup: {
       systemCalls: { create_army },
+      configManager
     },
   } = useDojo();
+
+  const troopConfig = configManager.getTroopConfig();
 
   const [loading, setLoading] = useState<Loading>(Loading.None);
 
   const maxAmountOfAttackingArmies = useMemo(() => {
     const maxWithBuildings =
-      EternumGlobalConfig.troop.baseArmyNumberForStructure +
+      troopConfig.baseArmyNumberForStructure +
       existingBuildings.filter(
         (building) =>
           building.category === BuildingType[BuildingType.ArcheryRange] ||
           building.category === BuildingType[BuildingType.Barracks] ||
           building.category === BuildingType[BuildingType.Stable],
       ).length *
-        EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding;
+        troopConfig.armyExtraPerMilitaryBuilding;
     // remove 1 to force to create defensive army first
-    const hardMax = EternumGlobalConfig.troop.maxArmiesPerStructure - 1;
+    const hardMax = troopConfig.maxArmiesPerStructure - 1;
     return Math.min(maxWithBuildings, hardMax);
   }, [existingBuildings]);
 
@@ -95,7 +98,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       </Headline>
       <div className="px-3 py-2 bg-blueish/20  font-bold">
         Build military buildings to increase your current max number of attacking armies. Realms can support up to{" "}
-        {EternumGlobalConfig.troop.maxArmiesPerStructure - 1} attacking armies.
+        {troopConfig.maxArmiesPerStructure - 1} attacking armies.
       </div>
       <div className="flex justify-between">
         <div
