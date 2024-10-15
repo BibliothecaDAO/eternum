@@ -5,10 +5,10 @@ import { currencyFormat, gramToKg, multiplyByPrecision } from "@/ui/utils/utils"
 import {
   CapacityConfigCategory,
   EternumGlobalConfig,
-  findResourceById,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
+  findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
@@ -40,7 +40,7 @@ export const Resources = () => {
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
           <span className="font-bold">
             {` ${
-              gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) /
+              gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) /
               (EternumGlobalConfig.resources.resourceMultiplier * EternumGlobalConfig.resources.resourcePrecision)
             }M capacity per resource type`}
           </span>

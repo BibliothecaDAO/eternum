@@ -247,7 +247,7 @@ export interface Config {
     startingResourcesInputProductionFactor: number;
     resourceInputs: ResourceInputs;
     resourceOutputs: ResourceOutputs;
-    resourceWeightsGrams: { [key in ResourcesIds]?: number };
+    resourceWeightsGrams: { [key in ResourcesIds]: number };
     resourceBuildingCosts: ResourceInputs;
   };
   banks: {

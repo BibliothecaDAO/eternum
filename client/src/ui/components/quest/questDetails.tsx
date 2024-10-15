@@ -411,8 +411,8 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
             <ResourceIcon size="sm" resource={ResourcesIds[ResourcesIds.Donkey]} />
             <div>
               {" "}
-              Donkeys can transport {EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey] /
-                1000} kg{" "}
+              Donkeys can transport{" "}
+              {Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]) / 1000} kg{" "}
             </div>
           </div>
           <ResourceWeight className="mt-2" />

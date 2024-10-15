@@ -37,7 +37,7 @@ export const ResourceChip = ({
   }, [productionManager, production, currentDefaultTick, maxStorehouseCapacityKg]);
 
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(WEIGHTS_GRAM[resourceId] || 1000);
+    return maxStorehouseCapacityKg / gramToKg(WEIGHTS_GRAM[resourceId as ResourcesIds] || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {

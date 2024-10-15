@@ -3,10 +3,10 @@ import {
   BuildingType,
   CapacityConfigCategory,
   EternumGlobalConfig,
-  type ID,
   RESOURCE_INPUTS_SCALED,
   ResourcesIds,
   WEIGHTS_GRAM,
+  type ID,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { type SetupResult } from "../setup";
@@ -15,11 +15,7 @@ export class ProductionManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
-  constructor(
-    private readonly setup: SetupResult,
-    entityId: ID,
-    resourceId: ResourcesIds,
-  ) {
+  constructor(private readonly setup: SetupResult, entityId: ID, resourceId: ResourcesIds) {
     this.entityId = entityId;
     this.resourceId = resourceId;
   }
@@ -88,8 +84,8 @@ export class ProductionManager {
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
     return (
-      (Number(quantity) * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
-        gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) *
+      (Number(quantity) * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
+        gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))) *
       EternumGlobalConfig.resources.resourcePrecision
     );
   }

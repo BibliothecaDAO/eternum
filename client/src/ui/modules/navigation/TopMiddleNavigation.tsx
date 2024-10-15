@@ -144,8 +144,8 @@ export const TopMiddleNavigation = () => {
       )?.value || 0;
 
     return (
-      quantity * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
-      gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])
+      quantity * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
+      gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))
     );
   }, [structureEntityId, nextBlockTimestamp]);
 

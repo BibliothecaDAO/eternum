@@ -327,7 +327,7 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
 };
 
 // weight in kg
-export const WEIGHTS_GRAM: { [key in ResourcesIds]?: number } = {
+export const WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Wood]: 1000,
   [ResourcesIds.Stone]: 1000,
   [ResourcesIds.Coal]: 1000,
