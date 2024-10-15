@@ -81,6 +81,7 @@ export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
 };
 
 export const BUILDING_COSTS: ResourceInputs = {
+  [BuildingType.None]: [],
   [BuildingType.Castle]: [],
   [BuildingType.Bank]: [],
   [BuildingType.FragmentMine]: [],
