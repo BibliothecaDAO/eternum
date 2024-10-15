@@ -73,5 +73,6 @@ export function getRealm(realmId: ID): RealmInterface | undefined {
 }
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
-  return (realm?.population || 0) + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY + (realm?.capacity || 0);
+  const buildingPopulation = BUILDING_POPULATION[building as keyof typeof BUILDING_POPULATION] || 0;
+  return (realm?.population || 0) + buildingPopulation <= BASE_POPULATION_CAPACITY + (realm?.capacity || 0);
 };
