@@ -1,4 +1,3 @@
-import { ResourcesIds } from ".";
 import { Config } from "../types";
 import { BUILDING_CAPACITY, BUILDING_COSTS, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED } from "./buildings";
 import {
@@ -13,6 +12,8 @@ import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS } from "./realmLevels";
 import { RESOURCE_BUILDING_COSTS, RESOURCE_INPUTS, RESOURCE_OUTPUTS, WEIGHTS_GRAM } from "./resources";
 import { CapacityConfigCategory } from "./structures";
 import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./troops";
+
+import { ResourcesIds } from ".";
 
 export const FELT_CENTER = 2147483646;
 export const WORLD_CONFIG_ID = 999999999n;

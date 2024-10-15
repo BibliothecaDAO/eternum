@@ -1,5 +1,4 @@
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
@@ -21,7 +20,6 @@ export const ImmunityTimer = ({ isImmune, timer }: { isImmune: boolean; timer: n
 };
 
 export const StructureInfoLabel = () => {
-  const dojo = useDojo();
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
   const { getStructureByEntityId } = useStructures();
