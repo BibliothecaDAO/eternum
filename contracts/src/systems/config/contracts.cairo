@@ -200,11 +200,11 @@ mod config_systems {
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
         RealmMaxLevelConfig, TravelFoodCostConfig
     };
-    use eternum::models::hyperstructure::SeasonCustomImpl;
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
+    use eternum::models::season::SeasonImpl;
 
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {

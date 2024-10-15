@@ -57,7 +57,6 @@
     "Owner",
     "Realm",
     "Position",
-    "EntityMetadata",
     "EntityOwner",
     "CapacityCategory",
     "Movable",
@@ -101,7 +100,6 @@
     "CapacityCategory",
     "Position",
     "EntityOwner",
-    "EntityMetadata",
     "Quantity",
     "ArrivalTime",
     "QuantityTracker"
@@ -198,7 +196,6 @@
     "CapacityCategory",
     "Position",
     "EntityOwner",
-    "EntityMetadata",
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",

@@ -2,7 +2,6 @@ use array::SpanTrait;
 use eternum::alias::ID;
 use eternum::models::config::{BattleConfig, TickConfig, TickTrait};
 use eternum::models::position::Coord;
-use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
 

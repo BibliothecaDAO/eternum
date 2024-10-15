@@ -18,8 +18,7 @@ fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsD
         .create(
             'Mysticora',
             1, // realm id
-            0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
-            3, // resource_types_count
+            0x20309, // produced_resources // 2,3,9 // stone, coal, gold
             5, // cities
             5, // harbors
             5, // rivers

@@ -72,8 +72,7 @@ fn realm_test_realm_create() {
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
     let realm_id = 1;
-    let resource_types_packed = 1;
-    let resource_types_count = 1;
+    let produced_resources = 1;
     let cities = 6;
     let harbors = 5;
     let rivers = 5;
@@ -84,18 +83,7 @@ fn realm_test_realm_create() {
     starknet::testing::set_contract_address(contract_address_const::<'caller'>());
 
     let realm_entity_id = realm_systems_dispatcher
-        .create(
-            'Mysticora',
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-        );
+        .create('Mysticora', realm_id, produced_resources, cities, harbors, rivers, regions, wonder, order,);
 
     let position = get!(world, realm_entity_id, Position);
 

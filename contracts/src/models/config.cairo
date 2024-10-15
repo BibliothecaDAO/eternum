@@ -39,6 +39,15 @@ pub struct WorldConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct SeasonConfig {
+    #[key]
+    config_id: ID,
+    nft_address: ContractAddress,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct RealmFreeMintConfig {
     #[key]
     config_id: ID,

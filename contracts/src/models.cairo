@@ -18,6 +18,7 @@ mod production;
 mod quantity;
 mod realm;
 mod resources;
+mod season;
 mod stamina;
 mod structure;
 mod trade;

@@ -30,7 +30,7 @@ trait IHyperstructureSystems {
 #[dojo::contract]
 mod hyperstructure_systems {
     use core::array::ArrayIndex;
-    use eternum::models::hyperstructure::SeasonCustomImpl;
+    use eternum::models::season::SeasonImpl;
     use eternum::{
         alias::ID,
         constants::{
@@ -102,7 +102,7 @@ mod hyperstructure_systems {
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
         fn create(ref world: IWorldDispatcher, creator_entity_id: ID, coord: Coord) -> ID {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             get!(world, creator_entity_id, Owner).assert_caller_owner();
 
@@ -169,7 +169,7 @@ mod hyperstructure_systems {
             contributor_entity_id: ID,
             contributions: Span<(u8, u128)>
         ) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             get!(world, contributor_entity_id, Owner).assert_caller_owner();
 
@@ -225,7 +225,7 @@ mod hyperstructure_systems {
         fn set_co_owners(
             ref world: IWorldDispatcher, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>
         ) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             assert!(co_owners.len() <= 10, "too many co-owners");
 
@@ -290,7 +290,7 @@ mod hyperstructure_systems {
             hyperstructures_contributed_to: Span<ID>,
             hyperstructure_shareholder_epochs: Span<(ID, u16)>
         ) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             let mut total_points: u128 = 0;
             let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
@@ -305,7 +305,7 @@ mod hyperstructure_systems {
 
             assert!(total_points >= hyperstructure_config.points_for_win, "Not enough points to end the game");
 
-            SeasonCustomImpl::end_season(world);
+            SeasonImpl::end_season(world);
 
             emit!(
                 world,

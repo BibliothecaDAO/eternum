@@ -25,7 +25,6 @@ use eternum::models::hyperstructure::{
     Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch, Season, season
 };
 use eternum::models::map::tile;
-use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
 use eternum::models::name::{address_name, AddressName};

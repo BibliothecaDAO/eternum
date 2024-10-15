@@ -63,8 +63,7 @@ mod tests {
             Realm {
                 entity_id: 1,
                 realm_id: 3,
-                resource_types_packed: 0,
-                resource_types_count: 0,
+                produced_resources: 0,
                 cities: 0,
                 harbors: 0,
                 rivers: 0,
