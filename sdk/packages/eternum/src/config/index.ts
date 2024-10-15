@@ -180,8 +180,6 @@ export const setBuildingConfig = async (config: Config) => {
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
   const buildingCosts = config.config.buildings.buildingCosts;
 
-  console.log(buildingCosts, buildingResourceProduced);
-
   for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
     if (scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier)[buildingId].length !== 0) {
       const calldata = {
