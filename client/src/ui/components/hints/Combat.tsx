@@ -1,10 +1,10 @@
-import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
-export const Combat = ({ configManager }: { configManager: ClientConfigManager }) => {
+export const Combat = () => {
   const troopConfig = configManager.getTroopConfig();
 
   const chapter = [
@@ -29,7 +29,7 @@ export const Combat = ({ configManager }: { configManager: ClientConfigManager }
 
     {
       title: "Troops",
-      content: <Troops configManager={configManager} />,
+      content: <Troops />,
     },
   ];
 
@@ -94,7 +94,7 @@ const Battles = () => {
   );
 };
 
-const Troops = ({ configManager }: { configManager: ClientConfigManager }) => {
+const Troops = () => {
   const troopConfig = configManager.getTroopConfig();
   const advantagePercent = (troopConfig.advantagePercent / 10000) * 100;
   const disadvantagePercent = (troopConfig.disadvantagePercent / 10000) * 100;

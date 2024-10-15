@@ -1,5 +1,5 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
-import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
+import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useMemo } from "react";
@@ -11,15 +11,7 @@ enum CapacityColor {
   HEAVY = "bg-red",
 }
 
-export const ArmyCapacity = ({
-  army,
-  className,
-  configManager,
-}: {
-  army: ArmyInfo | undefined;
-  className?: string;
-  configManager: ClientConfigManager;
-}) => {
+export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; className?: string }) => {
   if (!army) return null;
 
   const setTooltip = useUIStore((state) => state.setTooltip);

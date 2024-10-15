@@ -1,43 +1,11 @@
 import { Account } from "starknet";
-import {
-  ADMIN_BANK_ENTITY_ID,
-  AMM_STARTING_LIQUIDITY,
-  ARMY_ENTITY_TYPE,
-  BASE_POPULATION_CAPACITY,
-  BUILDING_CAPACITY,
-  BUILDING_COSTS,
-  BUILDING_FIXED_COST_SCALE_PERCENT,
-  BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  DONKEY_ENTITY_TYPE,
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  HYPERSTRUCTURE_CREATION_COSTS,
-  HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
-  HYPERSTRUCTURE_TOTAL_COSTS,
-  LORDS_LIQUIDITY_PER_RESOURCE,
-  REALM_MAX_LEVEL,
-  REALM_UPGRADE_COSTS,
-  RESOURCE_BUILDING_COSTS,
-  RESOURCE_INPUTS,
-  RESOURCE_OUTPUTS,
-  ResourcesIds,
-  STAMINA_REFILL_PER_TICK,
-  TROOPS_FOOD_CONSUMPTION,
-  TROOPS_STAMINAS,
-  WEIGHTS_GRAM,
-} from "../constants";
-import { BuildingType, STRUCTURE_COSTS } from "../constants/structures";
+import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, ResourcesIds } from "../constants";
+import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
 import { scaleResourceInputs, scaleResourceOutputs, scaleResources } from "../utils";
 
-import {
-  EternumGlobalConfig as DefaultConfig,
-  FELT_CENTER,
-  HYPERSTRUCTURE_POINTS_FOR_WIN,
-  HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-} from "../constants/global";
+import { EternumGlobalConfig as DefaultConfig, FELT_CENTER } from "../constants/global";
 
 interface Config {
   account: Account;
@@ -83,35 +51,52 @@ export class EternumConfig {
   }
 
   getResourceBuildingCostsScaled(): ResourceInputs {
-    return scaleResourceInputs(RESOURCE_BUILDING_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceInputs(
+      this.globalConfig.resources.resourceBuildingCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getResourceOutputsScaled(): ResourceOutputs {
-    return scaleResourceOutputs(RESOURCE_OUTPUTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceOutputs(
+      this.globalConfig.resources.resourceOutputs,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getBuildingCostsScaled(): ResourceInputs {
-    return scaleResourceInputs(BUILDING_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceInputs(
+      this.globalConfig.buildings.buildingCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getResourceInputsScaled(): ResourceInputs {
-    return scaleResourceInputs(RESOURCE_INPUTS, this.globalConfig.resources.resourceMultiplier);
-  }
-
-  getStructureCostsScaled(): ResourceInputs {
-    return scaleResourceInputs(STRUCTURE_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResourceInputs(
+      this.globalConfig.resources.resourceInputs,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getHyperstructureConstructionCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(HYPERSTRUCTURE_CONSTRUCTION_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResources(
+      this.globalConfig.hyperstructures.hyperstructureConstructionCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getHyperstructureCreationCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(HYPERSTRUCTURE_CREATION_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResources(
+      this.globalConfig.hyperstructures.hyperstructureCreationCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 
   getHyperstructureTotalCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(HYPERSTRUCTURE_TOTAL_COSTS, this.globalConfig.resources.resourceMultiplier);
+    return scaleResources(
+      this.globalConfig.hyperstructures.hyperstructureTotalCosts,
+      this.globalConfig.resources.resourceMultiplier,
+    );
   }
 }
 
@@ -119,12 +104,16 @@ export const setProductionConfig = async (config: Config) => {
   const calldataArray = [];
 
   for (const resourceId of Object.keys(
-    scaleResourceInputs(RESOURCE_INPUTS, config.config.resources.resourceMultiplier),
+    scaleResourceInputs(config.config.resources.resourceInputs, config.config.resources.resourceMultiplier),
   ) as unknown as ResourcesIds[]) {
     const calldata = {
-      amount: scaleResourceOutputs(RESOURCE_OUTPUTS, config.config.resources.resourceMultiplier)[resourceId],
+      amount: scaleResourceOutputs(config.config.resources.resourceOutputs, config.config.resources.resourceMultiplier)[
+        resourceId
+      ],
       resource_type: resourceId,
-      cost: scaleResourceInputs(RESOURCE_INPUTS, config.config.resources.resourceMultiplier)[resourceId].map((cost) => {
+      cost: scaleResourceInputs(config.config.resources.resourceInputs, config.config.resources.resourceMultiplier)[
+        resourceId
+      ].map((cost) => {
         return {
           ...cost,
           amount: cost.amount * config.config.resources.resourcePrecision,
@@ -143,13 +132,16 @@ export const setProductionConfig = async (config: Config) => {
 export const setBuildingCategoryPopConfig = async (config: Config) => {
   const calldataArray = [];
 
-  for (const buildingId of Object.keys(BUILDING_POPULATION) as unknown as BuildingType[]) {
+  const buildingPopulation = config.config.buildings.buildingPopulation;
+  const buildingCapacity = config.config.buildings.buildingCapacity;
+
+  for (const buildingId of Object.keys(buildingPopulation) as unknown as BuildingType[]) {
     // if both 0, tx will fail
-    if (BUILDING_POPULATION[buildingId] !== 0 || BUILDING_CAPACITY[buildingId] !== 0) {
+    if (buildingPopulation[buildingId] !== 0 || buildingCapacity[buildingId] !== 0) {
       const callData = {
         building_category: buildingId,
-        population: BUILDING_POPULATION[buildingId],
-        capacity: BUILDING_CAPACITY[buildingId],
+        population: buildingPopulation[buildingId] ?? 0,
+        capacity: buildingCapacity[buildingId] ?? 0,
       };
 
       calldataArray.push(callData);
@@ -167,7 +159,7 @@ export const setBuildingCategoryPopConfig = async (config: Config) => {
 export const setPopulationConfig = async (config: Config) => {
   const tx = await config.provider.set_population_config({
     signer: config.account,
-    base_population: BASE_POPULATION_CAPACITY,
+    base_population: config.config.populationCapacity.basePopulation,
   });
 
   console.log(`Configuring population config ${tx.statusReceipt}...`);
@@ -176,7 +168,7 @@ export const setPopulationConfig = async (config: Config) => {
 export const setBuildingGeneralConfig = async (config: Config) => {
   const tx = await config.provider.set_building_general_config({
     signer: config.account,
-    base_cost_percent_increase: BUILDING_FIXED_COST_SCALE_PERCENT,
+    base_cost_percent_increase: config.config.buildings.buildingFixedCostScalePercent,
   });
 
   console.log(`Configuring building general config ${tx.statusReceipt}...`);
@@ -185,12 +177,15 @@ export const setBuildingGeneralConfig = async (config: Config) => {
 export const setBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
-  for (const buildingId of Object.keys(BUILDING_RESOURCE_PRODUCED) as unknown as BuildingType[]) {
-    if (scaleResourceInputs(BUILDING_COSTS, config.config.resources.resourceMultiplier)[buildingId].length !== 0) {
+  const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
+  const buildingCosts = config.config.buildings.buildingCosts;
+
+  for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
+    if (scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier)[buildingId].length !== 0) {
       const calldata = {
         building_category: buildingId,
-        building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
-        cost_of_building: scaleResourceInputs(BUILDING_COSTS, config.config.resources.resourceMultiplier)[
+        building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,
+        cost_of_building: scaleResourceInputs(buildingCosts, config.config.resources.resourceMultiplier)[
           buildingId
         ].map((cost) => {
           return {
@@ -211,10 +206,12 @@ export const setBuildingConfig = async (config: Config) => {
 
 export const setRealmUpgradeConfig = async (config: Config) => {
   const calldataArray = [];
+
   const REALM_UPGRADE_COSTS_SCALED = scaleResourceInputs(
-    REALM_UPGRADE_COSTS,
+    config.config.realmUpgradeCosts,
     config.config.resources.resourceMultiplier,
   );
+
   for (const level of Object.keys(REALM_UPGRADE_COSTS_SCALED) as unknown as number[]) {
     if (REALM_UPGRADE_COSTS_SCALED[level].length !== 0) {
       const calldata = {
@@ -236,7 +233,7 @@ export const setRealmUpgradeConfig = async (config: Config) => {
 };
 
 export const setRealmMaxLevelConfig = async (config: Config) => {
-  const new_max_level = REALM_MAX_LEVEL - 1;
+  const new_max_level = config.config.realmMaxLevel - 1;
 
   const tx = await config.provider.set_realm_max_level_config({
     signer: config.account,
@@ -248,7 +245,10 @@ export const setRealmMaxLevelConfig = async (config: Config) => {
 export const setResourceBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
-  const scaledBuildingCosts = scaleResourceInputs(RESOURCE_BUILDING_COSTS, config.config.resources.resourceMultiplier);
+  const scaledBuildingCosts = scaleResourceInputs(
+    config.config.buildings.buildingCosts,
+    config.config.resources.resourceMultiplier,
+  );
 
   for (const resourceId of Object.keys(scaledBuildingCosts) as unknown as ResourcesIds[]) {
     const calldata = {
@@ -271,7 +271,9 @@ export const setResourceBuildingConfig = async (config: Config) => {
 };
 
 export const setWeightConfig = async (config: Config) => {
-  const calldataArray = Object.entries(WEIGHTS_GRAM).map(([resourceId, weight]) => ({
+  console.log(config.config.resources);
+
+  const calldataArray = Object.entries(config.config.resources.resourceWeightsGrams).map(([resourceId, weight]) => ({
     entity_type: resourceId,
     weight_gram: weight,
   }));
@@ -353,7 +355,7 @@ export const setupGlobals = async (config: Config) => {
     tick_id: TickIds.Default,
     tick_interval_in_seconds: config.config.tick.defaultTickIntervalInSeconds,
   });
-  console.log(`Configuring  tick config ${txDefaultTick.statusReceipt}...`);
+  console.log(`Configuring default tick config ${txDefaultTick.statusReceipt}...`);
 
   const txArmiesTick = await config.provider.set_tick_config({
     signer: config.account,
@@ -386,7 +388,7 @@ export const setupGlobals = async (config: Config) => {
 
   console.log(`Configuring travel stamina cost config ${txTravelStaminaCost.statusReceipt}...`);
 
-  for (const [unit_type, costs] of Object.entries(TROOPS_FOOD_CONSUMPTION)) {
+  for (const [unit_type, costs] of Object.entries(config.config.troop.troopFoodConsumption)) {
     const tx = await config.provider.set_travel_food_cost_config({
       signer: config.account,
       config_id: 0,
@@ -431,25 +433,34 @@ export const setSpeedConfig = async (config: Config) => {
 };
 
 export const setHyperstructureConfig = async (config: Config) => {
+  const {
+    hyperstructurePointsPerCycle,
+    hyperstructurePointsOnCompletion,
+    hyperstructureTimeBetweenSharesChangeSeconds,
+    hyperstructurePointsForWin,
+    hyperstructureTotalCosts,
+  } = config.config.hyperstructures;
+
   const tx = await config.provider.set_hyperstructure_config({
     signer: config.account,
-    resources_for_completion: scaleResources(
-      HYPERSTRUCTURE_TOTAL_COSTS,
-      config.config.resources.resourceMultiplier,
-    ).map((resource) => ({
-      ...resource,
-      amount: resource.amount * config.config.resources.resourcePrecision,
-    })),
-    time_between_shares_change: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
-    points_per_cycle: HYPERSTRUCTURE_POINTS_PER_CYCLE,
-    points_for_win: HYPERSTRUCTURE_POINTS_FOR_WIN,
-    points_on_completion: HYPERSTRUCTURE_POINTS_ON_COMPLETION,
+    resources_for_completion: scaleResources(hyperstructureTotalCosts, config.config.resources.resourceMultiplier).map(
+      (resource) => ({
+        ...resource,
+        amount: resource.amount * config.config.resources.resourcePrecision,
+      }),
+    ),
+    time_between_shares_change: hyperstructureTimeBetweenSharesChangeSeconds,
+    points_per_cycle: hyperstructurePointsPerCycle,
+    points_for_win: hyperstructurePointsForWin,
+    points_on_completion: hyperstructurePointsOnCompletion,
   });
   console.log(`Configuring hyperstructure ${tx.statusReceipt}...`);
 };
 
 export const setStaminaConfig = async (config: Config) => {
-  for (const [unit_type, stamina] of Object.entries(TROOPS_STAMINAS)) {
+  const { troopStaminas } = config.config.troop;
+
+  for (const [unit_type, stamina] of Object.entries(troopStaminas)) {
     const tx = await config.provider.set_stamina_config({
       signer: config.account,
       unit_type: unit_type,
@@ -462,9 +473,9 @@ export const setStaminaConfig = async (config: Config) => {
 export const setStaminaRefillConfig = async (config: Config) => {
   const tx = await config.provider.set_stamina_refill_config({
     signer: config.account,
-    amount_per_tick: STAMINA_REFILL_PER_TICK,
+    amount_per_tick: config.config.stamina.refillPerTick,
   });
-  console.log(`Configuring stamina refill per tick to ${STAMINA_REFILL_PER_TICK} ${tx.statusReceipt}...`);
+  console.log(`Configuring stamina refill per tick to ${config.config.stamina.refillPerTick} ${tx.statusReceipt}...`);
 };
 
 export const setMercenariesConfig = async (config: Config) => {
@@ -514,6 +525,7 @@ export const setSettlementConfig = async (config: Config) => {
 export const createAdminBank = async (config: Config) => {
   const tx = await config.provider.create_admin_bank({
     signer: config.account,
+    name: config.config.banks.name,
     coord: { x: FELT_CENTER, y: FELT_CENTER },
     owner_fee_num: config.config.banks.ownerFeesNumerator,
     owner_fee_denom: config.config.banks.ownerFeesDenominator,
@@ -524,7 +536,9 @@ export const createAdminBank = async (config: Config) => {
 };
 
 export const mintResources = async (config: Config) => {
-  const ammResourceIds = Object.keys(AMM_STARTING_LIQUIDITY).map(Number);
+  const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
+
+  const ammResourceIds = Object.keys(ammStartingLiquidity).map(Number);
 
   const totalResourceCount = ammResourceIds.length;
   // mint lords
@@ -533,7 +547,7 @@ export const mintResources = async (config: Config) => {
     receiver_id: ADMIN_BANK_ENTITY_ID,
     resources: [
       ResourcesIds.Lords,
-      config.config.resources.resourcePrecision * LORDS_LIQUIDITY_PER_RESOURCE * totalResourceCount,
+      config.config.resources.resourcePrecision * lordsLiquidityPerResource * totalResourceCount,
     ],
   });
   console.log(`Minting lords ${lordsTx.statusReceipt}...`);
@@ -542,7 +556,7 @@ export const mintResources = async (config: Config) => {
   const resources = ammResourceIds.flatMap((resourceId) => {
     return [
       resourceId,
-      AMM_STARTING_LIQUIDITY[resourceId as keyof typeof AMM_STARTING_LIQUIDITY]! *
+      ammStartingLiquidity[resourceId as keyof typeof ammStartingLiquidity]! *
         config.config.resources.resourcePrecision,
     ];
   });
@@ -556,18 +570,20 @@ export const mintResources = async (config: Config) => {
 };
 
 export const addLiquidity = async (config: Config) => {
+  const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
+
   let calls = [];
 
-  for (const [resourceId, amount] of Object.entries(AMM_STARTING_LIQUIDITY)) {
+  for (const [resourceId, amount] of Object.entries(ammStartingLiquidity)) {
     calls.push({
       resource_type: resourceId,
       resource_amount: amount * config.config.resources.resourcePrecision,
-      lords_amount: LORDS_LIQUIDITY_PER_RESOURCE * config.config.resources.resourcePrecision,
+      lords_amount: lordsLiquidityPerResource * config.config.resources.resourcePrecision,
     });
 
     console.log(
       `Adding liquidity for ${resourceId}: Lords ${
-        LORDS_LIQUIDITY_PER_RESOURCE * config.config.resources.resourcePrecision
+        lordsLiquidityPerResource * config.config.resources.resourcePrecision
       }, ` + `${resourceId} ${amount * config.config.resources.resourcePrecision}`,
     );
   }

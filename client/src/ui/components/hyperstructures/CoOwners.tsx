@@ -2,7 +2,7 @@ import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
+import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { AddressSelect } from "@/ui/elements/AddressSelect";
 import Button from "@/ui/elements/Button";
@@ -82,7 +82,7 @@ const CoOwnersRows = ({
     }
   }, [hyperstructure, hyperstructureConfig, nextBlockTimestamp]);
 
-  const structure = getStructureByEntityId(hyperstructureEntityId);
+  const structure = useStructureByEntityId(hyperstructureEntityId);
 
   const { getAddressName } = useRealm();
 

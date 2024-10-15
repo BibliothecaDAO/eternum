@@ -2,13 +2,14 @@ import { divideByPrecision } from "@/ui/utils/utils";
 import { TickIds, TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ClientComponents } from "../createClientComponents";
+
+import { ContractComponents } from "../contractComponents";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
-  private components!: ClientComponents;
+  private components!: ContractComponents;
 
-  public setDojo(components: ClientComponents) {
+  public setDojo(components: ContractComponents) {
     this.components = components;
   }
 

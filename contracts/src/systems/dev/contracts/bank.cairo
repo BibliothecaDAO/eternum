@@ -6,6 +6,7 @@ use eternum::models::position::{Coord};
 trait IBankSystems {
     fn create_admin_bank(
         ref world: IWorldDispatcher,
+        name: felt252,
         coord: Coord,
         owner_fee_num: u128,
         owner_fee_denom: u128,
@@ -21,6 +22,7 @@ mod dev_bank_systems {
     use eternum::models::bank::bank::{Bank};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
+    use eternum::models::name::{EntityName};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl};
@@ -38,6 +40,7 @@ mod dev_bank_systems {
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_admin_bank(
             ref world: IWorldDispatcher,
+            name: felt252,
             coord: Coord,
             owner_fee_num: u128,
             owner_fee_denom: u128,
@@ -54,6 +57,7 @@ mod dev_bank_systems {
             set!(
                 world,
                 (
+                    EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, },
                     Structure {
                         entity_id: ADMIN_BANK_ENTITY_ID,
                         category: StructureCategory::Bank,

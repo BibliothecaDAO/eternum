@@ -1,14 +1,13 @@
-import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
+
 import { QuestId } from "@/ui/components/quest/questDetails";
-import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
+
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
-import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import clsx from "clsx";
@@ -23,12 +22,28 @@ import {
 } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Chat } from "../chat/Chat";
-import { Military } from "../military/Military";
-import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MiniMapNavigation } from "./MiniMapNavigation";
 
 const EntityDetails = lazy(() =>
   import("../entity-details/EntityDetails").then((module) => ({ default: module.EntityDetails })),
+);
+const Military = lazy(() => import("../military/Military").then((module) => ({ default: module.Military })));
+const SelectPreviewBuildingMenu = lazy(() =>
+  import("../../components/construction/SelectPreviewBuilding").then((module) => ({
+    default: module.SelectPreviewBuildingMenu,
+  })),
+);
+const StructureConstructionMenu = lazy(() =>
+  import("../../components/structures/construction/StructureConstructionMenu").then((module) => ({
+    default: module.StructureConstructionMenu,
+  })),
+);
+const WorldStructuresMenu = lazy(() =>
+  import("../world-structures/WorldStructuresMenu").then((module) => ({ default: module.WorldStructuresMenu })),
+);
+
+const AllResourceArrivals = lazy(() =>
+  import("../../components/trading/ResourceArrivals").then((module) => ({ default: module.AllResourceArrivals })),
 );
 
 export enum View {
@@ -68,7 +83,8 @@ export const LeftNavigationModule = () => {
     );
   }, [selectedQuest, isMapView]);
 
-  const { getEntityInfo } = getEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
+
   const structureInfo = getEntityInfo(structureEntityId);
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
@@ -203,7 +219,7 @@ export const LeftNavigationModule = () => {
       ].includes(item.name as MenuEnum),
     );
 
-    return filteredNavigation;
+    return isMapView ? filteredNavigation : filteredNavigation;
   }, [
     view,
     openedPopups,
@@ -230,7 +246,7 @@ export const LeftNavigationModule = () => {
           }`}
         >
           <BaseContainer className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh]}`}>
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === View.EntityView && <EntityDetails />}
               {view === View.MilitaryView && <Military entityId={structureEntityId} />}
               {!isMapView && view === View.ConstructionView && (

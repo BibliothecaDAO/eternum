@@ -38,10 +38,13 @@ export const useChatStore = create<ChatState>()(
               ...updatedTabs[existingTabIndex],
               ...newTab,
             };
-            return { tabs: updatedTabs };
+            return { tabs: updatedTabs, currentTab: { ...newTab, lastSeen: new Date() } };
           } else {
             // Add new tab
-            return { tabs: [...state.tabs, { ...newTab, lastSeen: new Date() }] };
+            return {
+              tabs: [...state.tabs, { ...newTab, lastSeen: new Date() }],
+              currentTab: { ...newTab, lastSeen: new Date() },
+            };
           }
         }),
       hideTab: (tab: Tab) =>

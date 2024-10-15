@@ -12,11 +12,11 @@ import {
   ID,
   ResourcesIds,
   getDirectionBetweenAdjacentHexes,
-  getNeighborHexes
+  getNeighborHexes,
 } from "@bibliothecadao/eternum";
 import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
-import { type SetupResult } from "../setup";
+import { configManager, type SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
 import { StaminaManager } from "./StaminaManager";
 import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
@@ -94,7 +94,7 @@ export class ArmyMovementManager {
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
-    if (stamina.amount < this.setup.configManager.getExploreStaminaCost()) {
+    if (stamina.amount < configManager.getExploreStaminaCost()) {
       return false;
     }
 
@@ -109,7 +109,7 @@ export class ArmyMovementManager {
       return false;
     }
 
-    if (this._getArmyRemainingCapacity() < this.setup.configManager.getExploreReward()) {
+    if (this._getArmyRemainingCapacity() < configManager.getExploreReward()) {
       return false;
     }
 
@@ -118,7 +118,7 @@ export class ArmyMovementManager {
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    const maxStaminaSteps = Math.floor((stamina.amount || 0) / this.setup.configManager.getTravelStaminaCost());
+    const maxStaminaSteps = Math.floor((stamina.amount || 0) / configManager.getTravelStaminaCost());
 
     const entityArmy = getComponentValue(this.setup.components.Army, this.entity);
     const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
@@ -247,7 +247,7 @@ export class ArmyMovementManager {
   private readonly _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
     const overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, this.setup.configManager.getExploreStaminaCost(), currentArmiesTick);
+    this._optimisticStaminaUpdate(overrideId, configManager.getExploreStaminaCost(), currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
 
@@ -286,11 +286,7 @@ export class ArmyMovementManager {
   private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number, currentArmiesTick: number) => {
     const overrideId = uuid();
 
-    this._optimisticStaminaUpdate(
-      overrideId,
-      this.setup.configManager.getTravelStaminaCost() * pathLength,
-      currentArmiesTick,
-    );
+    this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
 
     this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,

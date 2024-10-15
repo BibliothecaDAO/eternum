@@ -1,6 +1,6 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
-import { QuestId, getQuestDetails } from "@/ui/components/quest/questDetails";
+import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
 import { BuildingType, ContractAddress, ID, QuestType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -10,7 +10,7 @@ import { Account, AccountInterface } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
-import { getEntitiesUtils, useEntities } from "./useEntities";
+import { useEntities, useEntitiesUtils } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
 
 export interface Quest {
@@ -38,8 +38,6 @@ export const useQuests = () => {
   const { setup, account } = useDojo();
 
   const questDependencies = useQuestDependencies(setup, account.account);
-
-  const questDetails = getQuestDetails(setup.configManager);
 
   const createQuest = (questId: QuestId) => {
     const dependency = questDependencies[questId];
@@ -87,8 +85,8 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
   const orders = useGetMyOffers();
   const { playerStructures } = useEntities();
   const structures = playerStructures();
+  const { getEntityInfo } = useEntitiesUtils();
 
-  const { getEntityInfo } = getEntitiesUtils();
   const structurePosition = getEntityInfo(structureEntityId)?.position || { x: 0, y: 0 };
 
   const tileManager = new TileManager(setup, {
@@ -271,7 +269,6 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
 export const useQuestClaimStatus = () => {
   const {
     setup: {
-      configManager,
       components: { HasClaimedStartingResources },
     },
   } = useDojo();
@@ -290,8 +287,6 @@ export const useQuestClaimStatus = () => {
   };
 
   const questClaimStatus = useMemo(() => {
-    const questDetails = getQuestDetails(configManager);
-
     return Array.from(questDetails.keys()).reduce(
       (acc, questName) => ({
         ...acc,

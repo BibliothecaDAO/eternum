@@ -14,6 +14,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ArmyManager } from "@/dojo/modelManager/ArmyManager";
+import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
@@ -37,7 +38,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     setup: {
       systemCalls: { army_buy_troops },
       components: { Position },
-      configManager,
     },
   } = useDojo();
 

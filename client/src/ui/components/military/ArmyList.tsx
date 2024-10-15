@@ -1,4 +1,5 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { type PlayerStructure } from "@/hooks/helpers/useEntities";
@@ -8,7 +9,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { BuildingType, EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
@@ -39,7 +40,6 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     account: { account },
     setup: {
       systemCalls: { create_army },
-      configManager
     },
   } = useDojo();
 

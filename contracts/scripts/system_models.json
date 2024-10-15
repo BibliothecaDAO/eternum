@@ -36,6 +36,7 @@
   ],
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker", "Production"],
   "DEV_BANK_SYSTEMS": [
+    "EntityName",
     "Tile",
     "Position",
     "Owner",

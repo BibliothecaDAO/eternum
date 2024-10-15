@@ -35,6 +35,8 @@ export const Chat = () => {
   const tabs = useChatStore((state) => state.tabs);
   const setTabs = useChatStore((state) => state.setTabs);
 
+  const addTab = useChatStore((state) => state.addTab);
+
   const allMessageEntities = useEntityQuery([Has(Message)]);
   const getPlayers = useGetOtherPlayers();
 
@@ -117,9 +119,7 @@ export const Chat = () => {
           name: metadata.fromName,
           address: metadata.address,
           key: getMessageKey(account.address, BigInt(metadata.address)),
-          visible: true,
           displayed: true,
-          numberOfMessages: metadata.messages.filter((msg) => !msg.fromSelf).length,
           lastSeen: new Date(),
         };
         setTabs([...tabs, newTab]);
@@ -161,43 +161,24 @@ export const Chat = () => {
       return;
     }
 
-    const tabName = fromSelector
-      ? shortString.decodeShortString(
-          getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
-        )
-      : tab!;
-
-    const numberOfMessages =
-      messages.get(ContractAddress(address))?.messages.filter((msg) => !msg.fromSelf).length || 0;
-
-    const currentTab: Tab = {
-      name: tabName,
+    addTab({
+      name: fromSelector
+        ? shortString.decodeShortString(
+            getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
+          )
+        : tab!,
       address,
-      numberOfMessages,
       displayed: true,
-      visible: true,
       lastSeen: new Date(),
       key: getMessageKey(account.address, BigInt(address)),
-    };
-
-    const existingTabIndex = tabs.findIndex((t) => ContractAddress(t.address) === ContractAddress(address));
-
-    if (existingTabIndex === -1) {
-      setTabs([...tabs, currentTab]);
-    } else {
-      const newTabs = [...tabs];
-      newTabs[existingTabIndex] = { ...newTabs[existingTabIndex], displayed: true, visible: true };
-      setTabs(newTabs);
-    }
-
-    setCurrentTab(currentTab);
+    });
   };
 
   const renderTabs = useMemo(() => {
     return tabs
-      .filter((tab) => tab.visible)
+      .filter((tab) => ContractAddress(tab.address) !== ContractAddress(account.address))
       .map((tab) => <ChatTab key={tab.address} tab={tab} selected={tab.name === currentTab.name} />);
-  }, [tabs]);
+  }, [tabs, account.address]);
 
   return (
     <div className={`rounded max-w-[28vw] pointer-events-auto flex flex-col z-1`}>
@@ -250,9 +231,11 @@ export const Chat = () => {
         <div className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}>
           <InputField currentTab={currentTab} salt={salt} />
           <Select
-            value={""}
-            onValueChange={(trait) => {
-              changeTabs(undefined, trait, true);
+            value={
+              currentTab.name === GLOBAL_CHANNEL_KEY ? GLOBAL_CHANNEL_KEY : toHexString(BigInt(currentTab.address))
+            }
+            onValueChange={(address) => {
+              changeTabs(undefined, address, true);
             }}
           >
             <SelectTrigger>
@@ -262,6 +245,7 @@ export const Chat = () => {
               {players &&
                 players
                   .sort((a, b) => a.addressName.localeCompare(b.addressName))
+                  .filter((tab) => ContractAddress(tab.address) !== ContractAddress(account.address))
                   .map((player, index) => (
                     <SelectItem className="flex justify-between" key={index} value={toHexString(player.address)}>
                       {player.addressName}

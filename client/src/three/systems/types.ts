@@ -38,6 +38,7 @@ export type BuildingSystemUpdate = {
   buildingType: string;
   innerCol: number;
   innerRow: number;
+  paused: boolean;
 };
 
 export type RealmSystemUpdate = {

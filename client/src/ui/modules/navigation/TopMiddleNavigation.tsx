@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntitiesUtils, useEntities } from "@/hooks/helpers/useEntities";
+import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
@@ -93,7 +93,7 @@ export const TopMiddleNavigation = () => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
 
-  const { getEntityInfo } = getEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
 
   const structure = useMemo(() => {
     return getEntityInfo(structureEntityId);
@@ -144,8 +144,8 @@ export const TopMiddleNavigation = () => {
       )?.value || 0;
 
     return (
-      quantity * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
-      gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])
+      quantity * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
+      gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))
     );
   }, [structureEntityId, nextBlockTimestamp]);
 
@@ -189,7 +189,7 @@ export const TopMiddleNavigation = () => {
               <div>
                 <div className="self-center flex gap-4">
                   {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
-                  {structure.owner ? structure.name : "Unsettled"}
+                  {structure.name}
                 </div>
               </div>
             )}

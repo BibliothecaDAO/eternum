@@ -1,4 +1,4 @@
-import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
+import { configManager } from "@/dojo/setup";
 import { useStaminaManager } from "@/hooks/helpers/useStamina";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ID } from "@bibliothecadao/eternum";
@@ -9,12 +9,10 @@ export const StaminaResourceCost = ({
   travelingEntityId,
   travelLength,
   isExplored,
-  configManager,
 }: {
   travelingEntityId: ID | undefined;
   travelLength: number;
   isExplored: boolean;
-  configManager: ClientConfigManager;
 }) => {
   const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
 

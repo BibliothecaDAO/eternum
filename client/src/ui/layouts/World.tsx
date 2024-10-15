@@ -1,31 +1,57 @@
-import { Leva } from "leva";
-import useUIStore from "../../hooks/store/useUIStore";
-
 import clsx from "clsx";
+import { Leva } from "leva";
+import { lazy, Suspense } from "react";
 import { Redirect } from "wouter";
-import { ActionInfo } from "../components/worldmap/armies/ActionInfo";
-import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
-import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
+import useUIStore from "../../hooks/store/useUIStore";
 
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
-import { StructureInfoLabel } from "../components/worldmap/structures/StructureLabel";
-import { BattleContainer } from "../containers/BattleContainer";
-import BottomMiddleContainer from "../containers/BottomMiddleContainer";
-import { BottomRightContainer } from "../containers/BottomRightContainer";
-import LeftMiddleContainer from "../containers/LeftMiddleContainer";
-import RightMiddleContainer from "../containers/RightMiddleContainer";
-import TopLeftContainer from "../containers/TopLeftContainer";
-import { Tooltip } from "../elements/Tooltip";
-import { BattleView } from "../modules/military/battle-view/BattleView";
-import { BottomNavigation } from "../modules/navigation/BottomNavigation";
-import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
-import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
-import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
-import { PlayerId } from "../modules/social/PlayerId";
-import { EventStream } from "../modules/stream/EventStream";
-import { Onboarding } from "./Onboarding";
+
+// Lazy load components
+const ActionInfo = lazy(() =>
+  import("../components/worldmap/armies/ActionInfo").then((module) => ({ default: module.ActionInfo })),
+);
+const ArmyInfoLabel = lazy(() =>
+  import("../components/worldmap/armies/ArmyInfoLabel").then((module) => ({ default: module.ArmyInfoLabel })),
+);
+const BlankOverlayContainer = lazy(() =>
+  import("../containers/BlankOverlayContainer").then((module) => ({ default: module.BlankOverlayContainer })),
+);
+const StructureInfoLabel = lazy(() =>
+  import("../components/worldmap/structures/StructureLabel").then((module) => ({ default: module.StructureInfoLabel })),
+);
+const BattleContainer = lazy(() =>
+  import("../containers/BattleContainer").then((module) => ({ default: module.BattleContainer })),
+);
+const BottomMiddleContainer = lazy(() => import("../containers/BottomMiddleContainer"));
+const BottomRightContainer = lazy(() =>
+  import("../containers/BottomRightContainer").then((module) => ({ default: module.BottomRightContainer })),
+);
+const LeftMiddleContainer = lazy(() => import("../containers/LeftMiddleContainer"));
+const RightMiddleContainer = lazy(() => import("../containers/RightMiddleContainer"));
+const TopLeftContainer = lazy(() => import("../containers/TopLeftContainer"));
+const Tooltip = lazy(() => import("../elements/Tooltip").then((module) => ({ default: module.Tooltip })));
+const BattleView = lazy(() =>
+  import("../modules/military/battle-view/BattleView").then((module) => ({ default: module.BattleView })),
+);
+const BottomNavigation = lazy(() =>
+  import("../modules/navigation/BottomNavigation").then((module) => ({ default: module.BottomNavigation })),
+);
+const LeftNavigationModule = lazy(() =>
+  import("../modules/navigation/LeftNavigationModule").then((module) => ({ default: module.LeftNavigationModule })),
+);
+const RightNavigationModule = lazy(() =>
+  import("../modules/navigation/RightNavigationModule").then((module) => ({ default: module.RightNavigationModule })),
+);
+const TopMiddleNavigation = lazy(() =>
+  import("../modules/navigation/TopMiddleNavigation").then((module) => ({ default: module.TopMiddleNavigation })),
+);
+const PlayerId = lazy(() => import("../modules/social/PlayerId").then((module) => ({ default: module.PlayerId })));
+const EventStream = lazy(() =>
+  import("../modules/stream/EventStream").then((module) => ({ default: module.EventStream })),
+);
+const Onboarding = lazy(() => import("./Onboarding").then((module) => ({ default: module.Onboarding })));
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -64,51 +90,53 @@ export const World = () => {
       >
         <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
       </div>
-      <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
-      <BlankOverlayContainer open={showBlankOverlay}>
-        <Onboarding />
-      </BlankOverlayContainer>
-      <ActionInfo />
-      <ArmyInfoLabel />
-      <StructureInfoLabel />
+      <Suspense fallback={<div>Loading...</div>}>
+        <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
+        <BlankOverlayContainer open={showBlankOverlay}>
+          <Onboarding />
+        </BlankOverlayContainer>
+        <ActionInfo />
+        <ArmyInfoLabel />
+        <StructureInfoLabel />
 
-      <BattleContainer>
-        <BattleView />
-      </BattleContainer>
+        <BattleContainer>
+          <BattleView />
+        </BattleContainer>
 
-      <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
-        <LeftMiddleContainer>
-          <LeftNavigationModule />
-        </LeftMiddleContainer>
+        <div className={`${battleView ? "opacity-0 pointer-events-none" : ""}`}>
+          <LeftMiddleContainer>
+            <LeftNavigationModule />
+          </LeftMiddleContainer>
 
-        <BottomMiddleContainer>
-          <BottomNavigation />
-        </BottomMiddleContainer>
+          <BottomMiddleContainer>
+            <BottomNavigation />
+          </BottomMiddleContainer>
 
-        <BottomRightContainer>
-          <EventStream />
-        </BottomRightContainer>
+          <BottomRightContainer>
+            <EventStream />
+          </BottomRightContainer>
 
-        <RightMiddleContainer>
-          <RightNavigationModule />
-        </RightMiddleContainer>
+          <RightMiddleContainer>
+            <RightNavigationModule />
+          </RightMiddleContainer>
 
-        <TopLeftContainer>
-          <TopMiddleNavigation />
-        </TopLeftContainer>
-      </div>
+          <TopLeftContainer>
+            <TopMiddleNavigation />
+          </TopLeftContainer>
+        </div>
 
-      <PlayerId />
+        <PlayerId />
 
-      <Redirect to="/" />
-      <Leva
-        hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
-        collapsed
-        titleBar={{ position: { x: 0, y: 50 } }}
-      />
-      <Tooltip />
-      <VersionDisplay />
-      <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
+        <Redirect to="/" />
+        <Leva
+          hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
+          collapsed
+          titleBar={{ position: { x: 0, y: 50 } }}
+        />
+        <Tooltip />
+        <VersionDisplay />
+        <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
+      </Suspense>
     </div>
   );
 };

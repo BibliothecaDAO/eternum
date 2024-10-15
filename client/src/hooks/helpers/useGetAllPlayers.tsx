@@ -1,7 +1,7 @@
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { Has, NotValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { getAddressNameFromEntityIds, getEntitiesUtils } from "./useEntities";
+import { getAddressNameFromEntityIds, useEntitiesUtils } from "./useEntities";
 
 export const useGetAllPlayers = () => {
   const {
@@ -10,7 +10,7 @@ export const useGetAllPlayers = () => {
     },
   } = useDojo();
 
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const playersEntityIds = runQuery([Has(Owner), Has(Realm)]);
 
@@ -32,7 +32,7 @@ export const useGetOtherPlayers = () => {
       components: { Owner, Realm },
     },
   } = useDojo();
-  const { getAddressNameFromEntity } = getEntitiesUtils();
+  const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const playersEntityIds = runQuery([
     Has(Owner),

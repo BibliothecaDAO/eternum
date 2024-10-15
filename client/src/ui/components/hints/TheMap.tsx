@@ -1,12 +1,12 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
-import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ResourcesIds, TROOPS_FOOD_CONSUMPTION } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
-export const TheMap = ({ configManager }: { configManager: ClientConfigManager }) => {
+export const TheMap = () => {
   const chapters = [
     {
       title: "Exploration",
@@ -16,7 +16,7 @@ export const TheMap = ({ configManager }: { configManager: ClientConfigManager }
             The world map starts unexplored, except for Realms. Exploring new tiles with your armies costs food and
             reveals hidden lands, potentially yielding random resources or uncovering valuable fragment mines.
           </p>
-          <ExplorationTable configManager={configManager} />
+          <ExplorationTable />
         </>
       ),
     },
@@ -43,7 +43,7 @@ export const TheMap = ({ configManager }: { configManager: ClientConfigManager }
   );
 };
 
-const ExplorationTable = ({ configManager }: { configManager: ClientConfigManager }) => {
+const ExplorationTable = () => {
   const travelStaminaCost = configManager.getTravelStaminaCost();
   const exploreStaminaCost = configManager.getExploreStaminaCost();
 

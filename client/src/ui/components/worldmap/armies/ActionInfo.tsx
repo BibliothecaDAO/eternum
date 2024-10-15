@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -19,7 +20,6 @@ export const ActionInfo = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const {
     setup: {
-      configManager,
       components: { Army },
     },
   } = useDojo();
@@ -92,7 +92,6 @@ export const ActionInfo = () => {
             travelingEntityId={selectedEntityId!}
             isExplored={isExplored}
             travelLength={travelPath!.path.length - 1}
-            configManager={configManager}
           />
           {!isExplored && (
             <div className="flex flex-row text-xs ml-1">

@@ -517,7 +517,7 @@ export const ResourceInfo = ({
 export const BuildingInfo = ({
   buildingId,
   entityId,
-  name = BuildingEnumToString[buildingId],
+  name = BuildingEnumToString[buildingId as keyof typeof BuildingEnumToString],
   hintModal = false,
   isPaused,
 }: {
@@ -531,12 +531,16 @@ export const BuildingInfo = ({
 
   const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
 
-  const population = BUILDING_POPULATION[buildingId] || 0;
-  const capacity = BUILDING_CAPACITY[buildingId] || 0;
-  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
+  const population = BUILDING_POPULATION[buildingId as keyof typeof BUILDING_POPULATION] || 0;
+  const capacity = BUILDING_CAPACITY[buildingId as keyof typeof BUILDING_CAPACITY] || 0;
+  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId as keyof typeof BUILDING_RESOURCE_PRODUCED];
+  const ongoingCost =
+    resourceProduced !== undefined
+      ? RESOURCE_INPUTS_SCALED[resourceProduced as keyof typeof RESOURCE_INPUTS_SCALED] || 0
+      : 0;
 
-  const perTick = RESOURCE_OUTPUTS[resourceProduced] || 0;
+  const perTick =
+    resourceProduced !== undefined ? RESOURCE_OUTPUTS[resourceProduced as keyof typeof RESOURCE_OUTPUTS] || 0 : 0;
 
   const { getBalance } = getResourceBalance();
 

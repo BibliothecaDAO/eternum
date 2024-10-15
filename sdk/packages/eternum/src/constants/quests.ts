@@ -1,4 +1,5 @@
 import { ResourcesIds } from ".";
+import { ResourceCost } from "../types";
 
 export enum QuestType {
   Food = 1,
@@ -22,7 +23,7 @@ export enum QuestType {
   CreateDefenseArmy,
 }
 
-export const QUEST_RESOURCES = {
+export const QUEST_RESOURCES: { [key in QuestType]: ResourceCost[] } = {
   [QuestType.Food]: [
     { resource: ResourcesIds.Wheat, amount: 1000 },
     { resource: ResourcesIds.Fish, amount: 1000 },

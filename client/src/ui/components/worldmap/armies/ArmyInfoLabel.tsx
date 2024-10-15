@@ -3,10 +3,11 @@ import { computeExploreFoodCosts, currencyFormat, multiplyByPrecision } from "..
 
 import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
 import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { isStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
@@ -75,14 +76,14 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const isImmune = isStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
+  const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
 
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure?.created_at || 0) +
-      setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
     );
-  }, [structure?.created_at, setup.configManager]);
+  }, [structure?.created_at]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
@@ -100,16 +101,16 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
         </Headline>
 
         <div>
-          {stamina.amount < setup.configManager.getTravelStaminaCost() ? (
+          {stamina.amount < configManager.getTravelStaminaCost() ? (
             <div className="text-xxs font-semibold items-center text-center">
               ⚠️ Not enough stamina to explore or travel
             </div>
           ) : (
-            stamina.amount < setup.configManager.getExploreStaminaCost() && (
+            stamina.amount < configManager.getExploreStaminaCost() && (
               <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough stamina to explore</div>
             )
           )}
-          {remainingCapacity < setup.configManager.getExploreReward() && (
+          {remainingCapacity < configManager.getExploreReward() && (
             <div className="text-xxs font-semibold items-center text-center">⚠️ Too heavy to explore</div>
           )}
           {notEnoughFood && (
@@ -124,7 +125,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
           </div>
           <div className="flex flex-col items-end">
             <StaminaResource entityId={entity_id} />
-            <ArmyCapacity army={army} configManager={setup.configManager} className="mt-1" />
+            <ArmyCapacity army={army} className="mt-1" />
           </div>
         </div>
         <div className="w-full flex flex-col mt-2 space-y-2">

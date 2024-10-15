@@ -2,10 +2,11 @@ import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg"
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures";
-import { Structure, isStructureImmune } from "@/hooks/helpers/useStructures";
+import { Structure, useIsStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { formatTime } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
@@ -57,11 +58,11 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
 
   const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
 
-  const isImmune = isStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
+  const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
 
   const immunityEndTimestamp =
     Number(structure?.created_at) +
-    dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;

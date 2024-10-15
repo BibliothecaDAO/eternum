@@ -1,6 +1,7 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { isStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
@@ -35,14 +36,14 @@ export const StructureInfoLabel = () => {
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
-  const isImmune = isStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
+  const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
 
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure?.created_at || 0) +
-      dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
     );
-  }, [structure?.created_at, dojo.setup.configManager]);
+  }, [structure?.created_at]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;

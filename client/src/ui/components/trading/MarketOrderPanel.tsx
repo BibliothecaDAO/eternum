@@ -12,12 +12,12 @@ import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPr
 import {
   CapacityConfigCategory,
   EternumGlobalConfig,
-  type ID,
-  type MarketInterface,
   ONE_MONTH,
-  type Resources,
   ResourcesIds,
   findResourceById,
+  type ID,
+  type MarketInterface,
+  type Resources,
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -328,7 +328,7 @@ const OrderRow = ({
 
   const donkeysNeeded = useMemo(() => {
     return Math.ceil(
-      divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey],
+      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
     );
   }, [orderWeight]);
 
@@ -548,7 +548,7 @@ const OrderCreation = ({
 
   const donkeysNeeded = useMemo(() => {
     return Math.ceil(
-      divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey],
+      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
     );
   }, [orderWeight]);
 

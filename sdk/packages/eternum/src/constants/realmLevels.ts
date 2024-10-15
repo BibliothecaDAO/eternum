@@ -1,4 +1,5 @@
 import { ResourcesIds } from ".";
+import { ResourceCost } from "../types";
 
 export enum RealmLevels {
   Settlement,
@@ -16,7 +17,7 @@ export enum RealmLevelNames {
 
 export const REALM_MAX_LEVEL = Object.keys(RealmLevels).length / 2;
 
-export const REALM_UPGRADE_COSTS = {
+export const REALM_UPGRADE_COSTS: { [key in RealmLevels]: ResourceCost[] } = {
   [RealmLevels.Settlement]: [],
 
   [RealmLevels.City]: [
