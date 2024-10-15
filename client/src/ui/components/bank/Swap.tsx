@@ -9,7 +9,14 @@ import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { ContractAddress, DONKEY_ENTITY_TYPE, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  DONKEY_ENTITY_TYPE,
+  EternumGlobalConfig,
+  ID,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";

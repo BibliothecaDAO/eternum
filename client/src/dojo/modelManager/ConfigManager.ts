@@ -1,5 +1,12 @@
 import { divideByPrecision } from "@/ui/utils/utils";
-import { BUILDING_CATEGORY_POPULATION_CONFIG_ID, BuildingType, CapacityConfigCategory, TickIds, TravelTypes, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import {
+  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  BuildingType,
+  CapacityConfigCategory,
+  TickIds,
+  TravelTypes,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 

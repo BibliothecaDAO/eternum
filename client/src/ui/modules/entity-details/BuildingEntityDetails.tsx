@@ -198,8 +198,7 @@ const CastleDetails = () => {
 
   const immunityEndTimestamp = useMemo(() => {
     return (
-      Number(structure.created_at) +
-      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
+      Number(structure.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
   }, [structure.created_at, configManager]);
 

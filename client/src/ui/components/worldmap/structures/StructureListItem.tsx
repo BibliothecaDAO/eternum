@@ -61,8 +61,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
 
   const immunityEndTimestamp =
-    Number(structure?.created_at) +
-    configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies);
+    Number(structure?.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies);
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;

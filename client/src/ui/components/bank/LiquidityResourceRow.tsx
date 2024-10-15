@@ -13,7 +13,7 @@ import {
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
-  resources
+  resources,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";

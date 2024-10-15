@@ -390,9 +390,9 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     {
       name: "Build a workers hut",
       description: `Each building takes up population in your realm. You realm starts with a population of ${BASE_POPULATION_CAPACITY}. 
-      Build worker huts to extend your population capacity by ${configManager.getBuildingPopConfig(
-        BuildingType.WorkersHut,
-      ).capacity}.`,
+      Build worker huts to extend your population capacity by ${
+        configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity
+      }.`,
       steps: [
         navigationStep(BuildingThumbs.construction),
         "2. Select the worker hut building",
