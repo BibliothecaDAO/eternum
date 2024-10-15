@@ -329,10 +329,7 @@ export interface Config {
       paladin_count: number;
       crossbowman_count: number;
     };
-    rewards: Array<{
-      resource: ResourcesIds;
-      amount: number;
-    }>;
+    rewards: Array<ResourceCost>;
   };
   settlement: {
     radius: number;

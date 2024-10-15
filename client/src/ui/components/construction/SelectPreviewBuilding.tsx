@@ -14,6 +14,7 @@ import {
   RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
+  ResourceCost as ResourceCostType,
   ResourcesIds,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
@@ -678,10 +679,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
     dojo.setup.components.BuildingQuantityv2,
   );
 
-  let updatedCosts: {
-    resource: ResourcesIds;
-    amount: number;
-  }[] = [];
+  let updatedCosts: ResourceCostType[] = [];
 
   RESOURCE_BUILDING_COSTS_SCALED[Number(resourceId)].forEach((cost) => {
     const baseCost = cost.amount;
@@ -709,10 +707,7 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
     dojo.setup.components.BuildingQuantityv2,
   );
 
-  let updatedCosts: {
-    resource: ResourcesIds;
-    amount: number;
-  }[] = [];
+  let updatedCosts: ResourceCostType[] = [];
 
   BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
     const baseCost = cost.amount;

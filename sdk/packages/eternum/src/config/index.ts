@@ -271,8 +271,6 @@ export const setResourceBuildingConfig = async (config: Config) => {
 };
 
 export const setWeightConfig = async (config: Config) => {
-  console.log(config.config.resources);
-
   const calldataArray = Object.entries(config.config.resources.resourceWeightsGrams).map(([resourceId, weight]) => ({
     entity_type: resourceId,
     weight_gram: weight,
