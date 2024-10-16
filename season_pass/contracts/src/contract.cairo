@@ -122,7 +122,7 @@ mod EternumSeasonPass {
     impl ERC721MintImpl of ERC721MintTrait {
         #[external(v0)]
         fn mint(ref self: ContractState, token_id: u256) {
-            // ensure caller is the current realm owner
+            // ensure only caller is the token owner
             let caller = starknet::get_caller_address();
             let current_realm_owner = self.realms.read().owner_of(token_id);
             assert!(current_realm_owner == caller, "ESP: Only realm owner can mint season pass");
