@@ -15,11 +15,7 @@ export class ProductionManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
-  constructor(
-    private readonly setup: SetupResult,
-    entityId: ID,
-    resourceId: ResourcesIds,
-  ) {
+  constructor(private readonly setup: SetupResult, entityId: ID, resourceId: ResourcesIds) {
     this.entityId = entityId;
     this.resourceId = resourceId;
   }
@@ -37,7 +33,7 @@ export class ProductionManager {
     return production !== undefined && (production.building_count > 0 || production.consumption_rate > 0);
   }
 
-  public netRate(currentTick: number): [boolean, number] {
+  public netRate(): [boolean, number] {
     return this._netRate(this.resourceId);
   }
 
@@ -55,6 +51,11 @@ export class ProductionManager {
 
   public balance(currentTick: number): number {
     return this._balance(currentTick, this.resourceId);
+  }
+
+  public timeUntilFinishTick(currentTick: number): number {
+    const finishTick = this._finish_tick();
+    return finishTick > currentTick ? finishTick - currentTick : 0;
   }
 
   public timeUntilValueReached(currentTick: number, value: number): number {
@@ -178,7 +179,7 @@ export class ProductionManager {
     // If there is no production or resource, return current tick
     if (!production || !resource) return currentTick;
 
-    const [_, value] = this.netRate(currentTick);
+    const [_, value] = this.netRate();
     const balance = this.balance(currentTick);
 
     if (value != 0) {
