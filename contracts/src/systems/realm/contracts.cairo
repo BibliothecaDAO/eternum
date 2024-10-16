@@ -73,36 +73,10 @@ mod realm_systems {
             );
 
             // create realm
-            let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
-            let entity_id = world.uuid();
-            let timestamp = starknet::get_block_timestamp();
             let mut coord: Coord = InternalRealmLogicImpl::get_new_location(world);
-            set!(
-                world,
-                (
-                    Owner { entity_id: entity_id.into(), address: owner },
-                    EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
-                    Structure {
-                        entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: timestamp,
-                    },
-                    StructureCount { coord, count: 1 },
-                    CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure },
-                    Realm {
-                        entity_id: entity_id.into(),
-                        realm_id,
-                        produced_resources: realm_produced_resources_packed,
-                        order,
-                        level: 0
-                    },
-                    Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
-                )
+            let (entity_id, realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
+                world, owner, realm_id, resources, order, 0, coord
             );
-
-            // explore tile where realm sits if not already explored
-            let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
-            if tile.explored_at.is_zero() {
-                InternalMapSystemsImpl::explore(world, entity_id.into(), coord, array![(1, 0)].span());
-            }
 
             // emit realm settle event
             emit!(
@@ -123,7 +97,7 @@ mod realm_systems {
                     order,
                     x: coord.x,
                     y: coord.y,
-                    timestamp,
+                    timestamp: starknet::get_block_timestamp(),
                 }),
             );
 
@@ -209,6 +183,47 @@ mod realm_systems {
 
     #[generate_trait]
     impl InternalRealmLogicImpl of InternalRealmLogicTrait {
+        fn create_realm(
+            world: IWorldDispatcher,
+            owner: ContractAddress,
+            realm_id: ID,
+            resources: Array<u8>,
+            order: u8,
+            level: u8,
+            coord: Coord
+        ) -> (ID, u128) {
+            // create realm
+            let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
+            let entity_id = world.uuid();
+            let now = starknet::get_block_timestamp();
+            set!(
+                world,
+                (
+                    Owner { entity_id: entity_id.into(), address: owner },
+                    EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
+                    Structure { entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: now, },
+                    StructureCount { coord, count: 1 },
+                    CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure },
+                    Realm {
+                        entity_id: entity_id.into(),
+                        realm_id,
+                        produced_resources: realm_produced_resources_packed,
+                        order,
+                        level
+                    },
+                    Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
+                )
+            );
+
+            // explore tile where realm sits if not already explored
+            let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
+            if tile.explored_at.is_zero() {
+                InternalMapSystemsImpl::explore(world, entity_id.into(), coord, array![(1, 0)].span());
+            }
+
+            (entity_id, realm_produced_resources_packed)
+        }
+
         fn collect_season_pass(season_pass_address: ContractAddress, realm_id: ID) {
             let caller = starknet::get_caller_address();
             let this = starknet::get_contract_address();

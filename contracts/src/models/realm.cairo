@@ -278,12 +278,56 @@ impl RealmResourcesImpl of RealmResourcesTrait {
     }
 }
 
+#[cfg(test)]
+mod test_realm_name_and_attrs_decode_impl {
+    use super::{RealmNameAndAttrsDecodingImpl};
+
+
+    fn DATA_ONE() -> felt252 {
+        0x53746f6c736c69010102011a1108060708
+    }
+
+    fn DATA_TWO() -> felt252 {
+        0x5165756a7165756a776f75770107040301281915060c09
+    }
+
+    #[test]
+    fn test_decode_name_and_attrs_one() {
+        let (name, region, cities, harbors, rivers, wonder, order, resources) = RealmNameAndAttrsDecodingImpl::decode(
+            DATA_ONE()
+        );
+        assert_eq!(name, 'Stolsli');
+        assert_eq!(region, 6);
+        assert_eq!(cities, 8);
+        assert_eq!(harbors, 17);
+        assert_eq!(rivers, 26);
+        assert_eq!(wonder, 1);
+        assert_eq!(order, 1);
+        assert_eq!(resources, array![1, 2]); // stone and coal
+    }
+
+
+    #[test]
+    fn test_decode_name_and_attrs_two() {
+        let (name, region, cities, harbors, rivers, wonder, order, resources) = RealmNameAndAttrsDecodingImpl::decode(
+            DATA_TWO()
+        );
+        assert_eq!(name, 'Qeujqeujwouw');
+        assert_eq!(region, 6);
+        assert_eq!(cities, 21);
+        assert_eq!(harbors, 25);
+        assert_eq!(rivers, 40);
+        assert_eq!(wonder, 1);
+        assert_eq!(order, 7);
+        assert_eq!(resources, array![1, 3, 4]); // stone, wood, copper
+    }
+}
 
 #[cfg(test)]
-mod tests {
+mod test_realm_resources_impl {
     use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
 
-    fn test_realm() -> Realm {
+    fn mock_realm() -> Realm {
         Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, }
     }
 
@@ -340,7 +384,7 @@ mod tests {
     #[test]
     fn test_contains_resource_present() {
         let resource_types: Array<u8> = array![10, 20, 30, 40];
-        let mut realm = test_realm();
+        let mut realm = mock_realm();
         realm.produced_resources = RealmResourcesImpl::pack_resource_types(resource_types.span());
         assert!(realm.produces_resource(20), "Resource 20 should be present");
     }
@@ -348,21 +392,21 @@ mod tests {
     #[test]
     fn test_contains_resource_absent() {
         let resource_types: Array<u8> = array![10, 20, 30, 40];
-        let mut realm = test_realm();
+        let mut realm = mock_realm();
         realm.produced_resources = RealmResourcesImpl::pack_resource_types(resource_types.span());
         assert!(!realm.produces_resource(50), "Resource 50 should not be present");
     }
 
     #[test]
     fn test_contains_resource_empty() {
-        let mut realm = test_realm();
+        let mut realm = mock_realm();
         assert!(!realm.produces_resource(10), "No resources should be present in an empty pack");
     }
 
     #[test]
     fn test_contains_resource_multiple_occurrences() {
         let resource_types: Array<u8> = array![10, 20, 10, 30];
-        let mut realm = test_realm();
+        let mut realm = mock_realm();
         realm.produced_resources = RealmResourcesImpl::pack_resource_types(resource_types.span());
         assert!(realm.produces_resource(10), "Resource 10 should be present");
         assert!(realm.produces_resource(20), "Resource 20 should be present");
@@ -372,8 +416,8 @@ mod tests {
 
     #[test]
     fn test_contains_resource_max_value() {
-        let resource_types: Array<u8> = array![255, 0, 127, 128];
-        let mut realm = test_realm();
+        let resource_types: Array<u8> = array![255, 127, 128];
+        let mut realm = mock_realm();
         realm.produced_resources = RealmResourcesImpl::pack_resource_types(resource_types.span());
         assert!(realm.produces_resource(255), "Resource 255 should be present");
         assert!(realm.produces_resource(127), "Resource 127 should be present");

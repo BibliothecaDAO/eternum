@@ -22,7 +22,7 @@ use eternum::models::config::{
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
-    Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch, Season, season
+    Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch
 };
 use eternum::models::map::tile;
 use eternum::models::metadata::{foreign_key, ForeignKey};
@@ -43,6 +43,7 @@ use eternum::models::resources::resource_allowance;
 use eternum::models::resources::resource_transfer_lock;
 use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
+use eternum::models::season::season;
 use eternum::models::stamina::stamina;
 use eternum::models::structure::structure;
 use eternum::models::structure::structure_count;
@@ -102,7 +103,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         speed_config::TEST_CLASS_HASH,
         capacity_config::TEST_CLASS_HASH,
         world_config::TEST_CLASS_HASH,
-        entity_metadata::TEST_CLASS_HASH,
         quantity_tracker::TEST_CLASS_HASH,
         position::TEST_CLASS_HASH,
         arrival_time::TEST_CLASS_HASH,

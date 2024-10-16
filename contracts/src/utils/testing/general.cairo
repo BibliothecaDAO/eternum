@@ -8,26 +8,19 @@ use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTra
 use eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
 use eternum::systems::{
     hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},
-    realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
+    realm::contracts::realm_systems::InternalRealmLogicImpl,
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::map::biomes::Biome;
 
-fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position) -> ID {
-    let realm_entity_id = realm_systems_dispatcher
-        .create(
-            'Mysticora',
-            1, // realm id
-            0x20309, // produced_resources // 2,3,9 // stone, coal, gold
-            5, // cities
-            5, // harbors
-            5, // rivers
-            5, // regions
-            1, // wonder
-            1, // order
-        );
-
-    set!(world, Position { entity_id: realm_entity_id, x: position.x, y: position.y });
+fn spawn_realm(world: IWorldDispatcher, realm_id: ID, coord: Coord) -> ID {
+    let owner = starknet::get_contract_address();
+    let realm_id = 1;
+    let produced_resources = array![];
+    let order = 1;
+    let (realm_entity_id, _realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
+        world, owner, realm_id, produced_resources, order, 0, coord.into()
+    );
 
     realm_entity_id
 }
