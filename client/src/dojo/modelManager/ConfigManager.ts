@@ -15,13 +15,6 @@ export class ClientConfigManager {
   private static _instance: ClientConfigManager;
   private components!: ContractComponents;
 
-  private isDojoSet() {
-    if (!this.components) {
-      return false;
-    }
-    return true;
-  }
-
   public setDojo(components: ContractComponents) {
     this.components = components;
   }
@@ -34,37 +27,64 @@ export class ClientConfigManager {
     return ClientConfigManager._instance;
   }
 
-  getTravelStaminaCost() {
-    if (!this.isDojoSet()) return 0;
+  private getValueOrDefault<T>(callback: () => T, defaultValue: T): T {
+    if (!this.components) {
+      return defaultValue;
+    }
+    return callback();
+  }
 
-    const staminaConfig = getComponentValue(
-      this.components.TravelStaminaCostConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Travel)]),
-    );
-    return staminaConfig?.cost ?? 0;
+  getTravelStaminaCost() {
+    return this.getValueOrDefault(() => {
+      const staminaConfig = getComponentValue(
+        this.components.TravelStaminaCostConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Travel)]),
+      );
+      return staminaConfig?.cost ?? 0;
+    }, 1);
   }
 
   getExploreStaminaCost() {
-    if (!this.isDojoSet()) return 0;
-
-    const staminaConfig = getComponentValue(
-      this.components.TravelStaminaCostConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Explore)]),
-    );
-    return staminaConfig?.cost ?? 0;
+    return this.getValueOrDefault(() => {
+      const staminaConfig = getComponentValue(
+        this.components.TravelStaminaCostConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Explore)]),
+      );
+      return staminaConfig?.cost ?? 0;
+    }, 1);
   }
 
   getExploreReward() {
-    if (!this.isDojoSet()) return 0;
+    return this.getValueOrDefault(() => {
+      const exploreConfig = getComponentValue(this.components.MapConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
-    const exploreConfig = getComponentValue(this.components.MapConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
-    return divideByPrecision(Number(exploreConfig?.reward_resource_amount ?? 0));
+      return divideByPrecision(Number(exploreConfig?.reward_resource_amount ?? 0));
+    }, 0);
   }
 
   getTroopConfig() {
-    if (!this.isDojoSet()) {
-      return {
+    return this.getValueOrDefault(
+      () => {
+        const troopConfig = getComponentValue(this.components.TroopConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+        return {
+          health: troopConfig?.health ?? 0,
+          knightStrength: troopConfig?.knight_strength ?? 0,
+          paladinStrength: troopConfig?.paladin_strength ?? 0,
+          crossbowmanStrength: troopConfig?.crossbowman_strength ?? 0,
+          advantagePercent: troopConfig?.advantage_percent ?? 0,
+          disadvantagePercent: troopConfig?.disadvantage_percent ?? 0,
+          maxTroopCount: divideByPrecision(troopConfig?.max_troop_count ?? 0),
+          pillageHealthDivisor: troopConfig?.pillage_health_divisor ?? 0,
+          baseArmyNumberForStructure: troopConfig?.army_free_per_structure ?? 0,
+          armyExtraPerMilitaryBuilding: troopConfig?.army_extra_per_building ?? 0,
+          maxArmiesPerStructure: troopConfig?.army_max_per_structure ?? 0,
+          battleLeaveSlashNum: troopConfig?.battle_leave_slash_num ?? 0,
+          battleLeaveSlashDenom: troopConfig?.battle_leave_slash_denom ?? 0,
+          battleTimeScale: troopConfig?.battle_time_scale ?? 0,
+        };
+      },
+      {
         health: 0,
         knightStrength: 0,
         paladinStrength: 0,
@@ -79,113 +99,93 @@ export class ClientConfigManager {
         battleLeaveSlashNum: 0,
         battleLeaveSlashDenom: 0,
         battleTimeScale: 0,
-      };
-    }
-
-    const troopConfig = getComponentValue(this.components.TroopConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
-    return {
-      health: troopConfig?.health ?? 0,
-      knightStrength: troopConfig?.knight_strength ?? 0,
-      paladinStrength: troopConfig?.paladin_strength ?? 0,
-      crossbowmanStrength: troopConfig?.crossbowman_strength ?? 0,
-      advantagePercent: troopConfig?.advantage_percent ?? 0,
-      disadvantagePercent: troopConfig?.disadvantage_percent ?? 0,
-      maxTroopCount: divideByPrecision(troopConfig?.max_troop_count ?? 0),
-      pillageHealthDivisor: troopConfig?.pillage_health_divisor ?? 0,
-      baseArmyNumberForStructure: troopConfig?.army_free_per_structure ?? 0,
-      armyExtraPerMilitaryBuilding: troopConfig?.army_extra_per_building ?? 0,
-      maxArmiesPerStructure: troopConfig?.army_max_per_structure ?? 0,
-      battleLeaveSlashNum: troopConfig?.battle_leave_slash_num ?? 0,
-      battleLeaveSlashDenom: troopConfig?.battle_leave_slash_denom ?? 0,
-      battleTimeScale: troopConfig?.battle_time_scale ?? 0,
-    };
+      },
+    );
   }
 
   getBattleGraceTickCount() {
-    if (!this.isDojoSet()) return 0;
-
-    const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    return Number(battleConfig?.battle_grace_tick_count);
+    return this.getValueOrDefault(() => {
+      const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      return Number(battleConfig?.battle_grace_tick_count ?? 0);
+    }, 0);
   }
 
   getBattleDelay() {
-    if (!this.isDojoSet()) return 0;
+    return this.getValueOrDefault(() => {
+      const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
-    const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
-    return Number(battleConfig?.battle_delay_seconds);
+      return Number(battleConfig?.battle_delay_seconds ?? 0);
+    }, 0);
   }
 
   getTick(tickId: TickIds) {
-    if (!this.isDojoSet()) return 0;
+    return this.getValueOrDefault(() => {
+      const tickConfig = getComponentValue(
+        this.components.TickConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(tickId)]),
+      );
 
-    const tickConfig = getComponentValue(
-      this.components.TickConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(tickId)]),
-    );
-
-    return Number(tickConfig?.tick_interval_in_seconds);
+      return Number(tickConfig?.tick_interval_in_seconds ?? 0);
+    }, 0);
   }
 
   getBankConfig() {
-    if (!this.isDojoSet()) {
-      return {
+    return this.getValueOrDefault(
+      () => {
+        const bankConfig = getComponentValue(this.components.BankConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+        return {
+          lordsCost: divideByPrecision(Number(bankConfig?.lords_cost)),
+          lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
+          lpFeesDenominator: Number(bankConfig?.lp_fee_denom ?? 0),
+        };
+      },
+      {
         lordsCost: 0,
         lpFeesNumerator: 0,
         lpFeesDenominator: 0,
-      };
-    }
-
-    const bankConfig = getComponentValue(this.components.BankConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
-    return {
-      lordsCost: divideByPrecision(Number(bankConfig?.lords_cost)),
-      lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
-      lpFeesDenominator: Number(bankConfig?.lp_fee_denom ?? 0),
-    };
+      },
+    );
   }
 
   getCapacityConfig(category: CapacityConfigCategory) {
-    if (!this.isDojoSet()) {
-      return 0;
-    }
-
-    const capacityConfig = getComponentValue(this.components.CapacityConfig, getEntityIdFromKeys([BigInt(category)]));
-    return Number(capacityConfig?.weight_gram);
+    return this.getValueOrDefault(() => {
+      const capacityConfig = getComponentValue(this.components.CapacityConfig, getEntityIdFromKeys([BigInt(category)]));
+      return Number(capacityConfig?.weight_gram ?? 0);
+    }, 0);
   }
 
   getSpeedConfig(entityType: number): number {
-    if (!this.isDojoSet()) {
-      return 0;
-    }
+    return this.getValueOrDefault(() => {
+      const speedConfig = getComponentValue(
+        this.components.SpeedConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(entityType)]),
+      );
 
-    const speedConfig = getComponentValue(
-      this.components.SpeedConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(entityType)]),
-    );
-
-    return speedConfig?.sec_per_km ?? 0;
+      return speedConfig?.sec_per_km ?? 0;
+    }, 0);
   }
 
   getBuildingPopConfig(buildingId: BuildingType): {
     population: number;
     capacity: number;
   } {
-    if (!this.isDojoSet()) {
-      return {
+    return this.getValueOrDefault(
+      () => {
+        const buildingConfig = getComponentValue(
+          this.components.BuildingCategoryPopConfig,
+          getEntityIdFromKeys([BUILDING_CATEGORY_POPULATION_CONFIG_ID, BigInt(buildingId)]),
+        );
+
+        return {
+          population: buildingConfig?.population ?? 0,
+          capacity: buildingConfig?.capacity ?? 0,
+        };
+      },
+      {
         population: 0,
         capacity: 0,
-      };
-    }
-    const buildingConfig = getComponentValue(
-      this.components.BuildingCategoryPopConfig,
-      getEntityIdFromKeys([BUILDING_CATEGORY_POPULATION_CONFIG_ID, BigInt(buildingId)]),
+      },
     );
-
-    return {
-      population: buildingConfig?.population ?? 0,
-      capacity: buildingConfig?.capacity ?? 0,
-    };
   }
 }

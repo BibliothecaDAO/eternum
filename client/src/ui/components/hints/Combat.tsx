@@ -96,8 +96,8 @@ const Battles = () => {
 
 const Troops = () => {
   const troopConfig = configManager.getTroopConfig();
-  const advantagePercent = (troopConfig.advantagePercent / 10000) * 100;
-  const disadvantagePercent = (troopConfig.disadvantagePercent / 10000) * 100;
+  const advantagePercent = troopConfig.advantagePercent / 100;
+  const disadvantagePercent = troopConfig.disadvantagePercent / 100;
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">

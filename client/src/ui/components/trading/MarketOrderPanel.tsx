@@ -329,7 +329,7 @@ const OrderRow = ({
   }, [entityId, calculatedResourceAmount, calculatedLords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
+    return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -547,7 +547,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
+    return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
@@ -677,4 +677,8 @@ const OrderCreation = ({
       </div>
     </div>
   );
+};
+
+const calculateDonkeysNeeded = (orderWeight: number): number => {
+  return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
 };

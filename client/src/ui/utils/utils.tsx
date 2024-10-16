@@ -361,14 +361,16 @@ export const toValidAscii = (str: string) => {
   return accentsToAscii(intermediateString);
 };
 
-export const computeTravelFoodCosts = (troops: any) => {
+export const computeTravelFoodCosts = (
+  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
+) => {
   const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
   const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
   const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
 
-  const paladinCount = Number(troops.paladin_count);
-  const knightCount = Number(troops.knight_count);
-  const crossbowmanCount = Number(troops.crossbowman_count);
+  const paladinCount = Number(troops?.paladin_count);
+  const knightCount = Number(troops?.knight_count);
+  const crossbowmanCount = Number(troops?.crossbowman_count);
 
   const paladinWheatConsumption = paladinFoodConsumption.travel_wheat_burn_amount * paladinCount;
   const knightWheatConsumption = knightFoodConsumption.travel_wheat_burn_amount * knightCount;
