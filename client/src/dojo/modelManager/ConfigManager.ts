@@ -165,8 +165,6 @@ export class ClientConfigManager {
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(entityType)]),
     );
 
-    console.log(speedConfig);
-
     return speedConfig?.sec_per_km ?? 0;
   }
 
