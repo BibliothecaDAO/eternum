@@ -15,7 +15,11 @@ export class ProductionManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
-  constructor(private readonly setup: SetupResult, entityId: ID, resourceId: ResourcesIds) {
+  constructor(
+    private readonly setup: SetupResult,
+    entityId: ID,
+    resourceId: ResourcesIds,
+  ) {
     this.entityId = entityId;
     this.resourceId = resourceId;
   }
