@@ -5,7 +5,7 @@ trait IRealmMetadataEncoded<TState> {
 
 #[starknet::interface]
 trait IERC721Minter<TState> {
-    fn mint(ref self: TState, recipient: starknet::ContractAddress, token_id: u256);
+    fn mint(ref self: TState, token_id: u256);
 }
 
 #[starknet::contract]
@@ -96,9 +96,9 @@ mod TestRealm {
 
     #[abi(embed_v0)]
     impl ERC721MinterImpl of IERC721Minter<ContractState> {
-        fn mint(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
+        fn mint(ref self: ContractState, token_id: u256) {
             // allow anyone mint
-            self.erc721.mint(recipient, token_id);
+            self.erc721.mint(starknet::get_caller_address(), token_id);
         }
     }
 

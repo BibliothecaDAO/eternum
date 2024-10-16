@@ -174,31 +174,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
       [
         {
-          contractAddress: getContractByName(
-            this.manifest,
-            `0x54719c22294322ed2d36cca904b5dcab22a1d2bbfbf1fcf76463346dd538b04`,
-          ),
-          entrypoint: "mint",
-          calldata: [signer.address, realm_id],
-        },
-        {
-          contractAddress: getContractByName(
-            this.manifest,
-            `0x226fec36c2d9a1da06df7274fed8a65f299003ba979f468c21b9f5f2db15f7a`,
-          ),
-          entrypoint: "mint",
-          calldata: [realm_id],
-        },
-        {
-          contractAddress: getContractByName(
-            this.manifest,
-            `0x226fec36c2d9a1da06df7274fed8a65f299003ba979f468c21b9f5f2db15f7a`,
-          ),
-          entrypoint: "approve",
-          calldata: [getContractByName(this.manifest, `${NAMESPACE}-realm_systems`), realm_id],
-        },
-        {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
           calldata: [realm_id],
         },
@@ -224,35 +200,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     let calldata = realm_ids.flatMap((realm_id) => {
       let calldata = [
         {
-          contractAddress: `0x26584908db2e68b91de120fff303c04e5de1b0dcc4a3dfe038431624cf6dfcb`,
-          entrypoint: "mint",
-          calldata: [signer.address, realm_id, 0],
-        },
-        {
-          contractAddress: `0x226fec36c2d9a1da06df7274fed8a65f299003ba979f468c21b9f5f2db15f7a`,
-          entrypoint: "mint",
-          calldata: [realm_id, 0],
-        },
-        {
-          contractAddress: `0x226fec36c2d9a1da06df7274fed8a65f299003ba979f468c21b9f5f2db15f7a`,
-          entrypoint: "approve",
-          calldata: [getContractByName(this.manifest, `${NAMESPACE}-realm_systems`), realm_id, 0],
-        },
-        {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
           calldata: [realm_id],
         },
       ];
-      // 2024-10-15T20:26:55.708171Z  INFO katana_pool::pool: Transaction received. hash="0x4897e05ff2e77cfe34e211ea21f2107f0c9188296ff1551ac8902b23137425c"
-      // 2024-10-15T20:26:55.749338Z DEBUG server: method="starknet_blockHashAndNumber"
-      // 2024-10-15T20:26:55.749743Z DEBUG server: method="starknet_getEvents"
-      // 2024-10-15T20:26:55.812945Z TRACE executor: Transaction resource usage. usage="steps: 227733 | memory holes: 8993 | bitwise_builtin: 105 | ec_op_builtin: 3 | pedersen_builtin: 115 | poseidon_builtin: 114 | range_check_builtin: 30501"
-      // 2024-10-15T20:26:55.812967Z TRACE executor: Event emitted. keys="0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9, 0x0, 0x646d18580869dfeb095b602b54dd40c6c90a48f48f88cd314c217fa23289c83, 0x1a, 0x0"
-      // 2024-10-15T20:26:55.812970Z TRACE executor: Event emitted. keys="0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9, 0x0, 0x646d18580869dfeb095b602b54dd40c6c90a48f48f88cd314c217fa23289c83, 0x1a, 0x0"
-      // 2024-10-15T20:26:55.812972Z TRACE executor: Event emitted. keys="0x134692b230b9e1ffa39098904722134159652b09c5bc41d88d6698779d228ff, 0x646d18580869dfeb095b602b54dd40c6c90a48f48f88cd314c217fa23289c83, 0x37940c191510c4faccd4ccb7cbe012d20b91bd61aaa346dcb1279990d28a787, 0x1a, 0x0"
-      // 2024-10-15T20:26:55.813039Z TRACE executor: Event emitted. keys="0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9, 0x646d18580869dfeb095b602b54dd40c6c90a48f48f88cd314c217fa23289c83, 0x37940c191510c4faccd4ccb7cbe012d20b91bd61aaa346dcb1279990d28a787, 0x1a, 0x0"
-      // 2024-10-15T20:26:55.813047Z TRACE executor: Event emitted. keys="0x1a2f334228cee715f1f0f54053bb6b5eac54fa336e0bc1aacf7516decb0471d"
       return calldata;
     });
 
@@ -783,12 +735,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
   public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
-    const { season_pass_address, signer } = props;
+    const { season_pass_address, realms_address, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_season_config",
-      calldata: [season_pass_address],
+      calldata: [season_pass_address, realms_address],
     });
   }
 

@@ -20,7 +20,11 @@ trait IWorldConfig {
 
 #[dojo::interface]
 trait ISeasonConfig {
-    fn set_season_config(ref world: IWorldDispatcher, season_pass_address: starknet::ContractAddress,);
+    fn set_season_config(
+        ref world: IWorldDispatcher,
+        season_pass_address: starknet::ContractAddress,
+        realms_address: starknet::ContractAddress
+    );
 }
 
 #[dojo::interface]
@@ -236,12 +240,14 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl SeasonConfigCustomImpl of super::ISeasonConfig<ContractState> {
-        fn set_season_config(ref world: IWorldDispatcher, season_pass_address: starknet::ContractAddress) {
+        fn set_season_config(
+            ref world: IWorldDispatcher,
+            season_pass_address: starknet::ContractAddress,
+            realms_address: starknet::ContractAddress
+        ) {
             assert_caller_is_admin(world);
 
-            println!("\n\n season_pass_address: {:?} \n\n", season_pass_address);
-
-            set!(world, (SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address }));
+            set!(world, (SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address }));
         }
     }
 

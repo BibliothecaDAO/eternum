@@ -54,6 +54,8 @@ export DEV_BANK_SYSTEMS=$(get_contract_address "eternum-dev_bank_systems")
 
 export GUILD_SYSTEMS=$(get_contract_address "eternum-guild_systems")
 
+export DEV_REALM_SYSTEMS=$(get_contract_address "eternum-dev_realm_systems")
+
 # Display the addresses
 echo "-------------------------ADDRESS----------------------------------------"
 echo world : $DOJO_WORLD_ADDRESS
@@ -75,3 +77,4 @@ echo buildings : $BUILDINGS_SYSTEMS
 echo maps : $MAP_SYSTEMS
 echo test_bank : $DEV_BANK_SYSTEMS
 echo guild : $GUILD_SYSTEMS
+echo test_realm : $DEV_REALM_SYSTEMS

@@ -416,6 +416,7 @@ export const setSeasonConfig = async (config: Config) => {
   const tx = await config.provider.set_season_config({
     signer: config.account,
     season_pass_address: config.config.season.seasonPassAddress,
+    realms_address: config.config.season.realmsAddress,
   });
 
   console.log(`Configuring season config ${tx.statusReceipt}`);

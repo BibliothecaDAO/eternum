@@ -9,7 +9,7 @@ trait ISeasonPass<TState> {
 
 #[dojo::interface]
 trait IRealmSystems {
-    fn create(ref world: IWorldDispatcher, realm_id: ID) -> ID;
+    fn create(ref world: IWorldDispatcher, owner: starknet::ContractAddress, realm_id: ID) -> ID;
     fn upgrade_level(ref world: IWorldDispatcher, realm_id: ID);
     fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID;
 }
@@ -49,45 +49,16 @@ mod realm_systems {
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
-        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
-            SeasonImpl::assert_season_is_not_over(world);
-
-            get!(world, (entity_id), Realm).assert_is_set();
-
-            let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
-
-            assert(!claimed_resources.claimed, 'already claimed');
-
-            // get index
-            let config_index = REALM_FREE_MINT_CONFIG_ID + config_id.into();
-
-            let realm_free_mint_config = get!(world, config_index, RealmFreeMintConfig);
-            let mut index = 0;
-            loop {
-                if index == realm_free_mint_config.detached_resource_count {
-                    break;
-                }
-
-                let mut detached_resource = get!(
-                    world, (realm_free_mint_config.detached_resource_id, index), DetachedResource
-                );
-                let mut realm_resource = ResourceCustomImpl::get(
-                    world, (entity_id.into(), detached_resource.resource_type)
-                );
-
-                realm_resource.add(detached_resource.resource_amount);
-                realm_resource.save(world);
-
-                index += 1;
-            };
-
-            claimed_resources.claimed = true;
-            set!(world, (claimed_resources));
-
-            entity_id.into()
-        }
-
-        fn create(ref world: IWorldDispatcher, realm_id: ID) -> ID {
+        /// Create a new realm
+        /// @param owner the address that'll own the realm in the game
+        /// @param realm_id The ID of the realm
+        /// @return The realm's entity ID
+        ///
+        /// @note This function is only callable by the season pass owner
+        /// and the season pass owner must approve this contract to
+        /// spend their season pass NFT
+        ///
+        fn create(ref world: IWorldDispatcher, owner: ContractAddress, realm_id: ID) -> ID {
             // check that season is still active
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -104,13 +75,12 @@ mod realm_systems {
             // create realm
             let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
             let entity_id = world.uuid();
-            let caller = starknet::get_caller_address();
             let timestamp = starknet::get_block_timestamp();
             let mut coord: Coord = InternalRealmLogicImpl::get_new_location(world);
             set!(
                 world,
                 (
-                    Owner { entity_id: entity_id.into(), address: caller },
+                    Owner { entity_id: entity_id.into(), address: owner },
                     EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
                     Structure {
                         entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: timestamp,
@@ -135,15 +105,14 @@ mod realm_systems {
             }
 
             // emit realm settle event
-            let owner_address = starknet::get_caller_address();
             emit!(
                 world,
                 (SettleRealmData {
                     id: world.uuid(),
                     event_id: EventType::SettleRealm,
                     entity_id,
-                    owner_address,
-                    owner_name: get!(world, owner_address, AddressName).name,
+                    owner_address: owner,
+                    owner_name: get!(world, owner, AddressName).name,
                     realm_name: realm_name,
                     produced_resources: realm_produced_resources_packed,
                     cities,
@@ -196,6 +165,44 @@ mod realm_systems {
             // set new level
             realm.level = next_level;
             set!(world, (realm));
+        }
+
+        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
+            SeasonImpl::assert_season_is_not_over(world);
+
+            get!(world, (entity_id), Realm).assert_is_set();
+
+            let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
+
+            assert(!claimed_resources.claimed, 'already claimed');
+
+            // get index
+            let config_index = REALM_FREE_MINT_CONFIG_ID + config_id.into();
+
+            let realm_free_mint_config = get!(world, config_index, RealmFreeMintConfig);
+            let mut index = 0;
+            loop {
+                if index == realm_free_mint_config.detached_resource_count {
+                    break;
+                }
+
+                let mut detached_resource = get!(
+                    world, (realm_free_mint_config.detached_resource_id, index), DetachedResource
+                );
+                let mut realm_resource = ResourceCustomImpl::get(
+                    world, (entity_id.into(), detached_resource.resource_type)
+                );
+
+                realm_resource.add(detached_resource.resource_amount);
+                realm_resource.save(world);
+
+                index += 1;
+            };
+
+            claimed_resources.claimed = true;
+            set!(world, (claimed_resources));
+
+            entity_id.into()
         }
     }
 

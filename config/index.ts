@@ -5,9 +5,6 @@ import productionManifest from "../contracts/manifests/prod/deployment/manifest.
 import { EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
-import SEASON_PASS from "../season_pass/scripts/deployment/addresses/local/season_pass.json";
-import TEST_REALMS from "../season_pass/scripts/deployment/addresses/local/test_realms.json";
-
 if (
   !process.env.VITE_PUBLIC_MASTER_ADDRESS ||
   !process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY ||
@@ -52,12 +49,14 @@ const setupConfig: Config =
           graceTickCount: 0,
           delaySeconds: 0,
         },
-        season: {
-          seasonPassAddress: SEASON_PASS.address,
-          realmsAddress: TEST_REALMS.address,
-        },
       }
     : EternumGlobalConfig;
+
+// probably should be refactored
+setupConfig.season = {
+  seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
+  realmsAddress: process.env.VITE_REALMS_ADDRESS!,
+};
 
 export const config = new EternumConfig(setupConfig);
 

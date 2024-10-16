@@ -488,6 +488,7 @@ export interface SetSpeedConfigProps extends SystemSigner {
 
 export interface SetSeasonConfigProps extends SystemSigner {
   season_pass_address: num.BigNumberish;
+  realms_address: num.BigNumberish;
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {
