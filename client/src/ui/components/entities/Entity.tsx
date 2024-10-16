@@ -34,7 +34,7 @@ type EntityProps = {
 export const Entity = ({ entityId, ...props }: EntityProps) => {
   const dojo = useDojo();
 
-  const { getEntityInfo, getEntityName } = useEntitiesUtils();
+  const { getEntityInfo } = useEntitiesUtils();
   const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
@@ -70,7 +70,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       case EntityState.Idle:
       case EntityState.WaitingToOffload:
         return depositEntityId !== undefined && hasResources ? (
-          <div className="flex ml-auto italic">Waiting to offload to {getEntityName(depositEntityId)}</div>
+          <div className="flex ml-auto italic">Waiting to offload</div>
         ) : (
           <div className="flex ml-auto italic">Idle</div>
         );
