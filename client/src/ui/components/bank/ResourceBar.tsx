@@ -19,7 +19,6 @@ export const ResourceBar = ({
   disableInput = false,
   onFocus,
   onBlur,
-  max = Infinity,
 }: {
   entityId: ID;
   lordsFee: number;
@@ -31,7 +30,6 @@ export const ResourceBar = ({
   disableInput?: boolean;
   onFocus?: () => void; // New prop
   onBlur?: () => void; // New prop
-  max?: number;
 }) => {
   const { getBalance } = getResourceBalance();
 
@@ -94,7 +92,7 @@ export const ResourceBar = ({
           className="text-2xl border-transparent"
           value={amount}
           onChange={handleAmountChange}
-          max={max}
+          max={Infinity}
           arrows={false}
           allowDecimals
           onFocus={onFocus}
