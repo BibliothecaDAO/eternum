@@ -49,7 +49,7 @@ export const useChatStore = create<ChatState>()(
         }),
       hideTab: (tab: Tab) =>
         set((state) => ({
-          tabs: state.tabs.map((t) => (t.address === tab.address ? { ...t, visible: false } : t)),
+          tabs: state.tabs.map((t) => (t.address === tab.address ? { ...t, displayed: false } : t)),
           currentTab: DEFAULT_TAB,
         })),
       deleteTab: (address: string) =>

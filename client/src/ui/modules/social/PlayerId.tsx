@@ -12,7 +12,7 @@ import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useChatStore } from "../chat/ChatState";
-// import { addNewTab } from "../chat/utils";
+import { getMessageKey } from "../chat/utils";
 
 export const MessageIcon = ({
   playerName,
@@ -24,20 +24,17 @@ export const MessageIcon = ({
   const {
     account: { account },
   } = useDojo();
-
-  const tabs = useChatStore((state) => state.tabs);
-  const setTabs = useChatStore((state) => state.setTabs);
-  const setCurrentTab = useChatStore((state) => state.setCurrentTab);
+  const addTab = useChatStore((state) => state.addTab);
 
   const handleClick = () => {
     if (!playerName) return;
-    // addNewTab(
-    //   tabs,
-    //   { name: playerName, address: toHexString(selectedPlayer), displayed: true },
-    //   setCurrentTab,
-    //   account.address,
-    //   setTabs,
-    // );
+    addTab({
+      name: playerName,
+      key: getMessageKey(account.address, selectedPlayer),
+      address: toHexString(selectedPlayer),
+      displayed: true,
+      lastSeen: new Date(),
+    });
   };
 
   return (

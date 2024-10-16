@@ -58,6 +58,7 @@ export enum ClaimStatus {
   Claimable = "Claim",
   NoSelectedArmy = "No selected army",
   BattleOngoing = "Battle ongoing",
+  DefenderPresent = "An army's defending the structure",
   NoStructureToClaim = "No structure to claim",
   StructureIsMine = "Can't claim your own structure",
   SelectedArmyIsDead = "Selected army is dead",
@@ -257,36 +258,30 @@ export class BattleManager {
     defender: ArmyInfo | undefined,
   ): ClaimStatus {
     if (!selectedArmy) return ClaimStatus.NoSelectedArmy;
-    if (this.battleIsClaimable) return this.battleIsClaimable;
 
     if (this.isBattleOngoing(currentTimestamp)) {
       return ClaimStatus.BattleOngoing;
     }
 
     if (!structure) {
-      this.battleIsClaimable = ClaimStatus.NoStructureToClaim;
       return ClaimStatus.NoStructureToClaim;
     }
 
     if (this.getBattleType(structure) !== BattleType.Structure) {
-      this.battleIsClaimable = ClaimStatus.NoStructureToClaim;
       return ClaimStatus.NoStructureToClaim;
     }
 
     if (defender === undefined) {
-      this.battleIsClaimable = ClaimStatus.Claimable;
       return ClaimStatus.Claimable;
     }
 
     const updatedBattle = this.getUpdatedBattle(currentTimestamp);
     if (updatedBattle && updatedBattle.defence_army_health.current > 0n) {
-      this.battleIsClaimable = ClaimStatus.BattleOngoing;
       return ClaimStatus.BattleOngoing;
     }
 
     if (defender.health.current > 0n) {
-      this.battleIsClaimable = ClaimStatus.BattleOngoing;
-      return ClaimStatus.BattleOngoing;
+      return ClaimStatus.DefenderPresent;
     }
 
     if (structure.isMine) {
@@ -297,7 +292,6 @@ export class BattleManager {
       return ClaimStatus.SelectedArmyIsDead;
     }
 
-    this.battleIsClaimable = ClaimStatus.Claimable;
     return ClaimStatus.Claimable;
   }
 

@@ -649,7 +649,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(ClaimStatus.BattleOngoing);
+    expect(isClaimable).toBe(ClaimStatus.DefenderPresent);
   });
 
   it("should return false if structure protector has health", () => {
@@ -664,7 +664,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(ClaimStatus.BattleOngoing);
+    expect(isClaimable).toBe(ClaimStatus.DefenderPresent);
   });
 
   it("should return false if the structure is mine", () => {

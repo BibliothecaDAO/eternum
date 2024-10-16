@@ -7,12 +7,13 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
 
+import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { toHexString } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useChatStore } from "./ChatState";
 import { ChatTab, DEFAULT_TAB } from "./ChatTab";
-import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY, PASTEL_BLUE, PASTEL_PINK } from "./constants";
+import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY, PASTEL_BLUE, PASTEL_GREEN, PASTEL_PINK } from "./constants";
 import { InputField } from "./InputField";
 import { ChatMetadata, Tab } from "./types";
 import { getMessageKey } from "./utils";
@@ -24,6 +25,10 @@ export const Chat = () => {
       components: { Message, AddressName },
     },
   } = useDojo();
+
+  const { getGuildFromPlayerAddress } = useGuilds();
+  const guildName = getGuildFromPlayerAddress(ContractAddress(account.address))?.guildName;
+  const guildKey = guildName ? shortString.encodeShortString(guildName) : undefined;
 
   const bottomChatRef = useRef<HTMLDivElement>(null);
 
@@ -56,10 +61,10 @@ export const Chat = () => {
       if (!addressName) return;
 
       const fromSelf = message.identity === BigInt(account.address);
-      const isRelevantMessage =
-        fromSelf ||
-        BigInt(message.channel) === BigInt(account.address) ||
-        BigInt(message.channel) === BigInt(GLOBAL_CHANNEL);
+      const toSelf = message.channel === BigInt(account.address);
+      const isGlobalMessage = BigInt(message.channel) === BigInt(GLOBAL_CHANNEL);
+      const isGuildMessage = guildKey && BigInt(message.channel) === BigInt(guildKey);
+      const isRelevantMessage = fromSelf || toSelf || isGlobalMessage || isGuildMessage;
 
       if (!isRelevantMessage) return;
 
@@ -70,9 +75,10 @@ export const Chat = () => {
       const identity = message.identity;
       const channel = message.channel;
 
-      const key =
-        BigInt(message.channel) === BigInt(GLOBAL_CHANNEL)
-          ? GLOBAL_CHANNEL
+      const key = isGlobalMessage
+        ? GLOBAL_CHANNEL
+        : isGuildMessage
+          ? guildKey
           : getMessageKey(identity, BigInt(message.channel));
 
       if (!messageMap.has(ContractAddress(key))) {
@@ -82,8 +88,6 @@ export const Chat = () => {
           channel: BigInt(message.channel),
           fromName: name,
           address,
-          isChannel:
-            BigInt(message.channel) !== BigInt(account.address) && BigInt(message.channel) !== BigInt(GLOBAL_CHANNEL),
         });
       }
 
@@ -112,7 +116,8 @@ export const Chat = () => {
 
       const existingTab = tabs.find((t) => t.address === metadata.address);
 
-      if (existingTab?.name === GLOBAL_CHANNEL_KEY || metadata.address == "0x0") return;
+      if (existingTab?.name === GLOBAL_CHANNEL_KEY || existingTab?.name === guildName || metadata.address == "0x0")
+        return;
 
       if (!existingTab) {
         const newTab: Tab = {
@@ -127,14 +132,17 @@ export const Chat = () => {
     });
 
     return messageMap;
-  }, [allMessageEntities, account.address]);
+  }, [allMessageEntities, account.address, guildKey]);
 
   const messagesToDisplay = useMemo(() => {
     if (currentTab.name === GLOBAL_CHANNEL_KEY) {
       return messages.get(BigInt(GLOBAL_CHANNEL));
     }
+    if (currentTab.name === guildName && guildKey) {
+      return messages.get(ContractAddress(guildKey));
+    }
     return messages.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
-  }, [messages, currentTab.address]);
+  }, [messages, currentTab.address, currentTab.name, guildName, guildKey]);
 
   useEffect(() => {
     scrollToElement(bottomChatRef);
@@ -157,6 +165,17 @@ export const Chat = () => {
       return;
     }
 
+    if (guildName && guildKey && address === guildKey) {
+      addTab({
+        name: guildName,
+        address,
+        key: guildKey,
+        displayed: true,
+        lastSeen: new Date(),
+      });
+      return;
+    }
+
     if (ContractAddress(address) === ContractAddress(account.address)) {
       return;
     }
@@ -176,7 +195,7 @@ export const Chat = () => {
 
   const renderTabs = useMemo(() => {
     return tabs
-      .filter((tab) => ContractAddress(tab.address) !== ContractAddress(account.address))
+      .filter((tab) => ContractAddress(tab.address) !== ContractAddress(account.address) && tab.displayed)
       .map((tab) => <ChatTab key={tab.address} tab={tab} selected={tab.name === currentTab.name} />);
   }, [tabs, account.address]);
 
@@ -209,7 +228,14 @@ export const Chat = () => {
         >
           {messagesToDisplay?.messages.map((message, index) => (
             <div
-              style={{ color: currentTab.name === GLOBAL_CHANNEL_KEY ? PASTEL_PINK : PASTEL_BLUE }}
+              style={{
+                color:
+                  currentTab.name === GLOBAL_CHANNEL_KEY
+                    ? PASTEL_PINK
+                    : currentTab.name === guildName
+                      ? PASTEL_GREEN
+                      : PASTEL_BLUE,
+              }}
               className={`flex gap-2 mb-1`}
               key={index}
             >
@@ -228,18 +254,32 @@ export const Chat = () => {
           ))}
           <span className="" ref={bottomChatRef}></span>
         </div>
-        <div className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}>
+        <div
+          style={{
+            color:
+              currentTab.name === GLOBAL_CHANNEL_KEY
+                ? PASTEL_PINK
+                : currentTab.name === guildName
+                  ? PASTEL_GREEN
+                  : PASTEL_BLUE,
+          }}
+          className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}
+        >
           <InputField currentTab={currentTab} salt={salt} />
           <Select
             value={
-              currentTab.name === GLOBAL_CHANNEL_KEY ? GLOBAL_CHANNEL_KEY : toHexString(BigInt(currentTab.address))
+              currentTab.name === GLOBAL_CHANNEL_KEY
+                ? GLOBAL_CHANNEL_KEY
+                : currentTab.name === guildName
+                  ? guildKey
+                  : toHexString(BigInt(currentTab.address))
             }
             onValueChange={(address) => {
               changeTabs(undefined, address, true);
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Player or Global" />
+              <SelectValue placeholder="Select Player or Channel" />
             </SelectTrigger>
             <SelectContent>
               {players &&
@@ -247,13 +287,23 @@ export const Chat = () => {
                   .sort((a, b) => a.addressName.localeCompare(b.addressName))
                   .filter((tab) => ContractAddress(tab.address) !== ContractAddress(account.address))
                   .map((player, index) => (
-                    <SelectItem className="flex justify-between" key={index} value={toHexString(player.address)}>
+                    <SelectItem
+                      className="flex justify-between"
+                      style={{ color: PASTEL_BLUE }}
+                      key={index}
+                      value={toHexString(player.address)}
+                    >
                       {player.addressName}
                     </SelectItem>
                   ))}
-              <SelectItem className="flex justify-between" value={GLOBAL_CHANNEL_KEY}>
+              <SelectItem className="flex justify-between " value={GLOBAL_CHANNEL_KEY} style={{ color: PASTEL_PINK }}>
                 Global
               </SelectItem>
+              {guildName && guildKey && (
+                <SelectItem className="flex justify-between " value={guildKey} style={{ color: PASTEL_GREEN }}>
+                  {guildName}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
