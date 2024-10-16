@@ -4,13 +4,14 @@ import { useGetOtherPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
 
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import TextInput from "@/ui/elements/TextInput";
 import { toHexString } from "@/ui/utils/utils";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, Player } from "@bibliothecadao/eternum";
 import { useChatStore } from "./ChatState";
 import { ChatTab, DEFAULT_TAB } from "./ChatTab";
 import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY, PASTEL_BLUE, PASTEL_GREEN, PASTEL_PINK } from "./constants";
@@ -38,16 +39,156 @@ export const Chat = () => {
   const currentTab = useChatStore((state) => state.currentTab);
   const setCurrentTab = useChatStore((state) => state.setCurrentTab);
   const tabs = useChatStore((state) => state.tabs);
-  const setTabs = useChatStore((state) => state.setTabs);
 
   const addTab = useChatStore((state) => state.addTab);
 
-  const allMessageEntities = useEntityQuery([Has(Message)]);
   const getPlayers = useGetOtherPlayers();
 
   const players = useMemo(() => {
     return getPlayers();
   }, []);
+
+  useEffect(() => {
+    scrollToElement(bottomChatRef);
+  }, [currentTab]);
+
+  useEffect(() => {
+    const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
+
+    const latestSalt = Array.from(selfMessageEntities).reduce((maxSalt, entity) => {
+      const currentSalt = getComponentValue(Message, entity)?.salt ?? 0n;
+      return currentSalt > maxSalt ? currentSalt : maxSalt;
+    }, 0n);
+
+    setSalt(latestSalt + 1n);
+  }, [account.address]);
+
+  const changeTabs = useCallback(
+    (tab: string | undefined, address: string, fromSelector: boolean = false) => {
+      if (address === GLOBAL_CHANNEL_KEY) {
+        setCurrentTab(DEFAULT_TAB);
+        return;
+      }
+
+      if (guildName && guildKey && address === guildKey) {
+        addTab({
+          name: guildName,
+          address,
+          key: guildKey,
+          displayed: true,
+          lastSeen: new Date(),
+        });
+        return;
+      }
+
+      if (ContractAddress(address) === ContractAddress(account.address)) {
+        return;
+      }
+
+      addTab({
+        name: fromSelector
+          ? shortString.decodeShortString(
+              getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
+            )
+          : tab!,
+        address,
+        displayed: true,
+        lastSeen: new Date(),
+        key: getMessageKey(account.address, BigInt(address)),
+      });
+    },
+    [guildName, guildKey, account.address, addTab, setCurrentTab],
+  );
+
+  const renderTabs = useMemo(() => {
+    return tabs
+      .filter(
+        (tab) =>
+          (tab.name === GLOBAL_CHANNEL_KEY || ContractAddress(tab.address) !== ContractAddress(account.address)) &&
+          tab.displayed,
+      )
+      .map((tab) => <ChatTab key={tab.address} tab={tab} selected={tab.name === currentTab.name} />);
+  }, [tabs, account.address, currentTab.name]);
+
+  return (
+    <div className={`rounded max-w-[28vw] pointer-events-auto flex flex-col z-1`}>
+      <div className="flex flex-row justify-between">
+        <div className="flex flex-wrap gap-1 overflow-y-auto max-w-[calc(100%-2rem)] no-scrollbar items-end uppercase font-bold">
+          {renderTabs}
+        </div>
+        <div
+          className="flex flex-row items-start h-8 ml-2"
+          onClick={() => {
+            setHideChat(!hideChat);
+          }}
+        >
+          <div className="bg-hex-bg bg-black/5 h-6 w-6 rounded-t">
+            <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
+          </div>
+        </div>
+      </div>
+      <div
+        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-black/60 border-gold/40 bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
+          hideChat ? "p-0" : "p-1"
+        }`}
+      >
+        <Messages
+          account={account}
+          currentTab={currentTab}
+          guildName={guildName}
+          guildKey={guildKey}
+          hideChat={hideChat}
+          bottomChatRef={bottomChatRef}
+          changeTabs={changeTabs}
+        />
+        <div
+          style={{
+            color:
+              currentTab.name === GLOBAL_CHANNEL_KEY
+                ? PASTEL_PINK
+                : currentTab.name === guildName
+                ? PASTEL_GREEN
+                : PASTEL_BLUE,
+          }}
+          className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}
+        >
+          <InputField currentTab={currentTab} salt={salt} />
+          <ChatSelect
+            selectedChannel={currentTab.name}
+            changeTabs={changeTabs}
+            guildName={guildName}
+            players={players}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Messages = ({
+  account,
+  currentTab,
+  guildName,
+  guildKey,
+  hideChat,
+  bottomChatRef,
+  changeTabs,
+}: {
+  account: { address: string };
+  currentTab: Tab;
+  guildName: string | undefined;
+  guildKey: string | undefined;
+  hideChat: boolean;
+  bottomChatRef: React.RefObject<HTMLDivElement>;
+  changeTabs: (tab: string | undefined, address: string) => void;
+}) => {
+  const {
+    setup: {
+      components: { Message, AddressName },
+    },
+  } = useDojo();
+
+  const allMessageEntities = useEntityQuery([Has(Message)]);
 
   const messages = useMemo(() => {
     const messageMap = new Map<ContractAddress, ChatMetadata>();
@@ -78,8 +219,8 @@ export const Chat = () => {
       const key = isGlobalMessage
         ? GLOBAL_CHANNEL
         : isGuildMessage
-          ? guildKey
-          : getMessageKey(identity, BigInt(message.channel));
+        ? guildKey
+        : getMessageKey(identity, BigInt(message.channel));
 
       if (!messageMap.has(ContractAddress(key))) {
         messageMap.set(ContractAddress(key), {
@@ -108,29 +249,6 @@ export const Chat = () => {
       }
     });
 
-    // Sort messages within each chat
-    messageMap.forEach((metadata, key) => {
-      metadata.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-      const tabKey = key.toString().toLowerCase(); // Normalize to lowercase for consistent comparison
-
-      const existingTab = tabs.find((t) => t.address === metadata.address);
-
-      if (existingTab?.name === GLOBAL_CHANNEL_KEY || existingTab?.name === guildName || metadata.address == "0x0")
-        return;
-
-      if (!existingTab) {
-        const newTab: Tab = {
-          name: metadata.fromName,
-          address: metadata.address,
-          key: getMessageKey(account.address, BigInt(metadata.address)),
-          displayed: true,
-          lastSeen: new Date(),
-        };
-        setTabs([...tabs, newTab]);
-      }
-    });
-
     return messageMap;
   }, [allMessageEntities, account.address, guildKey]);
 
@@ -142,172 +260,41 @@ export const Chat = () => {
       return messages.get(ContractAddress(guildKey));
     }
     return messages.get(ContractAddress(getMessageKey(currentTab.address, account.address)));
-  }, [messages, currentTab.address, currentTab.name, guildName, guildKey]);
-
-  useEffect(() => {
-    scrollToElement(bottomChatRef);
-  }, [messagesToDisplay]);
-
-  useEffect(() => {
-    const selfMessageEntities = runQuery([Has(Message), HasValue(Message, { identity: BigInt(account.address) })]);
-
-    const latestSalt = Array.from(selfMessageEntities).reduce((maxSalt, entity) => {
-      const currentSalt = getComponentValue(Message, entity)?.salt ?? 0n;
-      return currentSalt > maxSalt ? currentSalt : maxSalt;
-    }, 0n);
-
-    setSalt(latestSalt + 1n);
-  }, [account.address, messages]);
-
-  const changeTabs = (tab: string | undefined, address: string, fromSelector: boolean = false) => {
-    if (address === GLOBAL_CHANNEL_KEY) {
-      setCurrentTab(DEFAULT_TAB);
-      return;
-    }
-
-    if (guildName && guildKey && address === guildKey) {
-      addTab({
-        name: guildName,
-        address,
-        key: guildKey,
-        displayed: true,
-        lastSeen: new Date(),
-      });
-      return;
-    }
-
-    if (ContractAddress(address) === ContractAddress(account.address)) {
-      return;
-    }
-
-    addTab({
-      name: fromSelector
-        ? shortString.decodeShortString(
-            getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
-          )
-        : tab!,
-      address,
-      displayed: true,
-      lastSeen: new Date(),
-      key: getMessageKey(account.address, BigInt(address)),
-    });
-  };
-
-  const renderTabs = useMemo(() => {
-    return tabs
-      .filter((tab) => ContractAddress(tab.address) !== ContractAddress(account.address) && tab.displayed)
-      .map((tab) => <ChatTab key={tab.address} tab={tab} selected={tab.name === currentTab.name} />);
-  }, [tabs, account.address]);
+  }, [messages, currentTab.address, currentTab.name, guildName, guildKey, account.address]);
 
   return (
-    <div className={`rounded max-w-[28vw] pointer-events-auto flex flex-col z-1`}>
-      <div className="flex flex-row justify-between">
-        <div className="flex flex-wrap gap-1 overflow-y-auto max-w-[calc(100%-2rem)] no-scrollbar items-end uppercase font-bold">
-          {renderTabs}
-        </div>
-        <div
-          className="flex flex-row items-start h-8 ml-2"
-          onClick={() => {
-            setHideChat(!hideChat);
-          }}
-        >
-          <div className="bg-hex-bg bg-black/5 h-6 w-6 rounded-t">
-            <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
-          </div>
-        </div>
-      </div>
-      <div
-        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-black/60 border-gold/40 bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
-          hideChat ? "p-0" : "p-1"
-        }`}
-      >
-        <div
-          className={`border border-gold/40 text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${
-            hideChat ? "h-0 hidden" : "block h-[20vh] p-2"
-          }`}
-        >
-          {messagesToDisplay?.messages.map((message, index) => (
-            <div
-              style={{
-                color:
-                  currentTab.name === GLOBAL_CHANNEL_KEY
-                    ? PASTEL_PINK
-                    : currentTab.name === guildName
-                      ? PASTEL_GREEN
-                      : PASTEL_BLUE,
-              }}
-              className={`flex gap-2 mb-1`}
-              key={index}
-            >
-              <div className="opacity-90 hover:opacity-100">
-                <span className=" mr-1 inline" onClick={() => changeTabs(message.name, message.address)}>
-                  {message.fromSelf ? "you" : message.name}:
-                </span>
-                <span
-                  className="font-bold mr-2 inline text-wrap max-w-full"
-                  style={{ wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "pre-wrap" }}
-                >
-                  {`${message.content}`}
-                </span>
-              </div>
-            </div>
-          ))}
-          <span className="" ref={bottomChatRef}></span>
-        </div>
+    <div
+      className={`border border-gold/40 text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${
+        hideChat ? "h-0 hidden" : "block h-[20vh] p-2"
+      }`}
+    >
+      {messagesToDisplay?.messages.map((message, index) => (
         <div
           style={{
             color:
               currentTab.name === GLOBAL_CHANNEL_KEY
                 ? PASTEL_PINK
                 : currentTab.name === guildName
-                  ? PASTEL_GREEN
-                  : PASTEL_BLUE,
+                ? PASTEL_GREEN
+                : PASTEL_BLUE,
           }}
-          className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}
+          className={`flex gap-2 mb-1`}
+          key={index}
         >
-          <InputField currentTab={currentTab} salt={salt} />
-          <Select
-            value={
-              currentTab.name === GLOBAL_CHANNEL_KEY
-                ? GLOBAL_CHANNEL_KEY
-                : currentTab.name === guildName
-                  ? guildKey
-                  : toHexString(BigInt(currentTab.address))
-            }
-            onValueChange={(address) => {
-              changeTabs(undefined, address, true);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Player or Channel" />
-            </SelectTrigger>
-            <SelectContent>
-              {players &&
-                players
-                  .sort((a, b) => a.addressName.localeCompare(b.addressName))
-                  .filter((tab) => ContractAddress(tab.address) !== ContractAddress(account.address))
-                  .map((player, index) => (
-                    <SelectItem
-                      className="flex justify-between"
-                      style={{ color: PASTEL_BLUE }}
-                      key={index}
-                      value={toHexString(player.address)}
-                    >
-                      {player.addressName}
-                    </SelectItem>
-                  ))}
-              <SelectItem className="flex justify-between " value={GLOBAL_CHANNEL_KEY} style={{ color: PASTEL_PINK }}>
-                Global
-              </SelectItem>
-              {guildName && guildKey && (
-                <SelectItem className="flex justify-between " value={guildKey} style={{ color: PASTEL_GREEN }}>
-                  {guildName}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+          <div className="opacity-90 hover:opacity-100">
+            <span className=" mr-1 inline" onClick={() => changeTabs(message.name, message.address)}>
+              {message.fromSelf ? "you" : message.name}:
+            </span>
+            <span
+              className="font-bold mr-2 inline text-wrap max-w-full"
+              style={{ wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "pre-wrap" }}
+            >
+              {`${message.content}`}
+            </span>
+          </div>
         </div>
-      </div>
+      ))}
+      <span className="" ref={bottomChatRef}></span>
     </div>
   );
 };
@@ -318,4 +305,105 @@ const scrollToElement = (ref: React.RefObject<HTMLDivElement>) => {
       ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, 1);
+};
+
+const ChatSelect = ({
+  selectedChannel,
+  changeTabs,
+  guildName,
+  guildKey,
+  players,
+}: {
+  selectedChannel: string;
+  changeTabs: (tab: string | undefined, address: string, fromSelector?: boolean) => void;
+  guildName?: string;
+  guildKey?: string;
+  players: Player[];
+}) => {
+  const [searchInput, setSearchInput] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleTabChange = (channel: string) => {
+    if (channel === GLOBAL_CHANNEL_KEY) {
+      changeTabs(undefined, GLOBAL_CHANNEL_KEY);
+    } else if (channel === guildKey) {
+      changeTabs(guildName, guildKey!);
+    } else {
+      const player = players.find((p) => p.addressName === channel);
+      if (player) {
+        changeTabs(undefined, toHexString(player.address), true);
+      }
+    }
+  };
+
+  const filteredPlayers = players.filter(
+    (player) =>
+      player.addressName.toLowerCase().startsWith(searchInput.toLowerCase()) || player.addressName === selectedChannel,
+  );
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen && inputRef.current) {
+      setSearchInput("");
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (filteredPlayers.length > 0) {
+        const selectedPlayer = filteredPlayers.find((player) => player.addressName !== selectedChannel);
+        if (selectedPlayer) {
+          handleTabChange(selectedPlayer.addressName);
+          setOpen(false);
+        }
+      }
+      setSearchInput("");
+    } else {
+      e.stopPropagation();
+    }
+  };
+
+  return (
+    <Select
+      open={open}
+      onOpenChange={handleOpenChange}
+      value={selectedChannel}
+      onValueChange={(channel) => {
+        handleTabChange(channel);
+        setOpen(false);
+        setSearchInput("");
+      }}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select Channel" />
+      </SelectTrigger>
+      <SelectContent className="bg-black/90 text-gold">
+        <TextInput
+          ref={inputRef}
+          onChange={setSearchInput}
+          placeholder="Filter channels..."
+          className="w-full"
+          onKeyDown={handleKeyDown}
+        />
+        <SelectItem value={GLOBAL_CHANNEL_KEY} style={{ color: PASTEL_PINK }}>
+          Global
+        </SelectItem>
+        {guildName && guildKey && (
+          <SelectItem value={guildKey} style={{ color: PASTEL_GREEN }}>
+            {guildName}
+          </SelectItem>
+        )}
+        {filteredPlayers.map((player) => (
+          <SelectItem key={player.address} value={player.addressName} style={{ color: PASTEL_BLUE }}>
+            {player.addressName}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 };
