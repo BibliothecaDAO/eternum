@@ -311,13 +311,11 @@ const ChatSelect = ({
   selectedChannel,
   changeTabs,
   guildName,
-  guildKey,
   players,
 }: {
   selectedChannel: string;
   changeTabs: (tab: string | undefined, address: string, fromSelector?: boolean) => void;
   guildName?: string;
-  guildKey?: string;
   players: Player[];
 }) => {
   const [searchInput, setSearchInput] = useState("");
@@ -325,11 +323,13 @@ const ChatSelect = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const guildKey = guildName ? shortString.encodeShortString(guildName) : undefined;
+
   const handleTabChange = (channel: string) => {
     if (channel === GLOBAL_CHANNEL_KEY) {
       changeTabs(undefined, GLOBAL_CHANNEL_KEY);
     } else if (channel === guildKey) {
-      changeTabs(guildName, guildKey!);
+      changeTabs(undefined, guildKey, true);
     } else {
       const player = players.find((p) => p.addressName === channel);
       if (player) {
@@ -372,7 +372,7 @@ const ChatSelect = ({
     <Select
       open={open}
       onOpenChange={handleOpenChange}
-      value={selectedChannel}
+      value={selectedChannel === guildName ? guildKey : selectedChannel}
       onValueChange={(channel) => {
         handleTabChange(channel);
         setOpen(false);
