@@ -18,7 +18,7 @@ interface ChatState {
 export const useChatStore = create<ChatState>()(
   persist(
     (set, get) => ({
-      tabs: [],
+      tabs: [DEFAULT_TAB],
       currentTab: DEFAULT_TAB,
       setCurrentTab: (tab: Tab) => {
         set({ currentTab: tab });
