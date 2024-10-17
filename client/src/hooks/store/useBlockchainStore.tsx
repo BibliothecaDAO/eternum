@@ -33,7 +33,6 @@ export const useFetchBlockchainData = () => {
   const setNextBlockTimestamp = useUIStore((state) => state.setNextBlockTimestamp);
   const setCurrentDefaultTick = useUIStore((state) => state.setCurrentDefaultTick);
   const setCurrentArmiesTick = useUIStore((state) => state.setCurrentArmiesTick);
-  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp); // Get the current nextBlockTimestamp from the store
 
   const tickConfigArmies = getComponentValue(
     TickConfig,
@@ -50,7 +49,7 @@ export const useFetchBlockchainData = () => {
       const timestamp = await fetchBlockTimestamp(); // Example: getBlockchainTimestamp is a placeholder for your blockchain timestamp retrieval logic
 
       // Update the state with the fetched timestamp
-      if (timestamp && timestamp !== currentTimestamp) {
+      if (timestamp) {
         // Check if fetched timestamp is different from current state
         setNextBlockTimestamp(timestamp);
         setCurrentDefaultTick(Math.floor(timestamp / Number(tickConfigDefault!.tick_interval_in_seconds)));

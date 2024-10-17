@@ -364,3 +364,9 @@ export interface Config {
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
 }
+
+export interface Player {
+  entity_id: number;
+  address: ContractAddress;
+  addressName: string;
+}
