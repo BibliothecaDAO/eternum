@@ -74,7 +74,7 @@ const CircleButton = ({
         onClick={handleClick}
         className={clsx(
           "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-white/10",
-          active ? "bg-gold !border-gold sepia-0" : "bg-black/90 border-brown/30",
+          active ? "bg-gold !border-gold sepia-0" : "bg-brown/90 border-brown/30",
           className,
           sizes[size],
           { "cursor-not-allowed": disabled },
@@ -88,7 +88,7 @@ const CircleButton = ({
             <img className="p-1" src={image} alt="icon" />
           </div>
         )}
-        {disabled && <div className="absolute inset-0 bg-black opacity-50 rounded-full"></div>}
+        {disabled && <div className="absolute inset-0 bg-brown opacity-50 rounded-full"></div>}
       </button>
       {notification && !disabled ? (
         <div

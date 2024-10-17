@@ -7,7 +7,7 @@ import { ResourceTable } from "./components/modules/resource-table";
 function App() {
   return (
     <>
-      <div className="bg-black text-white">
+      <div className="bg-brown text-white">
         <Tabs defaultValue="account">
           <TabsList>
             <TabsTrigger value="resources">Production</TabsTrigger>

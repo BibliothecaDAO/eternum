@@ -197,7 +197,7 @@ const MarketOrders = ({
             />
           ))}
           {isResourcesLocked && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xl text-bold">
+            <div className="absolute inset-0 bg-brown/50 flex items-center justify-center text-xl text-bold">
               Resources locked in battle
             </div>
           )}
@@ -380,7 +380,7 @@ const OrderRow = ({
       } ${isMakerResourcesLocked ? "opacity-50" : ""}`}
     >
       {isMakerResourcesLocked && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
+        <div className="absolute inset-0 bg-brown/50 flex items-center justify-center text-lg">
           Resources locked in battle
         </div>
       )}

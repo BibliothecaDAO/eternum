@@ -40,7 +40,7 @@ export const EntityAvatar = ({
           initial="hidden"
           animate="visible"
           variants={slideUp}
-          className="h-44 w-44  rounded-full object-cover  border-gold/10 border-2 -mt-12 bg-black"
+          className="h-44 w-44  rounded-full object-cover  border-gold/10 border-2 -mt-12 bg-brown"
           src={imgSource}
           alt=""
         />

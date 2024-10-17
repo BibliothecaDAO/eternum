@@ -97,11 +97,11 @@ export const ResourceIcon = ({ isLabor = false, withTooltip = true, tooltipText,
         </span>
       )}
       {withTooltip && (
-        <div className="absolute -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-black rounded-lg w-max group-hover:flex">
+        <div className="absolute -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-brown rounded-lg w-max group-hover:flex">
           <span className="relative z-10 p-2 text-xs leading-none  whitespace-no-wrap rounded shadow-lg bg-gray-1000">
             {tooltipText || Components[props.resource.replace(" ", "").replace("'", "")]?.name}
           </span>
-          <div className="z-[100] w-3 h-3 bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 absolute rotate-45 bg-black"></div>
+          <div className="z-[100] w-3 h-3 bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 absolute rotate-45 bg-brown"></div>
         </div>
       )}
     </div>

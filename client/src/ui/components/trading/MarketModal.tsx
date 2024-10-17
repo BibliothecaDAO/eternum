@@ -210,13 +210,11 @@ export const MarketModal = () => {
             onChange={(index: any) => setSelectedTab(index)}
             className="h-full"
           >
-            <div className="">
-              <Tabs.List>
-                {tabs.map((tab, index) => (
-                  <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-                ))}
-              </Tabs.List>
-            </div>
+            <Tabs.List className=" flex w-full">
+              {tabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
 
             <Tabs.Panels className="overflow-hidden">
               {tabs.map((tab, index) => (

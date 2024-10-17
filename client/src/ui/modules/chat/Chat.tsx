@@ -122,13 +122,13 @@ export const Chat = () => {
             setHideChat(!hideChat);
           }}
         >
-          <div className="bg-hex-bg bg-black/5 h-6 w-6 rounded-t">
+          <div className="bg-hex-bg bg-brown/5 h-6 w-6 rounded-t">
             <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
           </div>
         </div>
       </div>
       <div
-        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-black/60 border-gold/40 bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
+        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-brown/60 border-gold/40 bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
           hideChat ? "p-0" : "p-1"
         }`}
       >
@@ -147,8 +147,8 @@ export const Chat = () => {
               currentTab.name === GLOBAL_CHANNEL_KEY
                 ? CHAT_COLORS.GLOBAL
                 : currentTab.name === guildName
-                  ? CHAT_COLORS.GUILD
-                  : CHAT_COLORS.PRIVATE,
+                ? CHAT_COLORS.GUILD
+                : CHAT_COLORS.PRIVATE,
           }}
           className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}
         >
@@ -219,8 +219,8 @@ const Messages = ({
       const key = isGlobalMessage
         ? GLOBAL_CHANNEL
         : isGuildMessage
-          ? guildKey
-          : getMessageKey(identity, BigInt(message.channel));
+        ? guildKey
+        : getMessageKey(identity, BigInt(message.channel));
 
       if (!messageMap.has(ContractAddress(key))) {
         messageMap.set(ContractAddress(key), {
@@ -275,8 +275,8 @@ const Messages = ({
               currentTab.name === GLOBAL_CHANNEL_KEY
                 ? CHAT_COLORS.GLOBAL
                 : currentTab.name === guildName
-                  ? CHAT_COLORS.GUILD
-                  : CHAT_COLORS.PRIVATE,
+                ? CHAT_COLORS.GUILD
+                : CHAT_COLORS.PRIVATE,
           }}
           className={`flex gap-2 mb-1`}
           key={index}
@@ -382,7 +382,7 @@ const ChatSelect = ({
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Select Channel" />
       </SelectTrigger>
-      <SelectContent className="bg-black/90 text-gold">
+      <SelectContent className="bg-brown/90 text-gold">
         <TextInput
           ref={inputRef}
           onChange={setSearchInput}

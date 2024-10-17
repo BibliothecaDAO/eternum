@@ -143,7 +143,7 @@ const AddLiquidity = ({
               variant="primary"
               isLoading={false}
               disabled={!canAdd}
-              className="text-brown bg-black/90"
+              className="text-brown bg-brown/90"
               onClick={() => setOpenConfirmation(true)}
             >
               Add Liquidity

@@ -61,7 +61,7 @@ export const Buildings = () => {
                 {" "}
                 <h5>{BuildingEnumToString[building.building_category]}</h5>
                 <img
-                  className="h-32 min-w-20 bg-black/40 rounded-xl m-1 p-2"
+                  className="h-32 min-w-20 bg-brown/40 rounded-xl m-1 p-2"
                   src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
                 />
               </td>

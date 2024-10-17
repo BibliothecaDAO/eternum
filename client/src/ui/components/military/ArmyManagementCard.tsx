@@ -429,7 +429,7 @@ const TravelToLocation = ({
   };
 
   return (
-    <div className="absolute h-full w-full bg-black/90 top-0 z-10 ">
+    <div className="absolute h-full w-full bg-brown/90 top-0 z-10 ">
       <div className="flex justify-between mb-3">
         <div className="flex">
           <div className="my-2 uppercase mb-1 font-bold">Status:</div>

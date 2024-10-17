@@ -225,7 +225,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
       return sum + Number(price) * resource.amount;
     }, 0) / outputAmount;
   return (
-    <div className="p-2 w-full flex flex-col items-center justify-center bg-black/70 rounded-lg shadow-xl">
+    <div className="p-2 w-full flex flex-col items-center justify-center bg-brown/70 rounded-lg shadow-xl">
       <div className="flex items-center justify-center">
         {inputResources.map(({ resource }, index) => (
           <React.Fragment key={index}>

@@ -99,7 +99,7 @@ export const BattleSideView = ({
               if (!army) return;
               const addressName = getAddressNameFromEntity(army.entity_id);
               return (
-                <div className="flex justify-around px-2 py-1 rounded bg-black/70 text-xs flex gap-2 border-gold/10 border">
+                <div className="flex justify-around px-2 py-1 rounded bg-brown/70 text-xs flex gap-2 border-gold/10 border">
                   <span className="self-center align-middle">{addressName}</span>
                   <span className="self-center align-middle">{army?.name}</span>
                   {army?.isMine && (

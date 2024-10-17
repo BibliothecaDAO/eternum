@@ -127,7 +127,7 @@ export const ResourceBar = ({
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder={HintSection.Resources} />
         </SelectTrigger>
-        <SelectContent className="bg-black/90 text-gold">
+        <SelectContent className="bg-brown/90 text-gold">
           {resources.length > 1 && (
             <TextInput
               ref={inputRef}
