@@ -55,7 +55,7 @@ export const ActionInfo = () => {
   return (
     <>
       {selectedEntityId && (
-        <div className="text-xs fixed top-0 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-center py-2 z-50 w-[300px] top-[60px] rounded-lg animate-pulse">
+        <div className="text-xs fixed top-0 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-center py-2 z-50 w-[300px] top-[60px] rounded-lg animate-pulse pointer-events-none">
           Press Esc to exit travel mode
         </div>
       )}
@@ -103,6 +103,7 @@ export const ActionInfo = () => {
               </div>
             </div>
           )}
+          <div className="text-xs text-center mt-2 text-gray-400 animate-pulse">Right-click to confirm</div>
         </BaseThreeTooltip>
       )}
     </>
