@@ -14,16 +14,21 @@ export const TroopRow = ({
     <div className="self-center m-auto grid grid-cols-3 gap-2">
       <TroopCard
         defending={defending}
-        className={`${defending ? "order-last" : ""}`}
-        id={ResourcesIds.Crossbowman}
-        count={Number(troops?.crossbowman_count || 0)}
-      />
-      <TroopCard defending={defending} id={ResourcesIds.Paladin} count={Number(troops?.paladin_count || 0)} />
-      <TroopCard
-        defending={defending}
-        className={`${defending ? "order-first" : ""}`}
+        className={`${defending ? "" : ""}`}
         id={ResourcesIds.Knight}
         count={Number(troops?.knight_count || 0)}
+      />
+      <TroopCard
+        defending={defending}
+        className={`${defending ? "" : ""}`}
+        id={ResourcesIds.Paladin}
+        count={Number(troops?.paladin_count || 0)}
+      />
+      <TroopCard
+        defending={defending}
+        className={`${defending ? "" : ""}`}
+        id={ResourcesIds.Crossbowman}
+        count={Number(troops?.crossbowman_count || 0)}
       />
     </div>
   );
@@ -41,16 +46,13 @@ const TroopCard = ({
   defending?: boolean;
 }) => {
   return (
-    <div
-      className={`bg-gold/10 text-gold font-bold border-2 border-gradient p-2  hover:bg-gold/40 duration-300${className}`}
-    >
+    <div className={`bg-gold/10 text-gold rounded-xl p-4  hover:bg-gold/40 duration-300${className}`}>
       <img
-        style={defending ? { transform: "scaleX(-1)" } : {}}
-        className="w-[5vw] object-cover mx-auto p-2"
+        className={`w-[6vw] object-cover transform mx-auto p-2  ${!defending ? "scale-x-[-1]" : ""}`}
         src={`/images/icons/${id}.png`}
         alt={ResourcesIds[id]}
       />
-      <div className="truncate"> {ResourcesIds[id]}</div>
+      <h4 className="truncate"> {ResourcesIds[id]}</h4>
       <div className="text-green">x {currencyFormat(count, 0)}</div>
     </div>
   );

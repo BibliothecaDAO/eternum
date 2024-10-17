@@ -1,3 +1,8 @@
+import { ReactComponent as Coins } from "@/assets/icons/Coins.svg";
+import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
+import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
+import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
+import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
@@ -72,8 +77,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Order Book</div>
+          <div className="flex relative group items-center gap-2">
+            <Scroll className="w-6 fill-current" />
+            <div className="self-center">Order Book</div>
           </div>
         ),
         component: (
@@ -90,8 +96,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>AMM</div>
+          <div className="flex relative group items-center gap-2">
+            <Swap className="w-6 fill-current" />
+            <div className="self-center">AMM</div>
           </div>
         ),
         component: bank && (
@@ -107,8 +114,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>History</div>
+          <div className="flex relative group items-center gap-2">
+            <Sparkles className="w-6 fill-current" />
+            <div className="self-center">History</div>
           </div>
         ),
         component: (
@@ -120,8 +128,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Transfer</div>
+          <div className="flex relative group items-center gap-2">
+            <Coins className="w-6 fill-current" />
+            <div className="self-center">Transfer</div>
           </div>
         ),
         component: (
@@ -133,8 +142,9 @@ export const MarketModal = () => {
       {
         key: "resourceProd",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Realm Production</div>
+          <div className="flex relative group items-center gap-2">
+            <Crown className="w-6 fill-current" />
+            <div className="self-center">Realm Production</div>
           </div>
         ),
         component: (
