@@ -282,6 +282,7 @@ export class SystemManager {
     hyperstructureEntityId: ID,
   ) => {
     let percentage = 0;
+    const epsilon = 1e-10; // Small value to account for floating-point precision errors
     const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
       let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
       let progress = {
@@ -303,6 +304,12 @@ export class SystemManager {
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;
     });
+
+    // Adjust percentage to account for floating-point precision issues
+    if (Math.abs(percentage - 1.0) < epsilon) {
+      percentage = 1.0;
+    }
+
     return { allProgresses, percentage };
   };
 }
