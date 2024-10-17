@@ -1,4 +1,5 @@
 import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
@@ -11,7 +12,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
-  EternumGlobalConfig,
+  DONKEY_ENTITY_TYPE,
   ONE_MONTH,
   ResourcesIds,
   findResourceById,
@@ -259,7 +260,7 @@ const OrderRow = ({
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
   const travelTime = useMemo(
-    () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
+    () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), true),
     [entityId, offer],
   );
 
@@ -301,20 +302,20 @@ const OrderRow = ({
   );
   const [inputValue, setInputValue] = useState<number>(() => {
     return isBuy
-      ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
-      : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio;
+      ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
+      : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio;
   });
 
   useEffect(() => {
     setInputValue(
       isBuy
-        ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
-        : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio,
+        ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
+        : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio,
     );
   }, [resourceBalanceRatio, lordsBalanceRatio]);
 
   const calculatedResourceAmount = useMemo(() => {
-    return inputValue * EternumGlobalConfig.resources.resourcePrecision;
+    return multiplyByPrecision(inputValue);
   }, [inputValue, getsDisplay, getTotalLords]);
 
   const calculatedLords = useMemo(() => {
@@ -332,9 +333,7 @@ const OrderRow = ({
   }, [entityId, calculatedResourceAmount, calculatedLords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(
-      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
-    );
+    return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -450,16 +449,12 @@ const OrderRow = ({
                   value={inputValue}
                   className="w-full col-span-3"
                   onChange={setInputValue}
-                  max={
-                    (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
-                    (isBuy ? resourceBalanceRatio : lordsBalanceRatio)
-                  }
+                  max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
                 />
                 <Button
                   onClick={() => {
                     setInputValue(
-                      (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
-                        (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
+                      divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
                     );
                   }}
                 >
@@ -552,9 +547,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(
-      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
-    );
+    return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
@@ -611,7 +604,7 @@ const OrderCreation = ({
             onChange={(value) => {
               setResource(Number(value));
             }}
-            max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -643,7 +636,7 @@ const OrderCreation = ({
             onChange={(value) => {
               setLords(Number(value));
             }}
-            max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -684,4 +677,8 @@ const OrderCreation = ({
       </div>
     </div>
   );
+};
+
+const calculateDonkeysNeeded = (orderWeight: number): number => {
+  return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
 };

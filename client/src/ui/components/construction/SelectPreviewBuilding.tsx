@@ -1,32 +1,12 @@
-import clsx from "clsx";
-
-import useUIStore from "@/hooks/store/useUIStore";
-import { Tabs } from "@/ui/elements/tab";
-import {
-  BUILDING_CAPACITY,
-  BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  BuildingEnumToString,
-  BuildingType,
-  EternumGlobalConfig,
-  findResourceById,
-  ID,
-  RESOURCE_BUILDING_COSTS_SCALED,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS,
-  ResourceCost as ResourceCostType,
-  ResourcesIds,
-  WORLD_CONFIG_ID,
-} from "@bibliothecadao/eternum";
-
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { configManager } from "@/dojo/setup";
+import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
+import useUIStore from "@/hooks/store/useUIStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -35,11 +15,26 @@ import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { Tabs } from "@/ui/elements/tab";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { getEntityIdFromKeys, isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getEntityIdFromKeys,
+  isResourceProductionBuilding,
+  ResourceIdToMiningType,
+} from "@/ui/utils/utils";
+import {
+  BuildingEnumToString,
+  BuildingType,
+  findResourceById,
+  ID,
+  ResourceCost as ResourceCostType,
+  ResourcesIds,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
 import { Component, getComponentValue } from "@dojoengine/recs";
+import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
@@ -85,7 +80,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(entityId, resourceCost.resource);
-      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
+      return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
 
   const [selectedTab, setSelectedTab] = useState(1);
@@ -112,13 +107,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               const buildingCosts = getResourceBuildingCosts(entityId, dojo, resourceId);
               if (!buildingCosts) return;
-              const cost = [...buildingCosts, ...RESOURCE_INPUTS_SCALED[resourceId]];
+              const cost = [...buildingCosts, ...configManager.resourceInputs[resourceId]];
 
               const hasBalance = checkBalance(cost);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
                 realm,
-                BUILDING_POPULATION[BuildingType.Resource],
+                configManager.getBuildingPopConfig(BuildingType.Resource).population,
               );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
@@ -409,14 +404,15 @@ export const ResourceInfo = ({
   hintModal?: boolean;
 }) => {
   const dojo = useDojo();
-  const cost = RESOURCE_INPUTS_SCALED[resourceId];
+  const cost = configManager.resourceInputs[resourceId];
 
   const buildingCost = getResourceBuildingCosts(entityId ?? 0, dojo, resourceId) ?? [];
-  const population = BUILDING_POPULATION[BuildingType.Resource];
 
-  const capacity = BUILDING_CAPACITY[BuildingType.Resource];
+  const buildingPopCapacityConfig = configManager.getBuildingPopConfig(BuildingType.Resource);
+  const population = buildingPopCapacityConfig.population;
+  const capacity = buildingPopCapacityConfig.capacity;
 
-  const amountProducedPerTick = RESOURCE_OUTPUTS[resourceId];
+  const amountProducedPerTick = configManager.getResourceOutputs(resourceId);
 
   const { getBalance } = getResourceBalance();
 
@@ -532,16 +528,14 @@ export const BuildingInfo = ({
 
   const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
 
-  const population = BUILDING_POPULATION[buildingId as keyof typeof BUILDING_POPULATION] || 0;
-  const capacity = BUILDING_CAPACITY[buildingId as keyof typeof BUILDING_CAPACITY] || 0;
-  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId as keyof typeof BUILDING_RESOURCE_PRODUCED];
-  const ongoingCost =
-    resourceProduced !== undefined
-      ? RESOURCE_INPUTS_SCALED[resourceProduced as keyof typeof RESOURCE_INPUTS_SCALED] || 0
-      : 0;
+  const buildingPopCapacityConfig = configManager.getBuildingPopConfig(buildingId);
+  const population = buildingPopCapacityConfig.population;
+  const capacity = buildingPopCapacityConfig.capacity;
 
-  const perTick =
-    resourceProduced !== undefined ? RESOURCE_OUTPUTS[resourceProduced as keyof typeof RESOURCE_OUTPUTS] || 0 : 0;
+  const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
+  const ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || 0 : 0;
+
+  const perTick = resourceProduced !== undefined ? configManager.getResourceOutputs(resourceProduced) || 0 : 0;
 
   const { getBalance } = getResourceBalance();
 
@@ -650,7 +644,7 @@ export const BuildingInfo = ({
 };
 
 const getConsumedBy = (resourceProduced: ResourcesIds) => {
-  return Object.entries(RESOURCE_INPUTS_SCALED)
+  return Object.entries(configManager.resourceInputs)
     .map(([resourceId, inputs]) => {
       const resource = inputs.find(
         (input: { resource: number; amount: number }) => input.resource === resourceProduced,
@@ -681,7 +675,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
 
   let updatedCosts: ResourceCostType[] = [];
 
-  RESOURCE_BUILDING_COSTS_SCALED[Number(resourceId)].forEach((cost) => {
+  configManager.resourceBuildingCosts[Number(resourceId)].forEach((cost) => {
     const baseCost = cost.amount;
     const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
     const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
@@ -709,7 +703,8 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
 
   let updatedCosts: ResourceCostType[] = [];
 
-  BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
+  configManager.buildingCosts[Number(buildingCategory)].forEach((cost) => {
+    // BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
     const baseCost = cost.amount;
     const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
     const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);

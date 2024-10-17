@@ -19,6 +19,7 @@ import {
   ResourceIdToMiningType,
   copyPlayerAddressToClipboard,
   displayAddress,
+  divideByPrecision,
   formatTime,
   getEntityIdFromKeys,
   toHexString,
@@ -28,10 +29,10 @@ import {
   EternumGlobalConfig,
   ID,
   LEVEL_DESCRIPTIONS,
-  REALM_UPGRADE_COSTS,
   RealmLevels,
   ResourcesIds,
   StructureType,
+  TickIds,
   scaleResources,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
@@ -197,8 +198,7 @@ const CastleDetails = () => {
 
   const immunityEndTimestamp = useMemo(() => {
     return (
-      Number(structure.created_at) +
-      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      Number(structure.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
   }, [structure.created_at, configManager]);
 
@@ -218,14 +218,14 @@ const CastleDetails = () => {
     if (!getNextRealmLevel) return false;
 
     const cost = scaleResources(
-      REALM_UPGRADE_COSTS[getNextRealmLevel as keyof typeof REALM_UPGRADE_COSTS],
+      configManager.realmUpgradeCosts[getNextRealmLevel],
       EternumGlobalConfig.resources.resourceMultiplier,
     );
 
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(structureEntityId, resourceCost.resource);
-      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
+      return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);
 
@@ -305,7 +305,7 @@ const CastleDetails = () => {
                 <div className="my-4 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
                 <div className="flex gap-2">
                   {scaleResources(
-                    REALM_UPGRADE_COSTS[(realm.level + 1) as keyof typeof REALM_UPGRADE_COSTS],
+                    configManager.realmUpgradeCosts[realm.level + 1],
                     EternumGlobalConfig.resources.resourceMultiplier,
                   )?.map((a) => {
                     return (

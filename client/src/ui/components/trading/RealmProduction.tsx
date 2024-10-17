@@ -1,8 +1,9 @@
+import { configManager } from "@/dojo/setup";
 import { getRealms } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectResource } from "@/ui/elements/SelectResource";
 import { unpackResources } from "@/ui/utils/packedData";
-import { RESOURCE_INPUTS_SCALED, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useState } from "react";
 import { RealmResourcesIO } from "../resources/RealmResourcesIO";
 
@@ -31,15 +32,16 @@ export const RealmProduction = () => {
         {realms &&
           realms.map((realm, index) => {
             if (!realm) return;
-            console.log("Realm prod", realm);
 
             const resourcesProduced = unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount);
             if (filterProduced && !resourcesProduced.includes(filterProduced)) return;
 
+            const resourcesInputs = configManager.resourceInputs;
+
             const resourcesConsumed = [
               ...new Set(
                 resourcesProduced.flatMap((resourceId) => {
-                  return RESOURCE_INPUTS_SCALED[resourceId]
+                  return resourcesInputs[resourceId]
                     .filter(
                       (input) => input.resource !== ResourcesIds["Wheat"] && input.resource !== ResourcesIds["Fish"],
                     )

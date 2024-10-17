@@ -1,15 +1,7 @@
-import { getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
-import {
-  BuildingType,
-  CapacityConfigCategory,
-  EternumGlobalConfig,
-  RESOURCE_INPUTS_SCALED,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-  type ID,
-} from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
+import { BuildingType, CapacityConfigCategory, ResourcesIds, type ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { type SetupResult } from "../setup";
+import { configManager, type SetupResult } from "../setup";
 
 export class ProductionManager {
   entityId: ID;
@@ -82,16 +74,13 @@ export class ProductionManager {
   }
 
   public getStoreCapacity(): number {
+    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
     const quantity =
       getComponentValue(
         this.setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
-    return (
-      (Number(quantity) * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
-        gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))) *
-      EternumGlobalConfig.resources.resourcePrecision
-    );
+    return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
   }
 
   public isConsumingInputsWithoutOutput(currentTick: number): boolean {
@@ -111,8 +100,9 @@ export class ProductionManager {
         const productionDuration = this._productionDuration(currentTick, resourceId);
         const balance = Number(resource?.balance || 0n) + productionDuration * rate;
         const storeCapacity = this.getStoreCapacity();
-        const maxAmountStorable =
-          (storeCapacity / (WEIGHTS_GRAM[resourceId] || 1000)) * EternumGlobalConfig.resources.resourcePrecision;
+        const maxAmountStorable = multiplyByPrecision(
+          storeCapacity / (configManager.getResourceWeight(resourceId) || 1000),
+        );
         const result = Math.min(balance, maxAmountStorable);
         return result;
       } else {
@@ -199,7 +189,7 @@ export class ProductionManager {
   }
 
   private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
-    const inputs = RESOURCE_INPUTS_SCALED[resourceId];
+    const inputs = configManager.resourceInputs[resourceId];
 
     // Ensure inputs is an array before proceeding
     if (inputs.length == 0) {

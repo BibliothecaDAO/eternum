@@ -1,5 +1,6 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
@@ -8,13 +9,10 @@ import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, DONKEY_ENTITY_TYPE, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
-
-const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
-const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.banks.lpFeesDenominator;
 
 export const ResourceSwap = ({
   bankEntityId,
@@ -41,8 +39,8 @@ export const ResourceSwap = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  const ownerFee = lordsAmount * OWNER_FEE;
-  const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * LP_FEE;
+  const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
+  const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
     () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
@@ -107,15 +105,15 @@ export const ResourceSwap = ({
       const calculatedResourceAmount = divideByPrecision(
         marketManager.calculateResourceOutputForLordsInput(
           multiplyByPrecision(amount) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
       setResourceAmount(calculatedResourceAmount);
     } else {
       const calculatedResourceAmount = divideByPrecision(
         marketManager.calculateResourceInputForLordsOutput(
-          multiplyByPrecision(amount / (1 - OWNER_FEE)) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          multiplyByPrecision(amount / (1 - configManager.getAdminBankOwnerFee())) || 0,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
       setResourceAmount(calculatedResourceAmount);
@@ -129,7 +127,7 @@ export const ResourceSwap = ({
       const calculatedLordsAmount = divideByPrecision(
         marketManager.calculateLordsInputForResourceOutput(
           multiplyByPrecision(amount) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
       setLordsAmount(calculatedLordsAmount);
@@ -137,10 +135,10 @@ export const ResourceSwap = ({
       const calculatedLordsAmount = divideByPrecision(
         marketManager.calculateLordsOutputForResourceInput(
           multiplyByPrecision(amount) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
-      const lordsAmountAfterFee = calculatedLordsAmount * (1 - OWNER_FEE);
+      const lordsAmountAfterFee = calculatedLordsAmount * (1 - configManager.getAdminBankOwnerFee());
       setLordsAmount(lordsAmountAfterFee);
     }
   };
@@ -215,7 +213,12 @@ export const ResourceSwap = ({
               <TravelInfo
                 entityId={entityId}
                 resources={resourcesToTransport}
-                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey, true)}
+                travelTime={computeTravelTime(
+                  bankEntityId,
+                  entityId,
+                  configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+                  true,
+                )}
                 setCanCarry={setCanCarry}
                 isAmm={true}
               />
