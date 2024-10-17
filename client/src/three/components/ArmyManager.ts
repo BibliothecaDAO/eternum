@@ -212,7 +212,7 @@ export class ArmyManager {
     });
 
     console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count}`);
-    this.armyModel.mesh.count = count;
+    this.armyModel.mesh.count = this.visibleArmies.length;
     console.debug(`Setting cached chunk with key: ${chunkKey} and count: ${count} and matrices:`);
     this.armyModel.mesh.instanceMatrix.needsUpdate = true;
     if (this.armyModel.mesh.instanceColor) {
@@ -245,12 +245,12 @@ export class ArmyManager {
       .filter(([_, army]) => {
         return this.isArmyVisible(army, startRow, startCol);
       })
-      .map(([entityId, army]) => ({
+      .map(([entityId, army], index) => ({
         entityId,
         hexCoords: army.hexCoords,
         isMine: army.isMine,
         color: army.color,
-        matrixIndex: army.matrixIndex,
+        matrixIndex: index,
       }));
     console.debug(`Found ${visibleArmies.length} visible armies for chunk`);
     return visibleArmies;
@@ -313,6 +313,7 @@ export class ArmyManager {
       progress: 0,
       matrixIndex: armyData.matrixIndex,
     });
+    console.log("Visible armies", this.visibleArmies);
     console.debug(
       `Army with entityId: ${entityId} movement started from (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.z}) to (${newPosition.x}, ${newPosition.y}, ${newPosition.z})`,
     );
