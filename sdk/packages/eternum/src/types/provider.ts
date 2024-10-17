@@ -515,9 +515,9 @@ export interface ContributeToConstructionProps extends SystemSigner {
   contributions: { resource: number; amount: number }[];
 }
 
-export interface SetPrivateProps extends SystemSigner {
+export interface SetAccessProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
-  to_private: boolean;
+  access: num.BigNumberish;
 }
 
 export interface EndGameProps extends SystemSigner {
