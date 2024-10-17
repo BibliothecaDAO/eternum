@@ -1,11 +1,12 @@
+import colors from "colors";
 import "dotenv/config";
 import * as fs from "fs";
 import * as path from "path";
 import { json } from "starknet";
-import { getNetwork, getAccount } from "./network.js";
-import colors from "colors";
 import { promisify } from "util";
+import { getAccount, getNetwork } from "./network.js";
 
+colors.america;
 export const getContracts = (TARGET_PATH) => {
   if (!fs.existsSync(TARGET_PATH)) {
     throw new Error(`Target directory not found at path: ${TARGET_PATH}`);
@@ -24,7 +25,7 @@ export const getContractPath = (TARGET_PATH, project_name, contract_name) => {
   if (!c) {
     throw new Error(`Contract not found: ${fileName}`);
   }
-  console.log(`\n\n\nContract is ${c}...\n\n`.blue);
+  console.log(`\nFound contract path at ${c}...\n`.blue);
   return path.join(TARGET_PATH, c);
 };
 
