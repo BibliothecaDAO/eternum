@@ -75,7 +75,7 @@ export const NumberInput = ({
             const match = inputValue.match(/[+-]?([0-9,]+([.][0-9]*)?|[.][0-9]+)/);
             if (match) {
               const parsedNumber = Math.min(parseNumber(match[0]), max);
-              setDisplayValue(formatNumber(parsedNumber));
+              setDisplayValue(match[0]);
               onChange(parsedNumber);
             } else {
               setDisplayValue(formatNumber(min));
@@ -86,7 +86,7 @@ export const NumberInput = ({
             if (match) {
               const parsedValue = parseNumber(match[0]);
               const maxValue = Math.min(Math.max(Math.floor(parsedValue), min), max);
-              setDisplayValue(formatNumber(maxValue));
+              setDisplayValue(match[0]);
               onChange(maxValue);
             } else {
               setDisplayValue(formatNumber(min));
