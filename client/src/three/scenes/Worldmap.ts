@@ -168,6 +168,11 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
     });
+
+    window.addEventListener("urlChanged", () => {
+      this.clearEntitySelection();
+      this.state.setSelectedHex({ col: 0, row: 0 });
+    });
   }
 
   public moveCameraToURLLocation() {
