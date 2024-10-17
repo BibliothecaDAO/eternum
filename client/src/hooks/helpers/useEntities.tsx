@@ -110,8 +110,8 @@ export const useEntities = () => {
         const name = realm
           ? getRealmNameById(realm.realm_id)
           : structureName
-          ? `${structure?.category} ${structureName}`
-          : structure.category || "";
+            ? `${structure?.category} ${structureName}`
+            : structure.category || "";
         return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
       })
       .filter((structure): structure is PlayerStructure => structure !== undefined)
