@@ -2,6 +2,8 @@
 
 import { defineComponent, Type as RecsType, type World } from "@dojoengine/recs";
 
+export type ContractComponents = ReturnType<typeof defineContractComponents>;
+
 export function defineContractComponents(world: World) {
   return {
     AddressName: (() => {
@@ -204,7 +206,7 @@ export function defineContractComponents(world: World) {
     BattleConfig: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.BigInt },
+        { config_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
@@ -584,10 +586,6 @@ export function defineContractComponents(world: World) {
         world,
         {
           config_id: RecsType.Number,
-          explore_wheat_burn_amount: RecsType.BigInt,
-          explore_fish_burn_amount: RecsType.BigInt,
-          travel_wheat_burn_amount: RecsType.BigInt,
-          travel_fish_burn_amount: RecsType.BigInt,
           reward_resource_amount: RecsType.BigInt,
           shards_mines_fail_probability: RecsType.BigInt,
         },
@@ -595,7 +593,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "MapConfig",
-            types: ["u32", "u128", "u128", "u128", "u128", "u128", "u128"],
+            types: ["u32", "u128", "u128"],
             customTypes: [],
           },
         },

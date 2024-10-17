@@ -70,17 +70,20 @@ export const BattleActions = ({
 
   const [loading, setLoading] = useState<Loading>(Loading.None);
   const [raidWarning, setRaidWarning] = useState(false);
-  const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>();
+  const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(ownArmyEntityId ?? 0);
 
   useEffect(() => {
-    setLocalSelectedUnit(userArmiesInBattle[0]?.entity_id || ownArmyEntityId || 0);
+    if (localSelectedUnit === 0 || !userArmiesInBattle.some((army) => army.entity_id === localSelectedUnit)) {
+      const newLocalSelectedUnit = userArmiesInBattle?.[0]?.entity_id ?? ownArmyEntityId;
+      setLocalSelectedUnit(newLocalSelectedUnit);
+    }
   }, [userArmiesInBattle, ownArmyEntityId]);
 
   const isActive = useMemo(() => battleManager.isBattleOngoing(currentTimestamp!), [battleManager, currentTimestamp]);
 
   const selectedArmy = useMemo(() => {
     return getAliveArmy(localSelectedUnit || 0);
-  }, [localSelectedUnit, isActive]);
+  }, [localSelectedUnit, isActive, userArmiesInBattle]);
 
   const defenderArmy = useMemo(() => {
     const defender = structure?.protector ? structure.protector : defenderArmies[0];
@@ -96,59 +99,70 @@ export const BattleActions = ({
 
     setLoading(Loading.Raid);
     setRaidWarning(false);
-
-    await battleManager.pillageStructure(selectedArmy!, structure!.entity_id);
+    try {
+      await battleManager.pillageStructure(selectedArmy!, structure!.entity_id);
+      toggleModal(
+        <ModalContainer size="half">
+          <Headline>Pillage History</Headline>
+          <PillageHistory structureId={structure!.entity_id} />
+        </ModalContainer>,
+      );
+      setBattleView(null);
+      setView(View.None);
+    } catch (error) {
+      console.error("Error during pillage:", error);
+    }
     setLoading(Loading.None);
-    setBattleView(null);
-    setView(View.None);
-    toggleModal(
-      <ModalContainer size="half">
-        <Headline>Pillage History</Headline>
-        <PillageHistory structureId={structure!.entity_id} />
-      </ModalContainer>,
-    );
   };
 
   const handleBattleStart = async () => {
     setLoading(Loading.Start);
 
-    if (battleStartStatus === BattleStartStatus.ForceStart) {
-      await battle_force_start({
-        signer: account,
-        battle_id: battleManager?.battleEntityId || 0,
-        defending_army_id: defenderArmy!.entity_id,
+    try {
+      if (battleStartStatus === BattleStartStatus.ForceStart) {
+        await battle_force_start({
+          signer: account,
+          battle_id: battleManager?.battleEntityId || 0,
+          defending_army_id: defenderArmy!.entity_id,
+        });
+      } else {
+        await battle_start({
+          signer: account,
+          attacking_army_id: selectedArmy!.entity_id,
+          defending_army_id: defenderArmy!.entity_id,
+        });
+      }
+      setBattleView({
+        engage: false,
+        battleEntityId: undefined,
+        ownArmyEntityId: undefined,
+        targetArmy: defenderArmy?.entity_id,
       });
-    } else {
-      await battle_start({
-        signer: account,
-        attacking_army_id: selectedArmy!.entity_id,
-        defending_army_id: defenderArmy!.entity_id,
-      });
+    } catch (error) {
+      console.error("Error during battle start:", error);
     }
-    setBattleView({
-      engage: false,
-      battleEntityId: undefined,
-      ownArmyEntityId: undefined,
-      targetArmy: defenderArmy?.entity_id,
-    });
     setLoading(Loading.None);
   };
 
   const handleBattleClaim = async () => {
     setLoading(Loading.Claim);
-    if (battleAdjusted?.entity_id! !== 0 && battleAdjusted?.entity_id === selectedArmy!.battle_id) {
-      await battle_leave_and_claim({
-        signer: account,
-        army_id: selectedArmy!.entity_id,
-        battle_id: battleManager?.battleEntityId || 0,
-        structure_id: structure!.entity_id,
-      });
-    } else {
-      await battle_claim({
-        signer: account,
-        army_id: selectedArmy!.entity_id,
-        structure_id: structure!.entity_id,
-      });
+    try {
+      if (battleAdjusted?.entity_id! !== 0 && battleAdjusted?.entity_id === selectedArmy!.battle_id) {
+        await battle_leave_and_claim({
+          signer: account,
+          army_id: selectedArmy!.entity_id,
+          battle_id: battleManager?.battleEntityId || 0,
+          structure_id: structure!.entity_id,
+        });
+      } else {
+        await battle_claim({
+          signer: account,
+          army_id: selectedArmy!.entity_id,
+          structure_id: structure!.entity_id,
+        });
+      }
+    } catch (error) {
+      console.error("Error during claim:", error);
     }
     setBattleView(null);
     setView(View.None);
@@ -163,10 +177,6 @@ export const BattleActions = ({
       army_ids: [selectedArmy!.entity_id],
       battle_id: battleManager?.battleEntityId || 0,
     }).then(() => {
-      setLoading(Loading.None);
-      setBattleView(null);
-      setView(View.None);
-
       const attackerArmiesLength = attackerArmies.some((army) => army?.entity_id === selectedArmy?.entity_id)
         ? attackerArmies.length - 1
         : attackerArmies.length;
@@ -177,26 +187,29 @@ export const BattleActions = ({
         battleManager.deleteBattle();
       }
     });
+    setLoading(Loading.None);
+    setBattleView(null);
+    setView(View.None);
   };
 
   const claimStatus = useMemo(
     () => battleManager.isClaimable(currentTimestamp!, selectedArmy, structure, defenderArmy),
-    [battleManager, currentTimestamp, selectedArmy],
+    [battleManager, currentTimestamp, selectedArmy, structure, defenderArmy],
   );
 
   const raidStatus = useMemo(
     () => battleManager.isRaidable(currentTimestamp!, currentArmiesTick, selectedArmy, structure),
-    [battleManager, currentTimestamp, selectedArmy],
+    [battleManager, currentTimestamp, selectedArmy, structure, currentArmiesTick],
   );
 
   const battleStartStatus = useMemo(
     () => battleManager.isAttackable(selectedArmy, defenderArmy, currentTimestamp!),
-    [battleManager, defenderArmy, currentTimestamp],
+    [battleManager, defenderArmy, currentTimestamp, selectedArmy],
   );
 
   const leaveStatus = useMemo(
     () => battleManager.isLeavable(currentTimestamp!, selectedArmy),
-    [battleManager, selectedArmy],
+    [currentTimestamp, battleManager, selectedArmy],
   );
 
   const mouseEnterRaid = useCallback(() => {
@@ -232,7 +245,7 @@ export const BattleActions = ({
     <div className="col-span-2 flex justify-center flex-wrap -bottom-y p-2 my-10 ">
       <div className="grid grid-cols-2 gap-4 w-full">
         <div
-          className={`flex flex-col gap-2 h-full w-full bg-[#FF621F] rounded-xl border-red/30 border-4 ${
+          className={`flex flex-col gap-2 h-full w-full bg-[#FF621F] rounded-xl border-red/30 ${
             loading !== Loading.None || raidStatus !== RaidStatus.isRaidable ? "opacity-50 cursor-not-allowed" : ""
           }`}
           onMouseEnter={mouseEnterRaid}
@@ -245,7 +258,7 @@ export const BattleActions = ({
             onClick={handleRaid}
             disabled={loading !== Loading.None || raidStatus !== RaidStatus.isRaidable}
           >
-            <Burn className="w-10" />
+            <Burn className="w-12 h-12" />
 
             <div className={`text-wrap text-xl text-white/80 ${raidWarning ? "text-danger" : ""}`}>
               {raidWarning ? "Leave & Raid ?" : "Raid"}
@@ -253,7 +266,7 @@ export const BattleActions = ({
           </Button>
         </div>
         <div
-          className={`flex flex-col gap-2 h-full w-full bg-[#377D5B] rounded-xl border-[#377D5B] border-4 ${
+          className={`flex flex-col gap-2 h-full w-full bg-[#377D5B] rounded-xl border-[#377D5B] ${
             loading !== Loading.None || claimStatus !== ClaimStatus.Claimable ? "opacity-50 cursor-not-allowed" : ""
           }`}
           onMouseEnter={mouseEnterClaim}
@@ -266,7 +279,7 @@ export const BattleActions = ({
             onClick={handleBattleClaim}
             disabled={loading !== Loading.None || claimStatus !== ClaimStatus.Claimable}
           >
-            <Castle className="w-10" />
+            <Castle className="w-12 h-12" />
             <div className="text-xl text-white/80">Claim</div>
           </Button>
         </div>
@@ -284,7 +297,7 @@ export const BattleActions = ({
             onClick={handleLeaveBattle}
             disabled={loading !== Loading.None || leaveStatus !== LeaveStatus.Leave}
           >
-            <Flag className="w-10" />
+            <Flag className="w-12 h-12" />
             <div className="text-xl text-white/80">Leave</div>
           </Button>
         </div>
@@ -309,7 +322,7 @@ export const BattleActions = ({
                 battleStartStatus !== BattleStartStatus.ForceStart)
             }
           >
-            <Battle className="w-10" />
+            <Battle className="w-12 h-12" />
             <div className="text-xl text-white/80">Battle</div>
           </Button>
         </div>

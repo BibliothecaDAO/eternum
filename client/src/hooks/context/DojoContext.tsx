@@ -47,7 +47,7 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
-  const rpcProvider: any = useMemo(
+  const rpcProvider = useMemo(
     () =>
       new RpcProvider({
         nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
@@ -59,7 +59,7 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
   const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
   const accountClassHash = import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH;
   const feeTokenAddress = import.meta.env.VITE_NETWORK_FEE_TOKEN;
-  const masterAccount: any = useMemo(
+  const masterAccount = useMemo(
     () => new Account(rpcProvider, masterAddress, privateKey),
     [rpcProvider, masterAddress, privateKey],
   );
@@ -118,9 +118,9 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
           get,
           select,
           clear,
-          account: account ? account : masterAccount,
+          account: account || masterAccount,
           isDeploying,
-          accountDisplay: account ? displayAddress(account.address) : displayAddress(masterAddress.address),
+          accountDisplay: account ? displayAddress(account.address) : displayAddress(masterAddress),
         },
       }}
     >

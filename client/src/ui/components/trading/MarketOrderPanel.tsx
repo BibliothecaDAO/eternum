@@ -12,12 +12,12 @@ import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPr
 import {
   CapacityConfigCategory,
   EternumGlobalConfig,
-  type ID,
-  type MarketInterface,
   ONE_MONTH,
-  type Resources,
   ResourcesIds,
   findResourceById,
+  type ID,
+  type MarketInterface,
+  type Resources,
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -328,7 +328,7 @@ const OrderRow = ({
 
   const donkeysNeeded = useMemo(() => {
     return Math.ceil(
-      divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey],
+      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
     );
   }, [orderWeight]);
 
@@ -491,7 +491,7 @@ const OrderCreation = ({
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState(1000);
   const [lords, setLords] = useState(100);
-  const [bid, setBid] = useState((lords / resource).toFixed(2));
+  const [bid, setBid] = useState(String(lords / resource));
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
@@ -500,17 +500,17 @@ const OrderCreation = ({
     },
   } = useDojo();
   useEffect(() => {
-    setBid((lords / resource).toFixed(2));
+    setBid(String(lords / resource));
   }, [resource, lords]);
 
   const updateLords = useCallback((newBid: number, newResource: number) => {
-    setLords(Number((newBid * newResource).toFixed(2)));
+    setLords(Number(newBid * newResource));
   }, []);
 
   const handleBidChange = (newBid: number) => {
     const numericBid = Number(newBid);
     if (!isNaN(numericBid) && numericBid > 0) {
-      setBid(newBid.toString());
+      setBid(String(newBid));
       updateLords(numericBid, resource);
     }
   };
@@ -548,7 +548,7 @@ const OrderCreation = ({
 
   const donkeysNeeded = useMemo(() => {
     return Math.ceil(
-      divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey],
+      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
     );
   }, [orderWeight]);
 

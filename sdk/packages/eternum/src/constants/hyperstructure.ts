@@ -1,13 +1,14 @@
 import { ResourcesIds } from ".";
+import { ResourceCost } from "../types";
 
-export const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
+export const HYPERSTRUCTURE_CREATION_COSTS: ResourceCost[] = [
   {
     resource: ResourcesIds.AncientFragment,
     amount: 1000,
   },
 ];
 
-export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] = [
+export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: ResourceCost[] = [
   { resource: ResourcesIds.Wood, amount: 2000 },
   { resource: ResourcesIds.Stone, amount: 2000 },
   { resource: ResourcesIds.Coal, amount: 2000 },
@@ -32,7 +33,7 @@ export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: numb
   { resource: ResourcesIds.Dragonhide, amount: 300 },
 ];
 
-export const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
+export const HYPERSTRUCTURE_TOTAL_COSTS: ResourceCost[] = [
   ...HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   ...HYPERSTRUCTURE_CREATION_COSTS,
 ];

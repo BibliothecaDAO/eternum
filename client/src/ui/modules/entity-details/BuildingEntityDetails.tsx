@@ -1,4 +1,5 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
@@ -197,9 +198,9 @@ const CastleDetails = () => {
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure.created_at) +
-      dojo.setup.configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
     );
-  }, [structure.created_at, dojo.setup.configManager]);
+  }, [structure.created_at, configManager]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;

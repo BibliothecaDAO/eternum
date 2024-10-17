@@ -16,8 +16,8 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
 
   const maxStorehouseCapacityKg = useMemo(() => {
     return (
-      (quantity * gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]) +
-        gramToKg(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) *
+      (quantity * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
+        gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))) *
       EternumGlobalConfig.resources.resourcePrecision
     );
   }, [quantity, entityId]);

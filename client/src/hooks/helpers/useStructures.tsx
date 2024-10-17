@@ -1,5 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { configManager } from "@/dojo/setup";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
@@ -250,10 +251,6 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
 }
 
 export const useIsStructureImmune = (created_at: number, currentTimestamp: number): boolean => {
-  const {
-    setup: { configManager },
-  } = useDojo();
-
   const tickCount = currentTickCount(currentTimestamp);
   const allowAttackTick = currentTickCount(created_at) + configManager.getBattleGraceTickCount();
 

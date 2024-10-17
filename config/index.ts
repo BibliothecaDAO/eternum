@@ -42,6 +42,7 @@ const setupConfig: Config =
     ? {
         ...EternumGlobalConfig,
         stamina: {
+          ...EternumGlobalConfig.stamina,
           travelCost: 0,
           exploreCost: 0,
         },

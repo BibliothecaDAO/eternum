@@ -11,7 +11,6 @@ interface ChatMessage {
 export interface ChatMetadata {
   messages: ChatMessage[];
   lastMessageReceived: Date;
-  isChannel: boolean;
   channel: bigint;
   fromName: string;
   address: string;
@@ -21,8 +20,6 @@ export interface Tab {
   name: string;
   key: string;
   address: string;
-  numberOfMessages?: number;
   displayed: boolean;
-  visible: boolean;
   lastSeen: Date;
 }

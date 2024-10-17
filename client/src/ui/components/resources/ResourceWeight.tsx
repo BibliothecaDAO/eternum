@@ -4,10 +4,10 @@ import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrec
 import {
   CapacityConfigCategory,
   EternumGlobalConfig,
-  type ID,
-  type Resource,
   ResourcesIds,
   WEIGHTS_GRAM,
+  type ID,
+  type Resource,
 } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
@@ -27,7 +27,7 @@ export const TravelInfo = ({
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = Math.ceil(
-    divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey],
+    divideByPrecision(resourceWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
   );
 
   const { getBalance } = getResourceBalance();

@@ -14,6 +14,7 @@ import {
   RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
+  ResourceCost as ResourceCostType,
   ResourcesIds,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
@@ -517,7 +518,7 @@ export const ResourceInfo = ({
 export const BuildingInfo = ({
   buildingId,
   entityId,
-  name = BuildingEnumToString[buildingId],
+  name = BuildingEnumToString[buildingId as keyof typeof BuildingEnumToString],
   hintModal = false,
   isPaused,
 }: {
@@ -531,12 +532,16 @@ export const BuildingInfo = ({
 
   const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
 
-  const population = BUILDING_POPULATION[buildingId] || 0;
-  const capacity = BUILDING_CAPACITY[buildingId] || 0;
-  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
+  const population = BUILDING_POPULATION[buildingId as keyof typeof BUILDING_POPULATION] || 0;
+  const capacity = BUILDING_CAPACITY[buildingId as keyof typeof BUILDING_CAPACITY] || 0;
+  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId as keyof typeof BUILDING_RESOURCE_PRODUCED];
+  const ongoingCost =
+    resourceProduced !== undefined
+      ? RESOURCE_INPUTS_SCALED[resourceProduced as keyof typeof RESOURCE_INPUTS_SCALED] || 0
+      : 0;
 
-  const perTick = RESOURCE_OUTPUTS[resourceProduced] || 0;
+  const perTick =
+    resourceProduced !== undefined ? RESOURCE_OUTPUTS[resourceProduced as keyof typeof RESOURCE_OUTPUTS] || 0 : 0;
 
   const { getBalance } = getResourceBalance();
 
@@ -674,10 +679,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
     dojo.setup.components.BuildingQuantityv2,
   );
 
-  let updatedCosts: {
-    resource: ResourcesIds;
-    amount: number;
-  }[] = [];
+  let updatedCosts: ResourceCostType[] = [];
 
   RESOURCE_BUILDING_COSTS_SCALED[Number(resourceId)].forEach((cost) => {
     const baseCost = cost.amount;
@@ -705,10 +707,7 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
     dojo.setup.components.BuildingQuantityv2,
   );
 
-  let updatedCosts: {
-    resource: ResourcesIds;
-    amount: number;
-  }[] = [];
+  let updatedCosts: ResourceCostType[] = [];
 
   BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
     const baseCost = cost.amount;
