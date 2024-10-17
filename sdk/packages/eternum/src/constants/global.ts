@@ -95,9 +95,12 @@ export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
 export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
 
 // Mercenaries
-export const MERCENARIES_KNIGHT_COUNT = 1000;
-export const MERCENARIES_PALADIN_COUNT = 1000;
-export const MERCENARIES_CROSSBOWMAN_COUNT = 1000;
+export const MERCENARIES_KNIGHTS_LOWER_BOUND = 1000;
+export const MERCENARIES_KNIGHTS_UPPER_BOUND = 5000;
+export const MERCENARIES_PALADINS_LOWER_BOUND = 1000;
+export const MERCENARIES_PALADINS_UPPER_BOUND = 5000;
+export const MERCENARIES_CROSSBOWMEN_LOWER_BOUND = 1000;
+export const MERCENARIES_CROSSBOWMEN_UPPER_BOUND = 5000;
 export const MERCENARIES_WHEAT_REWARD = 100;
 export const MERCENARIES_FISH_REWARD = 200;
 
@@ -185,11 +188,12 @@ export const EternumGlobalConfig: Config = {
     troopFoodConsumption: TROOPS_FOOD_CONSUMPTION,
   },
   mercenaries: {
-    troops: {
-      knight_count: MERCENARIES_KNIGHT_COUNT,
-      paladin_count: MERCENARIES_PALADIN_COUNT,
-      crossbowman_count: MERCENARIES_CROSSBOWMAN_COUNT,
-    },
+    knights_lower_bound: MERCENARIES_KNIGHTS_LOWER_BOUND,
+    knights_upper_bound: MERCENARIES_KNIGHTS_UPPER_BOUND,
+    paladins_lower_bound: MERCENARIES_PALADINS_LOWER_BOUND,
+    paladins_upper_bound: MERCENARIES_PALADINS_UPPER_BOUND,
+    crossbowmen_lower_bound: MERCENARIES_CROSSBOWMEN_LOWER_BOUND,
+    crossbowmen_upper_bound: MERCENARIES_CROSSBOWMEN_UPPER_BOUND,
     rewards: [
       { resource: ResourcesIds.Wheat, amount: MERCENARIES_WHEAT_REWARD },
       { resource: ResourcesIds.Fish, amount: MERCENARIES_FISH_REWARD },
