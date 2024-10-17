@@ -3,6 +3,7 @@ import { calculateCompletionPoints } from "@/dojo/modelManager/utils/Leaderboard
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
 import {
   ProgressWithPercentage,
   useHyperstructureProgress,
@@ -10,9 +11,11 @@ import {
 } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
+  Access,
   ContractAddress,
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
@@ -37,16 +40,19 @@ export const HyperstructurePanel = ({ entity }: any) => {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { contribute_to_construction, set_private },
+      systemCalls: { contribute_to_construction, set_access },
       components: { Hyperstructure },
     },
   } = useDojo();
+
+  const { getGuildFromPlayerAddress } = useGuilds();
 
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
   const [resetContributions, setResetContributions] = useState(false);
 
+  const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const progresses = useHyperstructureProgress(entity.entity_id);
@@ -63,6 +69,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const ownerName = getAddressNameFromEntity(entity.entity_id);
 
   const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
+
+  const playerGuild = useMemo(() => getGuildFromPlayerAddress(ContractAddress(account.address)), []);
 
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
@@ -106,6 +114,20 @@ export const HyperstructurePanel = ({ entity }: any) => {
     });
   }, [progresses, myContributions]);
 
+  const canContribute = useMemo(() => {
+    const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0));
+    return (
+      entity.isOwner ||
+      (hyperstructure?.access === Access[Access.GuildOnly] &&
+        playerGuild?.guildEntityId !== undefined &&
+        playerGuild.guildEntityId !== 0 &&
+        hyperstructureOwnerGuild?.guildEntityId !== undefined &&
+        hyperstructureOwnerGuild.guildEntityId !== 0 &&
+        hyperstructureOwnerGuild.guildEntityId === playerGuild.guildEntityId) ||
+      hyperstructure?.access === Access[Access.Public]
+    );
+  }, [newContributions]);
+
   const initialPoints = useMemo(() => {
     return calculateCompletionPoints(myContributions);
   }, [myContributions, updates]);
@@ -114,13 +136,13 @@ export const HyperstructurePanel = ({ entity }: any) => {
     return LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), entity.entity_id);
   }, [myContributions, updates]);
 
-  const setPrivate = async () => {
+  const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);
     try {
-      await set_private({
+      await set_access({
         signer: account,
         hyperstructure_entity_id: entity.entity_id,
-        to_private: !hyperstructure?.private,
+        access,
       });
     } finally {
       setIsLoading(Loading.None);
@@ -173,9 +195,34 @@ export const HyperstructurePanel = ({ entity }: any) => {
                   <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
                     edit name
                   </Button>
-                  <Button isLoading={isLoading === Loading.SetPrivate} size="xs" variant="default" onClick={setPrivate}>
-                    Make {hyperstructure?.private ? "public" : "private"}
-                  </Button>
+                  {hyperstructure && entity.isOwner && (
+                    <Select
+                      onValueChange={(access: keyof typeof Access) => {
+                        setAccess(BigInt(Access[access]));
+                      }}
+                    >
+                      <SelectTrigger className="w-[140px] text-gold h-10 text-lg">
+                        <SelectValue placeholder={separateCamelCase(hyperstructure.access)} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black/90 text-gold">
+                        {Object.keys(Access)
+                          .filter((access) => {
+                            if (!isNaN(Number(access))) return false;
+
+                            if (access === "GuildOnly") {
+                              return playerGuild?.guildEntityId !== undefined && playerGuild.guildEntityId !== 0;
+                            }
+
+                            return access !== hyperstructure!.access;
+                          })
+                          .map((access) => (
+                            <SelectItem key={access} value={access} disabled={!entity.isOwner}>
+                              {separateCamelCase(access)}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
             </div>
@@ -219,18 +266,41 @@ export const HyperstructurePanel = ({ entity }: any) => {
           <div className="">
             {resourceElements}
             <div className="flex justify-end w-full">
-              <Button
-                isLoading={isLoading === Loading.Contribute}
-                className="mt-4 bg-gold/20"
-                disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None}
-                onClick={contributeToConstruction}
+              <div
+                onMouseEnter={() => {
+                  if (!canContribute) {
+                    setTooltip({
+                      content: <>Not the correct access</>,
+                      position: "right",
+                    });
+                  }
+                }}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                }}
               >
-                Contribute
-              </Button>
+                <Button
+                  isLoading={isLoading === Loading.Contribute}
+                  className="mt-4 bg-gold/20"
+                  disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None || !canContribute}
+                  onClick={contributeToConstruction}
+                >
+                  Contribute
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </div>
     </div>
   );
+};
+
+const separateCamelCase = (str: string): string => {
+  return str
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };

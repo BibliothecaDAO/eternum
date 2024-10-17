@@ -36,6 +36,12 @@ export enum BattleSide {
   Defence,
 }
 
+export enum Access {
+  Public,
+  Private,
+  GuildOnly,
+}
+
 export enum TravelTypes {
   Explore,
   Travel,

@@ -516,14 +516,14 @@ export function defineContractComponents(world: World) {
           completed: RecsType.Boolean,
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
-          private: RecsType.Boolean,
+          access: RecsType.String,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Hyperstructure",
-            types: ["u32", "u16", "bool", "contractaddress", "u64", "bool"],
-            customTypes: [],
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum"],
+            customTypes: ["Access"],
           },
         },
       );
