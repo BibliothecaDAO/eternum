@@ -324,11 +324,12 @@ export interface Config {
     troopFoodConsumption: Record<number, TroopFoodConsumption>;
   };
   mercenaries: {
-    troops: {
-      knight_count: number;
-      paladin_count: number;
-      crossbowman_count: number;
-    };
+    knights_lower_bound: number;
+    knights_upper_bound: number;
+    paladins_lower_bound: number;
+    paladins_upper_bound: number;
+    crossbowmen_lower_bound: number;
+    crossbowmen_upper_bound: number;
     rewards: Array<ResourceCost>;
   };
   settlement: {

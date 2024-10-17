@@ -1081,11 +1081,28 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
-    const { troops, rewards, signer } = props;
+    const {
+      knights_lower_bound,
+      knights_upper_bound,
+      paladins_lower_bound,
+      paladins_upper_bound,
+      crossbowmen_lower_bound,
+      crossbowmen_upper_bound,
+      rewards,
+      signer,
+    } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_config",
-      calldata: [troops, rewards],
+      calldata: [
+        knights_lower_bound,
+        knights_upper_bound,
+        paladins_lower_bound,
+        paladins_upper_bound,
+        crossbowmen_lower_bound,
+        crossbowmen_upper_bound,
+        rewards,
+      ],
     });
   }
 

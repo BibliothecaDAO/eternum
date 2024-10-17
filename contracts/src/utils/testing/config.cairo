@@ -181,10 +181,25 @@ fn set_speed_config(config_systems_address: ContractAddress) {
 fn set_mercenaries_config(config_systems_address: ContractAddress) {
     let mercenaries_troops = Troops { knight_count: 4_000_000, paladin_count: 4_000_000, crossbowman_count: 4_000_000 };
 
+    let knights_lower_bound = 0;
+    let knights_upper_bound = 4_000_000;
+    let paladins_lower_bound = 0;
+    let paladins_upper_bound = 4_000_000;
+    let crossbowmen_lower_bound = 0;
+    let crossbowmen_upper_bound = 4_000_000;
+
     let mercenaries_rewards = array![(ResourceTypes::WHEAT, 10_000), (ResourceTypes::FISH, 20_000)].span();
 
     IMercenariesConfigDispatcher { contract_address: config_systems_address }
-        .set_mercenaries_config(mercenaries_troops, mercenaries_rewards);
+        .set_mercenaries_config(
+            knights_lower_bound,
+            knights_upper_bound,
+            paladins_lower_bound,
+            paladins_upper_bound,
+            crossbowmen_lower_bound,
+            crossbowmen_upper_bound,
+            mercenaries_rewards
+        );
 }
 
 fn set_settlement_config(config_systems_address: ContractAddress) {
