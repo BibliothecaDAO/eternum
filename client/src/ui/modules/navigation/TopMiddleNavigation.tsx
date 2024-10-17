@@ -158,7 +158,7 @@ export const TopMiddleNavigation = () => {
   return (
     <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-black border-gold/10 relative">
+        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -170,7 +170,7 @@ export const TopMiddleNavigation = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-black/90">
+                <SelectContent className="bg-brown/90">
                   {structures.map((structure, index) => (
                     <SelectItem
                       className="flex justify-between"
@@ -199,7 +199,7 @@ export const TopMiddleNavigation = () => {
             style={{ width: `${progress}%` }}
           ></div>
         </div>
-        <div className=" bg-black/90 bg-hex-bg   rounded-b-xl   flex gap-1">
+        <div className=" bg-brown/90 bg-hex-bg   rounded-b-xl   flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -237,7 +237,7 @@ export const TopMiddleNavigation = () => {
             </div>
           )}
         </div>
-        <div className=" bg-black/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
+        <div className=" bg-brown/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"
@@ -266,7 +266,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
         {pointToWorldButton && (
-          <div className="bg-black/90 text-gold border border-gold/30 rounded-md shadow-lg left-1/2 transform p-3 flex flex-row items-center animate-pulse">
+          <div className="bg-brown/90 text-gold border border-gold/30 rounded-md shadow-lg left-1/2 transform p-3 flex flex-row items-center animate-pulse">
             <ArrowLeft className="text-gold w-5 h-5 mb-2" />
             <div className="text-sm font-semibold mb-2 text-center leading-tight">Explore the map</div>
           </div>

@@ -136,14 +136,14 @@ export const BattleProgressBar = ({
     <motion.div
       initial="hidden"
       animate="visible"
-      className=""
+      className="w-2/3 mx-auto"
       variants={{
         hidden: { y: "100%" },
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
       {!isNaN(Number(attackingHealthPercentage)) && !isNaN(Number(defendingHealthPercentage)) && (
-        <div className="relative h-6  mx-auto w-2/3 -y rounded-t-2xl bg-opacity-40" style={{ background: gradient }}>
+        <div className="relative h-6  mx-auto bg-opacity-40" style={{ background: gradient }}>
           <div className="flex px-4 justify-between">
             {Number(attackingHealthPercentage) > 0 && (
               <div className="text-left self-center">
@@ -158,11 +158,9 @@ export const BattleProgressBar = ({
           </div>
         </div>
       )}
-      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold bg-[#1b1a1a] bg-hex-bg px-4 py-2 -top-y">
+      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl bg-hex-bg px-4 py-2">
         <div className="text-left">
-          <p>
-            {attackerName} {}
-          </p>
+          <p>{attackerName}</p>
         </div>
         <div className="font-bold text-center">
           {time
