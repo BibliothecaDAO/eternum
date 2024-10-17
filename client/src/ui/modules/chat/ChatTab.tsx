@@ -42,7 +42,7 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
       >
         <div
           className={`text-sm px-2 py-1 text-center self-center rounded bg-hex-bg border border-gold/30 ${
-            selected ? "bg-black/70" : "bg-black/10"
+            selected ? "bg-brown/70" : "bg-brown/10"
           } flex flex-row gap-2 justify-between items-center relative h-8`}
           style={{ zIndex: 2 }}
           onClick={() => setCurrentTab({ ...tab, displayed: true })}
@@ -56,7 +56,7 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
                   e.stopPropagation();
                   hideTab({ ...tab, displayed: false });
                 }}
-                className="hover:bg-black/40 rounded-full p-0.5"
+                className="hover:bg-brown/40 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />
               </button>

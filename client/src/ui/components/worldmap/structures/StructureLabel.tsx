@@ -4,9 +4,9 @@ import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructur
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
+import { TickIds } from "@bibliothecadao/eternum";
 
 export const ImmunityTimer = ({ isImmune, timer }: { isImmune: boolean; timer: number }) => {
   if (!isImmune) return null;
@@ -39,7 +39,7 @@ export const StructureInfoLabel = () => {
   const immunityEndTimestamp = useMemo(() => {
     return (
       Number(structure?.created_at || 0) +
-      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
   }, [structure?.created_at]);
 

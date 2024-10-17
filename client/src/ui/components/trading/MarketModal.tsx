@@ -1,3 +1,8 @@
+import { ReactComponent as Coins } from "@/assets/icons/Coins.svg";
+import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
+import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
+import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
+import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
@@ -72,8 +77,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Order Book</div>
+          <div className="flex relative group items-center gap-2">
+            <Scroll className="w-6 fill-current" />
+            <div className="self-center">Order Book</div>
           </div>
         ),
         component: (
@@ -90,8 +96,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>AMM</div>
+          <div className="flex relative group items-center gap-2">
+            <Swap className="w-6 fill-current" />
+            <div className="self-center">AMM</div>
           </div>
         ),
         component: bank && (
@@ -107,8 +114,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>History</div>
+          <div className="flex relative group items-center gap-2">
+            <Sparkles className="w-6 fill-current" />
+            <div className="self-center">History</div>
           </div>
         ),
         component: (
@@ -120,8 +128,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Transfer</div>
+          <div className="flex relative group items-center gap-2">
+            <Coins className="w-6 fill-current" />
+            <div className="self-center">Transfer</div>
           </div>
         ),
         component: (
@@ -133,8 +142,9 @@ export const MarketModal = () => {
       {
         key: "resourceProd",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Realm Production</div>
+          <div className="flex relative group items-center gap-2">
+            <Crown className="w-6 fill-current" />
+            <div className="self-center">Realm Production</div>
           </div>
         ),
         component: (
@@ -149,10 +159,10 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30  h-full row-span-12 ">
-        <div className="col-span-12  p-2 flex justify-between row-span-2">
-          <div className="self-center text-xl flex gap-2 items-center">
-            <div className="bg-black">
+      <div className="container border mx-auto  grid grid-cols-12 bg-dark border-gold/30  h-full row-span-12 rounded-2xl ">
+        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
+          <div className="self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
+            <div className="">
               <Select
                 value={structureEntityId.toString()}
                 onValueChange={(trait) => {
@@ -162,7 +172,7 @@ export const MarketModal = () => {
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-black bg-hex-bg">
+                <SelectContent>
                   {structures.map((structure, index) => (
                     <SelectItem key={index} value={structure.entity_id.toString()}>
                       {structure.name}
@@ -171,27 +181,11 @@ export const MarketModal = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className=" ml-2 bg-map align-middle flex">
+            <div className=" ml-2 bg-map align-middle flex gap-2">
               {currencyFormat(Number(lordsBalance), 0)}{" "}
               <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
             </div>
           </div>
-          <div className="self-center text-3xl">
-            <h2 className="text-center">The Lords Market</h2>
-          </div>
-          <div className="self-center flex gap-4">
-            <CircleButton
-              onClick={() => {
-                toggleModal(null);
-                toggleModal(<HintModal initialActiveSection={"Trading"} />);
-              }}
-              size={"sm"}
-              image={BuildingThumbs.question}
-            />
-          </div>
-        </div>
-
-        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
           <Suspense fallback={<LoadingAnimation />}>
             <MarketResourceSidebar
               entityId={structureEntityId}
@@ -205,19 +199,32 @@ export const MarketModal = () => {
           </Suspense>
         </div>
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
+          <div className="col-span-12  p-2 flex justify-between row-span-2 gap-4 my-4 px-8">
+            <div className="self-center text-3xl ">
+              <h1 className="text-center">The Lords Market</h1>
+            </div>
+            <div className="self-center flex gap-4">
+              <CircleButton
+                onClick={() => {
+                  toggleModal(null);
+                  toggleModal(<HintModal initialActiveSection={"Trading"} />);
+                }}
+                size={"sm"}
+                image={BuildingThumbs.question}
+              />
+            </div>
+          </div>
           <Tabs
             size="large"
             selectedIndex={selectedTab}
             onChange={(index: any) => setSelectedTab(index)}
             className="h-full"
           >
-            <div className="">
-              <Tabs.List>
-                {tabs.map((tab, index) => (
-                  <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-                ))}
-              </Tabs.List>
-            </div>
+            <Tabs.List className=" flex w-full">
+              {tabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
 
             <Tabs.Panels className="overflow-hidden">
               {tabs.map((tab, index) => (

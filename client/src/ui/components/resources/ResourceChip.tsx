@@ -1,12 +1,6 @@
-import {
-  EternumGlobalConfig,
-  findResourceById,
-  getIconResourceId,
-  ID,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-} from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecadao/eternum";
 
+import { configManager } from "@/dojo/setup";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
@@ -41,24 +35,8 @@ export const ResourceChip = ({
     return productionManager.getProduction();
   }, [productionManager]);
 
-  useEffect(() => {
-    const tickTime = EternumGlobalConfig.tick.defaultTickIntervalInSeconds * 1000;
-
-    let realTick = currentDefaultTick;
-
-    setBalance(productionManager.balance(realTick));
-
-    const interval = setInterval(() => {
-      realTick += 1;
-      const newBalance = productionManager.balance(realTick);
-
-      setBalance(newBalance);
-    }, tickTime);
-    return () => clearInterval(interval);
-  }, [currentDefaultTick, setBalance, productionManager, production, maxStorehouseCapacityKg]);
-
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(WEIGHTS_GRAM[resourceId as ResourcesIds] || 1000);
+    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {
@@ -77,7 +55,7 @@ export const ResourceChip = ({
   }, [productionManager, production]);
 
   useEffect(() => {
-    const tickTime = EternumGlobalConfig.tick.defaultTickIntervalInSeconds * 1000;
+    const tickTime = configManager.getTick(TickIds.Default) * 1000;
 
     let realTick = currentDefaultTick;
 
@@ -100,6 +78,7 @@ export const ResourceChip = ({
     if (Math.abs(netRate) > 0) {
       const interval = setInterval(() => {
         realTick += 1;
+        const localResource = productionManager.getResource();
         const localProductionDuration = productionManager.productionDuration(realTick);
         const localDepletionDuration = productionManager.depletionDuration(realTick);
 
@@ -107,7 +86,7 @@ export const ResourceChip = ({
           resourceId,
           rate,
           netRate > 0,
-          resource?.balance,
+          localResource?.balance,
           localProductionDuration,
           localDepletionDuration,
         );

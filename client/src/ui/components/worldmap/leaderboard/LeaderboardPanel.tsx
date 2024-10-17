@@ -1,10 +1,11 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { ContractAddress, HYPERSTRUCTURE_POINTS_FOR_WIN } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useCallback, useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
@@ -31,7 +32,7 @@ export const LeaderboardPanel = () => {
     const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
     const playerPoints = player?.[1] ?? 0;
 
-    return Math.min((playerPoints / HYPERSTRUCTURE_POINTS_FOR_WIN) * 100, 100);
+    return Math.min((playerPoints / configManager.getHyperstructureConfig().pointsForWin) * 100, 100);
   }, [structureEntityId, nextBlockTimestamp]);
 
   const hasReachedFinalPoints = useMemo(() => {

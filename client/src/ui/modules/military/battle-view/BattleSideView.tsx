@@ -83,11 +83,11 @@ export const BattleSideView = ({
 
   return (
     <div
-      className={`flex col-span-5 -bottom-y bg-[#1b1a1a] mx-4 bg-hex-bg ${
+      className={`flex col-span-5 bg-brown mx-4 bg-hex-bg -mt-16 ${
         battleSide === BattleSide.Attack ? "flex-row " : "flex-row-reverse "
       }`}
     >
-      <div className="flex flex-col bg-gold/10 border-x px-2 border-gold/20 mx-4">
+      <div className="flex flex-col   px-2  mx-4">
         <EntityAvatar
           address={battleSide === BattleSide.Attack ? account.address : battleEntityId?.toString()}
           structure={structure}
@@ -99,7 +99,7 @@ export const BattleSideView = ({
               if (!army) return;
               const addressName = getAddressNameFromEntity(army.entity_id);
               return (
-                <div className="flex justify-around px-2 py-1 rounded bg-black/70 text-xs flex gap-2 border-gold/10 border">
+                <div className="flex justify-around px-2 py-1 rounded bg-brown/70 text-xs gap-2 border-gold/10 border">
                   <span className="self-center align-middle">{addressName}</span>
                   <span className="self-center align-middle">{army?.name}</span>
                   {army?.isMine && (
@@ -139,7 +139,7 @@ export const BattleSideView = ({
       {showBattleDetails && battleEntityId ? (
         <BattleHistory battleSide={battleSide} battleId={battleEntityId} />
       ) : (
-        <TroopRow troops={ownSideTroopsUpdated} />
+        <TroopRow defending={battleSide === BattleSide.Defence} troops={ownSideTroopsUpdated} />
       )}
     </div>
   );
