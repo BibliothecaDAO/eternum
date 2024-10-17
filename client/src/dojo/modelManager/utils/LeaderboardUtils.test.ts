@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { TOTAL_CONTRIBUTABLE_AMOUNT } from "./LeaderboardUtils";
 
-const EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT = 2.27;
+const EXPECTED_TOTAL_CONTRIBUTABLE_AMOUNT = 2.58;
 
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const actual = await importOriginal();
