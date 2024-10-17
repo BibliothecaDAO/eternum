@@ -11,8 +11,6 @@ import {
   type Resource,
   ResourcesIds,
   TickIds,
-  TROOPS_FOOD_CONSUMPTION,
-  WEIGHTS_GRAM,
 } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -263,8 +261,11 @@ export const isRealmSelected = (structureEntityId: ID, structures: any) => {
 };
 
 export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
+  const configManager = ClientConfigManager.instance();
+
   return resources.reduce(
-    (total, resource) => total + (resource ? resource.amount * WEIGHTS_GRAM[resource.resourceId] || 0 : 0),
+    (total, resource) =>
+      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
     0,
   );
 };
@@ -364,21 +365,23 @@ export const toValidAscii = (str: string) => {
 export const computeTravelFoodCosts = (
   troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
 ) => {
-  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
-  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
-  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+  const configManager = ClientConfigManager.instance();
+
+  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
 
   const paladinCount = Number(troops?.paladin_count);
   const knightCount = Number(troops?.knight_count);
   const crossbowmanCount = Number(troops?.crossbowman_count);
 
-  const paladinWheatConsumption = paladinFoodConsumption.travel_wheat_burn_amount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.travel_wheat_burn_amount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travel_wheat_burn_amount * crossbowmanCount;
+  const paladinWheatConsumption = paladinFoodConsumption.travelWheatBurnAmount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.travelWheatBurnAmount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travelWheatBurnAmount * crossbowmanCount;
 
-  const paladinFishConsumption = paladinFoodConsumption.travel_fish_burn_amount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.travel_fish_burn_amount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travel_fish_burn_amount * crossbowmanCount;
+  const paladinFishConsumption = paladinFoodConsumption.travelFishBurnAmount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.travelFishBurnAmount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travelFishBurnAmount * crossbowmanCount;
 
   const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
   const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
@@ -392,21 +395,23 @@ export const computeTravelFoodCosts = (
 export const computeExploreFoodCosts = (
   troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
 ) => {
-  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
-  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
-  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+  const configManager = ClientConfigManager.instance();
+
+  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
 
   const paladinCount = Number(troops?.paladin_count);
   const knightCount = Number(troops?.knight_count);
   const crossbowmanCount = Number(troops?.crossbowman_count);
 
-  const paladinWheatConsumption = paladinFoodConsumption.explore_wheat_burn_amount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.explore_wheat_burn_amount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.explore_wheat_burn_amount * crossbowmanCount;
+  const paladinWheatConsumption = paladinFoodConsumption.exploreWheatBurnAmount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.exploreWheatBurnAmount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.exploreWheatBurnAmount * crossbowmanCount;
 
-  const paladinFishConsumption = paladinFoodConsumption.explore_fish_burn_amount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.explore_fish_burn_amount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.explore_fish_burn_amount * crossbowmanCount;
+  const paladinFishConsumption = paladinFoodConsumption.exploreFishBurnAmount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.exploreFishBurnAmount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.exploreFishBurnAmount * crossbowmanCount;
 
   const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
   const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;

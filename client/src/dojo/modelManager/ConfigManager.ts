@@ -3,6 +3,11 @@ import {
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   BuildingType,
   CapacityConfigCategory,
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_CONFIG_ID,
+  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
+  POPULATION_CONFIG_ID,
+  ResourcesIds,
   TickIds,
   TravelTypes,
   WORLD_CONFIG_ID,
@@ -15,8 +20,18 @@ export class ClientConfigManager {
   private static _instance: ClientConfigManager;
   private components!: ContractComponents;
 
+  resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  resourceOutputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  hyperstructureTotalCosts: Record<number, { resource: ResourcesIds; amount: number }> = {};
+  realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+
   public setDojo(components: ContractComponents) {
     this.components = components;
+    this.initializeResourceInputs();
+    this.initializeHyperstructureTotalCosts();
+    this.initializeRealmUpgradeCosts();
+    this.initializeResourceBuildingCosts();
   }
 
   public static instance(): ClientConfigManager {
@@ -32,6 +47,127 @@ export class ClientConfigManager {
       return defaultValue;
     }
     return callback();
+  }
+
+  private initializeResourceInputs() {
+    if (!this.components) return;
+
+    for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
+      const productionConfig = getComponentValue(
+        this.components.ProductionConfig,
+        getEntityIdFromKeys([BigInt(resourceType)]),
+      );
+
+      const inputCount = productionConfig?.input_count ?? 0;
+      const inputs: { resource: ResourcesIds; amount: number }[] = [];
+
+      for (let index = 0; index < inputCount; index++) {
+        const productionInput = getComponentValue(
+          this.components.ProductionInput,
+          getEntityIdFromKeys([BigInt(resourceType), BigInt(index)]),
+        );
+
+        if (productionInput) {
+          const resource = productionInput.input_resource_type;
+          const amount = divideByPrecision(Number(productionInput.input_resource_amount));
+          inputs.push({ resource, amount });
+        }
+      }
+
+      this.resourceInputs[Number(resourceType)] = inputs;
+    }
+  }
+
+  private initializeHyperstructureTotalCosts() {
+    const hyperstructureTotalCosts: { resource: ResourcesIds; amount: number }[] = [];
+
+    for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
+      const hyperstructureResourceConfig = getComponentValue(
+        this.components.HyperstructureResourceConfig,
+        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceId)]),
+      );
+
+      const amount =
+        Number(hyperstructureResourceConfig?.amount_for_completion ?? 0) /
+        EternumGlobalConfig.resources.resourcePrecision;
+
+      hyperstructureTotalCosts.push({ resource: resourceId as ResourcesIds, amount });
+
+      if (resourceId === ResourcesIds.AncientFragment) {
+        break;
+      }
+    }
+
+    this.hyperstructureTotalCosts = hyperstructureTotalCosts;
+  }
+
+  private initializeRealmUpgradeCosts() {
+    const realmMaxLevel =
+      getComponentValue(this.components.RealmMaxLevelConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.max_level ?? 0;
+
+    for (let index = 1; index <= realmMaxLevel; index++) {
+      const realmLevelConfig = getComponentValue(
+        this.components.RealmLevelConfig,
+        getEntityIdFromKeys([BigInt(index)]),
+      );
+
+      const resourcesCount = realmLevelConfig?.required_resource_count ?? 0;
+      const detachedResourceId = realmLevelConfig?.required_resources_id ?? 0;
+
+      const resources: { resource: ResourcesIds; amount: number }[] = [];
+
+      for (let index = 0; index < resourcesCount; index++) {
+        const resource = getComponentValue(
+          this.components.DetachedResource,
+          getEntityIdFromKeys([BigInt(detachedResourceId), BigInt(index)]),
+        );
+        if (resource) {
+          const resourceId = resource.resource_type;
+          const amount = divideByPrecision(Number(resource.resource_amount));
+          resources.push({ resource: resourceId, amount });
+        }
+      }
+      this.realmUpgradeCosts[index] = resources;
+    }
+  }
+
+  private initializeResourceBuildingCosts() {
+    for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
+      const buildingConfig = getComponentValue(
+        this.components.BuildingConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(BuildingType.Resource), BigInt(resourceId)]),
+      );
+
+      const resourceCostCount = buildingConfig?.resource_cost_count || 0;
+      const resourceCostId = buildingConfig?.resource_cost_id || 0;
+
+      const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
+      for (let index = 0; index < resourceCostCount; index++) {
+        const resourceCost = getComponentValue(
+          this.components.ResourceCost,
+          getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
+        );
+        if (!resourceCost) {
+          continue;
+        }
+
+        const resourceType = resourceCost.resource_type;
+        const amount = Number(resourceCost.amount) / EternumGlobalConfig.resources.resourcePrecision;
+
+        resourceCosts.push({ resource: resourceType, amount });
+      }
+      this.resourceBuildingCosts[Number(resourceId)] = resourceCosts;
+    }
+  }
+
+  getResourceWeight(resourceId: number): number {
+    return this.getValueOrDefault(() => {
+      const weightConfig = getComponentValue(
+        this.components.WeightConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(resourceId)]),
+      );
+      return Number(weightConfig?.weight_gram ?? 0);
+    }, 0);
   }
 
   getTravelStaminaCost() {
@@ -185,6 +321,84 @@ export class ClientConfigManager {
       {
         population: 0,
         capacity: 0,
+      },
+    );
+  }
+
+  getHyperstructureConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const hyperstructureConfig = getComponentValue(
+          this.components.HyperstructureConfig,
+          getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]),
+        );
+
+        return {
+          timeBetweenSharesChange: hyperstructureConfig?.time_between_shares_change ?? 0,
+          pointsPerCycle: Number(hyperstructureConfig?.points_per_cycle) ?? 0,
+          pointsForWin: Number(hyperstructureConfig?.points_for_win) ?? 0,
+          pointsOnCompletion: Number(hyperstructureConfig?.points_on_completion) ?? 0,
+        };
+      },
+      {
+        timeBetweenSharesChange: 0,
+        pointsPerCycle: 0,
+        pointsForWin: 0,
+        pointsOnCompletion: 0,
+      },
+    );
+  }
+
+  getHyperstructureTotalContributableAmount() {
+    return Object.values(this.hyperstructureTotalCosts).reduce((total, { resource, amount }) => {
+      return (
+        total +
+        (HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[resource as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS] ?? 0) *
+          amount
+      );
+    }, 0);
+  }
+
+  getBasePopulationCapacity(): number {
+    return this.getValueOrDefault(() => {
+      return (
+        getComponentValue(this.components.PopulationConfig, getEntityIdFromKeys([POPULATION_CONFIG_ID]))
+          ?.base_population ?? 0
+      );
+    }, 0);
+  }
+
+  getResourceOutputs(resourceType: number): number {
+    return this.getValueOrDefault(() => {
+      const productionConfig = getComponentValue(
+        this.components.ProductionConfig,
+        getEntityIdFromKeys([BigInt(resourceType)]),
+      );
+
+      return Number(productionConfig?.amount ?? 0);
+    }, 0);
+  }
+
+  getTravelFoodCostConfig(troopType: number) {
+    return this.getValueOrDefault(
+      () => {
+        const travelFoodCostConfig = getComponentValue(
+          this.components.TravelFoodCostConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(troopType)]),
+        );
+
+        return {
+          exploreWheatBurnAmount: Number(travelFoodCostConfig?.explore_wheat_burn_amount) ?? 0,
+          exploreFishBurnAmount: Number(travelFoodCostConfig?.explore_fish_burn_amount) ?? 0,
+          travelWheatBurnAmount: Number(travelFoodCostConfig?.travel_wheat_burn_amount) ?? 0,
+          travelFishBurnAmount: Number(travelFoodCostConfig?.travel_fish_burn_amount) ?? 0,
+        };
+      },
+      {
+        exploreWheatBurnAmount: 0,
+        exploreFishBurnAmount: 0,
+        travelWheatBurnAmount: 0,
+        travelFishBurnAmount: 0,
       },
     );
   }

@@ -246,7 +246,7 @@ export const setResourceBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
   const scaledBuildingCosts = scaleResourceInputs(
-    config.config.buildings.buildingCosts,
+    config.config.resources.resourceBuildingCosts,
     config.config.resources.resourceMultiplier,
   );
 

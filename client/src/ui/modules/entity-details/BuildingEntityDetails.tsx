@@ -28,7 +28,6 @@ import {
   EternumGlobalConfig,
   ID,
   LEVEL_DESCRIPTIONS,
-  REALM_UPGRADE_COSTS,
   RealmLevels,
   ResourcesIds,
   StructureType,
@@ -218,7 +217,7 @@ const CastleDetails = () => {
     if (!getNextRealmLevel) return false;
 
     const cost = scaleResources(
-      REALM_UPGRADE_COSTS[getNextRealmLevel as keyof typeof REALM_UPGRADE_COSTS],
+      configManager.realmUpgradeCosts[getNextRealmLevel],
       EternumGlobalConfig.resources.resourceMultiplier,
     );
 
@@ -305,7 +304,7 @@ const CastleDetails = () => {
                 <div className="my-4 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
                 <div className="flex gap-2">
                   {scaleResources(
-                    REALM_UPGRADE_COSTS[(realm.level + 1) as keyof typeof REALM_UPGRADE_COSTS],
+                    configManager.realmUpgradeCosts[realm.level + 1],
                     EternumGlobalConfig.resources.resourceMultiplier,
                   )?.map((a) => {
                     return (

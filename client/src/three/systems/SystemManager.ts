@@ -1,23 +1,16 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
-import { SetupResult } from "@/dojo/setup";
+import { configManager, SetupResult } from "@/dojo/setup";
 import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  ID,
-  StructureType,
-} from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, HYPERSTRUCTURE_RESOURCE_MULTIPLIERS, ID, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
-  Has,
-  HasValue,
   defineComponentSystem,
   defineQuery,
   getComponentValue,
+  Has,
+  HasValue,
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
@@ -281,28 +274,31 @@ export class SystemManager {
     progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
     hyperstructureEntityId: ID,
   ) => {
+    const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount();
     let percentage = 0;
-    const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
-      let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
-      let progress = {
-        hyperstructure_entity_id: hyperstructureEntityId,
-        resource_type: resource,
-        amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
-        percentage: !foundProgress
-          ? 0
-          : Math.floor(
-              (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-            ),
-        costNeeded: resourceCost,
-      };
-      percentage +=
-        (progress.amount *
-          HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
-            progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
-          ]!) /
-        TOTAL_CONTRIBUTABLE_AMOUNT;
-      return progress;
-    });
+    const allProgresses = Object.values(configManager.hyperstructureTotalCosts).map(
+      ({ resource, amount: resourceCost }) => {
+        let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+        let progress = {
+          hyperstructure_entity_id: hyperstructureEntityId,
+          resource_type: resource,
+          amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
+          percentage: !foundProgress
+            ? 0
+            : Math.floor(
+                (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
+              ),
+          costNeeded: resourceCost,
+        };
+        percentage +=
+          (progress.amount *
+            HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
+              progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
+            ]!) /
+          totalContributableAmount;
+        return progress;
+      },
+    );
     return { allProgresses, percentage };
   };
 }

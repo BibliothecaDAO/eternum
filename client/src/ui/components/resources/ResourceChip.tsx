@@ -1,5 +1,6 @@
-import { findResourceById, getIconResourceId, ID, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
+import { configManager } from "@/dojo/setup";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
@@ -37,7 +38,7 @@ export const ResourceChip = ({
   }, [productionManager, production, currentDefaultTick, maxStorehouseCapacityKg]);
 
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(WEIGHTS_GRAM[resourceId as ResourcesIds] || 1000);
+    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {

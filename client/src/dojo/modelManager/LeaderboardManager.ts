@@ -1,11 +1,5 @@
 import { GuildFromPlayerAddress } from "@/hooks/helpers/useGuilds";
-import {
-  ContractAddress,
-  HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  ID,
-  TickIds,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, ID, TickIds } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { ClientConfigManager } from "./ConfigManager";
@@ -94,6 +88,7 @@ export class LeaderboardManager {
     };
 
     const contributions = getContributions(parsedEvent.hyperstructureEntityId);
+    const pointsOnCompletion = this.configManager.getHyperstructureConfig().pointsOnCompletion;
 
     contributions.forEach((contribution) => {
       if (!contribution) return;
@@ -102,7 +97,7 @@ export class LeaderboardManager {
       const points = computeInitialContributionPoints(
         contribution.resource_type,
         contribution.amount,
-        HYPERSTRUCTURE_POINTS_ON_COMPLETION,
+        pointsOnCompletion,
       );
 
       const playerPointsForEachHyperstructure =
@@ -188,7 +183,7 @@ export class LeaderboardManager {
 
       const nbOfCycles = timePeriod / this.configManager.getTick(TickIds.Default);
 
-      const totalPoints = nbOfCycles * HYPERSTRUCTURE_POINTS_PER_CYCLE;
+      const totalPoints = nbOfCycles * this.configManager.getHyperstructureConfig().pointsPerCycle;
 
       event.coOwners.forEach((coOwner) => {
         const key = getGuildFromPlayerAddress

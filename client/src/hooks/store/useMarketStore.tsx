@@ -1,4 +1,4 @@
-import { ID, MarketInterface, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, MarketInterface } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 
 interface MarketStore {

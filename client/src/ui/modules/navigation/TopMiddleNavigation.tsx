@@ -13,15 +13,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  CapacityConfigCategory,
-  ID,
-  ResourcesIds,
-  TickIds,
-  WEIGHTS_GRAM,
-} from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -53,15 +45,15 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
       <ul className="list-none my-1">
         <li className="flex items-center">
           <ResourceIcon resource="Lords" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Lords]).toLocaleString()} Lords
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
         </li>
         <li className="flex items-center">
           <ResourceIcon resource="Wheat" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wheat]).toLocaleString()} Food
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
         </li>
         <li className="flex items-center">
           <ResourceIcon resource="Wood" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wood]).toLocaleString()} Other
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
         </li>
       </ul>
       <p className="italic text-xs">Build Storehouses to increase capacity.</p>
@@ -75,7 +67,7 @@ const WorkersHutTooltipContent = () => {
     <div className="text-xs text-gray-200 p-2 max-w-xs">
       <p className="font-semibold">Population Capacity</p>
       <ul className="list-disc list-inside my-1">
-        <li>{BASE_POPULATION_CAPACITY} Base Capacity</li>
+        <li>{configManager.getBasePopulationCapacity()} Base Capacity</li>
         <li>+{capacity} per Workers Hut</li>
       </ul>
       <p className="italic text-xs">Build Workers Huts to increase population capacity.</p>
@@ -232,7 +224,7 @@ export const TopMiddleNavigation = () => {
             >
               <ResourceIcon withTooltip={false} resource="House" size="sm" />
               <div className="self-center">
-                {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+                {population.population} / {population.capacity + configManager.getBasePopulationCapacity()}
               </div>
             </div>
           )}

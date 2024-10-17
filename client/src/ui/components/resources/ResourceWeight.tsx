@@ -2,7 +2,7 @@ import { configManager } from "@/dojo/setup";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { divideByPrecision, formatNumber, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
-import { CapacityConfigCategory, ResourcesIds, WEIGHTS_GRAM, type ID, type Resource } from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, ResourcesIds, type ID, type Resource } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
 export const TravelInfo = ({
@@ -81,9 +81,13 @@ export const TravelInfo = ({
 export const ResourceWeight = ({ className }: { className?: string }) => {
   return (
     <div className={`flex justify-center w-full gap-4 font-bold ${className}`}>
-      <div className="ml-2">Lords: {`${WEIGHTS_GRAM[ResourcesIds.Lords] / GRAMS_PER_KG} kg/unit`}</div>
-      <div>Food: {`${WEIGHTS_GRAM[ResourcesIds.Wheat] / GRAMS_PER_KG} kg/unit`}</div>
-      <div className="ml-2">Resource: {`${WEIGHTS_GRAM[ResourcesIds.Wood] / GRAMS_PER_KG} kg/unit`}</div>
+      <div className="ml-2">
+        Lords: {`${configManager.getResourceWeight(ResourcesIds.Lords) / GRAMS_PER_KG} kg/unit`}
+      </div>
+      <div>Food: {`${configManager.getResourceWeight(ResourcesIds.Wheat) / GRAMS_PER_KG} kg/unit`}</div>
+      <div className="ml-2">
+        Resource: {`${configManager.getResourceWeight(ResourcesIds.Wood) / GRAMS_PER_KG} kg/unit`}
+      </div>
     </div>
   );
 };

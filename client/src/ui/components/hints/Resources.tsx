@@ -3,14 +3,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import {
-  CapacityConfigCategory,
-  EternumGlobalConfig,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
-  ResourcesIds,
-  findResourceById,
-} from "@bibliothecadao/eternum";
+import { CapacityConfigCategory, EternumGlobalConfig, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
 
@@ -71,13 +64,13 @@ export const Resources = () => {
 const ResourceTable = () => {
   const resourceTable = useMemo(() => {
     const resources = [];
-    for (const resourceId of Object.keys(RESOURCE_INPUTS_SCALED) as unknown as ResourcesIds[]) {
+    for (const resourceId of Object.keys(configManager.resourceInputs) as unknown as ResourcesIds[]) {
       if (resourceId == ResourcesIds.Lords) continue;
       const calldata = {
         resource: findResourceById(Number(resourceId)),
-        amount: RESOURCE_OUTPUTS_SCALED[resourceId],
+        amount: configManager.getResourceOutputs(resourceId),
         resource_type: resourceId,
-        cost: RESOURCE_INPUTS_SCALED[resourceId].map((cost: any) => ({
+        cost: configManager.resourceInputs[resourceId].map((cost: any) => ({
           ...cost,
           amount: multiplyByPrecision(cost.amount),
         })),

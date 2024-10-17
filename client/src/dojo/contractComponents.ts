@@ -551,12 +551,18 @@ export function defineContractComponents(world: World) {
     HyperstructureConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, time_between_shares_change: RecsType.Number },
+        {
+          config_id: RecsType.Number,
+          time_between_shares_change: RecsType.Number,
+          points_per_cycle: RecsType.BigInt,
+          points_for_win: RecsType.BigInt,
+          points_on_completion: RecsType.BigInt,
+        },
         {
           metadata: {
             namespace: "eternum",
             name: "HyperstructureConfig",
-            types: ["u32", "u64"],
+            types: ["u32", "u64", "u128", "u128", "u128"],
             customTypes: [],
           },
         },
@@ -976,6 +982,34 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    RealmLevelConfig: (() => {
+      return defineComponent(
+        world,
+        { level: RecsType.Number, required_resources_id: RecsType.Number, required_resource_count: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "RealmLevelConfig",
+            types: ["u8", "u32", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RealmMaxLevelConfig: (() => {
+      return defineComponent(
+        world,
+        { config_id: RecsType.Number, max_level: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "RealmMaxLevelConfig",
+            types: ["u32", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Resource: (() => {
       return defineComponent(
         world,
@@ -1196,6 +1230,27 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "Trade",
             types: ["u32", "u32", "u32", "u32", "felt252", "u128", "u32", "u32", "u32", "felt252", "u128", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    TravelFoodCostConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          unit_type: RecsType.Number,
+          explore_wheat_burn_amount: RecsType.BigInt,
+          explore_fish_burn_amount: RecsType.BigInt,
+          travel_wheat_burn_amount: RecsType.BigInt,
+          travel_fish_burn_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "TravelFoodCostConfig",
+            types: ["u32", "u8", "u128", "u128", "u128", "u128"],
             customTypes: [],
           },
         },

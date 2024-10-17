@@ -3,9 +3,7 @@ import {
   BuildingType,
   CapacityConfigCategory,
   EternumGlobalConfig,
-  RESOURCE_INPUTS_SCALED,
   ResourcesIds,
-  WEIGHTS_GRAM,
   type ID,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
@@ -112,7 +110,8 @@ export class ProductionManager {
         const balance = Number(resource?.balance || 0n) + productionDuration * rate;
         const storeCapacity = this.getStoreCapacity();
         const maxAmountStorable =
-          (storeCapacity / (WEIGHTS_GRAM[resourceId] || 1000)) * EternumGlobalConfig.resources.resourcePrecision;
+          (storeCapacity / (configManager.getResourceWeight(resourceId) || 1000)) *
+          EternumGlobalConfig.resources.resourcePrecision;
         const result = Math.min(balance, maxAmountStorable);
         return result;
       } else {
@@ -199,7 +198,7 @@ export class ProductionManager {
   }
 
   private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
-    const inputs = RESOURCE_INPUTS_SCALED[resourceId];
+    const inputs = configManager.resourceInputs[resourceId];
 
     // Ensure inputs is an array before proceeding
     if (inputs.length == 0) {
