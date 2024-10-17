@@ -2,13 +2,7 @@ import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { formatTime } from "@/ui/utils/utils";
-import {
-  findResourceById,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/eternum";
+import { findResourceById, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { tableOfContents } from "./utils";
@@ -94,13 +88,15 @@ const HyperstructureCreationTable = () => {
           <tr>
             <td colSpan={2} className="p-2">
               Hyperstructures are key to victory and can be constructed collaboratively. Once built, Hyperstructures
-              generate {HYPERSTRUCTURE_POINTS_PER_CYCLE} points per tick. Once completed, the Hyperstructure owner can
-              distribute shares to others, allowing shareholders to earn a portion of the generated points.
+              generate {configManager.getHyperstructureConfig().pointsPerCycle} points per tick. Once completed, the
+              Hyperstructure owner can distribute shares to others, allowing shareholders to earn a portion of the
+              generated points.
               <br />
               <br />
               Defending your Hyperstructure is crucial. If captured by another player, they can redistribute the shares,
               potentially cutting off your point income.
-              <br />A new set of shareholers can be set every {formatTime(HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S)}.
+              <br />A new set of shareholers can be set every{" "}
+              {formatTime(configManager.getHyperstructureConfig().timeBetweenSharesChange)}.
             </td>
           </tr>
         </tfoot>

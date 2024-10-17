@@ -3,7 +3,7 @@ import { configManager, SetupResult } from "@/dojo/setup";
 import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, HYPERSTRUCTURE_RESOURCE_MULTIPLIERS, ID, StructureType } from "@bibliothecadao/eternum";
+import { ID, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
@@ -75,7 +75,7 @@ export class SystemManager {
             const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
             if (protectee) return;
 
-            const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
+            const healthMultiplier = BigInt(configManager.getResourcePrecision());
 
             const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
             if (!entityOwner) return;
@@ -168,7 +168,7 @@ export class SystemManager {
           const position = getComponentValue(this.setup.components.Position, update.entity);
           if (!position) return;
 
-          const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          const healthMultiplier = BigInt(configManager.getResourcePrecision());
           const isEmpty =
             battle.attack_army_health.current < healthMultiplier &&
             battle.defence_army_health.current < healthMultiplier;
@@ -290,11 +290,7 @@ export class SystemManager {
           costNeeded: resourceCost,
         };
         percentage +=
-          (progress.amount *
-            HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
-              progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
-            ]!) /
-          totalContributableAmount;
+          (progress.amount * configManager.getResourceRarity(progress.resource_type)) / totalContributableAmount;
         return progress;
       },
     );

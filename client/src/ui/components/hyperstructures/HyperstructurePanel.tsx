@@ -1,5 +1,6 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { calculateCompletionPoints } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
@@ -12,12 +13,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
-import {
-  ContractAddress,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  MAX_NAME_LENGTH,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 import { ContributionSummary } from "./ContributionSummary";
@@ -87,7 +83,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
-    return HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
+    return Object.values(configManager.hyperstructureTotalCosts).map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
@@ -205,7 +201,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           <div className="flex flex-col justify-center items-center text-center">
             <div className="uppercase text-[10px]">Points/cycle</div>
             <div className="font-bold text-sm">
-              {currencyIntlFormat((myShares || 0) * HYPERSTRUCTURE_POINTS_PER_CYCLE)}
+              {currencyIntlFormat((myShares || 0) * configManager.getHyperstructureConfig().pointsPerCycle)}
             </div>
           </div>
         </div>

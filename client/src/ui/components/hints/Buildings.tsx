@@ -1,32 +1,30 @@
+import { configManager } from "@/dojo/setup";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import {
-  BUILDING_CAPACITY,
-  BUILDING_COSTS_SCALED,
-  BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  BuildingEnumToString,
-  BuildingType,
-} from "@bibliothecadao/eternum";
+import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const Buildings = () => {
   const buildingTable = useMemo(() => {
     const buildings = [];
 
-    for (const buildingId of Object.keys(BUILDING_RESOURCE_PRODUCED) as unknown as BuildingType[]) {
-      if (BUILDING_COSTS_SCALED[buildingId].length !== 0) {
-        const population = BUILDING_POPULATION[buildingId];
+    for (const buildingId of Object.keys(BuildingType) as unknown as BuildingType[]) {
+      if (isNaN(Number(buildingId))) continue;
 
-        const capacity = BUILDING_CAPACITY[buildingId];
+      const buildingCosts = configManager.buildingCosts[buildingId];
+
+      if (buildingCosts.length !== 0) {
+        const buildingPopCapacityConfig = configManager.getBuildingPopConfig(buildingId);
+        const population = buildingPopCapacityConfig.population;
+        const capacity = buildingPopCapacityConfig.capacity;
 
         const calldata = {
           building_category: buildingId,
           building_capacity: capacity,
           building_population: population,
-          building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
-          cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
+          building_resource_type: configManager.getResourceBuildingProduced(buildingId),
+          cost_of_building: buildingCosts.map((cost) => {
             return {
               ...cost,
               amount: cost.amount,

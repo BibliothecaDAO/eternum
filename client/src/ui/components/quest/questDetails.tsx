@@ -3,15 +3,7 @@ import { Prize } from "@/hooks/helpers/useQuests";
 import { BUILDING_IMAGES_PATH, BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  CapacityConfigCategory,
-  QuestType,
-  ResourcesIds,
-  TROOPS_FOOD_CONSUMPTION,
-} from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, QuestType, ResourcesIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ResourceWeight } from "../resources/ResourceWeight";
 
@@ -252,15 +244,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                     <tbody>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_fish_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).travelFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
@@ -268,15 +258,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                       </tr>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_wheat_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).travelWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
@@ -332,15 +320,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                     <tbody>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_fish_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).exploreFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).exploreFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
@@ -348,15 +334,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                       </tr>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_wheat_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).exploreWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).exploreWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
@@ -389,7 +373,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildWorkersHut,
     {
       name: "Build a workers hut",
-      description: `Each building takes up population in your realm. You realm starts with a population of ${BASE_POPULATION_CAPACITY}. 
+      description: `Each building takes up population in your realm. You realm starts with a population of ${configManager.getBasePopulationCapacity()}. 
       Build worker huts to extend your population capacity by ${
         configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity
       }.`,

@@ -13,7 +13,6 @@ import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPr
 import {
   CapacityConfigCategory,
   DONKEY_ENTITY_TYPE,
-  EternumGlobalConfig,
   ONE_MONTH,
   ResourcesIds,
   findResourceById,

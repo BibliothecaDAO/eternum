@@ -1,11 +1,11 @@
 import { divideByPrecision } from "@/ui/utils/utils";
 import {
+  ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   BuildingType,
   CapacityConfigCategory,
   EternumGlobalConfig,
   HYPERSTRUCTURE_CONFIG_ID,
-  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   POPULATION_CONFIG_ID,
   ResourcesIds,
   StructureType,
@@ -25,6 +25,7 @@ export class ClientConfigManager {
   resourceOutputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   hyperstructureTotalCosts: Record<number, { resource: ResourcesIds; amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
 
@@ -34,6 +35,7 @@ export class ClientConfigManager {
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
     this.initializeResourceBuildingCosts();
+    this.initializeBuildingCosts();
     this.initializeStructureCosts();
   }
 
@@ -160,6 +162,37 @@ export class ClientConfigManager {
         resourceCosts.push({ resource: resourceType, amount });
       }
       this.resourceBuildingCosts[Number(resourceId)] = resourceCosts;
+    }
+  }
+
+  private initializeBuildingCosts() {
+    for (const buildingType of Object.values(BuildingType).filter(Number.isInteger)) {
+      const resourceType = this.getResourceBuildingProduced(Number(buildingType));
+
+      const buildingConfig = getComponentValue(
+        this.components.BuildingConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(buildingType), BigInt(resourceType)]),
+      );
+
+      const resourceCostCount = buildingConfig?.resource_cost_count || 0;
+      const resourceCostId = buildingConfig?.resource_cost_id || 0;
+
+      const resourceCosts: { resource: ResourcesIds; amount: number }[] = [];
+      for (let index = 0; index < resourceCostCount; index++) {
+        const resourceCost = getComponentValue(
+          this.components.ResourceCost,
+          getEntityIdFromKeys([BigInt(resourceCostId), BigInt(index)]),
+        );
+        if (!resourceCost) {
+          continue;
+        }
+
+        const resourceType = resourceCost.resource_type;
+        const amount = Number(resourceCost.amount) / this.getResourcePrecision();
+
+        resourceCosts.push({ resource: resourceType, amount });
+      }
+      this.buildingCosts[Number(buildingType)] = resourceCosts;
     }
   }
 
@@ -312,6 +345,20 @@ export class ClientConfigManager {
     );
   }
 
+  getAdminBankOwnerFee() {
+    const adminBank = getComponentValue(this.components.Bank, getEntityIdFromKeys([ADMIN_BANK_ENTITY_ID]));
+
+    const numerator = Number(adminBank?.owner_fee_num) ?? 0;
+    const denominator = Number(adminBank?.owner_fee_denom) ?? 0;
+    return numerator / denominator;
+  }
+
+  getAdminBankLpFee() {
+    const bankConfig = this.getBankConfig();
+
+    return bankConfig.lpFeesNumerator / bankConfig.lpFeesDenominator;
+  }
+
   getCapacityConfig(category: CapacityConfigCategory) {
     return this.getValueOrDefault(() => {
       const capacityConfig = getComponentValue(this.components.CapacityConfig, getEntityIdFromKeys([BigInt(category)]));
@@ -379,11 +426,7 @@ export class ClientConfigManager {
 
   getHyperstructureTotalContributableAmount() {
     return Object.values(this.hyperstructureTotalCosts).reduce((total, { resource, amount }) => {
-      return (
-        total +
-        (HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[resource as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS] ?? 0) *
-          amount
-      );
+      return total + this.getResourceRarity(resource) * amount;
     }, 0);
   }
 
@@ -429,5 +472,27 @@ export class ClientConfigManager {
         travelFishBurnAmount: 0,
       },
     );
+  }
+
+  getTroopStaminaConfig(troopId: number) {
+    return this.getValueOrDefault(() => {
+      const staminaConfig = getComponentValue(
+        this.components.StaminaConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(troopId)]),
+      );
+      return staminaConfig?.max_stamina ?? 0;
+    }, 0);
+  }
+
+  getResourceRarity(resourceId: ResourcesIds) {
+    return EternumGlobalConfig.resources.resourceRarity[resourceId] ?? 0;
+  }
+
+  getResourcePrecision() {
+    return EternumGlobalConfig.resources.resourcePrecision;
+  }
+
+  getResourceBuildingProduced(buildingType: BuildingType) {
+    return EternumGlobalConfig.buildings.buildingResourceProduced[buildingType] ?? 0;
   }
 }

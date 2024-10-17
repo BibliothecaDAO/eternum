@@ -1,27 +1,12 @@
-import clsx from "clsx";
-
-import useUIStore from "@/hooks/store/useUIStore";
-import { Tabs } from "@/ui/elements/tab";
-import {
-  BUILDING_RESOURCE_PRODUCED,
-  BuildingEnumToString,
-  BuildingType,
-  findResourceById,
-  ID,
-  ResourceCost as ResourceCostType,
-  ResourcesIds,
-  WORLD_CONFIG_ID,
-} from "@bibliothecadao/eternum";
-
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { configManager } from "@/dojo/setup";
+import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { configManager } from "@/dojo/setup";
-import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
+import useUIStore from "@/hooks/store/useUIStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -30,6 +15,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { Tabs } from "@/ui/elements/tab";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import {
@@ -38,8 +24,17 @@ import {
   isResourceProductionBuilding,
   ResourceIdToMiningType,
 } from "@/ui/utils/utils";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
+import {
+  BuildingEnumToString,
+  BuildingType,
+  findResourceById,
+  ID,
+  ResourceCost as ResourceCostType,
+  ResourcesIds,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/eternum";
 import { Component, getComponentValue } from "@dojoengine/recs";
+import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
@@ -537,7 +532,7 @@ export const BuildingInfo = ({
   const population = buildingPopCapacityConfig.population;
   const capacity = buildingPopCapacityConfig.capacity;
 
-  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId as keyof typeof BUILDING_RESOURCE_PRODUCED];
+  const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   const ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || 0 : 0;
 
   const perTick = resourceProduced !== undefined ? configManager.getResourceOutputs(resourceProduced) || 0 : 0;
@@ -708,7 +703,8 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
 
   let updatedCosts: ResourceCostType[] = [];
 
-  BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
+  configManager.buildingCosts[Number(buildingCategory)].forEach((cost) => {
+    // BUILDING_COSTS_SCALED[Number(buildingCategory)].forEach((cost) => {
     const baseCost = cost.amount;
     const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
     const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);

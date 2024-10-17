@@ -1,7 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Combat = () => {
@@ -173,9 +173,7 @@ const TroopRow = ({
       <td className="border border-gold/10 p-2">
         <ResourceIcon resource={type} size="xxl" />
       </td>
-      <td className="border border-gold/10 p-2 text-center">
-        {TROOPS_STAMINAS[resourceId as keyof typeof TROOPS_STAMINAS]}
-      </td>
+      <td className="border border-gold/10 p-2 text-center">{configManager.getTroopStaminaConfig(resourceId)}</td>
       <td className="border border-gold/10 p-2 text-center">{strength}</td>
       <td className="border border-gold/10 p-2 text-center">{health}</td>
     </tr>

@@ -9,20 +9,10 @@ import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import {
-  ContractAddress,
-  DONKEY_ENTITY_TYPE,
-  EternumGlobalConfig,
-  ID,
-  ResourcesIds,
-  resources,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, DONKEY_ENTITY_TYPE, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
-
-const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
-const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.banks.lpFeesDenominator;
 
 export const ResourceSwap = ({
   bankEntityId,
@@ -49,8 +39,8 @@ export const ResourceSwap = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  const ownerFee = lordsAmount * OWNER_FEE;
-  const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * LP_FEE;
+  const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
+  const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
     () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
@@ -119,7 +109,7 @@ export const ResourceSwap = ({
     } else {
       const calculatedResourceAmount = divideByPrecision(
         marketManager.calculateResourceInputForLordsOutput(
-          multiplyByPrecision(amount / (1 - OWNER_FEE)) || 0,
+          multiplyByPrecision(amount / (1 - configManager.getAdminBankOwnerFee())) || 0,
           configManager.getBankConfig().lpFeesNumerator,
         ),
       );
@@ -145,7 +135,7 @@ export const ResourceSwap = ({
           configManager.getBankConfig().lpFeesNumerator,
         ),
       );
-      const lordsAmountAfterFee = calculatedLordsAmount * (1 - OWNER_FEE);
+      const lordsAmountAfterFee = calculatedLordsAmount * (1 - configManager.getAdminBankOwnerFee());
       setLordsAmount(lordsAmountAfterFee);
     }
   };
