@@ -149,10 +149,10 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30  h-full row-span-12 ">
-        <div className="col-span-12  p-2 flex justify-between row-span-2">
-          <div className="self-center text-xl flex gap-2 items-center">
-            <div className="bg-black">
+      <div className="container border mx-auto  grid grid-cols-12 bg-dark border-gold/30  h-full row-span-12 rounded-2xl ">
+        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
+          <div className="self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
+            <div className="">
               <Select
                 value={structureEntityId.toString()}
                 onValueChange={(trait) => {
@@ -162,7 +162,7 @@ export const MarketModal = () => {
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-black bg-hex-bg">
+                <SelectContent>
                   {structures.map((structure, index) => (
                     <SelectItem key={index} value={structure.entity_id.toString()}>
                       {structure.name}
@@ -171,27 +171,11 @@ export const MarketModal = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className=" ml-2 bg-map align-middle flex">
+            <div className=" ml-2 bg-map align-middle flex gap-2">
               {currencyFormat(Number(lordsBalance), 0)}{" "}
               <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
             </div>
           </div>
-          <div className="self-center text-3xl">
-            <h2 className="text-center">The Lords Market</h2>
-          </div>
-          <div className="self-center flex gap-4">
-            <CircleButton
-              onClick={() => {
-                toggleModal(null);
-                toggleModal(<HintModal initialActiveSection={"Trading"} />);
-              }}
-              size={"sm"}
-              image={BuildingThumbs.question}
-            />
-          </div>
-        </div>
-
-        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
           <Suspense fallback={<LoadingAnimation />}>
             <MarketResourceSidebar
               entityId={structureEntityId}
@@ -205,6 +189,21 @@ export const MarketModal = () => {
           </Suspense>
         </div>
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
+          <div className="col-span-12  p-2 flex justify-between row-span-2 gap-4 my-4 px-8">
+            <div className="self-center text-3xl ">
+              <h1 className="text-center">The Lords Market</h1>
+            </div>
+            <div className="self-center flex gap-4">
+              <CircleButton
+                onClick={() => {
+                  toggleModal(null);
+                  toggleModal(<HintModal initialActiveSection={"Trading"} />);
+                }}
+                size={"sm"}
+                image={BuildingThumbs.question}
+              />
+            </div>
+          </div>
           <Tabs
             size="large"
             selectedIndex={selectedTab}

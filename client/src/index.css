@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap&family=Sedan:ital@0;1&display=swap&Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Bokor&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -20,7 +21,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Sedan", sans-serif;
+  font-family: "Bokor", system-ui;
 }
 
 .h1,
@@ -29,7 +30,7 @@ h6 {
 .h4,
 .h5,
 .h6 {
-  font-family: "Sedan", sans-serif;
+  font-family: "Bokor", system-ui;
 }
 
 @keyframes dotAnimation {
