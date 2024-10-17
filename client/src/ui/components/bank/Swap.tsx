@@ -62,11 +62,14 @@ export const ResourceSwap = ({
     }
   }, [marketManager.resourceId]);
 
+  const lordsBalance = useMemo(() => getBalance(entityId, ResourcesIds.Lords).balance, [entityId, getBalance]);
+  const resourceBalance = useMemo(() => getBalance(entityId, resourceId).balance, [entityId, resourceId, getBalance]);
+
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
-    const balanceId = isBuyResource ? BigInt(ResourcesIds.Lords) : resourceId;
-    return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
-  }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId, ownerFee]);
+    const balance = isBuyResource ? lordsBalance : resourceBalance;
+    return multiplyByPrecision(amount) <= balance;
+  }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
   const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
   const isMyResourcesLocked = useIsResourcesLocked(entityId);
@@ -159,6 +162,7 @@ export const ResourceSwap = ({
           resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
+          max={isLords ? divideByPrecision(lordsBalance) : Infinity}
         />
       );
     },
@@ -268,8 +272,8 @@ export const ResourceSwap = ({
                       {(
                         marketManager.slippage(
                           isBuyResource
-                            ? multiplyByPrecision(lordsAmount - lpFee)
-                            : multiplyByPrecision(resourceAmount - lpFee),
+                            ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
+                            : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
                           isBuyResource,
                         ) || 0
                       ).toFixed(2)}{" "}
