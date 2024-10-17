@@ -53,6 +53,12 @@ const setupConfig: Config =
       }
     : EternumGlobalConfig;
 
+// probably should be refactored
+setupConfig.season = {
+  seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
+  realmsAddress: process.env.VITE_REALMS_ADDRESS!,
+};
+
 export const config = new EternumConfig(setupConfig);
 
 console.log("Setting up config...");

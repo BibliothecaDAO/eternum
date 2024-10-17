@@ -73,9 +73,8 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDisp
     let maker_position = Position { x: 100000, y: 200000, entity_id: 1 };
     let taker_position = Position { x: 200000, y: 1000000, entity_id: 1 };
 
-    let realm_systems_dispatcher = deploy_realm_systems(world);
-    let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);
-    let taker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, taker_position);
+    let maker_realm_entity_id = spawn_realm(world, 1, maker_position.into());
+    let taker_realm_entity_id = spawn_realm(world, 2, taker_position.into());
 
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;

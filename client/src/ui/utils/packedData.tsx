@@ -1,25 +1,24 @@
-export function unpackResources(packedValue: bigint, valueCount: number): number[] {
-  const MAX_NUMBER_SIZE = 8;
+export function unpackResources(packedValue: bigint): number[] {
+  const MAX_BITS_PER_VALUE = 8;
 
   const unpackedNumbers = [];
 
   let remainingValue = BigInt(packedValue);
 
-  for (let i = 0; i < valueCount; i++) {
-    const number = remainingValue & BigInt((1 << MAX_NUMBER_SIZE) - 1);
+  while (remainingValue > 0n) {
+    const number = remainingValue & BigInt((1 << MAX_BITS_PER_VALUE) - 1);
     unpackedNumbers.unshift(Number(number));
-    remainingValue = remainingValue >> BigInt(MAX_NUMBER_SIZE);
+    remainingValue = remainingValue >> BigInt(MAX_BITS_PER_VALUE);
   }
-
   return unpackedNumbers;
 }
 
 export function packResources(numbers: number[]) {
   const MAX_BITS = 128;
-  const MAX_NUMBER_SIZE = 8;
+  const MAX_BITS_PER_VALUE = 8;
 
   // Calculate the maximum number of values that can be packed
-  const maxValues = Math.floor(MAX_BITS / MAX_NUMBER_SIZE);
+  const maxValues = Math.floor(MAX_BITS / MAX_BITS_PER_VALUE);
 
   if (numbers.length > maxValues) {
     throw new Error(`Exceeded maximum number of values that can be packed: ${maxValues}`);
@@ -30,11 +29,11 @@ export function packResources(numbers: number[]) {
   for (let i = 0; i < numbers.length; i++) {
     const number = BigInt(numbers[i]);
 
-    if (number >= 1 << MAX_NUMBER_SIZE) {
-      throw new Error(`Number ${number} exceeds maximum size of ${MAX_NUMBER_SIZE} bits`);
+    if (number >= 1 << MAX_BITS_PER_VALUE) {
+      throw new Error(`Number ${number} exceeds maximum size of ${MAX_BITS_PER_VALUE} bits`);
     }
 
-    packedValue = (packedValue << BigInt(MAX_NUMBER_SIZE)) | number;
+    packedValue = (packedValue << BigInt(MAX_BITS_PER_VALUE)) | number;
   }
 
   return packedValue.toString();

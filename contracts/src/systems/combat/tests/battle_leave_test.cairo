@@ -19,7 +19,7 @@ use eternum::systems::{
 };
 use eternum::utils::testing::{
     config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_system, deploy_combat_systems}, general::mint
+    systems::{deploy_realm_systems, deploy_system, deploy_combat_systems}, general::{mint, spawn_realm}
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -97,7 +97,6 @@ fn set_configurations(world: IWorldDispatcher) {
 fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, ID) {
     let world = spawn_eternum();
     set_configurations(world);
-    let realm_system_dispatcher = deploy_realm_systems(world);
     let combat_system_dispatcher = deploy_combat_systems(world);
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
@@ -110,7 +109,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
-    let player_1_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
+    let player_1_realm_id = spawn_realm(world, 1, Coord { x: 1, y: 1 });
     mint(
         world,
         player_1_realm_id,
@@ -137,7 +136,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_2_REALM_OWNER>());
-    let player_2_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
+    let player_2_realm_id = spawn_realm(world, 2, Coord { x: 2, y: 2 });
     mint(
         world,
         player_2_realm_id,
@@ -164,7 +163,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_3_REALM_OWNER>());
-    let player_3_realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1,);
+    let player_3_realm_id = spawn_realm(world, 3, Coord { x: 4, y: 4 });
     mint(
         world,
         player_3_realm_id,

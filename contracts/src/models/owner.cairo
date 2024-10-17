@@ -58,22 +58,7 @@ mod tests {
     fn owner_test_entity_owner_get_realm_id() {
         let world = spawn_eternum();
 
-        set!(
-            world,
-            Realm {
-                entity_id: 1,
-                realm_id: 3,
-                resource_types_packed: 0,
-                resource_types_count: 0,
-                cities: 0,
-                harbors: 0,
-                rivers: 0,
-                regions: 0,
-                wonder: 0,
-                order: 0,
-                level: 0
-            }
-        );
+        set!(world, Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0 });
 
         set!(world, EntityOwner { entity_id: 2, entity_owner_id: 1 });
 

@@ -168,38 +168,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_realm(props: SystemProps.CreateRealmProps) {
-    const {
-      realm_name,
-      realm_id,
-      resource_types_packed,
-      resource_types_count,
-      cities,
-      harbors,
-      rivers,
-      regions,
-      wonder,
-      order,
-      signer,
-    } = props;
+    const { realm_id, signer } = props;
 
     const tx = await this.execute(
       signer,
       [
         {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [
-            realm_name,
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-          ],
+          calldata: [realm_id],
         },
       ],
       NAMESPACE,
@@ -218,41 +195,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
-    let { realms, signer } = props;
+    let { realm_ids, signer } = props;
 
-    let calldata = realms.flatMap((realm) => {
-      const {
-        realm_name,
-        realm_id,
-        resource_types_packed,
-        resource_types_count,
-        cities,
-        harbors,
-        rivers,
-        regions,
-        wonder,
-        order,
-      } = realm;
-
+    let calldata = realm_ids.flatMap((realm_id) => {
       let calldata = [
         {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [
-            realm_name,
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-          ],
+          calldata: [realm_id],
         },
       ];
-
       return calldata;
     });
 
@@ -780,6 +732,15 @@ export class EternumProvider extends EnhancedDojoProvider {
         travel_wheat_burn_amount,
         travel_fish_burn_amount,
       ],
+    });
+  }
+  public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
+    const { season_pass_address, realms_address, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_season_config",
+      calldata: [season_pass_address, realms_address],
     });
   }
 

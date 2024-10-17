@@ -114,6 +114,10 @@ export const SETTLEMENT_MIN_SCALING_FACTOR_SCALED = 1844674407370955161n;
 export const SETTLEMENT_MIN_ANGLE_INCREASE = 20;
 export const SETTLEMENT_MAX_ANGLE_INCREASE = 40;
 
+// Season
+export const SEASON_PASS_ADDRESS = "0x0"; // set in indexer.sh
+export const REALMS_ADDRESS = "0x0"; // set in indexer.sh
+
 export const EternumGlobalConfig: Config = {
   stamina: {
     travelCost: STAMINA_TRAVEL_COST,
@@ -225,6 +229,10 @@ export const EternumGlobalConfig: Config = {
     hyperstructurePointsOnCompletion: HYPERSTRUCTURE_POINTS_ON_COMPLETION,
     hyperstructureTimeBetweenSharesChangeSeconds: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
     hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
+  },
+  season: {
+    seasonPassAddress: SEASON_PASS_ADDRESS,
+    realmsAddress: REALMS_ADDRESS,
   },
   questResources: QUEST_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,

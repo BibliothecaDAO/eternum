@@ -33,7 +33,7 @@ export const RealmProduction = () => {
             if (!realm) return;
             console.log("Realm prod", realm);
 
-            const resourcesProduced = unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount);
+            const resourcesProduced = unpackResources(realm.resourceTypesPacked);
             if (filterProduced && !resourcesProduced.includes(filterProduced)) return;
 
             const resourcesConsumed = [

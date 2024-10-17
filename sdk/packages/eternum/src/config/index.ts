@@ -23,6 +23,7 @@ export class EternumConfig {
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setProductionConfig(config);
+    await setSeasonConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
     await setBuildingConfig(config);
@@ -410,6 +411,16 @@ export const setCapacityConfig = async (config: Config) => {
 
     console.log(`Configuring capacity ${category} config ${tx.statusReceipt} max capacity: ${weight_gram}...`);
   }
+};
+
+export const setSeasonConfig = async (config: Config) => {
+  const tx = await config.provider.set_season_config({
+    signer: config.account,
+    season_pass_address: config.config.season.seasonPassAddress,
+    realms_address: config.config.season.realmsAddress,
+  });
+
+  console.log(`Configuring season config ${tx.statusReceipt}`);
 };
 
 export const setSpeedConfig = async (config: Config) => {

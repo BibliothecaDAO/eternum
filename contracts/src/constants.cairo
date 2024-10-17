@@ -75,28 +75,29 @@ fn all_resource_ids() -> Array<u8> {
 
 // Note: Please update the all_resources_ids list whenever ResourceTypes are updated
 mod ResourceTypes {
-    const WOOD: u8 = 1;
-    const STONE: u8 = 2;
-    const COAL: u8 = 3;
+    const STONE: u8 = 1;
+    const COAL: u8 = 2;
+    const WOOD: u8 = 3;
     const COPPER: u8 = 4;
-    const OBSIDIAN: u8 = 5;
-    const SILVER: u8 = 6;
-    const IRONWOOD: u8 = 7;
-    const COLD_IRON: u8 = 8;
-    const GOLD: u8 = 9;
-    const HARTWOOD: u8 = 10;
-    const DIAMONDS: u8 = 11;
-    const SAPPHIRE: u8 = 12;
+    const IRONWOOD: u8 = 5;
+    const OBSIDIAN: u8 = 6;
+    const GOLD: u8 = 7;
+    const SILVER: u8 = 8;
+    const MITHRAL: u8 = 9;
+    const ALCHEMICAL_SILVER: u8 = 10;
+    const COLD_IRON: u8 = 11;
+    const DEEP_CRYSTAL: u8 = 12;
     const RUBY: u8 = 13;
-    const DEEP_CRYSTAL: u8 = 14;
-    const IGNIUM: u8 = 15;
-    const ETHEREAL_SILICA: u8 = 16;
-    const TRUE_ICE: u8 = 17;
-    const TWILIGHT_QUARTZ: u8 = 18;
-    const ALCHEMICAL_SILVER: u8 = 19;
-    const ADAMANTINE: u8 = 20;
-    const MITHRAL: u8 = 21;
+    const DIAMONDS: u8 = 14;
+    const HARTWOOD: u8 = 15;
+    const IGNIUM: u8 = 16;
+    const TWILIGHT_QUARTZ: u8 = 17;
+    const TRUE_ICE: u8 = 18;
+    const ADAMANTINE: u8 = 19;
+    const SAPPHIRE: u8 = 20;
+    const ETHEREAL_SILICA: u8 = 21;
     const DRAGONHIDE: u8 = 22;
+
     const DEMONHIDE: u8 = 28;
     const EARTHEN_SHARD: u8 = 29;
 

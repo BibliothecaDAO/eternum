@@ -21,8 +21,6 @@ mod map_systems {
         ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigCustomImpl,
         TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl
     };
-
-    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
@@ -33,6 +31,8 @@ mod map_systems {
     use eternum::models::resources::{
         Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
+
+    use eternum::models::season::SeasonImpl;
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
@@ -79,7 +79,7 @@ mod map_systems {
     #[abi(embed_v0)]
     impl MapSystemsImpl of super::IMapSystems<ContractState> {
         fn explore(ref world: IWorldDispatcher, unit_id: ID, direction: Direction) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             // check that caller owns unit
             get!(world, unit_id, EntityOwner).assert_caller_owner(world);

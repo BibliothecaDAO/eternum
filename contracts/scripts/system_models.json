@@ -32,9 +32,27 @@
     "ResourceBridgeWhitelistConfig",
     "RealmLevelConfig",
     "RealmMaxLevelConfig",
-    "TravelFoodCostConfig"
+    "TravelFoodCostConfig",
+    "SeasonConfig"
   ],
   "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker", "Production"],
+  "DEV_REALM_SYSTEMS": [
+    "SettlementConfig",
+    "Owner",
+    "Realm",
+    "Position",
+    "EntityOwner",
+    "CapacityCategory",
+    "Movable",
+    "QuantityTracker",
+    "Resource",
+    "OwnedResourcesTracker",
+    "Tile",
+    "Production",
+    "HasClaimedStartingResources",
+    "Structure",
+    "StructureCount"
+  ],
   "DEV_BANK_SYSTEMS": [
     "EntityName",
     "Tile",
@@ -57,7 +75,6 @@
     "Owner",
     "Realm",
     "Position",
-    "EntityMetadata",
     "EntityOwner",
     "CapacityCategory",
     "Movable",
@@ -101,7 +118,6 @@
     "CapacityCategory",
     "Position",
     "EntityOwner",
-    "EntityMetadata",
     "Quantity",
     "ArrivalTime",
     "QuantityTracker"
@@ -198,7 +214,6 @@
     "CapacityCategory",
     "Position",
     "EntityOwner",
-    "EntityMetadata",
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",
