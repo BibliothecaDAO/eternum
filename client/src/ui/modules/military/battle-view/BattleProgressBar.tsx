@@ -56,8 +56,8 @@ export const BattleProgressBar = ({
       ? "Bandits"
       : `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
-    ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
-    : "Empty";
+      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+      : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0n) + (defendingHealth?.current || 0n),
@@ -168,8 +168,8 @@ export const BattleProgressBar = ({
                 battleManager?.isSiege(currentTimestamp!) && battleType === BattleType.Structure
                   ? `Siege ongoing: ${formatTimeDifference(time)} left`
                   : battleManager?.isSiege(currentTimestamp!)
-                  ? "Loading..."
-                  : `${formatTimeDifference(time)} left`
+                    ? "Loading..."
+                    : `${formatTimeDifference(time)} left`
               }`
             : battleStatus}
         </div>
