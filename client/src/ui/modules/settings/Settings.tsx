@@ -1,5 +1,3 @@
-// UNUSED - can deprecated when ready
-
 import { useEffect, useRef, useState } from "react";
 
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
