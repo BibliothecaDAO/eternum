@@ -76,6 +76,48 @@ export const ResourceChip = ({
     return netRate[1];
   }, [productionManager, production]);
 
+  useEffect(() => {
+    const tickTime = EternumGlobalConfig.tick.defaultTickIntervalInSeconds * 1000;
+
+    let realTick = currentDefaultTick;
+
+    const resource = productionManager.getResource();
+    const [sign, rate] = productionManager.netRate();
+    const productionDuration = productionManager.productionDuration(realTick);
+    const depletionDuration = productionManager.depletionDuration(realTick);
+
+    const newBalance = productionManager.balanceFromComponents(
+      resourceId,
+      rate,
+      sign,
+      resource?.balance,
+      productionDuration,
+      depletionDuration,
+    );
+
+    setBalance(newBalance);
+
+    if (Math.abs(netRate) > 0) {
+      const interval = setInterval(() => {
+        realTick += 1;
+        const localProductionDuration = productionManager.productionDuration(realTick);
+        const localDepletionDuration = productionManager.depletionDuration(realTick);
+
+        const newBalance = productionManager.balanceFromComponents(
+          resourceId,
+          rate,
+          netRate > 0,
+          resource?.balance,
+          localProductionDuration,
+          localDepletionDuration,
+        );
+
+        setBalance(newBalance);
+      }, tickTime);
+      return () => clearInterval(interval);
+    }
+  }, [currentDefaultTick, setBalance, productionManager, netRate, resourceId]);
+
   const isConsumingInputsWithoutOutput = useMemo(() => {
     if (!production?.production_rate) return false;
     return productionManager.isConsumingInputsWithoutOutput(currentDefaultTick);

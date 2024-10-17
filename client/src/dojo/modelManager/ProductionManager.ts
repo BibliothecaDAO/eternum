@@ -105,16 +105,29 @@ export class ProductionManager {
     return production?.production_rate > 0n && !this._inputs_available(currentTick, this.resourceId);
   }
 
-  private _balance(currentTick: number, resourceId: ResourcesIds): number {
-    const resource = this._getResource(resourceId);
+  public balanceFromComponents(
+    resourceId: ResourcesIds,
+    rate: number,
+    sign: boolean,
+    resourceBalance: bigint | undefined,
+    productionDuration: number,
+    depletionDuration: number,
+  ): number {
+    return this._calculateBalance(resourceId, rate, sign, resourceBalance, productionDuration, depletionDuration);
+  }
 
-    const [sign, rate] = this._netRate(resourceId);
-
+  private _calculateBalance(
+    resourceId: ResourcesIds,
+    rate: number,
+    sign: boolean,
+    resourceBalance: bigint | undefined,
+    productionDuration: number,
+    depletionDuration: number,
+  ): number {
     if (rate !== 0) {
       if (sign) {
         // Positive net rate, increase balance
-        const productionDuration = this._productionDuration(currentTick, resourceId);
-        const balance = Number(resource?.balance || 0n) + productionDuration * rate;
+        const balance = Number(resourceBalance || 0n) + productionDuration * rate;
         const storeCapacity = this.getStoreCapacity();
         const maxAmountStorable =
           (storeCapacity / (WEIGHTS_GRAM[resourceId] || 1000)) * EternumGlobalConfig.resources.resourcePrecision;
@@ -122,8 +135,7 @@ export class ProductionManager {
         return result;
       } else {
         // Negative net rate, decrease balance but not below zero
-        const depletionDuration = this._depletionDuration(currentTick, resourceId);
-        const balance = Number(resource?.balance || 0n) - -depletionDuration * rate;
+        const balance = Number(resourceBalance || 0n) - -depletionDuration * rate;
         if (balance < 0) {
           return 0;
         } else {
@@ -132,9 +144,18 @@ export class ProductionManager {
       }
     } else {
       // No net rate change, return current balance
-      const currentBalance = Number(resource?.balance || 0n);
+      const currentBalance = Number(resourceBalance || 0n);
       return currentBalance;
     }
+  }
+
+  private _balance(currentTick: number, resourceId: ResourcesIds): number {
+    const resource = this._getResource(resourceId);
+
+    const [sign, rate] = this._netRate(resourceId);
+    const productionDuration = this._productionDuration(currentTick, resourceId);
+    const productionDepletion = this._depletionDuration(currentTick, resourceId);
+    return this._calculateBalance(resourceId, rate, sign, resource?.balance, productionDuration, productionDepletion);
   }
 
   private _finish_tick(): number {
