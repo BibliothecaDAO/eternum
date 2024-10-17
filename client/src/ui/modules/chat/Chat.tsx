@@ -147,8 +147,8 @@ export const Chat = () => {
               currentTab.name === GLOBAL_CHANNEL_KEY
                 ? CHAT_COLORS.GLOBAL
                 : currentTab.name === guildName
-                ? CHAT_COLORS.GUILD
-                : CHAT_COLORS.PRIVATE,
+                  ? CHAT_COLORS.GUILD
+                  : CHAT_COLORS.PRIVATE,
           }}
           className={`grid gap-2 grid-cols-2 ${hideChat ? "hidden" : "mt-2"}`}
         >
@@ -219,8 +219,8 @@ const Messages = ({
       const key = isGlobalMessage
         ? GLOBAL_CHANNEL
         : isGuildMessage
-        ? guildKey
-        : getMessageKey(identity, BigInt(message.channel));
+          ? guildKey
+          : getMessageKey(identity, BigInt(message.channel));
 
       if (!messageMap.has(ContractAddress(key))) {
         messageMap.set(ContractAddress(key), {
@@ -275,8 +275,8 @@ const Messages = ({
               currentTab.name === GLOBAL_CHANNEL_KEY
                 ? CHAT_COLORS.GLOBAL
                 : currentTab.name === guildName
-                ? CHAT_COLORS.GUILD
-                : CHAT_COLORS.PRIVATE,
+                  ? CHAT_COLORS.GUILD
+                  : CHAT_COLORS.PRIVATE,
           }}
           className={`flex gap-2 mb-1`}
           key={index}
