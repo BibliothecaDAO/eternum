@@ -6,7 +6,6 @@ import {
   BUILDING_RESOURCE_PRODUCED,
   BuildingEnumToString,
   BuildingType,
-  EternumGlobalConfig,
   findResourceById,
   ID,
   ResourceCost as ResourceCostType,
@@ -33,7 +32,12 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { getEntityIdFromKeys, isResourceProductionBuilding, ResourceIdToMiningType } from "@/ui/utils/utils";
+import {
+  divideByPrecision,
+  getEntityIdFromKeys,
+  isResourceProductionBuilding,
+  ResourceIdToMiningType,
+} from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
@@ -81,7 +85,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(entityId, resourceCost.resource);
-      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
+      return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
 
   const [selectedTab, setSelectedTab] = useState(1);

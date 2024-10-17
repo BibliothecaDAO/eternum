@@ -2,6 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager, SetupResult } from "@/dojo/setup";
 import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
+import { divideByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, HYPERSTRUCTURE_RESOURCE_MULTIPLIERS, ID, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
@@ -282,12 +283,10 @@ export class SystemManager {
         let progress = {
           hyperstructure_entity_id: hyperstructureEntityId,
           resource_type: resource,
-          amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
+          amount: !foundProgress ? 0 : divideByPrecision(Number(foundProgress.amount)),
           percentage: !foundProgress
             ? 0
-            : Math.floor(
-                (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-              ),
+            : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100),
           costNeeded: resourceCost,
         };
         percentage +=

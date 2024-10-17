@@ -8,6 +8,7 @@ import {
   HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   POPULATION_CONFIG_ID,
   ResourcesIds,
+  StructureType,
   TickIds,
   TravelTypes,
   WORLD_CONFIG_ID,
@@ -25,6 +26,7 @@ export class ClientConfigManager {
   hyperstructureTotalCosts: Record<number, { resource: ResourcesIds; amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
 
   public setDojo(components: ContractComponents) {
     this.components = components;
@@ -32,6 +34,7 @@ export class ClientConfigManager {
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
     this.initializeResourceBuildingCosts();
+    this.initializeStructureCosts();
   }
 
   public static instance(): ClientConfigManager {
@@ -158,6 +161,31 @@ export class ClientConfigManager {
       }
       this.resourceBuildingCosts[Number(resourceId)] = resourceCosts;
     }
+  }
+
+  private initializeStructureCosts() {
+    this.structureCosts[StructureType.Hyperstructure] = this.getHyperstructureTotalCosts();
+  }
+
+  private getHyperstructureTotalCosts(): {
+    resource: ResourcesIds;
+    amount: number;
+  }[] {
+    const hyperstructureTotalCosts: { resource: ResourcesIds; amount: number }[] = [];
+
+    for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
+      const entity = getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceId)]);
+      const hyperstructureResourceConfig = getComponentValue(this.components.HyperstructureResourceConfig, entity);
+      const amount = divideByPrecision(Number(hyperstructureResourceConfig?.amount_for_completion)) ?? 0;
+
+      hyperstructureTotalCosts.push({ resource: resourceId as ResourcesIds, amount });
+
+      if (resourceId === ResourcesIds.AncientFragment) {
+        break;
+      }
+    }
+
+    return hyperstructureTotalCosts;
   }
 
   getResourceWeight(resourceId: number): number {

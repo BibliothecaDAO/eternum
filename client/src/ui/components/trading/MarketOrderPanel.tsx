@@ -298,20 +298,20 @@ const OrderRow = ({
   );
   const [inputValue, setInputValue] = useState<number>(() => {
     return isBuy
-      ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
-      : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio;
+      ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
+      : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio;
   });
 
   useEffect(() => {
     setInputValue(
       isBuy
-        ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
-        : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio,
+        ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
+        : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio,
     );
   }, [resourceBalanceRatio, lordsBalanceRatio]);
 
   const calculatedResourceAmount = useMemo(() => {
-    return inputValue * EternumGlobalConfig.resources.resourcePrecision;
+    return multiplyByPrecision(inputValue);
   }, [inputValue, getsDisplay, getTotalLords]);
 
   const calculatedLords = useMemo(() => {
@@ -445,16 +445,12 @@ const OrderRow = ({
                   value={inputValue}
                   className="w-full col-span-3"
                   onChange={setInputValue}
-                  max={
-                    (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
-                    (isBuy ? resourceBalanceRatio : lordsBalanceRatio)
-                  }
+                  max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
                 />
                 <Button
                   onClick={() => {
                     setInputValue(
-                      (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
-                        (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
+                      divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
                     );
                   }}
                 >
@@ -604,7 +600,7 @@ const OrderCreation = ({
             onChange={(value) => {
               setResource(Number(value));
             }}
-            max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -636,7 +632,7 @@ const OrderCreation = ({
             onChange={(value) => {
               setLords(Number(value));
             }}
-            max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">

@@ -11,10 +11,9 @@ import {
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   ContractAddress,
-  EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   MAX_NAME_LENGTH,
@@ -67,7 +66,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
-      amount: amount * EternumGlobalConfig.resources.resourcePrecision,
+      amount: multiplyByPrecision(amount),
     }));
 
     setIsLoading(Loading.Contribute);

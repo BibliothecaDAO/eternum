@@ -19,6 +19,7 @@ import {
   ResourceIdToMiningType,
   copyPlayerAddressToClipboard,
   displayAddress,
+  divideByPrecision,
   formatTime,
   getEntityIdFromKeys,
   toHexString,
@@ -224,7 +225,7 @@ const CastleDetails = () => {
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(structureEntityId, resourceCost.resource);
-      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
+      return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);
 

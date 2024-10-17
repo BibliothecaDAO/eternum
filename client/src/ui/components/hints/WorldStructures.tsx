@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { formatTime } from "@/ui/utils/utils";
@@ -5,9 +6,7 @@ import {
   findResourceById,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   ResourcesIds,
-  STRUCTURE_COSTS_SCALED,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -60,9 +59,11 @@ export const WorldStructures = () => {
 const HyperstructureCreationTable = () => {
   const structureId = StructureType["Hyperstructure"];
 
-  const creationCost = STRUCTURE_COSTS_SCALED[structureId].map((cost) => ({
-    ...cost,
-  }));
+  const creationCost = configManager.structureCosts[structureId]
+    .filter((cost) => cost.resource === ResourcesIds["AncientFragment"])
+    .map((cost) => ({
+      ...cost,
+    }));
 
   return (
     <>
@@ -109,9 +110,9 @@ const HyperstructureCreationTable = () => {
 };
 
 const HyperstructureConstructionTable = () => {
-  const constructionCost = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.filter(
-    (cost) => cost.resource !== ResourcesIds["AncientFragment"],
-  ).map((cost) => ({ ...cost }));
+  const constructionCost = configManager.structureCosts[StructureType.Hyperstructure]
+    .filter((cost) => cost.resource !== ResourcesIds["AncientFragment"])
+    .map((cost) => ({ ...cost }));
 
   return (
     <table className="not-prose w-full p-2 border-gold/10 mt-5">

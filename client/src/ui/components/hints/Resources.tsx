@@ -35,7 +35,7 @@ export const Resources = () => {
           <span className="font-bold">
             {` ${
               gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse)) /
-              (EternumGlobalConfig.resources.resourceMultiplier * EternumGlobalConfig.resources.resourcePrecision)
+              multiplyByPrecision(EternumGlobalConfig.resources.resourceMultiplier)
             }M capacity per resource type`}
           </span>
           . Build more of them to increase storage.

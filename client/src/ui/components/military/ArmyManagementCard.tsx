@@ -10,6 +10,7 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
 import {
   currencyFormat,
+  divideByPrecision,
   formatNumber,
   formatSecondsInHoursMinutes,
   getEntityIdFromKeys,
@@ -102,10 +103,10 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const getMaxTroopCount = useCallback(
     (balance: number, troopName: number) => {
-      const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+      const balanceFloor = Math.floor(divideByPrecision(balance));
       if (!balance) return 0;
 
-      const maxFromBalance = Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision);
+      const maxFromBalance = Math.min(balanceFloor, divideByPrecision(U32_MAX));
 
       if (isDefendingArmy) {
         return maxFromBalance;

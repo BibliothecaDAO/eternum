@@ -1,7 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
-import { toHexString } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { divideByPrecision, toHexString } from "@/ui/utils/utils";
+import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";
@@ -179,13 +179,11 @@ const getAllProgressesAndTotalPercentage = (
       let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
       const resourcePercentage = !foundProgress
         ? 0
-        : Math.floor(
-            (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-          );
+        : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100);
       let progress = {
         hyperstructure_entity_id: hyperstructureEntityId,
         resource_type: resource,
-        amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
+        amount: !foundProgress ? 0 : divideByPrecision(Number(foundProgress.amount)),
         percentage: resourcePercentage,
         costNeeded: resourceCost,
       };
