@@ -171,7 +171,6 @@ export default class WorldmapScene extends HexagonScene {
 
     window.addEventListener("urlChanged", () => {
       this.clearEntitySelection();
-      this.state.setSelectedHex({ col: 0, row: 0 });
     });
   }
 
@@ -305,6 +304,7 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes([]);
     this.state.updateTravelPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
+    this.state.setSelectedHex({ col: 0, row: 0 });
   }
 
   setup() {
