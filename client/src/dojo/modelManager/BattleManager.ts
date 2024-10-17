@@ -207,44 +207,29 @@ export class BattleManager {
       battle_army_lifetime = updatedBattle.attack_army_lifetime;
     }
 
-    cloneArmy.troops.knight_count =
-      cloneArmy.troops.knight_count === 0n
-        ? 0n
-        : BigInt(
-            Math.floor(
-              Number(cloneArmy.troops.knight_count) *
-                this.getRemainingPercentageOfTroops(
-                  battle_army.troops.knight_count,
-                  battle_army_lifetime.troops.knight_count,
-                ),
-            ),
-          );
+    const remainingKnights =
+      Number(cloneArmy.troops.knight_count) *
+      this.getRemainingPercentageOfTroops(battle_army.troops.knight_count, battle_army_lifetime.troops.knight_count);
+    cloneArmy.troops.knight_count = BigInt(
+      remainingKnights - (remainingKnights % EternumGlobalConfig.resources.resourcePrecision),
+    );
 
-    cloneArmy.troops.paladin_count =
-      cloneArmy.troops.paladin_count === 0n
-        ? 0n
-        : BigInt(
-            Math.floor(
-              Number(cloneArmy.troops.paladin_count) *
-                this.getRemainingPercentageOfTroops(
-                  battle_army.troops.paladin_count,
-                  battle_army_lifetime.troops.paladin_count,
-                ),
-            ),
-          );
+    const remainingPaladins =
+      Number(cloneArmy.troops.paladin_count) *
+      this.getRemainingPercentageOfTroops(battle_army.troops.paladin_count, battle_army_lifetime.troops.paladin_count);
+    cloneArmy.troops.paladin_count = BigInt(
+      remainingPaladins - (remainingPaladins % EternumGlobalConfig.resources.resourcePrecision),
+    );
 
-    cloneArmy.troops.crossbowman_count =
-      cloneArmy.troops.crossbowman_count === 0n
-        ? 0n
-        : BigInt(
-            Math.floor(
-              Number(cloneArmy.troops.crossbowman_count) *
-                this.getRemainingPercentageOfTroops(
-                  battle_army.troops.crossbowman_count,
-                  battle_army_lifetime.troops.crossbowman_count,
-                ),
-            ),
-          );
+    const remainingCrossbowmen =
+      Number(cloneArmy.troops.crossbowman_count) *
+      this.getRemainingPercentageOfTroops(
+        battle_army.troops.crossbowman_count,
+        battle_army_lifetime.troops.crossbowman_count,
+      );
+    cloneArmy.troops.crossbowman_count = BigInt(
+      remainingCrossbowmen - (remainingCrossbowmen % EternumGlobalConfig.resources.resourcePrecision),
+    );
 
     cloneArmy.health.current = this.getTroopFullHealth(cloneArmy.troops);
 
@@ -459,9 +444,10 @@ export class BattleManager {
     }
 
     return {
-      knight_count,
-      paladin_count,
-      crossbowman_count,
+      knight_count: knight_count - (knight_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      paladin_count: paladin_count - (paladin_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      crossbowman_count:
+        crossbowman_count - (crossbowman_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
     };
   };
 
@@ -513,7 +499,7 @@ export class BattleManager {
     return damages > health.current ? 0n : health.current - damages;
   }
 
-  private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint) {
+  private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint): number {
     if (lifetime_troops === 0n) return 0;
     return Number(current_troops) / Number(lifetime_troops);
   }
