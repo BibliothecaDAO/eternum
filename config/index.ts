@@ -59,7 +59,7 @@ console.log("Setting up config...");
 await config.setup(account, provider);
 
 // Add a 20-second delay before setting up the bank
-console.log("Waiting for 15 seconds before setting up the bank...");
+console.log("Waiting for 20 seconds before setting up the bank...");
 await new Promise((resolve) => setTimeout(resolve, 20000));
 
 console.log("Setting up bank...");

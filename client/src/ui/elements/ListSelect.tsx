@@ -60,7 +60,7 @@ function ListSelect(props: ListSelectProps) {
                 <Listbox.Options
                   className={clsx(
                     "z-50 mt-3 w-full rounded-md py-1 max-h-72 overflow-scroll z-100 border border-gold/10 no-scrollbar",
-                    props.style === "black" ? "bg-black" : " bg-black",
+                    props.style === "black" ? "bg-brown" : " bg-brown",
                   )}
                 >
                   {props.options.map((option) => (

@@ -246,7 +246,7 @@ export const setResourceBuildingConfig = async (config: Config) => {
   const calldataArray = [];
 
   const scaledBuildingCosts = scaleResourceInputs(
-    config.config.buildings.buildingCosts,
+    config.config.resources.resourceBuildingCosts,
     config.config.resources.resourceMultiplier,
   );
 
@@ -479,14 +479,14 @@ export const setStaminaRefillConfig = async (config: Config) => {
 export const setMercenariesConfig = async (config: Config) => {
   const tx = await config.provider.set_mercenaries_config({
     signer: config.account,
-    troops: {
-      knight_count:
-        BigInt(config.config.mercenaries.troops.knight_count) * BigInt(config.config.resources.resourcePrecision),
-      paladin_count:
-        BigInt(config.config.mercenaries.troops.paladin_count) * BigInt(config.config.resources.resourcePrecision),
-      crossbowman_count:
-        BigInt(config.config.mercenaries.troops.crossbowman_count) * BigInt(config.config.resources.resourcePrecision),
-    },
+    knights_lower_bound: config.config.mercenaries.knights_lower_bound * config.config.resources.resourcePrecision,
+    knights_upper_bound: config.config.mercenaries.knights_upper_bound * config.config.resources.resourcePrecision,
+    paladins_lower_bound: config.config.mercenaries.paladins_lower_bound * config.config.resources.resourcePrecision,
+    paladins_upper_bound: config.config.mercenaries.paladins_upper_bound * config.config.resources.resourcePrecision,
+    crossbowmen_lower_bound:
+      config.config.mercenaries.crossbowmen_lower_bound * config.config.resources.resourcePrecision,
+    crossbowmen_upper_bound:
+      config.config.mercenaries.crossbowmen_upper_bound * config.config.resources.resourcePrecision,
     rewards: config.config.mercenaries.rewards.map((reward) => ({
       resource: reward.resource,
       amount: reward.amount * config.config.resources.resourcePrecision * config.config.resources.resourceMultiplier,

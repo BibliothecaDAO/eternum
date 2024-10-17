@@ -1,26 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  ResourcesIds,
-} from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
-
-export const TOTAL_CONTRIBUTABLE_AMOUNT: number = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.reduce(
-  (total, { resource, amount }) => {
-    return (
-      total +
-      (HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[resource as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS] ?? 0) * amount
-    );
-  },
-  0,
-);
-
-function getResourceMultiplier(resourceType: ResourcesIds): number {
-  return HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[resourceType] ?? 0;
-}
+import { ClientConfigManager } from "../ConfigManager";
 
 export function computeInitialContributionPoints(
   resourceType: ResourcesIds,
@@ -31,23 +12,23 @@ export function computeInitialContributionPoints(
 }
 
 export function getTotalPointsPercentage(resourceType: ResourcesIds, resourceQuantity: bigint): number {
+  const configManager = ClientConfigManager.instance();
+
   const effectiveContribution =
-    Number(resourceQuantity / BigInt(EternumGlobalConfig.resources.resourcePrecision)) *
-    getResourceMultiplier(resourceType);
-  return effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT;
+    Number(resourceQuantity / BigInt(configManager.getResourcePrecision())) *
+    configManager.getResourceRarity(resourceType);
+  const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount();
+
+  return effectiveContribution / totalContributableAmount;
 }
 
 export const calculateCompletionPoints = (
   contributions: ComponentValue<ClientComponents["Contribution"]["schema"]>[],
 ) => {
+  const configManager = ClientConfigManager.instance();
+  const pointsOnCompletion = configManager.getHyperstructureConfig().pointsOnCompletion;
+
   return contributions.reduce((acc, contribution) => {
-    return (
-      acc +
-      computeInitialContributionPoints(
-        contribution.resource_type,
-        contribution.amount,
-        HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-      )
-    );
+    return acc + computeInitialContributionPoints(contribution.resource_type, contribution.amount, pointsOnCompletion);
   }, 0);
 };

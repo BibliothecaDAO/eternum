@@ -2,20 +2,20 @@ import { ReactComponent as Check } from "@/assets/icons/Check.svg";
 import { ReactComponent as Chest } from "@/assets/icons/Chest.svg";
 import { ReactComponent as Coins } from "@/assets/icons/Coins.svg";
 import { ReactComponent as Combat } from "@/assets/icons/Combat.svg";
-import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { ReactComponent as Compass } from "@/assets/icons/Compass.svg";
 import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
 import { ReactComponent as Wrench } from "@/assets/icons/Wrench.svg";
+import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { ContractAddress, Position } from "@bibliothecadao/eternum";
-import { Component, defineComponentSystem, getComponentValue, World } from "@dojoengine/recs";
+import { Component, World, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useState } from "react";
 import { MessageIcon } from "../social/PlayerId";
@@ -169,23 +169,23 @@ export const EventStream = () => {
           setHideEventStream(!hideEventStream);
         }}
       >
-        <div className="bg-black/10 h-6 w-6 rounded-t">
+        <div className="bg-brown/10 h-6 w-6 rounded-t">
           <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
         </div>
       </div>
       {hideEventStream ? (
-        <div className="bg-black/5 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full">
+        <div className="bg-brown/5 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full">
           Events
         </div>
       ) : (
-        <div className="bg-black/40 bg-hex-bg  rounded-bl-2xl p-1 rounded-tr  border border-gold/40 h-full">
+        <div className="bg-brown/40 bg-hex-bg  rounded-bl-2xl p-1 rounded-tr  border border-gold/40 h-full">
           {eventList
             .sort((a, b) => a.timestamp - b.timestamp)
             .slice(-EVENT_STREAM_SIZE)
             .map((event, index) => {
               const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
               return (
-                <div className="hover:bg-black/20 rounded flex gap-1 justify-between" key={index}>
+                <div className="hover:bg-brown/20 rounded flex gap-1 justify-between" key={index}>
                   <div className="flex gap-1">
                     {emoji} [{event.name || "Unknown"}]: {action}{" "}
                     <span className="opacity-50">[{new Date(event.timestamp * 1000).toLocaleString()}]</span>

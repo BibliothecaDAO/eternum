@@ -67,16 +67,17 @@ export const Battle = ({
           )}
           <HintModalButton className={`relative ${battleAdjusted ? "left-3" : ""}`} section={HintSection.Combat} />
         </div>
-        <BattleProgressBar
-          battleManager={battleManager}
-          ownArmySide={ownArmySide}
-          attackingHealth={attackerHealth}
-          attackerArmies={attackerArmies}
-          defendingHealth={defenderHealth}
-          defenderArmies={defenderArmies}
-          structure={structure}
-        />
-        <div className="w-screen bg-[#1b1a1a] -top bg-hex-bg h-[35vh]">
+
+        <div className="w-screen bg-brown bg-hex-bg min-h-[40vh]">
+          <BattleProgressBar
+            battleManager={battleManager}
+            ownArmySide={ownArmySide}
+            attackingHealth={attackerHealth}
+            attackerArmies={attackerArmies}
+            defendingHealth={defenderHealth}
+            defenderArmies={defenderArmies}
+            structure={structure}
+          />
           <div className="grid grid-cols-12 justify-between gap-4 h-full">
             <BattleSideView
               battleManager={battleManager}

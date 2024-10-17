@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useTravel } from "@/hooks/helpers/useTravel";
@@ -6,7 +7,7 @@ import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
 import TextInput from "@/ui/elements/TextInput";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
@@ -80,7 +81,7 @@ export const TransferBetweenEntities = ({
         computeTravelTime(
           selectedEntityIdFrom?.entityId,
           selectedEntityIdTo?.entityId,
-          EternumGlobalConfig.speed.donkey,
+          configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
         ),
       );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);

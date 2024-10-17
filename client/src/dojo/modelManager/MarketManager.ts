@@ -1,7 +1,7 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { SetupResult } from "../setup";
+import { configManager, SetupResult } from "../setup";
 
 export class MarketManager {
   bankEntityId: ID;
@@ -89,7 +89,7 @@ export class MarketManager {
     }
 
     // Calculate the input amount after fee
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee
@@ -114,7 +114,7 @@ export class MarketManager {
     }
 
     // Calculate the input amount after fee
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee
@@ -140,7 +140,7 @@ export class MarketManager {
     if (!market) return 0;
 
     // Calculate the input amount of Lords needed to buy the desired amount of resource
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputReserve = market.lords_amount;
     const outputReserve = market.resource_amount;
 
@@ -172,7 +172,7 @@ export class MarketManager {
     if (!market) return 0;
 
     // Calculate the input amount of Resource needed to get the desired amount of Lords
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputReserve = market.resource_amount;
     const outputReserve = market.lords_amount;
 

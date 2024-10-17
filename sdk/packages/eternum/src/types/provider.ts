@@ -542,7 +542,12 @@ export interface SetStaminaRefillConfigProps extends SystemSigner {
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 
 export interface SetMercenariesConfigProps extends SystemSigner {
-  troops: Troops;
+  knights_lower_bound: num.BigNumberish;
+  knights_upper_bound: num.BigNumberish;
+  paladins_lower_bound: num.BigNumberish;
+  paladins_upper_bound: num.BigNumberish;
+  crossbowmen_lower_bound: num.BigNumberish;
+  crossbowmen_upper_bound: num.BigNumberish;
   rewards: { resource: number; amount: number }[];
 }
 

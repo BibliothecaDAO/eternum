@@ -1,5 +1,6 @@
-import { findResourceById, getIconResourceId, ID, ResourcesIds, WEIGHTS_GRAM } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecadao/eternum";
 
+import { configManager } from "@/dojo/setup";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useEffect, useMemo, useState } from "react";
@@ -28,16 +29,14 @@ export const ResourceChip = ({
   const [displayedNetRate, setDisplayedNetRate] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  const [balance, setBalance] = useState(productionManager.balance(currentDefaultTick));
+
   const production = useMemo(() => {
     return productionManager.getProduction();
   }, [productionManager]);
 
-  const balance = useMemo(() => {
-    return productionManager.balance(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick, maxStorehouseCapacityKg]);
-
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(WEIGHTS_GRAM[resourceId as ResourcesIds] || 1000);
+    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {
@@ -45,7 +44,7 @@ export const ResourceChip = ({
   }, [productionManager, production, currentDefaultTick]);
 
   const netRate = useMemo(() => {
-    let netRate = productionManager.netRate(currentDefaultTick);
+    let netRate = productionManager.netRate();
     if (netRate[1] < 0) {
       // net rate is negative
       if (Math.abs(netRate[1]) > productionManager.balance(currentDefaultTick)) {
@@ -55,12 +54,53 @@ export const ResourceChip = ({
     return netRate[1];
   }, [productionManager, production]);
 
+  useEffect(() => {
+    const tickTime = configManager.getTick(TickIds.Default) * 1000;
+
+    let realTick = currentDefaultTick;
+
+    const resource = productionManager.getResource();
+    const [sign, rate] = productionManager.netRate();
+    const productionDuration = productionManager.productionDuration(realTick);
+    const depletionDuration = productionManager.depletionDuration(realTick);
+
+    const newBalance = productionManager.balanceFromComponents(
+      resourceId,
+      rate,
+      sign,
+      resource?.balance,
+      productionDuration,
+      depletionDuration,
+    );
+
+    setBalance(newBalance);
+
+    if (Math.abs(netRate) > 0) {
+      const interval = setInterval(() => {
+        realTick += 1;
+        const localResource = productionManager.getResource();
+        const localProductionDuration = productionManager.productionDuration(realTick);
+        const localDepletionDuration = productionManager.depletionDuration(realTick);
+
+        const newBalance = productionManager.balanceFromComponents(
+          resourceId,
+          rate,
+          netRate > 0,
+          localResource?.balance,
+          localProductionDuration,
+          localDepletionDuration,
+        );
+
+        setBalance(newBalance);
+      }, tickTime);
+      return () => clearInterval(interval);
+    }
+  }, [currentDefaultTick, setBalance, productionManager, netRate, resourceId]);
+
   const isConsumingInputsWithoutOutput = useMemo(() => {
     if (!production?.production_rate) return false;
     return productionManager.isConsumingInputsWithoutOutput(currentDefaultTick);
   }, [productionManager, production, currentDefaultTick, entityId]);
-
-  const [displayBalance, setDisplayBalance] = useState(balance);
 
   const icon = useMemo(
     () => (
@@ -75,19 +115,18 @@ export const ResourceChip = ({
     [resourceId],
   );
 
-  useEffect(() => {
-    setDisplayBalance(balance);
+  const reachedMaxCap = useMemo(() => {
+    return maxAmountStorable === balance && Math.abs(netRate) > 0;
+  }, [maxAmountStorable, balance, netRate]);
 
-    const interval = setInterval(() => {
-      setDisplayBalance((prevDisplayBalance) => {
-        if (Math.abs(netRate) > 0 && !isConsumingInputsWithoutOutput) {
-          return Math.min(maxAmountStorable, Math.max(0, prevDisplayBalance + netRate));
-        }
-        return Math.min(maxAmountStorable, prevDisplayBalance);
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [balance, netRate, entityId, maxAmountStorable]);
+  const timeUntilFinishTick = useMemo(() => {
+    return productionManager.timeUntilFinishTick(currentDefaultTick);
+  }, [productionManager, currentDefaultTick]);
+
+  const isProducingOrConsuming = useMemo(() => {
+    if (netRate > 0 && timeUntilFinishTick <= 0) return false;
+    return Math.abs(netRate) > 0 && !reachedMaxCap && !isConsumingInputsWithoutOutput && balance > 0;
+  }, [netRate, reachedMaxCap, isConsumingInputsWithoutOutput, balance, timeUntilFinishTick]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -110,8 +149,6 @@ export const ResourceChip = ({
     }
   }, [netRate, showPerHour]);
 
-  const reachedMaxCap = maxAmountStorable === displayBalance && Math.abs(netRate) > 0;
-
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
@@ -127,9 +164,7 @@ export const ResourceChip = ({
     >
       {icon}
       <div className="grid grid-cols-10 w-full">
-        <div className="self-center font-bold col-span-3">
-          {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}
-        </div>
+        <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 0)}</div>
 
         <div className="self-center m-y-auto font-bold col-span-4 text-center">
           {timeUntilValueReached !== 0
@@ -137,7 +172,7 @@ export const ResourceChip = ({
             : ""}
         </div>
 
-        {netRate && !reachedMaxCap && !isConsumingInputsWithoutOutput && displayBalance > 0 ? (
+        {isProducingOrConsuming ? (
           <div
             className={`${
               Number(netRate) < 0 ? "text-light-red" : "text-green/80"

@@ -1,11 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import {
-  BASE_POPULATION_CAPACITY,
-  ContractAddress,
-  ID,
-  getOrderName,
-  getQuestResources as getStartingResources,
-} from "@bibliothecadao/eternum";
+import { configManager } from "@/dojo/setup";
+import { ContractAddress, ID, getOrderName, getQuestResources as getStartingResources } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -229,7 +224,8 @@ export function useGetRealm(realmEntityId: ID | undefined) {
           order,
           position,
           ...population,
-          hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+          hasCapacity:
+            !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
           owner: address,
         };
       }
@@ -293,7 +289,8 @@ export function getRealms(): RealmInfo[] {
         order,
         position,
         ...population,
-        hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+        hasCapacity:
+          !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
         owner: address,
         ownerName,
       };

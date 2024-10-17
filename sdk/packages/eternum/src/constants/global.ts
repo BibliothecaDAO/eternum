@@ -3,13 +3,12 @@ import { BUILDING_CAPACITY, BUILDING_COSTS, BUILDING_POPULATION, BUILDING_RESOUR
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
-  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
   HYPERSTRUCTURE_TOTAL_COSTS,
 } from "./hyperstructure";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./market";
 import { QUEST_RESOURCES } from "./quests";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS } from "./realmLevels";
-import { RESOURCE_BUILDING_COSTS, RESOURCE_INPUTS, RESOURCE_OUTPUTS, WEIGHTS_GRAM } from "./resources";
+import { RESOURCE_BUILDING_COSTS, RESOURCE_INPUTS, RESOURCE_OUTPUTS, RESOURCE_RARITY, WEIGHTS_GRAM } from "./resources";
 import { CapacityConfigCategory } from "./structures";
 import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./troops";
 
@@ -18,6 +17,8 @@ import { ResourcesIds } from ".";
 export const FELT_CENTER = 2147483646;
 export const WORLD_CONFIG_ID = 999999999n;
 export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
+export const BUILDING_CATEGORY_POPULATION_CONFIG_ID = 999999990n;
+export const POPULATION_CONFIG_ID = 999999989n;
 export const U32_MAX = 4294967295;
 export const MAX_NAME_LENGTH = 31;
 export const ONE_MONTH = 2628000;
@@ -95,9 +96,12 @@ export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
 export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
 
 // Mercenaries
-export const MERCENARIES_KNIGHT_COUNT = 1000;
-export const MERCENARIES_PALADIN_COUNT = 1000;
-export const MERCENARIES_CROSSBOWMAN_COUNT = 1000;
+export const MERCENARIES_KNIGHTS_LOWER_BOUND = 1_000;
+export const MERCENARIES_KNIGHTS_UPPER_BOUND = 10_000;
+export const MERCENARIES_PALADINS_LOWER_BOUND = 1_000;
+export const MERCENARIES_PALADINS_UPPER_BOUND = 10_000;
+export const MERCENARIES_CROSSBOWMEN_LOWER_BOUND = 1_000;
+export const MERCENARIES_CROSSBOWMEN_UPPER_BOUND = 10_000;
 export const MERCENARIES_WHEAT_REWARD = 100;
 export const MERCENARIES_FISH_REWARD = 200;
 
@@ -126,6 +130,7 @@ export const EternumGlobalConfig: Config = {
     resourceOutputs: RESOURCE_OUTPUTS,
     resourceWeightsGrams: WEIGHTS_GRAM,
     resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
+    resourceRarity: RESOURCE_RARITY,
   },
   banks: {
     name: BANK_NAME,
@@ -185,11 +190,12 @@ export const EternumGlobalConfig: Config = {
     troopFoodConsumption: TROOPS_FOOD_CONSUMPTION,
   },
   mercenaries: {
-    troops: {
-      knight_count: MERCENARIES_KNIGHT_COUNT,
-      paladin_count: MERCENARIES_PALADIN_COUNT,
-      crossbowman_count: MERCENARIES_CROSSBOWMAN_COUNT,
-    },
+    knights_lower_bound: MERCENARIES_KNIGHTS_LOWER_BOUND,
+    knights_upper_bound: MERCENARIES_KNIGHTS_UPPER_BOUND,
+    paladins_lower_bound: MERCENARIES_PALADINS_LOWER_BOUND,
+    paladins_upper_bound: MERCENARIES_PALADINS_UPPER_BOUND,
+    crossbowmen_lower_bound: MERCENARIES_CROSSBOWMEN_LOWER_BOUND,
+    crossbowmen_upper_bound: MERCENARIES_CROSSBOWMEN_UPPER_BOUND,
     rewards: [
       { resource: ResourcesIds.Wheat, amount: MERCENARIES_WHEAT_REWARD },
       { resource: ResourcesIds.Fish, amount: MERCENARIES_FISH_REWARD },
@@ -216,7 +222,6 @@ export const EternumGlobalConfig: Config = {
     hyperstructureCreationCosts: HYPERSTRUCTURE_CREATION_COSTS,
     hyperstructureConstructionCosts: HYPERSTRUCTURE_CONSTRUCTION_COSTS,
     hyperstructureTotalCosts: HYPERSTRUCTURE_TOTAL_COSTS,
-    hyperstructureResourceMultipliers: HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
     hyperstructurePointsPerCycle: HYPERSTRUCTURE_POINTS_PER_CYCLE,
     hyperstructurePointsOnCompletion: HYPERSTRUCTURE_POINTS_ON_COMPLETION,
     hyperstructureTimeBetweenSharesChangeSeconds: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
