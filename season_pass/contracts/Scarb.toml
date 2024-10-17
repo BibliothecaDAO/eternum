@@ -9,6 +9,9 @@ sierra-replace-ids = true
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
 openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.15.0"}
 
+[dev-dependencies]
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.31.0" }
+
 [[target.starknet-contract]]
 sierra = true
 casm = true

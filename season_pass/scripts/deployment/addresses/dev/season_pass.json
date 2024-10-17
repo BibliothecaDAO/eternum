@@ -1,0 +1,9 @@
+{
+  "address": "0x144cbbc903361051bdd264f6edf407dd8c17011f16fa3f42e454fb463ed9b94",
+  "calldata": [
+    "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b",
+    "0x167c8a51643e56f6e6a4d6bf2924bff37b27464a8e31ebae80410bbd2941411"
+  ],
+  "deployed_at": 1729113748216,
+  "deployed_at_readable": "Wed, 16 Oct 2024 21:22:28 GMT"
+}

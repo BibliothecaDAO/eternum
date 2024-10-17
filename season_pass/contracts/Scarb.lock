@@ -59,6 +59,7 @@ version = "1.0.0"
 dependencies = [
  "alexandria_math",
  "openzeppelin",
+ "snforge_std",
 ]
 
 [[package]]
@@ -146,3 +147,16 @@ source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.15.0#f57642
 name = "openzeppelin_utils"
 version = "0.15.0"
 source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.15.0#f57642960f1c8cffafefb88bfff418eca8510634"
+
+[[package]]
+name = "snforge_scarb_plugin"
+version = "0.31.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry.git?tag=v0.31.0#72ea785ca354e9e506de3e5d687da9fb2c1b3c67"
+
+[[package]]
+name = "snforge_std"
+version = "0.31.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry.git?tag=v0.31.0#72ea785ca354e9e506de3e5d687da9fb2c1b3c67"
+dependencies = [
+ "snforge_scarb_plugin",
+]
