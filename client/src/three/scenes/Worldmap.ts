@@ -239,7 +239,12 @@ export default class WorldmapScene extends HexagonScene {
     if (!hexCoords) {
       return;
     }
-    const { selectedEntityId, travelPaths } = this.state.armyActions;
+    const { selectedEntityId } = this.state.armyActions;
+
+    // don't allow hexagon left click if in travel mode
+    if (selectedEntityId) {
+      return;
+    }
 
     const buildingType = this.structurePreview?.getPreviewStructure();
 
@@ -247,17 +252,6 @@ export default class WorldmapScene extends HexagonScene {
       const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
       this.tileManager.placeStructure(this.structureEntityId, buildingType.type, normalizedHexCoords);
       this.clearEntitySelection();
-    } else if (selectedEntityId && travelPaths.size > 0) {
-      const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
-      if (travelPath) {
-        const selectedPath = travelPath.path;
-        const isExplored = travelPath.isExplored ?? false;
-        if (selectedPath.length > 0) {
-          const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
-          this.clearEntitySelection();
-        }
-      }
     } else {
       const position = getWorldPositionForHex(hexCoords);
       this.selectedHexManager.setPosition(position.x, position.z);
@@ -268,7 +262,22 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLeftNavigationView(View.EntityView);
     }
   }
-  protected onHexagonRightClick(): void {}
+
+  protected onHexagonRightClick(hexCoords: HexPosition | null): void {
+    const { selectedEntityId, travelPaths } = this.state.armyActions;
+    if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
+      const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
+      if (travelPath) {
+        const selectedPath = travelPath.path;
+        const isExplored = travelPath.isExplored ?? false;
+        if (selectedPath.length > 0) {
+          const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
+          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
+          this.clearEntitySelection();
+        }
+      }
+    }
+  }
 
   private onArmySelection(selectedEntityId: ID | undefined) {
     if (!selectedEntityId) {
