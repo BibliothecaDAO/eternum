@@ -49,13 +49,16 @@ export const ActionInfo = () => {
 
   const isExplored = travelPath?.isExplored || false;
 
-  if (!travelPath) return;
-
   const travelFoodCosts = computeTravelFoodCosts(selectedEntityTroops);
   const exploreFoodCosts = computeExploreFoodCosts(selectedEntityTroops);
 
   return (
     <>
+      {selectedEntityId && (
+        <div className="text-xs fixed top-0 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-center py-2 z-50 w-[300px] top-[60px] rounded-lg animate-pulse">
+          Press Esc to exit travel mode
+        </div>
+      )}
       {showTooltip && (
         <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
           <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
@@ -63,12 +66,12 @@ export const ActionInfo = () => {
           {isExplored ? (
             <div>
               <ResourceCost
-                amount={-travelFoodCosts.wheatPayAmount * (travelPath.path.length - 1)}
+                amount={-travelFoodCosts.wheatPayAmount * (travelPath!.path.length - 1)}
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={-travelFoodCosts.fishPayAmount * (travelPath.path.length - 1)}
+                amount={-travelFoodCosts.fishPayAmount * (travelPath!.path.length - 1)}
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
