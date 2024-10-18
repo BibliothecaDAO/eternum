@@ -1,16 +1,13 @@
-import { useDojo } from "@/hooks/context/DojoContext";
 import { useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
-import { getPlayerStructures } from "@/hooks/helpers/useEntities";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { InventoryResources } from "@/ui/components/resources/InventoryResources";
-import { ContractAddress } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const SelectedArmy = () => {
-  const dojo = useDojo();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
@@ -22,12 +19,12 @@ export const SelectedArmy = () => {
     if (!selectedHex) updateSelectedEntityId(null);
   }, [selectedHex, updateSelectedEntityId]);
 
-  const getStructures = getPlayerStructures();
+  const { playerStructures } = useEntities();
 
   const rawArmies = useOwnArmiesByPosition({
     position: new Position({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }).getContract(),
     inBattle: false,
-    playerStructures: getStructures(ContractAddress(dojo.account.account.address)),
+    playerStructures: playerStructures(),
   });
 
   const userArmies = useMemo(() => rawArmies.filter((army) => army.health.current > 0), [rawArmies]);
