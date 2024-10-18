@@ -400,7 +400,8 @@ mod combat_systems {
     use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCategory
+        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,
+        CapacityConfigCategory
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::event::{
@@ -563,7 +564,15 @@ mod combat_systems {
             from_army.assert_not_in_battle();
             from_army.troops.deduct(troops);
             from_army.troops.assert_normalized();
-            set!(world, (from_army));
+
+            let from_army_weight: Weight = get!(world, from_army_id, Weight);
+
+            // decrease from army  quantity
+            let mut from_army_quantity: Quantity = get!(world, from_army_id, Quantity);
+            from_army_quantity.value -= troops.count().into();
+
+            let capacity_config = get!(world, CapacityConfigCategory::Army, CapacityConfig);
+            capacity_config.assert_can_carry(from_army_quantity, from_army_weight);
 
             // decrease from army health
             let mut from_army_health: Health = get!(world, from_army_id, Health);
@@ -573,12 +582,8 @@ mod combat_systems {
             }
             from_army_health.decrease_current_by(troop_full_health);
             from_army_health.lifetime -= (troop_full_health);
-            set!(world, (from_army_health));
 
-            // decrease from army  quantity
-            let mut from_army_quantity: Quantity = get!(world, from_army_id, Quantity);
-            from_army_quantity.value -= troops.count().into();
-            set!(world, (from_army_quantity));
+            set!(world, (from_army, from_army_health, from_army_quantity));
 
             // delete army if troop count is 0 and if it's not a defensive army
             let protectee = get!(world, from_army_id, Protectee);
@@ -1076,7 +1081,8 @@ mod combat_systems {
                                     world, CapacityConfigCategory::Army, CapacityConfig
                                 );
 
-                                // Divided by resource precision because we need capacity in gram per client unit
+                                // Divided by resource precision because we need capacity in gram
+                                // per client unit
                                 let army_total_capacity = army_capacity_config.weight_gram
                                     * attacking_army.troops.count().into()
                                     / RESOURCE_PRECISION;
@@ -1508,7 +1514,8 @@ mod combat_systems {
 
             // update army quantity to correct value before calling `withdraw_balance_and_reward`
             // because it is used to calculate the loot amount sent to army if it wins the battle
-            // i.e when the `withdraw_balance_and_reward` calls `InternalResourceSystemsImpl::mint_if_adequate_capacity`
+            // i.e when the `withdraw_balance_and_reward` calls
+            // `InternalResourceSystemsImpl::mint_if_adequate_capacity`
             let army_quantity_left = Quantity { entity_id: army_id, value: army_left.troops.count().into() };
             set!(world, (army_quantity_left));
 
