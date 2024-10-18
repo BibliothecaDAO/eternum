@@ -3,8 +3,7 @@ import { FELT_CENTER } from "@/ui/config";
 import {
   computeExploreFoodCosts,
   computeTravelFoodCosts,
-  getEntityIdFromKeys,
-  multiplyByPrecision,
+  getEntityIdFromKeys
 } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
@@ -78,10 +77,7 @@ export class ArmyMovementManager {
   private readonly wheatManager: ProductionManager;
   private readonly staminaManager: StaminaManager;
 
-  constructor(
-    private readonly setup: SetupResult,
-    entityId: ID,
-  ) {
+  constructor(private readonly setup: SetupResult, entityId: ID) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
@@ -124,8 +120,8 @@ export class ArmyMovementManager {
     const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
-    const maxTravelFishSteps = Math.floor(fish / multiplyByPrecision(travelFoodCosts.fishPayAmount));
+    const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
+    const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
     return Math.min(maxStaminaSteps, maxTravelSteps);
   };
