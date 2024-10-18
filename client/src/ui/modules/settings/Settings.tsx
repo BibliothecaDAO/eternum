@@ -22,6 +22,7 @@ import { RangeInput } from "@/ui/elements/RangeInput";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { toast } from "react-toastify";
+import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 
 export const SettingsWindow = () => {
   const {
@@ -62,7 +63,7 @@ export const SettingsWindow = () => {
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
-  const isLowGraphics = localStorage.getItem("LOW_GRAPHICS_FLAG");
+  const isLowGraphics = IS_LOW_GRAPHICS_ENABLED
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
       <div className="flex p-4">
@@ -74,15 +75,15 @@ export const SettingsWindow = () => {
             src={`/images/avatars/${addressToNumber(account.address)}.png`}
           />
         </div>
-        {addressName && <div className="self-center text-xl px-4 border rounded border-gold mx-2">{addressName}</div>}{" "}
-        <div className="mx-1 self-center" onClick={copyToClipBoard}>
+        {addressName && <div className="self-center px-4 mx-2 text-xl border rounded border-gold">{addressName}</div>}{" "}
+        <div className="self-center mx-1" onClick={copyToClipBoard}>
           {displayAddress(account.address)}
         </div>
-        <Copy className="mx-1 w-4" onClick={copyToClipBoard} />
+        <Copy className="w-4 mx-1" onClick={copyToClipBoard} />
       </div>
-      <div className="flex flex-col  space-y-2 p-3">
+      <div className="flex flex-col p-3 space-y-2">
         <Headline>Video</Headline>
-        <div className="flex text-xs text-gray-gold space-x-2 items-center cursor-pointer" onClick={clickFullScreen}>
+        <div className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold" onClick={clickFullScreen}>
           <Checkbox enabled={fullScreen} />
           <div>Fullscreen</div>
         </div>
@@ -118,17 +119,17 @@ export const SettingsWindow = () => {
         <div className="flex space-x-2">
           {isSoundOn ? (
             <Button variant="outline" onClick={() => toggleSound()}>
-              <Unmuted className=" cursor-pointer fill-gold  w-4" />
+              <Unmuted className="w-4 cursor-pointer  fill-gold" />
             </Button>
           ) : (
             <Button variant="outline" onClick={() => toggleSound()}>
-              <Muted className=" cursor-pointer fill-gold  w-4" />
+              <Muted className="w-4 cursor-pointer  fill-gold" />
             </Button>
           )}
 
           <ScrollingTrackName trackName={trackName} />
           <Button variant="outline" onClick={next}>
-            <Next className="cursor-pointer fill-gold stroke-gold  h-4" />
+            <Next className="h-4 cursor-pointer fill-gold stroke-gold" />
           </Button>
         </div>
 
@@ -137,7 +138,7 @@ export const SettingsWindow = () => {
         <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
           Done
         </Button>
-        <div className="flex space-x-3 py-3">
+        <div className="flex py-3 space-x-3">
           <a target="_blank" href="https://realms.world">
             <RealmsWorld className="w-16" />
           </a>
@@ -189,7 +190,7 @@ const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
   }, []);
 
   return (
-    <div className="overflow-hidden w-full text-xs border border-gold p-1">
+    <div className="w-full p-1 overflow-hidden text-xs border border-gold">
       <div className="track-name" ref={trackNameRef}>
         {trackName} - Casey Wescot
       </div>
