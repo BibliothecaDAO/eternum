@@ -136,11 +136,11 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 9 {
         "MITHRAL"
     } else if resource_type == 10 {
-        "ALCHEMICAL_SILVER"
+        "ALCHEMICAL SILVER"
     } else if resource_type == 11 {
-        "COLD_IRON"
+        "COLD IRON"
     } else if resource_type == 12 {
-        "DEEP_CRYSTAL"
+        "DEEP CRYSTAL"
     } else if resource_type == 13 {
         "RUBY"
     } else if resource_type == 14 {
@@ -150,21 +150,21 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 16 {
         "IGNIUM"
     } else if resource_type == 17 {
-        "TWILIGHT_QUARTZ"
+        "TWILIGHT QUARTZ"
     } else if resource_type == 18 {
-        "TRUE_ICE"
+        "TRUE ICE"
     } else if resource_type == 19 {
         "ADAMANTINE"
     } else if resource_type == 20 {
         "SAPPHIRE"
     } else if resource_type == 21 {
-        "ETHEREAL_SILICA"
+        "ETHEREAL SILICA"
     } else if resource_type == 22 {
         "DRAGONHIDE"
     } else if resource_type == 28 {
         "DEMONHIDE"
     } else if resource_type == 29 {
-        "EARTHEN_SHARD"
+        "EARTHEN SHARD"
     } else if resource_type == 249 {
         "DONKEY"
     } else if resource_type == 250 {
