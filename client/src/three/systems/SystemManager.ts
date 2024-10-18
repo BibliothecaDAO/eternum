@@ -277,6 +277,8 @@ export class SystemManager {
   ) => {
     const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount();
     let percentage = 0;
+    const epsilon = 1e-10; // Small value to account for floating-point precision errors
+
     const allProgresses = Object.values(configManager.hyperstructureTotalCosts).map(
       ({ resource, amount: resourceCost }) => {
         let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
@@ -294,6 +296,11 @@ export class SystemManager {
         return progress;
       },
     );
+    // Adjust percentage to account for floating-point precision issues
+    if (Math.abs(percentage - 1.0) < epsilon) {
+      percentage = 1.0;
+    }
+
     return { allProgresses, percentage };
   };
 }
