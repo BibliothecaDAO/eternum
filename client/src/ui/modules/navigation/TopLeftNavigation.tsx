@@ -75,7 +75,7 @@ const WorkersHutTooltipContent = () => {
   );
 };
 
-export const TopMiddleNavigation = () => {
+export const TopLeftNavigation = () => {
   const { setup } = useDojo();
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
