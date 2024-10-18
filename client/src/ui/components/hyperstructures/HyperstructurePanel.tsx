@@ -13,7 +13,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyIntlFormat, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
 import {
   Access,
   ContractAddress,
@@ -294,13 +294,4 @@ export const HyperstructurePanel = ({ entity }: any) => {
       </div>
     </div>
   );
-};
-
-const separateCamelCase = (str: string): string => {
-  return str
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 };
