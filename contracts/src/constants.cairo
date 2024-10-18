@@ -118,53 +118,53 @@ mod ResourceTypes {
 
 fn resource_type_name(resource_type: u8) -> ByteArray {
     if resource_type == 1 {
-        "WOOD"
-    } else if resource_type == 2 {
         "STONE"
-    } else if resource_type == 3 {
+    } else if resource_type == 2 {
         "COAL"
+    } else if resource_type == 3 {
+        "WOOD"
     } else if resource_type == 4 {
         "COPPER"
     } else if resource_type == 5 {
-        "OBSIDIAN"
-    } else if resource_type == 6 {
-        "SILVER"
-    } else if resource_type == 7 {
         "IRONWOOD"
-    } else if resource_type == 8 {
-        "COLD IRON"
-    } else if resource_type == 9 {
+    } else if resource_type == 6 {
+        "OBSIDIAN"
+    } else if resource_type == 7 {
         "GOLD"
+    } else if resource_type == 8 {
+        "SILVER"
+    } else if resource_type == 9 {
+        "MITHRAL"
     } else if resource_type == 10 {
-        "HARTWOOD"
+        "ALCHEMICAL_SILVER"
     } else if resource_type == 11 {
-        "DIAMONDS"
+        "COLD_IRON"
     } else if resource_type == 12 {
-        "SAPPHIRE"
+        "DEEP_CRYSTAL"
     } else if resource_type == 13 {
         "RUBY"
     } else if resource_type == 14 {
-        "DEEP CRYSTAL"
+        "DIAMONDS"
     } else if resource_type == 15 {
-        "IGNIUM"
+        "HARTWOOD"
     } else if resource_type == 16 {
-        "ETHEREAL SILICA"
+        "IGNIUM"
     } else if resource_type == 17 {
-        "TRUE ICE"
+        "TWILIGHT_QUARTZ"
     } else if resource_type == 18 {
-        "TWILIGHT QUARTZ"
+        "TRUE_ICE"
     } else if resource_type == 19 {
-        "ALCHEMICAL SILVER"
-    } else if resource_type == 20 {
         "ADAMANTINE"
+    } else if resource_type == 20 {
+        "SAPPHIRE"
     } else if resource_type == 21 {
-        "MITHRAL"
+        "ETHEREAL_SILICA"
     } else if resource_type == 22 {
         "DRAGONHIDE"
     } else if resource_type == 28 {
         "DEMONHIDE"
     } else if resource_type == 29 {
-        "EARTHEN SHARD"
+        "EARTHEN_SHARD"
     } else if resource_type == 249 {
         "DONKEY"
     } else if resource_type == 250 {

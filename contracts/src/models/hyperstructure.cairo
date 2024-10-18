@@ -76,3 +76,24 @@ pub impl EpochCustomImpl of EpochCustomTrait {
         epoch
     }
 }
+
+#[generate_trait]
+pub impl HyperstructureCustomImpl of HyperstructureCustomTrait {
+    fn assert_access(self: Hyperstructure, world: IWorldDispatcher) {
+        let contributor_address = starknet::get_caller_address();
+        let hyperstructure_owner = get!(world, self.entity_id, Owner);
+
+        match self.access {
+            Access::Public => {},
+            Access::Private => {
+                assert!(contributor_address == hyperstructure_owner.address, "Hyperstructure is private");
+            },
+            Access::GuildOnly => {
+                let guild_member = get!(world, contributor_address, GuildMember);
+
+                let owner_guild_member = get!(world, hyperstructure_owner.address, GuildMember);
+                assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
+            }
+        }
+    }
+}
