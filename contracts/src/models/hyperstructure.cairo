@@ -1,6 +1,20 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::{alias::ID, constants::WORLD_CONFIG_ID};
+use eternum::{
+    alias::ID,
+    constants::{
+        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
+        get_contributable_resources_with_rarity, RESOURCE_PRECISION
+    },
+    models::{
+        owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
+        resources::{Resource, ResourceCustomImpl, ResourceCost},
+        structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}, guild::{GuildMember}
+    },
+    systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
+};
+
+use eternum::{constants::WORLD_CONFIG_ID};
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -12,7 +26,14 @@ pub struct Hyperstructure {
     completed: bool,
     last_updated_by: ContractAddress,
     last_updated_timestamp: u64,
-    private: bool,
+    access: Access,
+}
+
+#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked)]
+pub enum Access {
+    Public,
+    Private,
+    GuildOnly,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

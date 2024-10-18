@@ -402,7 +402,12 @@ impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
 pub struct MercenariesConfig {
     #[key]
     config_id: ID,
-    troops: Troops,
+    knights_lower_bound: u64,
+    knights_upper_bound: u64,
+    paladins_lower_bound: u64,
+    paladins_upper_bound: u64,
+    crossbowmen_lower_bound: u64,
+    crossbowmen_upper_bound: u64,
     rewards: Span<(u8, u128)>
 }
 

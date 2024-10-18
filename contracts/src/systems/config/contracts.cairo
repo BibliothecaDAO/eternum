@@ -161,7 +161,16 @@ trait IPopulationConfig {
 
 #[dojo::interface]
 trait IMercenariesConfig {
-    fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>);
+    fn set_mercenaries_config(
+        ref world: IWorldDispatcher,
+        knights_lower_bound: u64,
+        knights_upper_bound: u64,
+        paladins_lower_bound: u64,
+        paladins_upper_bound: u64,
+        crossbowmen_lower_bound: u64,
+        crossbowmen_upper_bound: u64,
+        rewards: Span<(u8, u128)>
+    );
 }
 
 #[dojo::interface]
@@ -674,10 +683,43 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl IMercenariesConfig of super::IMercenariesConfig<ContractState> {
-        fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>) {
+        fn set_mercenaries_config(
+            ref world: IWorldDispatcher,
+            knights_lower_bound: u64,
+            knights_upper_bound: u64,
+            paladins_lower_bound: u64,
+            paladins_upper_bound: u64,
+            crossbowmen_lower_bound: u64,
+            crossbowmen_upper_bound: u64,
+            rewards: Span<(u8, u128)>
+        ) {
             assert_caller_is_admin(world);
 
-            set!(world, (MercenariesConfig { config_id: WORLD_CONFIG_ID, troops, rewards }));
+            assert!(
+                knights_lower_bound < knights_upper_bound, "knights_lower_bound must be lower than knights_upper_bound"
+            );
+            assert!(
+                paladins_lower_bound < paladins_upper_bound,
+                "paladins_lower_bound must be lower than paladins_upper_bound"
+            );
+            assert!(
+                crossbowmen_lower_bound < crossbowmen_upper_bound,
+                "crossbowmen_lower_bound must be lower than crossbowmen_upper_bound"
+            );
+
+            set!(
+                world,
+                (MercenariesConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    knights_lower_bound,
+                    knights_upper_bound,
+                    paladins_lower_bound,
+                    paladins_upper_bound,
+                    crossbowmen_lower_bound,
+                    crossbowmen_upper_bound,
+                    rewards
+                })
+            );
         }
     }
 

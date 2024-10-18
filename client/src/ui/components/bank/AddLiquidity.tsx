@@ -4,7 +4,7 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { multiplyByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmationPopup } from "./ConfirmationPopup";
@@ -57,9 +57,10 @@ const AddLiquidity = ({
     }
   }, [resourceAmount]);
 
+  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords)).balance;
+  const resourceBalance = getBalance(entityId, Number(resourceId)).balance;
   const hasEnough =
-    getBalance(entityId, Number(ResourcesIds.Lords)).balance >= multiplyByPrecision(lordsAmount) &&
-    getBalance(entityId, Number(resourceId)).balance >= multiplyByPrecision(resourceAmount);
+    lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
   const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
   const isMyResourcesLocked = useIsResourcesLocked(entityId);
@@ -123,6 +124,7 @@ const AddLiquidity = ({
             setAmount={setLordsAmount}
             resourceId={ResourcesIds.Lords}
             setResourceId={setResourceId}
+            max={divideByPrecision(lordsBalance)}
           />
 
           <ResourceBar
@@ -133,6 +135,7 @@ const AddLiquidity = ({
             setAmount={setResourceAmount}
             resourceId={resourceId}
             setResourceId={setResourceId}
+            max={divideByPrecision(resourceBalance)}
           />
         </div>
         <div className="p-2">
@@ -143,7 +146,7 @@ const AddLiquidity = ({
               variant="primary"
               isLoading={false}
               disabled={!canAdd}
-              className="text-brown bg-black/90"
+              className="text-brown bg-brown/90"
               onClick={() => setOpenConfirmation(true)}
             >
               Add Liquidity

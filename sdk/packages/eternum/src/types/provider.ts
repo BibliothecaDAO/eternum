@@ -529,9 +529,9 @@ export interface ContributeToConstructionProps extends SystemSigner {
   contributions: { resource: number; amount: number }[];
 }
 
-export interface SetPrivateProps extends SystemSigner {
+export interface SetAccessProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
-  to_private: boolean;
+  access: num.BigNumberish;
 }
 
 export interface EndGameProps extends SystemSigner {
@@ -556,7 +556,12 @@ export interface SetStaminaRefillConfigProps extends SystemSigner {
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 
 export interface SetMercenariesConfigProps extends SystemSigner {
-  troops: Troops;
+  knights_lower_bound: num.BigNumberish;
+  knights_upper_bound: num.BigNumberish;
+  paladins_lower_bound: num.BigNumberish;
+  paladins_upper_bound: num.BigNumberish;
+  crossbowmen_lower_bound: num.BigNumberish;
+  crossbowmen_upper_bound: num.BigNumberish;
   rewards: { resource: number; amount: number }[];
 }
 

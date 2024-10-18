@@ -502,14 +502,14 @@ export function defineContractComponents(world: World) {
           completed: RecsType.Boolean,
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
-          private: RecsType.Boolean,
+          access: RecsType.String,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Hyperstructure",
-            types: ["u32", "u16", "bool", "contractaddress", "u64", "bool"],
-            customTypes: [],
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum"],
+            customTypes: ["Access"],
           },
         },
       );
@@ -537,12 +537,18 @@ export function defineContractComponents(world: World) {
     HyperstructureConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, time_between_shares_change: RecsType.Number },
+        {
+          config_id: RecsType.Number,
+          time_between_shares_change: RecsType.Number,
+          points_per_cycle: RecsType.BigInt,
+          points_for_win: RecsType.BigInt,
+          points_on_completion: RecsType.BigInt,
+        },
         {
           metadata: {
             namespace: "eternum",
             name: "HyperstructureConfig",
-            types: ["u32", "u64"],
+            types: ["u32", "u64", "u128", "u128", "u128"],
             customTypes: [],
           },
         },
@@ -956,6 +962,34 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    RealmLevelConfig: (() => {
+      return defineComponent(
+        world,
+        { level: RecsType.Number, required_resources_id: RecsType.Number, required_resource_count: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "RealmLevelConfig",
+            types: ["u8", "u32", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RealmMaxLevelConfig: (() => {
+      return defineComponent(
+        world,
+        { config_id: RecsType.Number, max_level: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "RealmMaxLevelConfig",
+            types: ["u32", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Resource: (() => {
       return defineComponent(
         world,
@@ -1181,6 +1215,27 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    TravelFoodCostConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          unit_type: RecsType.Number,
+          explore_wheat_burn_amount: RecsType.BigInt,
+          explore_fish_burn_amount: RecsType.BigInt,
+          travel_wheat_burn_amount: RecsType.BigInt,
+          travel_fish_burn_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "TravelFoodCostConfig",
+            types: ["u32", "u8", "u128", "u128", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     TravelStaminaCostConfig: (() => {
       return defineComponent(
         world,
@@ -1210,6 +1265,7 @@ export function defineContractComponents(world: World) {
           crossbowman_strength: RecsType.Number,
           advantage_percent: RecsType.Number,
           disadvantage_percent: RecsType.Number,
+          max_troop_count: RecsType.Number,
           pillage_health_divisor: RecsType.Number,
           army_free_per_structure: RecsType.Number,
           army_extra_per_building: RecsType.Number,
@@ -1222,7 +1278,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
+            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u64", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
             customTypes: [],
           },
         },

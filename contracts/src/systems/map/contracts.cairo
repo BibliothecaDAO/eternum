@@ -169,6 +169,12 @@ mod map_systems {
                 let mine_structure_entity_id = Self::create_shard_mine_structure(world, coord);
 
                 Self::add_mercenaries_to_structure(world, mine_structure_entity_id);
+
+                let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
+                InternalResourceSystemsImpl::transfer(
+                    world, 0, mine_structure_entity_id, mercenaries_config.rewards, 0, false, false
+                );
+
                 let deadline = Self::add_production_deadline(world, mine_structure_entity_id);
 
                 // create shards production building
@@ -241,17 +247,46 @@ mod map_systems {
         fn add_mercenaries_to_structure(world: IWorldDispatcher, structure_entity_id: ID) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
-            let troops = mercenaries_config.troops;
-
             let army_entity_id = InternalCombatImpl::create_defensive_army(
                 world, structure_entity_id, starknet::contract_address_const::<0x0>()
             );
 
-            InternalCombatImpl::add_troops_to_army(world, troops, army_entity_id);
+            let tx_info = starknet::get_tx_info();
+            let salt_one: u256 = tx_info.transaction_hash.into();
+            let salt_two: u256 = starknet::get_block_timestamp().into();
+            let salt_three: u256 = tx_info.nonce.into();
 
-            InternalResourceSystemsImpl::transfer(
-                world, 0, structure_entity_id, mercenaries_config.rewards, 0, false, false
-            );
+            let random_knights_amount: u64 = random::random(
+                salt_one.low,
+                mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
+            )
+                .try_into()
+                .unwrap()
+                + mercenaries_config.knights_lower_bound;
+            let random_paladins_amount: u64 = random::random(
+                salt_two.low,
+                mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
+            )
+                .try_into()
+                .unwrap()
+                + mercenaries_config.paladins_lower_bound;
+            let random_crossbowmen_amount: u64 = random::random(
+                salt_three.low,
+                mercenaries_config.crossbowmen_upper_bound.into() - mercenaries_config.crossbowmen_lower_bound.into()
+            )
+                .try_into()
+                .unwrap()
+                + mercenaries_config.crossbowmen_lower_bound;
+
+            let mut troops = Troops {
+                knight_count: random_knights_amount,
+                paladin_count: random_paladins_amount,
+                crossbowman_count: random_crossbowmen_amount
+            };
+
+            troops.normalize_counts();
+
+            InternalCombatImpl::add_troops_to_army(world, troops, army_entity_id);
 
             army_entity_id
         }

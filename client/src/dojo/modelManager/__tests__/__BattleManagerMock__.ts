@@ -143,3 +143,22 @@ export const generateMockStructure = (structureType: StructureType, isMine?: boo
     },
   };
 };
+
+export const generateMockTroopConfig = () => {
+  return {
+    health: 1,
+    knightStrength: 1,
+    paladinStrength: 1,
+    crossbowmanStrength: 1,
+    advantagePercent: 1000,
+    disadvantagePercent: 1000,
+    maxTroopCount: 500000,
+    pillageHealthDivisor: 8,
+    baseArmyNumberForStructure: 3,
+    armyExtraPerMilitaryBuilding: 1,
+    maxArmiesPerStructure: 7,
+    battleLeaveSlashNum: 25,
+    battleLeaveSlashDenom: 100,
+    battleTimeScale: 1000,
+  };
+};
