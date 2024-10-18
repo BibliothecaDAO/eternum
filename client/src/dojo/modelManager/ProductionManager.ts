@@ -1,15 +1,7 @@
-import { getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
-import {
-  BuildingType,
-  CapacityConfigCategory,
-  EternumGlobalConfig,
-  RESOURCE_INPUTS_SCALED,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-  type ID,
-} from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
+import { BuildingType, CapacityConfigCategory, ResourcesIds, type ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { type SetupResult } from "../setup";
+import { configManager, type SetupResult } from "../setup";
 
 export class ProductionManager {
   entityId: ID;
@@ -37,7 +29,7 @@ export class ProductionManager {
     return production !== undefined && (production.building_count > 0 || production.consumption_rate > 0);
   }
 
-  public netRate(currentTick: number): [boolean, number] {
+  public netRate(): [boolean, number] {
     return this._netRate(this.resourceId);
   }
 
@@ -55,6 +47,11 @@ export class ProductionManager {
 
   public balance(currentTick: number): number {
     return this._balance(currentTick, this.resourceId);
+  }
+
+  public timeUntilFinishTick(currentTick: number): number {
+    const finishTick = this._finish_tick();
+    return finishTick > currentTick ? finishTick - currentTick : 0;
   }
 
   public timeUntilValueReached(currentTick: number, value: number): number {
@@ -82,16 +79,13 @@ export class ProductionManager {
   }
 
   public getStoreCapacity(): number {
+    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
     const quantity =
       getComponentValue(
         this.setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(this.entityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
-    return (
-      (Number(quantity) * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
-        gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))) *
-      EternumGlobalConfig.resources.resourcePrecision
-    );
+    return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
   }
 
   public isConsumingInputsWithoutOutput(currentTick: number): boolean {
@@ -100,25 +94,38 @@ export class ProductionManager {
     return production?.production_rate > 0n && !this._inputs_available(currentTick, this.resourceId);
   }
 
-  private _balance(currentTick: number, resourceId: ResourcesIds): number {
-    const resource = this._getResource(resourceId);
+  public balanceFromComponents(
+    resourceId: ResourcesIds,
+    rate: number,
+    sign: boolean,
+    resourceBalance: bigint | undefined,
+    productionDuration: number,
+    depletionDuration: number,
+  ): number {
+    return this._calculateBalance(resourceId, rate, sign, resourceBalance, productionDuration, depletionDuration);
+  }
 
-    const [sign, rate] = this._netRate(resourceId);
-
+  private _calculateBalance(
+    resourceId: ResourcesIds,
+    rate: number,
+    sign: boolean,
+    resourceBalance: bigint | undefined,
+    productionDuration: number,
+    depletionDuration: number,
+  ): number {
     if (rate !== 0) {
       if (sign) {
         // Positive net rate, increase balance
-        const productionDuration = this._productionDuration(currentTick, resourceId);
-        const balance = Number(resource?.balance || 0n) + productionDuration * rate;
+        const balance = Number(resourceBalance || 0n) + productionDuration * rate;
         const storeCapacity = this.getStoreCapacity();
-        const maxAmountStorable =
-          (storeCapacity / (WEIGHTS_GRAM[resourceId] || 1000)) * EternumGlobalConfig.resources.resourcePrecision;
+        const maxAmountStorable = multiplyByPrecision(
+          storeCapacity / (configManager.getResourceWeight(resourceId) || 1000),
+        );
         const result = Math.min(balance, maxAmountStorable);
         return result;
       } else {
         // Negative net rate, decrease balance but not below zero
-        const depletionDuration = this._depletionDuration(currentTick, resourceId);
-        const balance = Number(resource?.balance || 0n) - -depletionDuration * rate;
+        const balance = Number(resourceBalance || 0n) - -depletionDuration * rate;
         if (balance < 0) {
           return 0;
         } else {
@@ -127,9 +134,18 @@ export class ProductionManager {
       }
     } else {
       // No net rate change, return current balance
-      const currentBalance = Number(resource?.balance || 0n);
+      const currentBalance = Number(resourceBalance || 0n);
       return currentBalance;
     }
+  }
+
+  private _balance(currentTick: number, resourceId: ResourcesIds): number {
+    const resource = this._getResource(resourceId);
+
+    const [sign, rate] = this._netRate(resourceId);
+    const productionDuration = this._productionDuration(currentTick, resourceId);
+    const productionDepletion = this._depletionDuration(currentTick, resourceId);
+    return this._calculateBalance(resourceId, rate, sign, resource?.balance, productionDuration, productionDepletion);
   }
 
   private _finish_tick(): number {
@@ -178,7 +194,7 @@ export class ProductionManager {
     // If there is no production or resource, return current tick
     if (!production || !resource) return currentTick;
 
-    const [_, value] = this.netRate(currentTick);
+    const [_, value] = this.netRate();
     const balance = this.balance(currentTick);
 
     if (value != 0) {
@@ -199,7 +215,7 @@ export class ProductionManager {
   }
 
   private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
-    const inputs = RESOURCE_INPUTS_SCALED[resourceId];
+    const inputs = configManager.resourceInputs[resourceId];
 
     // Ensure inputs is an array before proceeding
     if (inputs.length == 0) {

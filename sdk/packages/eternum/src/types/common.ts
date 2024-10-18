@@ -256,6 +256,7 @@ export interface Config {
     resourceOutputs: ResourceOutputs;
     resourceWeightsGrams: { [key in ResourcesIds]: number };
     resourceBuildingCosts: ResourceInputs;
+    resourceRarity: { [key in ResourcesIds]?: number };
   };
   banks: {
     name: string;
@@ -355,7 +356,6 @@ export interface Config {
     hyperstructureCreationCosts: ResourceCost[];
     hyperstructureConstructionCosts: ResourceCost[];
     hyperstructureTotalCosts: ResourceCost[];
-    hyperstructureResourceMultipliers: { [key in ResourcesIds]?: number };
     hyperstructurePointsPerCycle: number;
     hyperstructurePointsOnCompletion: number;
     hyperstructureTimeBetweenSharesChangeSeconds: number;

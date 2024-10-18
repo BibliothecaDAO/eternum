@@ -2,6 +2,7 @@ import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -15,7 +16,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -351,10 +352,10 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Days are {formatTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)} long</h2>
+        <h2 className="mb-4">Days are {formatTime(configManager.getTick(TickIds.Armies))} long</h2>
         <p className="mb-4 text-xl">
-          Each {formatTime(EternumGlobalConfig.tick.armiesTickIntervalInSeconds)} period your Realms and Troops will
-          regain energy and be able to travel again. Don't get caught out in the open.
+          Each {formatTime(configManager.getTick(TickIds.Armies))} period your Realms and Troops will regain energy and
+          be able to travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
