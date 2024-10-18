@@ -17,6 +17,7 @@ import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
 import { ResourceExchange } from "./ResourceExchange";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 export const StructureCard = ({
   position,
@@ -255,6 +256,11 @@ const TroopExchange = ({
       <div className="flex flex-row justify-around items-center">
         <div className="w-[60%] mr-1 bg-gold/20">
           <p className="pt-2 pb-1 text-center">{giverArmyName}</p>
+          <ArmyCapacity
+            army={transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id)}
+            className="flex justify-center"
+            deductedTroops={Object.values(troopsGiven).reduce((a, b) => a + b, 0n)}
+          />
           {Object.entries(troopsToFormat(attackerArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
