@@ -1,4 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
@@ -17,6 +18,8 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
     },
     account: { account },
   } = useDojo();
+
+  const { isMapView } = useQuery();
 
   const [isLoading, setIsLoading] = useState(false);
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
@@ -65,6 +68,20 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
           <div className="mb-4">
             <hr />
             <h5 className="my-4">Steps</h5>
+            {quest.view && (
+              <div className={clsx("mb-4 flex gap-2")}>
+                Navigate to the{" "}
+                <span className="text-xxs font-medium px-0.5 border border-gold bg-transparent rounded flex items-center">
+                  {quest.view}
+                </span>{" "}
+                view
+                {(isMapView && quest.view === "WORLD") || (!isMapView && quest.view === "REALM") ? (
+                  <Check />
+                ) : (
+                  <ShieldQuestion />
+                )}
+              </div>
+            )}
             {quest.steps.map((step: any, index: number) => (
               <div className="flex flex-col text-md" key={index}>
                 <div className="text-md mb-4">{step}</div>
