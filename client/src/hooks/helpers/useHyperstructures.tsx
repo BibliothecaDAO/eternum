@@ -17,13 +17,9 @@ export type ProgressWithPercentage = {
   amount: number;
 };
 
-type Progress = {
-  percentage: number;
-  progresses: ProgressWithPercentage[];
-};
-
 export const useHyperstructures = () => {
   const {
+    account: { account },
     setup: {
       components: { Structure, Contribution, Position, Owner, EntityName },
     },
@@ -38,13 +34,16 @@ export const useHyperstructures = () => {
         .values()
         .next().value;
 
-      const owner = toHexString(getComponentValue(Owner, ownerEntityIds || ("" as Entity))?.address || 0n);
+      const ownerComponent = getComponentValue(Owner, ownerEntityIds || ("" as Entity));
+      const owner = toHexString(ownerComponent?.address || 0n);
+      const isOwner = ContractAddress(ownerComponent?.address ?? 0n) === ContractAddress(account.address);
       const entityName = getComponentValue(EntityName, hyperstructureEntityId);
       return {
         ...hyperstructure,
         ...position,
         ...contributions,
         owner,
+        isOwner,
         entityIdPoseidon: hyperstructureEntityId,
         name: entityName
           ? shortString.decodeShortString(entityName.name.toString())

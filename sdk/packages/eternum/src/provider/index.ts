@@ -1035,12 +1035,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_private(props: SystemProps.SetPrivateProps) {
-    const { hyperstructure_entity_id, to_private, signer } = props;
+  public async set_access(props: SystemProps.SetAccessProps) {
+    const { hyperstructure_entity_id, access, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "set_private",
-      calldata: [hyperstructure_entity_id, to_private],
+      entrypoint: "set_access",
+      calldata: [hyperstructure_entity_id, access],
     });
   }
 
