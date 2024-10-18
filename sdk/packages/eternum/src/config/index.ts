@@ -23,6 +23,9 @@ export class EternumConfig {
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setProductionConfig(config);
+    await setSeasonConfig(config);
+    await setResourceBridgeWhitlelistConfig(config);
+    await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
     await setBuildingConfig(config);
@@ -410,6 +413,47 @@ export const setCapacityConfig = async (config: Config) => {
 
     console.log(`Configuring capacity ${category} config ${tx.statusReceipt} max capacity: ${weight_gram}...`);
   }
+};
+
+export const setSeasonConfig = async (config: Config) => {
+  const tx = await config.provider.set_season_config({
+    signer: config.account,
+    season_pass_address: config.config.season.seasonPassAddress,
+    realms_address: config.config.season.realmsAddress,
+    lords_address: config.config.season.lordsAddress,
+  });
+
+  console.log(`Configuring season config ${tx.statusReceipt}`);
+};
+
+export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
+  // allow bridging in of lords into the game
+  const tx = await config.provider.set_resource_bridge_whitlelist_config({
+    signer: config.account,
+    token: config.config.season.lordsAddress,
+    resource_type: ResourcesIds.Lords,
+  });
+
+  console.log(`Configuring whitelist for lords for in-game asset bridge ${tx.statusReceipt}`);
+};
+
+export const setResourceBridgeFeesConfig = async (config: Config) => {
+  // allow bridging in of lords into the game
+  const tx = await config.provider.set_resource_bridge_fees_config({
+    signer: config.account,
+    velords_fee_on_dpt_percent: config.config.bridge.velords_fee_on_dpt_percent,
+    velords_fee_on_wtdr_percent: config.config.bridge.velords_fee_on_wtdr_percent,
+    season_pool_fee_on_dpt_percent: config.config.bridge.season_pool_fee_on_dpt_percent,
+    season_pool_fee_on_wtdr_percent: config.config.bridge.season_pool_fee_on_wtdr_percent,
+    client_fee_on_dpt_percent: config.config.bridge.client_fee_on_dpt_percent,
+    client_fee_on_wtdr_percent: config.config.bridge.client_fee_on_wtdr_percent,
+    velords_fee_recipient: config.config.bridge.velords_fee_recipient,
+    season_pool_fee_recipient: config.config.bridge.season_pool_fee_recipient,
+    max_bank_fee_dpt_percent: config.config.bridge.max_bank_fee_dpt_percent,
+    max_bank_fee_wtdr_percent: config.config.bridge.max_bank_fee_wtdr_percent,
+  });
+
+  console.log(`Configuring bridge fees ${tx.statusReceipt}`);
 };
 
 export const setSpeedConfig = async (config: Config) => {

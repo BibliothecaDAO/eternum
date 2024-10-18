@@ -10,6 +10,7 @@ dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.16" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
 cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
+
 [[target.dojo]]
 
 [tool.fmt]

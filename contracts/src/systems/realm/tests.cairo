@@ -67,35 +67,14 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
 #[test]
 #[available_gas(3000000000000)]
 fn realm_test_realm_create() {
-    let (world, realm_systems_dispatcher) = setup();
+    let (world, _realm_systems_dispatcher) = setup();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
     let realm_id = 1;
-    let resource_types_packed = 1;
-    let resource_types_count = 1;
-    let cities = 6;
-    let harbors = 5;
-    let rivers = 5;
-    let regions = 5;
-    let wonder = 1;
-    let order = 1;
-
     starknet::testing::set_contract_address(contract_address_const::<'caller'>());
 
-    let realm_entity_id = realm_systems_dispatcher
-        .create(
-            'Mysticora',
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-        );
+    let realm_entity_id = spawn_realm(world, realm_id, get_default_realm_pos().into());
 
     let position = get!(world, realm_entity_id, Position);
 
@@ -121,7 +100,7 @@ fn realm_test_mint_starting_resources() {
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
 
@@ -141,7 +120,7 @@ fn realm_test_mint_starting_resources_twice() {
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
 
@@ -159,7 +138,7 @@ fn realm_test_mint_starting_resources_as_not_realm() {
     starknet::testing::set_contract_address(contract_address_const::<'caller'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'caller'>());
 
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     let hyperstructure_entity_id = spawn_hyperstructure(
         world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
@@ -174,7 +153,7 @@ fn realm_test_upgrade_level_success() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     // Add required resources for upgrade
     let required_resources = array![(ResourceTypes::WHEAT, 100), (ResourceTypes::WOOD, 100),];
@@ -207,7 +186,7 @@ fn realm_test_upgrade_level_not_owner() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     // Set a different caller
     starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
@@ -236,7 +215,7 @@ fn realm_test_upgrade_level_max_level() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     // Set realm to max level
     let mut realm = get!(world, realm_entity_id, Realm);
@@ -259,7 +238,7 @@ fn realm_test_upgrade_level_insufficient_resources() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     // Attempt to upgrade level without adding resources
     realm_systems_dispatcher.upgrade_level(realm_entity_id);
@@ -271,7 +250,7 @@ fn realm_test_upgrade_level_multiple_times() {
     let (world, realm_systems_dispatcher) = setup();
 
     // Spawn a realm
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     // Add more than enough resources for multiple upgrades
     let required_resources = array![

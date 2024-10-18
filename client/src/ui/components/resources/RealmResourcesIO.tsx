@@ -17,7 +17,7 @@ export const RealmResourcesIO = ({
 }) => {
   const { realm } = useGetRealm(realmEntityId);
 
-  const resourcesProduced = realm ? unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount) : [];
+  const resourcesProduced = realm ? unpackResources(realm.resourceTypesPacked) : [];
   const resourcesInputs = configManager.resourceInputs;
 
   const resourcesConsumed = [

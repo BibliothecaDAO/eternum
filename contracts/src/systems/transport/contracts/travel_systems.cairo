@@ -19,8 +19,6 @@ mod travel_systems {
     use eternum::constants::{WORLD_CONFIG_ID, TravelTypes};
     use eternum::models::combat::Army;
     use eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
-
-    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::order::{Orders, OrdersCustomTrait};
@@ -28,6 +26,8 @@ mod travel_systems {
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
     use eternum::models::quantity::{Quantity,};
     use eternum::models::realm::Realm;
+
+    use eternum::models::season::SeasonImpl;
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
 
@@ -65,7 +65,7 @@ mod travel_systems {
         /// * `destination_coord` - The coordinate to travel to
         ///
         fn travel(ref world: IWorldDispatcher, travelling_entity_id: ID, destination_coord: Coord) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             // todo@security prevent free transport units from travelling
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
@@ -89,7 +89,7 @@ mod travel_systems {
 
 
         fn travel_hex(ref world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 

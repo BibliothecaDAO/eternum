@@ -135,24 +135,14 @@ export interface MintResourcesAndClaimProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-interface Realm {
-  realm_name: string;
-  realm_id: num.BigNumberish;
-  resource_types_packed: num.BigNumberish;
-  resource_types_count: num.BigNumberish;
-  cities: num.BigNumberish;
-  harbors: num.BigNumberish;
-  rivers: num.BigNumberish;
-  regions: num.BigNumberish;
-  wonder: num.BigNumberish;
-  order: num.BigNumberish;
-}
-
 export interface CreateMultipleRealmsProps extends SystemSigner {
-  realms: Realm[];
+  realm_ids: num.BigNumberish[];
 }
 
-export interface CreateRealmProps extends Realm, SystemSigner {}
+export interface CreateRealmProps extends SystemSigner {
+  realm_id: num.BigNumberish;
+}
+
 export interface UpgradeRealmProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
 }
@@ -494,6 +484,30 @@ export interface SetWorldConfigProps extends SystemSigner {
 export interface SetSpeedConfigProps extends SystemSigner {
   entity_type: num.BigNumberish;
   sec_per_km: num.BigNumberish;
+}
+
+export interface SetSeasonConfigProps extends SystemSigner {
+  season_pass_address: num.BigNumberish;
+  realms_address: num.BigNumberish;
+  lords_address: num.BigNumberish;
+}
+
+export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
+  token: num.BigNumberish;
+  resource_type: num.BigNumberish;
+}
+
+export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
+  velords_fee_on_dpt_percent: num.BigNumberish;
+  velords_fee_on_wtdr_percent: num.BigNumberish;
+  season_pool_fee_on_dpt_percent: num.BigNumberish;
+  season_pool_fee_on_wtdr_percent: num.BigNumberish;
+  client_fee_on_dpt_percent: num.BigNumberish;
+  client_fee_on_wtdr_percent: num.BigNumberish;
+  velords_fee_recipient: num.BigNumberish;
+  season_pool_fee_recipient: num.BigNumberish;
+  max_bank_fee_dpt_percent: num.BigNumberish;
+  max_bank_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {

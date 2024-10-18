@@ -19,14 +19,6 @@ use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct Season {
-    #[key]
-    config_id: ID,
-    is_over: bool,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct Hyperstructure {
     #[key]
     entity_id: ID,
@@ -84,19 +76,6 @@ pub impl EpochCustomImpl of EpochCustomTrait {
         epoch
     }
 }
-
-#[generate_trait]
-pub impl SeasonCustomImpl of SeasonCustomTrait {
-    fn end_season(world: IWorldDispatcher) {
-        set!(world, (Season { config_id: WORLD_CONFIG_ID, is_over: true }));
-    }
-
-    fn assert_season_is_not_over(world: IWorldDispatcher) {
-        let season = get!(world, WORLD_CONFIG_ID, Season);
-        assert!(season.is_over == false, "Season is over");
-    }
-}
-
 
 #[generate_trait]
 pub impl HyperstructureCustomImpl of HyperstructureCustomTrait {

@@ -227,7 +227,7 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
           if (!realmData) return undefined;
           const name = realmData.name;
           const owner = getComponentValue(Owner, entityId);
-          const resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+          const resources = unpackResources(BigInt(realm.produced_resources));
 
           const distanceFromPosition = calculateDistance(position, realmPosition) ?? 0;
 

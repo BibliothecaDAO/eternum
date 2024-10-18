@@ -4,7 +4,7 @@ use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
 use eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonConfig
 };
 use eternum::models::position::Coord;
 
@@ -14,6 +14,17 @@ trait IWorldConfig {
         ref world: IWorldDispatcher,
         admin_address: starknet::ContractAddress,
         realm_l2_contract: starknet::ContractAddress
+    );
+}
+
+
+#[dojo::interface]
+trait ISeasonConfig {
+    fn set_season_config(
+        ref world: IWorldDispatcher,
+        season_pass_address: starknet::ContractAddress,
+        realms_address: starknet::ContractAddress,
+        lords_address: starknet::ContractAddress
     );
 }
 
@@ -207,13 +218,13 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonConfig
     };
-    use eternum::models::hyperstructure::SeasonCustomImpl;
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
+    use eternum::models::season::SeasonImpl;
 
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
@@ -235,6 +246,24 @@ mod config_systems {
             set!(world, (WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract }));
         }
     }
+
+
+    #[abi(embed_v0)]
+    impl SeasonConfigCustomImpl of super::ISeasonConfig<ContractState> {
+        fn set_season_config(
+            ref world: IWorldDispatcher,
+            season_pass_address: starknet::ContractAddress,
+            realms_address: starknet::ContractAddress,
+            lords_address: starknet::ContractAddress
+        ) {
+            assert_caller_is_admin(world);
+
+            set!(
+                world, (SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address })
+            )
+        }
+    }
+
     #[abi(embed_v0)]
     impl RealmFreeMintConfigCustomImpl of super::IRealmFreeMintConfig<ContractState> {
         fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>) {

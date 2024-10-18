@@ -70,7 +70,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const realmResourceIds = useMemo(() => {
     if (realm) {
-      return unpackResources(BigInt(realm.resourceTypesPacked), realm.resourceTypesCount);
+      return unpackResources(BigInt(realm.resourceTypesPacked));
     } else {
       return [];
     }
