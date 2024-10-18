@@ -176,7 +176,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [realm_id],
+          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
         },
       ],
       NAMESPACE,
@@ -202,7 +202,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [realm_id],
+          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
         },
       ];
       return calldata;
@@ -735,15 +735,58 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
   public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
-    const { season_pass_address, realms_address, signer } = props;
+    const { season_pass_address, realms_address, lords_address, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_season_config",
-      calldata: [season_pass_address, realms_address],
+      calldata: [season_pass_address, realms_address, lords_address],
     });
   }
 
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+    const { token, resource_type, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_whitelist_config",
+      calldata: [token, resource_type],
+    });
+  }
+
+  public async set_resource_bridge_fees_config(props: SystemProps.SetResourceBridgeFeesConfigProps) {
+    const {
+      velords_fee_on_dpt_percent,
+      velords_fee_on_wtdr_percent,
+      season_pool_fee_on_dpt_percent,
+      season_pool_fee_on_wtdr_percent,
+      client_fee_on_dpt_percent,
+      client_fee_on_wtdr_percent,
+      velords_fee_recipient,
+      season_pool_fee_recipient,
+      max_bank_fee_dpt_percent,
+      max_bank_fee_wtdr_percent,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_fee_split_config",
+      calldata: [
+        0, // config id
+        velords_fee_on_dpt_percent,
+        velords_fee_on_wtdr_percent,
+        season_pool_fee_on_dpt_percent,
+        season_pool_fee_on_wtdr_percent,
+        client_fee_on_dpt_percent,
+        client_fee_on_wtdr_percent,
+        velords_fee_recipient,
+        season_pool_fee_recipient,
+        max_bank_fee_dpt_percent,
+        max_bank_fee_wtdr_percent,
+      ],
+    });
+  }
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { category, weight_gram, signer } = props;
 

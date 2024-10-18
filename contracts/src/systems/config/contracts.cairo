@@ -23,7 +23,8 @@ trait ISeasonConfig {
     fn set_season_config(
         ref world: IWorldDispatcher,
         season_pass_address: starknet::ContractAddress,
-        realms_address: starknet::ContractAddress
+        realms_address: starknet::ContractAddress,
+        lords_address: starknet::ContractAddress
     );
 }
 
@@ -243,11 +244,14 @@ mod config_systems {
         fn set_season_config(
             ref world: IWorldDispatcher,
             season_pass_address: starknet::ContractAddress,
-            realms_address: starknet::ContractAddress
+            realms_address: starknet::ContractAddress,
+            lords_address: starknet::ContractAddress
         ) {
             assert_caller_is_admin(world);
 
-            set!(world, (SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address }));
+            set!(
+                world, (SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address })
+            )
         }
     }
 

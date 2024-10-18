@@ -5,6 +5,45 @@ use starknet::ContractAddress;
 trait IResourceBridgeSystems {
     /// Deposits tokens into the resource bridge, converting them to in-game resources.
     ///
+    /// NOTE: this is only to be called by realms_systems and resources are deposited
+    ///       directly into the realm
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The address of the ERC20 token being deposited
+    /// * `recipient_realm_id` - The ID of the realm receiving the resources
+    /// * `amount` - The amount of tokens to deposit
+    /// * `client_fee_recipient` - The address to receive the client fee
+    ///
+    /// # Configuration
+    ///
+    /// Before calling this function, ensure:
+    /// - The token is whitelisted in `ResourceBridgeWhitelistConfig`
+    /// - Deposit is not paused in `ResourceBridgeConfig`
+    /// - Fee percentages are set in `ResourceBridgeFeeSplitConfig`
+    ///
+    /// # Fees
+    ///
+    /// Fees are taken in the following order:
+    /// 1. Non-bank fees (velords, season pool, client)
+    ///
+    ///  NO BANK FEES ARE TAKEN
+    ///
+    /// # Other Notes
+    ///
+    /// - The caller must approve this contract to spend the deposit amount
+    /// - Resources are deposited directly into realm balance
+    ///
+    fn deposit_initial(
+        ref world: IWorldDispatcher,
+        token: ContractAddress,
+        recipient_realm_id: ID,
+        amount: u256,
+        client_fee_recipient: ContractAddress
+    );
+
+    /// Deposits tokens into the resource bridge, converting them to in-game resources.
+    ///
     /// # Arguments
     ///
     /// * `token` - The address of the ERC20 token being deposited
@@ -169,6 +208,57 @@ mod resource_bridge_systems {
 
     #[abi(embed_v0)]
     impl ResourceBridgeImpl of super::IResourceBridgeSystems<ContractState> {
+        fn deposit_initial(
+            ref world: IWorldDispatcher,
+            token: ContractAddress,
+            recipient_realm_id: ID,
+            amount: u256,
+            client_fee_recipient: ContractAddress
+        ) {
+            // ensure this system can only be called by realms systems contract
+            let caller = get_caller_address();
+            let (_realm_systems_class_hash, realm_systems_address) =
+                match world.resource(selector_from_tag!("eternum-realm_systems")) {
+                dojo::world::Resource::Contract((class_hash, contract_address)) => (class_hash, contract_address),
+                _ => (Zeroable::zero(), Zeroable::zero())
+            };
+            assert!(caller == realm_systems_address, "only realm systems can call this system");
+
+            // ensure transfer recipient is a realm
+            let recipient_structure: Structure = get!(world, recipient_realm_id, Structure);
+            recipient_structure.assert_is_structure();
+            assert!(recipient_structure.category == StructureCategory::Realm, "recipient structure is not a realm");
+
+            // ensure bridge deposit is not paused
+            InternalBridgeImpl::assert_deposit_not_paused(world);
+
+            // ensure token is whitelisted
+            let resource_bridge_token_whitelist = get!(world, token, ResourceBridgeWhitelistConfig);
+            InternalBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
+
+            let this = get_contract_address();
+            assert!(
+                ERC20ABIDispatcher { contract_address: token }.transfer_from(realm_systems_address, this, amount),
+                "Bridge: transfer failed"
+            );
+
+            // take non bank fees from deposit
+            let non_bank_fees = InternalBridgeImpl::send_non_bank_fees(
+                world, token, client_fee_recipient, amount, TxType::Deposit
+            );
+
+            let token_amount_less_non_bank_fees = amount - non_bank_fees;
+            let resource_amount_less_non_bank_fees = InternalBridgeImpl::token_amount_to_resource_amount(
+                token, token_amount_less_non_bank_fees
+            );
+
+            // transfer the resource to the recipient realm
+            let resource = array![(resource_bridge_token_whitelist.resource_type, resource_amount_less_non_bank_fees)]
+                .span();
+            InternalResourceSystemsImpl::transfer(world, 0, recipient_realm_id, resource, 0, false, false);
+        }
+
+
         fn deposit(
             ref world: IWorldDispatcher,
             token: ContractAddress,

@@ -57,6 +57,7 @@ const setupConfig: Config =
 setupConfig.season = {
   seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
   realmsAddress: process.env.VITE_REALMS_ADDRESS!,
+  lordsAddress: process.env.VITE_LORDS_ADDRESS!,
 };
 
 export const config = new EternumConfig(setupConfig);

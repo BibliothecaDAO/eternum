@@ -28,16 +28,19 @@ if [[ "$setConfig" == "true" ]]; then
     # update the .env.local file with the season pass and test realms contracts addresses
     VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/dev/season_pass.json | jq -r '.address')
     VITE_REALMS_ADDRESS=$(cat ./addresses/dev/test_realms.json | jq -r '.address')
+    VITE_LORDS_ADDRESS=$(cat ./addresses/dev/test_lords.json | jq -r '.address')
 
     # remove the old addresses if they exist
     ENV_FILE=../../../client/.env.local
     sed -i '' '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
     sed -i '' '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
+    sed -i '' '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
 
     # add the new addresses to the .env.local file
     echo "" >> $ENV_FILE
     echo "VITE_SEASON_PASS_ADDRESS=$VITE_SEASON_PASS_ADDRESS" >> $ENV_FILE
     echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
+    echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
 
     cd ../../../
     printf "\n\n"

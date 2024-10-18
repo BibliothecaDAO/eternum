@@ -7,10 +7,21 @@ trait IRealmMetadataEncoded<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
+#[starknet::interface]
+trait ISeasonPass<TState> {
+    fn mint(ref self: TState, token_id: u256);
+    fn attach_lords(ref self: TState, token_id: u256, amount: u256);
+    fn detach_lords(ref self: TState, token_id: u256, amount: u256);
+    fn lords_balance(self: @TState, token_id: u256) -> u256;
+}
+
+
 #[starknet::contract]
 mod EternumSeasonPass {
+    use debug::PrintTrait;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc721::ERC721Component;
     use openzeppelin::token::erc721::ERC721HooksEmptyImpl;
     use openzeppelin::token::erc721::interface::{
@@ -40,6 +51,8 @@ mod EternumSeasonPass {
     #[storage]
     struct Storage {
         realms: IERC721Dispatcher,
+        lords: IERC20Dispatcher,
+        lords_balance: LegacyMap<u256, u256>,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -64,10 +77,16 @@ mod EternumSeasonPass {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, owner: ContractAddress, realms_contract_address: ContractAddress) {
+    fn constructor(
+        ref self: ContractState,
+        owner: ContractAddress,
+        realms_contract_address: ContractAddress,
+        lords_contract_address: ContractAddress
+    ) {
         self.erc721.initializer("Eternum Season 0 Pass", "ES0P", "");
         self.ownable.initializer(owner);
         self.realms.write(IERC721Dispatcher { contract_address: realms_contract_address });
+        self.lords.write(IERC20Dispatcher { contract_address: lords_contract_address });
     }
 
     #[abi(embed_v0)]
@@ -117,10 +136,8 @@ mod EternumSeasonPass {
         }
     }
 
-    #[generate_trait]
-    #[abi(per_item)]
-    impl ERC721MintImpl of ERC721MintTrait {
-        #[external(v0)]
+    #[abi(embed_v0)]
+    impl SeasonPassImpl of super::ISeasonPass<ContractState> {
         fn mint(ref self: ContractState, token_id: u256) {
             // ensure only caller is the token owner
             let caller = starknet::get_caller_address();
@@ -129,6 +146,41 @@ mod EternumSeasonPass {
 
             // mint season pass
             self.erc721.mint(caller, token_id);
+        }
+
+        fn attach_lords(ref self: ContractState, token_id: u256, amount: u256) {
+            // ensure season pass exists
+            assert!(self.erc721.owner_of(token_id) != Zeroable::zero(), "ESP: Season pass does not exist");
+
+            // receive lords from caller
+            let caller = starknet::get_caller_address();
+            let this = starknet::get_contract_address();
+
+            self.lords.read().transfer_from(caller, this, amount);
+
+            // update lords balance
+            let lords_balance = self.lords_balance.read(token_id);
+            self.lords_balance.write(token_id, lords_balance + amount);
+        }
+
+        fn detach_lords(ref self: ContractState, token_id: u256, amount: u256) {
+            // ensure caller is season pass owner
+            let caller = starknet::get_caller_address();
+            assert!(self.erc721.owner_of(token_id) == caller, "ESP: Only season pass owner can detach lords");
+
+            // ensure caller has enough lords
+            let lords_balance = self.lords_balance.read(token_id);
+            assert!(lords_balance >= amount, "ESP: Insufficient lords balance");
+
+            // transfer lords to caller
+            self.lords.read().transfer(caller, amount);
+ 
+            // update lords balance
+            self.lords_balance.write(token_id, lords_balance - amount);
+        }
+
+        fn lords_balance(self: @ContractState, token_id: u256) -> u256 {
+            self.lords_balance.read(token_id)
         }
     }
 }

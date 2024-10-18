@@ -5,22 +5,28 @@ use starknet::ContractAddress;
 trait ISeasonPass<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
     fn transfer_from(self: @TState, from: ContractAddress, to: ContractAddress, token_id: u256);
+    fn lords_balance(self: @TState, token_id: u256) -> u256;
+    fn detach_lords(self: @TState, token_id: u256, amount: u256);
 }
+
+#[starknet::interface]
+trait IERC20<TState> {
+    fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
+}
+
 
 #[dojo::interface]
 trait IRealmSystems {
-    fn create(ref world: IWorldDispatcher, owner: starknet::ContractAddress, realm_id: ID) -> ID;
+    fn create(
+        ref world: IWorldDispatcher, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress
+    ) -> ID;
     fn upgrade_level(ref world: IWorldDispatcher, realm_id: ID);
     fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID;
 }
 
 #[dojo::contract]
 mod realm_systems {
-    use core::poseidon::poseidon_hash_span;
-    use core::traits::Into;
-
     use eternum::alias::ID;
-
     use eternum::constants::REALM_ENTITY_TYPE;
     use eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID};
     use eternum::models::capacity::{CapacityCategory};
@@ -42,9 +48,12 @@ mod realm_systems {
     use eternum::models::season::SeasonImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+    use eternum::systems::resources::contracts::resource_bridge_systems::{
+        IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
+    };
 
     use starknet::ContractAddress;
-    use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
+    use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
 
 
     #[abi(embed_v0)]
@@ -52,13 +61,14 @@ mod realm_systems {
         /// Create a new realm
         /// @param owner the address that'll own the realm in the game
         /// @param realm_id The ID of the realm
+        /// @param frontend: address to pay client fees to
         /// @return The realm's entity ID
         ///
         /// @note This function is only callable by the season pass owner
         /// and the season pass owner must approve this contract to
         /// spend their season pass NFT
         ///
-        fn create(ref world: IWorldDispatcher, owner: ContractAddress, realm_id: ID) -> ID {
+        fn create(ref world: IWorldDispatcher, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
             // check that season is still active
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -68,7 +78,7 @@ mod realm_systems {
 
             // retrieve realm metadata
             let (realm_name, regions, cities, harbors, rivers, wonder, order, resources) =
-                InternalRealmLogicImpl::retrieve_realm_metadata(
+                InternalRealmLogicImpl::retrieve_metadata_from_season_pass(
                 season.season_pass_address, realm_id
             );
 
@@ -77,6 +87,18 @@ mod realm_systems {
             let (entity_id, realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
                 world, owner, realm_id, resources, order, 0, coord
             );
+
+            // collect lords attached to season pass and bridge into the realm
+            let lords_amount_attached: u256 = InternalRealmLogicImpl::collect_lords_from_season_pass(
+                season.season_pass_address, realm_id
+            );
+
+            // bridge attached lords into the realm
+            if lords_amount_attached.is_non_zero() {
+                InternalRealmLogicImpl::bridge_lords_into_realm(
+                    world, season.lords_address, entity_id, lords_amount_attached, frontend
+                );
+            }
 
             // emit realm settle event
             emit!(
@@ -228,10 +250,47 @@ mod realm_systems {
             let caller = starknet::get_caller_address();
             let this = starknet::get_contract_address();
             let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
+
+            // transfer season pass from caller to this
             season_pass.transfer_from(caller, this, realm_id.into());
         }
 
-        fn retrieve_realm_metadata(
+        fn collect_lords_from_season_pass(season_pass_address: ContractAddress, realm_id: ID) -> u256 {
+            // detach lords from season pass
+            let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
+            let token_lords_balance: u256 = season_pass.lords_balance(realm_id.into());
+            season_pass.detach_lords(realm_id.into(), token_lords_balance);
+            assert!(season_pass.lords_balance(realm_id.into()).is_zero(), "lords amount attached to realm should be 0");
+
+            // at this point, this contract's lords balance must have increased by `token_lords_balance`
+            token_lords_balance
+        }
+
+
+        fn bridge_lords_into_realm(
+            world: IWorldDispatcher,
+            lords_address: ContractAddress,
+            realm_entity_id: ID,
+            amount: u256,
+            frontend: ContractAddress
+        ) {
+            // get bridge systems address
+            let (_bridge_systems_class_hash, bridge_systems_address) =
+                match world.resource(selector_from_tag!("eternum-resource_bridge_systems")) {
+                dojo::world::Resource::Contract((class_hash, contract_address)) => (class_hash, contract_address),
+                _ => (Zeroable::zero(), Zeroable::zero())
+            };
+
+            // approve bridge to spend lords
+            IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
+
+            // deposit lords
+            IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
+                .deposit_initial(lords_address, realm_entity_id, amount, frontend);
+        }
+
+
+        fn retrieve_metadata_from_season_pass(
             season_pass_address: ContractAddress, realm_id: ID
         ) -> (felt252, u8, u8, u8, u8, u8, u8, Array<u8>) {
             let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };

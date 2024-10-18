@@ -3,7 +3,7 @@ use eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IERC721Mint<TState> {
+trait IMint<TState> {
     fn mint(ref self: TState, token_id: u256);
 }
 
@@ -14,7 +14,7 @@ trait IERC721Approval<TState> {
 
 #[dojo::interface]
 trait IDevRealmSystems {
-    fn create(ref world: IWorldDispatcher, realm_id: ID);
+    fn create(ref world: IWorldDispatcher, realm_id: ID, frontend: ContractAddress);
 }
 
 #[dojo::contract]
@@ -24,24 +24,26 @@ mod dev_realm_systems {
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::models::config::SeasonConfig;
     use eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
-    use super::{
-        IERC721MintDispatcher, IERC721MintDispatcherTrait, IERC721ApprovalDispatcher, IERC721ApprovalDispatcherTrait
-    };
+    use starknet::ContractAddress;
+    use super::{IMintDispatcher, IMintDispatcherTrait, IERC721ApprovalDispatcher, IERC721ApprovalDispatcherTrait};
 
     #[abi(embed_v0)]
     impl DevRealmSystemsImpl of super::IDevRealmSystems<ContractState> {
         /// A system that simplifies onboarding for test purpose
         /// in production, use realms_systems.create() directly
         ///
-        fn create(ref world: IWorldDispatcher, realm_id: ID) {
+        fn create(ref world: IWorldDispatcher, realm_id: ID, frontend: ContractAddress) {
             // mint test realm to this contract
             let season: SeasonConfig = get!(world, WORLD_CONFIG_ID, SeasonConfig);
-            IERC721MintDispatcher { contract_address: season.realms_address }.mint(realm_id.into());
+            IMintDispatcher { contract_address: season.realms_address }.mint(realm_id.into());
 
             // mint season pass to this contract
-            IERC721MintDispatcher { contract_address: season.season_pass_address }.mint(realm_id.into());
+            IMintDispatcher { contract_address: season.season_pass_address }.mint(realm_id.into());
 
-            // approve realms systems contract to spend season pass
+            // mint free lords attached to season pass
+            IMintDispatcher { contract_address: season.lords_address }.mint(realm_id.into());
+
+            // approve realms systems contract to spend season passs
             let (_realm_systems_class_hash, realm_systems_address) =
                 match world.resource(selector_from_tag!("eternum-realm_systems")) {
                 dojo::world::Resource::Contract((class_hash, contract_address)) => (class_hash, contract_address),
@@ -54,7 +56,7 @@ mod dev_realm_systems {
 
             // mint realm to the caller
             let caller = starknet::get_caller_address();
-            IRealmSystemsDispatcher { contract_address: realm_systems_address }.create(caller, realm_id);
+            IRealmSystemsDispatcher { contract_address: realm_systems_address }.create(caller, realm_id, frontend);
         }
     }
 }

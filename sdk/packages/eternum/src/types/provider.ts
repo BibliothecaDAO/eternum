@@ -489,6 +489,25 @@ export interface SetSpeedConfigProps extends SystemSigner {
 export interface SetSeasonConfigProps extends SystemSigner {
   season_pass_address: num.BigNumberish;
   realms_address: num.BigNumberish;
+  lords_address: num.BigNumberish;
+}
+
+export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
+  token: num.BigNumberish;
+  resource_type: num.BigNumberish;
+}
+
+export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
+  velords_fee_on_dpt_percent: num.BigNumberish;
+  velords_fee_on_wtdr_percent: num.BigNumberish;
+  season_pool_fee_on_dpt_percent: num.BigNumberish;
+  season_pool_fee_on_wtdr_percent: num.BigNumberish;
+  client_fee_on_dpt_percent: num.BigNumberish;
+  client_fee_on_wtdr_percent: num.BigNumberish;
+  velords_fee_recipient: num.BigNumberish;
+  season_pool_fee_recipient: num.BigNumberish;
+  max_bank_fee_dpt_percent: num.BigNumberish;
+  max_bank_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {

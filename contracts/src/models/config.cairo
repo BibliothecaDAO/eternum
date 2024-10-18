@@ -44,6 +44,7 @@ pub struct SeasonConfig {
     config_id: ID,
     season_pass_address: ContractAddress,
     realms_address: ContractAddress,
+    lords_address: ContractAddress,
 }
 
 

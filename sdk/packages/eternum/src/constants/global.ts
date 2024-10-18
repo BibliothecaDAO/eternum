@@ -114,6 +114,19 @@ export const SETTLEMENT_MAX_ANGLE_INCREASE = 40;
 // Season
 export const SEASON_PASS_ADDRESS = "0x0"; // set in indexer.sh
 export const REALMS_ADDRESS = "0x0"; // set in indexer.sh
+export const LORDS_ADDRESS = "0x0"; // set in indexer.sh
+
+// Bridge Fees (using 10_000 precision)
+export const VELORDS_FEE_ON_DEPOSIT = 500; // 5%
+export const VELORDS_FEE_ON_WITHDRAWAL = 500; // 5%
+export const SEASON_POOL_FEE_ON_DEPOSIT = 250; // 2.5%
+export const SEASON_POOL_FEE_ON_WITHDRAWAL = 250; // 2.5%
+export const CLIENT_FEE_ON_DEPOSIT = 250; // 2.5%
+export const CLIENT_FEE_ON_WITHDRAWAL = 250; // 2.5%
+export const VELORDS_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b";
+export const SEASON_POOL_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b";
+export const MAX_BANK_FEE_ON_DEPOSIT = 1000; // 10%
+export const MAX_BANK_FEE_ON_WITHDRAWAL = 1000; // 10%
 
 export const EternumGlobalConfig: Config = {
   stamina: {
@@ -229,6 +242,19 @@ export const EternumGlobalConfig: Config = {
   season: {
     seasonPassAddress: SEASON_PASS_ADDRESS,
     realmsAddress: REALMS_ADDRESS,
+    lordsAddress: LORDS_ADDRESS,
+  },
+  bridge: {
+    velords_fee_on_dpt_percent: VELORDS_FEE_ON_DEPOSIT,
+    velords_fee_on_wtdr_percent: VELORDS_FEE_ON_WITHDRAWAL,
+    season_pool_fee_on_dpt_percent: SEASON_POOL_FEE_ON_DEPOSIT,
+    season_pool_fee_on_wtdr_percent: SEASON_POOL_FEE_ON_WITHDRAWAL,
+    client_fee_on_dpt_percent: CLIENT_FEE_ON_DEPOSIT,
+    client_fee_on_wtdr_percent: CLIENT_FEE_ON_WITHDRAWAL,
+    velords_fee_recipient: BigInt(VELORDS_FEE_RECIPIENT),
+    season_pool_fee_recipient: BigInt(SEASON_POOL_FEE_RECIPIENT),
+    max_bank_fee_dpt_percent: MAX_BANK_FEE_ON_DEPOSIT,
+    max_bank_fee_wtdr_percent: MAX_BANK_FEE_ON_WITHDRAWAL,
   },
   questResources: QUEST_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
