@@ -1,10 +1,6 @@
 import { type HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
-import {
-  computeExploreFoodCosts,
-  computeTravelFoodCosts,
-  getEntityIdFromKeys
-} from "@/ui/utils/utils";
+import { computeExploreFoodCosts, computeTravelFoodCosts, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
   ContractAddress,
@@ -77,7 +73,10 @@ export class ArmyMovementManager {
   private readonly wheatManager: ProductionManager;
   private readonly staminaManager: StaminaManager;
 
-  constructor(private readonly setup: SetupResult, entityId: ID) {
+  constructor(
+    private readonly setup: SetupResult,
+    entityId: ID,
+  ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
