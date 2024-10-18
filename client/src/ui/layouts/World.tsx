@@ -9,6 +9,11 @@ import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
 
 // Lazy load components
+
+const SelectedArmy = lazy(() =>
+  import("../components/worldmap/armies/SelectedArmy").then((module) => ({ default: module.SelectedArmy })),
+);
+
 const ActionInfo = lazy(() =>
   import("../components/worldmap/armies/ActionInfo").then((module) => ({ default: module.ActionInfo })),
 );
@@ -24,7 +29,7 @@ const StructureInfoLabel = lazy(() =>
 const BattleContainer = lazy(() =>
   import("../containers/BattleContainer").then((module) => ({ default: module.BattleContainer })),
 );
-const BottomMiddleContainer = lazy(() => import("../containers/BottomMiddleContainer"));
+const TopCenterContainer = lazy(() => import("../containers/TopCenterContainer"));
 const BottomRightContainer = lazy(() =>
   import("../containers/BottomRightContainer").then((module) => ({ default: module.BottomRightContainer })),
 );
@@ -35,17 +40,22 @@ const Tooltip = lazy(() => import("../elements/Tooltip").then((module) => ({ def
 const BattleView = lazy(() =>
   import("../modules/military/battle-view/BattleView").then((module) => ({ default: module.BattleView })),
 );
-const BottomNavigation = lazy(() =>
-  import("../modules/navigation/BottomNavigation").then((module) => ({ default: module.BottomNavigation })),
+const TopMiddleNavigation = lazy(() =>
+  import("../modules/navigation/TopNavigation").then((module) => ({ default: module.TopMiddleNavigation })),
 );
+
+const BottomMiddleContainer = lazy(() =>
+  import("../containers/BottomMiddleContainer").then((module) => ({ default: module.BottomMiddleContainer })),
+);
+
 const LeftNavigationModule = lazy(() =>
   import("../modules/navigation/LeftNavigationModule").then((module) => ({ default: module.LeftNavigationModule })),
 );
 const RightNavigationModule = lazy(() =>
   import("../modules/navigation/RightNavigationModule").then((module) => ({ default: module.RightNavigationModule })),
 );
-const TopMiddleNavigation = lazy(() =>
-  import("../modules/navigation/TopMiddleNavigation").then((module) => ({ default: module.TopMiddleNavigation })),
+const TopLeftNavigation = lazy(() =>
+  import("../modules/navigation/TopLeftNavigation").then((module) => ({ default: module.TopLeftNavigation })),
 );
 const PlayerId = lazy(() => import("../modules/social/PlayerId").then((module) => ({ default: module.PlayerId })));
 const EventStream = lazy(() =>
@@ -108,8 +118,12 @@ export const World = () => {
             <LeftNavigationModule />
           </LeftMiddleContainer>
 
+          <TopCenterContainer>
+            <TopMiddleNavigation />
+          </TopCenterContainer>
+
           <BottomMiddleContainer>
-            <BottomNavigation />
+            <SelectedArmy />
           </BottomMiddleContainer>
 
           <BottomRightContainer>
@@ -121,7 +135,7 @@ export const World = () => {
           </RightMiddleContainer>
 
           <TopLeftContainer>
-            <TopMiddleNavigation />
+            <TopLeftNavigation />
           </TopLeftContainer>
         </div>
 
