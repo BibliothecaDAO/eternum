@@ -1,7 +1,7 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
+import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { formatNumber } from "../utils/utils";
 
@@ -19,7 +19,7 @@ export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; 
 
   const capacityColor = useMemo(() => {
     if (army.weight >= army.totalCapacity) return CapacityColor.HEAVY;
-    if (remainingCapacity < BigInt(EternumGlobalConfig.exploration.reward)) return CapacityColor.MEDIUM;
+    if (remainingCapacity < BigInt(configManager.getExploreReward())) return CapacityColor.MEDIUM;
     return CapacityColor.LIGHT;
   }, [remainingCapacity]);
 

@@ -260,7 +260,7 @@ const ArmySelector = ({ armies, onSelect }: { armies: ArmyInfo[]; onSelect: (arm
         <div
           key={army.entity_id}
           className={`rounded cursor-pointer transition-all duration-300 ${
-            selectedArmy?.entity_id === army.entity_id ? "bg-gray-300" : "bg-black"
+            selectedArmy?.entity_id === army.entity_id ? "bg-gray-300" : "bg-brown"
           }`}
           onClick={() => handleArmyClick(army)}
         >

@@ -53,7 +53,7 @@ export const BaseThreeTooltip = ({
   return (
     <div
       ref={ref}
-      className={clsx("min-w-[215px] ml-3 mt-3 rounded-xl relative p-2 bg-black/90 text-gold", position, className, {
+      className={clsx("min-w-[215px] ml-3 mt-3 rounded-xl relative p-2 bg-brown/90 text-gold", position, className, {
         hidden: !visible,
       })}
     >

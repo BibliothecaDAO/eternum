@@ -64,7 +64,6 @@ export const BattleActions = ({
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -86,10 +85,11 @@ export const BattleActions = ({
   }, [localSelectedUnit, isActive, userArmiesInBattle]);
 
   const defenderArmy = useMemo(() => {
-    const defender = structure?.protector ? structure.protector : defenderArmies[0];
-    const battleManager = new BattleManager(defender?.battle_id || 0, dojo);
+    const defender = structure?.protector ?? defenderArmies[0];
+
+    const battleManager = new BattleManager(defender?.battle_id || battleAdjusted?.entity_id || 0, dojo);
     return battleManager.getUpdatedArmy(defender, battleManager.getUpdatedBattle(currentTimestamp!));
-  }, [defenderArmies, localSelectedUnit, isActive]);
+  }, [defenderArmies, localSelectedUnit, isActive, currentTimestamp, battleAdjusted]);
 
   const handleRaid = async () => {
     if (selectedArmy?.battle_id !== 0 && !raidWarning) {
@@ -198,8 +198,8 @@ export const BattleActions = ({
   );
 
   const raidStatus = useMemo(
-    () => battleManager.isRaidable(currentTimestamp!, currentArmiesTick, selectedArmy, structure),
-    [battleManager, currentTimestamp, selectedArmy, structure, currentArmiesTick],
+    () => battleManager.isRaidable(currentTimestamp!, currentTimestamp!, selectedArmy, structure),
+    [battleManager, currentTimestamp, selectedArmy, structure, currentTimestamp],
   );
 
   const battleStartStatus = useMemo(

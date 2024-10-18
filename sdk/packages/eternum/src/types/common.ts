@@ -256,6 +256,7 @@ export interface Config {
     resourceOutputs: ResourceOutputs;
     resourceWeightsGrams: { [key in ResourcesIds]: number };
     resourceBuildingCosts: ResourceInputs;
+    resourceRarity: { [key in ResourcesIds]?: number };
   };
   banks: {
     name: string;
@@ -324,11 +325,12 @@ export interface Config {
     troopFoodConsumption: Record<number, TroopFoodConsumption>;
   };
   mercenaries: {
-    troops: {
-      knight_count: number;
-      paladin_count: number;
-      crossbowman_count: number;
-    };
+    knights_lower_bound: number;
+    knights_upper_bound: number;
+    paladins_lower_bound: number;
+    paladins_upper_bound: number;
+    crossbowmen_lower_bound: number;
+    crossbowmen_upper_bound: number;
     rewards: Array<ResourceCost>;
   };
   settlement: {
@@ -354,7 +356,6 @@ export interface Config {
     hyperstructureCreationCosts: ResourceCost[];
     hyperstructureConstructionCosts: ResourceCost[];
     hyperstructureTotalCosts: ResourceCost[];
-    hyperstructureResourceMultipliers: { [key in ResourcesIds]?: number };
     hyperstructurePointsPerCycle: number;
     hyperstructurePointsOnCompletion: number;
     hyperstructureTimeBetweenSharesChangeSeconds: number;

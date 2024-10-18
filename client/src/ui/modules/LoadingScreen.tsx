@@ -35,9 +35,9 @@ export const LoadingScreen = () => {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen bg-black">
+    <div className="relative h-screen w-screen bg-brown">
       <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-black/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStatement}

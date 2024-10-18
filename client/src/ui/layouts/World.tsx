@@ -94,7 +94,7 @@ export const World = () => {
       <div className="vignette" />
       <div
         className={clsx(
-          "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-black duration-300 transition-opacity",
+          "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-brown duration-300 transition-opacity",
           isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
         )}
       >
