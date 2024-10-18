@@ -8,12 +8,20 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, formatNumber, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  currencyFormat,
+  divideByPrecision,
+  formatNumber,
+  formatSecondsInHoursMinutes,
+  getEntityIdFromKeys,
+  multiplyByPrecision,
+} from "@/ui/utils/utils";
 import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ArmyManager } from "@/dojo/modelManager/ArmyManager";
+import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
@@ -22,8 +30,6 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { LucideArrowRight } from "lucide-react";
-
-const MAX_TROOPS_PER_ARMY = EternumGlobalConfig.troop.maxTroopCount;
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -43,6 +49,8 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   } = useDojo();
 
   const dojo = useDojo();
+
+  const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
 
   const isDefendingArmy = Boolean(army?.protectee);
 
@@ -88,17 +96,17 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const remainingTroops = useMemo(() => {
     return (
-      Math.max(0, MAX_TROOPS_PER_ARMY - Object.values(troopCounts).reduce((a, b) => a + b, 0)) -
+      Math.max(0, maxTroopCountPerArmy - Object.values(troopCounts).reduce((a, b) => a + b, 0)) -
       Number(army?.quantity.value)
     );
   }, [troopCounts]);
 
   const getMaxTroopCount = useCallback(
     (balance: number, troopName: number) => {
-      const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+      const balanceFloor = Math.floor(divideByPrecision(balance));
       if (!balance) return 0;
 
-      const maxFromBalance = Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision);
+      const maxFromBalance = Math.min(balanceFloor, divideByPrecision(U32_MAX));
 
       if (isDefendingArmy) {
         return maxFromBalance;
@@ -133,9 +141,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       army_id: army?.entity_id || 0n,
       payer_id: owner_entity,
       troops: {
-        knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        paladin_count: troopCounts[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        crossbowman_count: troopCounts[ResourcesIds.Crossbowman] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        knight_count: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
+        paladin_count: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
+        crossbowman_count: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
       },
     }).finally(() => setIsLoading(false));
 
@@ -297,7 +305,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
           {!isDefendingArmy && (
             <div className="text-xs text-yellow-500 mb-2">
-              ⚠️ Maximum troops per attacking army is {formatNumber(MAX_TROOPS_PER_ARMY, 0)}
+              ⚠️ Maximum troops per attacking army is {formatNumber(maxTroopCountPerArmy, 0)}
             </div>
           )}
 
@@ -429,7 +437,7 @@ const TravelToLocation = ({
   };
 
   return (
-    <div className="absolute h-full w-full bg-black/90 top-0 z-10 ">
+    <div className="absolute h-full w-full bg-brown/90 top-0 z-10 ">
       <div className="flex justify-between mb-3">
         <div className="flex">
           <div className="my-2 uppercase mb-1 font-bold">Status:</div>

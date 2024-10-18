@@ -203,12 +203,11 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
-    let realm_systems_dispatcher = deploy_realm_systems(world);
     let combat_systems_dispatcher = deploy_combat_systems(world);
     let map_systems_dispatcher = deploy_map_systems(world);
 
     let realm_position = get_default_realm_pos();
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, realm_position);
+    let realm_entity_id = spawn_realm(world, 1, realm_position.into());
 
     deploy_dev_resource_systems(world)
         .mint(

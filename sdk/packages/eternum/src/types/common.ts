@@ -36,6 +36,12 @@ export enum BattleSide {
   Defence,
 }
 
+export enum Access {
+  Public,
+  Private,
+  GuildOnly,
+}
+
 export enum TravelTypes {
   Explore,
   Travel,
@@ -256,6 +262,7 @@ export interface Config {
     resourceOutputs: ResourceOutputs;
     resourceWeightsGrams: { [key in ResourcesIds]: number };
     resourceBuildingCosts: ResourceInputs;
+    resourceRarity: { [key in ResourcesIds]?: number };
   };
   banks: {
     name: string;
@@ -324,11 +331,12 @@ export interface Config {
     troopFoodConsumption: Record<number, TroopFoodConsumption>;
   };
   mercenaries: {
-    troops: {
-      knight_count: number;
-      paladin_count: number;
-      crossbowman_count: number;
-    };
+    knights_lower_bound: number;
+    knights_upper_bound: number;
+    paladins_lower_bound: number;
+    paladins_upper_bound: number;
+    crossbowmen_lower_bound: number;
+    crossbowmen_upper_bound: number;
     rewards: Array<ResourceCost>;
   };
   settlement: {
@@ -341,7 +349,23 @@ export interface Config {
     min_angle_increase: number;
     max_angle_increase: number;
   };
-
+  season: {
+    seasonPassAddress: string;
+    realmsAddress: string;
+    lordsAddress: string;
+  };
+  bridge: {
+    velords_fee_on_dpt_percent: number;
+    velords_fee_on_wtdr_percent: number;
+    season_pool_fee_on_dpt_percent: number;
+    season_pool_fee_on_wtdr_percent: number;
+    client_fee_on_dpt_percent: number;
+    client_fee_on_wtdr_percent: number;
+    velords_fee_recipient: ContractAddress;
+    season_pool_fee_recipient: ContractAddress;
+    max_bank_fee_dpt_percent: number;
+    max_bank_fee_wtdr_percent: number;
+  };
   buildings: {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
@@ -354,7 +378,6 @@ export interface Config {
     hyperstructureCreationCosts: ResourceCost[];
     hyperstructureConstructionCosts: ResourceCost[];
     hyperstructureTotalCosts: ResourceCost[];
-    hyperstructureResourceMultipliers: { [key in ResourcesIds]?: number };
     hyperstructurePointsPerCycle: number;
     hyperstructurePointsOnCompletion: number;
     hyperstructureTimeBetweenSharesChangeSeconds: number;
@@ -363,4 +386,10 @@ export interface Config {
   questResources: { [key in QuestType]: ResourceCost[] };
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
+}
+
+export interface Player {
+  entity_id: number;
+  address: ContractAddress;
+  addressName: string;
 }

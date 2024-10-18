@@ -17,9 +17,9 @@ const STYLES = {
   baseStyle:
     "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium text-gold uppercase rounded",
   primary:
-    "px-6 py-2 bg-black from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
-  default: "bg-black !text-gold px-6 py-2 ",
-  enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
+    "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
+  default: "bg-brown !text-gold px-6 py-2 ",
+  enabledStyle: "bg-brown/10 hover:bg-brown/30 focus:outline-none",
   disabledStyle: "bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
   success: "border border-green !text-brilliance bg-transparent hover:bg-green/10",
   red: "border border-danger !text-danger bg-transparent hover:bg-danger/10",
@@ -27,7 +27,7 @@ const STYLES = {
   danger: "bg-red border-red !text-gold bg-transparent hover:bg-red/90 ",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   opaque:
-    "px-6 py-2 bg-black font-semibold text-lg uppercase tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:bg-black/90 bg-black/40 hover:text-black/90",
+    "px-6 py-2 bg-brown font-semibold text-lg uppercase tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:bg-brown/90 bg-brown/40 hover:text-black/90",
   loadingStyle: "relative",
 };
 

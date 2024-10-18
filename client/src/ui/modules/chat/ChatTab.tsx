@@ -23,7 +23,6 @@ export interface Tab {
 
 export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
   const setCurrentTab = useChatStore((state) => state.setCurrentTab);
-
   const hideTab = useChatStore((state) => state.hideTab);
 
   const userName = useMemo(() => {
@@ -42,24 +41,24 @@ export const ChatTab = ({ tab, selected }: { tab: Tab; selected: boolean }) => {
         transition={{ duration: 0.3 }}
       >
         <div
-          className={`text-sm px-2 text-center self-center rounded bg-hex-bg border border-gold/30 ${
-            selected ? "bg-black/70" : "bg-black/10"
-          } flex flex-row gap-2 justify-between items-center relative`}
+          className={`text-sm px-2 py-1 text-center self-center rounded bg-hex-bg border border-gold/30 ${
+            selected ? "bg-brown/70" : "bg-brown/10"
+          } flex flex-row gap-2 justify-between items-center relative h-8`}
           style={{ zIndex: 2 }}
           onClick={() => setCurrentTab({ ...tab, displayed: true })}
         >
           <span>{userName}</span>
 
-          <div>
+          <div className="w-4 flex items-center justify-center">
             {tab.name !== GLOBAL_CHANNEL_KEY && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   hideTab({ ...tab, displayed: false });
                 }}
-                className="hover:bg-black/40 rounded-full"
+                className="hover:bg-brown/40 rounded-full p-0.5"
               >
-                <X className="w-2" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>

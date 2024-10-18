@@ -1,5 +1,6 @@
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { TickIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const GettingStarted = () => {
@@ -7,7 +8,7 @@ export const GettingStarted = () => {
     {
       title: "The Time Cycle",
       content: `Everything in this world revolves around an Eternum Day. A day in Eternum is ${
-        EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60
+        configManager.getTick(TickIds.Armies) / 60
       } minutes.`,
     },
     {

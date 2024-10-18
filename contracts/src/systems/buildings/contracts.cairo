@@ -17,12 +17,12 @@ trait IBuildingContract<TContractState> {
 #[dojo::contract]
 mod building_systems {
     use eternum::alias::ID;
-    use eternum::models::hyperstructure::SeasonCustomImpl;
+    use eternum::models::season::SeasonImpl;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
         position::{Coord, CoordTrait, Position, PositionCustomTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingCustomImpl}, production::{Production, ProductionRateTrait},
-        realm::{Realm, RealmCustomImpl}
+        realm::{Realm, RealmCustomImpl, RealmResourcesTrait}
     };
 
     #[abi(embed_v0)]
@@ -51,12 +51,11 @@ mod building_systems {
             // ensure that the realm produces the resource
             if produce_resource_type.is_some() {
                 let resource_type: u8 = produce_resource_type.unwrap();
-                let realm_produces_resource = realm.has_resource(resource_type);
-                assert!(realm_produces_resource, "realm does not produce specified resource");
+                assert!(realm.produces_resource(resource_type), "realm does not produce specified resource");
             }
 
             // check if season is over
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             let mut building_coord: Coord = BuildingCustomImpl::center();
             loop {
@@ -76,19 +75,19 @@ mod building_systems {
         }
 
         fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             BuildingCustomImpl::pause_production(world, entity_id, building_coord);
         }
 
         fn resume_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             BuildingCustomImpl::resume_production(world, entity_id, building_coord);
         }
 
         fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             BuildingCustomImpl::destroy(world, entity_id, building_coord);
         }

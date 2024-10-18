@@ -4,7 +4,7 @@ import { configManager } from "@/dojo/setup";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm } from "@/ui/utils/realms";
 import { calculateDistance, currentTickCount } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
+import { ContractAddress, DONKEY_ENTITY_TYPE, ID, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -227,11 +227,13 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
           if (!realmData) return undefined;
           const name = realmData.name;
           const owner = getComponentValue(Owner, entityId);
-          const resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+          const resources = unpackResources(BigInt(realm.produced_resources));
 
           const distanceFromPosition = calculateDistance(position, realmPosition) ?? 0;
 
-          const timeToTravel = Math.floor(((distanceFromPosition / EternumGlobalConfig.speed.donkey) * 3600) / 60 / 60);
+          const timeToTravel = Math.floor(
+            ((distanceFromPosition / configManager.getSpeedConfig(DONKEY_ENTITY_TYPE)) * 3600) / 60 / 60,
+          );
 
           return {
             ...realm,

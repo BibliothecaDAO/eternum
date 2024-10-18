@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -12,15 +13,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  CapacityConfigCategory,
-  EternumGlobalConfig,
-  ID,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-} from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -52,15 +45,15 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
       <ul className="list-none my-1">
         <li className="flex items-center">
           <ResourceIcon resource="Lords" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Lords]).toLocaleString()} Lords
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
         </li>
         <li className="flex items-center">
           <ResourceIcon resource="Wheat" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wheat]).toLocaleString()} Food
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
         </li>
         <li className="flex items-center">
           <ResourceIcon resource="Wood" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wood]).toLocaleString()} Other
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
         </li>
       </ul>
       <p className="italic text-xs">Build Storehouses to increase capacity.</p>
@@ -69,12 +62,12 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
 };
 
 const WorkersHutTooltipContent = () => {
-  const capacity = EternumGlobalConfig.populationCapacity.workerHuts;
+  const capacity = configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity;
   return (
     <div className="text-xs text-gray-200 p-2 max-w-xs">
       <p className="font-semibold">Population Capacity</p>
       <ul className="list-disc list-inside my-1">
-        <li>{BASE_POPULATION_CAPACITY} Base Capacity</li>
+        <li>{configManager.getBasePopulationCapacity()} Base Capacity</li>
         <li>+{capacity} per Workers Hut</li>
       </ul>
       <p className="italic text-xs">Build Workers Huts to increase population capacity.</p>
@@ -143,22 +136,21 @@ export const TopMiddleNavigation = () => {
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 
-    return (
-      quantity * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
-      gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))
-    );
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
+
+    return quantity * gramToKg(storehouseCapacity) + gramToKg(storehouseCapacity);
   }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % configManager.getTick(TickIds.Armies);
+    const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
   return (
     <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-black border-gold/10 relative">
+        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -170,7 +162,7 @@ export const TopMiddleNavigation = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-black/90">
+                <SelectContent className="bg-brown/90">
                   {structures.map((structure, index) => (
                     <SelectItem
                       className="flex justify-between"
@@ -199,7 +191,7 @@ export const TopMiddleNavigation = () => {
             style={{ width: `${progress}%` }}
           ></div>
         </div>
-        <div className=" bg-black/90 bg-hex-bg   rounded-b-xl   flex gap-1">
+        <div className=" bg-brown/90 bg-hex-bg   rounded-b-xl   flex gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -232,12 +224,12 @@ export const TopMiddleNavigation = () => {
             >
               <ResourceIcon withTooltip={false} resource="House" size="sm" />
               <div className="self-center">
-                {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+                {population.population} / {population.capacity + configManager.getBasePopulationCapacity()}
               </div>
             </div>
           )}
         </div>
-        <div className=" bg-black/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
+        <div className=" bg-brown/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
           <TickProgress />
           <Button
             variant="outline"
@@ -266,7 +258,7 @@ export const TopMiddleNavigation = () => {
           )}
         </div>
         {pointToWorldButton && (
-          <div className="bg-black/90 text-gold border border-gold/30 rounded-md shadow-lg left-1/2 transform p-3 flex flex-row items-center animate-pulse">
+          <div className="bg-brown/90 text-gold border border-gold/30 rounded-md shadow-lg left-1/2 transform p-3 flex flex-row items-center animate-pulse">
             <ArrowLeft className="text-gold w-5 h-5 mb-2" />
             <div className="text-sm font-semibold mb-2 text-center leading-tight">Explore the map</div>
           </div>
@@ -284,7 +276,7 @@ const TickProgress = () => {
   const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
-  let cycleTime = EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+  let cycleTime = configManager.getTick(TickIds.Armies);
 
   useEffect(() => {
     const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);

@@ -19,20 +19,20 @@ import {
   ResourceIdToMiningType,
   copyPlayerAddressToClipboard,
   displayAddress,
+  divideByPrecision,
   formatTime,
   getEntityIdFromKeys,
   toHexString,
 } from "@/ui/utils/utils";
 import {
   BuildingType,
-  EternumGlobalConfig,
   ID,
   LEVEL_DESCRIPTIONS,
-  REALM_UPGRADE_COSTS,
+  REALM_MAX_LEVEL,
   RealmLevels,
   ResourcesIds,
   StructureType,
-  scaleResources,
+  TickIds,
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -197,8 +197,7 @@ const CastleDetails = () => {
 
   const immunityEndTimestamp = useMemo(() => {
     return (
-      Number(structure.created_at) +
-      configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds
+      Number(structure.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
   }, [structure.created_at, configManager]);
 
@@ -211,21 +210,17 @@ const CastleDetails = () => {
 
   const getNextRealmLevel = useMemo(() => {
     const nextLevel = realm.level + 1;
-    return nextLevel <= RealmLevels.Empire ? nextLevel : null;
+    return nextLevel <= REALM_MAX_LEVEL ? nextLevel : null;
   }, [realm.level]);
 
   const checkBalance = useMemo(() => {
     if (!getNextRealmLevel) return false;
 
-    const cost = scaleResources(
-      REALM_UPGRADE_COSTS[getNextRealmLevel as keyof typeof REALM_UPGRADE_COSTS],
-      EternumGlobalConfig.resources.resourceMultiplier,
-    );
-
+    const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(structureEntityId, resourceCost.resource);
-      return balance.balance / EternumGlobalConfig.resources.resourcePrecision >= resourceCost.amount;
+      return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);
 
@@ -304,10 +299,7 @@ const CastleDetails = () => {
                 </p>
                 <div className="my-4 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
                 <div className="flex gap-2">
-                  {scaleResources(
-                    REALM_UPGRADE_COSTS[(realm.level + 1) as keyof typeof REALM_UPGRADE_COSTS],
-                    EternumGlobalConfig.resources.resourceMultiplier,
-                  )?.map((a) => {
+                  {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => {
                     return (
                       <ResourceCost
                         key={a.resource}
