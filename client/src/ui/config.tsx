@@ -3,7 +3,7 @@ import { BuildingType, FELT_CENTER } from "@bibliothecadao/eternum";
 
 export { FELT_CENTER };
 
-export const checkIfGameIsRunningOnLaptop = async () => {
+const checkIfGameIsRunningOnLaptop = async () => {
   if (!localStorage.getItem("INITIAL_LAPTOP_CHECK")) {
     try {
       const battery = await (navigator as any).getBattery();
@@ -24,8 +24,6 @@ export const checkIfGameIsRunningOnLaptop = async () => {
   }
   return localStorage.getItem("LOW_GRAPHICS_FLAG") === "true";
 };
-
-
 
 export const IS_LOW_GRAPHICS_ENABLED = await checkIfGameIsRunningOnLaptop();
 console.log("IS_LOW_GRAPHICS_ENABLED", IS_LOW_GRAPHICS_ENABLED);

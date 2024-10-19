@@ -63,7 +63,7 @@ export const SettingsWindow = () => {
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
-  const isLowGraphics = IS_LOW_GRAPHICS_ENABLED
+  const isLowGraphics = IS_LOW_GRAPHICS_ENABLED;
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
       <div className="flex p-4">
