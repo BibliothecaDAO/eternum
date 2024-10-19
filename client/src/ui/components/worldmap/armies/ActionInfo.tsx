@@ -7,7 +7,7 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
-import { computeExploreFoodCosts, computeTravelFoodCosts } from "@/ui/utils/utils";
+import { computeExploreFoodCosts, computeTravelFoodCosts, divideByPrecision } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -50,13 +50,16 @@ export const ActionInfo = () => {
 
   const isExplored = travelPath?.isExplored || false;
 
-  if (!travelPath) return;
-
   const travelFoodCosts = computeTravelFoodCosts(selectedEntityTroops);
   const exploreFoodCosts = computeExploreFoodCosts(selectedEntityTroops);
 
   return (
     <>
+      {selectedEntityId && (
+        <div className="text-xs fixed top-0 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-center py-2 z-50 w-[300px] top-[60px] rounded-lg animate-pulse pointer-events-none">
+          Press Esc to exit travel mode
+        </div>
+      )}
       {showTooltip && (
         <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
           <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
@@ -64,12 +67,12 @@ export const ActionInfo = () => {
           {isExplored ? (
             <div>
               <ResourceCost
-                amount={-travelFoodCosts.wheatPayAmount * (travelPath.path.length - 1)}
+                amount={-travelFoodCosts.wheatPayAmount * (travelPath!.path.length - 1)}
                 resourceId={ResourcesIds.Wheat}
                 balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
               />
               <ResourceCost
-                amount={-travelFoodCosts.fishPayAmount * (travelPath.path.length - 1)}
+                amount={-travelFoodCosts.fishPayAmount * (travelPath!.path.length - 1)}
                 resourceId={ResourcesIds.Fish}
                 balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
               />
@@ -101,6 +104,7 @@ export const ActionInfo = () => {
               </div>
             </div>
           )}
+          <div className="text-xs text-center mt-2 text-gray-400 animate-pulse">Right-click to confirm</div>
         </BaseThreeTooltip>
       )}
     </>

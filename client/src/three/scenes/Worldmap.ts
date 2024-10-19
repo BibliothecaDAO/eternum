@@ -9,7 +9,6 @@ import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
@@ -131,10 +130,6 @@ export default class WorldmapScene extends HexagonScene {
         this.onArmyMouseMove(entityId);
       }, 10),
     );
-    this.inputManager.addListener("click", (raycaster) => {
-      const selectedEntityId = this.armyManager.onRightClick(raycaster);
-      selectedEntityId && this.onArmySelection(selectedEntityId);
-    });
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
@@ -143,9 +138,7 @@ export default class WorldmapScene extends HexagonScene {
     useUIStore.subscribe(
       (state) => state.armyActions.selectedEntityId,
       (selectedEntityId) => {
-        if (selectedEntityId) {
-          this.onArmySelection(selectedEntityId);
-        }
+        this.onArmySelection(selectedEntityId);
       },
     );
 
@@ -165,8 +158,14 @@ export default class WorldmapScene extends HexagonScene {
           this.closeNavigationViews();
         } else {
           this.clearEntitySelection();
+          this.clearHexSelection();
         }
       }
+    });
+
+    window.addEventListener("urlChanged", () => {
+      this.clearEntitySelection();
+      this.clearHexSelection();
     });
   }
 
@@ -239,25 +238,12 @@ export default class WorldmapScene extends HexagonScene {
     if (!hexCoords) {
       return;
     }
-    const { selectedEntityId, travelPaths } = this.state.armyActions;
-
     const buildingType = this.structurePreview?.getPreviewStructure();
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
       const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
       this.tileManager.placeStructure(this.structureEntityId, buildingType.type, normalizedHexCoords);
       this.clearEntitySelection();
-    } else if (selectedEntityId && travelPaths.size > 0) {
-      const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
-      if (travelPath) {
-        const selectedPath = travelPath.path;
-        const isExplored = travelPath.isExplored ?? false;
-        if (selectedPath.length > 0) {
-          const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
-          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
-          this.clearEntitySelection();
-        }
-      }
     } else {
       const position = getWorldPositionForHex(hexCoords);
       this.selectedHexManager.setPosition(position.x, position.z);
@@ -265,17 +251,29 @@ export default class WorldmapScene extends HexagonScene {
         col: hexCoords.col + FELT_CENTER,
         row: hexCoords.row + FELT_CENTER,
       });
-      this.state.setLeftNavigationView(View.EntityView);
     }
   }
-  protected onHexagonRightClick(): void {}
 
-  private onArmySelection(selectedEntityId: ID | undefined) {
+  protected onHexagonRightClick(hexCoords: HexPosition | null): void {
+    const { selectedEntityId, travelPaths } = this.state.armyActions;
+    if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
+      const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
+      if (travelPath) {
+        const selectedPath = travelPath.path;
+        const isExplored = travelPath.isExplored ?? false;
+        if (selectedPath.length > 0) {
+          const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
+          armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
+        }
+      }
+    }
+  }
+
+  private onArmySelection(selectedEntityId: ID | null) {
     if (!selectedEntityId) {
       this.clearEntitySelection();
       return;
     }
-    this.state.updateSelectedEntityId(selectedEntityId);
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
     const travelPaths = armyMovementManager.findPaths(
       this.exploredTiles,
@@ -287,10 +285,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private clearEntitySelection() {
-    this.state.updateSelectedEntityId(null);
+    // this.state.setSelectedHex(null);
     this.highlightHexManager.highlightHexes([]);
     this.state.updateTravelPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
+  }
+
+  private clearHexSelection() {
+    this.state.setSelectedHex(null);
   }
 
   setup() {

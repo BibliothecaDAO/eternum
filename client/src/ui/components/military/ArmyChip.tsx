@@ -81,7 +81,7 @@ export const ArmyChip = ({
     const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
     return updatedArmy;
-  }, [nextBlockTimestamp]);
+  }, [nextBlockTimestamp, army]);
 
   const [location] = useLocation();
   const isOnMap = useMemo(() => location.includes("map"), [location]);

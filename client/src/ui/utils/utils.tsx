@@ -371,9 +371,9 @@ export const computeTravelFoodCosts = (
   const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
   const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
 
-  const paladinCount = Number(troops?.paladin_count);
-  const knightCount = Number(troops?.knight_count);
-  const crossbowmanCount = Number(troops?.crossbowman_count);
+  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
+  const knightCount = divideByPrecision(Number(troops?.knight_count));
+  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
 
   const paladinWheatConsumption = paladinFoodConsumption.travelWheatBurnAmount * paladinCount;
   const knightWheatConsumption = knightFoodConsumption.travelWheatBurnAmount * knightCount;
@@ -401,9 +401,9 @@ export const computeExploreFoodCosts = (
   const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
   const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
 
-  const paladinCount = Number(troops?.paladin_count);
-  const knightCount = Number(troops?.knight_count);
-  const crossbowmanCount = Number(troops?.crossbowman_count);
+  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
+  const knightCount = divideByPrecision(Number(troops?.knight_count));
+  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
 
   const paladinWheatConsumption = paladinFoodConsumption.exploreWheatBurnAmount * paladinCount;
   const knightWheatConsumption = knightFoodConsumption.exploreWheatBurnAmount * knightCount;
