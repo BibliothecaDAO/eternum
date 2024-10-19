@@ -9,6 +9,7 @@ import { ResourceWeight } from "../resources/ResourceWeight";
 
 interface StaticQuestInfo {
   name: string;
+  view: string;
   description: string | React.ReactNode;
   steps: (string | React.ReactNode)[];
   prizes: Prize[];
@@ -54,6 +55,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Settle,
     {
       name: "Settle",
+      view: "",
       description: (
         <div className="space-y-2">
           <p>A gift of food from the gods.</p>
@@ -72,6 +74,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildFood,
     {
       name: "Build a Farm or a Fishing Village",
+      view: "REALM",
       description:
         "Wheat and Fish are the lifeblood of your people. Go to the construction menu and build a Farm or a Fishing Village",
       steps: [
@@ -122,6 +125,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildResource,
     {
       name: "Build a Resource Facility",
+      view: "REALM",
       description: (
         <div className="space-y-2">
           <div>Eternum thrives on resources. Construct resource facilities to harvest them efficiently.</div>
@@ -144,6 +148,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.PauseProduction,
     {
       name: "Pause Production",
+      view: "REALM",
       description:
         "Resource facilities will produce resources automatically. Pause production to stop its consumption.",
       steps: ["1. Left mouse click on the building's model", "2. Pause its production"],
@@ -155,6 +160,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.CreateTrade,
     {
       name: "Create a Trade",
+      view: "",
       description: "Trading is the lifeblood of Eternum. Create a trade to start your economy",
       steps: [navigationStep(BuildingThumbs.scale), "2. Create a 'Buy' or 'Sell' order."],
       prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
@@ -165,6 +171,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.CreateDefenseArmy,
     {
       name: "Create a Defensive Army",
+      view: "REALM",
       description: "Your realm is always at risk. Create a defensive army to protect it",
       steps: [
         navigationStep(BuildingThumbs.military),
@@ -179,6 +186,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.CreateAttackArmy,
     {
       name: "Create an attacking Army",
+      view: "REALM",
       description: "Conquest is fulfilling. Create an attacking army to conquer your enemies",
       steps: [
         navigationStep(BuildingThumbs.military),
@@ -193,6 +201,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Travel,
     {
       name: "Move with your Army",
+      view: "WORLD",
       description: (
         <div className="space-y-4 text-base">
           <p>
@@ -373,6 +382,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildWorkersHut,
     {
       name: "Build a workers hut",
+      view: "REALM",
       description: `Each building takes up population in your realm. You realm starts with a population of ${configManager.getBasePopulationCapacity()}. 
       Build worker huts to extend your population capacity by ${
         configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity
@@ -390,6 +400,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Market,
     {
       name: "Build a market",
+      view: "REALM",
       description: (
         <div>
           <div className="mt-2">Build a market to produce donkeys. Donkeys are a resource used to transport goods.</div>{" "}
@@ -414,6 +425,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Pillage,
     {
       name: "Pillage a structure",
+      view: "WORLD",
       description:
         "Pillage a realm, hyperstructure or fragment mine. To pillage a structure, travel with your army to your target first, then pillage it.",
       steps: [
@@ -430,6 +442,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Mine,
     {
       name: "Claim a Fragment mine",
+      view: "WORLD",
       description: "Explore the world, find Fragment mines and battle bandits for its ownership",
       steps: [
         "1. Go to world view",
@@ -445,12 +458,12 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Contribution,
     {
       name: "Contribute to a hyperstructure",
+      view: "",
       description: "Contribute to a Hyperstructure",
       steps: [
-        "1. Go to world view",
-        "2. Right click on your army",
-        "3. Travel with your army to a Hyperstructure",
-        "4. Contribute to the Hyperstructure",
+        navigationStep(BuildingThumbs.worldStructures),
+        "2. Select a Hyperstructure",
+        "4. Contribute to the Hyperstructure's construction",
       ],
       prizes: [{ id: QuestType.Contribution, title: "Contribution" }],
       depth: 6,
@@ -460,6 +473,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Hyperstructure,
     {
       name: "Build a hyperstructure",
+      view: "WORLD",
       description: "Build a Hyperstructure",
       steps: [
         navigationStep(BuildingThumbs.construction),
