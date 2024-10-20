@@ -1,74 +1,11 @@
 import { motion } from "framer-motion";
-import { SeasonPass } from "./season-pass";
+import { SeasonPass, SeasonPassProps } from "./season-pass";
 
-const seasonPasses = [
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-  {
-    title: "l'unpik",
-    description: "1000 Lords",
-  },
-];
+interface SeasonPassRowProps {
+  seasonPasses: SeasonPassProps[];
+}
 
-export const SeasonPassRow = () => {
+export const SeasonPassRow = ({ seasonPasses }: SeasonPassRowProps) => {
   return (
     <motion.div
       className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"

@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 
 // Import the generated route tree
+import { StarknetProvider } from "./components/providers/Starknet";
 import { routeTree } from "./routeTree.gen";
 
 // Create a new router instance
@@ -22,7 +23,9 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <StarknetProvider>
+        <RouterProvider router={router} />
+      </StarknetProvider>
     </StrictMode>,
   );
 }
