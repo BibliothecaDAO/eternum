@@ -1,10 +1,10 @@
 {
-  "address": "0x69094dae62b02e63ddb0e52986db1175608de6944ff0ef37c736b4cd94762d3",
+  "address": "0xf4b5a0baaa2bb2d71853cb8bdadf8531a7034ba7a0d0f7af6a1ae4f98b70bb",
   "calldata": [
     "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b",
-    "0x5eda62b7df3205bcf19a302a6628431876c2459877369df927e47ae396acb14",
-    "0x3d5dd2d7f4a672c15c879e0298fe1efae6f5c462e2328600c9a785270f571ea"
+    "0xdf756104ae64d2dbf5053b22f33f23854778841cb161570e3c83fa8e0f8bbb",
+    "0xf0c95c89beab893ffbbbd082f5ae94bcfab6e03554a592c499f4bdf733b1ca"
   ],
-  "deployed_at": 1729253392316,
-  "deployed_at_readable": "Fri, 18 Oct 2024 12:09:52 GMT"
+  "deployed_at": 1729460473185,
+  "deployed_at_readable": "Sun, 20 Oct 2024 21:41:13 GMT"
 }

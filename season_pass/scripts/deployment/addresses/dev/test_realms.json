@@ -1,6 +1,8 @@
 {
-  "address": "0x5eda62b7df3205bcf19a302a6628431876c2459877369df927e47ae396acb14",
-  "calldata": ["0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
-  "deployed_at": 1729253324782,
-  "deployed_at_readable": "Fri, 18 Oct 2024 12:08:44 GMT"
+  "address": "0xdf756104ae64d2dbf5053b22f33f23854778841cb161570e3c83fa8e0f8bbb",
+  "calldata": [
+    "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"
+  ],
+  "deployed_at": 1729460405541,
+  "deployed_at_readable": "Sun, 20 Oct 2024 21:40:05 GMT"
 }
