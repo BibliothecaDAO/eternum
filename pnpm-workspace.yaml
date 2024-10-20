@@ -5,3 +5,4 @@ packages:
   - "config"
   - "bot"
   - "balancing"
+  - "landing"
