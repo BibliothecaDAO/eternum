@@ -15,6 +15,7 @@ import { useGetMyOffers } from "./useTrade";
 
 export interface Quest {
   id: QuestId;
+  view: string;
   name: string;
   description: string | React.ReactNode;
   steps: (string | React.ReactNode)[];
