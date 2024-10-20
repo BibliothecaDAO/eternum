@@ -17,6 +17,7 @@ import { Route as rootRoute } from './routes/__root'
 // Create Virtual Routes
 
 const PassesLazyImport = createFileRoute('/passes')()
+const BridgeLazyImport = createFileRoute('/bridge')()
 const IndexLazyImport = createFileRoute('/')()
 
 // Create/Update Routes
@@ -26,6 +27,12 @@ const PassesLazyRoute = PassesLazyImport.update({
   path: '/passes',
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/passes.lazy').then((d) => d.Route))
+
+const BridgeLazyRoute = BridgeLazyImport.update({
+  id: '/bridge',
+  path: '/bridge',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/bridge.lazy').then((d) => d.Route))
 
 const IndexLazyRoute = IndexLazyImport.update({
   id: '/',
@@ -44,6 +51,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyImport
       parentRoute: typeof rootRoute
     }
+    '/bridge': {
+      id: '/bridge'
+      path: '/bridge'
+      fullPath: '/bridge'
+      preLoaderRoute: typeof BridgeLazyImport
+      parentRoute: typeof rootRoute
+    }
     '/passes': {
       id: '/passes'
       path: '/passes'
@@ -58,36 +72,41 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
+  '/bridge': typeof BridgeLazyRoute
   '/passes': typeof PassesLazyRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
+  '/bridge': typeof BridgeLazyRoute
   '/passes': typeof PassesLazyRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
+  '/bridge': typeof BridgeLazyRoute
   '/passes': typeof PassesLazyRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/passes'
+  fullPaths: '/' | '/bridge' | '/passes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/passes'
-  id: '__root__' | '/' | '/passes'
+  to: '/' | '/bridge' | '/passes'
+  id: '__root__' | '/' | '/bridge' | '/passes'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
+  BridgeLazyRoute: typeof BridgeLazyRoute
   PassesLazyRoute: typeof PassesLazyRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
+  BridgeLazyRoute: BridgeLazyRoute,
   PassesLazyRoute: PassesLazyRoute,
 }
 
@@ -104,11 +123,15 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/bridge",
         "/passes"
       ]
     },
     "/": {
       "filePath": "index.lazy.tsx"
+    },
+    "/bridge": {
+      "filePath": "bridge.lazy.tsx"
     },
     "/passes": {
       "filePath": "passes.lazy.tsx"
