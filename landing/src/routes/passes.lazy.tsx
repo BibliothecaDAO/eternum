@@ -1,3 +1,4 @@
+import { Filters } from "@/components/modules/filters";
 import { SeasonPassRow } from "@/components/modules/season-pass-row";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
@@ -108,6 +109,7 @@ export const Route = createLazyFileRoute("/passes")({
 function Passes() {
   return (
     <div>
+      <Filters />
       <SeasonPassRow seasonPasses={seasonPasses} />
     </div>
   );
