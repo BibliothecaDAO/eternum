@@ -495,4 +495,14 @@ export class ClientConfigManager {
   getResourceBuildingProduced(buildingType: BuildingType) {
     return EternumGlobalConfig.buildings.buildingResourceProduced[buildingType] ?? 0;
   }
+
+  getBuildingBaseCostPercentIncrease() {
+    return this.getValueOrDefault(() => {
+      const buildingGeneralConfig = getComponentValue(
+        this.components.BuildingGeneralConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      );
+      return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
+    }, 0);
+  }
 }
