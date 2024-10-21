@@ -17,7 +17,7 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "dependencies": {
-    "@dojoengine/core": "1.0.0-alpha.21",
+    "@dojoengine/core": "1.0.0-alpha.22",
     "eventemitter3": "^5.0.1",
     "vitest": "^2.0.5"
   },
