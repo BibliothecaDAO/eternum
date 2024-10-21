@@ -138,29 +138,15 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async mint_resources(props: SystemProps.MintResourcesProps) {
-    const { receiver_id, resources } = props;
 
-    return await this.executeAndCheckTransaction(props.signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
-      entrypoint: "mint",
-      calldata: [receiver_id, resources.length / 2, ...resources],
-    });
-  }
-
-  public async mint_resources_and_claim_quest(props: SystemProps.MintResourcesAndClaimProps) {
-    const { receiver_id, resources, config_ids, signer } = props;
+  public async claim_quest(props: SystemProps.ClaimQuestProps) {
+    const { receiver_id, quest_ids, signer } = props;
 
     const calldata = [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
-        entrypoint: "mint",
-        calldata: [receiver_id, resources.length / 2, ...resources],
-      },
-      ...config_ids.map((configId) => ({
+      ...quest_ids.map((questId) => ({
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
-        entrypoint: "mint_starting_resources",
-        calldata: [configId, receiver_id],
+        entrypoint: "quest_claim",
+        calldata: [questId, receiver_id],
       })),
     ];
 
@@ -680,14 +666,28 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_mint_config(props: SystemProps.SetMintConfigProps) {
-    const { config_id, resources, signer } = props;
+  public async set_quest_config(props: SystemProps.SetQuestConfigProps) {
+    const { production_material_multiplier, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_mint_config",
-      calldata: [config_id, resources.length, ...resources.flatMap(({ resource, amount }) => [resource, amount])],
+      entrypoint: "set_quest_config",
+      calldata: [production_material_multiplier],
     });
+  }
+
+  public async set_quest_reward_config(props: SystemProps.SetQuestRewardConfigProps) {
+    const { calls, signer } = props;
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+          entrypoint: "set_quest_reward_config",
+          calldata: [call.quest_id, call.resources.length, ...call.resources.flatMap(({ resource, amount }) => [resource, amount])],
+        };
+      }),
+    );
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {

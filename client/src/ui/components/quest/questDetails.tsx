@@ -34,7 +34,7 @@ const navigationStep = (imgPath: string) => {
 };
 
 export enum QuestId {
-  Settle,
+  Settle = 1,
   BuildFood,
   BuildResource,
   PauseProduction,

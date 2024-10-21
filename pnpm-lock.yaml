@@ -10737,10 +10737,6 @@ snapshots:
     dependencies:
       '@starknet-io/types-js': 0.7.7
 
-  get-starknet-core@4.0.0:
-    dependencies:
-      '@starknet-io/types-js': 0.7.7
-
   get-stream@6.0.1: {}
 
   get-stream@8.0.1: {}

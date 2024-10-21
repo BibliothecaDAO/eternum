@@ -21,7 +21,7 @@ trait IRealmSystems {
         ref world: IWorldDispatcher, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress
     ) -> ID;
     fn upgrade_level(ref world: IWorldDispatcher, realm_id: ID);
-    fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID;
+    fn quest_claim(ref world: IWorldDispatcher, quest_id: ID, entity_id: ID);
 }
 
 #[dojo::contract]
@@ -31,19 +31,23 @@ mod realm_systems {
     use eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
-    use eternum::models::config::{RealmFreeMintConfig, HasClaimedStartingResources, SeasonConfig};
+    use eternum::models::config::{QuestRewardConfig, QuestConfig, SeasonConfig, ProductionConfig};
     use eternum::models::event::{SettleRealmData, EventType};
     use eternum::models::map::Tile;
     use eternum::models::movable::Movable;
     use eternum::models::name::{AddressName};
     use eternum::models::owner::{Owner, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Position, Coord};
+    use eternum::models::production::{ProductionOutput};
     use eternum::models::quantity::QuantityTracker;
+    use eternum::models::quest::{Quest, QuestBonus};
     use eternum::models::realm::{
         Realm, RealmCustomTrait, RealmCustomImpl, RealmResourcesTrait, RealmResourcesImpl,
         RealmNameAndAttrsDecodingTrait, RealmNameAndAttrsDecodingImpl
     };
-    use eternum::models::resources::{DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use eternum::models::resources::{
+        DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceFoodImpl, ResourceFoodTrait
+    };
 
     use eternum::models::season::SeasonImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
@@ -163,42 +167,89 @@ mod realm_systems {
             set!(world, (realm));
         }
 
-        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
+        fn quest_claim(ref world: IWorldDispatcher, quest_id: ID, entity_id: ID) {
+            // ensure season is still active
             SeasonImpl::assert_season_is_not_over(world);
 
-            get!(world, (entity_id), Realm).assert_is_set();
+            // ensure entity is a realm
+            let realm = get!(world, (entity_id), Realm);
+            realm.assert_is_set();
 
-            let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
-
-            assert(!claimed_resources.claimed, 'already claimed');
+            // ensure quest is not already completed
+            let mut quest: Quest = get!(world, (entity_id, quest_id), Quest);
+            assert(!quest.completed, 'quest already completed');
 
             // get index
-            let config_index = REALM_FREE_MINT_CONFIG_ID + config_id.into();
-
-            let realm_free_mint_config = get!(world, config_index, RealmFreeMintConfig);
+            let quest_config: QuestConfig = get!(world, quest_id, QuestConfig);
+            let quest_reward_config: QuestRewardConfig = get!(world, quest_id, QuestRewardConfig);
             let mut index = 0;
             loop {
-                if index == realm_free_mint_config.detached_resource_count {
+                if index == quest_reward_config.detached_resource_count {
                     break;
                 }
 
+                // get reward resource
                 let mut detached_resource = get!(
-                    world, (realm_free_mint_config.detached_resource_id, index), DetachedResource
+                    world, (quest_reward_config.detached_resource_id, index), DetachedResource
                 );
-                let mut realm_resource = ResourceCustomImpl::get(
-                    world, (entity_id.into(), detached_resource.resource_type)
-                );
+                let reward_resource_type = detached_resource.resource_type;
+                let mut reward_resource_amount = detached_resource.resource_amount;
 
+                let mut quest_bonus: QuestBonus = get!(world, (entity_id, reward_resource_type), QuestBonus);
+
+                print!("\n\n quest_bonus.claimed: {}\n\n", quest_bonus.claimed);
+                print!(
+                    "\n\n !ResourceFoodImpl::is_food(reward_resource_type): {}\n\n",
+                    !ResourceFoodImpl::is_food(reward_resource_type)
+                );
+                print!("\n\n resource type: {}\n\n", reward_resource_type);
+                print!("\n\n quest id: {}\n\n", quest_id);
+                print!("\n\n entity id: {}\n\n", entity_id);
+                // scale reward resource amount by quest production multiplier
+                // if the reward resource is used to produce another resource in the realm.
+                // it will only be scaled if the quest bonus has not been claimed yet and
+                // the reward resource is not food.
+                if !quest_bonus.claimed && !ResourceFoodImpl::is_food(reward_resource_type) {
+                    let reward_resource_production_config: ProductionConfig = get!(
+                        world, reward_resource_type, ProductionConfig
+                    );
+                    let mut jndex = 0;
+                    loop {
+                        if jndex == reward_resource_production_config.output_count {
+                            break;
+                        }
+
+                        let output_resource_type = get!(world, (reward_resource_type, jndex), ProductionOutput)
+                            .output_resource_type;
+                        print!("\n\n output resource type: {}\n\n", output_resource_type);
+                        if realm.produces_resource(output_resource_type) {
+                            print!("\n\n yay! realm produces output resource type\n\n");
+                            // scale reward resource amount by quest production multiplier
+                            reward_resource_amount *= quest_config.production_material_multiplier.into();
+                            print!("\n\n reward resource amount: {}\n\n", reward_resource_amount);
+                            // set quest bonus as claimed
+                            quest_bonus.claimed = true;
+                            set!(world, (quest_bonus));
+
+                            break;
+                        }
+
+                        jndex += 1;
+                    }
+                }
+
+                let mut realm_resource = ResourceCustomImpl::get(world, (entity_id.into(), reward_resource_type));
                 realm_resource.add(detached_resource.resource_amount);
                 realm_resource.save(world);
+
+                print!("\n\n saved realm resource amount: {}\n\n", realm_resource.balance);
 
                 index += 1;
             };
 
-            claimed_resources.claimed = true;
-            set!(world, (claimed_resources));
-
-            entity_id.into()
+            print!("\n\n setting quest as completed\n\n");
+            quest.completed = true;
+            set!(world, (quest));
         }
     }
 

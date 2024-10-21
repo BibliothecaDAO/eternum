@@ -129,10 +129,9 @@ export interface MintResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-export interface MintResourcesAndClaimProps extends SystemSigner {
-  config_ids: num.BigNumberish[];
+export interface ClaimQuestProps extends SystemSigner {
+  quest_ids: num.BigNumberish[];
   receiver_id: num.BigNumberish;
-  resources: num.BigNumberish[];
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
@@ -366,9 +365,16 @@ interface ResourceCosts {
   amount: num.BigNumberish;
 }
 
-export interface SetMintConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
-  resources: ResourceCosts[];
+
+export interface SetQuestConfigProps extends SystemSigner {
+  production_material_multiplier: num.BigNumberish;
+}
+
+export interface SetQuestRewardConfigProps extends SystemSigner {
+  calls: {
+    quest_id: num.BigNumberish;
+    resources: ResourceCosts[];
+  }[];
 }
 
 export interface SetMapConfigProps extends SystemSigner {

@@ -11,9 +11,7 @@ use eternum::models::realm::{Realm, RealmCustomTrait};
 use eternum::models::resources::DetachedResource;
 use eternum::models::resources::Resource;
 
-use eternum::systems::config::contracts::{
-    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait
-};
+use eternum::systems::config::contracts::{config_systems, IQuestConfigDispatcher, IQuestConfigDispatcherTrait};
 use eternum::systems::realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
 
 use eternum::utils::map::biomes::Biome;
@@ -54,12 +52,12 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
         (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
     ];
 
-    let realm_free_mint_config_dispatcher = IRealmFreeMintConfigDispatcher { contract_address: config_systems_address };
+    let realm_free_mint_config_dispatcher = IQuestConfigDispatcher { contract_address: config_systems_address };
 
     let REALM_FREE_MINT_CONFIG_ID = 0;
 
     realm_free_mint_config_dispatcher
-        .set_mint_config(config_id: REALM_FREE_MINT_CONFIG_ID, resources: initial_resources.span());
+        .set_quest_reward_config(config_id: REALM_FREE_MINT_CONFIG_ID, resources: initial_resources.span());
 
     (world, realm_systems_dispatcher)
 }

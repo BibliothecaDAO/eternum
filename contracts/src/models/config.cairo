@@ -50,15 +50,6 @@ pub struct SeasonConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct RealmFreeMintConfig {
-    #[key]
-    config_id: ID,
-    detached_resource_id: ID,
-    detached_resource_count: u32
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct HyperstructureResourceConfig {
     #[key]
     config_id: ID,
@@ -658,12 +649,20 @@ impl HyperstructureResourceConfigCustomImpl of HyperstructureResourceConfigCusto
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct HasClaimedStartingResources {
-    #[key]
-    entity_id: ID,
+pub struct QuestConfig {
     #[key]
     config_id: ID,
-    claimed: bool,
+    production_material_multiplier: u16,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct QuestRewardConfig {
+    #[key]
+    quest_id: ID,
+    detached_resource_id: ID,
+    detached_resource_count: u32
 }
 
 

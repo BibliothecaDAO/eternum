@@ -215,16 +215,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.army_merge_troops(props);
   };
 
-  const mint_starting_resources = async (props: SystemProps.MintStartingResources) => {
-    await provider.mint_starting_resources(props);
-  };
-
-  const mint_resources = async (props: SystemProps.MintResourcesProps) => {
-    await provider.mint_resources(props);
-  };
-
-  const mint_resources_and_claim_quest = async (props: SystemProps.MintResourcesAndClaimProps) => {
-    await provider.mint_resources_and_claim_quest(props);
+  const claim_quest = async (props: SystemProps.ClaimQuestProps) => {
+    await provider.claim_quest(props);
   };
 
   const create_hyperstructure = async (props: SystemProps.CreateHyperstructureProps) => {
@@ -354,9 +346,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
     end_game: withQueueing(withErrorHandling(end_game)),
 
-    mint_resources: withQueueing(withErrorHandling(mint_resources)),
-    mint_starting_resources: withQueueing(withErrorHandling(mint_starting_resources)),
-    mint_resources_and_claim_quest: withQueueing(withErrorHandling(mint_resources_and_claim_quest)),
+    claim_quest: withQueueing(withErrorHandling(claim_quest)),
 
     army_buy_troops: withQueueing(withErrorHandling(army_buy_troops)),
     army_merge_troops: withQueueing(withErrorHandling(army_merge_troops)),

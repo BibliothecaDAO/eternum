@@ -124,7 +124,7 @@ const SkipTutorial = ({
 }) => {
   const {
     setup: {
-      systemCalls: { mint_resources_and_claim_quest },
+      systemCalls: { claim_quest },
     },
     account: { account },
   } = useDojo();
@@ -146,7 +146,7 @@ const SkipTutorial = ({
     if (resourcesToMint && unclaimedQuests) {
       setIsLoading(true);
       try {
-        await mint_resources_and_claim_quest({
+        await claim_quest({
           signer: account,
           config_ids: unclaimedQuests.flatMap((quest) => quest.prizes.map((prize) => BigInt(prize.id))),
           receiver_id: entityId,
