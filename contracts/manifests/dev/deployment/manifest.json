@@ -1236,7 +1236,7 @@
     ],
     "address": "0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11",
     "transaction_hash": "0x5a4deb5ecebc548f10b969db5496f9605a3b862dc766bb419c42615ff735760",
-    "block_number": 50,
+    "block_number": 51,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -2016,8 +2016,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6bde5ad6204af5e31e9b66f687f5ccd84fcefa1b61dfba9bda8ca331252e641",
-      "class_hash": "0x415b7fbec04a92d4b9c0e8609ac23369eb7a321382b832f7d364b99d84170da",
-      "original_class_hash": "0x415b7fbec04a92d4b9c0e8609ac23369eb7a321382b832f7d364b99d84170da",
+      "class_hash": "0x2253d2b111c13991bee5248d1eb5b1b98fb69a0af8e3fc7b13383adb0d41bde",
+      "original_class_hash": "0x2253d2b111c13991bee5248d1eb5b1b98fb69a0af8e3fc7b13383adb0d41bde",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -4948,8 +4948,8 @@
     {
       "kind": "DojoContract",
       "address": "0x5886dd9b433da22f890ff62d65de352ece2e98e8b5a54fd73dbe5dfa5c212c2",
-      "class_hash": "0x2119c7396a5673deee312df02e6ec7108a2ea6e080ba01cfc06bd5020887d68",
-      "original_class_hash": "0x2119c7396a5673deee312df02e6ec7108a2ea6e080ba01cfc06bd5020887d68",
+      "class_hash": "0x6df101d21ff5eb3855e99b271537f9c5e872fe16e1c8861fab8315c32079252",
+      "original_class_hash": "0x6df101d21ff5eb3855e99b271537f9c5e872fe16e1c8861fab8315c32079252",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -5140,14 +5140,18 @@
         },
         {
           "type": "enum",
-          "name": "core::bool",
+          "name": "eternum::models::hyperstructure::Access",
           "variants": [
             {
-              "name": "False",
+              "name": "Public",
               "type": "()"
             },
             {
-              "name": "True",
+              "name": "Private",
+              "type": "()"
+            },
+            {
+              "name": "GuildOnly",
               "type": "()"
             }
           ]
@@ -5230,15 +5234,15 @@
             },
             {
               "type": "function",
-              "name": "set_private",
+              "name": "set_access",
               "inputs": [
                 {
                   "name": "hyperstructure_entity_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "private",
-                  "type": "core::bool"
+                  "name": "access",
+                  "type": "eternum::models::hyperstructure::Access"
                 }
               ],
               "outputs": [],
@@ -5331,7 +5335,7 @@
       "systems": [
         "contribute_to_construction",
         "set_co_owners",
-        "set_private",
+        "set_access",
         "end_game"
       ],
       "manifest_name": "eternum-hyperstructure_systems-3660009a"
@@ -26194,13 +26198,13 @@
           "key": false
         },
         {
-          "name": "private",
-          "type": "bool",
+          "name": "access",
+          "type": "Access",
           "key": false
         }
       ],
-      "class_hash": "0x191b6a74aef66c4146874f50a63809c039c6243f2d0d643693fa5690990e0a4",
-      "original_class_hash": "0x191b6a74aef66c4146874f50a63809c039c6243f2d0d643693fa5690990e0a4",
+      "class_hash": "0x338d3e6593d7cdd1088edd18bbd44f38598d465f533dac605135b7e6cd754e1",
+      "original_class_hash": "0x338d3e6593d7cdd1088edd18bbd44f38598d465f533dac605135b7e6cd754e1",
       "abi": [
         {
           "type": "impl",
@@ -26584,6 +26588,24 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "eternum::models::hyperstructure::Access",
+          "variants": [
+            {
+              "name": "Public",
+              "type": "()"
+            },
+            {
+              "name": "Private",
+              "type": "()"
+            },
+            {
+              "name": "GuildOnly",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "struct",
           "name": "eternum::models::hyperstructure::Hyperstructure",
           "members": [
@@ -26608,8 +26630,8 @@
               "type": "core::integer::u64"
             },
             {
-              "name": "private",
-              "type": "core::bool"
+              "name": "access",
+              "type": "eternum::models::hyperstructure::Access"
             }
           ]
         },
