@@ -27,12 +27,11 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
 
   const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
     if (tier === "lords") return [];
-    return resourceIds.filter(
-      (resourceId) =>
-        resources
-          .find((r) => r.id === resourceId)
-          ?.trait.toLowerCase()
-          .includes(searchTerm.toLowerCase()),
+    return resourceIds.filter((resourceId) =>
+      resources
+        .find((r) => r.id === resourceId)
+        ?.trait.toLowerCase()
+        .includes(searchTerm.toLowerCase()),
     );
   });
 

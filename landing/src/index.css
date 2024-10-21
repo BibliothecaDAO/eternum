@@ -63,7 +63,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-gold ;
+    @apply bg-background text-gold;
   }
   h1,
   h2,
