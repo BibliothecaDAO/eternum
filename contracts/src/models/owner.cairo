@@ -63,22 +63,49 @@ impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
 mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
+    use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
+    use eternum::models::owner::{owner, entity_owner};
     use eternum::models::realm::Realm;
-    use eternum::utils::testing::world::spawn_eternum;
+    use eternum::models::realm::realm;
+    use eternum::utils::testing::world::spawn_eternum_custom;
+    use starknet::contract_address_const;
 
     #[test]
-    #[available_gas(300000000)]
     fn owner_test_entity_owner_get_realm_id() {
-        let world = spawn_eternum();
+        let world = spawn_eternum_custom(
+            array![array![realm::TEST_CLASS_HASH, entity_owner::TEST_CLASS_HASH]], array![].span()
+        );
 
         set!(world, Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0 });
-
         set!(world, EntityOwner { entity_id: 2, entity_owner_id: 1 });
 
         let entity_owner = get!(world, (2), EntityOwner);
         let realm_id = entity_owner.get_realm_id(world);
 
         assert(realm_id == 3, 'wrong realm id');
+    }
+
+
+    #[test]
+    #[should_panic(expected: "there is no current owner of 199999")]
+    fn owner_test_set_no_owner() {
+        let mut owner = Owner { entity_id: 199999, address: contract_address_const::<0>() };
+        owner.transfer(contract_address_const::<1>());
+    }
+
+
+    #[test]
+    #[should_panic(expected: "new owner is zero")]
+    fn owner_test_set_zero_owner() {
+        let mut owner = Owner { entity_id: 199999, address: contract_address_const::<1>() };
+        owner.transfer(contract_address_const::<0>());
+    }
+
+
+    #[test]
+    #[should_panic(expected: "current owner and new owner are the same")]
+    fn owner_test_set_same_owner() {
+        let mut owner = Owner { entity_id: 199999, address: contract_address_const::<1>() };
+        owner.transfer(contract_address_const::<1>());
     }
 }

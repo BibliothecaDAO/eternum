@@ -37,7 +37,7 @@ fn setup() -> (IWorldDispatcher, ContractAddress, Owner) {
 
 
 #[test]
-fn test_set_owner() {
+fn test_ownership_systems_set_owner() {
     let (world, ownership_systems_address, _owner) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<FIRST_OWNER>());
@@ -46,4 +46,15 @@ fn test_set_owner() {
 
     let new_owner = get!(world, OWNER_ENTITY_ID, Owner);
     assert_eq!(new_owner.address, contract_address_const::<SECOND_OWNER>());
+}
+
+
+#[test]
+#[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+fn test_ownership_systems_set_owner_caller_not_current_owner() {
+    let (_world, ownership_systems_address, _owner) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<SECOND_OWNER>());
+    let ownership_systems_dispatcher = IOwnershipSystemsDispatcher { contract_address: ownership_systems_address };
+    ownership_systems_dispatcher.transfer_ownership(OWNER_ENTITY_ID, contract_address_const::<SECOND_OWNER>());
 }
