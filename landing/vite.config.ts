@@ -15,7 +15,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/api": {
-        target: "http://localhost:3000", // Replace with your API server URL
+        target: "http://localhost:8080/graphql", // Replace with your API server URL
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
