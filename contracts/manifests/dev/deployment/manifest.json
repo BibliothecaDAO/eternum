@@ -1236,7 +1236,7 @@
     ],
     "address": "0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11",
     "transaction_hash": "0x26db3d138f389503ae59e1bdc1ebec38d33c600942622dd4da8038175c24499",
-    "block_number": 244,
+    "block_number": 246,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -2016,8 +2016,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6bde5ad6204af5e31e9b66f687f5ccd84fcefa1b61dfba9bda8ca331252e641",
-      "class_hash": "0x72d6f63bc2cab6fd1f6a1b6048521e3aee453665c7bc988196711f90844d846",
-      "original_class_hash": "0x72d6f63bc2cab6fd1f6a1b6048521e3aee453665c7bc988196711f90844d846",
+      "class_hash": "0x44af0b3e7b229e0ffdfb275c32b83742760b0ee7d1c06d3ad1ebbb0083f2db4",
+      "original_class_hash": "0x44af0b3e7b229e0ffdfb275c32b83742760b0ee7d1c06d3ad1ebbb0083f2db4",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -6474,6 +6474,254 @@
         "set_entity_name"
       ],
       "manifest_name": "eternum-name_systems-bbb2e543"
+    },
+    {
+      "kind": "DojoContract",
+      "address": "0x78c5d059a124afa26aa13d8d626a009dad537d8c70f7ef1070e0283fda84889",
+      "class_hash": "0x3e1b39b8ec54856fe7f324de91f1497b059326fa6a8a902465d16d7888fb968",
+      "original_class_hash": "0x3e1b39b8ec54856fe7f324de91f1497b059326fa6a8a902465d16d7888fb968",
+      "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "ContractImpl",
+          "interface_name": "dojo::contract::contract::IContract"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::contract::IContract",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "namespace",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "tag",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "name_hash",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "namespace_hash",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "selector",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::world::world_contract::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::world_contract::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::world::world_contract::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::world_contract::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "OwnershipSystemsImpl",
+          "interface_name": "eternum::systems::ownership::contracts::IOwnershipSystems"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::ownership::contracts::IOwnershipSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "transfer_ownership",
+              "inputs": [
+                {
+                  "name": "entity_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "new_owner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "IDojoInitImpl",
+          "interface_name": "eternum::systems::ownership::contracts::ownership_systems::IDojoInit"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::ownership::contracts::ownership_systems::IDojoInit",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradableImpl",
+          "interface_name": "dojo::contract::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::upgradeable::upgradeable::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::upgradeable::upgradeable::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::contract::upgradeable::upgradeable::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::ownership::contracts::ownership_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "reads": [],
+      "writes": [],
+      "init_calldata": [],
+      "tag": "eternum-ownership_systems",
+      "systems": [
+        "transfer_ownership"
+      ],
+      "manifest_name": "eternum-ownership_systems-61566ab9"
     },
     {
       "kind": "DojoContract",
