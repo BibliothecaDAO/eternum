@@ -119,7 +119,7 @@ export const setQuestRewardConfig = async (config: Config) => {
 
   let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
     QUEST_RESOURCES,
-    config.config.resources.resourceMultiplier,
+    config.config.resources.resourceMultiplier * config.config.resources.resourcePrecision,
   );
 
   for (const questId of Object.keys(QUEST_RESOURCES_SCALED) as unknown as QuestType[]) {
