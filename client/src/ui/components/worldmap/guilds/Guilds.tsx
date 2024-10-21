@@ -14,7 +14,7 @@ import { hasGuild } from "./utils";
 
 type GuildAndNameKeys = keyof (ComponentValue<ClientComponents["Guild"]["schema"]> & {
   name: string;
-  rank: string | number;
+  age: number;
 });
 interface SortingParamGuildAndName {
   label: string;
@@ -35,6 +35,9 @@ export const Guilds = () => {
     account: { account },
   } = useDojo();
 
+  const { getCreateGuildEvent } = useGuilds();
+
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
   const [_, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0, name: "" });
 
@@ -48,6 +51,7 @@ export const Guilds = () => {
       { label: "Guild Name", sortKey: "name", className: "col-span-1" },
       { label: "Access", sortKey: "is_public", className: "col-span-1" },
       { label: "Members", sortKey: "member_count", className: "col-span-1" },
+      { label: "Age", sortKey: "age", className: "col-span-1" },
     ];
   }, []);
 
@@ -109,6 +113,9 @@ export const Guilds = () => {
           </SortPanel>
           <div className="flex flex-col p-3 space-y-2 overflow-y-auto ">
             {sortItems(guilds, activeSort)?.map((guild: GuildAndName, index) => {
+              const guildCreationTimestamp = getCreateGuildEvent(guild.guild.entity_id)?.timestamp ?? 0;
+              const timeSinceCreation = formatTime((nextBlockTimestamp || 0) - guildCreationTimestamp, undefined, true);
+
               return (
                 <div
                   key={guild.guild.entity_id}
@@ -117,13 +124,14 @@ export const Guilds = () => {
                   } `}
                 >
                   <p
-                    className="col-span-1 hover:text-white truncate"
+                    className="hover:text-white truncate"
                     onClick={() => setSelectedGuild({ guildEntityId: guild.guild.entity_id, name: guild.name })}
                   >
                     {guild.name}
                   </p>
-                  <p className="col-span-1">{guild.guild.is_public ? "Public" : "Private"}</p>
-                  <p className="col-span-1">{guild.guild.member_count}</p>
+                  <p>{guild.guild.is_public ? "Public" : "Private"}</p>
+                  <p>{guild.guild.member_count}</p>
+                  <p>{timeSinceCreation}</p>
                 </div>
               );
             })}

@@ -158,3 +158,23 @@ pub struct SettleRealmData {
     y: u32,
     timestamp: u64,
 }
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
+pub struct CreateGuild {
+    #[key]
+    guild_entity_id: ID,
+    timestamp: u64
+}
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
+pub struct JoinGuild {
+    #[key]
+    guild_entity_id: ID,
+    #[key]
+    address: ContractAddress,
+    timestamp: u64
+}

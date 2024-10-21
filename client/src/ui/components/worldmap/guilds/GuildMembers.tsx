@@ -1,4 +1,4 @@
-import { copyPlayerAddressToClipboard, displayAddress, sortItems } from "@/ui/utils/utils";
+import { copyPlayerAddressToClipboard, displayAddress, formatTime, sortItems } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -40,6 +40,7 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
     return [
       { label: "Player", sortKey: "name", className: "col-span-1" },
       { label: "Address", sortKey: "playerAddress", className: "col-span-1" },
+      { label: "Age", sortKey: "playerAddress", className: "col-span-1" },
     ];
   }, []);
 
@@ -57,6 +58,9 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
       setIsLoading(false);
     });
   }, []);
+
+  const { getGuildJoinEvent } = useGuilds();
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
 
   return (
     <>
@@ -79,6 +83,14 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
       </SortPanel>
       <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
         {sortItems(guildMembers, activeSort)?.map((member: GuildMemberAndName) => {
+          const guildJoinTimestamp = getGuildJoinEvent(member.guildMember.guild_entity_id, member.guildMember.address);
+
+          const timeSinceGuildJoin = formatTime(
+            (nextBlockTimestamp || 0) - (guildJoinTimestamp?.timestamp ?? 0),
+            undefined,
+            true,
+          );
+
           return (
             <div
               key={member.guildMember.address}
@@ -93,6 +105,7 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
               >
                 {displayAddress(member.playerAddress)}
               </p>
+              <p>{timeSinceGuildJoin}</p>
               {isOwner &&
                 member.playerAddress != account.address &&
                 guildOwner?.address == ContractAddress(account.address) && (

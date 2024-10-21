@@ -197,6 +197,7 @@ export enum TimeFormat {
 export const formatTime = (
   seconds: number,
   format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
+  abbreviate: boolean = false,
 ): string => {
   const days = Math.floor(seconds / (3600 * 24));
   const hours = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -208,6 +209,10 @@ export const formatTime = (
   if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}h`);
   if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}m`);
   if (remainingSeconds > 0 && format & TimeFormat.S) parts.push(`${remainingSeconds}s`);
+
+  if (abbreviate) {
+    return parts[0] || "0s";
+  }
 
   return parts.join(" ");
 };

@@ -17,11 +17,11 @@ trait IGuildSystems {
 #[dojo::contract]
 mod guild_systems {
     use eternum::alias::ID;
+    use eternum::models::event::{CreateGuild, JoinGuild};
     use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
-
     use eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
@@ -35,7 +35,6 @@ mod guild_systems {
 
             get!(world, caller_address, GuildMember).assert_has_no_guild();
 
-            // Add min name length
             assert(guild_name != 0, 'Guild name cannot be empty');
 
             let guild_uuid: ID = world.uuid();
@@ -50,6 +49,10 @@ mod guild_systems {
                     GuildMember { address: caller_address, guild_entity_id: guild_uuid }
                 )
             );
+
+            let timestamp = starknet::get_block_timestamp();
+            emit!(world, CreateGuild { guild_entity_id: guild_uuid, timestamp },);
+            emit!(world, JoinGuild { guild_entity_id: guild_uuid, address: caller_address, timestamp });
 
             guild_uuid
         }
@@ -70,6 +73,11 @@ mod guild_systems {
             guild.member_count += 1;
 
             set!(world, (GuildMember { address: caller_address, guild_entity_id: guild_entity_id }, guild));
+
+            emit!(
+                world,
+                JoinGuild { guild_entity_id, address: caller_address, timestamp: starknet::get_block_timestamp() }
+            );
         }
 
         fn whitelist_player(
@@ -104,12 +112,7 @@ mod guild_systems {
             if (guild_member.address == guild_owner.address) {
                 assert(guild.member_count == 1, 'Guild not empty');
 
-                guild.member_count = 0;
-                guild_member.guild_entity_id = 0;
-
-                guild_owner.address = contract_address_const::<'0x0'>();
-
-                set!(world, (guild, guild_member, guild_owner));
+                delete!(world, (guild, guild_member, guild_owner));
             } else {
                 guild.member_count -= 1;
 

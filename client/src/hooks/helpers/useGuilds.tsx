@@ -51,7 +51,14 @@ export type GuildFromPlayerAddress = {
 export const useGuilds = () => {
   const {
     setup: {
-      components: { Guild, GuildMember, GuildWhitelist, Owner, AddressName },
+      components: {
+        Guild,
+        GuildMember,
+        GuildWhitelist,
+        Owner,
+        AddressName,
+        events: { CreateGuild, JoinGuild },
+      },
     },
   } = useDojo();
 
@@ -169,6 +176,16 @@ export const useGuilds = () => {
     return getPlayerListInGuild(guildEntityId);
   }, []);
 
+  const getCreateGuildEvent = (guildEntityId: ID) => {
+    const event = getComponentValue(CreateGuild, getEntityIdFromKeys([BigInt(guildEntityId)]));
+    return event;
+  };
+
+  const getGuildJoinEvent = (guildEntityId: ID, address: ContractAddress) => {
+    const event = getComponentValue(JoinGuild, getEntityIdFromKeys([BigInt(guildEntityId), BigInt(address)]));
+    return event;
+  };
+
   return {
     useGuildQuery,
     useGuildMembers,
@@ -179,6 +196,8 @@ export const useGuilds = () => {
     getGuildFromEntityId,
     getPlayerList,
     getPlayersInPlayersGuild,
+    getCreateGuildEvent,
+    getGuildJoinEvent,
   };
 };
 
