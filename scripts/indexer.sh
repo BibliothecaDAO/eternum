@@ -21,6 +21,9 @@ if [[ "$setConfig" == "true" ]]; then
     echo "----- Building Eternum Season Pass Contract ----- "
     printf "\n\n"
 
+    # source .env file in deployment
+    source ./season_pass/scripts/deployment/.env
+
     # build and deploy season pass contract
     cd season_pass/contracts && scarb --release build
     cd ../scripts/deployment && npm run deploy 
