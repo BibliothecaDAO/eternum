@@ -953,24 +953,25 @@ mod combat_systems {
                 assert!(!structure_army_health.is_alive(), "can only claim when structure army is dead");
             }
 
-            let previous_owner = get!(world, structure_id, Owner).address;
-
+            // transfer structure ownership to claimer
+            let claimer = starknet::get_caller_address();
             let mut structure_owner: Owner = get!(world, structure_id, Owner);
-            structure_owner.address = starknet::get_caller_address();
+            let structure_owner_before_transfer = structure_owner.address;
+            structure_owner.transfer(claimer);
             set!(world, (structure_owner));
 
+            // emit battle claim event
             let structure_position = get!(world, structure_id, Position);
-
             emit!(
                 world,
                 BattleClaimData {
                     id: world.uuid(),
                     event_id: EventType::BattleClaim,
                     structure_entity_id: structure_id,
-                    claimer: starknet::get_caller_address(),
-                    claimer_name: get!(world, starknet::get_caller_address(), AddressName).name,
+                    claimer,
+                    claimer_name: get!(world, claimer, AddressName).name,
                     claimer_army_entity_id: army_id,
-                    previous_owner,
+                    previous_owner: structure_owner_before_transfer,
                     x: structure_position.x,
                     y: structure_position.y,
                     structure_type: structure.category,
