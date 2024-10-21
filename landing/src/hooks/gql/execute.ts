@@ -3,7 +3,7 @@ import type { TypedDocumentString } from "./index";
 export async function execute<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
-) {
+): Promise<TResult> {
   const response = await fetch("/api", {
     method: "POST",
     headers: {
@@ -20,5 +20,11 @@ export async function execute<TResult, TVariables>(
     throw new Error("Network response was not ok");
   }
 
-  return response.json() as TResult;
+  const json = await response.json();
+
+  if ("data" in json) {
+    return json.data as TResult;
+  }
+
+  throw new Error("No data returned from GraphQL");
 }
