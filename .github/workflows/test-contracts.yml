@@ -44,6 +44,7 @@ jobs:
             realm_test,
             guild_test,
             transport_test,
+            test_ownership_systems,
           ]
       fail-fast: false
     steps:
