@@ -306,5 +306,6 @@
     "BuildingQuantityv2",
     "Stamina"
   ],
-  "GUILD_SYSTEMS": ["Guild", "GuildMember", "GuildWhitelist", "EntityName", "Owner", "EntityOwner"]
+  "GUILD_SYSTEMS": ["Guild", "GuildMember", "GuildWhitelist", "EntityName", "Owner", "EntityOwner"],
+  "OWNERSHIP_SYSTEMS": ["Owner"]
 }
