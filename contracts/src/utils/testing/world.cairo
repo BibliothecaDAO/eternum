@@ -49,6 +49,7 @@ use eternum::models::structure::structure;
 use eternum::models::structure::structure_count;
 use eternum::models::trade::{status, Status, trade, Trade,};
 use eternum::models::weight::weight;
+use starknet::ContractAddress;
 
 use starknet::contract_address_const;
 
@@ -154,5 +155,30 @@ fn spawn_eternum() -> IWorldDispatcher {
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'taker'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'0'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'takers_other_realm'>());
+    world
+}
+
+
+fn spawn_eternum_custom(models_list: Array<Array<felt252>>, owners_list: Span<ContractAddress>) -> IWorldDispatcher {
+    let mut world_models = array![];
+    let mut model_added: Felt252Dict<bool> = Default::default();
+
+    for models in models_list {
+        for model in models {
+            if model_added.get(model) == false {
+                model_added.insert(model, true);
+                world_models.append(model);
+            }
+        }
+    };
+
+    let world = spawn_test_world(["eternum"].span(), world_models.span());
+
+    world.uuid();
+
+    for owner in owners_list {
+        world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), *owner);
+    };
+
     world
 }

@@ -27,6 +27,20 @@ impl OwnerCustomImpl of OwnerCustomTrait {
     fn assert_caller_owner(self: Owner) {
         assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
+
+    fn transfer(ref self: Owner, new_owner: ContractAddress) {
+        // ensure current owner is non zero
+        assert!(self.address.is_non_zero(), "there is no current owner of {}", self.entity_id);
+
+        // ensure new owner is non zero
+        assert!(new_owner.is_non_zero(), "new owner is zero");
+
+        // ensure current owner and new owner are not the same
+        assert!(self.address != new_owner, "current owner and new owner are the same");
+
+        // set the new owner
+        self.address = new_owner;
+    }
 }
 
 #[generate_trait]
