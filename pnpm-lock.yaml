@@ -5705,20 +5705,8 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
-<<<<<<< HEAD
   starknet@6.11.0:
     resolution: {integrity: sha512-u50KrGDi9fbu1Ogu7ynwF/tSeFlp3mzOg1/Y5x50tYFICImo3OfY4lOz9OtYDk404HK4eUujKkhov9tG7GAKlg==}
-=======
-  starknet-types@0.0.4:
-    resolution: {integrity: sha512-PklqFeSp9gMqbzW5IbO8l1s3xsNZYkNG/x/gsytgYCIl6H/cqiwCZolVTneyTibvrdHOQ8kP3PXwfdsypudYqw==}
-    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-
-  starknet@6.11.0:
-    resolution: {integrity: sha512-u50KrGDi9fbu1Ogu7ynwF/tSeFlp3mzOg1/Y5x50tYFICImo3OfY4lOz9OtYDk404HK4eUujKkhov9tG7GAKlg==}
-
-  starknet@6.7.0:
-    resolution: {integrity: sha512-8NMedKBfkg/oZUgTYNw9lKeNoNYakL/Roah2HwKzrVyvDxBs0arrNrR8No8+tTq0wQg0HGu1w+JIObynjHAK3w==}
->>>>>>> rc-1
 
   stats-gl@2.2.8:
     resolution: {integrity: sha512-94G5nZvduDmzxBS7K0lYnynYwreZpkknD8g5dZmU6mpwIhy3caCrjAm11Qm1cbyx7mqix7Fp00RkbsonzKWnoQ==}
@@ -10765,10 +10753,6 @@ snapshots:
     dependencies:
       '@starknet-io/types-js': 0.7.7
 
-  get-starknet-core@4.0.0:
-    dependencies:
-      '@starknet-io/types-js': 0.7.7
-
   get-stream@6.0.1: {}
 
   get-stream@8.0.1: {}
@@ -12884,31 +12868,7 @@ snapshots:
 
   stackback@0.0.2: {}
 
-<<<<<<< HEAD
   starknet@6.11.0(encoding@0.1.13):
-=======
-  starknet-types@0.0.4: {}
-
-  starknet@6.11.0(encoding@0.1.13):
-    dependencies:
-      '@noble/curves': 1.4.2
-      '@noble/hashes': 1.5.0
-      '@scure/base': 1.1.8
-      '@scure/starknet': 1.0.0
-      abi-wan-kanabi: 2.2.3
-      fetch-cookie: 3.0.1
-      get-starknet-core: 4.0.0
-      isomorphic-fetch: 3.0.0(encoding@0.1.13)
-      lossless-json: 4.0.1
-      pako: 2.1.0
-      starknet-types-07: '@starknet-io/types-js@0.7.7'
-      ts-mixer: 6.0.4
-      url-join: 4.0.1
-    transitivePeerDependencies:
-      - encoding
-
-  starknet@6.7.0(encoding@0.1.13):
->>>>>>> rc-1
     dependencies:
       '@noble/curves': 1.4.2
       '@noble/hashes': 1.5.0
