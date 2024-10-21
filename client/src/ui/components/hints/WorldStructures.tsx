@@ -1,15 +1,8 @@
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { formatTime } from "@/ui/utils/utils";
-import {
-  findResourceById,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  ResourcesIds,
-  STRUCTURE_COSTS_SCALED,
-  StructureType,
-} from "@bibliothecadao/eternum";
+import { findResourceById, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { tableOfContents } from "./utils";
@@ -60,9 +53,11 @@ export const WorldStructures = () => {
 const HyperstructureCreationTable = () => {
   const structureId = StructureType["Hyperstructure"];
 
-  const creationCost = STRUCTURE_COSTS_SCALED[structureId].map((cost) => ({
-    ...cost,
-  }));
+  const creationCost = configManager.structureCosts[structureId]
+    .filter((cost) => cost.resource === ResourcesIds["AncientFragment"])
+    .map((cost) => ({
+      ...cost,
+    }));
 
   return (
     <>
@@ -93,13 +88,15 @@ const HyperstructureCreationTable = () => {
           <tr>
             <td colSpan={2} className="p-2">
               Hyperstructures are key to victory and can be constructed collaboratively. Once built, Hyperstructures
-              generate {HYPERSTRUCTURE_POINTS_PER_CYCLE} points per tick. Once completed, the Hyperstructure owner can
-              distribute shares to others, allowing shareholders to earn a portion of the generated points.
+              generate {configManager.getHyperstructureConfig().pointsPerCycle} points per tick. Once completed, the
+              Hyperstructure owner can distribute shares to others, allowing shareholders to earn a portion of the
+              generated points.
               <br />
               <br />
               Defending your Hyperstructure is crucial. If captured by another player, they can redistribute the shares,
               potentially cutting off your point income.
-              <br />A new set of shareholers can be set every {formatTime(HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S)}.
+              <br />A new set of shareholers can be set every{" "}
+              {formatTime(configManager.getHyperstructureConfig().timeBetweenSharesChange)}.
             </td>
           </tr>
         </tfoot>
@@ -109,9 +106,9 @@ const HyperstructureCreationTable = () => {
 };
 
 const HyperstructureConstructionTable = () => {
-  const constructionCost = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.filter(
-    (cost) => cost.resource !== ResourcesIds["AncientFragment"],
-  ).map((cost) => ({ ...cost }));
+  const constructionCost = configManager.structureCosts[StructureType.Hyperstructure]
+    .filter((cost) => cost.resource !== ResourcesIds["AncientFragment"])
+    .map((cost) => ({ ...cost }));
 
   return (
     <table className="not-prose w-full p-2 border-gold/10 mt-5">

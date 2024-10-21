@@ -79,13 +79,7 @@ mod dev_bank_systems {
                 )
             );
 
-            let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
-            let troops = mercenaries_config.troops;
-
-            let army_entity_id = InternalCombatImpl::create_defensive_army(
-                world, ADMIN_BANK_ENTITY_ID, starknet::contract_address_const::<0x0>()
-            );
-            InternalCombatImpl::add_troops_to_army(world, troops, army_entity_id);
+            InternalMapSystemsImpl::add_mercenaries_to_structure(world, ADMIN_BANK_ENTITY_ID);
 
             ADMIN_BANK_ENTITY_ID
         }

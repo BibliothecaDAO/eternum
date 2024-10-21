@@ -1,7 +1,7 @@
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyIntlFormat } from "@/ui/utils/utils";
-import { EternumGlobalConfig, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { Crown } from "lucide-react";
 import { TradeEvent } from "./MarketTradingHistory";
 
@@ -42,11 +42,8 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
       <div className="text-sm my-auto flex flex-row">
         <div>{"bought"}</div>
         <ResourceIcon resource={ResourcesIds[Number(trade.event.resourceTaken.resourceId)]} size={"sm"} />
-        <div>{`${currencyIntlFormat(
-          Number(trade.event.resourceTaken.amount) / EternumGlobalConfig.resources.resourcePrecision,
-          2,
-        )} for ${currencyIntlFormat(
-          Number(trade.event.resourceGiven.amount) / EternumGlobalConfig.resources.resourcePrecision,
+        <div>{`${currencyIntlFormat(divideByPrecision(trade.event.resourceTaken.amount), 2)} for ${currencyIntlFormat(
+          divideByPrecision(trade.event.resourceGiven.amount),
           2,
         )}`}</div>
         <ResourceIcon resource={ResourcesIds[Number(trade.event.resourceGiven.resourceId)]} size={"sm"} />

@@ -1,16 +1,12 @@
+import { configManager } from "@/dojo/setup";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  ID,
-  STRUCTURE_COSTS_SCALED,
-  StructureType,
-} from "@bibliothecadao/eternum";
+import { multiplyByPrecision } from "@/ui/utils/utils";
+import { ID, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React from "react";
 import { StructureCard } from "./StructureCard";
@@ -42,14 +38,14 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(entityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
+      return balance.balance >= multiplyByPrecision(resourceCost.amount);
     });
 
   return (
     <div className={`${className} grid grid-cols-2 gap-2 p-2`}>
       {buildingTypes.map((structureType, index) => {
         const building = StructureType[structureType as keyof typeof StructureType];
-        const cost = STRUCTURE_COSTS_SCALED[building];
+        const cost = configManager.structureCosts[building];
         const hasBalance = checkBalance(cost);
 
         const isHyperstructure = building === StructureType["Hyperstructure"];
@@ -89,9 +85,12 @@ const StructureInfo = ({
   entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
-  const cost = STRUCTURE_COSTS_SCALED[structureId];
+  const cost = configManager.structureCosts[structureId];
 
-  const perTick = structureId == StructureType.Hyperstructure ? `+${HYPERSTRUCTURE_POINTS_PER_CYCLE} points` : "";
+  const perTick =
+    structureId == StructureType.Hyperstructure
+      ? `+${configManager.getHyperstructureConfig().pointsPerCycle} points`
+      : "";
 
   const { getBalance } = getResourceBalance();
 

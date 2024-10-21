@@ -1,7 +1,7 @@
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import { LEVEL_DESCRIPTIONS, REALM_UPGRADE_COSTS, RealmLevels } from "@bibliothecadao/eternum";
+import { LEVEL_DESCRIPTIONS, RealmLevels } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const Realm = () => {
@@ -26,11 +26,11 @@ export const Realm = () => {
 
 const LevelTable = () => {
   const levelTable = useMemo(() => {
-    return Object.entries(REALM_UPGRADE_COSTS).map(([level, costs]) => ({
+    return Object.entries(configManager.realmUpgradeCosts).map(([level, costs]) => ({
       level: RealmLevels[level as keyof typeof RealmLevels],
       cost: costs.map((cost) => ({
         ...cost,
-        amount: multiplyByPrecision(cost.amount),
+        amount: cost.amount,
       })),
     }));
   }, []);

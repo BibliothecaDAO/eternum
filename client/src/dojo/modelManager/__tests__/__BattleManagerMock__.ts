@@ -116,15 +116,9 @@ export const generateMockArmyInfo = (
     realm: {
       entity_id: ARMY_ENTITY_ID,
       realm_id: 1,
-      resource_types_packed: 1n,
-      resource_types_count: 1,
-      cities: 1,
-      harbors: 1,
-      rivers: 1,
-      regions: 1,
-      wonder: 1,
-      order: 1,
+      produced_resources: 1n,
       level: 1,
+      order: 1,
     },
     homePosition: { entity_id: ARMY_ENTITY_ID, x: 0, y: 0 },
   };
@@ -147,5 +141,24 @@ export const generateMockStructure = (structureType: StructureType, isMine?: boo
       entity_id: 1,
       entity_owner_id: 0,
     },
+  };
+};
+
+export const generateMockTroopConfig = () => {
+  return {
+    health: 1,
+    knightStrength: 1,
+    paladinStrength: 1,
+    crossbowmanStrength: 1,
+    advantagePercent: 1000,
+    disadvantagePercent: 1000,
+    maxTroopCount: 500000,
+    pillageHealthDivisor: 8,
+    baseArmyNumberForStructure: 3,
+    armyExtraPerMilitaryBuilding: 1,
+    maxArmiesPerStructure: 7,
+    battleLeaveSlashNum: 25,
+    battleLeaveSlashDenom: 100,
+    battleTimeScale: 1000,
   };
 };

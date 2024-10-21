@@ -1,6 +1,7 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
-import { BuildingType, CapacityConfigCategory, EternumGlobalConfig, ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
+import { BuildingType, CapacityConfigCategory, ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
 import { ResourceChip } from "./ResourceChip";
@@ -15,11 +16,8 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
     )?.value || 0;
 
   const maxStorehouseCapacityKg = useMemo(() => {
-    return (
-      (quantity * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
-        gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))) *
-      EternumGlobalConfig.resources.resourcePrecision
-    );
+    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse));
+    return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);
 
   const resourceElements = useMemo(() => {

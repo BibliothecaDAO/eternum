@@ -3,6 +3,7 @@ import { BattleSide, StructureType } from "@bibliothecadao/eternum";
 import { Entity, getComponentValue, runQuery } from "@dojoengine/recs";
 import { describe, expect, it, vi } from "vitest";
 import { BattleManager, BattleStartStatus, BattleType, ClaimStatus } from "../BattleManager";
+import { ClientConfigManager } from "../ConfigManager";
 import {
   ARMY_TROOP_COUNT,
   BATTLE_ENTITY_ID,
@@ -33,6 +34,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
       troop: { health: 1 },
       resources: {
         resourceMultiplier: 1,
+        resourcePrecision: 1,
       },
       tick: {
         armiesTickIntervalInSeconds: 1,
@@ -389,19 +391,30 @@ describe("getUpdatedBattle", () => {
 });
 
 describe("getTroopFullHealth", () => {
-  const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
-
   it("should return the correct amount of health", () => {
+    const mockConfigManager = {
+      getTroopConfig: vi.fn().mockReturnValue({ health: 1 }),
+    } as unknown as ClientConfigManager;
+
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+    battleManager["configManager"] = mockConfigManager;
+
     const army = generateMockArmyInfo(true);
 
     const fullHealth = battleManager["getTroopFullHealth"](army.troops);
 
+    expect(mockConfigManager.getTroopConfig).toHaveBeenCalled();
     expect(fullHealth).toBe(10n);
   });
 });
 
 describe("getUpdatedArmy", () => {
+  const mockConfigManager = {
+    getTroopConfig: vi.fn().mockReturnValue({ health: 1 }),
+  } as unknown as ClientConfigManager;
+
   const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
+  battleManager["configManager"] = mockConfigManager;
 
   it("should return undefined if army is undefined", () => {
     const battle = generateMockBatle(true);
@@ -637,7 +650,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(ClaimStatus.BattleOngoing);
+    expect(isClaimable).toBe(ClaimStatus.DefenderPresent);
   });
 
   it("should return false if structure protector has health", () => {
@@ -652,7 +665,7 @@ describe("isClaimable", () => {
 
     const isClaimable = battleManager.isClaimable(CURRENT_TIMESTAMP, army, structure, defender);
 
-    expect(isClaimable).toBe(ClaimStatus.BattleOngoing);
+    expect(isClaimable).toBe(ClaimStatus.DefenderPresent);
   });
 
   it("should return false if the structure is mine", () => {

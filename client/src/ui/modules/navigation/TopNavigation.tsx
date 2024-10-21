@@ -4,7 +4,7 @@ import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 import { Social } from "../social/Social";
 
-export const BottomNavigation = () => {
+export const TopMiddleNavigation = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   return (

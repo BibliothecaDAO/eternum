@@ -39,6 +39,17 @@ pub struct WorldConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
+pub struct SeasonConfig {
+    #[key]
+    config_id: ID,
+    season_pass_address: ContractAddress,
+    realms_address: ContractAddress,
+    lords_address: ContractAddress,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
 pub struct RealmFreeMintConfig {
     #[key]
     config_id: ID,
@@ -391,7 +402,12 @@ impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
 pub struct MercenariesConfig {
     #[key]
     config_id: ID,
-    troops: Troops,
+    knights_lower_bound: u64,
+    knights_upper_bound: u64,
+    paladins_lower_bound: u64,
+    paladins_upper_bound: u64,
+    crossbowmen_lower_bound: u64,
+    crossbowmen_upper_bound: u64,
     rewards: Span<(u8, u128)>
 }
 

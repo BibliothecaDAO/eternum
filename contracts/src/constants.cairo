@@ -75,28 +75,29 @@ fn all_resource_ids() -> Array<u8> {
 
 // Note: Please update the all_resources_ids list whenever ResourceTypes are updated
 mod ResourceTypes {
-    const WOOD: u8 = 1;
-    const STONE: u8 = 2;
-    const COAL: u8 = 3;
+    const STONE: u8 = 1;
+    const COAL: u8 = 2;
+    const WOOD: u8 = 3;
     const COPPER: u8 = 4;
-    const OBSIDIAN: u8 = 5;
-    const SILVER: u8 = 6;
-    const IRONWOOD: u8 = 7;
-    const COLD_IRON: u8 = 8;
-    const GOLD: u8 = 9;
-    const HARTWOOD: u8 = 10;
-    const DIAMONDS: u8 = 11;
-    const SAPPHIRE: u8 = 12;
+    const IRONWOOD: u8 = 5;
+    const OBSIDIAN: u8 = 6;
+    const GOLD: u8 = 7;
+    const SILVER: u8 = 8;
+    const MITHRAL: u8 = 9;
+    const ALCHEMICAL_SILVER: u8 = 10;
+    const COLD_IRON: u8 = 11;
+    const DEEP_CRYSTAL: u8 = 12;
     const RUBY: u8 = 13;
-    const DEEP_CRYSTAL: u8 = 14;
-    const IGNIUM: u8 = 15;
-    const ETHEREAL_SILICA: u8 = 16;
-    const TRUE_ICE: u8 = 17;
-    const TWILIGHT_QUARTZ: u8 = 18;
-    const ALCHEMICAL_SILVER: u8 = 19;
-    const ADAMANTINE: u8 = 20;
-    const MITHRAL: u8 = 21;
+    const DIAMONDS: u8 = 14;
+    const HARTWOOD: u8 = 15;
+    const IGNIUM: u8 = 16;
+    const TWILIGHT_QUARTZ: u8 = 17;
+    const TRUE_ICE: u8 = 18;
+    const ADAMANTINE: u8 = 19;
+    const SAPPHIRE: u8 = 20;
+    const ETHEREAL_SILICA: u8 = 21;
     const DRAGONHIDE: u8 = 22;
+
     const DEMONHIDE: u8 = 28;
     const EARTHEN_SHARD: u8 = 29;
 
@@ -117,47 +118,47 @@ mod ResourceTypes {
 
 fn resource_type_name(resource_type: u8) -> ByteArray {
     if resource_type == 1 {
-        "WOOD"
-    } else if resource_type == 2 {
         "STONE"
-    } else if resource_type == 3 {
+    } else if resource_type == 2 {
         "COAL"
+    } else if resource_type == 3 {
+        "WOOD"
     } else if resource_type == 4 {
         "COPPER"
     } else if resource_type == 5 {
-        "OBSIDIAN"
-    } else if resource_type == 6 {
-        "SILVER"
-    } else if resource_type == 7 {
         "IRONWOOD"
-    } else if resource_type == 8 {
-        "COLD IRON"
-    } else if resource_type == 9 {
+    } else if resource_type == 6 {
+        "OBSIDIAN"
+    } else if resource_type == 7 {
         "GOLD"
+    } else if resource_type == 8 {
+        "SILVER"
+    } else if resource_type == 9 {
+        "MITHRAL"
     } else if resource_type == 10 {
-        "HARTWOOD"
+        "ALCHEMICAL SILVER"
     } else if resource_type == 11 {
-        "DIAMONDS"
+        "COLD IRON"
     } else if resource_type == 12 {
-        "SAPPHIRE"
+        "DEEP CRYSTAL"
     } else if resource_type == 13 {
         "RUBY"
     } else if resource_type == 14 {
-        "DEEP CRYSTAL"
+        "DIAMONDS"
     } else if resource_type == 15 {
-        "IGNIUM"
+        "HARTWOOD"
     } else if resource_type == 16 {
-        "ETHEREAL SILICA"
+        "IGNIUM"
     } else if resource_type == 17 {
-        "TRUE ICE"
-    } else if resource_type == 18 {
         "TWILIGHT QUARTZ"
+    } else if resource_type == 18 {
+        "TRUE ICE"
     } else if resource_type == 19 {
-        "ALCHEMICAL SILVER"
-    } else if resource_type == 20 {
         "ADAMANTINE"
+    } else if resource_type == 20 {
+        "SAPPHIRE"
     } else if resource_type == 21 {
-        "MITHRAL"
+        "ETHEREAL SILICA"
     } else if resource_type == 22 {
         "DRAGONHIDE"
     } else if resource_type == 28 {
