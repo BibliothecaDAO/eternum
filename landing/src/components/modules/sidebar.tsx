@@ -10,6 +10,9 @@ export const Sidebar = () => {
       <Link to="/passes" className="[&.active]:font-bold">
         <Button variant="ghost">Passes</Button>
       </Link>
+      <Link to="/trade" className="[&.active]:font-bold">
+        <Button variant="ghost">Trade</Button>
+      </Link>
       <Link to="/bridge" className="[&.active]:font-bold">
         <Button variant="ghost">Bridge</Button>
       </Link>

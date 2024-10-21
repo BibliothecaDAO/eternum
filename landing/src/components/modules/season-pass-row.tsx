@@ -1,8 +1,8 @@
 import { AnimatedGrid } from "./animated-grid";
-import { SeasonPass, SeasonPassProps } from "./season-pass";
+import { SeasonPass } from "./season-pass";
 
 interface SeasonPassRowProps {
-  seasonPasses: SeasonPassProps[];
+  seasonPasses: SeasonPass[];
 }
 
 export const SeasonPassRow = ({ seasonPasses }: SeasonPassRowProps) => {

@@ -30,8 +30,8 @@ export const TopNavigation = () => {
         <Button variant="cta">
           <CartridgeIcon /> Login
         </Button>
-        {connectors.map((connector) => (
-          <Button onClick={() => connect({ connector })} variant="cta">
+        {connectors.map((connector, index) => (
+          <Button key={index} onClick={() => connect({ connector })} variant="cta">
             {" "}
             Connect {connector.name}
           </Button>
