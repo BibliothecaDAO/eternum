@@ -1,10 +1,11 @@
-import { SeasonPassRow } from "@/components/modules/season-pass-row";
+import { DataCard } from "@/components/modules/data-card";
 import type { Meta, StoryObj } from "@storybook/react";
+import { UsersIcon } from "lucide-react";
 import "../index.css";
 
 const meta = {
-  title: "Modules/SeasonPassRow",
-  component: SeasonPassRow,
+  title: "Modules/DataCard",
+  component: DataCard,
   parameters: {
     layout: "centered",
     backgrounds: {
@@ -13,19 +14,22 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="flex items-center justify-center min-h-screen w-screen">
+      <div className="flex items-center justify-center min-h-screen">
         <Story />
       </div>
     ),
   ],
   tags: ["autodocs"],
-} satisfies Meta<typeof SeasonPassRow>;
+} satisfies Meta<typeof DataCard>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    seasonPasses: [],
+    title: "players",
+    value: "1000",
+    description: "season 1 active players",
+    icon: <UsersIcon />,
   },
 };
