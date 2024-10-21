@@ -29,9 +29,6 @@ impl OwnerCustomImpl of OwnerCustomTrait {
     }
 
     fn transfer(ref self: Owner, new_owner: ContractAddress) {
-        // ensure current owner is non zero
-        assert!(self.address.is_non_zero(), "there is no current owner of {}", self.entity_id);
-
         // ensure new owner is non zero
         assert!(new_owner.is_non_zero(), "new owner is zero");
 
@@ -84,15 +81,6 @@ mod tests {
 
         assert(realm_id == 3, 'wrong realm id');
     }
-
-
-    #[test]
-    #[should_panic(expected: "there is no current owner of 199999")]
-    fn owner_test_set_no_owner() {
-        let mut owner = Owner { entity_id: 199999, address: contract_address_const::<0>() };
-        owner.transfer(contract_address_const::<1>());
-    }
-
 
     #[test]
     #[should_panic(expected: "new owner is zero")]
