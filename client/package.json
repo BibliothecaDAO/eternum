@@ -13,7 +13,7 @@
     "coverage": "vitest run --coverage"
   },
   "peerDependencies": {
-    "starknet": "6.7.0"
+    "starknet": "6.11.0"
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:^",
