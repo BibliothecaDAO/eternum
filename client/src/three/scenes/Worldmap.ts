@@ -189,6 +189,8 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: THREE.Vector3 } | null): void {
     if (hex === null) {
       this.state.updateHoveredHex(null);
+      this.state.setHoveredStructure(null);
+      this.state.setHoveredBattle(null);
       return;
     }
     const { hexCoords } = hex;
