@@ -36,8 +36,6 @@ export DEV_RESOURCE_SYSTEMS=$(get_contract_address "eternum-dev_resource_systems
 
 export COMBAT_SYSTEMS=$(get_contract_address "eternum-combat_systems")
 
-export LEVELING_SYSTEMS=$(get_contract_address "eternum-leveling_systems")
-
 export NAME_SYSTEMS=$(get_contract_address "eternum-name_systems")
 
 export BANK_SYSTEMS=$(get_contract_address "eternum-bank_systems")
@@ -72,7 +70,6 @@ echo travel : $TRAVEL_SYSTEMS
 echo realm : $REALM_SYSTEMS
 echo test_resource : $DEV_RESOURCE_SYSTEMS
 echo combat : $COMBAT_SYSTEMS
-echo leveling : $LEVELING_SYSTEMS
 echo name : $NAME_SYSTEMS
 echo bank : $BANK_SYSTEMS
 echo swap : $SWAP_SYSTEMS

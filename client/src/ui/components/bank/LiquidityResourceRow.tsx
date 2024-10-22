@@ -1,3 +1,4 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -6,25 +7,65 @@ import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, DONKEY_ENTITY_TYPE, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  DONKEY_ENTITY_TYPE,
+  ID,
+  RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
+import { ComponentValue, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import React, { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
 type LiquidityResourceRowProps = {
+  playerStructureIds: ID[];
   bankEntityId: ID;
   entityId: ID;
   resourceId: ResourcesIds;
   isFirst?: boolean;
 };
 
-export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFirst }: LiquidityResourceRowProps) => {
+export const LiquidityResourceRow = ({
+  playerStructureIds,
+  bankEntityId,
+  entityId,
+  resourceId,
+  isFirst,
+}: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
   const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
+
+  const playerLiquidityInfo: ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null =
+    useMemo(() => {
+      let mostRecentEvent: ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null = null;
+
+      playerStructureIds.forEach((structureId) => {
+        const liquidityEvents = runQuery([
+          HasValue(dojoContext.setup.components.events.LiquidityEvent, {
+            bank_entity_id: bankEntityId,
+            entity_id: structureId,
+            resource_type: resourceId,
+          }),
+        ]);
+
+        liquidityEvents.forEach((event) => {
+          const eventInfo = getComponentValue(dojoContext.setup.components.events.LiquidityEvent, event);
+          if (eventInfo && (!mostRecentEvent || eventInfo.timestamp > mostRecentEvent.timestamp)) {
+            mostRecentEvent = eventInfo;
+          }
+        });
+      });
+
+      return mostRecentEvent as ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null;
+    }, [playerStructureIds, bankEntityId, resourceId]);
 
   const marketEntityId = useMemo(
     () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
@@ -64,6 +105,27 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
 
   const [totalLords, totalResource] = marketManager.getReserves();
   const [lordsAmount, resourceAmount] = marketManager.getMyLP();
+
+  const [lordsDifferencePercentage, resourceDifferencePercentage] = useMemo(() => {
+    if (!playerLiquidityInfo) return [0, 0];
+    return [
+      ((lordsAmount - Number(playerLiquidityInfo.lords_amount)) / Number(playerLiquidityInfo.lords_amount)) * 100,
+      ((resourceAmount - Number(playerLiquidityInfo.resource_amount)) / Number(playerLiquidityInfo.resource_amount)) *
+        100,
+    ];
+  }, [playerLiquidityInfo, lordsAmount, resourceAmount]);
+
+  const totalValueDifferenceInLords = useMemo(() => {
+    if (!playerLiquidityInfo) return 0;
+    const currentResourcePrice = marketManager.getMarketPrice();
+    const previousResourcePrice = divideByPrecision(Number(playerLiquidityInfo.resource_price));
+
+    const currentTotalValue = lordsAmount + currentResourcePrice * resourceAmount;
+    const previousTotalValue =
+      Number(playerLiquidityInfo.lords_amount) + previousResourcePrice * Number(playerLiquidityInfo.resource_amount);
+
+    return divideByPrecision(currentTotalValue - previousTotalValue);
+  }, [playerLiquidityInfo, totalLords, totalResource, marketManager]);
 
   const myLiquidity = marketManager.getLiquidity();
   const canWithdraw = useMemo(
@@ -164,7 +226,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
           )}
         </div>
 
-        <div className="flex flex-col col-span-2">
+        <div className="flex flex-col col-span-2 justify-center">
           <div className="flex">
             <div>{divideByPrecision(totalLords).toLocaleString()}</div>
             <ResourceIcon resource="Lords" size="sm" />
@@ -180,12 +242,33 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
           <div className="flex">
             <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
             <ResourceIcon resource="Lords" size="sm" />
+            {lordsAmount > 0 && (
+              <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+                ({lordsDifferencePercentage > 0 ? "+" : ""}
+                {lordsDifferencePercentage.toFixed(2)}%)
+              </span>
+            )}
           </div>
 
           <div className="flex">
             <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
             <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+            {lordsAmount > 0 && (
+              <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+                ({resourceDifferencePercentage > 0 ? "+" : ""}
+                {resourceDifferencePercentage.toFixed(2)}%)
+              </span>
+            )}
           </div>
+
+          {totalValueDifferenceInLords > 0 && (
+            <div className="flex mt-1">
+              <span className={`text-xs ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
+                {totalValueDifferenceInLords >= 0 ? "+" : "-"}
+                {Math.abs(totalValueDifferenceInLords).toFixed(2)} Lords (uPNL)
+              </span>
+            </div>
+          )}
         </div>
 
         <div>
@@ -208,8 +291,8 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
 
 const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
   const { setup } = useDojo();
-  const inputResources = configManager.resourceInputs[marketManager.resourceId];
-  const outputAmount = configManager.getResourceOutputs(marketManager.resourceId);
+  const inputResources = RESOURCE_INPUTS_SCALED[marketManager.resourceId];
+  const outputAmount = RESOURCE_OUTPUTS[marketManager.resourceId];
 
   if (!inputResources?.length) return null;
   const totalPrice =

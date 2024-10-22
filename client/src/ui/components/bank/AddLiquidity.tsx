@@ -1,5 +1,6 @@
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
@@ -27,6 +28,10 @@ const AddLiquidity = ({
   } = useDojo();
 
   const { getBalance } = getResourceBalance();
+
+  const { playerStructures } = useEntities();
+
+  const playerStructureIds = playerStructures().map((structure) => structure.entity_id);
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);
@@ -140,7 +145,12 @@ const AddLiquidity = ({
         </div>
         <div className="p-2">
           <LiquidityTableHeader />
-          <LiquidityResourceRow bankEntityId={bankEntityId} entityId={entityId} resourceId={resourceId} />
+          <LiquidityResourceRow
+            playerStructureIds={playerStructureIds}
+            bankEntityId={bankEntityId}
+            entityId={entityId}
+            resourceId={resourceId}
+          />
           <div className="w-full flex flex-col justify-center mt-4">
             <Button
               variant="primary"
