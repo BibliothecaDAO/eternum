@@ -1,5 +1,5 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { DojoResult, useDojo } from "@/hooks/context/DojoContext";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -15,9 +15,43 @@ export const BattleInfoLabel = () => {
   const hoveredBattlePosition = useUIStore((state) => state.hoveredBattle);
   const currentTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
 
-  const battles = useBattlesByPosition({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 });
+  const battles = useBattlesByPosition({ x: hoveredBattlePosition?.x || 0, y: hoveredBattlePosition?.y || 0 }).filter(
+    (battle) => battle.duration_left > 0,
+  );
 
-  const battleManager = useMemo(() => new BattleManager(battles[0]?.entity_id || 0, dojo), [battles, dojo]);
+  return (
+    <>
+      {battles.length > 0 && isMapView && (
+        <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-[250px]`}>
+          <div id="battle-label" className="flex flex-col gap-4 w-full">
+            <Headline className="text-center text-lg">
+              <div>{`Battles (${battles.length})`}</div>
+            </Headline>
+            {battles.map((battle) => (
+              <BattleInfo
+                key={battle.entity_id}
+                battleEntityId={battle.entity_id}
+                dojo={dojo}
+                currentTimestamp={currentTimestamp}
+              />
+            ))}
+          </div>
+        </BaseThreeTooltip>
+      )}
+    </>
+  );
+};
+
+const BattleInfo = ({
+  battleEntityId,
+  dojo,
+  currentTimestamp,
+}: {
+  battleEntityId: number;
+  dojo: DojoResult;
+  currentTimestamp: number;
+}) => {
+  const battleManager = useMemo(() => new BattleManager(battleEntityId, dojo), [battleEntityId, dojo]);
 
   const { attackerHealth, defenderHealth, isOngoing } = useMemo(() => {
     const adjustedBattle = battleManager.getUpdatedBattle(currentTimestamp);
@@ -35,27 +69,18 @@ export const BattleInfoLabel = () => {
   }, [battleManager, currentTimestamp]);
 
   return (
-    <>
-      {battles[0]?.entity_id && isMapView && (
-        <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-[250px]`}>
-          <div id="battle-label" className="flex flex-col gap-1 w-full">
-            <Headline className="text-center text-lg">
-              <div>{"Battle"}</div>
-            </Headline>
-            <div className="flex justify-center items-center space-x-2">
-              <span className="">{Number(divideByPrecision(Number(attackerHealth.current))).toFixed(0)} troops</span>
-              <span className="font-bold">vs</span>
-              <span className="">{Number(divideByPrecision(Number(defenderHealth.current))).toFixed(0)} troops</span>
-            </div>
-            <ProgressBar className={"w-full"} attackingHealth={attackerHealth} defendingHealth={defenderHealth} />
-            <div className="text-center">
-              {isOngoing && (
-                <DurationLeft battleManager={battleManager} currentTimestamp={currentTimestamp} structure={undefined} />
-              )}
-            </div>
-          </div>
-        </BaseThreeTooltip>
-      )}
-    </>
+    <div className="flex flex-col gap-1 w-full">
+      <div className="flex justify-center items-center space-x-2">
+        <span className="">{Number(divideByPrecision(Number(attackerHealth.current))).toFixed(0)} troops</span>
+        <span className="font-bold">vs</span>
+        <span className="">{Number(divideByPrecision(Number(defenderHealth.current))).toFixed(0)} troops</span>
+      </div>
+      <ProgressBar className={"w-full"} attackingHealth={attackerHealth} defendingHealth={defenderHealth} />
+      <div className="text-center">
+        {isOngoing && (
+          <DurationLeft battleManager={battleManager} currentTimestamp={currentTimestamp} structure={undefined} />
+        )}
+      </div>
+    </div>
   );
 };
