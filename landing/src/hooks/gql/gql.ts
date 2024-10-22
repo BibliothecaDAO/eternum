@@ -1,7 +1,5 @@
 /* eslint-disable */
-import * as types from './graphql';
-
-
+import * as types from "./graphql";
 
 /**
  * Map of all GraphQL operations in the project.
@@ -15,14 +13,15 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 const documents = {
-    "\n  query totalPlayers {\n    eternumOwnerModels {\n      totalCount\n    }\n  }\n": types.TotalPlayersDocument,
+  "\n  query totalPlayers {\n    eternumOwnerModels {\n      totalCount\n    }\n  }\n": types.TotalPlayersDocument,
 };
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query totalPlayers {\n    eternumOwnerModels {\n      totalCount\n    }\n  }\n"): typeof import('./graphql').TotalPlayersDocument;
-
+export function graphql(
+  source: "\n  query totalPlayers {\n    eternumOwnerModels {\n      totalCount\n    }\n  }\n",
+): typeof import("./graphql").TotalPlayersDocument;
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};
