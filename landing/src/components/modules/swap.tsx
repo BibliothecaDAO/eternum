@@ -55,7 +55,7 @@ export const Swap = () => {
         </div>
       </div>
 
-      <Button>Initiate Transfer</Button>
+      <Button variant="cta">Initiate Transfer</Button>
     </div>
   );
 };
@@ -72,17 +72,17 @@ export const SwapRow = ({
   setFromToken: (value: string) => void;
 }) => {
   return (
-    <div className="rounded-lg p-3 border flex gap-3">
+    <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3">
       <Input
         type="text"
         placeholder="0.0"
         value={fromAmount}
         onChange={(e) => setFromAmount(e.target.value)}
-        className="bg-brown text-2xl w-full outline-none h-16"
+        className="bg-dark-brown text-2xl w-full outline-none h-16 border-none"
       />
 
       <Select value={fromToken} onValueChange={(value) => setFromToken(value)}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-[180px] border-gold/15">
           <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
