@@ -53,7 +53,7 @@ const BattleInfo = ({
 }) => {
   const battleManager = useMemo(() => new BattleManager(battleEntityId, dojo), [battleEntityId, dojo]);
 
-  const { attackerHealth, defenderHealth, isOngoing } = useMemo(() => {
+  const { attackerHealth, defenderHealth, isOngoing, isSiege } = useMemo(() => {
     const adjustedBattle = battleManager.getUpdatedBattle(currentTimestamp);
     return {
       attackerHealth: {
@@ -65,6 +65,7 @@ const BattleInfo = ({
         lifetime: adjustedBattle?.defence_army_health.lifetime || 0n,
       },
       isOngoing: battleManager.isBattleOngoing(currentTimestamp),
+      isSiege: battleManager.isSiege(currentTimestamp),
     };
   }, [battleManager, currentTimestamp]);
 
@@ -77,7 +78,7 @@ const BattleInfo = ({
       </div>
       <ProgressBar className={"w-full"} attackingHealth={attackerHealth} defendingHealth={defenderHealth} />
       <div className="text-center">
-        {isOngoing && (
+        {(isOngoing || isSiege) && (
           <DurationLeft battleManager={battleManager} currentTimestamp={currentTimestamp} structure={undefined} />
         )}
       </div>
