@@ -189,6 +189,8 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: THREE.Vector3 } | null): void {
     if (hex === null) {
       this.state.updateHoveredHex(null);
+      this.state.setHoveredStructure(null);
+      this.state.setHoveredBattle(null);
       return;
     }
     const { hexCoords } = hex;
@@ -211,6 +213,18 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setHoveredStructure(structure);
     } else if (this.state.hoveredStructure) {
       this.state.setHoveredStructure(null);
+    }
+
+    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const isBattle = this.battleManager.battles.hasByPosition(position);
+
+    if (isBattle) {
+      const contractPosition = position.getContract();
+      if (this.state.hoveredBattle?.x !== contractPosition.x || this.state.hoveredBattle?.y !== contractPosition.y) {
+        this.state.setHoveredBattle(position.getContract());
+      }
+    } else {
+      this.state.setHoveredBattle(null);
     }
   }
 

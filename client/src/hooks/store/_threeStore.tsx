@@ -1,6 +1,6 @@
 import { StructureInfo } from "@/three/components/StructureManager";
 import { HexPosition } from "@/types";
-import { BuildingType, ID } from "@bibliothecadao/eternum";
+import { BuildingType, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
@@ -16,6 +16,8 @@ export interface ThreeStore {
   setHoveredArmyEntityId: (id: ID | null) => void;
   hoveredStructure: StructureInfo | null;
   setHoveredStructure: (structure: StructureInfo | null) => void;
+  hoveredBattle: Position | null;
+  setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
   setSelectedBuilding: (building: BuildingType) => void;
   selectedBuildingEntityId: ID | null;
@@ -61,6 +63,8 @@ export const createThreeStoreSlice = (set: any, get: any) => ({
   setHoveredArmyEntityId: (id: ID | null) => set({ hoveredArmyEntityId: id }),
   hoveredStructure: null,
   setHoveredStructure: (structure: StructureInfo | null) => set({ hoveredStructure: structure }),
+  hoveredBattle: null,
+  setHoveredBattle: (hex: Position | null) => set({ hoveredBattle: hex }),
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building: BuildingType) => set({ selectedBuilding: building }),
   selectedBuildingEntityId: null,
