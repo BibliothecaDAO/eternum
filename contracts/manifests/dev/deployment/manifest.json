@@ -1236,7 +1236,7 @@
     ],
     "address": "0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11",
     "transaction_hash": "0x26db3d138f389503ae59e1bdc1ebec38d33c600942622dd4da8038175c24499",
-    "block_number": 246,
+    "block_number": 250,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
