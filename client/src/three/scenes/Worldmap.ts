@@ -212,6 +212,18 @@ export default class WorldmapScene extends HexagonScene {
     } else if (this.state.hoveredStructure) {
       this.state.setHoveredStructure(null);
     }
+
+    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const isBattle = this.battleManager.battles.hasByPosition(position);
+
+    if (isBattle) {
+      const contractPosition = position.getContract();
+      if (this.state.hoveredBattle?.x !== contractPosition.x || this.state.hoveredBattle?.y !== contractPosition.y) {
+        this.state.setHoveredBattle(position.getContract());
+      }
+    } else {
+      this.state.setHoveredBattle(null);
+    }
   }
 
   private _canBuildStructure(hexCoords: HexPosition) {
