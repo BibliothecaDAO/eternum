@@ -20,6 +20,11 @@ const ActionInfo = lazy(() =>
 const ArmyInfoLabel = lazy(() =>
   import("../components/worldmap/armies/ArmyInfoLabel").then((module) => ({ default: module.ArmyInfoLabel })),
 );
+
+const BattleInfoLabel = lazy(() =>
+  import("../components/worldmap/battles/BattleLabel").then((module) => ({ default: module.BattleInfoLabel })),
+);
+
 const BlankOverlayContainer = lazy(() =>
   import("../containers/BlankOverlayContainer").then((module) => ({ default: module.BlankOverlayContainer })),
 );
@@ -108,6 +113,7 @@ export const World = () => {
         <ActionInfo />
         <ArmyInfoLabel />
         <StructureInfoLabel />
+        <BattleInfoLabel />
 
         <BattleContainer>
           <BattleView />
