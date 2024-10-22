@@ -279,10 +279,7 @@ export const useQuestClaimStatus = () => {
 
   const checkPrizesClaimed = (prizes: Prize[]) => {
     return prizes.every((prize) => {
-      const value = getComponentValue(
-        Quest,
-        getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(prize.id)]),
-      );
+      const value = getComponentValue(Quest, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(prize.id)]));
       return value?.completed;
     });
   };

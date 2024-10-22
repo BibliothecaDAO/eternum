@@ -180,7 +180,7 @@ mod realm_systems {
             assert(!quest.completed, 'quest already completed');
 
             // get index
-            let quest_config: QuestConfig = get!(world, quest_id, QuestConfig);
+            let quest_config: QuestConfig = get!(world, WORLD_CONFIG_ID, QuestConfig);
             let quest_reward_config: QuestRewardConfig = get!(world, quest_id, QuestRewardConfig);
             let mut index = 0;
             loop {
@@ -197,14 +197,6 @@ mod realm_systems {
 
                 let mut quest_bonus: QuestBonus = get!(world, (entity_id, reward_resource_type), QuestBonus);
 
-                print!("\n\n quest_bonus.claimed: {}\n\n", quest_bonus.claimed);
-                print!(
-                    "\n\n !ResourceFoodImpl::is_food(reward_resource_type): {}\n\n",
-                    !ResourceFoodImpl::is_food(reward_resource_type)
-                );
-                print!("\n\n resource type: {}\n\n", reward_resource_type);
-                print!("\n\n quest id: {}\n\n", quest_id);
-                print!("\n\n entity id: {}\n\n", entity_id);
                 // scale reward resource amount by quest production multiplier
                 // if the reward resource is used to produce another resource in the realm.
                 // it will only be scaled if the quest bonus has not been claimed yet and
@@ -221,12 +213,9 @@ mod realm_systems {
 
                         let output_resource_type = get!(world, (reward_resource_type, jndex), ProductionOutput)
                             .output_resource_type;
-                        print!("\n\n output resource type: {}\n\n", output_resource_type);
                         if realm.produces_resource(output_resource_type) {
-                            print!("\n\n yay! realm produces output resource type\n\n");
                             // scale reward resource amount by quest production multiplier
                             reward_resource_amount *= quest_config.production_material_multiplier.into();
-                            print!("\n\n reward resource amount: {}\n\n", reward_resource_amount);
                             // set quest bonus as claimed
                             quest_bonus.claimed = true;
                             set!(world, (quest_bonus));
@@ -239,15 +228,12 @@ mod realm_systems {
                 }
 
                 let mut realm_resource = ResourceCustomImpl::get(world, (entity_id.into(), reward_resource_type));
-                realm_resource.add(detached_resource.resource_amount);
+                realm_resource.add(reward_resource_amount);
                 realm_resource.save(world);
-
-                print!("\n\n saved realm resource amount: {}\n\n", realm_resource.balance);
 
                 index += 1;
             };
 
-            print!("\n\n setting quest as completed\n\n");
             quest.completed = true;
             set!(world, (quest));
         }

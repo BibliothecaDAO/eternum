@@ -1,5 +1,12 @@
 import { Account } from "starknet";
-import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, QUEST_RESOURCES, QuestType, ResourcesIds } from "../constants";
+import {
+  ADMIN_BANK_ENTITY_ID,
+  ARMY_ENTITY_TYPE,
+  DONKEY_ENTITY_TYPE,
+  QUEST_RESOURCES,
+  QuestType,
+  ResourcesIds,
+} from "../constants";
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
@@ -112,7 +119,7 @@ export const setQuestConfig = async (config: Config) => {
   });
 
   console.log(`Configuring quest config ${tx.statusReceipt}...`);
-}
+};
 
 export const setQuestRewardConfig = async (config: Config) => {
   const calldataArray = [];
@@ -125,7 +132,7 @@ export const setQuestRewardConfig = async (config: Config) => {
   for (const questId of Object.keys(QUEST_RESOURCES_SCALED) as unknown as QuestType[]) {
     const calldata = {
       quest_id: questId,
-      resources: QUEST_RESOURCES_SCALED[questId]
+      resources: QUEST_RESOURCES_SCALED[questId],
     };
 
     calldataArray.push(calldata);
@@ -134,7 +141,6 @@ export const setQuestRewardConfig = async (config: Config) => {
 
   console.log(`Configuring quest reward ${tx.statusReceipt}...`);
 };
-
 
 export const setProductionConfig = async (config: Config) => {
   const calldataArray = [];
@@ -612,9 +618,7 @@ export const createAdminBank = async (config: Config) => {
 
 export const mintResources = async (config: Config) => {
   // const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
-
   // const ammResourceIds = Object.keys(ammStartingLiquidity).map(Number);
-
   // const totalResourceCount = ammResourceIds.length;
   // mint lords
   // const lordsTx = await config.provider.mint_resources({
@@ -626,7 +630,6 @@ export const mintResources = async (config: Config) => {
   //   ],
   // });
   // console.log(`Minting lords ${lordsTx.statusReceipt}...`);
-
   // // mint all other resources
   // const resources = ammResourceIds.flatMap((resourceId) => {
   //   return [
@@ -635,7 +638,6 @@ export const mintResources = async (config: Config) => {
   //       config.config.resources.resourcePrecision,
   //   ];
   // });
-
   // const resourcesTx = await config.provider.mint_resources({
   //   signer: config.account,
   //   receiver_id: ADMIN_BANK_ENTITY_ID,

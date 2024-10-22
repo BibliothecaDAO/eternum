@@ -365,7 +365,6 @@ interface ResourceCosts {
   amount: num.BigNumberish;
 }
 
-
 export interface SetQuestConfigProps extends SystemSigner {
   production_material_multiplier: num.BigNumberish;
 }

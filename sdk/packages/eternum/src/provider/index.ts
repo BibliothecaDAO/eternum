@@ -138,7 +138,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-
   public async claim_quest(props: SystemProps.ClaimQuestProps) {
     const { receiver_id, quest_ids, signer } = props;
 
@@ -684,7 +683,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_quest_reward_config",
-          calldata: [call.quest_id, call.resources.length, ...call.resources.flatMap(({ resource, amount }) => [resource, amount])],
+          calldata: [
+            call.quest_id,
+            call.resources.length,
+            ...call.resources.flatMap(({ resource, amount }) => [resource, amount]),
+          ],
         };
       }),
     );
