@@ -34,7 +34,7 @@ const INITIAL_RESOURCE_1_AMOUNT: u128 = 800;
 const INITIAL_RESOURCE_2_TYPE: u8 = 2;
 const INITIAL_RESOURCE_2_AMOUNT: u128 = 700;
 
-const REALM_FREE_MINT_CONFIG_ID: ID = 0;
+const QUEST_ID: ID = 1;
 
 fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     let world = spawn_eternum();
@@ -52,12 +52,9 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
         (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
     ];
 
-    let realm_free_mint_config_dispatcher = IQuestConfigDispatcher { contract_address: config_systems_address };
+    let quest_reward_config_dispatcher = IQuestConfigDispatcher { contract_address: config_systems_address };
 
-    let REALM_FREE_MINT_CONFIG_ID = 0;
-
-    realm_free_mint_config_dispatcher
-        .set_quest_reward_config(config_id: REALM_FREE_MINT_CONFIG_ID, resources: initial_resources.span());
+    quest_reward_config_dispatcher.set_quest_reward_config(quest_id: QUEST_ID, resources: initial_resources.span());
 
     (world, realm_systems_dispatcher)
 }
@@ -93,17 +90,15 @@ fn realm_test_realm_create() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn realm_test_mint_starting_resources() {
+fn realm_test_claim_quest_reward() {
     let (world, realm_systems_dispatcher) = setup();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
     let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
-
-    realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
+    realm_systems_dispatcher.quest_claim(QUEST_ID, realm_entity_id);
 
     let realm_initial_resource_1 = get!(world, (realm_entity_id, INITIAL_RESOURCE_1_TYPE), Resource);
-
     assert(realm_initial_resource_1.balance == INITIAL_RESOURCE_1_AMOUNT, 'wrong mint 1 amount');
 
     let realm_initial_resource_2 = get!(world, (realm_entity_id, INITIAL_RESOURCE_2_TYPE), Resource);
@@ -112,23 +107,22 @@ fn realm_test_mint_starting_resources() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ('already claimed', 'ENTRYPOINT_FAILED'))]
-fn realm_test_mint_starting_resources_twice() {
+#[should_panic(expected: ('quest already completed', 'ENTRYPOINT_FAILED'))]
+fn realm_test_claim_quest_reward_twice() {
     let (world, realm_systems_dispatcher) = setup();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
     let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
-    realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
-
-    realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
+    realm_systems_dispatcher.quest_claim(QUEST_ID, realm_entity_id);
+    realm_systems_dispatcher.quest_claim(QUEST_ID, realm_entity_id);
 }
 
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Entity is not a realm', 'ENTRYPOINT_FAILED'))]
-fn realm_test_mint_starting_resources_as_not_realm() {
+fn realm_test_claim_quest_reward__not_realm() {
     let (world, realm_systems_dispatcher) = setup();
 
     let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
@@ -142,7 +136,7 @@ fn realm_test_mint_starting_resources_as_not_realm() {
         world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
     );
 
-    realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, hyperstructure_entity_id);
+    realm_systems_dispatcher.quest_claim(QUEST_ID, hyperstructure_entity_id);
 }
 
 #[test]
