@@ -5,7 +5,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
-import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/BattleProgressBar";
+import { DurationLeft, ProgressBar } from "@/ui/modules/military/battle-view/BattleProgress";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { useMemo } from "react";
 
