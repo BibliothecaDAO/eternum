@@ -4,8 +4,8 @@ class_hash = "0x6f38d5d9507c5d9546290e1a27e309efe5a9af3770b6cc1627db4a1b90a7dce"
 original_class_hash = "0x6f38d5d9507c5d9546290e1a27e309efe5a9af3770b6cc1627db4a1b90a7dce"
 abi = "manifests/dev/deployment/abis/dojo-world.json"
 address = "0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11"
-transaction_hash = "0x44854a32f7a9892b20051cb3fb215abfcbd630b83498a9514852233080eb960"
-block_number = 237
+transaction_hash = "0x26db3d138f389503ae59e1bdc1ebec38d33c600942622dd4da8038175c24499"
+block_number = 246
 seed = "eternum"
 manifest_name = "dojo-world"
 
@@ -60,8 +60,8 @@ manifest_name = "eternum-building_systems-4b0f3026"
 [[contracts]]
 kind = "DojoContract"
 address = "0x6bde5ad6204af5e31e9b66f687f5ccd84fcefa1b61dfba9bda8ca331252e641"
-class_hash = "0x72d6f63bc2cab6fd1f6a1b6048521e3aee453665c7bc988196711f90844d846"
-original_class_hash = "0x72d6f63bc2cab6fd1f6a1b6048521e3aee453665c7bc988196711f90844d846"
+class_hash = "0x44af0b3e7b229e0ffdfb275c32b83742760b0ee7d1c06d3ad1ebbb0083f2db4"
+original_class_hash = "0x44af0b3e7b229e0ffdfb275c32b83742760b0ee7d1c06d3ad1ebbb0083f2db4"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/dev/deployment/abis/contracts/eternum-combat_systems-27f37676.json"
 reads = []
@@ -264,6 +264,20 @@ systems = [
     "set_entity_name",
 ]
 manifest_name = "eternum-name_systems-bbb2e543"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x78c5d059a124afa26aa13d8d626a009dad537d8c70f7ef1070e0283fda84889"
+class_hash = "0x3e1b39b8ec54856fe7f324de91f1497b059326fa6a8a902465d16d7888fb968"
+original_class_hash = "0x3e1b39b8ec54856fe7f324de91f1497b059326fa6a8a902465d16d7888fb968"
+base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
+abi = "manifests/dev/deployment/abis/contracts/eternum-ownership_systems-61566ab9.json"
+reads = []
+writes = []
+init_calldata = []
+tag = "eternum-ownership_systems"
+systems = ["transfer_ownership"]
+manifest_name = "eternum-ownership_systems-61566ab9"
 
 [[contracts]]
 kind = "DojoContract"
