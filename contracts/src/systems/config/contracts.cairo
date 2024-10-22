@@ -206,8 +206,9 @@ mod config_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID,
-        REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, POPULATION_CONFIG_ID
+        ResourceTypes, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
+        HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+        POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
@@ -290,6 +291,8 @@ mod config_systems {
                         resource_type, resource_amount
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                        // ensure lords can't be minted
+                        assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as part of quest");
                         assert(resource_amount > 0, 'amount must not be 0');
 
                         set!(
