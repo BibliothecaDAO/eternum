@@ -617,33 +617,33 @@ export const createAdminBank = async (config: Config) => {
 };
 
 export const mintResources = async (config: Config) => {
-  // const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
-  // const ammResourceIds = Object.keys(ammStartingLiquidity).map(Number);
-  // const totalResourceCount = ammResourceIds.length;
+  const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
+  const ammResourceIds = Object.keys(ammStartingLiquidity).map(Number);
+  const totalResourceCount = ammResourceIds.length;
   // mint lords
-  // const lordsTx = await config.provider.mint_resources({
-  //   signer: config.account,
-  //   receiver_id: ADMIN_BANK_ENTITY_ID,
-  //   resources: [
-  //     ResourcesIds.Lords,
-  //     config.config.resources.resourcePrecision * lordsLiquidityPerResource * totalResourceCount,
-  //   ],
-  // });
-  // console.log(`Minting lords ${lordsTx.statusReceipt}...`);
-  // // mint all other resources
-  // const resources = ammResourceIds.flatMap((resourceId) => {
-  //   return [
-  //     resourceId,
-  //     ammStartingLiquidity[resourceId as keyof typeof ammStartingLiquidity]! *
-  //       config.config.resources.resourcePrecision,
-  //   ];
-  // });
-  // const resourcesTx = await config.provider.mint_resources({
-  //   signer: config.account,
-  //   receiver_id: ADMIN_BANK_ENTITY_ID,
-  //   resources,
-  // });
-  // console.log(`Minting resources ${resourcesTx.statusReceipt}...`);
+  const lordsTx = await config.provider.mint_resources({
+    signer: config.account,
+    receiver_id: ADMIN_BANK_ENTITY_ID,
+    resources: [
+      ResourcesIds.Lords,
+      config.config.resources.resourcePrecision * lordsLiquidityPerResource * totalResourceCount,
+    ],
+  });
+  console.log(`Minting lords ${lordsTx.statusReceipt}...`);
+  // mint all other resources
+  const resources = ammResourceIds.flatMap((resourceId) => {
+    return [
+      resourceId,
+      ammStartingLiquidity[resourceId as keyof typeof ammStartingLiquidity]! *
+        config.config.resources.resourcePrecision,
+    ];
+  });
+  const resourcesTx = await config.provider.mint_resources({
+    signer: config.account,
+    receiver_id: ADMIN_BANK_ENTITY_ID,
+    resources,
+  });
+  console.log(`Minting resources ${resourcesTx.statusReceipt}...`);
 };
 
 export const addLiquidity = async (config: Config) => {

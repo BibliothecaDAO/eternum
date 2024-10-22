@@ -219,6 +219,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.claim_quest(props);
   };
 
+  const mint_resources = async (props: SystemProps.MintResourcesProps) => {
+    await provider.mint_resources(props);
+  };
+
   const create_hyperstructure = async (props: SystemProps.CreateHyperstructureProps) => {
     await provider.create_hyperstructure(props);
   };
@@ -347,6 +351,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     end_game: withQueueing(withErrorHandling(end_game)),
 
     claim_quest: withQueueing(withErrorHandling(claim_quest)),
+    mint_resources: withQueueing(withErrorHandling(mint_resources)),
 
     army_buy_troops: withQueueing(withErrorHandling(army_buy_troops)),
     army_merge_troops: withQueueing(withErrorHandling(army_merge_troops)),

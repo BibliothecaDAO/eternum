@@ -138,6 +138,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async mint_resources(props: SystemProps.MintResourcesProps) {
+    const { receiver_id, resources } = props;
+
+    return await this.executeAndCheckTransaction(props.signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
+      entrypoint: "mint",
+      calldata: [receiver_id, resources.length / 2, ...resources],
+    });
+  }
+
   public async claim_quest(props: SystemProps.ClaimQuestProps) {
     const { receiver_id, quest_ids, signer } = props;
 
