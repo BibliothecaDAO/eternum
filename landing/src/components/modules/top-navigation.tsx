@@ -1,9 +1,9 @@
+import CartridgeIcon from "@/assets/icons/cartridge-small.svg?react";
 import { argent, braavos, useAccount, useConnect, useInjectedConnectors } from "@starknet-react/core";
+import { useEffect } from "react";
 import { TypeH1 } from "../typography/type-h1";
 import { Button } from "../ui/button";
-
-import CartridgeIcon from "@/assets/icons/cartridge-small.svg?react";
-import { useEffect } from "react";
+import { ModeToggle } from "./mode-toggle";
 
 export const TopNavigation = () => {
   const { address, status } = useAccount();
@@ -27,6 +27,7 @@ export const TopNavigation = () => {
     <div className="flex justify-between items-center w-full">
       <TypeH1>Season 0</TypeH1>
       <div className="flex gap-2">
+        <ModeToggle />
         <Button variant="cta">
           <CartridgeIcon /> Login
         </Button>

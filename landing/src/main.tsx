@@ -5,6 +5,7 @@ import "./index.css";
 
 // Import the generated route tree
 import { StarknetProvider } from "./components/providers/Starknet";
+import { ThemeProvider } from "./components/providers/theme-provider";
 import { routeTree } from "./routeTree.gen";
 
 // Create a new router instance
@@ -23,9 +24,11 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <StarknetProvider>
-        <RouterProvider router={router} />
-      </StarknetProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <StarknetProvider>
+          <RouterProvider router={router} />
+        </StarknetProvider>
+      </ThemeProvider>
     </StrictMode>,
   );
 }

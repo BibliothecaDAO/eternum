@@ -15,7 +15,7 @@ export const Swap = () => {
         <div>0x12340...</div>
       </div>
       <Select value={fromToken} onValueChange={(value) => setFromToken(value)}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm To Transfer" />
         </SelectTrigger>
         <SelectContent>
@@ -78,7 +78,7 @@ export const SwapRow = ({
         placeholder="0.0"
         value={fromAmount}
         onChange={(e) => setFromAmount(e.target.value)}
-        className="bg-dark-brown text-2xl w-full outline-none h-16 border-none"
+        className="bg-dark-brown text-2xl w-full outline-none h-16 border-none "
       />
 
       <Select value={fromToken} onValueChange={(value) => setFromToken(value)}>
