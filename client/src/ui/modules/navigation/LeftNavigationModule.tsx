@@ -10,9 +10,10 @@ import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
+import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import {
   construction,
   military,
@@ -93,19 +94,38 @@ export const LeftNavigationModule = () => {
     [structureInfo],
   );
 
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      switch (event.key.toLowerCase()) {
+        case "e":
+          setView(view === View.EntityView ? View.None : View.EntityView);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [view, setView, toggleModal]);
+
   const navigation = useMemo(() => {
     const baseNavigation = [
       {
         name: MenuEnum.entityDetails,
         button: (
-          <CircleButton
-            image={BuildingThumbs.hex}
-            tooltipLocation="top"
-            label="Details"
-            active={view === View.EntityView}
-            size="xl"
-            onClick={() => setView(view === View.EntityView ? View.None : View.EntityView)}
-          />
+          <div className="relative">
+            <CircleButton
+              image={BuildingThumbs.hex}
+              tooltipLocation="top"
+              label="Details"
+              active={view === View.EntityView}
+              size="xl"
+              onClick={() => setView(view === View.EntityView ? View.None : View.EntityView)}
+            />
+            <KeyBoardKey invertColors={view === View.EntityView} className="absolute top-1 right-1" keyName="E" />
+          </div>
         ),
       },
       {
