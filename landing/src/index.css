@@ -41,7 +41,7 @@
   }
   .dark {
     --background: 27 50% 5%;
-    --foreground: 27 5% 90%;
+    --foreground: 26 89.1% 78.4%;
     --card: 27 50% 4%;
     --card-foreground: 27 5% 90%;
     --popover: 27 50% 5%;
@@ -65,7 +65,7 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --sidebar-background: 27 50% 5%;
-    --sidebar-foreground: 27 5% 90%;
+    --sidebar-foreground: 26 89.1% 78.4%;
     --sidebar-primary: 27 84.1% 77.8%;
     --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: -11 30% 15%;
@@ -79,7 +79,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-gold;
+    @apply bg-background ;
   }
   h1,
   h2,
