@@ -18,7 +18,6 @@ import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ResourceExchange } from "../../hyperstructures/ResourceExchange";
 import { StructureListItem } from "../../worldmap/structures/StructureListItem";
-=
 export const StructureCard = ({
   className,
   position,
