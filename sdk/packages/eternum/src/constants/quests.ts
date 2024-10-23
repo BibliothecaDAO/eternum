@@ -62,10 +62,7 @@ export const QUEST_RESOURCES: { [key in QuestType]: ResourceCost[] } = {
     { resource: ResourcesIds.Mithral, amount: 5 },
     { resource: ResourcesIds.Dragonhide, amount: 5 },
   ],
-  [QuestType.Trade]: [
-    { resource: ResourcesIds.Donkey, amount: 3 },
-    { resource: ResourcesIds.Lords, amount: 10 },
-  ],
+  [QuestType.Trade]: [{ resource: ResourcesIds.Donkey, amount: 3 }],
   [QuestType.Military]: [
     { resource: ResourcesIds.Knight, amount: 3 },
     { resource: ResourcesIds.Crossbowman, amount: 3 },
