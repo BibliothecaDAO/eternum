@@ -7,3 +7,11 @@ export const GET_USERS = graphql(`
     }
   }
 `);
+
+export const GET_USER_REALMS = graphql(`
+  query userRealms($address: String!) {
+    eternumOwnerModels(where: { owner: $address }) {
+      realm
+    }
+  }
+`);

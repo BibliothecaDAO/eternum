@@ -3,10 +3,14 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
+import { ResourcesIds } from "@bibliothecadao/eternum";
+
 export const Swap = () => {
   const [fromToken, setFromToken] = useState("");
 
   const [fromAmount, setFromAmount] = useState("");
+
+  const [realms, setRealms] = useState<string>("");
 
   return (
     <div className="w-96 flex flex-col gap-3">
@@ -14,15 +18,11 @@ export const Swap = () => {
         <div>From Wallet</div>
         <div>0x12340...</div>
       </div>
-      <Select value={fromToken} onValueChange={(value) => setFromToken(value)}>
+      <Select value={fromToken} onValueChange={(value) => setRealms(value)}>
         <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm To Transfer" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="light">1</SelectItem>
-          <SelectItem value="dark">2</SelectItem>
-          <SelectItem value="system">3</SelectItem>
-        </SelectContent>
+        <SelectContent>{/* TODO: Add User realms */}</SelectContent>
       </Select>
 
       <SwapRow
@@ -83,12 +83,16 @@ export const SwapRow = ({
 
       <Select value={fromToken} onValueChange={(value) => setFromToken(value)}>
         <SelectTrigger className="w-[180px] border-gold/15">
-          <SelectValue placeholder="Theme" />
+          <SelectValue placeholder="Select Resource" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="light">Lords</SelectItem>
-          <SelectItem value="dark">Diamonds</SelectItem>
-          <SelectItem value="system">Ruby</SelectItem>
+          {Object.values(ResourcesIds)
+            .filter((resource) => isNaN(Number(resource)))
+            .map((resource) => (
+              <SelectItem key={resource} value={resource.toString()}>
+                {resource}
+              </SelectItem>
+            ))}
         </SelectContent>
       </Select>
     </div>

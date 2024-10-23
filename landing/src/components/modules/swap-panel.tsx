@@ -4,22 +4,23 @@ import { Swap } from "./swap";
 export const SwapPanel = () => {
   return (
     <div className="border-2 rounded-xl p-3 bg-brown border-gold/15 round-tr-none rounded-bl-none">
-      <Tabs defaultValue="account">
+      <Tabs defaultValue="in">
         <TabsList className="w-full">
-          <TabsTrigger className="w-full" value="account">
+          <TabsTrigger className="w-full" value="in">
             Bridge In
           </TabsTrigger>
-          <TabsTrigger className="w-full" value="password">
+          <TabsTrigger className="w-full" value="out">
             Bridge Out
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="account">
+        <TabsContent value="in">
           <Swap />
         </TabsContent>
-        <TabsContent value="password">
+        <TabsContent value="out">
           <Swap />
         </TabsContent>
       </Tabs>
     </div>
   );
 };
+1;
