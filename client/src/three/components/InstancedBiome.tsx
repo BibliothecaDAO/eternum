@@ -1,4 +1,3 @@
-import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
@@ -142,9 +141,6 @@ export default class InstancedModel {
   updateAnimations(deltaTime: number) {
     if (this.mixer && this.animation) {
       const time = performance.now() * 0.001;
-      if (IS_LOW_GRAPHICS_ENABLED) {
-        return;
-      }
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         for (let i = 0; i < mesh.count; i++) {
           if (!this.animationActions.has(meshIndex * this.count + i)) {

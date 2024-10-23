@@ -87,12 +87,12 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.1);
     this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
@@ -176,6 +176,7 @@ export abstract class HexagonScene {
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
+    directionalLightFolder.add(this.scene, "environmentIntensity", 0, 2, 0.1);
     directionalLightFolder.close();
   }
 

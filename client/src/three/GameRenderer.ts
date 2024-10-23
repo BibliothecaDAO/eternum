@@ -163,7 +163,7 @@ export default class GameRenderer {
       this.isLowGraphicsMode ? window.innerHeight : window.innerHeight,
     );
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.4;
+    this.renderer.toneMappingExposure = 1;
     this.renderer.autoClear = false;
   }
 
@@ -290,8 +290,8 @@ export default class GameRenderer {
     const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
     const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
-    this.hexceptionScene.setEnvironment(roomEnvironment, 0.5);
-    this.worldmapScene.setEnvironment(roomEnvironment, 0.5);
+    this.hexceptionScene.setEnvironment(roomEnvironment, 0.3);
+    this.worldmapScene.setEnvironment(roomEnvironment, 0.3);
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
