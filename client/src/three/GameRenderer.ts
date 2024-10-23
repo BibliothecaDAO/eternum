@@ -4,7 +4,7 @@ import { SceneName } from "@/types";
 import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import _ from "lodash";
 import * as THREE from "three";
-import { CSS2DRenderer } from "three-stdlib";
+import { CSS2DRenderer, EffectComposer, FXAAShader, RenderPass, ShaderPass, UnrealBloomPass } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import Stats from "three/examples/jsm/libs/stats.module";
@@ -25,6 +25,8 @@ export default class GameRenderer {
   private raycaster!: THREE.Raycaster;
   private mouse!: THREE.Vector2;
   private controls!: MapControls;
+  private composer!: EffectComposer;
+  private renderPass!: RenderPass;
 
   private locationManager!: LocationManager;
 
@@ -165,6 +167,7 @@ export default class GameRenderer {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;
     this.renderer.autoClear = false;
+    this.composer = new EffectComposer(this.renderer);
   }
 
   initStats() {
@@ -283,6 +286,21 @@ export default class GameRenderer {
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
     this.applyEnvironment();
 
+    this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
+    this.composer.addPass(this.renderPass);
+
+    const fxaaPass = new ShaderPass(FXAAShader);
+    fxaaPass.uniforms["resolution"].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    this.composer.addPass(fxaaPass);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      1.25, // Интенсивность
+      0.1, // Радиус
+      0.9, // Порог
+    );
+    this.composer.addPass(bloomPass);
+
     this.sceneManager.moveCameraForScene();
   }
 
@@ -351,14 +369,16 @@ export default class GameRenderer {
     // Render the current game scene
     if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
       this.worldmapScene.update(deltaTime);
-      this.renderer.render(this.worldmapScene.getScene(), this.camera);
+      this.renderPass.scene = this.worldmapScene.getScene();
+      //this.renderer.render(this.worldmapScene.getScene(), this.camera);
       this.labelRenderer.render(this.worldmapScene.getScene(), this.camera);
     } else {
       this.hexceptionScene.update(deltaTime);
-      this.renderer.render(this.hexceptionScene.getScene(), this.camera);
+      this.renderPass.scene = this.hexceptionScene.getScene();
+      //this.renderer.render(this.hexceptionScene.getScene(), this.camera);
       this.labelRenderer.render(this.hexceptionScene.getScene(), this.camera);
     }
-
+    this.composer.render();
     // Render the HUD scene without clearing the buffer
     this.hudScene.update(deltaTime);
     this.renderer.clearDepth(); // Clear only the depth buffer

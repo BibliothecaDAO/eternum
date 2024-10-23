@@ -8,14 +8,15 @@ export class SelectedHexManager {
 
   constructor(scene: THREE.Scene) {
     this.aura = new Aura();
+    this.aura.setRenderOrder(0);
     this.aura.addToScene(scene);
     this.particles = new Particles(scene);
     this.particles.setParticleSize(0.1);
-    this.particles.setLightIntensity(5);
+    this.particles.setLightIntensity(3);
   }
 
   setPosition(x: number, z: number) {
-    this.aura.setPosition(x, 0.19, z);
+    //this.aura.setPosition(x, 0.19, z);
     this.particles.setPosition(x, 0.1, z);
   }
 
@@ -25,7 +26,7 @@ export class SelectedHexManager {
   }
 
   update(deltaTime: number) {
-    this.aura.rotate();
+    //this.aura.rotate();
     this.particles.update(deltaTime);
   }
 }

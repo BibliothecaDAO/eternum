@@ -353,7 +353,7 @@ export abstract class HexagonScene {
             const model = gltf.scene as THREE.Group;
             if (biome === "Outline") {
               ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).transparent = true;
-              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.1;
+              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.3;
             }
             const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
             this.biomeModels.set(biome as BiomeType, tmp);

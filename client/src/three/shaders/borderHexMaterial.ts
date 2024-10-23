@@ -4,6 +4,6 @@ export const interactiveHexMaterial = new THREE.MeshStandardMaterial({
   color: "green",
   vertexColors: false,
   transparent: true,
-  opacity: 0.1, // Start fully transparent
+  opacity: 0.3, // Start fully transparent
   wireframe: false,
 });
