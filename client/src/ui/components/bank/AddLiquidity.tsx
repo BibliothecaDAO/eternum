@@ -49,6 +49,7 @@ const AddLiquidity = ({
   }, [listResourceId]);
 
   useEffect(() => {
+    if (!marketManager.hasReserves()) return;
     const optimalResourceAmout = marketManager.quoteResource(lordsAmount);
     if (resourceAmount !== optimalResourceAmout) {
       setResourceAmount(optimalResourceAmout);
@@ -56,6 +57,7 @@ const AddLiquidity = ({
   }, [lordsAmount]);
 
   useEffect(() => {
+    if (!marketManager.hasReserves()) return;
     const optimalLordsAmout = marketManager.quoteLords(resourceAmount);
     if (lordsAmount !== optimalLordsAmout) {
       setLordsAmount(optimalLordsAmout);

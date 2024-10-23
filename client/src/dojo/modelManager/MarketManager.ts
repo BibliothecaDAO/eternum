@@ -20,12 +20,17 @@ export class MarketManager {
     this.player = player;
   }
 
+  public hasReserves() {
+    const market = this.getMarket();
+    return market && market.lords_amount > 0 && market.resource_amount > 0;
+  }
+
   public canRemoveLiquidity(shares: number) {
     const liquidity = this.getTotalLiquidity();
     return liquidity >= shares;
   }
 
-  public getLiquidity() {
+  public getPlayerLiquidity() {
     return getComponentValue(
       this.setup.components.Liquidity,
       getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
@@ -39,21 +44,21 @@ export class MarketManager {
     );
   }
 
-  public getSharesScaled = () => {
-    const liquidity = this.getLiquidity();
+  public getPlayerSharesScaled = () => {
+    const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0;
     return Math.floor(Number(liquidity.shares.mag) / 2 ** 64);
   };
 
   public getMyLpPercentage = () => {
-    const myShares = this.getSharesScaled();
+    const myShares = this.getPlayerSharesScaled();
     const totalShares = this.getTotalSharesScaled();
     if (totalShares === 0) return 0;
     return myShares / totalShares;
   };
 
   public getSharesUnscaled = () => {
-    const liquidity = this.getLiquidity();
+    const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0n;
     return liquidity.shares.mag;
   };
@@ -245,8 +250,8 @@ export class MarketManager {
     return Math.floor(Number(market.total_shares.mag) / 2 ** 64);
   }
 
-  public hasLiquidity() {
-    return this.getSharesScaled() > 0;
+  public playerHasLiquidity() {
+    return this.getPlayerSharesScaled() > 0;
   }
 
   public getReserves() {
