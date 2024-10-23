@@ -79,7 +79,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background ;
+    @apply bg-background;
   }
   h1,
   h2,

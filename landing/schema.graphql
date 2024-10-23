@@ -38,7 +38,7 @@ type ERC__Transfer {
 scalar Enum
 
 union ModelUnion =
-  | eternum_AcceptOrder
+    eternum_AcceptOrder
   | eternum_AcceptPartialOrder
   | eternum_AddressName
   | eternum_Army
