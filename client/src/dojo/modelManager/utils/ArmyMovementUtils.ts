@@ -23,7 +23,7 @@ const getArmyWeight = (weight: ComponentValue<ClientComponents["Weight"]["schema
   return weight.value / BigInt(EternumGlobalConfig.resources.resourcePrecision);
 };
 
-const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
+export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
   const knights = army.troops.knight_count || 0n;
   const crossbowmen = army.troops.crossbowman_count || 0n;
   const paladins = army.troops.paladin_count || 0n;
