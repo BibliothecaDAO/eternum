@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:^",
+    "@cartridge/connector": "^0.4.0",
+    "@cartridge/controller": "^0.4.0",
     "@dojoengine/core": "1.0.0-alpha.23",
     "@dojoengine/create-burner": "1.0.0-alpha.23",
     "@dojoengine/react": "1.0.0-alpha.23",
@@ -31,6 +33,8 @@
     "@react-three/drei": "^9.101.0",
     "@react-three/fiber": "^8.16.1",
     "@react-three/postprocessing": "2.16.2",
+    "@starknet-react/chains": "^3.0.2",
+    "@starknet-react/core": "^3.0.3",
     "@vercel/analytics": "^1.2.2",
     "buffer": "^6.0.3",
     "clsx": "^1.2.1",
