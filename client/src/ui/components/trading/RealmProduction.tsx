@@ -33,7 +33,7 @@ export const RealmProduction = () => {
           realms.map((realm, index) => {
             if (!realm) return;
 
-            const resourcesProduced = unpackResources(realm.resourceTypesPacked, realm.resourceTypesCount);
+            const resourcesProduced = unpackResources(realm.resourceTypesPacked);
             if (filterProduced && !resourcesProduced.includes(filterProduced)) return;
 
             const resourcesInputs = configManager.resourceInputs;

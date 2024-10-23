@@ -15,6 +15,7 @@ import { useGetMyOffers } from "./useTrade";
 
 export interface Quest {
   id: QuestId;
+  view: string;
   name: string;
   description: string | React.ReactNode;
   steps: (string | React.ReactNode)[];
@@ -269,20 +270,17 @@ const useQuestDependencies = (setup: SetupResult, account: Account | AccountInte
 export const useQuestClaimStatus = () => {
   const {
     setup: {
-      components: { HasClaimedStartingResources },
+      components: { Quest },
     },
   } = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const prizeUpdate = useEntityQuery([HasValue(HasClaimedStartingResources, { entity_id: structureEntityId || 0 })]);
+  const prizeUpdate = useEntityQuery([HasValue(Quest, { entity_id: structureEntityId || 0 })]);
 
   const checkPrizesClaimed = (prizes: Prize[]) => {
     return prizes.every((prize) => {
-      const value = getComponentValue(
-        HasClaimedStartingResources,
-        getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(prize.id)]),
-      );
-      return value?.claimed;
+      const value = getComponentValue(Quest, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(prize.id)]));
+      return value?.completed;
     });
   };
 

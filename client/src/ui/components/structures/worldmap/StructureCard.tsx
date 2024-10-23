@@ -4,6 +4,7 @@ import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -15,14 +16,15 @@ import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { StructureListItem } from "../worldmap/structures/StructureListItem";
-import { ResourceExchange } from "./ResourceExchange";
-import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
-
+import { ResourceExchange } from "../../hyperstructures/ResourceExchange";
+import { StructureListItem } from "../../worldmap/structures/StructureListItem";
+=
 export const StructureCard = ({
+  className,
   position,
   ownArmySelected,
 }: {
+  className?: string;
   position: Position;
   ownArmySelected: ArmyInfo | undefined;
 }) => {
@@ -31,7 +33,7 @@ export const StructureCard = ({
 
   return (
     Boolean(structure) && (
-      <div className="px-2 w-[31rem] py-2">
+      <div className={`px-2 py-2 ${className}`}>
         Structure
         {!showMergeTroopsPopup && (
           <StructureListItem
@@ -41,7 +43,7 @@ export const StructureCard = ({
           />
         )}
         {showMergeTroopsPopup && (
-          <div className="flex flex-col w-[100%] mt-2">
+          <div className="flex flex-col mt-2">
             {ownArmySelected && (
               <StructureMergeTroopsPanel
                 giverArmy={ownArmySelected}

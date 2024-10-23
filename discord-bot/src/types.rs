@@ -390,17 +390,16 @@ impl EventHandler {
         let entity_id = self.extract_u32(&model.children[2]);
         let owner_name: String = self.extract_string(&model.children[3]);
         let realm_name: String = self.extract_string(&model.children[4]);
-        let resource_types_packed = self.extract_u128(&model.children[5]);
-        let resource_types_count = self.extract_u8(&model.children[6]);
-        let cities = self.extract_u8(&model.children[7]);
-        let harbors = self.extract_u8(&model.children[8]);
-        let rivers = self.extract_u8(&model.children[9]);
-        let regions = self.extract_u8(&model.children[10]);
-        let wonder = self.extract_u8(&model.children[11]);
-        let order = self.extract_u8(&model.children[12]);
-        let x = self.extract_u32(&model.children[13]);
-        let y = self.extract_u32(&model.children[14]);
-        let timestamp = self.extract_u64(&model.children[15]);
+        let produced_resources = self.extract_u128(&model.children[5]);
+        let cities = self.extract_u8(&model.children[6]);
+        let harbors = self.extract_u8(&model.children[7]);
+        let rivers = self.extract_u8(&model.children[8]);
+        let regions = self.extract_u8(&model.children[9]);
+        let wonder = self.extract_u8(&model.children[10]);
+        let order = self.extract_u8(&model.children[11]);
+        let x = self.extract_u32(&model.children[12]);
+        let y = self.extract_u32(&model.children[13]);
+        let timestamp = self.extract_u64(&model.children[14]);
 
         Some(GameEventData::SettleRealm(SettleRealm {
             id,
@@ -408,8 +407,7 @@ impl EventHandler {
             entity_id,
             owner_name,
             realm_name,
-            resource_types_packed,
-            resource_types_count,
+            produced_resources,
             cities,
             harbors,
             rivers,

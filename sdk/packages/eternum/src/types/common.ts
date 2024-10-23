@@ -349,7 +349,23 @@ export interface Config {
     min_angle_increase: number;
     max_angle_increase: number;
   };
-
+  season: {
+    seasonPassAddress: string;
+    realmsAddress: string;
+    lordsAddress: string;
+  };
+  bridge: {
+    velords_fee_on_dpt_percent: number;
+    velords_fee_on_wtdr_percent: number;
+    season_pool_fee_on_dpt_percent: number;
+    season_pool_fee_on_wtdr_percent: number;
+    client_fee_on_dpt_percent: number;
+    client_fee_on_wtdr_percent: number;
+    velords_fee_recipient: ContractAddress;
+    season_pool_fee_recipient: ContractAddress;
+    max_bank_fee_dpt_percent: number;
+    max_bank_fee_wtdr_percent: number;
+  };
   buildings: {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;

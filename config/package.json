@@ -7,7 +7,7 @@
   "peerDependencies": {
     "typescript": "^5.0.0",
     "@bibliothecadao/eternum": "workspace:^",
-    "@dojoengine/core": "1.0.0-alpha.14",
-    "starknet": "6.7.0"
+    "@dojoengine/core": "1.0.0-alpha.21",
+    "starknet": "6.11.0"
   }
 }
