@@ -11,7 +11,7 @@ import { ComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { BattleActions } from "./BattleActions";
-import { BattleProgressBar } from "./BattleProgressBar";
+import { BattleProgress } from "./BattleProgress";
 import { BattleSideView } from "./BattleSideView";
 import { LockedResources } from "./LockedResources";
 import { TopScreenView } from "./TopScreenView";
@@ -69,7 +69,7 @@ export const Battle = ({
         </div>
 
         <div className="w-screen bg-brown bg-hex-bg min-h-[40vh]">
-          <BattleProgressBar
+          <BattleProgress
             battleManager={battleManager}
             ownArmySide={ownArmySide}
             attackingHealth={attackerHealth}

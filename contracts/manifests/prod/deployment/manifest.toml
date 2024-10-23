@@ -83,8 +83,8 @@ manifest_name = "eternum-combat_systems-27f37676"
 [[contracts]]
 kind = "DojoContract"
 address = "0x2e57f328fea661edb9a599af68443e1d39942b93884d2ca28c68d3f2d0ab2a3"
-class_hash = "0x3c119ff3d2637cfe52ffbf9d86e8c0320d40eea4d183c37f9a54efcb5bae0c7"
-original_class_hash = "0x3c119ff3d2637cfe52ffbf9d86e8c0320d40eea4d183c37f9a54efcb5bae0c7"
+class_hash = "0x7a73a8201546c5058efa0c52c69dca8782b8673f4cf27553fa41d1bd255fbea"
+original_class_hash = "0x7a73a8201546c5058efa0c52c69dca8782b8673f4cf27553fa41d1bd255fbea"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/prod/deployment/abis/contracts/eternum-config_systems-5f8c7cdc.json"
 reads = []
@@ -94,7 +94,8 @@ tag = "eternum-config_systems"
 systems = [
     "set_world_config",
     "set_season_config",
-    "set_mint_config",
+    "set_quest_config",
+    "set_quest_reward_config",
     "set_map_config",
     "set_capacity_config",
     "set_travel_stamina_cost_config",
@@ -280,15 +281,18 @@ manifest_name = "eternum-ownership_systems-61566ab9"
 [[contracts]]
 kind = "DojoContract"
 address = "0x36dd69a39bd95c661c011ec3e8ceeaccd351c9a7512b4cbc0434c8ec913878c"
-class_hash = "0x61a201fbee5f548090937e7a723123fb5e4dd6019b8dcd1bbd4ec11292c6e94"
-original_class_hash = "0x61a201fbee5f548090937e7a723123fb5e4dd6019b8dcd1bbd4ec11292c6e94"
+class_hash = "0x5472b39def0d27f5b1eb625fa319b1705bff4f8385f180840d10717af39ec75"
+original_class_hash = "0x5472b39def0d27f5b1eb625fa319b1705bff4f8385f180840d10717af39ec75"
 base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/prod/deployment/abis/contracts/eternum-realm_systems-2b08f0da.json"
 reads = []
 writes = []
 init_calldata = []
 tag = "eternum-realm_systems"
-systems = ["upgrade_level"]
+systems = [
+    "upgrade_level",
+    "quest_claim",
+]
 manifest_name = "eternum-realm_systems-2b08f0da"
 
 [[contracts]]
@@ -1579,30 +1583,6 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x3cb4e8e2d6bcd98f0d1bfbc7d8c06364033fde0dbba8ec1d459f10e8d63f79f"
-original_class_hash = "0x3cb4e8e2d6bcd98f0d1bfbc7d8c06364033fde0dbba8ec1d459f10e8d63f79f"
-abi = "manifests/prod/deployment/abis/models/eternum-HasClaimedStartingResources-636eaec7.json"
-tag = "eternum-HasClaimedStartingResources"
-qualified_path = "eternum::models::config::has_claimed_starting_resources"
-manifest_name = "eternum-HasClaimedStartingResources-636eaec7"
-
-[[models.members]]
-name = "entity_id"
-type = "ID"
-key = true
-
-[[models.members]]
-name = "config_id"
-type = "ID"
-key = true
-
-[[models.members]]
-name = "claimed"
-type = "bool"
-key = false
-
-[[models]]
-kind = "DojoModel"
 class_hash = "0x3e7f76d49fffd245b285f60d01890894ba559a4f873c379fa47aa3e48027cf5"
 original_class_hash = "0x3e7f76d49fffd245b285f60d01890894ba559a4f873c379fa47aa3e48027cf5"
 abi = "manifests/prod/deployment/abis/models/eternum-Health-3bf465a5.json"
@@ -2581,6 +2561,97 @@ key = false
 
 [[models]]
 kind = "DojoModel"
+class_hash = "0x557d178675bc40519e1b34058bb68386bae215a7c958231ccf686adb7235134"
+original_class_hash = "0x557d178675bc40519e1b34058bb68386bae215a7c958231ccf686adb7235134"
+abi = "manifests/prod/deployment/abis/models/eternum-Quest-18cf370a.json"
+tag = "eternum-Quest"
+qualified_path = "eternum::models::quest::quest"
+manifest_name = "eternum-Quest-18cf370a"
+
+[[models.members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "completed"
+type = "bool"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x73dad6ea4a1952ac79d17cf7066c8592e3c9f97c1e16c1743ef5d4691ce07e7"
+original_class_hash = "0x73dad6ea4a1952ac79d17cf7066c8592e3c9f97c1e16c1743ef5d4691ce07e7"
+abi = "manifests/prod/deployment/abis/models/eternum-QuestBonus-83b4b8be.json"
+tag = "eternum-QuestBonus"
+qualified_path = "eternum::models::quest::quest_bonus"
+manifest_name = "eternum-QuestBonus-83b4b8be"
+
+[[models.members]]
+name = "entity_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[models.members]]
+name = "claimed"
+type = "bool"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x218edc3b30f31d235b93dd8d77bed9fe5522bd24a3ec7b501614f27855961e7"
+original_class_hash = "0x218edc3b30f31d235b93dd8d77bed9fe5522bd24a3ec7b501614f27855961e7"
+abi = "manifests/prod/deployment/abis/models/eternum-QuestConfig-2d5813dd.json"
+tag = "eternum-QuestConfig"
+qualified_path = "eternum::models::config::quest_config"
+manifest_name = "eternum-QuestConfig-2d5813dd"
+
+[[models.members]]
+name = "config_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "production_material_multiplier"
+type = "u16"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x667744a3984b7453ca8dba09d23775983e23568eb8e2e562341c1ae3057b971"
+original_class_hash = "0x667744a3984b7453ca8dba09d23775983e23568eb8e2e562341c1ae3057b971"
+abi = "manifests/prod/deployment/abis/models/eternum-QuestRewardConfig-306f7ec5.json"
+tag = "eternum-QuestRewardConfig"
+qualified_path = "eternum::models::config::quest_reward_config"
+manifest_name = "eternum-QuestRewardConfig-306f7ec5"
+
+[[models.members]]
+name = "quest_id"
+type = "ID"
+key = true
+
+[[models.members]]
+name = "detached_resource_id"
+type = "ID"
+key = false
+
+[[models.members]]
+name = "detached_resource_count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
 class_hash = "0x69a929bc00cef87c088389192011719dfaaa467badf8032a3fa4d05aa846aac"
 original_class_hash = "0x69a929bc00cef87c088389192011719dfaaa467badf8032a3fa4d05aa846aac"
 abi = "manifests/prod/deployment/abis/models/eternum-Realm-68a0f35d.json"
@@ -2611,30 +2682,6 @@ key = false
 [[models.members]]
 name = "level"
 type = "u8"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x92a43c9c368570d80d7a167747b9606d95da18eb76d48f0d2d7ec31a8f96c7"
-original_class_hash = "0x92a43c9c368570d80d7a167747b9606d95da18eb76d48f0d2d7ec31a8f96c7"
-abi = "manifests/prod/deployment/abis/models/eternum-RealmFreeMintConfig-767aa72c.json"
-tag = "eternum-RealmFreeMintConfig"
-qualified_path = "eternum::models::config::realm_free_mint_config"
-manifest_name = "eternum-RealmFreeMintConfig-767aa72c"
-
-[[models.members]]
-name = "config_id"
-type = "ID"
-key = true
-
-[[models.members]]
-name = "detached_resource_id"
-type = "ID"
-key = false
-
-[[models.members]]
-name = "detached_resource_count"
-type = "u32"
 key = false
 
 [[models]]

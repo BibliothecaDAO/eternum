@@ -5,7 +5,6 @@ import { useRealm } from "@/hooks/helpers/useRealm";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { Check, ShieldQuestion } from "lucide-react";
@@ -14,7 +13,7 @@ import { useState } from "react";
 export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) => {
   const {
     setup: {
-      systemCalls: { mint_resources_and_claim_quest },
+      systemCalls: { claim_quest },
     },
     account: { account },
   } = useDojo();
@@ -24,22 +23,13 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
   const [isLoading, setIsLoading] = useState(false);
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
 
-  const { getQuestResources } = useRealm();
-
   const handleAllClaims = async () => {
-    const questResources = getQuestResources();
-    const resourcesToMint = quest.prizes.flatMap((prize) => {
-      const resources = questResources[prize.id];
-      return resources.flatMap((resource) => [resource.resource as number, multiplyByPrecision(resource.amount)]);
-    });
-
     setIsLoading(true);
     try {
-      await mint_resources_and_claim_quest({
+      await claim_quest({
         signer: account,
-        config_ids: quest.prizes.map((prize) => BigInt(prize.id)),
+        quest_ids: quest.prizes.map((prize) => BigInt(prize.id)),
         receiver_id: entityId,
-        resources: resourcesToMint,
       });
     } catch (error) {
       console.error(`Failed to claim resources for quest ${quest.name}:`, error);

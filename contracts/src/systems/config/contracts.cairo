@@ -29,8 +29,9 @@ trait ISeasonConfig {
 }
 
 #[dojo::interface]
-trait IRealmFreeMintConfig {
-    fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>);
+trait IQuestConfig {
+    fn set_quest_config(ref world: IWorldDispatcher, production_material_multiplier: u16);
+    fn set_quest_reward_config(ref world: IWorldDispatcher, quest_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::interface]
@@ -205,16 +206,17 @@ mod config_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID,
-        REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, POPULATION_CONFIG_ID
+        ResourceTypes, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
+        HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+        POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
     use eternum::models::combat::{Troops};
 
     use eternum::models::config::{
-        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, RealmFreeMintConfig, MapConfig,
-        TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
+        CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestConfig, QuestRewardConfig,
+        MapConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
@@ -265,9 +267,19 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl RealmFreeMintConfigCustomImpl of super::IRealmFreeMintConfig<ContractState> {
-        fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>) {
+    impl QuestConfigCustomImpl of super::IQuestConfig<ContractState> {
+        fn set_quest_config(ref world: IWorldDispatcher, production_material_multiplier: u16) {
             assert_caller_is_admin(world);
+
+            set!(world, (QuestConfig { config_id: WORLD_CONFIG_ID, production_material_multiplier }));
+        }
+
+        fn set_quest_reward_config(ref world: IWorldDispatcher, quest_id: ID, resources: Span<(u8, u128)>) {
+            // ensure caller is admin
+            assert_caller_is_admin(world);
+
+            // ensure quest id is greater than 0
+            assert!(quest_id.is_non_zero(), "quest id must be greater than 0");
 
             let detached_resource_id = world.uuid();
             let detached_resource_count = resources.len();
@@ -279,6 +291,8 @@ mod config_systems {
                         resource_type, resource_amount
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                        // ensure lords can't be minted
+                        assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as part of quest");
                         assert(resource_amount > 0, 'amount must not be 0');
 
                         set!(
@@ -299,12 +313,7 @@ mod config_systems {
                 };
             };
 
-            // we define the config indexes so we can have more than 1
-            let config_index = REALM_FREE_MINT_CONFIG_ID + config_id.into();
-
-            set!(
-                world, (RealmFreeMintConfig { config_id: config_index, detached_resource_id, detached_resource_count })
-            );
+            set!(world, (QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count }));
         }
     }
     #[abi(embed_v0)]
