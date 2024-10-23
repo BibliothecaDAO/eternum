@@ -19,7 +19,7 @@ class TroopConfig {
     advantagePercent,
     disadvantagePercent,
     battleTimeScale,
-    battleMaxTimeSeconds
+    battleMaxTimeSeconds,
   ) {
     this.health = health;
     this.knightStrength = knightStrength;
@@ -248,19 +248,27 @@ class Battle {
       return [1, 1];
     }
 
-     const biggerStrength = attackStrength >= defenceStrength ? attackStrength : defenceStrength;
-     const smallerStrength = attackStrength <= defenceStrength ? attackStrength : defenceStrength
+    const biggerStrength = attackStrength >= defenceStrength ? attackStrength : defenceStrength;
+    const smallerStrength = attackStrength <= defenceStrength ? attackStrength : defenceStrength;
     // Calculate damage received
     const attackSecondsToDie = 1 + Math.floor((100 * this.attackArmy.count()) / 10 / defenceStrength);
     const attackSecondsTillDeathScaled =
-      1 + Math.floor((this.attackArmy.count() * attackSecondsToDie) / this.config.battleTimeScale);    
-    const attackTT = Math.floor(this.config.battleMaxTimeSeconds * attackSecondsTillDeathScaled * smallerStrength / (attackSecondsTillDeathScaled + 100_000) / biggerStrength);
+      1 + Math.floor((this.attackArmy.count() * attackSecondsToDie) / this.config.battleTimeScale);
+    const attackTT = Math.floor(
+      (this.config.battleMaxTimeSeconds * attackSecondsTillDeathScaled * smallerStrength) /
+        (attackSecondsTillDeathScaled + 100_000) /
+        biggerStrength,
+    );
     const attackDamageReceived = 1 + Math.floor(this.attackHealth.current / attackTT);
 
     const defenceSecondsToDie = 1 + Math.floor((100 * this.defenceArmy.count()) / 10 / attackStrength);
     const defenceSecondsTillDeathScaled =
       1 + Math.floor((this.defenceArmy.count() * defenceSecondsToDie) / this.config.battleTimeScale);
-    const defenceTT = Math.floor(this.config.battleMaxTimeSeconds * defenceSecondsTillDeathScaled * smallerStrength / (defenceSecondsTillDeathScaled + 100_000) / biggerStrength);
+    const defenceTT = Math.floor(
+      (this.config.battleMaxTimeSeconds * defenceSecondsTillDeathScaled * smallerStrength) /
+        (defenceSecondsTillDeathScaled + 100_000) /
+        biggerStrength,
+    );
     const defenceDamageReceived = 1 + Math.floor(this.defenceHealth.current / defenceTT);
 
     return [defenceDamageReceived, attackDamageReceived];
