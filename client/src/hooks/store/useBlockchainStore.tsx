@@ -44,8 +44,6 @@ export const useFetchBlockchainData = () => {
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Default)]),
     );
 
-    console.log(tickConfigArmies, tickConfigDefault);
-
     const fetchBlockchainTimestamp = async () => {
       const timestamp = Math.floor(Date.now() / 1000);
 
@@ -58,8 +56,10 @@ export const useFetchBlockchainData = () => {
 
     fetchBlockchainTimestamp(); // Initial fetch
 
+    const intervalId = setInterval(fetchBlockchainTimestamp, 10000);
+
     return () => {
-      clearInterval(setInterval(fetchBlockchainTimestamp, 10000));
+      clearInterval(intervalId);
     };
   }, []);
 };
