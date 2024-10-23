@@ -1,7 +1,8 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { configManager, SetupResult } from "../setup";
+import { ClientComponents } from "../createClientComponents";
 
 export class MarketManager {
   bankEntityId: ID;
@@ -251,5 +252,28 @@ export class MarketManager {
   public getReserves() {
     const market = this.getMarket();
     return [Number(market?.lords_amount || 0n), Number(market?.resource_amount || 0n)];
+  }
+
+  public getLatestLiquidityEvent(playerStructureIds: ID[]) {
+    let mostRecentEvent: ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null = null;
+
+    playerStructureIds.forEach((structureId) => {
+      const liquidityEvents = runQuery([
+        HasValue(this.setup.components.events.LiquidityEvent, {
+          bank_entity_id: this.bankEntityId,
+          entity_id: structureId,
+          resource_type: this.resourceId,
+        }),
+      ]);
+
+      liquidityEvents.forEach((event) => {
+        const eventInfo = getComponentValue(this.setup.components.events.LiquidityEvent, event);
+        if (eventInfo && (!mostRecentEvent || eventInfo.timestamp > mostRecentEvent.timestamp)) {
+          mostRecentEvent = eventInfo;
+        }
+      });
+    });
+
+    return mostRecentEvent as ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null;
   }
 }
