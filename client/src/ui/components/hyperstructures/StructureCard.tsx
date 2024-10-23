@@ -1,6 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
@@ -13,6 +14,7 @@ import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import clsx from "clsx";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
@@ -28,10 +30,31 @@ export const StructureCard = ({
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
   const structure = useStructureAtPosition(position.getContract());
 
+  const { handleUrlChange } = useQuery();
+
+  const goToHexView = () => {
+    const url = position.toHexLocationUrl();
+    handleUrlChange(url);
+  };
+
   return (
     Boolean(structure) && (
       <div className="px-2 w-[31rem] py-2">
-        Structure
+        <div className="flex flex-row">
+          Structure
+          <div className="ml-2">
+            <Button
+              variant="outline"
+              size="xs"
+              className={clsx("self-center")}
+              onClick={() => {
+                goToHexView();
+              }}
+            >
+              {"View"}
+            </Button>
+          </div>
+        </div>
         {!showMergeTroopsPopup && (
           <StructureListItem
             structure={structure!}
