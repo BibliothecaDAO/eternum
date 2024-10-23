@@ -51,24 +51,24 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
   [RealmLevelNames.Empire]: "/models/buildings/castle3.glb",
 };
 
-const BASE_PATH = "/models/bevel-biomes/";
+const BASE_PATH = "/models/biomes/";
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
-  DeepOcean: BASE_PATH + "deepocean.glb",
+  DeepOcean: BASE_PATH + "ocean.glb",
   Ocean: BASE_PATH + "ocean.glb",
   Beach: BASE_PATH + "beach.glb",
   Scorched: BASE_PATH + "scorched.glb",
   Bare: BASE_PATH + "bare.glb",
   Tundra: BASE_PATH + "tundra.glb",
   Snow: BASE_PATH + "snow.glb",
-  TemperateDesert: BASE_PATH + "temperatedessert.glb",
-  Shrubland: BASE_PATH + "shrublands.glb",
+  TemperateDesert: BASE_PATH + "temperateDesert.glb",
+  Shrubland: BASE_PATH + "shrubland.glb",
   Taiga: BASE_PATH + "taiga.glb",
   Grassland: BASE_PATH + "grassland.glb",
   TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
-  TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
-  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
+  SubtropicalDesert: BASE_PATH + "temperateDesert.glb",
+  TropicalSeasonalForest: BASE_PATH + "deciduousforest.glb",
+  TropicalRainForest: BASE_PATH + "deciduousforest.glb",
   Outline: BASE_PATH + "outline.glb",
 };
 

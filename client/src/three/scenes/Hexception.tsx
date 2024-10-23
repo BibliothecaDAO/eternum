@@ -559,6 +559,10 @@ export default class HexceptionScene extends HexagonScene {
       dummy.position.z = position.z;
       dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+      const rotationSeed = this.hashCoordinates(position.col, position.row);
+      const rotationIndex = Math.floor(rotationSeed * 6);
+      const randomRotation = (rotationIndex * Math.PI) / 3;
+      dummy.rotation.y = randomRotation;
       dummy.updateMatrix();
       biomeHexes[biome].push(dummy.matrix.clone());
     });
