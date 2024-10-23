@@ -17,13 +17,15 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { StructureListItem } from "../worldmap/structures/StructureListItem";
-import { ResourceExchange } from "./ResourceExchange";
+import { ResourceExchange } from "../../hyperstructures/ResourceExchange";
+import { StructureListItem } from "../../worldmap/structures/StructureListItem";
 
 export const StructureCard = ({
+  className,
   position,
   ownArmySelected,
 }: {
+  className?: string;
   position: Position;
   ownArmySelected: ArmyInfo | undefined;
 }) => {
@@ -39,7 +41,7 @@ export const StructureCard = ({
 
   return (
     Boolean(structure) && (
-      <div className="px-2 w-[31rem] py-2">
+      <div className={`px-2 py-2 ${className}`}>
         <div className="flex flex-row">
           Structure
           <div className="ml-2">
@@ -63,7 +65,7 @@ export const StructureCard = ({
           />
         )}
         {showMergeTroopsPopup && (
-          <div className="flex flex-col w-[100%] mt-2">
+          <div className="flex flex-col mt-2">
             {ownArmySelected && (
               <StructureMergeTroopsPanel
                 giverArmy={ownArmySelected}
