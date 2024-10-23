@@ -250,11 +250,12 @@ impl TroopsImpl of TroopsTrait {
         /// limit time till death using the formula
         /// (x * n)/(n + 100_000) * smaller_strength / bigger_strength
         /// where x is the max time, n is the scaled time till death
-        let self_seconds_till_death_limited: u256 = (troop_config.battle_max_time_seconds.into()
-            * self_seconds_till_death_scaled.into()
-            * smaller_strength.into())
-            / (self_seconds_till_death_scaled.into() + 100_000)
-            / bigger_strength.into();
+        let self_seconds_till_death_limited: u256 = 1
+            + ((troop_config.battle_max_time_seconds.into()
+                * self_seconds_till_death_scaled.into()
+                * smaller_strength.into())
+                / (self_seconds_till_death_scaled.into() + 100_000)
+                / bigger_strength.into());
         let self_seconds_till_death_limited: u64 = self_seconds_till_death_limited.try_into().unwrap();
 
         /// calculate damage received based on seconds till death
@@ -275,13 +276,13 @@ impl TroopsImpl of TroopsTrait {
         /// limit time till death using the formula
         /// (x * n)/(n + 100_000) * smaller_strength / bigger_strength
         /// where x is the max time, n is the scaled time till death
-        let enemy_seconds_till_death_limited: u256 = (troop_config.battle_max_time_seconds.into()
-            * enemy_seconds_till_death_scaled.into()
-            * smaller_strength.into())
-            / (enemy_seconds_till_death_scaled.into() + 100_000)
-            / bigger_strength.into();
+        let enemy_seconds_till_death_limited: u256 = 1
+            + ((troop_config.battle_max_time_seconds.into()
+                * enemy_seconds_till_death_scaled.into()
+                * smaller_strength.into())
+                / (enemy_seconds_till_death_scaled.into() + 100_000)
+                / bigger_strength.into());
         let enemy_seconds_till_death_limited: u64 = enemy_seconds_till_death_limited.try_into().unwrap();
-
         /// calculate damage received based on seconds till death
         /// we add 1 to prevent division by 0 errors
         let enemy_damage_received: u64 = 1

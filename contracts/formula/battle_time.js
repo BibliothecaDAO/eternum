@@ -254,22 +254,26 @@ class Battle {
     const attackSecondsToDie = 1 + Math.floor((100 * this.attackArmy.count()) / 10 / defenceStrength);
     const attackSecondsTillDeathScaled =
       1 + Math.floor((this.attackArmy.count() * attackSecondsToDie) / this.config.battleTimeScale);
-    const attackTT = Math.floor(
-      (this.config.battleMaxTimeSeconds * attackSecondsTillDeathScaled * smallerStrength) /
-        (attackSecondsTillDeathScaled + 100_000) /
-        biggerStrength,
-    );
-    const attackDamageReceived = 1 + Math.floor(this.attackHealth.current / attackTT);
+    const attackSecondsTillDeathLimited =
+      1 +
+      Math.floor(
+        (this.config.battleMaxTimeSeconds * attackSecondsTillDeathScaled * smallerStrength) /
+          (attackSecondsTillDeathScaled + 100_000) /
+          biggerStrength,
+      );
+    const attackDamageReceived = 1 + Math.floor(this.attackHealth.current / attackSecondsTillDeathLimited);
 
     const defenceSecondsToDie = 1 + Math.floor((100 * this.defenceArmy.count()) / 10 / attackStrength);
     const defenceSecondsTillDeathScaled =
       1 + Math.floor((this.defenceArmy.count() * defenceSecondsToDie) / this.config.battleTimeScale);
-    const defenceTT = Math.floor(
-      (this.config.battleMaxTimeSeconds * defenceSecondsTillDeathScaled * smallerStrength) /
-        (defenceSecondsTillDeathScaled + 100_000) /
-        biggerStrength,
-    );
-    const defenceDamageReceived = 1 + Math.floor(this.defenceHealth.current / defenceTT);
+    const defenceSecondsTillDeathLimited =
+      1 +
+      Math.floor(
+        (this.config.battleMaxTimeSeconds * defenceSecondsTillDeathScaled * smallerStrength) /
+          (defenceSecondsTillDeathScaled + 100_000) /
+          biggerStrength,
+      );
+    const defenceDamageReceived = 1 + Math.floor(this.defenceHealth.current / defenceSecondsTillDeathLimited);
 
     return [defenceDamageReceived, attackDamageReceived];
   }
