@@ -116,6 +116,7 @@ fn get_combat_config() -> TroopConfig {
         battle_leave_slash_num: 25,
         battle_leave_slash_denom: 100,
         battle_time_scale: 1000,
+        battle_max_time_seconds: 2 * 86400
     };
 }
 
