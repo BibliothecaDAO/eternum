@@ -198,6 +198,11 @@ export abstract class HexagonScene {
     return this.camera;
   }
 
+  public setEnvironment(texture: THREE.Texture, intensity: number = 1) {
+    this.scene.environment = texture;
+    this.scene.environmentIntensity = intensity;
+  }
+
   public closeNavigationViews() {
     this.state.setLeftNavigationView(LeftView.None);
     this.state.setRightNavigationView(RightView.None);

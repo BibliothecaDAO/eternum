@@ -6,6 +6,7 @@ import _ from "lodash";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { SceneManager } from "./SceneManager";
 import { TransitionManager } from "./components/TransitionManager";
@@ -111,6 +112,19 @@ export default class GameRenderer {
     );
     moveCameraFolder.close();
 
+    const rendererFolder = GUIManager.addFolder("Renderer");
+    rendererFolder
+      .add(this.renderer, "toneMapping", {
+        "No Tone Mapping": THREE.NoToneMapping,
+        "Linear Tone Mapping": THREE.LinearToneMapping,
+        "Reinhard Tone Mapping": THREE.ReinhardToneMapping,
+        "Cineon Tone Mapping": THREE.CineonToneMapping,
+        "ACESFilmic Tone Mapping": THREE.ACESFilmicToneMapping,
+      })
+      .name("Tone Mapping");
+    rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
+    rendererFolder.close();
+
     this.waitForLabelRendererElement().then((labelRendererElement) => {
       this.labelRendererElement = labelRendererElement;
       this.initializeLabelRenderer();
@@ -149,7 +163,7 @@ export default class GameRenderer {
       this.isLowGraphicsMode ? window.innerHeight : window.innerHeight,
     );
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.7;
+    this.renderer.toneMappingExposure = 0.4;
     this.renderer.autoClear = false;
   }
 
@@ -253,7 +267,7 @@ export default class GameRenderer {
     }
   };
 
-  renderModels() {
+  async renderModels() {
     this.transitionManager = new TransitionManager(this.renderer);
 
     this.sceneManager = new SceneManager(this.transitionManager);
@@ -267,8 +281,17 @@ export default class GameRenderer {
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
+    this.applyEnvironment();
 
     this.sceneManager.moveCameraForScene();
+  }
+
+  applyEnvironment() {
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
+    this.hexceptionScene.setEnvironment(roomEnvironment, 0.5);
+    this.worldmapScene.setEnvironment(roomEnvironment, 0.5);
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
