@@ -585,7 +585,8 @@ pub struct TroopConfig {
     battle_leave_slash_denom: u8,
     // 1_000. multiply this number by 2 to reduce battle time by 2x,
     // and reduce by 2x to increase battle time by 2x, etc
-    battle_time_scale: u16
+    battle_time_scale: u16,
+    battle_max_time_seconds: u64
 }
 
 

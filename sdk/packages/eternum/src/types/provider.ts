@@ -448,6 +448,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   battle_leave_slash_num: num.BigNumberish;
   battle_leave_slash_denom: num.BigNumberish;
   battle_time_scale: num.BigNumberish;
+  battle_max_time_seconds: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
