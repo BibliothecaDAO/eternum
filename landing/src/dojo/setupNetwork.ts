@@ -1,6 +1,5 @@
 import { EternumProvider } from "@bibliothecadao/eternum";
 import { DojoConfig } from "@dojoengine/core";
-import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
 
 import { BurnerManager } from "@dojoengine/create-burner";
@@ -37,7 +36,6 @@ export async function setupNetwork({ ...config }: DojoConfig) {
 
   return {
     toriiClient,
-    contractComponents: defineContractComponents(world),
     provider,
     world,
     burnerManager,

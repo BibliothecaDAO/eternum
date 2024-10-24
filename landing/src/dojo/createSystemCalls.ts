@@ -311,7 +311,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.mint_test_realm(props);
   };
 
-  const mint_season_passes = async (props: SystemProps.MintSeasonPassProps) => {
+  const mint_season_passes = async (props: SystemProps.MintSeasonPassesProps) => {
     await provider.mint_season_passes(props);
   };
 

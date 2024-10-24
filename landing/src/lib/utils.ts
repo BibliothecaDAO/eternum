@@ -1,17 +1,11 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
-
 import {
   BuildingType,
   ContractAddress,
   EternumGlobalConfig,
-  ResourcesIds,
-  TickIds,
   type ID,
   type Position,
-  type Resource,
+  type Resource
 } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -211,16 +205,6 @@ export const isRealmSelected = (structureEntityId: ID, structures: any) => {
   return selectedStructure?.category === "Realm";
 };
 
-export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
-  const configManager = ClientConfigManager.instance();
-
-  return resources.reduce(
-    (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
-    0,
-  );
-};
-
 export const formatSecondsInHoursMinutes = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -237,12 +221,6 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
     buildingId === BuildingType.ArcheryRange ||
     buildingId === BuildingType.Stable
   );
-};
-
-export const currentTickCount = (time: number) => {
-  const configManager = ClientConfigManager.instance();
-  const tickIntervalInSeconds = configManager.getTick(TickIds.Armies) || 1;
-  return Number(time / tickIntervalInSeconds);
 };
 
 export function gramToKg(grams: number): number {
@@ -311,66 +289,6 @@ const accentsToAscii = (str: string) => {
 export const toValidAscii = (str: string) => {
   const intermediateString = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   return accentsToAscii(intermediateString);
-};
-
-export const computeTravelFoodCosts = (
-  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
-) => {
-  const configManager = ClientConfigManager.instance();
-
-  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
-  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
-  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
-
-  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
-  const knightCount = divideByPrecision(Number(troops?.knight_count));
-  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
-
-  const paladinWheatConsumption = paladinFoodConsumption.travelWheatBurnAmount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.travelWheatBurnAmount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travelWheatBurnAmount * crossbowmanCount;
-
-  const paladinFishConsumption = paladinFoodConsumption.travelFishBurnAmount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.travelFishBurnAmount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travelFishBurnAmount * crossbowmanCount;
-
-  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
-  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
-
-  return {
-    wheatPayAmount,
-    fishPayAmount,
-  };
-};
-
-export const computeExploreFoodCosts = (
-  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
-) => {
-  const configManager = ClientConfigManager.instance();
-
-  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
-  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
-  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
-
-  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
-  const knightCount = divideByPrecision(Number(troops?.knight_count));
-  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
-
-  const paladinWheatConsumption = paladinFoodConsumption.exploreWheatBurnAmount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.exploreWheatBurnAmount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.exploreWheatBurnAmount * crossbowmanCount;
-
-  const paladinFishConsumption = paladinFoodConsumption.exploreFishBurnAmount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.exploreFishBurnAmount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.exploreFishBurnAmount * crossbowmanCount;
-
-  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
-  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
-
-  return {
-    wheatPayAmount,
-    fishPayAmount,
-  };
 };
 
 export const separateCamelCase = (str: string): string => {
