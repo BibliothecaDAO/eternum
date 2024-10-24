@@ -3,7 +3,14 @@ import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SceneName } from "@/types";
 import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import _ from "lodash";
-import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, RenderPass } from "postprocessing";
+import {
+  BloomEffect,
+  BrightnessContrastEffect,
+  EffectComposer,
+  EffectPass,
+  FXAAEffect,
+  RenderPass,
+} from "postprocessing";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -292,6 +299,10 @@ export default class GameRenderer {
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
 
+    const obj = { brightness: 0, contrast: 0.3 };
+    const folder = GUIManager.addFolder("BrightnesContrastt");
+    folder.add(obj, "brightness").name("Brightness").min(-1).max(1).step(0.01);
+    folder.add(obj, "contrast").name("Contrast").min(-1).max(1).step(0.01);
     this.composer.addPass(
       new EffectPass(
         this.camera,
@@ -301,6 +312,10 @@ export default class GameRenderer {
           luminanceThreshold: 1.1,
           mipmapBlur: true,
           intensity: 0.15,
+        }),
+        new BrightnessContrastEffect({
+          brightness: obj.brightness,
+          contrast: obj.contrast,
         }),
       ),
     );
