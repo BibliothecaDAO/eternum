@@ -1,6 +1,6 @@
 import { AnimatedGrid } from "@/components/modules/animated-grid";
 import { DataCard } from "@/components/modules/data-card";
-import { execute } from "@/hooks/gql";
+import { execute } from "@/hooks/gql/execute";
 import { GET_USERS } from "@/hooks/query/players";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
