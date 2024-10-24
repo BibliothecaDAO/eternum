@@ -9,6 +9,7 @@ import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
@@ -21,7 +22,6 @@ import Minimap from "../components/Minimap";
 import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
 import { StructurePreview } from "../components/StructurePreview";
-import { LocationManager } from "../helpers/LocationManager";
 import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
@@ -240,31 +240,40 @@ export default class WorldmapScene extends HexagonScene {
     return !isStructure && isExplored && !isOcean;
   }
 
-  protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-    const isBattle = this.battleManager.battles.hasByPosition(position);
-    if (isBattle) return;
-    const url = position.toHexLocationUrl();
-    LocationManager.updateUrl(url);
-  }
+  protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
   protected onHexagonClick(hexCoords: HexPosition | null) {
-    if (!hexCoords) {
-      return;
-    }
+    if (!hexCoords) return;
+
     const buildingType = this.structurePreview?.getPreviewStructure();
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
-      const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
-      this.tileManager.placeStructure(this.structureEntityId, buildingType.type, normalizedHexCoords);
-      this.clearEntitySelection();
+      this.handleStructurePlacement(hexCoords);
     } else {
-      const position = getWorldPositionForHex(hexCoords);
+      this.handleHexSelection(hexCoords);
+    }
+  }
+
+  protected handleStructurePlacement(hexCoords: HexPosition) {
+    const buildingType = this.structurePreview?.getPreviewStructure();
+    if (!buildingType) return;
+
+    const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition);
+    this.clearEntitySelection();
+  }
+
+  protected handleHexSelection(hexCoords: HexPosition) {
+    const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const position = getWorldPositionForHex(hexCoords);
+    if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
       this.selectedHexManager.setPosition(position.x, position.z);
       this.state.setSelectedHex({
-        col: hexCoords.col + FELT_CENTER,
-        row: hexCoords.row + FELT_CENTER,
+        col: contractHexPosition.x,
+        row: contractHexPosition.y,
       });
+    } else {
+      this.state.setLeftNavigationView(View.EntityView);
     }
   }
 
