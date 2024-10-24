@@ -1742,6 +1742,30 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+
+      LiquidityEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            bank_entity_id: RecsType.Number,
+            entity_id: RecsType.Number,
+            resource_type: RecsType.Number,
+            lords_amount: RecsType.BigInt,
+            resource_amount: RecsType.BigInt,
+            resource_price: RecsType.BigInt,
+            add: RecsType.Boolean,
+            timestamp: RecsType.BigInt,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "LiquidityEvent",
+              types: ["u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
     },
   };
 };

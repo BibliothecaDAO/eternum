@@ -8,6 +8,7 @@ import {
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   ID,
+  Position,
   RealmLevels,
   ResourcesIds,
   StructureType,
@@ -296,15 +297,12 @@ export class TileManager {
     });
   };
 
-  placeStructure = async (entityId: ID, structureType: StructureType, hexCoords: HexPosition) => {
+  placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
     if (structureType == StructureType.Hyperstructure) {
       await this.setup.systemCalls.create_hyperstructure({
         signer: this.setup.network.burnerManager.account!,
         creator_entity_id: entityId,
-        coords: {
-          x: hexCoords.col,
-          y: hexCoords.row,
-        },
+        coords,
       });
     }
   };
