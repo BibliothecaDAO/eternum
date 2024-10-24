@@ -53,7 +53,7 @@ mod dev_realm_systems {
 
             // mint season pass to this contract
             ISeasonPassMintDispatcher { contract_address: season.season_pass_address }
-                .mint(starknet::get_caller_address(), realm_id.into());
+                .mint(starknet::get_contract_address(), realm_id.into());
 
             // mint free lords attached to season pass
             ILordsMintDispatcher { contract_address: season.lords_address }.mint(realm_id.into());
