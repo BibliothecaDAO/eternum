@@ -1,39 +1,43 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GetRealmsQuery } from "@/hooks/gql";
-import { useState } from "react";
+import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { TypeP } from "../typography/type-p";
 
-export interface Realm {
-  title: string;
-  checked?: boolean;
-  owner?: string;
-  name?: string;
+export interface RealmCardProps {
+  realm: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["ercBalance"]>[0]>;
+  toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
+  isSelected?: boolean;
 }
 
-export const RealmCard = ({ tokenMetadata, description, checked: initialChecked, owner, name }: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["ercBalance"]>[0]>) => {
-  const [isChecked, setIsChecked] = useState(initialChecked);
+export const RealmCard = ({
+  realm: {
+    tokenMetadata: { tokenId, contractAddress },
+  },
+  isSelected,
+  toggleNftSelection,
+}: RealmCardProps) => {
 
   const handleCardClick = () => {
-    const newCheckedState = !isChecked;
-    setIsChecked(newCheckedState);
+    if (toggleNftSelection) {
+      toggleNftSelection(tokenId.toString(), contractAddress ?? "0x");
+    }
   };
 
   return (
     <Card
       onClick={handleCardClick}
-      className={`cursor-pointer transition-all duration-200 hover:border-gold ${isChecked ? "border-gold" : ""}`}
+      className={`cursor-pointer transition-all duration-200 hover:border-gold ${isSelected ? "border-gold" : ""}`}
     >
       <CardHeader>
         <CardTitle className="flex justify-between items-center gap-2">
-          ID: {Number(tokenMetadata.tokenId)}
-          <Checkbox checked={isChecked} />
+          ID: {Number(tokenId)}
+          <Checkbox checked={isSelected} />
         </CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription>{/*description*/}</CardDescription>
       </CardHeader>
       <CardContent>
-        <TypeP>{owner}</TypeP>
-        {name && <TypeP>{name}</TypeP>}
+        <TypeP>{/*owner*/}Owner</TypeP>
+        {/*name && <TypeP>{name}</TypeP>*/}
       </CardContent>
     </Card>
   );
