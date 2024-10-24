@@ -16,8 +16,8 @@ import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { ID } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
 
@@ -25,6 +25,8 @@ import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getChancesOfSuccess, getMaxResourceAmountStolen, getTroopLossOnRaid } from "./utils";
 
 enum Loading {
   None,
@@ -55,6 +57,7 @@ export const BattleActions = ({
   const {
     account: { account },
     setup: {
+      components: { TroopConfig },
       systemCalls: { battle_leave, battle_start, battle_claim, battle_leave_and_claim, battle_force_start },
     },
   } = dojo;
@@ -213,15 +216,32 @@ export const BattleActions = ({
   );
 
   const mouseEnterRaid = useCallback(() => {
+    const troopConfig = getComponentValue(TroopConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    if (!troopConfig) return 0;
+
+    const raidSuccessPercentage = getChancesOfSuccess(selectedArmy, defenderArmy, troopConfig) * 100;
+
+    const maxResourceAmountStolen = getMaxResourceAmountStolen(selectedArmy, defenderArmy, troopConfig);
+    const [attackerTroopsLoss, defenseTroopsLoss] = getTroopLossOnRaid(selectedArmy, defenderArmy, troopConfig);
+    let content = [
+      <div>Raid outcome:</div>,
+      <div>Your troops loss: {Number(attackerTroopsLoss)}</div>,
+      <div>Defender troops loss: {Number(defenseTroopsLoss)}</div>,
+      <div>Success chance: {raidSuccessPercentage.toFixed(2)}%</div>,
+      <div>Max weight of random resources stolen: {maxResourceAmountStolen}</div>,
+    ];
+
     if (raidStatus !== RaidStatus.isRaidable) {
       setTooltip({ content: <div>{raidStatus}</div>, position: "top" });
     } else if (selectedArmy?.battle_id !== 0) {
-      setTooltip({
-        content: <div>Raiding will make you leave and lose 25% of your army</div>,
-        position: "top",
-      });
+      content.push(<div>Raiding will make you leave and lose 25% of your army</div>);
     }
-  }, [raidStatus, selectedArmy]);
+
+    setTooltip({
+      content: <div>{content}</div>,
+      position: "top",
+    });
+  }, [raidStatus, selectedArmy, defenderArmy]);
 
   const mouseEnterLeave = useCallback(() => {
     if (leaveStatus !== LeaveStatus.Leave) {

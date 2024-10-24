@@ -1,25 +1,34 @@
-// battle_time_calculator.js
+import { EternumGlobalConfig } from "../constants";
 
-class Percentage {
+export class Percentage {
   static _100() {
     return 10_000;
   }
 
-  static get(value, numerator) {
+  static get(value: number, numerator: number) {
     return (value * numerator) / Percentage._100();
   }
 }
 
-class TroopConfig {
+export class TroopConfig {
+  health: number;
+  knightStrength: number;
+  paladinStrength: number;
+  crossbowmanStrength: number;
+  advantagePercent: number;
+  disadvantagePercent: number;
+  battleTimeScale: number;
+  battleMaxTimeSeconds: number;
+
   constructor(
-    health,
-    knightStrength,
-    paladinStrength,
-    crossbowmanStrength,
-    advantagePercent,
-    disadvantagePercent,
-    battleTimeScale,
-    battleMaxTimeSeconds,
+    health: number,
+    knightStrength: number,
+    paladinStrength: number,
+    crossbowmanStrength: number,
+    advantagePercent: number,
+    disadvantagePercent: number,
+    battleTimeScale: number,
+    battleMaxTimeSeconds: number,
   ) {
     this.health = health;
     this.knightStrength = knightStrength;
@@ -32,66 +41,67 @@ class TroopConfig {
   }
 }
 
-const TroopType = {
-  KNIGHT: 1,
-  PALADIN: 2,
-  CROSSBOWMAN: 3,
-};
+export class TroopsSimulator {
+  knight_count: bigint;
+  paladin_count: bigint;
+  crossbowman_count: bigint;
 
-class Troops {
-  constructor(knightCount, paladinCount, crossbowmanCount) {
-    this.knightCount = knightCount * Troops.normalizationFactor();
-    this.paladinCount = paladinCount * Troops.normalizationFactor();
-    this.crossbowmanCount = crossbowmanCount * Troops.normalizationFactor();
+  constructor(knight_count: bigint, paladin_count: bigint, crossbowman_count: bigint) {
+    this.knight_count = knight_count;
+    this.paladin_count = paladin_count;
+    this.crossbowman_count = crossbowman_count;
   }
 
   count() {
-    return this.knightCount + this.paladinCount + this.crossbowmanCount;
+    return this.knight_count + this.paladin_count + this.crossbowman_count;
   }
 
-  fullHealth(config) {
-    const singleTroopHealth = config.health;
-    const totalKnightHealth = singleTroopHealth * this.knightCount;
-    const totalPaladinHealth = singleTroopHealth * this.paladinCount;
-    const totalCrossbowmanHealth = singleTroopHealth * this.crossbowmanCount;
+  fullHealth(config: TroopConfig) {
+    const singleTroopHealth = BigInt(config.health);
+    const totalKnightHealth = singleTroopHealth * this.knight_count;
+    const totalPaladinHealth = singleTroopHealth * this.paladin_count;
+    const totalCrossbowmanHealth = singleTroopHealth * this.crossbowman_count;
     return totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth;
   }
 
   static normalizationFactor() {
-    return 1000;
+    return BigInt(EternumGlobalConfig.resources.resourcePrecision);
   }
 }
 
-class Health {
-  constructor(current, lifetime) {
-    this.current = current;
-    this.lifetime = lifetime;
+export class Health {
+  current: bigint;
+  lifetime: bigint;
+
+  constructor(health: { current: bigint; lifetime: bigint }) {
+    this.current = health.current * TroopsSimulator.normalizationFactor();
+    this.lifetime = health.lifetime * TroopsSimulator.normalizationFactor();
   }
 
-  stepsToDie(deduction, config) {
-    if (this.current === 0 || deduction === 0) {
+  stepsToDie(deduction: bigint, config: TroopConfig) {
+    if (this.current === 0n || deduction === 0n) {
       return 0;
     }
 
-    const singleTroopHealth = config.health * Troops.normalizationFactor();
+    const singleTroopHealth = BigInt(config.health) * TroopsSimulator.normalizationFactor();
 
     if (this.current <= deduction) {
       return 1;
     }
 
-    if (this.current % singleTroopHealth !== 0) {
+    if (this.current % singleTroopHealth !== 0n) {
       throw new Error("Health is not a multiple of normalization factor.");
     }
 
-    let numSteps;
+    let numSteps: number;
     if (deduction >= singleTroopHealth) {
-      numSteps = Math.floor(this.current / deduction);
-      if (this.current % deduction > 0) {
+      numSteps = Number(this.current / deduction);
+      if (this.current % deduction > 0n) {
         numSteps += 1;
       }
     } else {
       const currentLessOneTroop = this.current - singleTroopHealth;
-      numSteps = Math.floor(currentLessOneTroop / deduction);
+      numSteps = Number(currentLessOneTroop / deduction);
       numSteps += 1;
     }
 
@@ -99,39 +109,50 @@ class Health {
   }
 }
 
-class Battle {
-  constructor(attackArmy, defenceArmy, attackHealth, defenceHealth, config) {
-    this.attackArmy = attackArmy;
-    this.defenceArmy = defenceArmy;
-    this.attackHealth = attackHealth;
-    this.defenceHealth = defenceHealth;
+export class Battle {
+  attackArmy: TroopsSimulator;
+  defenceArmy: TroopsSimulator;
+  attackHealth: Health;
+  defenceHealth: Health;
+  config: TroopConfig;
+
+  constructor(
+    attackArmy: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint },
+    defenceArmy: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint },
+    attackHealth: { current: bigint; lifetime: bigint },
+    defenceHealth: { current: bigint; lifetime: bigint },
+    config: TroopConfig,
+  ) {
+    this.attackArmy = new TroopsSimulator(
+      attackArmy.knight_count,
+      attackArmy.paladin_count,
+      attackArmy.crossbowman_count,
+    );
+    this.defenceArmy = new TroopsSimulator(
+      defenceArmy.knight_count,
+      defenceArmy.paladin_count,
+      defenceArmy.crossbowman_count,
+    );
+    this.attackHealth = new Health(attackHealth);
+    this.defenceHealth = new Health(defenceHealth);
     this.config = config;
   }
 
-  strengthAgainst(attacker, defender) {
+  strengthAgainst(attacker: TroopsSimulator, defender: TroopsSimulator) {
     // Calculate total strength with advantages and disadvantages
+    let attackerKnightStrength = 1 + Number(attacker.knight_count) * this.config.knightStrength;
+    let attackerPaladinStrength = 1 + Number(attacker.paladin_count) * this.config.paladinStrength;
+    let attackerCrossbowmanStrength = 1 + Number(attacker.crossbowman_count) * this.config.crossbowmanStrength;
 
-    // get default strength
-    let attackerKnightStrength = 1 + attacker.knightCount * this.config.knightStrength;
-    console.log("attackerKnightStrength:", attackerKnightStrength);
-    let attackerPaladinStrength = 1 + attacker.paladinCount * this.config.paladinStrength;
-    console.log("attackerPaladinStrength:", attackerPaladinStrength);
-    let attackerCrossbowmanStrength = 1 + attacker.crossbowmanCount * this.config.crossbowmanStrength;
-    console.log("attackerCrossbowmanStrength:", attackerCrossbowmanStrength);
-
-    let defenderKnightStrength = 1 + defender.knightCount * this.config.knightStrength;
-    console.log("defenderKnightStrength:", defenderKnightStrength);
-    let defenderPaladinStrength = 1 + defender.paladinCount * this.config.paladinStrength;
-    console.log("defenderPaladinStrength:", defenderPaladinStrength);
-    let defenderCrossbowmanStrength = 1 + defender.crossbowmanCount * this.config.crossbowmanStrength;
-    console.log("defenderCrossbowmanStrength:", defenderCrossbowmanStrength);
+    let defenderKnightStrength = 1 + Number(defender.knight_count) * this.config.knightStrength;
+    let defenderPaladinStrength = 1 + Number(defender.paladin_count) * this.config.paladinStrength;
+    let defenderCrossbowmanStrength = 1 + Number(defender.crossbowman_count) * this.config.crossbowmanStrength;
 
     /* knight advantage calculation against enemy paladin */
 
     let attackerKnightStrengthWithAdvantage =
       attackerKnightStrength +
       Math.floor((defenderPaladinStrength * this.config.advantagePercent) / attackerKnightStrength / Percentage._100());
-    console.log("attackerKnightStrengthWithAdvantage", attackerKnightStrengthWithAdvantage);
     // attacker can only get a max of advantagePercent of its own size
     let attackerKnightStrengthWithAdvantageMax =
       attackerKnightStrength + Percentage.get(attackerKnightStrength, this.config.advantagePercent);
@@ -139,7 +160,6 @@ class Battle {
       attackerKnightStrengthWithAdvantage,
       attackerKnightStrengthWithAdvantageMax,
     );
-    console.log("attackerKnightStrengthWithAdvantageMax", attackerKnightStrengthWithAdvantageMax);
 
     /* knight disadvantage calculation against enemy crossbowman */
 
@@ -216,34 +236,27 @@ class Battle {
       attackerKnightStrength +
       (attackerKnightStrengthWithAdvantage - attackerKnightStrength) -
       (attackerKnightStrength - attackerKnightStrengthWithDisadvantage);
-    console.log("attackerTotalKnightStrength:", attackerTotalKnightStrength);
 
     let attackerTotalCrossbowmanStrength =
       attackerCrossbowmanStrength +
       (attackerCrossbowmanStrengthWithAdvantage - attackerCrossbowmanStrength) -
       (attackerCrossbowmanStrength - attackerCrossbowmanStrengthWithDisadvantage);
-    console.log("attackerTotalCrossbowmanStrength:", attackerTotalCrossbowmanStrength);
 
     let attackerTotalPaladinStrength =
       attackerPaladinStrength +
       (attackerPaladinStrengthWithAdvantage - attackerPaladinStrength) -
       (attackerPaladinStrength - attackerPaladinStrengthWithDisadvantage);
-    console.log("attackerTotalPaladinStrength:", attackerTotalPaladinStrength);
 
     let attackerTotalStrength =
       attackerTotalKnightStrength + attackerTotalCrossbowmanStrength + attackerTotalPaladinStrength;
-    console.log("attackerTotalStrength:", attackerTotalStrength);
 
     return attackerTotalStrength;
   }
 
   computeDelta() {
     // Calculate strengths
-    console.log("Attack strength:");
     const attackStrength = this.strengthAgainst(this.attackArmy, this.defenceArmy);
-    console.log("Defense strength:");
     const defenceStrength = this.strengthAgainst(this.defenceArmy, this.attackArmy);
-
     if (attackStrength === 0 || defenceStrength === 0) {
       return [1, 1];
     }
@@ -251,9 +264,9 @@ class Battle {
     const biggerStrength = attackStrength >= defenceStrength ? attackStrength : defenceStrength;
     const smallerStrength = attackStrength <= defenceStrength ? attackStrength : defenceStrength;
     // Calculate damage received
-    const attackSecondsToDie = 1 + Math.floor((100 * this.attackArmy.count()) / 10 / defenceStrength);
+    const attackSecondsToDie = 1 + Math.floor((100 * Number(this.attackArmy.count())) / 10 / defenceStrength);
     const attackSecondsTillDeathScaled =
-      1 + Math.floor((this.attackArmy.count() * attackSecondsToDie) / this.config.battleTimeScale);
+      1 + Math.floor((Number(this.attackArmy.count()) * attackSecondsToDie) / this.config.battleTimeScale);
     const attackSecondsTillDeathLimited =
       1 +
       Math.floor(
@@ -261,11 +274,11 @@ class Battle {
           (attackSecondsTillDeathScaled + 100_000) /
           biggerStrength,
       );
-    const attackDamageReceived = 1 + Math.floor(this.attackHealth.current / attackSecondsTillDeathLimited);
+    const attackDamageReceived = 1 + Math.floor(Number(this.attackHealth.current) / attackSecondsTillDeathLimited);
 
-    const defenceSecondsToDie = 1 + Math.floor((100 * this.defenceArmy.count()) / 10 / attackStrength);
+    const defenceSecondsToDie = 1 + Math.floor((100 * Number(this.defenceArmy.count())) / 10 / attackStrength);
     const defenceSecondsTillDeathScaled =
-      1 + Math.floor((this.defenceArmy.count() * defenceSecondsToDie) / this.config.battleTimeScale);
+      1 + Math.floor((Number(this.defenceArmy.count()) * defenceSecondsToDie) / this.config.battleTimeScale);
     const defenceSecondsTillDeathLimited =
       1 +
       Math.floor(
@@ -273,85 +286,16 @@ class Battle {
           (defenceSecondsTillDeathScaled + 100_000) /
           biggerStrength,
       );
-    const defenceDamageReceived = 1 + Math.floor(this.defenceHealth.current / defenceSecondsTillDeathLimited);
+    const defenceDamageReceived = 1 + Math.floor(Number(this.defenceHealth.current) / defenceSecondsTillDeathLimited);
 
     return [defenceDamageReceived, attackDamageReceived];
   }
 
   calculateDuration() {
     const [attackDelta, defenceDelta] = this.computeDelta();
-    const attackStepsToDie = this.attackHealth.stepsToDie(defenceDelta, this.config);
-    const defenceStepsToDie = this.defenceHealth.stepsToDie(attackDelta, this.config);
+    const attackStepsToDie = this.attackHealth.stepsToDie(BigInt(defenceDelta), this.config);
+    const defenceStepsToDie = this.defenceHealth.stepsToDie(BigInt(attackDelta), this.config);
 
-    if (attackStepsToDie > defenceStepsToDie) {
-      console.log("\n Attack Wins!!! \n");
-    }
-    if (attackStepsToDie < defenceStepsToDie) {
-      console.log("\n Defence Wins!!! \n");
-    }
-    if (attackStepsToDie == defenceStepsToDie) {
-      console.log("\n Both Attack and Defence lose \n");
-    }
     return Math.min(attackStepsToDie, defenceStepsToDie);
   }
 }
-
-// Example Usage and Testing
-function main() {
-  // Define troop configuration
-  const config = new TroopConfig(
-    1, // health
-    1, // knightStrength
-    1, // paladinStrength
-    1, // crossbowmanStrength
-    1_000, // advantagePercent (10%)
-    1_000, // disadvantagePercent (10%)
-
-    1000, // battleTimeScale
-    2 * 86400, // battleMaxTimeSeconds // 2 days
-    /////////// BIG NOTE ///
-    //
-    // ADJUST THIS SCALE TO SEE HOW BATTLE TIME INCREASES/ DECREASES
-    //
-    // if you double the current value, the battle time reduces by 2x
-    // if you reduce by 2, battle time increases by 2x
-    //
-    ///////////////////////////////////////
-  );
-
-  // Define attacking and defending troops
-  const attacker1 = new Troops(100, 0, 0);
-  const defender1 = new Troops(100, 0, 0);
-  runBattle(attacker1, defender1, config, "Equal troops");
-
-  // Test case 2: Attacker advantage
-  const attacker2 = new Troops(0, 100, 0);
-  const defender2 = new Troops(0, 100, 0);
-  runBattle(attacker2, defender2, config, "Attacker advantage");
-}
-
-function runBattle(attacker, defender, config, testCase) {
-  console.log(`\n--- Test Case: ${testCase} ---`);
-  console.log("Attacker:", attacker);
-  console.log("Defender:", defender);
-
-  // Calculate full health for both armies
-  const attackHealth = new Health(attacker.fullHealth(config), attacker.fullHealth(config));
-  const defenceHealth = new Health(defender.fullHealth(config), defender.fullHealth(config));
-
-  // Initialize Battle
-  const battle = new Battle(attacker, defender, attackHealth, defenceHealth, config);
-
-  // Calculate Battle Duration
-  const durationSteps = battle.calculateDuration();
-  console.log(`Battle Duration (in steps): ${durationSteps}`);
-
-  // Convert steps to actual time if each step represents a second
-  const days = Math.floor(durationSteps / 86400);
-  const hours = Math.floor((durationSteps % 86400) / 3600);
-  const minutes = Math.floor((durationSteps % 3600) / 60);
-  const seconds = durationSteps % 60;
-  console.log(`Battle Duration: ${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds`);
-}
-
-main();

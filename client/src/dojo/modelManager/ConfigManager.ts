@@ -509,6 +509,10 @@ export class ClientConfigManager {
     return EternumGlobalConfig.resources.resourcePrecision;
   }
 
+  getResourceMultiplier() {
+    return EternumGlobalConfig.resources.resourceMultiplier;
+  }
+
   getResourceBuildingProduced(buildingType: BuildingType) {
     return EternumGlobalConfig.buildings.buildingResourceProduced[buildingType] ?? 0;
   }

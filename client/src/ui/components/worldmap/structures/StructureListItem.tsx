@@ -172,7 +172,7 @@ export const StructureListItem = ({
   return (
     <div className="flex justify-between flex-row mt-2 ">
       <div
-        className={`flex w-full h-full justify-between  ${
+        className={`flex w-[27rem] h-full justify-between  ${
           structure.isMine ? "bg-blueish/20" : "bg-red/20"
         } rounded-md border-gold/20 p-2`}
       >
