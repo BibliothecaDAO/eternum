@@ -17,6 +17,19 @@ mod donkey_systems {
         ResourceSystemsImpl, InternalResourceSystemsImpl
     };
 
+    use starknet::ContractAddress;
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    #[dojo::model]
+    struct BurnDonkey {
+        #[key]
+        player_address: ContractAddress,
+        #[key]
+        entity_id: ID,
+        amount: u128,
+        timestamp: u64,
+    }
 
     #[generate_trait]
     pub impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
@@ -28,6 +41,17 @@ mod donkey_systems {
             let mut donkeys: Resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::DONKEY));
             donkeys.burn(donkey_amount);
             donkeys.save(world);
+
+            // emit burn donkey event
+            emit!(
+                world,
+                (BurnDonkey {
+                    entity_id: payer_id,
+                    player_address: starknet::get_caller_address(),
+                    amount: donkey_amount,
+                    timestamp: starknet::get_block_timestamp()
+                })
+            );
         }
 
         fn return_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {

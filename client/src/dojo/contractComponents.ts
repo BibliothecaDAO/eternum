@@ -1766,6 +1766,26 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+
+      BurnDonkey: (() => {
+        return defineComponent(
+          world,
+          {
+            player_address: RecsType.BigInt,
+            entity_id: RecsType.Number,
+            amount: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "BurnDonkey",
+              types: ["ContractAddress", "u32", "u128", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
     },
   };
 };
