@@ -12,7 +12,6 @@ import useNftSelection from "@/hooks/useNftSelection";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
-
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
@@ -28,18 +27,14 @@ function Mint() {
   });
 
   const realms_address = import.meta.env.VITE_REALMS_ADDRESS;
-  const season_pass_address = import.meta.env.VITE_SEASON_PASS_ADDRESS
+  const season_pass_address = import.meta.env.VITE_SEASON_PASS_ADDRESS;
 
-  const realmsErcBalance = data?.ercBalance?.filter(
-    (token) => token?.tokenMetadata.contractAddress === realms_address
-  );
+  const realmsErcBalance = data?.ercBalance?.filter((token) => token?.tokenMetadata.contractAddress === realms_address);
 
   const seasonPassErcBalance = data?.ercBalance?.filter(
-    (token) => token?.tokenMetadata.contractAddress === season_pass_address
+    (token) => token?.tokenMetadata.contractAddress === season_pass_address,
   );
-  const seasonPassTokenIds = new Set(
-    seasonPassErcBalance?.map((token) => token.tokenMetadata.tokenId)
-  );
+  const seasonPassTokenIds = new Set(seasonPassErcBalance?.map((token) => token.tokenMetadata.tokenId));
   const enrichedRealmsErcBalance = realmsErcBalance?.map((token) => ({
     ...token,
     seasonPassMinted: seasonPassTokenIds.has(token.tokenMetadata.tokenId),
@@ -90,7 +85,11 @@ function Mint() {
 
       <div className="flex-grow overflow-y-auto">
         <div className="flex flex-col gap-2">
-          <RealmsGrid isNftSelected={isNftSelected} toggleNftSelection={toggleNftSelection} realms={enrichedRealmsErcBalance} />
+          <RealmsGrid
+            isNftSelected={isNftSelected}
+            toggleNftSelection={toggleNftSelection}
+            realms={enrichedRealmsErcBalance}
+          />
         </div>
       </div>
       <div className="flex justify-end border border-gold/15 p-4 rounded-xl mt-4 sticky bottom-0 bg-brown gap-8">
@@ -99,17 +98,22 @@ function Mint() {
             Mint a Realm
           </Button>
         )}
-        {data?.ercBalance && <SelectNftActions          
-          selectedTokenIds={selectedTokenIds}
-          totalSelectedNfts={totalSelectedNfts}
-          selectBatchNfts={selectBatchNfts}
-          deselectAllNfts={deselectAllNfts}
-          contractAddress={realmsErcBalance?.[0]?.tokenMetadata.contractAddress}
-          batchTokenIds={data?.ercBalance
-            .map((token) => token?.tokenMetadata.tokenId)}
-          />}
+        {data?.ercBalance && (
+          <SelectNftActions
+            selectedTokenIds={selectedTokenIds}
+            totalSelectedNfts={totalSelectedNfts}
+            selectBatchNfts={selectBatchNfts}
+            deselectAllNfts={deselectAllNfts}
+            contractAddress={realmsErcBalance?.[0]?.tokenMetadata.contractAddress}
+            batchTokenIds={data?.ercBalance.map((token) => token?.tokenMetadata.tokenId)}
+          />
+        )}
         <TypeH2>{totalSelectedNfts} Selected</TypeH2>
-        {mintSeasonPasses && <Button onClick={()=>mintSeasonPasses(selectedTokenIds)} variant="cta">Mint Season Passes</Button>}
+        {mintSeasonPasses && (
+          <Button onClick={() => mintSeasonPasses(selectedTokenIds)} variant="cta">
+            Mint Season Passes
+          </Button>
+        )}
       </div>
     </div>
   );

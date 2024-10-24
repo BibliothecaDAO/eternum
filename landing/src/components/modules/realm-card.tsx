@@ -12,7 +12,7 @@ export interface RealmCardProps {
 export const RealmCard = ({
   realm: {
     tokenMetadata: { tokenId, contractAddress },
-    seasonPassMinted
+    seasonPassMinted,
   },
   isSelected,
   toggleNftSelection,
@@ -36,7 +36,6 @@ export const RealmCard = ({
         <CardDescription>{/*description*/}</CardDescription>
       </CardHeader>
       <CardContent>
-        
         <TypeP>{seasonPassMinted && "Season Pass Minted"}</TypeP>
         {/*name && <TypeP>{name}</TypeP>*/}
       </CardContent>

@@ -1155,15 +1155,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     const {
       token_id,
       signer,
-      realms_address // Should this be dynamically fetched from season config or passed to provider instead of prop?
+      realms_address, // Should this be dynamically fetched from season config or passed to provider instead of prop?
     } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: realms_address.toString(),
       entrypoint: "mint",
-      calldata: [
-        token_id,
-        0
-      ],
+      calldata: [token_id, 0],
     });
   }
 
@@ -1171,16 +1168,15 @@ export class EternumProvider extends EnhancedDojoProvider {
     const {
       token_ids,
       signer,
-      season_pass_address // Should this be dynamically fetched from season config instead of prop?
+      season_pass_address, // Should this be dynamically fetched from season config instead of prop?
     } = props;
     const multicall = token_ids.map((token) => {
       return {
-      contractAddress: season_pass_address.toString(),
-      entrypoint: "mint",
-      calldata: [
-        uint256.bnToUint256(token)
-      ]
-    }})
+        contractAddress: season_pass_address.toString(),
+        entrypoint: "mint",
+        calldata: [uint256.bnToUint256(token)],
+      };
+    });
     return await this.executeAndCheckTransaction(signer, multicall);
   }
 }

@@ -388,7 +388,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     mint_test_realm: withQueueing(withErrorHandling(mint_test_realm)),
     mint_season_passes: withQueueing(withErrorHandling(mint_season_passes)),
-
   };
 
   // TODO: Fix Type

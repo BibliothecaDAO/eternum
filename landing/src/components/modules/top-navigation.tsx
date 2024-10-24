@@ -34,15 +34,20 @@ export const TopNavigation = () => {
       </div>
       <div className="flex gap-2">
         <ModeToggle />
-        {!account?.address ? <><Button variant="cta">
-          <CartridgeIcon /> Login
-        </Button>
-        {connectors.map((connector, index) => (
-          <Button key={index} onClick={() => connect({ connector })} variant="cta">
-            Connect {connector.name}
-          </Button>
-        ))}
-        </>: <Button>{displayAddress(account?.address )}</Button>}
+        {!account?.address ? (
+          <>
+            <Button variant="cta">
+              <CartridgeIcon /> Login
+            </Button>
+            {connectors.map((connector, index) => (
+              <Button key={index} onClick={() => connect({ connector })} variant="cta">
+                Connect {connector.name}
+              </Button>
+            ))}
+          </>
+        ) : (
+          <Button>{displayAddress(account?.address)}</Button>
+        )}
       </div>
     </div>
   );

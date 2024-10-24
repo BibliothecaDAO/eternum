@@ -1,39 +1,22 @@
 import { useCallback, useMemo, useState } from "react";
 
-export default function useNftSelection({
-  userAddress,
-}: {
-  userAddress: `0x${string}`;
-}) {
+export default function useNftSelection({ userAddress }: { userAddress: `0x${string}` }) {
   const [selectedTokensByUserAddress, setSelectedTokensByUserAddress] =
-    useState<
-      Record<
-        `0x${string}`,
-        { collectionAddress: string; tokenIds: string[] } | null
-      >
-    >();
+    useState<Record<`0x${string}`, { collectionAddress: string; tokenIds: string[] } | null>>();
 
   const { selectedCollectionAddress, selectedTokenIds } = useMemo(
     () => ({
-      selectedCollectionAddress:
-        selectedTokensByUserAddress?.[userAddress]?.collectionAddress,
-      selectedTokenIds:
-        selectedTokensByUserAddress?.[userAddress]?.tokenIds ?? [],
+      selectedCollectionAddress: selectedTokensByUserAddress?.[userAddress]?.collectionAddress,
+      selectedTokenIds: selectedTokensByUserAddress?.[userAddress]?.tokenIds ?? [],
     }),
     [selectedTokensByUserAddress, userAddress],
   );
 
-  const totalSelectedNfts = useMemo(
-    () => selectedTokenIds.length,
-    [selectedTokenIds],
-  );
+  const totalSelectedNfts = useMemo(() => selectedTokenIds.length, [selectedTokenIds]);
 
   const isNftSelected = useCallback(
     (tokenId: string, collectionAddress: string) => {
-      return (
-        selectedTokenIds.includes(tokenId) &&
-        collectionAddress === selectedCollectionAddress
-      );
+      return selectedTokenIds.includes(tokenId) && collectionAddress === selectedCollectionAddress;
     },
     [selectedCollectionAddress, selectedTokenIds],
   );
@@ -43,10 +26,7 @@ export default function useNftSelection({
       return;
     }
 
-    if (
-      collectionAddress !==
-      selectedTokensByUserAddress?.[userAddress]?.collectionAddress
-    ) {
+    if (collectionAddress !== selectedTokensByUserAddress?.[userAddress]?.collectionAddress) {
       setSelectedTokensByUserAddress((previousValue) => ({
         ...previousValue,
         [userAddress]: { collectionAddress, tokenIds: [tokenId] },
@@ -81,18 +61,11 @@ export default function useNftSelection({
         ...previousValue,
         [userAddress]: {
           collectionAddress,
-          tokenIds: selectedTokenIds.filter(
-            (selectedTokenId) => selectedTokenId !== tokenId,
-          ),
+          tokenIds: selectedTokenIds.filter((selectedTokenId) => selectedTokenId !== tokenId),
         },
       }));
     },
-    [
-      isNftSelected,
-      selectedTokenIds,
-      setSelectedTokensByUserAddress,
-      userAddress,
-    ],
+    [isNftSelected, selectedTokenIds, setSelectedTokensByUserAddress, userAddress],
   );
 
   function selectBatchNfts(

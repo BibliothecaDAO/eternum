@@ -4,7 +4,7 @@ import {
   EternumGlobalConfig,
   type ID,
   type Position,
-  type Resource
+  type Resource,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { clsx, type ClassValue } from "clsx";
@@ -183,7 +183,6 @@ export const formatTime = (
 
   return parts.join(" ");
 };
-
 
 function getPropertyByPath<T>(obj: T, path: string): any {
   return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);

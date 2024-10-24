@@ -9,7 +9,6 @@ export async function setup({ ...config }: DojoConfig) {
   const network = await setupNetwork(config);
   const systemCalls = createSystemCalls(network);
 
-
   return {
     network,
     systemCalls,

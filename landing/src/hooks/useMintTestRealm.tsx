@@ -14,36 +14,42 @@ export const useMintTestRealm = () => {
     },
   } = useDojo();
 
-  const realms_address = BigInt(import.meta.env.VITE_REALMS_ADDRESS) 
+  const realms_address = BigInt(import.meta.env.VITE_REALMS_ADDRESS);
 
-  const {account} = useAccountOrBurner()
+  const { account } = useAccountOrBurner();
 
   //const { contractAddress } = useTokenContract();
   //const { isCoolDown, maxSupply, availableSupply } = useConfig();
   const { isConnected } = useAccount();
   //const { isCorrectChain } = useIsCorrectChain()
- // const { totalSupply } = useTotalSupply()
+  // const { totalSupply } = useTotalSupply()
 
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(0);
 
-  const canMint = useMemo(() => (
-    account /*&& isConnected /*&& isCorrectChain*/ && !isMinting
-  ), [account, /*isConnected, /*isCorrectChain,*/  isMinting]);
+  const canMint = useMemo(
+    () => account /*&& isConnected /*&& isCorrectChain*/ && !isMinting,
+    [account, /*isConnected, /*isCorrectChain,*/ isMinting],
+  );
 
-  const _mint = useCallback(async(token_id: number) => {
-    if (account && canMint) {
-      setIsMinting(true);
-      setMintingTokenId(token_id);
-      await mint_test_realm({signer: account, token_id, realms_address }).then((v) => {
-        // wait supply to change...
-      }).catch((e) => {
-        console.error(`mint error:`, e);
-        setMintingTokenId(0);
-        setIsMinting(false);
-      });
-    }
-  }, [account, canMint, mint_test_realm, realms_address]);
+  const _mint = useCallback(
+    async (token_id: number) => {
+      if (account && canMint) {
+        setIsMinting(true);
+        setMintingTokenId(token_id);
+        await mint_test_realm({ signer: account, token_id, realms_address })
+          .then((v) => {
+            // wait supply to change...
+          })
+          .catch((e) => {
+            console.error(`mint error:`, e);
+            setMintingTokenId(0);
+            setIsMinting(false);
+          });
+      }
+    },
+    [account, canMint, mint_test_realm, realms_address],
+  );
 
   useEffect(() => {
     if (isMinting /*&& totalSupply >= mintingTokenId*/) {
@@ -51,13 +57,13 @@ export const useMintTestRealm = () => {
       setIsMinting(false);
       //goToTokenPage(mintingTokenId);
     }
-  }, [mintingTokenId/*, totalSupply*/]);
+  }, [mintingTokenId /*, totalSupply*/]);
 
   //const { ownerAddress: lastOwnerAddress } = useTokenOwner(totalSupply);
 
   return {
     canMint,
     isMinting,
-    mint: (canMint ? _mint : undefined),
-  }
-}
+    mint: canMint ? _mint : undefined,
+  };
+};
