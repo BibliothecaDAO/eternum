@@ -34,6 +34,11 @@ const items = [
     url: "/bridge",
     icon: Ship,
   },
+  {
+    title: "Mint",
+    url: "/mint",
+    icon: Ship, 
+  }
 ];
 
 export function AppSidebar() {
