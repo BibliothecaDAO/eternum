@@ -1,6 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Battle, EternumGlobalConfig, Health, Troops as SdkTroops, TroopConfig } from "@bibliothecadao/eternum";
+import { Battle, Health, Percentage, Troops as SdkTroops, TroopConfig } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { getTotalTroops } from "./BattleHistory";
 
@@ -41,7 +42,7 @@ function percentageLeft(health: ComponentValue<ClientComponents["Health"]["schem
   if (health.lifetime === 0n) {
     return 0n;
   }
-  return (health.current * BigInt(10_000)) / health.lifetime;
+  return (health.current * BigInt(Percentage._100())) / health.lifetime;
 }
 
 export const getMaxResourceAmountStolen = (
@@ -50,7 +51,7 @@ export const getMaxResourceAmountStolen = (
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
 ) => {
   if (!attackerArmy) return 0;
-  const attackingTroops = getTotalTroops(attackerArmy.troops) / EternumGlobalConfig.resources.resourcePrecision;
+  const attackingTroops = getTotalTroops(attackerArmy.troops) / configManager.getResourcePrecision();
   return Math.floor(attackingTroops * getChancesOfSuccess(attackerArmy, defenderArmy, troopConfig));
 };
 
@@ -82,21 +83,21 @@ export const getTroopLossOnRaid = (
   const attackerHealthLoss =
     (defenceDelta * duration) /
     troopConfig.pillage_health_divisor /
-    EternumGlobalConfig.resources.resourcePrecision /
-    EternumGlobalConfig.resources.resourceMultiplier;
+    configManager.getResourcePrecision() /
+    configManager.getResourceMultiplier();
   const attackerTroopsLoss =
     (getTotalTroops(attackerArmy.troops) * attackerHealthLoss) / Number(attackerArmy.health.lifetime);
 
   const defenderHealthLoss =
     (attackDelta * duration) /
     troopConfig.pillage_health_divisor /
-    EternumGlobalConfig.resources.resourcePrecision /
-    EternumGlobalConfig.resources.resourceMultiplier;
+    configManager.getResourcePrecision() /
+    configManager.getResourceMultiplier();
   const defenderTroopsLoss =
     (getTotalTroops(defenderArmy.troops) * defenderHealthLoss) / Number(defenderArmy.health.lifetime);
 
   return [
-    Math.max(1, Math.floor(attackerTroopsLoss / EternumGlobalConfig.resources.resourcePrecision)),
-    Math.max(1, Math.floor(defenderTroopsLoss / EternumGlobalConfig.resources.resourcePrecision)),
+    Math.max(1, Math.floor(attackerTroopsLoss / configManager.getResourcePrecision())),
+    Math.max(1, Math.floor(defenderTroopsLoss / configManager.getResourcePrecision())),
   ];
 };
