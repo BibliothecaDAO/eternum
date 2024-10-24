@@ -15,8 +15,8 @@ import { StaminaResource } from "@/ui/elements/StaminaResource";
 import { Position } from "@bibliothecadao/eternum";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Exchange } from "../hyperstructures/StructureCard";
 import { InventoryResources } from "../resources/InventoryResources";
+import { Exchange } from "../structures/worldmap/StructureCard";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
 
@@ -81,7 +81,7 @@ export const ArmyChip = ({
     const updatedBattle = battleManager.getUpdatedBattle(nextBlockTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
     return updatedArmy;
-  }, [nextBlockTimestamp]);
+  }, [nextBlockTimestamp, army]);
 
   const [location] = useLocation();
   const isOnMap = useMemo(() => location.includes("map"), [location]);
@@ -260,7 +260,7 @@ const ArmySelector = ({ armies, onSelect }: { armies: ArmyInfo[]; onSelect: (arm
         <div
           key={army.entity_id}
           className={`rounded cursor-pointer transition-all duration-300 ${
-            selectedArmy?.entity_id === army.entity_id ? "bg-gray-300" : "bg-black"
+            selectedArmy?.entity_id === army.entity_id ? "bg-gray-300" : "bg-brown"
           }`}
           onClick={() => handleArmyClick(army)}
         >

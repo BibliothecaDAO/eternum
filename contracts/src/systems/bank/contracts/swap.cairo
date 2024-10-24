@@ -18,8 +18,8 @@ mod swap_systems {
     use eternum::models::bank::market::{Market, MarketCustomTrait};
     use eternum::models::config::{BankConfig};
     use eternum::models::config::{TickImpl, TickTrait};
-    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use eternum::models::season::SeasonImpl;
     use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     use option::OptionTrait;
@@ -49,7 +49,7 @@ mod swap_systems {
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
         fn buy(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
@@ -101,7 +101,7 @@ mod swap_systems {
 
 
         fn sell(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);

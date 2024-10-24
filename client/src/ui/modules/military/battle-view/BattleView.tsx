@@ -22,8 +22,8 @@ export const BattleView = () => {
   const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0);
 
   const battlePosition = useMemo(
-    () => ({ x: selectedHex.col, y: selectedHex.row }),
-    [selectedHex.col, selectedHex.row],
+    () => ({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }),
+    [selectedHex?.col, selectedHex?.row],
   );
 
   const targetArmy = useMemo(() => {

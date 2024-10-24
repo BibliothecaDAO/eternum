@@ -9,7 +9,7 @@ export const LockedResources = ({
   defendersResourcesEscrowEntityId: ID;
 }) => {
   return (
-    <div className="col-span-2 flex flex-col justify-start p-2 bg-[#1b1a1a] bg-hex-bg border-l-4 border-r-4 border-gold/20">
+    <div className="col-span-2 flex flex-col justify-start p-2">
       <div className="w-full text-center text-gold mb-2 text-lg font-bold">Locked Resources</div>
       <InventoryResources
         textSize="xxs"

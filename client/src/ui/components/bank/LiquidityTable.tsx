@@ -1,3 +1,4 @@
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
@@ -27,13 +28,18 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
 
   const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
     if (tier === "lords") return [];
-    return resourceIds.filter((resourceId) =>
-      resources
-        .find((r) => r.id === resourceId)
-        ?.trait.toLowerCase()
-        .includes(searchTerm.toLowerCase()),
+    return resourceIds.filter(
+      (resourceId) =>
+        resources
+          .find((r) => r.id === resourceId)
+          ?.trait.toLowerCase()
+          .includes(searchTerm.toLowerCase()),
     );
   });
+
+  const { playerStructures } = useEntities();
+
+  const playerStructureIds = playerStructures().map((structure) => structure.entity_id);
 
   return (
     <div className="p-4 h-full bg-gold/10 overflow-x-auto relative">
@@ -50,6 +56,7 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
           {filteredResources.map((resourceId, index) => (
             <LiquidityResourceRow
               key={resourceId}
+              playerStructureIds={playerStructureIds}
               bankEntityId={bankEntityId!}
               entityId={entity_id}
               resourceId={resourceId}

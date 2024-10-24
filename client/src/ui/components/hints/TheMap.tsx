@@ -1,8 +1,9 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds, TROOPS_FOOD_CONSUMPTION } from "@bibliothecadao/eternum";
+import {} from "@/ui/utils/utils";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const TheMap = () => {
@@ -43,6 +44,9 @@ export const TheMap = () => {
 };
 
 const ExplorationTable = () => {
+  const travelStaminaCost = configManager.getTravelStaminaCost();
+  const exploreStaminaCost = configManager.getExploreStaminaCost();
+
   return (
     <table className="not-prose w-full border-collapse border border-gold/10">
       <thead>
@@ -60,7 +64,7 @@ const ExplorationTable = () => {
               Travel
             </div>
           </td>
-          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.travelCost}</td>
+          <td className="border border-gold/10 p-2">{travelStaminaCost}</td>
           <td>
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>
@@ -84,13 +88,13 @@ const ExplorationTable = () => {
               <tbody>
                 <tr>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_fish_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).travelFishBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_fish_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelFishBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_fish_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelFishBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
                     <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
@@ -98,13 +102,13 @@ const ExplorationTable = () => {
                 </tr>
                 <tr>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_wheat_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).travelWheatBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_wheat_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelWheatBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_wheat_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelWheatBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
                     <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
@@ -121,7 +125,7 @@ const ExplorationTable = () => {
               Exploration
             </div>
           </td>
-          <td className="border border-gold/10 p-2">{EternumGlobalConfig.stamina.exploreCost}</td>
+          <td className="border border-gold/10 p-2">{exploreStaminaCost}</td>
           <td>
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>
@@ -145,13 +149,13 @@ const ExplorationTable = () => {
               <tbody>
                 <tr>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_fish_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).exploreFishBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_fish_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).exploreFishBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_fish_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreFishBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
                     <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
@@ -159,13 +163,13 @@ const ExplorationTable = () => {
                 </tr>
                 <tr>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_wheat_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).exploreWheatBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_wheat_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).exploreWheatBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
-                    {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_wheat_burn_amount)}
+                    {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreWheatBurnAmount}
                   </td>
                   <td className="border border-gold/10 p-2 text-center">
                     <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />

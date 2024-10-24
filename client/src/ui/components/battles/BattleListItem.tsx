@@ -9,9 +9,9 @@ import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
-import { StructureMergeTroopsPanel } from "../hyperstructures/StructureCard";
 import { TroopMenuRow } from "../military/TroopChip";
 import { InventoryResources } from "../resources/InventoryResources";
+import { StructureMergeTroopsPanel } from "../structures/worldmap/StructureCard";
 
 type BattleListItemProps = {
   battle: BattleInfo;

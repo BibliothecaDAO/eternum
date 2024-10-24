@@ -19,6 +19,7 @@ class TroopConfig {
     advantagePercent,
     disadvantagePercent,
     battleTimeScale,
+    battleMaxTimeSeconds,
   ) {
     this.health = health;
     this.knightStrength = knightStrength;
@@ -27,6 +28,7 @@ class TroopConfig {
     this.advantagePercent = advantagePercent;
     this.disadvantagePercent = disadvantagePercent;
     this.battleTimeScale = battleTimeScale;
+    this.battleMaxTimeSeconds = battleMaxTimeSeconds;
   }
 }
 
@@ -246,16 +248,32 @@ class Battle {
       return [1, 1];
     }
 
+    const biggerStrength = attackStrength >= defenceStrength ? attackStrength : defenceStrength;
+    const smallerStrength = attackStrength <= defenceStrength ? attackStrength : defenceStrength;
     // Calculate damage received
     const attackSecondsToDie = 1 + Math.floor((100 * this.attackArmy.count()) / 10 / defenceStrength);
     const attackSecondsTillDeathScaled =
       1 + Math.floor((this.attackArmy.count() * attackSecondsToDie) / this.config.battleTimeScale);
-    const attackDamageReceived = 1 + Math.floor(this.attackHealth.current / attackSecondsTillDeathScaled);
+    const attackSecondsTillDeathLimited =
+      1 +
+      Math.floor(
+        (this.config.battleMaxTimeSeconds * attackSecondsTillDeathScaled * smallerStrength) /
+          (attackSecondsTillDeathScaled + 100_000) /
+          biggerStrength,
+      );
+    const attackDamageReceived = 1 + Math.floor(this.attackHealth.current / attackSecondsTillDeathLimited);
 
     const defenceSecondsToDie = 1 + Math.floor((100 * this.defenceArmy.count()) / 10 / attackStrength);
     const defenceSecondsTillDeathScaled =
       1 + Math.floor((this.defenceArmy.count() * defenceSecondsToDie) / this.config.battleTimeScale);
-    const defenceDamageReceived = 1 + Math.floor(this.defenceHealth.current / defenceSecondsTillDeathScaled);
+    const defenceSecondsTillDeathLimited =
+      1 +
+      Math.floor(
+        (this.config.battleMaxTimeSeconds * defenceSecondsTillDeathScaled * smallerStrength) /
+          (defenceSecondsTillDeathScaled + 100_000) /
+          biggerStrength,
+      );
+    const defenceDamageReceived = 1 + Math.floor(this.defenceHealth.current / defenceSecondsTillDeathLimited);
 
     return [defenceDamageReceived, attackDamageReceived];
   }
@@ -290,6 +308,7 @@ function main() {
     1_000, // disadvantagePercent (10%)
 
     1000, // battleTimeScale
+    2 * 86400, // battleMaxTimeSeconds // 2 days
     /////////// BIG NOTE ///
     //
     // ADJUST THIS SCALE TO SEE HOW BATTLE TIME INCREASES/ DECREASES

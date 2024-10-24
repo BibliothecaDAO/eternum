@@ -33,25 +33,21 @@ export const useFetchBlockchainData = () => {
   const setNextBlockTimestamp = useUIStore((state) => state.setNextBlockTimestamp);
   const setCurrentDefaultTick = useUIStore((state) => state.setCurrentDefaultTick);
   const setCurrentArmiesTick = useUIStore((state) => state.setCurrentArmiesTick);
-  const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp); // Get the current nextBlockTimestamp from the store
-
-  const tickConfigArmies = getComponentValue(
-    TickConfig,
-    getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Armies)]),
-  );
-  const tickConfigDefault = getComponentValue(
-    TickConfig,
-    getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Default)]),
-  );
 
   useEffect(() => {
-    const fetchBlockchainTimestamp = async () => {
-      // Perform the necessary logic to fetch the blockchain timestamp
-      const timestamp = await fetchBlockTimestamp(); // Example: getBlockchainTimestamp is a placeholder for your blockchain timestamp retrieval logic
+    const tickConfigArmies = getComponentValue(
+      TickConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Armies)]),
+    );
+    const tickConfigDefault = getComponentValue(
+      TickConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Default)]),
+    );
 
-      // Update the state with the fetched timestamp
-      if (timestamp && timestamp !== currentTimestamp) {
-        // Check if fetched timestamp is different from current state
+    const fetchBlockchainTimestamp = async () => {
+      const timestamp = Math.floor(Date.now() / 1000);
+
+      if (timestamp) {
         setNextBlockTimestamp(timestamp);
         setCurrentDefaultTick(Math.floor(timestamp / Number(tickConfigDefault!.tick_interval_in_seconds)));
         setCurrentArmiesTick(Math.floor(timestamp / Number(tickConfigArmies!.tick_interval_in_seconds)));
@@ -60,15 +56,10 @@ export const useFetchBlockchainData = () => {
 
     fetchBlockchainTimestamp(); // Initial fetch
 
-    const intervalId = setInterval(fetchBlockchainTimestamp, 10000); // Fetch every 10 seconds
+    const intervalId = setInterval(fetchBlockchainTimestamp, 10000);
 
     return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
+      clearInterval(intervalId);
     };
   }, []);
-};
-
-const fetchBlockTimestamp = async (): Promise<number | undefined> => {
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  return currentTimestamp;
 };

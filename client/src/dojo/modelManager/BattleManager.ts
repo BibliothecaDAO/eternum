@@ -2,6 +2,7 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
+import { multiplyByPrecision } from "@/ui/utils/utils";
 import { BattleSide, EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import {
   ComponentValue,
@@ -14,6 +15,7 @@ import {
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
+import { ClientConfigManager } from "./ConfigManager";
 import { StaminaManager } from "./StaminaManager";
 
 export enum BattleType {
@@ -56,6 +58,7 @@ export enum ClaimStatus {
   Claimable = "Claim",
   NoSelectedArmy = "No selected army",
   BattleOngoing = "Battle ongoing",
+  DefenderPresent = "An army's defending the structure",
   NoStructureToClaim = "No structure to claim",
   StructureIsMine = "Can't claim your own structure",
   SelectedArmyIsDead = "Selected army is dead",
@@ -66,10 +69,12 @@ export class BattleManager {
   dojo: DojoResult;
   battleType: BattleType | undefined;
   private battleIsClaimable: ClaimStatus | undefined;
+  private configManager: ClientConfigManager;
 
   constructor(battleEntityId: ID, dojo: DojoResult) {
     this.battleEntityId = battleEntityId;
     this.dojo = dojo;
+    this.configManager = ClientConfigManager.instance();
   }
 
   public getUpdatedBattle(currentTimestamp: number) {
@@ -202,44 +207,29 @@ export class BattleManager {
       battle_army_lifetime = updatedBattle.attack_army_lifetime;
     }
 
-    cloneArmy.troops.knight_count =
-      cloneArmy.troops.knight_count === 0n
-        ? 0n
-        : BigInt(
-            Math.floor(
-              Number(cloneArmy.troops.knight_count) *
-                this.getRemainingPercentageOfTroops(
-                  battle_army.troops.knight_count,
-                  battle_army_lifetime.troops.knight_count,
-                ),
-            ),
-          );
+    const remainingKnights =
+      Number(cloneArmy.troops.knight_count) *
+      this.getRemainingPercentageOfTroops(battle_army.troops.knight_count, battle_army_lifetime.troops.knight_count);
+    cloneArmy.troops.knight_count = BigInt(
+      remainingKnights - (remainingKnights % EternumGlobalConfig.resources.resourcePrecision),
+    );
 
-    cloneArmy.troops.paladin_count =
-      cloneArmy.troops.paladin_count === 0n
-        ? 0n
-        : BigInt(
-            Math.floor(
-              Number(cloneArmy.troops.paladin_count) *
-                this.getRemainingPercentageOfTroops(
-                  battle_army.troops.paladin_count,
-                  battle_army_lifetime.troops.paladin_count,
-                ),
-            ),
-          );
+    const remainingPaladins =
+      Number(cloneArmy.troops.paladin_count) *
+      this.getRemainingPercentageOfTroops(battle_army.troops.paladin_count, battle_army_lifetime.troops.paladin_count);
+    cloneArmy.troops.paladin_count = BigInt(
+      remainingPaladins - (remainingPaladins % EternumGlobalConfig.resources.resourcePrecision),
+    );
 
-    cloneArmy.troops.crossbowman_count =
-      cloneArmy.troops.crossbowman_count === 0n
-        ? 0n
-        : BigInt(
-            Math.floor(
-              Number(cloneArmy.troops.crossbowman_count) *
-                this.getRemainingPercentageOfTroops(
-                  battle_army.troops.crossbowman_count,
-                  battle_army_lifetime.troops.crossbowman_count,
-                ),
-            ),
-          );
+    const remainingCrossbowmen =
+      Number(cloneArmy.troops.crossbowman_count) *
+      this.getRemainingPercentageOfTroops(
+        battle_army.troops.crossbowman_count,
+        battle_army_lifetime.troops.crossbowman_count,
+      );
+    cloneArmy.troops.crossbowman_count = BigInt(
+      remainingCrossbowmen - (remainingCrossbowmen % EternumGlobalConfig.resources.resourcePrecision),
+    );
 
     cloneArmy.health.current = this.getTroopFullHealth(cloneArmy.troops);
 
@@ -253,36 +243,30 @@ export class BattleManager {
     defender: ArmyInfo | undefined,
   ): ClaimStatus {
     if (!selectedArmy) return ClaimStatus.NoSelectedArmy;
-    if (this.battleIsClaimable) return this.battleIsClaimable;
 
     if (this.isBattleOngoing(currentTimestamp)) {
       return ClaimStatus.BattleOngoing;
     }
 
     if (!structure) {
-      this.battleIsClaimable = ClaimStatus.NoStructureToClaim;
       return ClaimStatus.NoStructureToClaim;
     }
 
     if (this.getBattleType(structure) !== BattleType.Structure) {
-      this.battleIsClaimable = ClaimStatus.NoStructureToClaim;
       return ClaimStatus.NoStructureToClaim;
     }
 
     if (defender === undefined) {
-      this.battleIsClaimable = ClaimStatus.Claimable;
       return ClaimStatus.Claimable;
     }
 
     const updatedBattle = this.getUpdatedBattle(currentTimestamp);
     if (updatedBattle && updatedBattle.defence_army_health.current > 0n) {
-      this.battleIsClaimable = ClaimStatus.BattleOngoing;
       return ClaimStatus.BattleOngoing;
     }
 
     if (defender.health.current > 0n) {
-      this.battleIsClaimable = ClaimStatus.BattleOngoing;
-      return ClaimStatus.BattleOngoing;
+      return ClaimStatus.DefenderPresent;
     }
 
     if (structure.isMine) {
@@ -293,7 +277,6 @@ export class BattleManager {
       return ClaimStatus.SelectedArmyIsDead;
     }
 
-    this.battleIsClaimable = ClaimStatus.Claimable;
     return ClaimStatus.Claimable;
   }
 
@@ -412,15 +395,15 @@ export class BattleManager {
   }
 
   private getTroopFullHealth(troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]>): bigint {
-    const health = EternumGlobalConfig.troop.health;
+    const troopHealth = this.configManager.getTroopConfig().health;
 
-    let total_knight_health = health * Number(troops.knight_count);
-    let total_paladin_health = health * Number(troops.paladin_count);
-    let total_crossbowman_health = health * Number(troops.crossbowman_count);
+    let totalKnightHealth = troopHealth * Number(troops.knight_count);
+    let totalPaladinHealth = troopHealth * Number(troops.paladin_count);
+    let totalCrossbowmanHealth = troopHealth * Number(troops.crossbowman_count);
 
     return BigInt(
       Math.floor(
-        (total_knight_health + total_paladin_health + total_crossbowman_health) /
+        (totalKnightHealth + totalPaladinHealth + totalCrossbowmanHealth) /
           EternumGlobalConfig.resources.resourceMultiplier,
       ),
     );
@@ -461,23 +444,23 @@ export class BattleManager {
     }
 
     return {
-      knight_count,
-      paladin_count,
-      crossbowman_count,
+      knight_count: knight_count - (knight_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      paladin_count: paladin_count - (paladin_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      crossbowman_count:
+        crossbowman_count - (crossbowman_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
     };
   };
 
   private updateHealth(battle: ComponentValue<ClientComponents["Battle"]["schema"]>, currentTimestamp: number) {
     const durationPassed: number = this.getElapsedTime(currentTimestamp);
 
+    const troopHealth = this.configManager.getTroopConfig().health;
+
     const attackDelta = this.attackingDelta(battle);
     const defenceDelta = this.defendingDelta(battle);
 
     battle.attack_army_health.current = this.getUdpdatedHealth(defenceDelta, battle.attack_army_health, durationPassed);
-    if (
-      battle.attack_army_health.current <
-      EternumGlobalConfig.troop.health * EternumGlobalConfig.resources.resourcePrecision
-    ) {
+    if (battle.attack_army_health.current < multiplyByPrecision(troopHealth)) {
       battle.attack_army_health.current = 0n;
     }
 
@@ -486,10 +469,7 @@ export class BattleManager {
       battle.defence_army_health,
       durationPassed,
     );
-    if (
-      battle.defence_army_health.current <
-      EternumGlobalConfig.troop.health * EternumGlobalConfig.resources.resourcePrecision
-    ) {
+    if (battle.defence_army_health.current < multiplyByPrecision(troopHealth)) {
       battle.defence_army_health.current = 0n;
     }
   }
@@ -519,7 +499,7 @@ export class BattleManager {
     return damages > health.current ? 0n : health.current - damages;
   }
 
-  private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint) {
+  private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint): number {
     if (lifetime_troops === 0n) return 0;
     return Number(current_troops) / Number(lifetime_troops);
   }

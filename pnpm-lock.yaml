@@ -96,26 +96,26 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@dojoengine/core':
-        specifier: 1.0.0-alpha.14
-        version: 1.0.0-alpha.14(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)
+        specifier: 1.0.0-alpha.22
+        version: 1.0.0-alpha.22(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)
       '@dojoengine/create-burner':
-        specifier: 1.0.0-alpha.14
-        version: 1.0.0-alpha.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)
+        specifier: 1.0.0-alpha.22
+        version: 1.0.0-alpha.22(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)
       '@dojoengine/react':
-        specifier: 1.0.0-alpha.14
-        version: 1.0.0-alpha.14(@types/node@20.16.5)(@types/react@18.3.7)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.6.2)(zod@3.23.8)
+        specifier: 1.0.0-alpha.22
+        version: 1.0.0-alpha.22(@types/node@20.16.5)(@types/react@18.3.7)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.6.2)(zod@3.23.8)
       '@dojoengine/recs':
         specifier: ^2.0.13
         version: 2.0.13(typescript@5.6.2)(zod@3.23.8)
       '@dojoengine/state':
-        specifier: 1.0.0-alpha.14
-        version: 1.0.0-alpha.14(@types/node@20.16.5)(@types/react@18.3.7)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
+        specifier: 1.0.0-alpha.22
+        version: 1.0.0-alpha.22(@types/node@20.16.5)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
       '@dojoengine/torii-client':
-        specifier: 1.0.0-alpha.14
-        version: 1.0.0-alpha.14
+        specifier: 1.0.0-alpha.22
+        version: 1.0.0-alpha.22
       '@dojoengine/utils':
-        specifier: 1.0.0-alpha.14
-        version: 1.0.0-alpha.14(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
+        specifier: 1.0.0-alpha.22
+        version: 1.0.0-alpha.22(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
       '@headlessui/react':
         specifier: ^1.7.18
         version: 1.7.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -180,8 +180,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.1
       starknet:
-        specifier: 6.7.0
-        version: 6.7.0(encoding@0.1.13)
+        specifier: 6.11.0
+        version: 6.11.0(encoding@0.1.13)
       tailwind-merge:
         specifier: ^2.2.2
         version: 2.5.2
@@ -233,7 +233,7 @@ importers:
         version: 0.163.0
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.5.0
-        version: 7.18.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)
+        version: 7.18.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)
       '@vitejs/plugin-react':
         specifier: ^4.2.1
         version: 4.3.1(vite@5.4.6(@types/node@20.16.5))
@@ -251,19 +251,19 @@ importers:
         version: 8.57.1
       eslint-config-standard-with-typescript:
         specifier: ^43.0.1
-        version: 43.0.1(@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.10.2(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@5.6.2)
+        version: 43.0.1(@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.11.1(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@5.6.2)
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)
+        version: 2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)
       eslint-plugin-n:
         specifier: ^17.0.0
-        version: 17.10.2(eslint@8.57.1)
+        version: 17.11.1(eslint@8.57.1)
       eslint-plugin-promise:
         specifier: ^6.1.1
         version: 6.6.0(eslint@8.57.1)
       eslint-plugin-react:
         specifier: ^7.34.1
-        version: 7.36.1(eslint@8.57.1)
+        version: 7.37.1(eslint@8.57.1)
       jsdom:
         specifier: ^24.1.0
         version: 24.1.3
@@ -304,11 +304,11 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@dojoengine/core':
-        specifier: 1.0.0-alpha.14
-        version: 1.0.0-alpha.14(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)
+        specifier: 1.0.0-alpha.21
+        version: 1.0.0-alpha.21(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)
       starknet:
-        specifier: 6.7.0
-        version: 6.7.0(encoding@0.1.13)
+        specifier: 6.11.0
+        version: 6.11.0(encoding@0.1.13)
       typescript:
         specifier: ^5.0.0
         version: 5.6.2
@@ -329,14 +329,14 @@ importers:
   sdk/packages/eternum:
     dependencies:
       '@dojoengine/core':
-        specifier: 1.0.0-alpha.12
-        version: 1.0.0-alpha.12(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)
+        specifier: 1.0.0-alpha.22
+        version: 1.0.0-alpha.22(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.1
       starknet:
-        specifier: 6.7.0
-        version: 6.7.0(encoding@0.1.13)
+        specifier: 6.11.0
+        version: 6.11.0(encoding@0.1.13)
       vitest:
         specifier: ^2.0.5
         version: 2.1.1(@types/node@22.5.5)(@vitest/ui@2.1.1)(jsdom@24.1.3)
@@ -347,6 +347,22 @@ importers:
       typescript:
         specifier: ^5.4.4
         version: 5.6.2
+
+  season_pass/scripts/deployment:
+    dependencies:
+      colors:
+        specifier: ^1.4.0
+        version: 1.4.0
+      dotenv:
+        specifier: ^16.3.1
+        version: 16.4.5
+      starknet:
+        specifier: ^6.8.0
+        version: 6.11.0(encoding@0.1.13)
+    devDependencies:
+      prettier:
+        specifier: 3.1.1
+        version: 3.1.1
 
 packages:
 
@@ -1016,27 +1032,27 @@ packages:
     bundledDependencies:
       - is-unicode-supported
 
-  '@dojoengine/core@1.0.0-alpha.12':
-    resolution: {integrity: sha512-KuinebMRPrsGebpQqW8oXVYRaCiUOdngjr4vN6WaWkUcyvFRfeJqzCemQdgqtOwvZZKjo6UIQNvYWPsuzjcxnA==}
+  '@dojoengine/core@1.0.0-alpha.21':
+    resolution: {integrity: sha512-qTBz1m5aG/m3P7ST+NcU2KeAH5+hWioxYijcmo1c3PuCMsYVoyy+INbMvpOZs8I/eeGIDDWXonN4jVswwn0GVQ==}
     hasBin: true
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/core@1.0.0-alpha.14':
-    resolution: {integrity: sha512-wWleoZ3v9V72t5m2u8rfTc1a4B1xoFMXvfwEy3rDanuIph392Buo5huYnskbmzs1qInNPygl/5zX8wyctprmyw==}
+  '@dojoengine/core@1.0.0-alpha.22':
+    resolution: {integrity: sha512-o3aJlUTeL8p3gTYdgCKGjI2EOxE4oWBYoaUboJ77bsvcNuWiL6X8RXEA7vGUY+F0zrp0UTlcixpIMEEOgDbgDA==}
     hasBin: true
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/create-burner@1.0.0-alpha.14':
-    resolution: {integrity: sha512-gOgvGNXweYAs1HyaX/ARD9oog9p5JvmeqqAIEXmOBrPv/R7/cY4dLVRS0ZG02Bcb2P6CLCoTWiMTz9t7n004Lg==}
+  '@dojoengine/create-burner@1.0.0-alpha.22':
+    resolution: {integrity: sha512-R1kOb4Gbi0aT8oYhRL1pEXHgG4nA8YPqYFPHD+i4XKMGz4nxucsIL//IynJVW7oeAibElufNyKcCiuhq91Q3rg==}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
       starknet: 6.11.0
 
-  '@dojoengine/react@1.0.0-alpha.14':
-    resolution: {integrity: sha512-oV2QE5VLJsIDyBLqtfH3LDdfGu1DORxEcvrO0UvHyIT6AvA0Gk61O+oOQ+bQ6ry/O4mGOvOX5Txno8jeA4Znew==}
+  '@dojoengine/react@1.0.0-alpha.22':
+    resolution: {integrity: sha512-pGx3zwr7YC7yhLVi7qJbNkDXflUB3KdbL5d8ydMvyt137Fq0A8ev2l74WY5d01iF4NwYhAaaHwu77ztcGrlcSw==}
     peerDependencies:
       react: ^18.2.0
       starknet: 6.11.0
@@ -1045,19 +1061,19 @@ packages:
   '@dojoengine/recs@2.0.13':
     resolution: {integrity: sha512-Cgz4Unlnk2FSDoFTYKrJexX/KiSYPMFMxftxQkC+9LUKS5yNGkgFQM7xu4/L1HvpDAenL7NjUmH6ynRAS7Iifw==}
 
-  '@dojoengine/state@1.0.0-alpha.14':
-    resolution: {integrity: sha512-4scuHGt05efeQ9JCP7fYyLwJBN/QIyQZ/NW5ObTNpHzjTQKY1G678o4LP7lhEmPJ8h6gJZTHLrRg380AJDCrlQ==}
+  '@dojoengine/state@1.0.0-alpha.22':
+    resolution: {integrity: sha512-iA/ShshfHlq220R2zgYK+RPjrYWO+p//lmamo97AaPXt2LV7YmscnR7B6A/TOXAwKNkF7UawGR5lk/+L5wv/0A==}
     peerDependencies:
       starknet: 6.11.0
 
-  '@dojoengine/torii-client@1.0.0-alpha.14':
-    resolution: {integrity: sha512-2tc5Phn6yI7dR5oHe9Jf3k88MCXO/K5KYoz+UUvk5Paf2dm5yHC2rKE3kqKwLBpBVuzg3GVzRTLnc55miVVXSQ==}
+  '@dojoengine/torii-client@1.0.0-alpha.22':
+    resolution: {integrity: sha512-0oungBQ5lZ8o2SAGQ5hoTpipRcGf0ehxiGpN6YsQvGvFHenQesW1hbqjxe/x5sfNslKgxjSPl+nN6PR0HXfefQ==}
 
-  '@dojoengine/torii-wasm@1.0.0-alpha.14':
-    resolution: {integrity: sha512-FABJsR/cIPLX+4vbR4rs2idwukwHgMV5xA55Gj6xX3IcaYj8wv1SokJGvV9vr+I8lc9qQ1JXpOAAGNQDOuu7pQ==}
+  '@dojoengine/torii-wasm@1.0.0-alpha.22':
+    resolution: {integrity: sha512-YfOMnLshZXhIlKfIkfch9aLN9IMrN/+iZHFGmmEDYWcleD67IQ614AcmWXeu3Fji58BfFWWteP+e8jlTqzzLQw==}
 
-  '@dojoengine/utils@1.0.0-alpha.14':
-    resolution: {integrity: sha512-JrJXmMX4fwmNmesWW0aQgZBazQTobR/z43ik/nTDQorSSWZLC0Y+L8XEVz+U6tlB6QHjP/usfVU/CSLe9zg8Gg==}
+  '@dojoengine/utils@1.0.0-alpha.22':
+    resolution: {integrity: sha512-MLDVKO8lblGAAzveUMRUuDeBlOF2ieXXarhtYbsKoN4WN6mH3W/VvDK+/hac6/vTCgln5DafvpZHafGdAkfVnw==}
     peerDependencies:
       starknet: 6.11.0
 
@@ -1612,6 +1628,9 @@ packages:
 
   '@latticexyz/utils@2.0.12':
     resolution: {integrity: sha512-AwniovUlWY7YL92Mjz/3R0V9g8c5wYg5t3agRmMZ9wgktUB6BYZC65n+sKp88wUuN3DrMLb51UFZOycGh0JD2w==}
+
+  '@latticexyz/utils@2.2.12':
+    resolution: {integrity: sha512-NOEvz90dUqjFJPemIMRIjb++9kkYccNsVRdA1B3pEhltZ9AGsr3k8NF28RAzYqYrQpRIQ/YkEiGkfNFG9SBS9g==}
 
   '@latticexyz/utils@2.2.3':
     resolution: {integrity: sha512-ybm0bOtGTbUU2knlZ1++djE9LfnKlzi1D+TOjIOUtALJ/2cS2jGFJGGewdrs5mxzQDQNQLB2VIGeuwXasFikAg==}
@@ -2297,6 +2316,9 @@ packages:
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
 
+  '@starknet-io/types-js@0.7.7':
+    resolution: {integrity: sha512-WLrpK7LIaIb8Ymxu6KF/6JkGW1sso988DweWu7p5QY/3y7waBIiPvzh27D9bX5KIJNRDyOoOVoHVEKYUYWZ/RQ==}
+
   '@starknet-react/chains@0.1.7':
     resolution: {integrity: sha512-UNh97I1SvuJKaAhKOmpEk8JcWuZWMlPG/ba2HcvFYL9x/47BKndJ+Da9V+iJFtkHUjreVnajT1snsaz1XMG+UQ==}
 
@@ -2649,6 +2671,16 @@ packages:
       typescript:
         optional: true
 
+  '@typescript-eslint/parser@8.9.0':
+    resolution: {integrity: sha512-U+BLn2rqTTHnc4FL3FJjxaXptTxmf9sNftJK62XLz4+GxG3hLHm/SUNaaXP5Y4uTiuYoL5YLy4JBCJe3+t8awQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      eslint: ^8.57.0 || ^9.0.0
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   '@typescript-eslint/scope-manager@6.21.0':
     resolution: {integrity: sha512-OwLUIWZJry80O99zvqXVEioyniJMa+d2GrqpUTqi5/v5D5rOrppJVBPa0yKCblcigC0/aYAzxxqQ1B+DS2RYsg==}
     engines: {node: ^16.0.0 || >=18.0.0}
@@ -2659,6 +2691,10 @@ packages:
 
   '@typescript-eslint/scope-manager@8.8.0':
     resolution: {integrity: sha512-EL8eaGC6gx3jDd8GwEFEV091210U97J0jeEHrAYvIYosmEGet4wJ+g0SYmLu+oRiAwbSA5AVrt6DxLHfdd+bUg==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@typescript-eslint/scope-manager@8.9.0':
+    resolution: {integrity: sha512-bZu9bUud9ym1cabmOYH9S6TnbWRzpklVmwqICeOulTCZ9ue2/pczWzQvt/cGj2r2o1RdKoZbuEMalJJSYw3pHQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@typescript-eslint/type-utils@7.18.0':
@@ -2692,6 +2728,10 @@ packages:
     resolution: {integrity: sha512-QJwc50hRCgBd/k12sTykOJbESe1RrzmX6COk8Y525C9l7oweZ+1lw9JiU56im7Amm8swlz00DRIlxMYLizr2Vw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@typescript-eslint/types@8.9.0':
+    resolution: {integrity: sha512-SjgkvdYyt1FAPhU9c6FiYCXrldwYYlIQLkuc+LfAhCna6ggp96ACncdtlbn8FmnG72tUkXclrDExOpEYf1nfJQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
   '@typescript-eslint/typescript-estree@6.21.0':
     resolution: {integrity: sha512-6npJTkZcO+y2/kr+z0hc4HwNfrrP4kNYh57ek7yCNlrBjWQ1Y0OS7jiZTkgumrvkX5HkEKXFZkkdFNkaW2wmUQ==}
     engines: {node: ^16.0.0 || >=18.0.0}
@@ -2712,6 +2752,15 @@ packages:
 
   '@typescript-eslint/typescript-estree@8.8.0':
     resolution: {integrity: sha512-ZaMJwc/0ckLz5DaAZ+pNLmHv8AMVGtfWxZe/x2JVEkD5LnmhWiQMMcYT7IY7gkdJuzJ9P14fRy28lUrlDSWYdw==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  '@typescript-eslint/typescript-estree@8.9.0':
+    resolution: {integrity: sha512-9iJYTgKLDG6+iqegehc5+EqE6sqaee7kb8vWpmHZ86EqwDjmlqNNHeqDVqb9duh+BY6WCNHfIGvuVU3Tf9Db0g==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '*'
@@ -2741,6 +2790,10 @@ packages:
 
   '@typescript-eslint/visitor-keys@8.8.0':
     resolution: {integrity: sha512-8mq51Lx6Hpmd7HnA2fcHQo3YgfX1qbccxQOgZcb4tvasu//zXRaA1j5ZRFeCw/VRAdFi4mRM9DnZw0Nu0Q2d1g==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@typescript-eslint/visitor-keys@8.9.0':
+    resolution: {integrity: sha512-Ht4y38ubk4L5/U8xKUBfKNYGmvKvA1CANoxiTRMM+tOLk3lbF3DvzZCxJCRSE+2GdCMSh6zq9VZJc3asc1XuAA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@typescript/vfs@1.6.0':
@@ -3217,6 +3270,10 @@ packages:
   colord@2.9.3:
     resolution: {integrity: sha512-jeC1axXpnb0/2nn/Y1LPuLdgXBLH7aDcHu4KEKfqw3CUhX7ZpfBSlPKyqXE6btIgEzfWtrX3/tyBCaCvXvMkOw==}
 
+  colors@1.4.0:
+    resolution: {integrity: sha512-a+UqTh4kgZg/SlGvfbzDHpgRu7AAQOmmqRHJnxhRZICKFUT91brVhNNt58CMWU9PsBbv3PDCZUHbVxuDiH2mtA==}
+    engines: {node: '>=0.1.90'}
+
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
@@ -3473,6 +3530,10 @@ packages:
   dot-case@3.0.4:
     resolution: {integrity: sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==}
 
+  dotenv@16.4.5:
+    resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
+    engines: {node: '>=12'}
+
   draco3d@1.5.7:
     resolution: {integrity: sha512-m6WCKt/erDXcw+70IJXnG7M3awwQPAsZvJGX5zY7beBqpELw6RDGkYVU0W43AFxye4pDZ5i2Lbyc/NNGqwjUVQ==}
 
@@ -3613,8 +3674,8 @@ packages:
   eslint-import-resolver-node@0.3.9:
     resolution: {integrity: sha512-WFj2isz22JahUv+B788TlO3N6zL3nNJGU8CcZbPZvVEkBPaJdCV4vy5wyghty5ROFbCRnm132v8BScu5/1BQ8g==}
 
-  eslint-module-utils@2.11.0:
-    resolution: {integrity: sha512-gbBE5Hitek/oG6MUVj6sFuzEjA/ClzNflVrLovHi/JgLdC7fiN5gLAY1WIPW1a0V5I999MnsrvVrCOGmmVqDBQ==}
+  eslint-module-utils@2.12.0:
+    resolution: {integrity: sha512-wALZ0HFoytlyh/1+4wuZ9FJCD/leWHQzzrxJ8+rebyReSLk7LApMyd3WJaLVoN+D5+WIdJyDK1c6JnE65V4Zyg==}
     engines: {node: '>=4'}
     peerDependencies:
       '@typescript-eslint/parser': '*'
@@ -3640,18 +3701,18 @@ packages:
     peerDependencies:
       eslint: '>=8'
 
-  eslint-plugin-import@2.30.0:
-    resolution: {integrity: sha512-/mHNE9jINJfiD2EKkg1BKyPyUk4zdnT54YgbOgfjSakWT5oyX/qQLVNTkehyfpcMxZXMy1zyonZ2v7hZTX43Yw==}
+  eslint-plugin-import@2.31.0:
+    resolution: {integrity: sha512-ixmkI62Rbc2/w8Vfxyh1jQRTdRTF52VxwRVHl/ykPAmqG+Nb7/kNn+byLP0LxPgI7zWA16Jt82SybJInmMia3A==}
     engines: {node: '>=4'}
     peerDependencies:
       '@typescript-eslint/parser': '*'
-      eslint: ^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8
+      eslint: ^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9
     peerDependenciesMeta:
       '@typescript-eslint/parser':
         optional: true
 
-  eslint-plugin-n@17.10.2:
-    resolution: {integrity: sha512-e+s4eAf5NtJaxPhTNu3qMO0Iz40WANS93w9LQgYcvuljgvDmWi/a3rh+OrNyMHeng6aOWGJO0rCg5lH4zi8yTw==}
+  eslint-plugin-n@17.11.1:
+    resolution: {integrity: sha512-93IUD82N6tIEgjztVI/l3ElHtC2wTa9boJHrD8iN+NyDxjxz/daZUZKfkedjBZNdg6EqDk4irybUsiPwDqXAEA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       eslint: '>=8.23.0'
@@ -3673,8 +3734,8 @@ packages:
     peerDependencies:
       eslint: '>=7'
 
-  eslint-plugin-react@7.36.1:
-    resolution: {integrity: sha512-/qwbqNXZoq+VP30s1d4Nc1C5GTxjJQjk4Jzs4Wq2qzxFM7dSmuG2UkIjg2USMLh3A/aVcUNrK7v0J5U1XEGGwA==}
+  eslint-plugin-react@7.37.1:
+    resolution: {integrity: sha512-xwTnwDqzbDRA8uJ7BMxPs/EXRB3i8ZfnOIp8BsxEQkT0nHPp+WWceqGgo6rKb9ctNi8GJLDT4Go5HAWELa/WMg==}
     engines: {node: '>=4'}
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7
@@ -3956,6 +4017,9 @@ packages:
     resolution: {integrity: sha512-IscL4lAigJpc/9Idkg07sdyUOXkB+/goTDQm8EhMGn/nIAW4rn04d+D47ils75drNQIfZZKDIIZrWrbIKvjoWA==}
     peerDependencies:
       starknet: ^5.18.0
+
+  get-starknet-core@4.0.0:
+    resolution: {integrity: sha512-6pLmidQZkC3wZsrHY99grQHoGpuuXqkbSP65F8ov1/JsEI8DDLkhsAuLCKFzNOK56cJp+f1bWWfTJ57e9r5eqQ==}
 
   get-stream@6.0.1:
     resolution: {integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==}
@@ -5193,6 +5257,11 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
+  prettier@3.1.1:
+    resolution: {integrity: sha512-22UbSzg8luF4UuZtzgiUOfcGM8s4tjBv6dJRT7j275NXsy2jb4aJa4NNveul5x4eqlF1wuhuR2RElK71RvmVaw==}
+    engines: {node: '>=14'}
+    hasBin: true
+
   pretty-format@29.7.0:
     resolution: {integrity: sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -5636,12 +5705,8 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
-  starknet-types@0.0.4:
-    resolution: {integrity: sha512-PklqFeSp9gMqbzW5IbO8l1s3xsNZYkNG/x/gsytgYCIl6H/cqiwCZolVTneyTibvrdHOQ8kP3PXwfdsypudYqw==}
-    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-
-  starknet@6.7.0:
-    resolution: {integrity: sha512-8NMedKBfkg/oZUgTYNw9lKeNoNYakL/Roah2HwKzrVyvDxBs0arrNrR8No8+tTq0wQg0HGu1w+JIObynjHAK3w==}
+  starknet@6.11.0:
+    resolution: {integrity: sha512-u50KrGDi9fbu1Ogu7ynwF/tSeFlp3mzOg1/Y5x50tYFICImo3OfY4lOz9OtYDk404HK4eUujKkhov9tG7GAKlg==}
 
   stats-gl@2.2.8:
     resolution: {integrity: sha512-94G5nZvduDmzxBS7K0lYnynYwreZpkknD8g5dZmU6mpwIhy3caCrjAm11Qm1cbyx7mqix7Fp00RkbsonzKWnoQ==}
@@ -7344,56 +7409,56 @@ snapshots:
       picocolors: 1.1.0
       sisteransi: 1.0.5
 
-  '@dojoengine/core@1.0.0-alpha.12(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)':
+  '@dojoengine/core@1.0.0-alpha.21(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.6.2)(zod@3.23.8)
-      starknet: 6.7.0(encoding@0.1.13)
+      starknet: 6.11.0(encoding@0.1.13)
       zod: 3.23.8
     transitivePeerDependencies:
       - bufferutil
       - typescript
       - utf-8-validate
 
-  '@dojoengine/core@1.0.0-alpha.14(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)':
+  '@dojoengine/core@1.0.0-alpha.22(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.6.2)(zod@3.23.8)
-      starknet: 6.7.0(encoding@0.1.13)
+      starknet: 6.11.0(encoding@0.1.13)
       zod: 3.23.8
     transitivePeerDependencies:
       - bufferutil
       - typescript
       - utf-8-validate
 
-  '@dojoengine/create-burner@1.0.0-alpha.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)':
+  '@dojoengine/create-burner@1.0.0-alpha.22(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)':
     dependencies:
-      '@dojoengine/core': 1.0.0-alpha.14(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)
+      '@dojoengine/core': 1.0.0-alpha.22(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)
       '@scure/bip32': 1.5.0
-      '@starknet-react/core': 2.3.0(get-starknet-core@3.3.3(starknet@6.7.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))
+      '@starknet-react/core': 2.3.0(get-starknet-core@3.3.3(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))
       encoding: 0.1.13
-      get-starknet-core: 3.3.3(starknet@6.7.0(encoding@0.1.13))
+      get-starknet-core: 3.3.3(starknet@6.11.0(encoding@0.1.13))
       js-cookie: 3.0.5
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      starknet: 6.7.0(encoding@0.1.13)
+      starknet: 6.11.0(encoding@0.1.13)
     transitivePeerDependencies:
       - bufferutil
       - typescript
       - utf-8-validate
 
-  '@dojoengine/react@1.0.0-alpha.14(@types/node@20.16.5)(@types/react@18.3.7)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.6.2)(zod@3.23.8)':
+  '@dojoengine/react@1.0.0-alpha.22(@types/node@20.16.5)(@types/react@18.3.7)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))(type-fest@0.21.3)(typescript@5.6.2)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.6.2)(zod@3.23.8)
-      '@dojoengine/state': 1.0.0-alpha.14(@types/node@20.16.5)(@types/react@18.3.7)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
-      '@dojoengine/torii-client': 1.0.0-alpha.14
-      '@dojoengine/utils': 1.0.0-alpha.14(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
-      '@latticexyz/utils': 2.2.3
+      '@dojoengine/state': 1.0.0-alpha.22(@types/node@20.16.5)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
+      '@dojoengine/torii-client': 1.0.0-alpha.22
+      '@dojoengine/utils': 1.0.0-alpha.22(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)
+      '@latticexyz/utils': 2.2.12
       encoding: 0.1.13
       fast-deep-equal: 3.1.3
-      get-starknet-core: 3.3.3(starknet@6.7.0(encoding@0.1.13))
+      get-starknet-core: 3.3.3(starknet@6.11.0(encoding@0.1.13))
       js-cookie: 3.0.5
       react: 18.3.1
       rxjs: 7.5.5
-      starknet: 6.7.0(encoding@0.1.13)
+      starknet: 6.11.0(encoding@0.1.13)
       type-fest: 0.21.3
       zustand: 4.5.5(@types/react@18.3.7)(react@18.3.1)
     transitivePeerDependencies:
@@ -7430,27 +7495,22 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.0.0-alpha.14(@types/node@20.16.5)(@types/react@18.3.7)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)':
+  '@dojoengine/state@1.0.0-alpha.22(@types/node@20.16.5)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.6.2)(zod@3.23.8)
-      '@dojoengine/torii-client': 1.0.0-alpha.14
-      '@latticexyz/utils': 2.2.3
-      starknet: 6.7.0(encoding@0.1.13)
+      '@dojoengine/torii-client': 1.0.0-alpha.22
+      starknet: 6.11.0(encoding@0.1.13)
       vitest: 1.6.0(@types/node@20.16.5)(@vitest/ui@2.1.1(vitest@2.1.1))(jsdom@24.1.3)
-      zustand: 4.5.5(@types/react@18.3.7)(react@18.3.1)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
-      - '@types/react'
       - '@vitest/browser'
       - '@vitest/ui'
       - bufferutil
       - happy-dom
-      - immer
       - jsdom
       - less
       - lightningcss
-      - react
       - sass
       - sass-embedded
       - stylus
@@ -7461,20 +7521,19 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/torii-client@1.0.0-alpha.14':
+  '@dojoengine/torii-client@1.0.0-alpha.22':
     dependencies:
-      '@dojoengine/torii-wasm': 1.0.0-alpha.14
-      typescript: 5.6.2
+      '@dojoengine/torii-wasm': 1.0.0-alpha.22
 
-  '@dojoengine/torii-wasm@1.0.0-alpha.14': {}
+  '@dojoengine/torii-wasm@1.0.0-alpha.22': {}
 
-  '@dojoengine/utils@1.0.0-alpha.14(starknet@6.7.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)':
+  '@dojoengine/utils@1.0.0-alpha.22(starknet@6.11.0(encoding@0.1.13))(typescript@5.6.2)(zod@3.23.8)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.6.2)(zod@3.23.8)
-      '@latticexyz/utils': 2.2.3
+      '@latticexyz/utils': 2.2.12
       mathjs: 12.4.3
       micro-starknet: 0.2.3
-      starknet: 6.7.0(encoding@0.1.13)
+      starknet: 6.11.0(encoding@0.1.13)
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -7846,6 +7905,12 @@ snapshots:
       - zod
 
   '@latticexyz/utils@2.0.12':
+    dependencies:
+      mobx: 6.13.2
+      proxy-deep: 3.1.1
+      rxjs: 7.5.5
+
+  '@latticexyz/utils@2.2.12':
     dependencies:
       mobx: 6.13.2
       proxy-deep: 3.1.1
@@ -8589,17 +8654,19 @@ snapshots:
 
   '@sinclair/typebox@0.27.8': {}
 
+  '@starknet-io/types-js@0.7.7': {}
+
   '@starknet-react/chains@0.1.7': {}
 
-  '@starknet-react/core@2.3.0(get-starknet-core@3.3.3(starknet@6.7.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.7.0(encoding@0.1.13))':
+  '@starknet-react/core@2.3.0(get-starknet-core@3.3.3(starknet@6.11.0(encoding@0.1.13)))(react@18.3.1)(starknet@6.11.0(encoding@0.1.13))':
     dependencies:
       '@starknet-react/chains': 0.1.7
       '@tanstack/react-query': 5.56.2(react@18.3.1)
       eventemitter3: 5.0.1
-      get-starknet-core: 3.3.3(starknet@6.7.0(encoding@0.1.13))
+      get-starknet-core: 3.3.3(starknet@6.11.0(encoding@0.1.13))
       immutable: 4.3.7
       react: 18.3.1
-      starknet: 6.7.0(encoding@0.1.13)
+      starknet: 6.11.0(encoding@0.1.13)
       zod: 3.23.8
 
   '@stitches/react@1.2.8(react@18.3.1)':
@@ -8905,10 +8972,10 @@ snapshots:
     dependencies:
       '@types/node': 20.16.5
 
-  '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)':
+  '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)':
     dependencies:
       '@eslint-community/regexpp': 4.11.1
-      '@typescript-eslint/parser': 8.8.0(eslint@8.57.1)(typescript@5.6.2)
+      '@typescript-eslint/parser': 8.9.0(eslint@8.57.1)(typescript@5.6.2)
       '@typescript-eslint/scope-manager': 7.18.0
       '@typescript-eslint/type-utils': 7.18.0(eslint@8.57.1)(typescript@5.6.2)
       '@typescript-eslint/utils': 7.18.0(eslint@8.57.1)(typescript@5.6.2)
@@ -8954,19 +9021,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2)':
-    dependencies:
-      '@typescript-eslint/scope-manager': 8.8.0
-      '@typescript-eslint/types': 8.8.0
-      '@typescript-eslint/typescript-estree': 8.8.0(typescript@5.6.2)
-      '@typescript-eslint/visitor-keys': 8.8.0
-      debug: 4.3.7
-      eslint: 8.57.1
-    optionalDependencies:
-      typescript: 5.6.2
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/parser@8.8.0(eslint@9.11.1(jiti@1.21.6))(typescript@5.6.2)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.8.0
@@ -8975,6 +9029,19 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.8.0
       debug: 4.3.7
       eslint: 9.11.1(jiti@1.21.6)
+    optionalDependencies:
+      typescript: 5.6.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2)':
+    dependencies:
+      '@typescript-eslint/scope-manager': 8.9.0
+      '@typescript-eslint/types': 8.9.0
+      '@typescript-eslint/typescript-estree': 8.9.0(typescript@5.6.2)
+      '@typescript-eslint/visitor-keys': 8.9.0
+      debug: 4.3.7
+      eslint: 8.57.1
     optionalDependencies:
       typescript: 5.6.2
     transitivePeerDependencies:
@@ -8994,6 +9061,11 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.8.0
       '@typescript-eslint/visitor-keys': 8.8.0
+
+  '@typescript-eslint/scope-manager@8.9.0':
+    dependencies:
+      '@typescript-eslint/types': 8.9.0
+      '@typescript-eslint/visitor-keys': 8.9.0
 
   '@typescript-eslint/type-utils@7.18.0(eslint@8.57.1)(typescript@5.6.2)':
     dependencies:
@@ -9024,6 +9096,8 @@ snapshots:
   '@typescript-eslint/types@7.18.0': {}
 
   '@typescript-eslint/types@8.8.0': {}
+
+  '@typescript-eslint/types@8.9.0': {}
 
   '@typescript-eslint/typescript-estree@6.21.0(typescript@5.6.2)':
     dependencies:
@@ -9070,6 +9144,21 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@typescript-eslint/typescript-estree@8.9.0(typescript@5.6.2)':
+    dependencies:
+      '@typescript-eslint/types': 8.9.0
+      '@typescript-eslint/visitor-keys': 8.9.0
+      debug: 4.3.7
+      fast-glob: 3.3.2
+      is-glob: 4.0.3
+      minimatch: 9.0.5
+      semver: 7.6.3
+      ts-api-utils: 1.3.0(typescript@5.6.2)
+    optionalDependencies:
+      typescript: 5.6.2
+    transitivePeerDependencies:
+      - supports-color
+
   '@typescript-eslint/utils@7.18.0(eslint@8.57.1)(typescript@5.6.2)':
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.57.1)
@@ -9105,6 +9194,11 @@ snapshots:
   '@typescript-eslint/visitor-keys@8.8.0':
     dependencies:
       '@typescript-eslint/types': 8.8.0
+      eslint-visitor-keys: 3.4.3
+
+  '@typescript-eslint/visitor-keys@8.9.0':
+    dependencies:
+      '@typescript-eslint/types': 8.9.0
       eslint-visitor-keys: 3.4.3
 
   '@typescript/vfs@1.6.0(typescript@5.4.4)':
@@ -9324,7 +9418,7 @@ snapshots:
       sirv: 2.0.4
       tinyglobby: 0.2.6
       tinyrainbow: 1.2.0
-      vitest: 2.1.1(@types/node@22.5.5)(@vitest/ui@2.1.1)(jsdom@24.1.3)
+      vitest: 2.1.1(@types/node@20.16.5)(@vitest/ui@2.1.1)(jsdom@24.1.3)
 
   '@vitest/utils@1.6.0':
     dependencies:
@@ -9716,6 +9810,8 @@ snapshots:
 
   colord@2.9.3: {}
 
+  colors@1.4.0: {}
+
   combined-stream@1.0.8:
     dependencies:
       delayed-stream: 1.0.0
@@ -9953,6 +10049,8 @@ snapshots:
       no-case: 3.0.4
       tslib: 2.7.0
 
+  dotenv@16.4.5: {}
+
   draco3d@1.5.7: {}
 
   eastasianwidth@0.2.0: {}
@@ -10174,24 +10272,24 @@ snapshots:
       eslint: 8.57.1
       semver: 7.6.3
 
-  eslint-config-standard-with-typescript@43.0.1(@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.10.2(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@5.6.2):
+  eslint-config-standard-with-typescript@43.0.1(@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.11.1(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@5.6.2):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)
+      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)
       '@typescript-eslint/parser': 6.21.0(eslint@8.57.1)(typescript@5.6.2)
       eslint: 8.57.1
-      eslint-config-standard: 17.1.0(eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.10.2(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)
-      eslint-plugin-import: 2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)
-      eslint-plugin-n: 17.10.2(eslint@8.57.1)
+      eslint-config-standard: 17.1.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.11.1(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)
+      eslint-plugin-n: 17.11.1(eslint@8.57.1)
       eslint-plugin-promise: 6.6.0(eslint@8.57.1)
       typescript: 5.6.2
     transitivePeerDependencies:
       - supports-color
 
-  eslint-config-standard@17.1.0(eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.10.2(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1):
+  eslint-config-standard@17.1.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1))(eslint-plugin-n@17.11.1(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1):
     dependencies:
       eslint: 8.57.1
-      eslint-plugin-import: 2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)
-      eslint-plugin-n: 17.10.2(eslint@8.57.1)
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)
+      eslint-plugin-n: 17.11.1(eslint@8.57.1)
       eslint-plugin-promise: 6.6.0(eslint@8.57.1)
 
   eslint-import-resolver-node@0.3.9:
@@ -10202,11 +10300,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.11.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@8.57.1):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@8.57.1):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.8.0(eslint@8.57.1)(typescript@5.6.2)
+      '@typescript-eslint/parser': 8.9.0(eslint@8.57.1)(typescript@5.6.2)
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
@@ -10219,7 +10317,7 @@ snapshots:
       eslint: 8.57.1
       eslint-compat-utils: 0.5.1(eslint@8.57.1)
 
-  eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1):
+  eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -10230,7 +10328,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.11.0(@typescript-eslint/parser@8.8.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@8.57.1)
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.9.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@8.57.1)
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -10239,15 +10337,16 @@ snapshots:
       object.groupby: 1.0.3
       object.values: 1.2.0
       semver: 6.3.1
+      string.prototype.trimend: 1.0.8
       tsconfig-paths: 3.15.0
     optionalDependencies:
-      '@typescript-eslint/parser': 8.8.0(eslint@8.57.1)(typescript@5.6.2)
+      '@typescript-eslint/parser': 8.9.0(eslint@8.57.1)(typescript@5.6.2)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-n@17.10.2(eslint@8.57.1):
+  eslint-plugin-n@17.11.1(eslint@8.57.1):
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.57.1)
       enhanced-resolve: 5.17.1
@@ -10271,7 +10370,7 @@ snapshots:
     dependencies:
       eslint: 9.11.1(jiti@1.21.6)
 
-  eslint-plugin-react@7.36.1(eslint@8.57.1):
+  eslint-plugin-react@7.37.1(eslint@8.57.1):
     dependencies:
       array-includes: 3.1.8
       array.prototype.findlast: 1.2.5
@@ -10645,10 +10744,14 @@ snapshots:
 
   get-nonce@1.0.1: {}
 
-  get-starknet-core@3.3.3(starknet@6.7.0(encoding@0.1.13)):
+  get-starknet-core@3.3.3(starknet@6.11.0(encoding@0.1.13)):
     dependencies:
       '@module-federation/runtime': 0.1.21
-      starknet: 6.7.0(encoding@0.1.13)
+      starknet: 6.11.0(encoding@0.1.13)
+
+  get-starknet-core@4.0.0:
+    dependencies:
+      '@starknet-io/types-js': 0.7.7
 
   get-stream@6.0.1: {}
 
@@ -12222,6 +12325,8 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
+  prettier@3.1.1: {}
+
   pretty-format@29.7.0:
     dependencies:
       '@jest/schemas': 29.6.3
@@ -12763,19 +12868,19 @@ snapshots:
 
   stackback@0.0.2: {}
 
-  starknet-types@0.0.4: {}
-
-  starknet@6.7.0(encoding@0.1.13):
+  starknet@6.11.0(encoding@0.1.13):
     dependencies:
       '@noble/curves': 1.4.2
+      '@noble/hashes': 1.5.0
       '@scure/base': 1.1.8
       '@scure/starknet': 1.0.0
       abi-wan-kanabi: 2.2.3
       fetch-cookie: 3.0.1
+      get-starknet-core: 4.0.0
       isomorphic-fetch: 3.0.0(encoding@0.1.13)
       lossless-json: 4.0.1
       pako: 2.1.0
-      starknet-types: 0.0.4
+      starknet-types-07: '@starknet-io/types-js@0.7.7'
       ts-mixer: 6.0.4
       url-join: 4.0.1
     transitivePeerDependencies:

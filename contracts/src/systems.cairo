@@ -59,3 +59,9 @@ pub mod guild {
     #[cfg(test)]
     mod tests;
 }
+
+pub mod ownership {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}

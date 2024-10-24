@@ -12,7 +12,7 @@ import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useChatStore } from "../chat/ChatState";
-// import { addNewTab } from "../chat/utils";
+import { getMessageKey } from "../chat/utils";
 
 export const MessageIcon = ({
   playerName,
@@ -24,20 +24,17 @@ export const MessageIcon = ({
   const {
     account: { account },
   } = useDojo();
-
-  const tabs = useChatStore((state) => state.tabs);
-  const setTabs = useChatStore((state) => state.setTabs);
-  const setCurrentTab = useChatStore((state) => state.setCurrentTab);
+  const addTab = useChatStore((state) => state.addTab);
 
   const handleClick = () => {
     if (!playerName) return;
-    // addNewTab(
-    //   tabs,
-    //   { name: playerName, address: toHexString(selectedPlayer), displayed: true },
-    //   setCurrentTab,
-    //   account.address,
-    //   setTabs,
-    // );
+    addTab({
+      name: playerName,
+      key: getMessageKey(account.address, selectedPlayer),
+      address: toHexString(selectedPlayer),
+      displayed: true,
+      lastSeen: new Date(),
+    });
   };
 
   return (
@@ -127,7 +124,7 @@ export const PlayerId = () => {
             <AvatarImage address={toHexString(selectedPlayer!)} />
             <div className="flex flex-row">
               <div className="flex flex-col mr-6">
-                <div className="text-2xl font-bold flex flex-row items-center space-x-1 bg-black/20 p-2 rounded-lg shadow-md">
+                <div className="text-2xl font-bold flex flex-row items-center space-x-1 bg-brown/20 p-2 rounded-lg shadow-md">
                   <span className="text-gold">{playerName || "No player selected"}</span>
                   {playerName && (
                     <div className="flex items-center justify-center p-1">
@@ -187,7 +184,7 @@ const AvatarImage = ({ address }: { address: string }) => {
 
   return (
     <div className="w-36 min-w-36 mr-4">
-      {<img className="h-36 w-36  object-cover  border-gold/10 border-2 bg-black" src={imgSource} alt="" />}
+      {<img className="h-36 w-36  object-cover  border-gold/10 border-2 bg-brown" src={imgSource} alt="" />}
     </div>
   );
 };

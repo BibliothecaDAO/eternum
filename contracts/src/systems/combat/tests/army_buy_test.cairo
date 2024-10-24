@@ -17,7 +17,8 @@ use eternum::systems::{
 };
 use eternum::utils::testing::{
     config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_combat_systems, deploy_system}, general::mint
+    systems::{deploy_realm_systems, deploy_combat_systems, deploy_system},
+    general::{mint, get_default_realm_pos, spawn_realm}
 };
 
 use starknet::ContractAddress;
@@ -58,7 +59,6 @@ fn set_configurations(world: IWorldDispatcher) {
 fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     let world = spawn_eternum();
     set_configurations(world);
-    let realm_system_dispatcher = deploy_realm_systems(world);
     let combat_system_dispatcher = deploy_combat_systems(world);
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
@@ -68,7 +68,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
-    let realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1);
+    let realm_id = spawn_realm(world, 1, get_default_realm_pos().into());
     mint(
         world,
         realm_id,

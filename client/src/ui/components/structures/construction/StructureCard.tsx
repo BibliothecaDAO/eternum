@@ -28,7 +28,7 @@ export const StructureCard = ({
     <div
       onClick={onClick}
       className={clsx(
-        "text-gold bg-black/30 overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded-xl",
+        "text-gold bg-brown/30 overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded-xl",
         {
           "!border-lightest": active,
         },
@@ -41,7 +41,7 @@ export const StructureCard = ({
         className="absolute inset-0 w-full h-full object-contain"
       />
       {!canBuild && (
-        <div className="absolute w-full h-full bg-black/70 p-4 text-xs flex justify-center">
+        <div className="absolute w-full h-full bg-brown/70 p-4 text-xs flex justify-center">
           <div className="self-center flex items-center space-x-2">
             <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />
           </div>
@@ -63,7 +63,7 @@ export const StructureCard = ({
         />
       </div>
       <div className="flex relative flex-col items-end p-2 rounded">
-        <div className="rounded p-1 bg-black/10">
+        <div className="rounded p-1 bg-brown/10">
           <ResourceIcon withTooltip={false} resource={name} size="lg" />
         </div>
       </div>

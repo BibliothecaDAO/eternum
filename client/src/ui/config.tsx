@@ -3,7 +3,30 @@ import { BuildingType, FELT_CENTER } from "@bibliothecadao/eternum";
 
 export { FELT_CENTER };
 
-export const IS_LOW_GRAPHICS_ENABLED = localStorage.getItem("LOW_GRAPHICS_FLAG") === "true";
+const checkIfGameIsRunningOnLaptop = async () => {
+  if (!localStorage.getItem("INITIAL_LAPTOP_CHECK")) {
+    try {
+      const battery = await (navigator as any).getBattery();
+      if (battery.charging && battery.chargingTime === 0) {
+        // It's likely a desktop
+        localStorage.setItem("LOW_GRAPHICS_FLAG", "false");
+      } else {
+        // It's likely a laptop or mobile device
+        localStorage.setItem("LOW_GRAPHICS_FLAG", "true");
+      }
+    } catch (error) {
+      console.error("Error calling getBattery():", error);
+      // Set default values if getBattery() is not supported
+      localStorage.setItem("LOW_GRAPHICS_FLAG", "true");
+    } finally {
+      localStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
+    }
+  }
+  return localStorage.getItem("LOW_GRAPHICS_FLAG") === "true";
+};
+
+export const IS_LOW_GRAPHICS_ENABLED = await checkIfGameIsRunningOnLaptop();
+console.log("IS_LOW_GRAPHICS_ENABLED", IS_LOW_GRAPHICS_ENABLED);
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 
