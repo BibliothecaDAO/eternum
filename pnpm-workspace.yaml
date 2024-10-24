@@ -5,4 +5,5 @@ packages:
   - "config"
   - "bot"
   - "balancing"
+  - "landing"
   - "season_pass/scripts/deployment"

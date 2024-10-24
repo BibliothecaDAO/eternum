@@ -6,6 +6,7 @@ import { dojoConfig } from "../dojoConfig";
 import App from "./App";
 import { setup } from "./dojo/setup";
 import { DojoProvider } from "./hooks/context/DojoContext";
+import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
 import GameRenderer from "./three/GameRenderer";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
@@ -35,9 +36,11 @@ async function init() {
   inject();
   root.render(
     <React.StrictMode>
-      <DojoProvider value={setupResult}>
-        <App />
-      </DojoProvider>
+      <StarknetProvider>
+        <DojoProvider value={setupResult}>
+          <App />
+        </DojoProvider>
+      </StarknetProvider>
     </React.StrictMode>,
   );
 }

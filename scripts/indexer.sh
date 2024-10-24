@@ -8,6 +8,13 @@ usage() {
     exit 1
 }
 
+# Detect OS and set sed in-place options
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    SED_INPLACE=(-i '')
+else
+    SED_INPLACE=(-i)
+fi
+
 # Parse command-line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -35,15 +42,30 @@ if [[ "$setConfig" == "true" ]]; then
 
     # remove the old addresses if they exist
     ENV_FILE=../../../client/.env.local
-    sed -i '' '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
-    sed -i '' '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
-    sed -i '' '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
+    sed "${SED_INPLACE[@]}" '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
+    sed "${SED_INPLACE[@]}" '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
+    sed "${SED_INPLACE[@]}" '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
 
     # add the new addresses to the .env.local file
     echo "" >> $ENV_FILE
     echo "VITE_SEASON_PASS_ADDRESS=$VITE_SEASON_PASS_ADDRESS" >> $ENV_FILE
     echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
     echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
+
+    TORII_CONFIG_FILE=../../../contracts/torii.toml
+    # Ensure the torii_config_file exists
+    if [[ ! -f "$TORII_CONFIG_FILE" ]]; then
+        echo "contracts = []" > "$TORII_CONFIG_FILE"
+        echo "Created new torii_config_file at $TORII_CONFIG_FILE"
+    fi
+        # Remove existing ERC721 entries
+    sed "${SED_INPLACE[@]}" '/{ type = "ERC721", address = "/d' "$TORII_CONFIG_FILE"
+
+    # Insert new ERC721 entries before the closing ]
+    sed -i "/contracts = \[/a\\
+    \ \ { type = \"ERC721\", address = \"$VITE_REALMS_ADDRESS\" },\\
+    \ \ { type = \"ERC721\", address = \"$VITE_SEASON_PASS_ADDRESS\" },\\
+    " "$TORII_CONFIG_FILE"
 
     cd ../../../
     printf "\n\n"
@@ -70,4 +92,5 @@ fi
 
 echo "-----  Started indexer ----- "
 rm torii.db
-torii --world 0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11 --database torii.db --allowed-origins "*"
+
+torii --database torii.db --world 0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11 --allowed-origins "*" --config torii.toml
