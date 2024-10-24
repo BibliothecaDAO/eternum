@@ -1,6 +1,6 @@
 import React from "react";
 
-import { mainnet, sepolia } from "@starknet-react/chains";
+import { devnet, mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, publicProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <StarknetConfig chains={[mainnet, sepolia]} provider={publicProvider()} connectors={connectors} explorer={voyager}>
+    <StarknetConfig chains={[mainnet, sepolia, devnet]} provider={publicProvider()} connectors={connectors} explorer={voyager}>
       {children}
     </StarknetConfig>
   );

@@ -1150,4 +1150,35 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
   }
+
+  public async mint_test_realm(props: SystemProps.MintTestRealmProps) {
+    const {
+      token_id,
+      signer,
+      realms_address // Should this be dynamically fetched from season config or passed to provider instead of prop?
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: realms_address.toString(),
+      entrypoint: "mint",
+      calldata: [
+        token_id,
+        0
+      ],
+    });
+  }
+
+  public async mint_season_pass(props: SystemProps.MintSeasonPassProps) {
+    const {
+      token_id,
+      signer,
+      season_pass_address // Should this be dynamically fetched from season config instead of prop?
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: season_pass_address.toString(),
+      entrypoint: "mint",
+      calldata: [
+        token_id
+      ],
+    });
+  }
 }

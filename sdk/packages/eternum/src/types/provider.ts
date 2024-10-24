@@ -580,3 +580,12 @@ export interface SetSettlementConfigProps extends SystemSigner {
   min_angle_increase: num.BigNumberish;
   max_angle_increase: num.BigNumberish;
 }
+
+export interface MintTestRealmProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  realms_address: num.BigNumberish;
+}
+export interface MintSeasonPassProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  season_pass_address: num.BigNumberish;
+}
