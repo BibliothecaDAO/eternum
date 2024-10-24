@@ -414,7 +414,19 @@ export default class HexceptionScene extends HexagonScene {
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
-
+            if (buildingType === ResourceMiningTypes.Mine) {
+              const material = new THREE.MeshStandardMaterial({
+                color: new THREE.Color("white"),
+                emissive: new THREE.Color("red").multiplyScalar(10),
+                emissiveIntensity: 5,
+              });
+              instance.children[1].material = material;
+              instance.children[2].material = material;
+              // instance.children[1].material.emissive = new THREE.Color(1.5, 1, 4);
+              // instance.children[1].material.emissiveIntensity = 2;
+              // instance.children[2].material.emissive = new THREE.Color(1.5, 1, 4);
+              // instance.children[2].material.emissiveIntensity = 2;
+            }
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
 

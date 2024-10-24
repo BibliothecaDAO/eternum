@@ -42,7 +42,7 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
   [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
   [ResourceMiningTypes.Forge]: "/models/buildings/forge.glb",
-  [ResourceMiningTypes.Mine]: "/models/buildings/mine.glb",
+  [ResourceMiningTypes.Mine]: "/models/buildings/mine_2.glb",
   [ResourceMiningTypes.LumberMill]: "/models/buildings/lumber_mill.glb",
   [ResourceMiningTypes.Dragonhide]: "/models/buildings/dragonhide.glb",
   [RealmLevelNames.Settlement]: "/models/buildings/castle0.glb",

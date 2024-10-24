@@ -3,16 +3,9 @@ import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SceneName } from "@/types";
 import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import _ from "lodash";
+import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, RenderPass } from "postprocessing";
 import * as THREE from "three";
-import {
-  BokehPass,
-  CSS2DRenderer,
-  EffectComposer,
-  FXAAShader,
-  RenderPass,
-  ShaderPass,
-  UnrealBloomPass,
-} from "three-stdlib";
+import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import Stats from "three/examples/jsm/libs/stats.module";
@@ -172,15 +165,17 @@ export default class GameRenderer {
       this.isLowGraphicsMode ? window.innerWidth : window.innerWidth,
       this.isLowGraphicsMode ? window.innerHeight : window.innerHeight,
     );
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 1;
     this.renderer.autoClear = false;
-    this.composer = new EffectComposer(this.renderer);
+    this.composer = new EffectComposer(this.renderer, {
+      frameBufferType: THREE.HalfFloatType,
+    });
   }
 
   initStats() {
     this.stats = new (Stats as any)();
-    if (import.meta.env.VITE_PUBLIC_SHOW_FPS) {
+    if (!import.meta.env.VITE_PUBLIC_SHOW_FPS) {
       this.stats.dom.style.left = "";
       this.stats.dom.style.right = "0";
       this.stats.dom.style.overflow = "hidden";
@@ -297,49 +292,18 @@ export default class GameRenderer {
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
 
-    const fxaaPass = new ShaderPass(FXAAShader);
-    fxaaPass.uniforms["resolution"].value.set(1 / window.innerWidth, 1 / window.innerHeight);
-    this.composer.addPass(fxaaPass);
+    this.composer.addPass(
+      new EffectPass(
+        this.camera,
 
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.25, 0.1, 0.9);
-    this.composer.addPass(bloomPass);
-
-    const bokehPass = new BokehPass(this.hexceptionScene.getScene(), this.camera, {
-      focus: 1.0,
-      aperture: 0.025,
-      maxblur: 0.01,
-    });
-    //this.composer.addPass(bokehPass);
-
-    const depthOfFieldFolder = GUIManager.addFolder("Depth of Field");
-    const depthOfFieldParams = {
-      focus: 1.0,
-      aperture: 0.025,
-      maxblur: 0.01,
-    };
-
-    depthOfFieldFolder
-      .add(depthOfFieldParams, "focus", 0.1, 30)
-      .onChange((value: any) => {
-        bokehPass.uniforms["focus"].value = value;
-      })
-      .name("Focus");
-
-    depthOfFieldFolder
-      .add(depthOfFieldParams, "aperture", 0.001, 0.1)
-      .onChange((value: any) => {
-        bokehPass.uniforms["aperture"].value = value;
-      })
-      .name("Aperture");
-
-    depthOfFieldFolder
-      .add(depthOfFieldParams, "maxblur", 0.0, 0.1)
-      .onChange((value: any) => {
-        bokehPass.uniforms["maxblur"].value = value;
-      })
-      .name("Max Blur");
-
-    depthOfFieldFolder.close();
+        new FXAAEffect(),
+        new BloomEffect({
+          luminanceThreshold: 1.1,
+          mipmapBlur: true,
+          intensity: 0.15,
+        }),
+      ),
+    );
 
     this.sceneManager.moveCameraForScene();
   }
