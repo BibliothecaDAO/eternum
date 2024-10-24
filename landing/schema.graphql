@@ -37,7 +37,7 @@ type ERC__Transfer {
 
 scalar Enum
 
-union ModelUnion = eternum_AcceptOrder | eternum_AcceptPartialOrder | eternum_AddressName | eternum_Army | eternum_ArrivalTime | eternum_Bank | eternum_BankConfig | eternum_Battle | eternum_BattleClaimData | eternum_BattleConfig | eternum_BattleJoinData | eternum_BattleLeaveData | eternum_BattlePillageData | eternum_BattleStartData | eternum_Building | eternum_BuildingCategoryPopConfig | eternum_BuildingConfig | eternum_BuildingGeneralConfig | eternum_BuildingQuantityv2 | eternum_CancelOrder | eternum_CapacityCategory | eternum_CapacityConfig | eternum_Contribution | eternum_CreateOrder | eternum_DetachedResource | eternum_EntityName | eternum_EntityOwner | eternum_Epoch | eternum_EternumEvent | eternum_ForeignKey | eternum_FragmentMineDiscovered | eternum_GameEnded | eternum_Guild | eternum_GuildMember | eternum_GuildWhitelist | eternum_HasClaimedStartingResources | eternum_Health | eternum_Hyperstructure | eternum_HyperstructureCoOwnersChange | eternum_HyperstructureConfig | eternum_HyperstructureContribution | eternum_HyperstructureFinished | eternum_HyperstructureResourceConfig | eternum_LevelingConfig | eternum_Liquidity | eternum_LiquidityEvent | eternum_MapConfig | eternum_MapExplored | eternum_Market | eternum_MercenariesConfig | eternum_Message | eternum_Movable | eternum_Orders | eternum_OwnedResourcesTracker | eternum_Owner | eternum_Population | eternum_PopulationConfig | eternum_Position | eternum_Production | eternum_ProductionConfig | eternum_ProductionDeadline | eternum_ProductionInput | eternum_ProductionOutput | eternum_Progress | eternum_Protectee | eternum_Protector | eternum_Quantity | eternum_QuantityTracker | eternum_Realm | eternum_RealmFreeMintConfig | eternum_RealmLevelConfig | eternum_RealmMaxLevelConfig | eternum_Resource | eternum_ResourceAllowance | eternum_ResourceBridgeConfig | eternum_ResourceBridgeFeeSplitConfig | eternum_ResourceBridgeWhitelistConfig | eternum_ResourceCost | eternum_ResourceTransferLock | eternum_Season | eternum_SeasonConfig | eternum_SettleRealmData | eternum_SettlementConfig | eternum_SpeedConfig | eternum_Stamina | eternum_StaminaConfig | eternum_StaminaRefillConfig | eternum_Status | eternum_Structure | eternum_StructureCount | eternum_SwapEvent | eternum_TickConfig | eternum_Tile | eternum_Trade | eternum_Transfer | eternum_Travel | eternum_TravelFoodCostConfig | eternum_TravelStaminaCostConfig | eternum_TroopConfig | eternum_Weight | eternum_WeightConfig | eternum_WorldConfig
+union ModelUnion = eternum_AcceptOrder | eternum_AcceptPartialOrder | eternum_AddressName | eternum_Army | eternum_ArrivalTime | eternum_Bank | eternum_BankConfig | eternum_Battle | eternum_BattleClaimData | eternum_BattleConfig | eternum_BattleJoinData | eternum_BattleLeaveData | eternum_BattlePillageData | eternum_BattleStartData | eternum_Building | eternum_BuildingCategoryPopConfig | eternum_BuildingConfig | eternum_BuildingGeneralConfig | eternum_BuildingQuantityv2 | eternum_CancelOrder | eternum_CapacityCategory | eternum_CapacityConfig | eternum_Contribution | eternum_CreateOrder | eternum_DetachedResource | eternum_EntityName | eternum_EntityOwner | eternum_Epoch | eternum_EternumEvent | eternum_ForeignKey | eternum_FragmentMineDiscovered | eternum_GameEnded | eternum_Guild | eternum_GuildMember | eternum_GuildWhitelist | eternum_Health | eternum_Hyperstructure | eternum_HyperstructureCoOwnersChange | eternum_HyperstructureConfig | eternum_HyperstructureContribution | eternum_HyperstructureFinished | eternum_HyperstructureResourceConfig | eternum_LevelingConfig | eternum_Liquidity | eternum_LiquidityEvent | eternum_MapConfig | eternum_MapExplored | eternum_Market | eternum_MercenariesConfig | eternum_Message | eternum_Movable | eternum_Orders | eternum_OwnedResourcesTracker | eternum_Owner | eternum_Population | eternum_PopulationConfig | eternum_Position | eternum_Production | eternum_ProductionConfig | eternum_ProductionDeadline | eternum_ProductionInput | eternum_ProductionOutput | eternum_Progress | eternum_Protectee | eternum_Protector | eternum_Quantity | eternum_QuantityTracker | eternum_Quest | eternum_QuestBonus | eternum_QuestConfig | eternum_QuestRewardConfig | eternum_Realm | eternum_RealmLevelConfig | eternum_RealmMaxLevelConfig | eternum_Resource | eternum_ResourceAllowance | eternum_ResourceBridgeConfig | eternum_ResourceBridgeFeeSplitConfig | eternum_ResourceBridgeWhitelistConfig | eternum_ResourceCost | eternum_ResourceTransferLock | eternum_Season | eternum_SeasonConfig | eternum_SettleRealmData | eternum_SettlementConfig | eternum_SpeedConfig | eternum_Stamina | eternum_StaminaConfig | eternum_StaminaRefillConfig | eternum_Status | eternum_Structure | eternum_StructureCount | eternum_SwapEvent | eternum_TickConfig | eternum_Tile | eternum_Trade | eternum_Transfer | eternum_Travel | eternum_TravelFoodCostConfig | eternum_TravelStaminaCostConfig | eternum_TroopConfig | eternum_Weight | eternum_WeightConfig | eternum_WorldConfig
 
 enum OrderDirection {
   ASC
@@ -217,7 +217,6 @@ type World__Query {
   eternumGuildMemberModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_GuildMemberOrder, where: eternum_GuildMemberWhereInput): eternum_GuildMemberConnection
   eternumGuildModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_GuildOrder, where: eternum_GuildWhereInput): eternum_GuildConnection
   eternumGuildWhitelistModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_GuildWhitelistOrder, where: eternum_GuildWhitelistWhereInput): eternum_GuildWhitelistConnection
-  eternumHasClaimedStartingResourcesModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_HasClaimedStartingResourcesOrder, where: eternum_HasClaimedStartingResourcesWhereInput): eternum_HasClaimedStartingResourcesConnection
   eternumHealthModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_HealthOrder, where: eternum_HealthWhereInput): eternum_HealthConnection
   eternumHyperstructureCoOwnersChangeModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_HyperstructureCoOwnersChangeOrder, where: eternum_HyperstructureCoOwnersChangeWhereInput): eternum_HyperstructureCoOwnersChangeConnection
   eternumHyperstructureConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_HyperstructureConfigOrder, where: eternum_HyperstructureConfigWhereInput): eternum_HyperstructureConfigConnection
@@ -250,7 +249,10 @@ type World__Query {
   eternumProtectorModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_ProtectorOrder, where: eternum_ProtectorWhereInput): eternum_ProtectorConnection
   eternumQuantityModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_QuantityOrder, where: eternum_QuantityWhereInput): eternum_QuantityConnection
   eternumQuantityTrackerModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_QuantityTrackerOrder, where: eternum_QuantityTrackerWhereInput): eternum_QuantityTrackerConnection
-  eternumRealmFreeMintConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_RealmFreeMintConfigOrder, where: eternum_RealmFreeMintConfigWhereInput): eternum_RealmFreeMintConfigConnection
+  eternumQuestBonusModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_QuestBonusOrder, where: eternum_QuestBonusWhereInput): eternum_QuestBonusConnection
+  eternumQuestConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_QuestConfigOrder, where: eternum_QuestConfigWhereInput): eternum_QuestConfigConnection
+  eternumQuestModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_QuestOrder, where: eternum_QuestWhereInput): eternum_QuestConnection
+  eternumQuestRewardConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_QuestRewardConfigOrder, where: eternum_QuestRewardConfigWhereInput): eternum_QuestRewardConfigConnection
   eternumRealmLevelConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_RealmLevelConfigOrder, where: eternum_RealmLevelConfigWhereInput): eternum_RealmLevelConfigConnection
   eternumRealmMaxLevelConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_RealmMaxLevelConfigOrder, where: eternum_RealmMaxLevelConfigWhereInput): eternum_RealmMaxLevelConfigConnection
   eternumRealmModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: eternum_RealmOrder, where: eternum_RealmWhereInput): eternum_RealmConnection
@@ -3271,62 +3273,6 @@ input eternum_GuildWhitelistWhereInput {
   is_whitelisted: bool
 }
 
-type eternum_HasClaimedStartingResources {
-  claimed: bool
-  config_id: u32
-  entity: World__Entity
-  entity_id: u32
-  eventMessage: World__EventMessage
-}
-
-type eternum_HasClaimedStartingResourcesConnection {
-  edges: [eternum_HasClaimedStartingResourcesEdge]
-  pageInfo: World__PageInfo!
-  totalCount: Int!
-}
-
-type eternum_HasClaimedStartingResourcesEdge {
-  cursor: Cursor
-  node: eternum_HasClaimedStartingResources
-}
-
-input eternum_HasClaimedStartingResourcesOrder {
-  direction: OrderDirection!
-  field: eternum_HasClaimedStartingResourcesOrderField!
-}
-
-enum eternum_HasClaimedStartingResourcesOrderField {
-  CLAIMED
-  CONFIG_ID
-  ENTITY_ID
-}
-
-input eternum_HasClaimedStartingResourcesWhereInput {
-  claimed: bool
-  config_id: u32
-  config_idEQ: u32
-  config_idGT: u32
-  config_idGTE: u32
-  config_idIN: [u32]
-  config_idLIKE: u32
-  config_idLT: u32
-  config_idLTE: u32
-  config_idNEQ: u32
-  config_idNOTIN: [u32]
-  config_idNOTLIKE: u32
-  entity_id: u32
-  entity_idEQ: u32
-  entity_idGT: u32
-  entity_idGTE: u32
-  entity_idIN: [u32]
-  entity_idLIKE: u32
-  entity_idLT: u32
-  entity_idLTE: u32
-  entity_idNEQ: u32
-  entity_idNOTIN: [u32]
-  entity_idNOTLIKE: u32
-}
-
 type eternum_Health {
   current: u128
   entity: World__Entity
@@ -5889,58 +5835,99 @@ input eternum_QuantityWhereInput {
   valueNOTLIKE: u128
 }
 
-type eternum_Realm {
+type eternum_Quest {
+  completed: bool
+  config_id: u32
   entity: World__Entity
   entity_id: u32
   eventMessage: World__EventMessage
-  level: u8
-  order: u8
-  produced_resources: u128
-  realm_id: u32
 }
 
-type eternum_RealmConnection {
-  edges: [eternum_RealmEdge]
+type eternum_QuestBonus {
+  claimed: bool
+  entity: World__Entity
+  entity_id: u32
+  eventMessage: World__EventMessage
+  resource_type: u8
+}
+
+type eternum_QuestBonusConnection {
+  edges: [eternum_QuestBonusEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type eternum_RealmEdge {
+type eternum_QuestBonusEdge {
   cursor: Cursor
-  node: eternum_Realm
+  node: eternum_QuestBonus
 }
 
-type eternum_RealmFreeMintConfig {
+input eternum_QuestBonusOrder {
+  direction: OrderDirection!
+  field: eternum_QuestBonusOrderField!
+}
+
+enum eternum_QuestBonusOrderField {
+  CLAIMED
+  ENTITY_ID
+  RESOURCE_TYPE
+}
+
+input eternum_QuestBonusWhereInput {
+  claimed: bool
+  entity_id: u32
+  entity_idEQ: u32
+  entity_idGT: u32
+  entity_idGTE: u32
+  entity_idIN: [u32]
+  entity_idLIKE: u32
+  entity_idLT: u32
+  entity_idLTE: u32
+  entity_idNEQ: u32
+  entity_idNOTIN: [u32]
+  entity_idNOTLIKE: u32
+  resource_type: u8
+  resource_typeEQ: u8
+  resource_typeGT: u8
+  resource_typeGTE: u8
+  resource_typeIN: [u8]
+  resource_typeLIKE: u8
+  resource_typeLT: u8
+  resource_typeLTE: u8
+  resource_typeNEQ: u8
+  resource_typeNOTIN: [u8]
+  resource_typeNOTLIKE: u8
+}
+
+type eternum_QuestConfig {
   config_id: u32
-  detached_resource_count: u32
-  detached_resource_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
+  production_material_multiplier: u16
 }
 
-type eternum_RealmFreeMintConfigConnection {
-  edges: [eternum_RealmFreeMintConfigEdge]
+type eternum_QuestConfigConnection {
+  edges: [eternum_QuestConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type eternum_RealmFreeMintConfigEdge {
+type eternum_QuestConfigEdge {
   cursor: Cursor
-  node: eternum_RealmFreeMintConfig
+  node: eternum_QuestConfig
 }
 
-input eternum_RealmFreeMintConfigOrder {
+input eternum_QuestConfigOrder {
   direction: OrderDirection!
-  field: eternum_RealmFreeMintConfigOrderField!
+  field: eternum_QuestConfigOrderField!
 }
 
-enum eternum_RealmFreeMintConfigOrderField {
+enum eternum_QuestConfigOrderField {
   CONFIG_ID
-  DETACHED_RESOURCE_COUNT
-  DETACHED_RESOURCE_ID
+  PRODUCTION_MATERIAL_MULTIPLIER
 }
 
-input eternum_RealmFreeMintConfigWhereInput {
+input eternum_QuestConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32
@@ -5952,6 +5939,72 @@ input eternum_RealmFreeMintConfigWhereInput {
   config_idNEQ: u32
   config_idNOTIN: [u32]
   config_idNOTLIKE: u32
+  production_material_multiplier: u16
+  production_material_multiplierEQ: u16
+  production_material_multiplierGT: u16
+  production_material_multiplierGTE: u16
+  production_material_multiplierIN: [u16]
+  production_material_multiplierLIKE: u16
+  production_material_multiplierLT: u16
+  production_material_multiplierLTE: u16
+  production_material_multiplierNEQ: u16
+  production_material_multiplierNOTIN: [u16]
+  production_material_multiplierNOTLIKE: u16
+}
+
+type eternum_QuestConnection {
+  edges: [eternum_QuestEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_QuestEdge {
+  cursor: Cursor
+  node: eternum_Quest
+}
+
+input eternum_QuestOrder {
+  direction: OrderDirection!
+  field: eternum_QuestOrderField!
+}
+
+enum eternum_QuestOrderField {
+  COMPLETED
+  CONFIG_ID
+  ENTITY_ID
+}
+
+type eternum_QuestRewardConfig {
+  detached_resource_count: u32
+  detached_resource_id: u32
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  quest_id: u32
+}
+
+type eternum_QuestRewardConfigConnection {
+  edges: [eternum_QuestRewardConfigEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_QuestRewardConfigEdge {
+  cursor: Cursor
+  node: eternum_QuestRewardConfig
+}
+
+input eternum_QuestRewardConfigOrder {
+  direction: OrderDirection!
+  field: eternum_QuestRewardConfigOrderField!
+}
+
+enum eternum_QuestRewardConfigOrderField {
+  DETACHED_RESOURCE_COUNT
+  DETACHED_RESOURCE_ID
+  QUEST_ID
+}
+
+input eternum_QuestRewardConfigWhereInput {
   detached_resource_count: u32
   detached_resource_countEQ: u32
   detached_resource_countGT: u32
@@ -5974,6 +6027,64 @@ input eternum_RealmFreeMintConfigWhereInput {
   detached_resource_idNEQ: u32
   detached_resource_idNOTIN: [u32]
   detached_resource_idNOTLIKE: u32
+  quest_id: u32
+  quest_idEQ: u32
+  quest_idGT: u32
+  quest_idGTE: u32
+  quest_idIN: [u32]
+  quest_idLIKE: u32
+  quest_idLT: u32
+  quest_idLTE: u32
+  quest_idNEQ: u32
+  quest_idNOTIN: [u32]
+  quest_idNOTLIKE: u32
+}
+
+input eternum_QuestWhereInput {
+  completed: bool
+  config_id: u32
+  config_idEQ: u32
+  config_idGT: u32
+  config_idGTE: u32
+  config_idIN: [u32]
+  config_idLIKE: u32
+  config_idLT: u32
+  config_idLTE: u32
+  config_idNEQ: u32
+  config_idNOTIN: [u32]
+  config_idNOTLIKE: u32
+  entity_id: u32
+  entity_idEQ: u32
+  entity_idGT: u32
+  entity_idGTE: u32
+  entity_idIN: [u32]
+  entity_idLIKE: u32
+  entity_idLT: u32
+  entity_idLTE: u32
+  entity_idNEQ: u32
+  entity_idNOTIN: [u32]
+  entity_idNOTLIKE: u32
+}
+
+type eternum_Realm {
+  entity: World__Entity
+  entity_id: u32
+  eventMessage: World__EventMessage
+  level: u8
+  order: u8
+  produced_resources: u128
+  realm_id: u32
+}
+
+type eternum_RealmConnection {
+  edges: [eternum_RealmEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_RealmEdge {
+  cursor: Cursor
+  node: eternum_Realm
 }
 
 type eternum_RealmLevelConfig {
