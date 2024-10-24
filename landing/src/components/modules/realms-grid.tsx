@@ -2,7 +2,7 @@ import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { AnimatedGrid } from "./animated-grid";
 import { RealmCard } from "./realm-card";
 interface SeasonPassRowProps {
-  realms: GetRealmsQuery["ercBalance"];
+  realms: GetRealmsQuery["ercBalance"] & {seasonPassMinted: boolean};
   toggleNftSelection: (tokenId: string, collectionAddress: string) => void;
   isNftSelected?: (tokenId: string, contractAddress: string) => boolean;
 }

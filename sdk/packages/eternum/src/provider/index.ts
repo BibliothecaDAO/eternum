@@ -1,6 +1,6 @@
 import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
-import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
+import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
 
 export const NAMESPACE = "eternum";
@@ -1167,18 +1167,20 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async mint_season_pass(props: SystemProps.MintSeasonPassProps) {
+  public async mint_season_passes(props: SystemProps.MintSeasonPassesProps) {
     const {
-      token_id,
+      token_ids,
       signer,
       season_pass_address // Should this be dynamically fetched from season config instead of prop?
     } = props;
-    return await this.executeAndCheckTransaction(signer, {
+    const multicall = token_ids.map((token) => {
+      return {
       contractAddress: season_pass_address.toString(),
       entrypoint: "mint",
       calldata: [
-        token_id
-      ],
-    });
+        uint256.bnToUint256(token)
+      ]
+    }})
+    return await this.executeAndCheckTransaction(signer, multicall);
   }
 }

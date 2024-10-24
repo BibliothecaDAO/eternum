@@ -4,7 +4,7 @@ import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { TypeP } from "../typography/type-p";
 
 export interface RealmCardProps {
-  realm: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["ercBalance"]>[0]>;
+  realm: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["ercBalance"]>[0]> & { seasonPassMinted: boolean };
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   isSelected?: boolean;
 }
@@ -12,13 +12,13 @@ export interface RealmCardProps {
 export const RealmCard = ({
   realm: {
     tokenMetadata: { tokenId, contractAddress },
+    seasonPassMinted
   },
   isSelected,
   toggleNftSelection,
 }: RealmCardProps) => {
-
   const handleCardClick = () => {
-    if (toggleNftSelection) {
+    if (toggleNftSelection && !seasonPassMinted) {
       toggleNftSelection(tokenId.toString(), contractAddress ?? "0x");
     }
   };
@@ -31,12 +31,13 @@ export const RealmCard = ({
       <CardHeader>
         <CardTitle className="flex justify-between items-center gap-2">
           ID: {Number(tokenId)}
-          <Checkbox checked={isSelected} />
+          <Checkbox checked={isSelected} disabled={seasonPassMinted} />
         </CardTitle>
         <CardDescription>{/*description*/}</CardDescription>
       </CardHeader>
       <CardContent>
-        <TypeP>{/*owner*/}Owner</TypeP>
+        
+        <TypeP>{seasonPassMinted && "Season Pass Minted"}</TypeP>
         {/*name && <TypeP>{name}</TypeP>*/}
       </CardContent>
     </Card>

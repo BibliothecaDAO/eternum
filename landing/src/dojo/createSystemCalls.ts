@@ -311,8 +311,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.mint_test_realm(props);
   };
 
-  const mint_season_pass = async (props: SystemProps.MintSeasonPassProps) => {
-    await provider.mint_season_pass(props);
+  const mint_season_passes = async (props: SystemProps.MintSeasonPassProps) => {
+    await provider.mint_season_passes(props);
   };
 
   const isLive = async () => {
@@ -387,7 +387,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     battle_leave_and_pillage: withQueueing(withErrorHandling(battle_leave_and_pillage)),
 
     mint_test_realm: withQueueing(withErrorHandling(mint_test_realm)),
-    mint_season_pass: withQueueing(withErrorHandling(mint_season_pass)),
+    mint_season_passes: withQueueing(withErrorHandling(mint_season_passes)),
 
   };
 
