@@ -48,7 +48,7 @@ function Mint() {
 
   const { data, error } = useQuery({
     queryKey: ["erc721Balance"],
-    queryFn: () => execute(GET_REALMS, { accountAddress: account?.address }),
+    queryFn: () => execute(GET_REALMS, { accountAddress: account?.address! }),
     enabled: !!account?.address,
   });
 
