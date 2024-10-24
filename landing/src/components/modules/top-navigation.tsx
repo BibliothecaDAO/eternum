@@ -28,7 +28,7 @@ export const TopNavigation = () => {
 
   return (
     <div className="flex justify-between items-center w-full">
-            <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <SidebarTrigger />
         <TypeH2>Season 0</TypeH2>
       </div>

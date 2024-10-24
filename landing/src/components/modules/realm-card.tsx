@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { GetRealmsQuery } from "@/hooks/gql";
 import { useState } from "react";
 import { TypeP } from "../typography/type-p";
 
@@ -10,7 +11,7 @@ export interface Realm {
   name?: string;
 }
 
-export const RealmCard = ({ title, description, checked: initialChecked, owner, name }: SeasonPass) => {
+export const RealmCard = ({ tokenMetadata, description, checked: initialChecked, owner, name }: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["ercBalance"]>[0]>) => {
   const [isChecked, setIsChecked] = useState(initialChecked);
 
   const handleCardClick = () => {
@@ -25,7 +26,7 @@ export const RealmCard = ({ title, description, checked: initialChecked, owner, 
     >
       <CardHeader>
         <CardTitle className="flex justify-between items-center gap-2">
-          {title}
+          ID: {Number(tokenMetadata.tokenId)}
           <Checkbox checked={isChecked} />
         </CardTitle>
         <CardDescription>{description}</CardDescription>

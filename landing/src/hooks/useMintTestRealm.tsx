@@ -31,11 +31,11 @@ export const useMintTestRealm = () => {
     account /*&& isConnected /*&& isCorrectChain*/ && !isMinting
   ), [account, /*isConnected, /*isCorrectChain,*/  isMinting]);
 
-  const _mint = useCallback(() => {
+  const _mint = useCallback(async(token_id: number) => {
     if (account && canMint) {
       setIsMinting(true);
-      setMintingTokenId(1);
-      mint_test_realm({signer: account, token_id: 2, realms_address }).then((v) => {
+      setMintingTokenId(token_id);
+      await mint_test_realm({signer: account, token_id, realms_address }).then((v) => {
         // wait supply to change...
       }).catch((e) => {
         console.error(`mint error:`, e);

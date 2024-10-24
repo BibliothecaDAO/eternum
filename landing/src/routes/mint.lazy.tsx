@@ -24,19 +24,6 @@ const realms = [
     name: "Shadow Walker",
   },
 ];
-interface GetRealmsVariables {
-  accountAddress: string;
-}
-
-interface Realm {
-  id: string;
-  name: string;
-  // other fields...
-}
-
-interface GetRealmsData {
-  realms: Realm[];
-}
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
@@ -46,15 +33,41 @@ function Mint() {
 
   const { account } = useAccountOrBurner();
 
-  const { data, error } = useQuery({
+  const { data, error, refetch } = useQuery({
     queryKey: ["erc721Balance"],
     queryFn: () => execute(GET_REALMS, { accountAddress: account?.address! }),
     enabled: !!account?.address,
+    refetchInterval: 10_000
   });
 
   console.log(data);
 
   const { mint } = useMintTestRealm();
+
+  // Function to get the highest tokenId
+  const getHighestTokenId = () => {
+    if (!data?.ercBalance || data.ercBalance.length === 0) {
+      return null;
+    }
+
+    const highest = data.ercBalance.reduce((max, item) => {
+      const tokenId = BigInt(item.tokenMetadata.tokenId);
+      return tokenId > max ? tokenId : max;
+    }, BigInt(0));
+
+    return Number(highest); // Convert BigInt to string in decimal
+  };
+
+  const highestTokenId = getHighestTokenId();
+
+  const mintRealm = async() => {
+    if(mint){
+      mint((highestTokenId ?? 0) + 1); 
+      refetch()
+    }
+  }
+
+  console.log("Highest Token ID:", highestTokenId);
 
   return (
     <div className="flex flex-col h-full">
@@ -64,14 +77,18 @@ function Mint() {
       {error?.message}
 
       <div className="flex-grow overflow-y-auto">
-        {mint && <Button onClick={() => mint()}>Mint a Realm</Button>}
+        {mint && <Button onClick={() => mintRealm()}>Mint a Realm</Button>}
         <div className="flex flex-col gap-2">
-          <RealmsGrid realms={realms} />
+          <RealmsGrid realms={data?.ercBalance} />
         </div>
       </div>
       <div className="flex justify-end border border-gold/15 p-4 rounded-xl mt-4 sticky bottom-0 bg-brown gap-8">
         <TypeH2>10 Selected</TypeH2>
         <Button /*onClick={mintRealmPasses}*/ variant="cta">Mint Season Passes</Button>
+      </div>
+      {/* Display Highest Token ID */}
+      <div className="mt-4">
+        <TypeH2>Highest Token ID: {highestTokenId ?? "N/A"}</TypeH2>
       </div>
     </div>
   );
