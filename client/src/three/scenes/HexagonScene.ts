@@ -100,8 +100,8 @@ export abstract class HexagonScene {
 
   private configureDirectionalLight(): void {
     this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.width = 2048;
-    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.shadow.mapSize.width = 1024;
+    this.mainDirectionalLight.shadow.mapSize.height = 1024;
     this.mainDirectionalLight.shadow.camera.left = -22;
     this.mainDirectionalLight.shadow.camera.right = 18;
     this.mainDirectionalLight.shadow.camera.top = 14;

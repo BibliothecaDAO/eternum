@@ -163,10 +163,12 @@ export default class GameRenderer {
   private initializeRenderer() {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
-      antialias: !this.isLowGraphicsMode,
+      antialias: false,
+      stencil: false,
+      depth: false,
     });
     this.renderer.setPixelRatio(this.isLowGraphicsMode ? 0.75 : window.devicePixelRatio);
-    this.renderer.shadowMap.enabled = !this.isLowGraphicsMode;
+    this.renderer.shadowMap.enabled = false;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setSize(
       this.isLowGraphicsMode ? window.innerWidth : window.innerWidth,
@@ -182,15 +184,7 @@ export default class GameRenderer {
 
   initStats() {
     this.stats = new (Stats as any)();
-    if (!import.meta.env.VITE_PUBLIC_SHOW_FPS) {
-      this.stats.dom.style.left = "";
-      this.stats.dom.style.right = "0";
-      this.stats.dom.style.overflow = "hidden";
-      this.stats.dom.style.opacity = "0.35";
-      this.stats.dom.style.height = "14px";
-      this.stats.dom.style.zIndex = "1";
-      this.stats.dom.style.borderRadius = "0 0 0 3px";
-    }
+
     document.body.appendChild(this.stats.dom);
   }
 
