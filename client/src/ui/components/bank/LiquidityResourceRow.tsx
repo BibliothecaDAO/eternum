@@ -6,15 +6,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  ContractAddress,
-  DONKEY_ENTITY_TYPE,
-  ID,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS,
-  ResourcesIds,
-  resources,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, EntityType, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
@@ -138,7 +130,7 @@ export const LiquidityResourceRow = ({
                 travelTime={computeTravelTime(
                   bankEntityId,
                   entityId,
-                  configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+                  configManager.getSpeedConfig(EntityType.DONKEY),
                   true,
                 )}
                 setCanCarry={setCanCarry}
@@ -310,8 +302,8 @@ const MyLiquidity = ({
 
 const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
   const { setup } = useDojo();
-  const inputResources = RESOURCE_INPUTS_SCALED[marketManager.resourceId];
-  const outputAmount = RESOURCE_OUTPUTS[marketManager.resourceId];
+  const inputResources = configManager.resourceInputs[marketManager.resourceId];
+  const outputAmount = configManager.resourceOutput[marketManager.resourceId].amount;
 
   if (!inputResources?.length) return null;
   const totalPrice =
