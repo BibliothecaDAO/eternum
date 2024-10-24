@@ -4,7 +4,15 @@ import { SceneName } from "@/types";
 import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import _ from "lodash";
 import * as THREE from "three";
-import { CSS2DRenderer, EffectComposer, FXAAShader, RenderPass, ShaderPass, UnrealBloomPass } from "three-stdlib";
+import {
+  BokehPass,
+  CSS2DRenderer,
+  EffectComposer,
+  FXAAShader,
+  RenderPass,
+  ShaderPass,
+  UnrealBloomPass,
+} from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import Stats from "three/examples/jsm/libs/stats.module";
@@ -293,13 +301,45 @@ export default class GameRenderer {
     fxaaPass.uniforms["resolution"].value.set(1 / window.innerWidth, 1 / window.innerHeight);
     this.composer.addPass(fxaaPass);
 
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      1.25, // Интенсивность
-      0.1, // Радиус
-      0.9, // Порог
-    );
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.25, 0.1, 0.9);
     this.composer.addPass(bloomPass);
+
+    const bokehPass = new BokehPass(this.hexceptionScene.getScene(), this.camera, {
+      focus: 1.0,
+      aperture: 0.025,
+      maxblur: 0.01,
+    });
+    //this.composer.addPass(bokehPass);
+
+    const depthOfFieldFolder = GUIManager.addFolder("Depth of Field");
+    const depthOfFieldParams = {
+      focus: 1.0,
+      aperture: 0.025,
+      maxblur: 0.01,
+    };
+
+    depthOfFieldFolder
+      .add(depthOfFieldParams, "focus", 0.1, 30)
+      .onChange((value: any) => {
+        bokehPass.uniforms["focus"].value = value;
+      })
+      .name("Focus");
+
+    depthOfFieldFolder
+      .add(depthOfFieldParams, "aperture", 0.001, 0.1)
+      .onChange((value: any) => {
+        bokehPass.uniforms["aperture"].value = value;
+      })
+      .name("Aperture");
+
+    depthOfFieldFolder
+      .add(depthOfFieldParams, "maxblur", 0.0, 0.1)
+      .onChange((value: any) => {
+        bokehPass.uniforms["maxblur"].value = value;
+      })
+      .name("Max Blur");
+
+    depthOfFieldFolder.close();
 
     this.sceneManager.moveCameraForScene();
   }

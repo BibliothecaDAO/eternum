@@ -11,7 +11,7 @@ export class SelectedHexManager {
     this.aura.setRenderOrder(0);
     this.aura.addToScene(scene);
     this.particles = new Particles(scene);
-    this.particles.setParticleSize(0.1);
+    this.particles.setParticleSize(0.3);
     this.particles.setLightIntensity(3);
   }
 
