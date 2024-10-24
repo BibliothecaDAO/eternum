@@ -36,7 +36,7 @@ export default class InstancedModel {
           tmp.morphTexture!.needsUpdate = true;
         }
 
-        if (name !== "Outline") {
+        if (name !== "Outline" && !name.toLowerCase().includes("ocean")) {
           tmp.castShadow = true;
           tmp.receiveShadow = true;
         }
