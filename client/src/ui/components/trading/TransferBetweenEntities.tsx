@@ -113,6 +113,14 @@ export const TransferBetweenEntities = ({
     });
   };
 
+  const onNewTrade = () => {
+    setSelectedEntityIdFrom(null);
+    setSelectedEntityIdTo(null);
+    setSelectedResourceIds([]);
+    setSelectedResourceAmounts({});
+    setSelectedStepId(STEP_ID.SELECT_ENTITIES);
+  };
+
   const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
     return entities.some((entity) => entity.entity_id === selectedEntityId);
   };
@@ -285,6 +293,9 @@ export const TransferBetweenEntities = ({
         <div className=" justify-center items-center text-center">
           <h4>Transfer successful!</h4>
           <p>Check transfers in the right sidebar transfer menu.</p>
+          <Button variant="primary" size="md" className="mt-4" onClick={onNewTrade}>
+            New transfer
+          </Button>
         </div>
       )}
     </div>

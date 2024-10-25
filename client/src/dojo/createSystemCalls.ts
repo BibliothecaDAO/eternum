@@ -127,6 +127,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.send_resources(props);
   };
 
+  const send_resources_multiple = async (props: SystemProps.SendResourcesMultipleProps) => {
+    await provider.send_resources_multiple(props);
+  };
+
   const pickup_resources = async (props: SystemProps.PickupResourcesProps) => {
     await provider.pickup_resources(props);
   };
@@ -314,6 +318,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const systemCalls = {
     send_resources: withQueueing(withErrorHandling(send_resources)),
+    send_resources_multiple: withQueueing(withErrorHandling(send_resources_multiple)),
     pickup_resources: withQueueing(withErrorHandling(pickup_resources)),
     remove_liquidity: withQueueing(withErrorHandling(remove_liquidity)),
     add_liquidity: withQueueing(withErrorHandling(add_liquidity)),

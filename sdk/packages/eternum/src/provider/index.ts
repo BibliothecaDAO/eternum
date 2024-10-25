@@ -226,6 +226,19 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => ({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "send",
+        calldata: [call.sender_entity_id, call.recipient_entity_id, call.resources.length / 2, ...call.resources],
+      })),
+    );
+  }
+
   public async pickup_resources(props: SystemProps.PickupResourcesProps) {
     const { recipient_entity_id, owner_entity_id, resources, signer } = props;
 
