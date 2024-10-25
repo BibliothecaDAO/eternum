@@ -141,15 +141,16 @@ export default class InstancedModel {
     if (this.mixer && this.animation) {
       const time = performance.now() * 0.001;
       this.instancedMeshes.forEach((mesh, meshIndex) => {
+        // Create a single action for each mesh if it doesn't exist
+        if (!this.animationActions.has(meshIndex)) {
+          const action = this.mixer!.clipAction(this.animation!);
+          this.animationActions.set(meshIndex, action);
+        }
+
+        const action = this.animationActions.get(meshIndex)!;
+        action.play();
+
         for (let i = 0; i < mesh.count; i++) {
-          if (!this.animationActions.has(meshIndex * this.count + i)) {
-            const action = this.mixer!.clipAction(this.animation!);
-            this.animationActions.set(meshIndex * this.count + i, action);
-          }
-
-          const action = this.animationActions.get(meshIndex * this.count + i)!;
-          action.play();
-
           this.mixer!.setTime(time + this.timeOffsets[i]);
           mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
         }
