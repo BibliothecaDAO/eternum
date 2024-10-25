@@ -12,7 +12,9 @@ import {
   ResourcesIds,
   STRUCTURE_COSTS,
 } from "../constants";
+
 import { ResourceInputs, ResourceOutputs } from "../types";
+export * from "./battleSimulation";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   let multipliedCosts: ResourceOutputs = {};
