@@ -32,25 +32,22 @@ export const useMintSeasonPass = () => {
     [account, /*isConnected, /*isCorrectChain,*/ isMinting],
   );
 
-  const _mint = useCallback(
-    async (token_ids: string[]) => {
-      const tokenIdsNumberArray: number[] = token_ids.map((tokenId) => parseInt(tokenId, 16));
-      if (account && canMint) {
-        setIsMinting(true);
-        setMintingTokenId(token_ids);
-        await mint_season_passes({ signer: account, token_ids: tokenIdsNumberArray, season_pass_address })
-          .then((v) => {
-            // wait supply to change...
-          })
-          .catch((e) => {
-            console.error(`mint error:`, e);
-            setMintingTokenId(["0"]);
-            setIsMinting(false);
-          });
-      }
-    },
-    [account, canMint, season_pass_address, mint_season_passes],
-  );
+  const _mint = useCallback(async(token_ids: string[]) => {
+    const tokenIdsNumberArray: number[] = token_ids.map(tokenId => parseInt(tokenId, 16));
+    if (account && canMint) {
+      setIsMinting(true);
+      setMintingTokenId(token_ids);
+      try {
+      const response = await mint_season_passes({signer: account, token_ids: tokenIdsNumberArray, season_pass_address })
+        // waitconsol supply to change...
+        console.log(response)
+      } catch(e) {
+        console.error(`mint error:`, e);
+        setMintingTokenId(['0']);
+        setIsMinting(false);
+      };
+    }
+  }, [account, canMint, season_pass_address, mint_season_passes]);
 
   useEffect(() => {
     if (isMinting /*&& totalSupply >= mintingTokenId*/) {
