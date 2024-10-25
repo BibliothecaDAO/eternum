@@ -16,9 +16,6 @@ export const SelectNftActions = ({
   contractAddress: string;
   deselectAllNfts: () => void;
 }) => {
-  /*const { toggleNftBridge, setNftBridgeModalProps } = useUIStore(
-    (state) => state,
-  );*/
   const isAllSelected = totalSelectedNfts === batchTokenIds?.length;
 
   let batchData: { contractAddress: string; tokenIds: string[] };
@@ -29,41 +26,22 @@ export const SelectNftActions = ({
     };
   }
   return (
-    <div className="my-2 flex w-full justify-between">
-      {/*<div className="flex items-center gap-x-4">
-        <span className="text-lg">Actions:</span>
+    <div className="flex items-center gap-x-4">
+      {isAllSelected ? (
+        <Button variant={"secondary"} className="flex" onClick={deselectAllNfts} size="sm">
+          Deselect All
+          <XIcon className="ml-2" />
+        </Button>
+      ) : (
         <Button
           onClick={() => {
-            setNftBridgeModalProps({
-              selectedTokenIds: selectedTokenIds,
-              sourceChain: sourceChain,
-            });
-            toggleNftBridge();
+            selectBatchNfts(batchData.contractAddress, batchData.tokenIds);
           }}
-          disabled={totalSelectedNfts < 1}
+          size="sm"
         >
-          <Bridge className="mr-2 w-6" />
-          Bridge
+          Select All
         </Button>
-        </div>*/}
-      <div className="flex items-center gap-x-4">
-        {isAllSelected ? (
-          <Button variant={"secondary"} className="flex" onClick={deselectAllNfts} size="sm">
-            Deselect All
-            <XIcon className="ml-2" />
-          </Button>
-        ) : (
-          <Button
-            onClick={() => {
-              selectBatchNfts(batchData.contractAddress, batchData.tokenIds);
-            }}
-            color="default"
-            size="sm"
-          >
-            Select All
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 };
