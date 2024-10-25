@@ -10,7 +10,9 @@ export const getChancesOfSuccess = (
   defenderArmy: ArmyInfo | undefined,
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
 ) => {
-  if (!attackerArmy || !defenderArmy) return 0;
+  if (!attackerArmy || !defenderArmy) {
+    return attackerArmy ? 1 : 0;
+  }
 
   const attackingArmyStrength = Number(
     fullStrength(attackerArmy.troops, troopConfig) * percentageLeft(attackerArmy.health),
