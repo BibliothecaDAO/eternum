@@ -38,16 +38,17 @@ slot deployments delete eternum-40 torii
 slot deployments delete eternum-40 katana
 
 echo "Deploying world to Realms L3..."
-slot deployments create -t epic eternum-42 katana --version v1.0.0-alpha.17 --invoke-max-steps 25000000 --disable-fee true --block-time 1000
+slot deployments create -t epic eternum-44 katana --version v1.0.0-alpha.18 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts
-slot deployments accounts eternum-42 katana 
+slot deployments accounts eternum-44 katana 
 
 echo "Migrating world..."
-sozo --profile prod migrate apply
+# the --dev allows batch migration
+sozo --profile prod migrate apply -—dev
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-42 torii --version v1.0.0-alpha.17 --world 0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11 --rpc https://api.cartridge.gg/x/eternum-42/katana --start-block 0  --index-pending true
+slot deployments create -t epic eternum-44 torii --version v1.0.0-alpha.18 --world 0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11 --rpc https://api.cartridge.gg/x/eternum-44/katana --start-block 0  --index-pending true
 
 echo "Setting up config..."
 

@@ -4,14 +4,14 @@ class_hash = "0x6f38d5d9507c5d9546290e1a27e309efe5a9af3770b6cc1627db4a1b90a7dce"
 original_class_hash = "0x6f38d5d9507c5d9546290e1a27e309efe5a9af3770b6cc1627db4a1b90a7dce"
 abi = "manifests/prod/deployment/abis/dojo-world.json"
 address = "0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11"
-transaction_hash = "0x470ef679174bdb5fad26cd508361ad8902b92e1df64a40068939ba2cff88891"
-block_number = 110
+transaction_hash = "0xb06d1107b2c767fdc49cd34431f7ecf43fa60c307bc30ad0b40c2a48c4d356"
+block_number = 67
 seed = "eternum"
 manifest_name = "dojo-world"
 
 [world.metadata]
 profile_name = "prod"
-rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+rpc_url = "https://api.cartridge.gg/x/eternum-44/katana"
 
 [base]
 kind = "Class"
@@ -141,9 +141,10 @@ manifest_name = "eternum-dev_bank_systems-7a630ec9"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x3bde87d577c1a56fa4053ff9ff54c270c236dcf52b149416aa0aa1df261a781"
 class_hash = "0x430a84bbe59b0a1e78945caed048d4670b130049b68ef2e6df2e1d932750ea3"
 original_class_hash = "0x430a84bbe59b0a1e78945caed048d4670b130049b68ef2e6df2e1d932750ea3"
-base_class_hash = "0x0"
+base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/prod/deployment/abis/contracts/eternum-dev_realm_systems-71907807.json"
 reads = []
 writes = []
@@ -267,9 +268,10 @@ manifest_name = "eternum-name_systems-bbb2e543"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x78c5d059a124afa26aa13d8d626a009dad537d8c70f7ef1070e0283fda84889"
 class_hash = "0x3e1b39b8ec54856fe7f324de91f1497b059326fa6a8a902465d16d7888fb968"
 original_class_hash = "0x3e1b39b8ec54856fe7f324de91f1497b059326fa6a8a902465d16d7888fb968"
-base_class_hash = "0x0"
+base_class_hash = "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2"
 abi = "manifests/prod/deployment/abis/contracts/eternum-ownership_systems-61566ab9.json"
 reads = []
 writes = []

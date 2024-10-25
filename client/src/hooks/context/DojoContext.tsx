@@ -1,5 +1,6 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
+import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
@@ -55,10 +56,13 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
     [],
   );
 
-  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-  const accountClassHash = import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH;
-  const feeTokenAddress = import.meta.env.VITE_NETWORK_FEE_TOKEN;
+  const {
+    VITE_PUBLIC_MASTER_ADDRESS: masterAddress,
+    VITE_PUBLIC_MASTER_PRIVATE_KEY: privateKey,
+    VITE_PUBLIC_ACCOUNT_CLASS_HASH: accountClassHash,
+    VITE_NETWORK_FEE_TOKEN: feeTokenAddress,
+  } = import.meta.env;
+
   const masterAccount = useMemo(
     () => new Account(rpcProvider, masterAddress, privateKey),
     [rpcProvider, masterAddress, privateKey],
@@ -107,6 +111,9 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
     burnerManager: value.network.burnerManager,
   });
 
+  // get the controller account
+  const { account: controllerAccount } = useAccount();
+
   return (
     <DojoContext.Provider
       value={{
@@ -118,9 +125,9 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
           get,
           select,
           clear,
-          account: account || masterAccount,
+          account: controllerAccount || masterAccount,
           isDeploying,
-          accountDisplay: account ? displayAddress(account.address) : displayAddress(masterAddress),
+          accountDisplay: controllerAccount ? displayAddress(controllerAccount.address) : displayAddress(masterAddress),
         },
       }}
     >

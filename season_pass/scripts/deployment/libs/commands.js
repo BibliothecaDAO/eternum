@@ -43,6 +43,7 @@ export const deployTestRealmsContract = async () => {
   // deploy contract
   let TEST_REALMS_ADMIN = BigInt(process.env.SEASON_PASS_ADMIN);
   let constructorCalldata = [TEST_REALMS_ADMIN];
+
   let address = await deploy(casualName, class_hash, constructorCalldata);
   return address;
 };

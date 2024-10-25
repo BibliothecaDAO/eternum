@@ -6,7 +6,6 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "components": "npx @dojoengine/core ../contracts/manifests/dev/deployment/manifest.json src/dojo/contractComponents.ts http://localhost:5050 0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

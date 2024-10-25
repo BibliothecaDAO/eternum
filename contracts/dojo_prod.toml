@@ -2,9 +2,9 @@
 default = "eternum"
 
 [env]
-account_address = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
-private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e60"
-rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+account_address = "0x24c2cabac53965693c322c98061ea40469ca0ce640408fd69c960ef61d6d950"
+private_key = "0x7ca06a1fbb9ae7c672a345c647942c632ffe42ee730897131b5335b5fbfb460"
+rpc_url = "https://api.cartridge.gg/x/eternum-44/katana"
 
 [world]
 seed = "eternum"
