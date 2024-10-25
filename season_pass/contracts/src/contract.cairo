@@ -2,6 +2,8 @@
 // Compatible with OpenZeppelin Contracts for Cairo ^0.17.0
 
 // Eternum Season Pass
+use starknet::ContractAddress;
+
 #[starknet::interface]
 trait IRealmMetadataEncoded<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
@@ -9,7 +11,7 @@ trait IRealmMetadataEncoded<TState> {
 
 #[starknet::interface]
 trait ISeasonPass<TState> {
-    fn mint(ref self: TState, token_id: u256);
+    fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn attach_lords(ref self: TState, token_id: u256, amount: u256);
     fn detach_lords(ref self: TState, token_id: u256, amount: u256);
     fn lords_balance(self: @TState, token_id: u256) -> u256;
@@ -138,14 +140,14 @@ mod EternumSeasonPass {
 
     #[abi(embed_v0)]
     impl SeasonPassImpl of super::ISeasonPass<ContractState> {
-        fn mint(ref self: ContractState, token_id: u256) {
+        fn mint(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
             // ensure only caller is the token owner
             let caller = starknet::get_caller_address();
             let current_realm_owner = self.realms.read().owner_of(token_id);
             assert!(current_realm_owner == caller, "ESP: Only realm owner can mint season pass");
 
             // mint season pass
-            self.erc721.mint(caller, token_id);
+            self.erc721.mint(recipient, token_id);
         }
 
         fn attach_lords(ref self: ContractState, token_id: u256, amount: u256) {

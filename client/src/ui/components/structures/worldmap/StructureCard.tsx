@@ -1,23 +1,25 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import clsx from "clsx";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ResourceExchange } from "../../hyperstructures/ResourceExchange";
 import { StructureListItem } from "../../worldmap/structures/StructureListItem";
-
 export const StructureCard = ({
   className,
   position,
@@ -30,10 +32,31 @@ export const StructureCard = ({
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
   const structure = useStructureAtPosition(position.getContract());
 
+  const { handleUrlChange } = useQuery();
+
+  const goToHexView = () => {
+    const url = position.toHexLocationUrl();
+    handleUrlChange(url);
+  };
+
   return (
     Boolean(structure) && (
       <div className={`px-2 py-2 ${className}`}>
-        Structure
+        <div className="flex flex-row">
+          Structure
+          <div className="ml-2">
+            <Button
+              variant="outline"
+              size="xs"
+              className={clsx("self-center")}
+              onClick={() => {
+                goToHexView();
+              }}
+            >
+              {"View"}
+            </Button>
+          </div>
+        </div>
         {!showMergeTroopsPopup && (
           <StructureListItem
             structure={structure!}
@@ -180,7 +203,7 @@ const TroopExchange = ({
   const totalTroopsReceiver = useMemo(() => {
     return (
       BigInt(Object.values(attackerArmyTroops || {}).reduce((a, b) => Number(a) + Number(b), 0)) /
-      BigInt(EternumGlobalConfig.resources.resourcePrecision)
+      BigInt(configManager.getResourcePrecision())
     );
   }, [attackerArmyTroops]);
 
@@ -213,10 +236,9 @@ const TroopExchange = ({
     const fromArmy = transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id);
     const toArmy = transferDirection === "to" ? takerArmy || getArmy(protector!.army_id) : getArmy(giverArmyEntityId);
     const transferedTroops = {
-      knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-      paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
-      crossbowman_count:
-        troopsGiven[ResourcesIds.Crossbowman] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+      knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(configManager.getResourcePrecision()),
+      paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(configManager.getResourcePrecision()),
+      crossbowman_count: troopsGiven[ResourcesIds.Crossbowman] * BigInt(configManager.getResourcePrecision()),
     };
     await army_merge_troops({
       signer: account,
@@ -257,6 +279,11 @@ const TroopExchange = ({
       <div className="flex flex-row justify-around items-center">
         <div className="w-[60%] mr-1 bg-gold/20">
           <p className="pt-2 pb-1 text-center">{giverArmyName}</p>
+          <ArmyCapacity
+            army={transferDirection === "to" ? getArmy(giverArmyEntityId) : takerArmy || getArmy(protector!.army_id)}
+            className="flex justify-center"
+            deductedTroops={Object.values(troopsGiven).reduce((a, b) => a + b, 0n)}
+          />
           {Object.entries(troopsToFormat(attackerArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
@@ -270,7 +297,7 @@ const TroopExchange = ({
                   <p
                     className={`${
                       transferDirection === "to" &&
-                      troopsGiven[Number(resourceId)] * BigInt(EternumGlobalConfig.resources.resourceMultiplier) !== 0n
+                      troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()) !== 0n
                         ? "text-red"
                         : ""
                     }`}
@@ -278,9 +305,7 @@ const TroopExchange = ({
                     {transferDirection === "to"
                       ? `[${currencyFormat(
                           Number(
-                            amount -
-                              troopsGiven[Number(resourceId)] *
-                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                            amount - troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()),
                           ),
                           0,
                         )}]`
@@ -291,7 +316,7 @@ const TroopExchange = ({
                 {transferDirection === "to" && (
                   <NumberInput
                     className="col-span-3 rounded-lg"
-                    max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
+                    max={Number(amount) / configManager.getResourcePrecision()}
                     min={0}
                     step={100}
                     value={Number(troopsGiven[Number(resourceId)])}
@@ -331,8 +356,7 @@ const TroopExchange = ({
                     <p
                       className={`${
                         transferDirection === "from" &&
-                        troopsGiven[Number(resourceId)] * BigInt(EternumGlobalConfig.resources.resourceMultiplier) !==
-                          0n
+                        troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()) !== 0n
                           ? "text-red"
                           : ""
                       }`}
@@ -340,9 +364,7 @@ const TroopExchange = ({
                       {transferDirection === "from"
                         ? `[${currencyFormat(
                             Number(
-                              amount -
-                                troopsGiven[Number(resourceId)] *
-                                  BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+                              amount - troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()),
                             ),
                             0,
                           )}]`

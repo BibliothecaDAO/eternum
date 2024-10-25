@@ -22,7 +22,7 @@ export class ClientConfigManager {
   private components!: ContractComponents;
 
   resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
-  resourceOutputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  resourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
   hyperstructureTotalCosts: Record<number, { resource: ResourcesIds; amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -32,6 +32,7 @@ export class ClientConfigManager {
   public setDojo(components: ContractComponents) {
     this.components = components;
     this.initializeResourceInputs();
+    this.initializeResourceOutput();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
     this.initializeResourceBuildingCosts();
@@ -80,6 +81,22 @@ export class ClientConfigManager {
       }
 
       this.resourceInputs[Number(resourceType)] = inputs;
+    }
+  }
+
+  private initializeResourceOutput() {
+    if (!this.components) return;
+
+    for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
+      const productionConfig = getComponentValue(
+        this.components.ProductionConfig,
+        getEntityIdFromKeys([BigInt(resourceType)]),
+      );
+
+      this.resourceOutput[Number(resourceType)] = {
+        resource: Number(resourceType) as ResourcesIds,
+        amount: divideByPrecision(Number(productionConfig?.amount)),
+      };
     }
   }
 

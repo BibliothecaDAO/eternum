@@ -94,6 +94,7 @@ export const TROOP_PILLAGE_HEALTH_DIVISOR = 8;
 export const TROOP_BATTLE_LEAVE_SLASH_NUM = 25;
 export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
 export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
+export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
 // Mercenaries
 export const MERCENARIES_KNIGHTS_LOWER_BOUND = 1_000;
@@ -203,6 +204,7 @@ export const EternumGlobalConfig: Config = {
     battleLeaveSlashNum: TROOP_BATTLE_LEAVE_SLASH_NUM,
     battleLeaveSlashDenom: TROOP_BATTLE_LEAVE_SLASH_DENOM,
     battleTimeReductionScale: TROOP_BATTLE_TIME_REDUCTION_SCALE,
+    battleMaxTimeSeconds: TROOP_BATTLE_MAX_TIME_SECONDS,
     troopStaminas: TROOPS_STAMINAS,
     troopFoodConsumption: TROOPS_FOOD_CONSUMPTION,
   },

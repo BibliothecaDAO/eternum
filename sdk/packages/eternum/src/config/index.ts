@@ -355,6 +355,7 @@ export const setCombatConfig = async (config: Config) => {
     battleLeaveSlashNum: battle_leave_slash_num,
     battleLeaveSlashDenom: battle_leave_slash_denom,
     battleTimeReductionScale: battle_time_scale,
+    battleMaxTimeSeconds: battle_max_time_seconds,
   } = config.config.troop;
 
   const tx = await config.provider.set_troop_config({
@@ -374,6 +375,7 @@ export const setCombatConfig = async (config: Config) => {
     battle_leave_slash_num,
     battle_leave_slash_denom,
     battle_time_scale,
+    battle_max_time_seconds,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);

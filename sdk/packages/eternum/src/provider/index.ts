@@ -893,6 +893,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       battle_leave_slash_num,
       battle_leave_slash_denom,
       battle_time_scale,
+      battle_max_time_seconds,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -914,6 +915,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         battle_leave_slash_num,
         battle_leave_slash_denom,
         battle_time_scale,
+        battle_max_time_seconds,
       ],
     });
   }
