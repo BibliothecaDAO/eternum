@@ -2016,8 +2016,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6bde5ad6204af5e31e9b66f687f5ccd84fcefa1b61dfba9bda8ca331252e641",
-      "class_hash": "0x44af0b3e7b229e0ffdfb275c32b83742760b0ee7d1c06d3ad1ebbb0083f2db4",
-      "original_class_hash": "0x44af0b3e7b229e0ffdfb275c32b83742760b0ee7d1c06d3ad1ebbb0083f2db4",
+      "class_hash": "0x26e9badadc1194720cd95f705b96026204f2ba3e635cab0340c74d6d01e4e74",
+      "original_class_hash": "0x26e9badadc1194720cd95f705b96026204f2ba3e635cab0340c74d6d01e4e74",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -2481,8 +2481,8 @@
     {
       "kind": "DojoContract",
       "address": "0x2e57f328fea661edb9a599af68443e1d39942b93884d2ca28c68d3f2d0ab2a3",
-      "class_hash": "0x7a73a8201546c5058efa0c52c69dca8782b8673f4cf27553fa41d1bd255fbea",
-      "original_class_hash": "0x7a73a8201546c5058efa0c52c69dca8782b8673f4cf27553fa41d1bd255fbea",
+      "class_hash": "0x39f665b33e9f0988d9ecdb5018533b6ba255964a0bac3605462c089cec6b086",
+      "original_class_hash": "0x39f665b33e9f0988d9ecdb5018533b6ba255964a0bac3605462c089cec6b086",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -3307,6 +3307,10 @@
             {
               "name": "battle_time_scale",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "battle_max_time_seconds",
+              "type": "core::integer::u64"
             }
           ]
         },
@@ -3886,8 +3890,8 @@
     {
       "kind": "DojoContract",
       "address": "0x35f19ba2473243c902b1a88029655ffd0d24ff875abe9fc74808af973b41183",
-      "class_hash": "0x3aba450210e6df8122703c402b8bb14110f45c9b0df7391c89f13bebf269637",
-      "original_class_hash": "0x3aba450210e6df8122703c402b8bb14110f45c9b0df7391c89f13bebf269637",
+      "class_hash": "0x21e35ed9e92473ce3dbcf786250759cefe1659b2e2cc545200a73594669c15a",
+      "original_class_hash": "0x21e35ed9e92473ce3dbcf786250759cefe1659b2e2cc545200a73594669c15a",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -4166,8 +4170,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3bde87d577c1a56fa4053ff9ff54c270c236dcf52b149416aa0aa1df261a781",
-      "class_hash": "0x430a84bbe59b0a1e78945caed048d4670b130049b68ef2e6df2e1d932750ea3",
-      "original_class_hash": "0x430a84bbe59b0a1e78945caed048d4670b130049b68ef2e6df2e1d932750ea3",
+      "class_hash": "0x6dd5cdce69e4ffa02d46ebfe5bef2303d1a7a98ce47c9ddb4a43c9a58022907",
+      "original_class_hash": "0x6dd5cdce69e4ffa02d46ebfe5bef2303d1a7a98ce47c9ddb4a43c9a58022907",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -5952,8 +5956,8 @@
     {
       "kind": "DojoContract",
       "address": "0x12db0b4283a945d27355203e0cb57e4eea75bf3f6b7349becb11b0802a0515",
-      "class_hash": "0x7679b191599dde2df279e1d45b3cc650ff9585e2832e5b867a4f1a9815349e3",
-      "original_class_hash": "0x7679b191599dde2df279e1d45b3cc650ff9585e2832e5b867a4f1a9815349e3",
+      "class_hash": "0x5b381a8e808ec45ec7474d687a2f67c99645eac12419e164689b4c2d62b5630",
+      "original_class_hash": "0x5b381a8e808ec45ec7474d687a2f67c99645eac12419e164689b4c2d62b5630",
       "base_class_hash": "0x2427dd10a58850ac9a5ca6ce04b7771b05330fd18f2e481831ad903b969e6b2",
       "abi": [
         {
@@ -55156,10 +55160,15 @@
           "name": "battle_time_scale",
           "type": "u16",
           "key": false
+        },
+        {
+          "name": "battle_max_time_seconds",
+          "type": "u64",
+          "key": false
         }
       ],
-      "class_hash": "0x60d997e89fd04b509af8ee9581cc738bf37bfd442682c6d84ac3e45af41471",
-      "original_class_hash": "0x60d997e89fd04b509af8ee9581cc738bf37bfd442682c6d84ac3e45af41471",
+      "class_hash": "0x659627a2a01de15bff374b46b575d6cb786ce52fe8f845cb19fa8fda4878f78",
+      "original_class_hash": "0x659627a2a01de15bff374b46b575d6cb786ce52fe8f845cb19fa8fda4878f78",
       "abi": [
         {
           "type": "impl",
@@ -55591,6 +55600,10 @@
             {
               "name": "battle_time_scale",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "battle_max_time_seconds",
+              "type": "core::integer::u64"
             }
           ]
         },

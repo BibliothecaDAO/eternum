@@ -1,4 +1,3 @@
-import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
@@ -61,13 +60,13 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
         <h2 className="">It's time to build...</h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
-        <Button className="px-4 " variant={"secondary"} onClick={connectWallet}>
+        {/* <Button className="px-4 " variant={"secondary"} onClick={connectWallet}>
           <CartridgeSmall className="w-6 mr-2 fill-current" /> Log in with Controller
-        </Button>
-        {/* <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+        </Button> */}
+        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
           Choose your Leader
           <ArrowRight className="w-2 ml-2 fill-current" />
-        </Button> */}
+        </Button>
       </div>
     </StepContainer>
   );

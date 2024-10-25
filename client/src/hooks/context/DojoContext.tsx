@@ -1,6 +1,5 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
-import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
@@ -112,7 +111,7 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
   });
 
   // get the controller account
-  const { account: controllerAccount } = useAccount();
+  // const { account: controllerAccount } = useAccount();
 
   return (
     <DojoContext.Provider
@@ -125,9 +124,9 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
           get,
           select,
           clear,
-          account: controllerAccount || masterAccount,
+          account: account || masterAccount,
           isDeploying,
-          accountDisplay: controllerAccount ? displayAddress(controllerAccount.address) : displayAddress(masterAddress),
+          accountDisplay: account ? displayAddress(account.address) : displayAddress(masterAddress),
         },
       }}
     >
