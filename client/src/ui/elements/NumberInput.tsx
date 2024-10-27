@@ -10,7 +10,7 @@ type NumberInputProps = {
   step?: number;
   className?: string;
   min?: number;
-  max: number;
+  max?: number;
   arrows?: boolean;
   allowDecimals?: boolean;
   onFocus?: () => void;
@@ -23,7 +23,7 @@ export const NumberInput = ({
   onChange,
   className,
   step = 1,
-  max = 0,
+  max = Infinity,
   min = 0,
   arrows = true,
   allowDecimals = false,
