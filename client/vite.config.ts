@@ -1,15 +1,57 @@
+import svgr from "@svgr/rollup";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
+import path, { resolve } from "path";
 import { defineConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
-
-import svgr from "@svgr/rollup";
-import path from "path";
+import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [mkcert(), svgr({ dimensions: false, svgo: false, typescript: true }), react(), wasm(), topLevelAwait()],
+  plugins: [
+    mkcert(),
+    svgr({ dimensions: false, svgo: false, typescript: true }),
+    react(),
+    wasm(),
+    topLevelAwait(),
+    VitePWA({
+      registerType: "autoUpdate",
+      devOptions: {
+        enabled: true,
+      },
+      manifest: {
+        name: "Eternum",
+        short_name: "Eternum",
+        description: "Rule the Hex",
+        theme_color: "#000000",
+        background_color: "#000000",
+        display: "standalone",
+        orientation: "landscape",
+        scope: "/",
+        start_url: "/",
+        icons: [
+          {
+            src: "/images/pwa-64x64.png",
+            sizes: "64x64",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+          {
+            src: "/images/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+          {
+            src: "/images/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       events: "events",

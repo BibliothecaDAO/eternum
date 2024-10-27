@@ -351,9 +351,9 @@ export const WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Dragonhide]: 1000,
   [ResourcesIds.AncientFragment]: 1000,
   [ResourcesIds.Donkey]: 0,
-  [ResourcesIds.Knight]: 0,
-  [ResourcesIds.Crossbowman]: 0,
-  [ResourcesIds.Paladin]: 0,
+  [ResourcesIds.Knight]: 1000,
+  [ResourcesIds.Crossbowman]: 1000,
+  [ResourcesIds.Paladin]: 1000,
   [ResourcesIds.Lords]: 1,
   [ResourcesIds.Wheat]: 100,
   [ResourcesIds.Fish]: 100,
@@ -524,9 +524,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 0.025 },
-    { resource: ResourcesIds.Wood, amount: 0.025 },
-    { resource: ResourcesIds.Diamonds, amount: 0.001 },
-    { resource: ResourcesIds.Sapphire, amount: 0.001 },
+    { resource: ResourcesIds.Lords, amount: 0.001 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 0.025 },

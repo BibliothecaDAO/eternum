@@ -5,7 +5,7 @@ printf "\n\n"
 echo "----- Building Eternum Season Pass Contract ----- "
 
 cd season_pass/contracts && scarb --release build
-cd ../scripts/deployment && npm run deploy 
+cd ../scripts/deployment && npm run deploy::prod 
 
 # update the .env.production file with the season pass and test realms contracts addresses
 VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/dev/season_pass.json | jq -r '.address')
@@ -48,12 +48,13 @@ echo "Migrating world..."
 sozo --profile prod migrate apply
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-44 torii --version v1.0.0-alpha.18 --world 0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11 --rpc https://api.cartridge.gg/x/eternum-44/katana --start-block 0  --index-pending true
+slot deployments create -t epic eternum-46 torii --version v1.0.0-alpha.18 --world 0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11 --rpc https://api.cartridge.gg/x/eternum-45/katana --start-block 0  --index-pending true
 
 echo "Setting up config..."
 
-# update the config
+# update the config with the accounts from above 
 source ./scripts/env_variables.sh prod
+
 ./scripts/set_writer.sh --interval 1 --mode prod
 
 bun --env-file=../client/.env.production ../config/index.ts
