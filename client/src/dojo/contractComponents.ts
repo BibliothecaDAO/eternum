@@ -1287,12 +1287,30 @@ export function defineContractComponents(world: World) {
           battle_leave_slash_num: RecsType.Number,
           battle_leave_slash_denom: RecsType.Number,
           battle_time_scale: RecsType.Number,
+          battle_max_time_seconds: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u64", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
+            types: [
+              "u32",
+              "u32",
+              "u8",
+              "u8",
+              "u16",
+              "u16",
+              "u16",
+              "u64",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u16",
+              "u64",
+            ],
             customTypes: [],
           },
         },
@@ -1761,6 +1779,26 @@ const eventsComponents = (world: World) => {
               namespace: "eternum",
               name: "LiquidityEvent",
               types: ["u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      BurnDonkey: (() => {
+        return defineComponent(
+          world,
+          {
+            player_address: RecsType.BigInt,
+            entity_id: RecsType.Number,
+            amount: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "BurnDonkey",
+              types: ["ContractAddress", "u32", "u128", "u64"],
               customTypes: [],
             },
           },

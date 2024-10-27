@@ -96,6 +96,14 @@ export interface SendResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
+export interface SendResourcesMultipleProps extends SystemSigner {
+  calls: {
+    sender_entity_id: num.BigNumberish;
+    recipient_entity_id: num.BigNumberish;
+    resources: num.BigNumberish[];
+  }[];
+}
+
 export interface PickupResourcesProps extends SystemSigner {
   recipient_entity_id: num.BigNumberish;
   owner_entity_id: num.BigNumberish;

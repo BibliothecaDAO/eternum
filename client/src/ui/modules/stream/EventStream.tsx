@@ -2,27 +2,31 @@ import { ReactComponent as Check } from "@/assets/icons/Check.svg";
 import { ReactComponent as Chest } from "@/assets/icons/Chest.svg";
 import { ReactComponent as Coins } from "@/assets/icons/Coins.svg";
 import { ReactComponent as Combat } from "@/assets/icons/Combat.svg";
+import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { ReactComponent as Compass } from "@/assets/icons/Compass.svg";
 import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
+import { ReactComponent as Burn } from "@/assets/icons/fire.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
 import { ReactComponent as Wrench } from "@/assets/icons/Wrench.svg";
-import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { ContractAddress, Position } from "@bibliothecadao/eternum";
-import { Component, World, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { currencyFormat } from "@/ui/utils/utils";
+import { ContractAddress, findResourceById, Position } from "@bibliothecadao/eternum";
+import { Component, ComponentValue, defineComponentSystem, getComponentValue, World } from "@dojoengine/recs";
+import { getEntityIdFromKeys, hexToAscii } from "@dojoengine/utils";
 import { useEffect, useState } from "react";
 import { MessageIcon } from "../social/PlayerId";
 
 const EVENT_STREAM_SIZE = 8;
 
 enum EventType {
+  BurnDonkey = "BurnDonkey",
   SettleRealm = "SettleRealmData",
   MapExplored = "MapExplored",
   BattleStart = "BattleStartData",
@@ -36,53 +40,95 @@ enum EventType {
   AcceptOrder = "AcceptOrder",
 }
 
-const EVENT_CONFIG = {
+const EVENT_CONFIG: {
+  [key in EventType]: {
+    getAction: (componentValue: ComponentValue<ClientComponents["events"][key]["schema"]>) => string;
+    emoji: JSX.Element;
+    color: string;
+  };
+} = {
   [EventType.SettleRealm]: {
-    action: "settled a realm",
-    emoji: <Crown className="w-6 self-center" />,
+    getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.SettleRealm]["schema"]>) =>
+      `settled Realm ${hexToAscii("0x" + componentValue.realm_name.toString(16))}`,
+    emoji: <Crown className="w-6 self-center fill-current" />,
     color: "#FFAB91",
   },
+  [EventType.BurnDonkey]: {
+    getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.BurnDonkey]["schema"]>) =>
+      `burnt ${currencyFormat(Number(componentValue.amount), 0)} donkeys`,
+    emoji: <Burn className="w-6 self-center fill-current" />,
+    color: "#A5D6A7",
+  },
   [EventType.MapExplored]: {
-    action: "explored a tile",
-    emoji: <Compass className="w-6 self-center fill-[#ED9733]" />,
+    getAction: (_: ComponentValue<ClientComponents["events"][EventType.MapExplored]["schema"]>) => `explored a tile`,
+    emoji: <Compass className="w-6 self-center fill-current" />,
     color: "#ED9733",
   },
-  [EventType.BattleJoin]: {
-    action: "joined a battle",
-    emoji: <Combat className="w-6 self-center" />,
+  [EventType.BattleStart]: {
+    getAction: (_: ComponentValue<ClientComponents["events"][EventType.BattleStart]["schema"]>) => `started a battle`,
+    emoji: <Combat className="w-6 self-center fill-current" />,
     color: "#EF9A9A",
   },
-  [EventType.BattleLeave]: { action: "left a battle", emoji: <Scroll className="w-6 self-center" />, color: "#90CAF9" },
+  [EventType.BattleJoin]: {
+    getAction: (_: ComponentValue<ClientComponents["events"][EventType.BattleJoin]["schema"]>) => `joined a battle`,
+    emoji: <Combat className="w-6 self-center fill-current" />,
+    color: "#EF9A9A",
+  },
+  [EventType.BattleLeave]: {
+    getAction: (_: ComponentValue<ClientComponents["events"][EventType.BattleLeave]["schema"]>) => "left a battle",
+    emoji: <Scroll className="w-6 self-center fill-current" />,
+    color: "#90CAF9",
+  },
   [EventType.BattleClaim]: {
-    action: "claimed a structure",
-    emoji: <Chest className="w-6 self-center" />,
+    getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.BattleClaim]["schema"]>) =>
+      `claimed a ${componentValue.structure_type}`,
+    emoji: <Chest className="w-6 self-center fill-current" />,
     color: "#FFCC80",
   },
   [EventType.BattlePillage]: {
-    action: "pillaged a structure",
-    emoji: <Coins className="w-6 self-center" />,
+    getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.BattlePillage]["schema"]>) =>
+      `pillaged a ${componentValue.structure_type}`,
+    emoji: <Coins className="w-6 self-center fill-current" />,
     color: "#CE93D8",
   },
-  [EventType.Swap]: { action: "made a swap", emoji: <Swap className="w-6 self-center" />, color: "#80DEEA" },
+  [EventType.Swap]: {
+    getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.Swap]["schema"]>) => {
+      const buyAmount = componentValue.buy ? componentValue.lords_amount : componentValue.resource_amount;
+      const buyResource = componentValue.buy ? "lords" : findResourceById(componentValue.resource_type)?.trait;
+
+      const sellAmount = componentValue.buy ? componentValue.resource_amount : componentValue.lords_amount;
+      const sellResource = componentValue.buy ? findResourceById(componentValue.resource_type)?.trait : "lords";
+      return `swapped  ${currencyFormat(Number(sellAmount), 0)} ${sellResource} for ${currencyFormat(
+        Number(buyAmount),
+        0,
+      )} ${buyResource}`;
+    },
+    emoji: <Swap className="w-6 self-center fill-current" />,
+    color: "#80DEEA",
+  },
   [EventType.HyperstructureFinished]: {
-    action: "finished a hyperstructure",
-    emoji: <Sparkles className="w-6 self-center" />,
+    getAction: (_: ComponentValue<ClientComponents["events"][EventType.HyperstructureFinished]["schema"]>) =>
+      `finished a hyperstructure`,
+    emoji: <Sparkles className="w-6 self-center fill-current" />,
     color: "#FFF59D",
   },
   [EventType.HyperstructureContribution]: {
-    action: "contributed to a hyperstructure",
-    emoji: <Wrench className="w-6 self-center" />,
+    getAction: (_: ComponentValue<ClientComponents["events"][EventType.HyperstructureContribution]["schema"]>) =>
+      `contributed to a hyperstructure`,
+    emoji: <Wrench className="w-6 self-center fill-current" />,
     color: "#FFD54F",
   },
   [EventType.AcceptOrder]: {
-    action: "accepted an order",
-    emoji: <Check className="w-6 self-center" />,
+    getAction: (_: ComponentValue<ClientComponents["events"][EventType.AcceptOrder]["schema"]>) =>
+      `accepted a p2p order}`,
+    emoji: <Check className="w-6 self-center fill-current" />,
     color: "#C5E1A5",
   },
 };
 
 interface EventData {
   name: string | undefined;
+  action: string;
   eventType: EventType;
   timestamp: number;
   position: Position | undefined;
@@ -130,6 +176,7 @@ export const EventStream = () => {
       : getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityId)]));
 
     return {
+      action: EVENT_CONFIG[eventType].getAction(componentValue! as any),
       name,
       eventType,
       timestamp: componentValue?.timestamp || 0,
@@ -183,17 +230,31 @@ export const EventStream = () => {
             .sort((a, b) => a.timestamp - b.timestamp)
             .slice(-EVENT_STREAM_SIZE)
             .map((event, index) => {
-              const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
+              const { emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
               return (
-                <div className="hover:bg-brown/20 rounded flex gap-1 justify-between" key={index}>
-                  <div className="flex gap-1">
-                    {emoji} [{event.name || "Unknown"}]: {action}{" "}
-                    <span className="opacity-50">[{new Date(event.timestamp * 1000).toLocaleString()}]</span>
+                <div
+                  className={`hover:bg-brown/20 w-full rounded flex gap-2 justify-between`}
+                  style={{ color: color }}
+                  key={index}
+                >
+                  <div className="flex items-center space-x-2 flex-grow overflow-hidden">
+                    <span className="text-lg" style={{ fill: color }}>
+                      {emoji}
+                    </span>
+                    <span className="whitespace-nowrap">[{event.name || "Unknown"}]:</span>
+                    <div className="whitespace-nowrap overflow-hidden text-ellipsis">{event.action}</div>
                   </div>
-                  <div className="flex flex-row items-center space-x-2 mr-2">
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    <span className="opacity-70 text-xs whitespace-nowrap">
+                      [{new Date(event.timestamp * 1000).toLocaleTimeString()}]
+                    </span>
+                    {event.position && (
+                      <>
+                        <ViewOnMapIcon hideTooltip={true} position={event.position} />
+                        <NavigateToPositionIcon hideTooltip={true} position={event.position} />
+                      </>
+                    )}
                     <MessageIcon playerName={event.name} selectedPlayer={event.address ?? BigInt(0)} />
-                    {event.position && <NavigateToPositionIcon hideTooltip={true} position={event.position} />}
-                    {event.position && <ViewOnMapIcon hideTooltip={true} position={event.position} />}
                   </div>
                 </div>
               );
