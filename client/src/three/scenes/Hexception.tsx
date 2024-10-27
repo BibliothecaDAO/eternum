@@ -24,6 +24,7 @@ import { HexagonScene } from "./HexagonScene";
 import {
   BUILDINGS_CENTER,
   HEX_SIZE,
+  MinesMaterialsParams,
   buildingModelPaths,
   castleLevelToRealmCastle,
   structureTypeToBuildingType,
@@ -102,6 +103,7 @@ export default class HexceptionScene extends HexagonScene {
     label: CSS2DObject;
   }[] = [];
   private castleLevel: RealmLevels = RealmLevels.Settlement;
+  private minesMaterials: Map<number, THREE.MeshStandardMaterial> = new Map();
 
   constructor(
     controls: MapControls,
@@ -207,7 +209,7 @@ export default class HexceptionScene extends HexagonScene {
       this.modelLoadPromises.push(loadPromise);
     }
 
-    Promise.all(this.modelLoadPromises).then(() => { });
+    Promise.all(this.modelLoadPromises).then(() => {});
   }
 
   setup() {
@@ -344,8 +346,8 @@ export default class HexceptionScene extends HexagonScene {
       this.state.setTooltip(null);
     }
   }
-  protected onHexagonRightClick(): void { }
-  protected onHexagonDoubleClick(): void { }
+  protected onHexagonRightClick(): void {}
+  protected onHexagonDoubleClick(): void {}
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -353,6 +355,7 @@ export default class HexceptionScene extends HexagonScene {
 
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
+
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],
       DeepOcean: [],
@@ -415,17 +418,16 @@ export default class HexceptionScene extends HexagonScene {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
             if (buildingType === ResourceMiningTypes.Mine) {
-              const material = new THREE.MeshStandardMaterial({
-                color: new THREE.Color("white"),
-                emissive: new THREE.Color("red").multiplyScalar(10),
-                emissiveIntensity: 5,
-              });
-              instance.children[1].material = material;
-              instance.children[2].material = material;
-              // instance.children[1].material.emissive = new THREE.Color(1.5, 1, 4);
-              // instance.children[1].material.emissiveIntensity = 2;
-              // instance.children[2].material.emissive = new THREE.Color(1.5, 1, 4);
-              // instance.children[2].material.emissiveIntensity = 2;
+              const crystalMesh1 = instance.children[1] as THREE.Mesh;
+              const crystalMesh2 = instance.children[2] as THREE.Mesh;
+              if (!this.minesMaterials.has(building.resource)) {
+                const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[5]);
+                this.minesMaterials.set(building.resource, material);
+              }
+              // @ts-ignoreq
+              crystalMesh1.material = this.minesMaterials.get(building.resource);
+              // @ts-ignore
+              crystalMesh2.material = this.minesMaterials.get(building.resource);
             }
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);

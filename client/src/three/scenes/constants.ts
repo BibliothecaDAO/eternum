@@ -1,5 +1,6 @@
 import { ResourceMiningTypes } from "@/types";
-import { BuildingType, RealmLevelNames, RealmLevels, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevelNames, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import * as THREE from "three";
 import { BiomeType } from "../components/Biome";
 
 export const HEX_SIZE = 1;
@@ -103,4 +104,60 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Bank]: "",
   // placeholder for now
   [StructureType.Settlement]: "textures/fragment_mine_label.png",
+};
+
+export const MinesMaterialsParams: Record<
+  number,
+  { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number }
+> = {
+  [ResourcesIds.Diamonds]: {
+    color: new THREE.Color(1.6, 1.47, 1.96),
+    emissive: new THREE.Color(0.8, 0.73, 5.93),
+    emissiveIntensity: 0.2,
+  },
+  [ResourcesIds.Sapphire]: {
+    color: new THREE.Color(0.23, 0.5, 0.96),
+    emissive: new THREE.Color(0, 0, 5.01),
+    emissiveIntensity: 2.5,
+  },
+  [ResourcesIds.Ruby]: {
+    color: new THREE.Color(0.86, 0.15, 0.15),
+    emissive: new THREE.Color(2.59, 0.0, 0.0),
+    emissiveIntensity: 4,
+  },
+  [ResourcesIds.DeepCrystal]: {
+    color: new THREE.Color(1.21, 2.7, 3.27),
+    emissive: new THREE.Color(0.58, 0.77, 3),
+    emissiveIntensity: 5,
+  },
+  [ResourcesIds.TwilightQuartz]: {
+    color: new THREE.Color(0.43, 0.16, 0.85),
+    emissive: new THREE.Color(0.0, 0.03, 4.25),
+    emissiveIntensity: 5.7,
+  },
+  [ResourcesIds.EtherealSilica]: {
+    color: new THREE.Color(0.06, 0.73, 0.51),
+    emissive: new THREE.Color(0.0, 0.12, 0.0),
+    emissiveIntensity: 2,
+  },
+  [ResourcesIds.Stone]: {
+    color: new THREE.Color(0.38, 0.38, 0.38),
+    emissive: new THREE.Color(0, 0, 0),
+    emissiveIntensity: 0,
+  },
+  [ResourcesIds.Coal]: {
+    color: new THREE.Color(0.18, 0.18, 0.18),
+    emissive: new THREE.Color(0, 0, 0),
+    emissiveIntensity: 0,
+  },
+  [ResourcesIds.Obsidian]: {
+    color: new THREE.Color(0.06, 0.06, 0.06),
+    emissive: new THREE.Color(0, 0, 0),
+    emissiveIntensity: 1,
+  },
+  [ResourcesIds.TrueIce]: {
+    color: new THREE.Color(3.0, 3.0, 3.8),
+    emissive: new THREE.Color(1.0, 1.0, 1),
+    emissiveIntensity: 4,
+  },
 };
