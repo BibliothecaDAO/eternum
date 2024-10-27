@@ -77,7 +77,11 @@ export const policies = [
   },
   {
     target: "0x2e57f328fea661edb9a599af68443e1d39942b93884d2ca28c68d3f2d0ab2a3",
-    method: "set_mint_config",
+    method: "set_quest_config",
+  },
+  {
+    target: "0x2e57f328fea661edb9a599af68443e1d39942b93884d2ca28c68d3f2d0ab2a3",
+    method: "set_quest_reward_config",
   },
   {
     target: "0x2e57f328fea661edb9a599af68443e1d39942b93884d2ca28c68d3f2d0ab2a3",
@@ -277,7 +281,7 @@ export const policies = [
   },
   {
     target: "0x36dd69a39bd95c661c011ec3e8ceeaccd351c9a7512b4cbc0434c8ec913878c",
-    method: "mint_starting_resources",
+    method: "quest_claim",
   },
   {
     target: "0x39a8f749f192e20f9c347142dc4693362e18c4e909ae6a31957853ab4afff28",

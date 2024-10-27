@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:^",
-    "@cartridge/connector": "^0.4.0",
-    "@cartridge/controller": "^0.4.0",
+    "@cartridge/connector": "^0.5.0-alpha.2",
+    "@cartridge/controller": "^0.5.0-alpha.2",
     "@dojoengine/core": "1.0.0-alpha.23",
     "@dojoengine/create-burner": "1.0.0-alpha.23",
     "@dojoengine/react": "1.0.0-alpha.23",
@@ -54,6 +54,7 @@
     "three-csg-ts": "^3.1.14",
     "three-stdlib": "^2.29.5",
     "use-sound": "^4.0.1",
+    "vite-plugin-mkcert": "^1.17.6",
     "vitest-canvas-mock": "^0.3.3",
     "wouter": "^2.12.1",
     "zustand": "^4.5.2"
