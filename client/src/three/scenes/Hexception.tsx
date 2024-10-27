@@ -421,7 +421,7 @@ export default class HexceptionScene extends HexagonScene {
               const crystalMesh1 = instance.children[1] as THREE.Mesh;
               const crystalMesh2 = instance.children[2] as THREE.Mesh;
               if (!this.minesMaterials.has(building.resource)) {
-                const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[5]);
+                const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
                 this.minesMaterials.set(building.resource, material);
               }
               // @ts-ignoreq
