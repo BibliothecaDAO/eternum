@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useTravel } from "@/hooks/helpers/useTravel";
@@ -6,7 +7,7 @@ import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
 import TextInput from "@/ui/elements/TextInput";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
@@ -80,7 +81,7 @@ export const TransferBetweenEntities = ({
         computeTravelTime(
           selectedEntityIdFrom?.entityId,
           selectedEntityIdTo?.entityId,
-          EternumGlobalConfig.speed.donkey,
+          configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
         ),
       );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
@@ -110,6 +111,14 @@ export const TransferBetweenEntities = ({
       setIsLoading(false);
       setSelectedStepId(STEP_ID.SUCCESS);
     });
+  };
+
+  const onNewTrade = () => {
+    setSelectedEntityIdFrom(null);
+    setSelectedEntityIdTo(null);
+    setSelectedResourceIds([]);
+    setSelectedResourceAmounts({});
+    setSelectedStepId(STEP_ID.SELECT_ENTITIES);
   };
 
   const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
@@ -284,6 +293,9 @@ export const TransferBetweenEntities = ({
         <div className=" justify-center items-center text-center">
           <h4>Transfer successful!</h4>
           <p>Check transfers in the right sidebar transfer menu.</p>
+          <Button variant="primary" size="md" className="mt-4" onClick={onNewTrade}>
+            New transfer
+          </Button>
         </div>
       )}
     </div>

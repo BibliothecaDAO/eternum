@@ -8,7 +8,9 @@ import {
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   ID,
+  Position,
   RealmLevels,
+  ResourcesIds,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
@@ -123,6 +125,21 @@ export class TileManager {
   ) => {
     let overrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
+
+    let produced_resource_type = 0;
+
+    switch (buildingType) {
+      case BuildingType.Farm:
+        produced_resource_type = ResourcesIds.Wheat;
+        break;
+      case BuildingType.FishingVillage:
+        produced_resource_type = ResourcesIds.Fish;
+        break;
+      case BuildingType.Resource:
+        produced_resource_type = resourceType || 0;
+        break;
+    }
+
     this.setup.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -131,7 +148,7 @@ export class TileManager {
         inner_col: col,
         inner_row: row,
         category: BuildingType[buildingType],
-        produced_resource_type: resourceType ? resourceType : 0,
+        produced_resource_type,
         bonus_percent: 0,
         entity_id: entityId,
         outer_entity_id: entityId,
@@ -280,15 +297,12 @@ export class TileManager {
     });
   };
 
-  placeStructure = async (entityId: ID, structureType: StructureType, hexCoords: HexPosition) => {
+  placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
     if (structureType == StructureType.Hyperstructure) {
       await this.setup.systemCalls.create_hyperstructure({
         signer: this.setup.network.burnerManager.account!,
         creator_entity_id: entityId,
-        coords: {
-          x: hexCoords.col,
-          y: hexCoords.row,
-        },
+        coords,
       });
     }
   };

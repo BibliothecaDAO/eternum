@@ -1,11 +1,5 @@
-import {
-  BASE_POPULATION_CAPACITY,
-  BUILDING_POPULATION,
-  findResourceIdByTrait,
-  ID,
-  orders,
-  RealmInterface,
-} from "@bibliothecadao/eternum";
+import { configManager } from "@/dojo/setup";
+import { findResourceIdByTrait, ID, orders, RealmInterface } from "@bibliothecadao/eternum";
 import realmsJson from "../../data/geodata/realms.json";
 import { packResources } from "./packedData";
 
@@ -73,6 +67,8 @@ export function getRealm(realmId: ID): RealmInterface | undefined {
 }
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
-  const buildingPopulation = BUILDING_POPULATION[building as keyof typeof BUILDING_POPULATION] || 0;
-  return (realm?.population || 0) + buildingPopulation <= BASE_POPULATION_CAPACITY + (realm?.capacity || 0);
+  const buildingPopulation = configManager.getBuildingPopConfig(building).population;
+  const basePopulationCapacity = configManager.getBasePopulationCapacity();
+
+  return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);
 };

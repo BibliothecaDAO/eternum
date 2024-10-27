@@ -44,12 +44,13 @@ jobs:
             realm_test,
             guild_test,
             transport_test,
+            test_ownership_systems,
           ]
       fail-fast: false
     steps:
       - name: Download Dojo release artifact
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.0.0-alpha.12/dojo_v1.0.0-alpha.12_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.0.0-alpha.17/dojo_v1.0.0-alpha.17_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
       - name: Checkout repository

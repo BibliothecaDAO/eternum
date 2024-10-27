@@ -24,9 +24,9 @@ mod liquidity_systems {
     use eternum::constants::ResourceTypes;
     use eternum::models::bank::liquidity::{Liquidity};
     use eternum::models::bank::market::{Market, MarketCustomTrait};
-    use eternum::models::hyperstructure::SeasonCustomImpl;
     use eternum::models::owner::{Owner, OwnerCustomTrait};
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use eternum::models::season::SeasonImpl;
     use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     #[derive(Copy, Drop, Serde)]
@@ -56,7 +56,7 @@ mod liquidity_systems {
             resource_amount: u128,
             lords_amount: u128,
         ) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             get!(world, entity_id, Owner).assert_caller_owner();
             let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
@@ -97,7 +97,7 @@ mod liquidity_systems {
         fn remove(
             ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed
         ) -> ID {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             let player = starknet::get_caller_address();
             get!(world, entity_id, Owner).assert_caller_owner();

@@ -121,6 +121,10 @@ impl ResourceTransferLockCustomImpl of ResourceTransferLockCustomTrait {
 
 #[generate_trait]
 impl ResourceFoodImpl of ResourceFoodTrait {
+    fn is_food(resource_type: u8) -> bool {
+        resource_type == ResourceTypes::WHEAT || resource_type == ResourceTypes::FISH
+    }
+
     fn get(world: IWorldDispatcher, entity_id: ID) -> (Resource, Resource) {
         let wheat = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::WHEAT));
         let fish = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::FISH));

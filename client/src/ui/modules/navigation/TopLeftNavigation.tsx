@@ -1,3 +1,4 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -12,15 +13,7 @@ import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  CapacityConfigCategory,
-  EternumGlobalConfig,
-  ID,
-  ResourcesIds,
-  WEIGHTS_GRAM,
-} from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -52,15 +45,15 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
       <ul className="list-none my-1">
         <li className="flex items-center">
           <ResourceIcon resource="Lords" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Lords]).toLocaleString()} Lords
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
         </li>
         <li className="flex items-center">
           <ResourceIcon resource="Wheat" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wheat]).toLocaleString()} Food
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
         </li>
         <li className="flex items-center">
           <ResourceIcon resource="Wood" size="xs" className="mr-1" />
-          {(capacity / WEIGHTS_GRAM[ResourcesIds.Wood]).toLocaleString()} Other
+          {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
         </li>
       </ul>
       <p className="italic text-xs">Build Storehouses to increase capacity.</p>
@@ -69,12 +62,12 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
 };
 
 const WorkersHutTooltipContent = () => {
-  const capacity = EternumGlobalConfig.populationCapacity.workerHuts;
+  const capacity = configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity;
   return (
     <div className="text-xs text-gray-200 p-2 max-w-xs">
       <p className="font-semibold">Population Capacity</p>
       <ul className="list-disc list-inside my-1">
-        <li>{BASE_POPULATION_CAPACITY} Base Capacity</li>
+        <li>{configManager.getBasePopulationCapacity()} Base Capacity</li>
         <li>+{capacity} per Workers Hut</li>
       </ul>
       <p className="italic text-xs">Build Workers Huts to increase population capacity.</p>
@@ -82,7 +75,7 @@ const WorkersHutTooltipContent = () => {
   );
 };
 
-export const TopMiddleNavigation = () => {
+export const TopLeftNavigation = () => {
   const { setup } = useDojo();
 
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
@@ -143,15 +136,14 @@ export const TopMiddleNavigation = () => {
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 
-    return (
-      quantity * gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse])) +
-      gramToKg(Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Storehouse]))
-    );
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
+
+    return quantity * gramToKg(storehouseCapacity) + gramToKg(storehouseCapacity);
   }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % configManager.getTick(TickIds.Armies);
+    const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -232,7 +224,7 @@ export const TopMiddleNavigation = () => {
             >
               <ResourceIcon withTooltip={false} resource="House" size="sm" />
               <div className="self-center">
-                {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+                {population.population} / {population.capacity + configManager.getBasePopulationCapacity()}
               </div>
             </div>
           )}
@@ -284,7 +276,7 @@ const TickProgress = () => {
   const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
-  let cycleTime = EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+  let cycleTime = configManager.getTick(TickIds.Armies);
 
   useEffect(() => {
     const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);

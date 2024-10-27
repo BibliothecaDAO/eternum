@@ -1,32 +1,32 @@
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  ContractAddress,
-  EternumGlobalConfig,
-  ID,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS,
-  ResourcesIds,
-  resources,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, EntityType, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
 type LiquidityResourceRowProps = {
+  playerStructureIds: ID[];
   bankEntityId: ID;
   entityId: ID;
   resourceId: ResourcesIds;
   isFirst?: boolean;
 };
 
-export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFirst }: LiquidityResourceRowProps) => {
+export const LiquidityResourceRow = ({
+  playerStructureIds,
+  bankEntityId,
+  entityId,
+  resourceId,
+  isFirst,
+}: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
@@ -72,7 +72,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
   const [totalLords, totalResource] = marketManager.getReserves();
   const [lordsAmount, resourceAmount] = marketManager.getMyLP();
 
-  const myLiquidity = marketManager.getLiquidity();
+  const myLiquidity = marketManager.getPlayerLiquidity();
   const canWithdraw = useMemo(
     () => (myLiquidity?.shares.mag || 0) > 0 && (totalLords > 0 || totalResource > 0),
     [myLiquidity, totalLords, totalResource],
@@ -127,7 +127,12 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
               <TravelInfo
                 entityId={entityId}
                 resources={travelResources}
-                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey, true)}
+                travelTime={computeTravelTime(
+                  bankEntityId,
+                  entityId,
+                  configManager.getSpeedConfig(EntityType.DONKEY),
+                  true,
+                )}
                 setCanCarry={setCanCarry}
               />
             </div>
@@ -165,30 +170,15 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
             </div>
           )}
         </div>
-
-        <div className="flex flex-col col-span-2">
-          <div className="flex">
-            <div>{divideByPrecision(totalLords).toLocaleString()}</div>
-            <ResourceIcon resource="Lords" size="sm" />
-          </div>
-
-          <div className="flex">
-            <div>{divideByPrecision(totalResource).toLocaleString()}</div>
-            <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
-          </div>
-        </div>
-
-        <div className="flex flex-col col-span-2">
-          <div className="flex">
-            <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
-            <ResourceIcon resource="Lords" size="sm" />
-          </div>
-
-          <div className="flex">
-            <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
-            <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
-          </div>
-        </div>
+        <TotalLiquidity totalLords={totalLords} totalResource={totalResource} resourceId={resourceId} />
+        <MyLiquidity
+          playerStructureIds={playerStructureIds}
+          lordsAmount={lordsAmount}
+          resourceAmount={resourceAmount}
+          totalLords={totalLords}
+          totalResource={totalResource}
+          marketManager={marketManager}
+        />
 
         <div>
           <div className="flex items-center h-full">
@@ -208,10 +198,112 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId, isFir
   );
 };
 
+const TotalLiquidity = ({
+  totalLords,
+  totalResource,
+  resourceId,
+}: {
+  totalLords: number;
+  totalResource: number;
+  resourceId: ResourcesIds;
+}) => {
+  return (
+    <div className="flex flex-col col-span-2 justify-center">
+      <div className="flex">
+        <div>{divideByPrecision(totalLords).toLocaleString()}</div>
+        <ResourceIcon resource="Lords" size="sm" />
+      </div>
+
+      <div className="flex">
+        <div>{divideByPrecision(totalResource).toLocaleString()}</div>
+        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+      </div>
+    </div>
+  );
+};
+
+const MyLiquidity = ({
+  playerStructureIds,
+  lordsAmount,
+  resourceAmount,
+  totalLords,
+  totalResource,
+  marketManager,
+}: {
+  playerStructureIds: ID[];
+  lordsAmount: number;
+  resourceAmount: number;
+  totalLords: number;
+  totalResource: number;
+  marketManager: MarketManager;
+}) => {
+  const resourceId = marketManager.resourceId;
+
+  const playerLiquidityInfo = useMemo(() => {
+    return marketManager.getLatestLiquidityEvent(playerStructureIds);
+  }, [playerStructureIds, marketManager]);
+
+  const [lordsDifferencePercentage, resourceDifferencePercentage] = useMemo(() => {
+    if (!playerLiquidityInfo) return [0, 0];
+    return [
+      ((lordsAmount - Number(playerLiquidityInfo.lords_amount)) / Number(playerLiquidityInfo.lords_amount)) * 100,
+      ((resourceAmount - Number(playerLiquidityInfo.resource_amount)) / Number(playerLiquidityInfo.resource_amount)) *
+        100,
+    ];
+  }, [playerLiquidityInfo, lordsAmount, resourceAmount]);
+
+  const totalValueDifferenceInLords = useMemo(() => {
+    if (!playerLiquidityInfo) return 0;
+    const currentResourcePrice = marketManager.getMarketPrice();
+    const previousResourcePrice = divideByPrecision(Number(playerLiquidityInfo.resource_price));
+
+    const currentTotalValue = lordsAmount + currentResourcePrice * resourceAmount;
+    const previousTotalValue =
+      Number(playerLiquidityInfo.lords_amount) + previousResourcePrice * Number(playerLiquidityInfo.resource_amount);
+
+    return divideByPrecision(currentTotalValue - previousTotalValue);
+  }, [playerLiquidityInfo, totalLords, totalResource, marketManager]);
+
+  return (
+    <div className="flex flex-col col-span-2">
+      <div className="flex">
+        <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
+        <ResourceIcon resource="Lords" size="sm" />
+        {lordsAmount > 0 && (
+          <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+            ({lordsDifferencePercentage > 0 ? "+" : ""}
+            {lordsDifferencePercentage.toFixed(2)}%)
+          </span>
+        )}
+      </div>
+
+      <div className="flex">
+        <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
+        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+        {resourceAmount > 0 && (
+          <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+            ({resourceDifferencePercentage > 0 ? "+" : ""}
+            {resourceDifferencePercentage.toFixed(2)}%)
+          </span>
+        )}
+      </div>
+
+      {totalValueDifferenceInLords !== 0 && (
+        <div className="flex mt-1">
+          <span className={`text-xs ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
+            {totalValueDifferenceInLords >= 0 ? "+" : "-"}
+            {Math.abs(totalValueDifferenceInLords).toFixed(2)} Lords (uPNL)
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
   const { setup } = useDojo();
-  const inputResources = RESOURCE_INPUTS_SCALED[marketManager.resourceId];
-  const outputAmount = RESOURCE_OUTPUTS[marketManager.resourceId];
+  const inputResources = configManager.resourceInputs[marketManager.resourceId];
+  const outputAmount = configManager.resourceOutput[marketManager.resourceId].amount;
 
   if (!inputResources?.length) return null;
   const totalPrice =
