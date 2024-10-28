@@ -72,7 +72,9 @@ export const MarketModal = () => {
 
   const battle = useMemo(() => {
     if (battles.length === 0) return null;
-    return battles.sort((a, b) => Number(a.last_updated || 0) - Number(b.last_updated || 0))[0];
+    return battles
+      .filter((battle) => battle.isStructureBattle)
+      .sort((a, b) => Number(a.last_updated || 0) - Number(b.last_updated || 0))[0];
   }, [battles]);
 
   const battleManager = useMemo(() => new BattleManager(battle?.entity_id || 0, dojo), [battle?.entity_id, dojo]);
