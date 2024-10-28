@@ -595,6 +595,7 @@ export interface MintTestRealmProps extends SystemSigner {
   realms_address: num.BigNumberish;
 }
 export interface MintSeasonPassesProps extends SystemSigner {
+  recipient: num.BigNumberish;
   token_ids: num.BigNumberish[];
   season_pass_address: num.BigNumberish;
 }
