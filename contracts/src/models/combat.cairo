@@ -336,7 +336,7 @@ impl TroopsImpl of TroopsTrait {
         ///
         ///
         let self_knight_strength_with_advantage = self_knight_strength
-            + (enemy_paladin_strength
+            + self_knight_strength * (enemy_paladin_strength
                 * troop_config.advantage_percent.into()
                 / self_knight_strength
                 / PercentageValueImpl::_100());
@@ -351,7 +351,7 @@ impl TroopsImpl of TroopsTrait {
         ///
         let self_knight_strength_with_disadvantage = cap_minus(
             self_knight_strength,
-            (enemy_crossbowman_strength
+            self_knight_strength * (enemy_crossbowman_strength
                 * troop_config.disadvantage_percent.into()
                 / self_knight_strength
                 / PercentageValueImpl::_100())
@@ -368,7 +368,7 @@ impl TroopsImpl of TroopsTrait {
         /// CROSSBOWMAN ADVANTAGE CALCULATION AGAINST ENEMY'S KNIGHT
         ///
         let self_crossbowman_strength_with_advantage = self_crossbowman_strength
-            + (enemy_knight_strength
+            + self_crossbowman_strength * (enemy_knight_strength
                 * troop_config.advantage_percent.into()
                 / self_crossbowman_strength
                 / PercentageValueImpl::_100());
@@ -383,7 +383,7 @@ impl TroopsImpl of TroopsTrait {
         ///
         let self_crossbowman_strength_with_disadvantage = cap_minus(
             self_crossbowman_strength,
-            (enemy_paladin_strength
+            self_crossbowman_strength * (enemy_paladin_strength
                 * troop_config.disadvantage_percent.into()
                 / self_crossbowman_strength
                 / PercentageValueImpl::_100())
@@ -400,7 +400,7 @@ impl TroopsImpl of TroopsTrait {
         /// PALADIN ADVANTAGE CALCULATION AGAINST ENEMY'S CROSSBOWMAN
         ///
         let self_paladin_strength_with_advantage = self_paladin_strength
-            + (enemy_crossbowman_strength
+            + self_paladin_strength * (enemy_crossbowman_strength
                 * troop_config.advantage_percent.into()
                 / self_paladin_strength
                 / PercentageValueImpl::_100());
@@ -415,7 +415,7 @@ impl TroopsImpl of TroopsTrait {
         ///
         let self_paladin_strength_with_disadvantage = cap_minus(
             self_paladin_strength,
-            (enemy_knight_strength
+            self_paladin_strength * (enemy_knight_strength
                 * troop_config.disadvantage_percent.into()
                 / self_paladin_strength
                 / PercentageValueImpl::_100())

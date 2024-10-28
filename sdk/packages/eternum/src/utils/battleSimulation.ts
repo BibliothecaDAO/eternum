@@ -159,7 +159,11 @@ export class Battle {
     /* knight advantage calculation against enemy paladin */
     let attackerKnightStrengthWithAdvantage =
       attackerKnightStrength +
-      Math.floor((defenderPaladinStrength * this.config.advantagePercent) / attackerKnightStrength / Percentage._100());
+      Math.floor(
+        (attackerKnightStrength * (defenderPaladinStrength * this.config.advantagePercent)) /
+          attackerKnightStrength /
+          Percentage._100(),
+      );
     // attacker can only get a max of advantagePercent of its own size
     let attackerKnightStrengthWithAdvantageMax =
       attackerKnightStrength + Percentage.get(attackerKnightStrength, this.config.advantagePercent);
@@ -172,7 +176,10 @@ export class Battle {
     let attackerKnightStrengthWithDisadvantage =
       attackerKnightStrength -
       Math.floor(
-        (defenderCrossbowmanStrength * this.config.disadvantagePercent) / attackerKnightStrength / Percentage._100(),
+        attackerKnightStrength *
+          ((defenderCrossbowmanStrength * this.config.disadvantagePercent) /
+            attackerKnightStrength /
+            Percentage._100()),
       );
     // attacker can only lose a max of disadvantagePercent of its own size
     let attackerKnightStrengthWithDisadvantageMax =
@@ -187,7 +194,9 @@ export class Battle {
     let attackerCrossbowmanStrengthWithAdvantage =
       attackerCrossbowmanStrength +
       Math.floor(
-        (defenderKnightStrength * this.config.advantagePercent) / attackerCrossbowmanStrength / Percentage._100(),
+        (attackerCrossbowmanStrength * (defenderKnightStrength * this.config.advantagePercent)) /
+          attackerCrossbowmanStrength /
+          Percentage._100(),
       );
     let attackerCrossbowmanStrengthWithAdvantageMax =
       attackerCrossbowmanStrength + Percentage.get(attackerCrossbowmanStrength, this.config.advantagePercent);
@@ -200,7 +209,9 @@ export class Battle {
     let attackerCrossbowmanStrengthWithDisadvantage =
       attackerCrossbowmanStrength -
       Math.floor(
-        (defenderPaladinStrength * this.config.disadvantagePercent) / attackerCrossbowmanStrength / Percentage._100(),
+        (attackerCrossbowmanStrength * (defenderPaladinStrength * this.config.disadvantagePercent)) /
+          attackerCrossbowmanStrength /
+          Percentage._100(),
       );
     let attackerCrossbowmanStrengthWithDisadvantageMax =
       attackerCrossbowmanStrength - Percentage.get(attackerCrossbowmanStrength, this.config.disadvantagePercent);
@@ -214,7 +225,9 @@ export class Battle {
     let attackerPaladinStrengthWithAdvantage =
       attackerPaladinStrength +
       Math.floor(
-        (defenderCrossbowmanStrength * this.config.advantagePercent) / attackerPaladinStrength / Percentage._100(),
+        (attackerPaladinStrength * (defenderCrossbowmanStrength * this.config.advantagePercent)) /
+          attackerPaladinStrength /
+          Percentage._100(),
       );
     let attackerPaladinStrengthWithAdvantageMax =
       attackerPaladinStrength + Percentage.get(attackerPaladinStrength, this.config.advantagePercent);
@@ -227,7 +240,9 @@ export class Battle {
     let attackerPaladinStrengthWithDisadvantage =
       attackerPaladinStrength -
       Math.floor(
-        (defenderKnightStrength * this.config.disadvantagePercent) / attackerPaladinStrength / Percentage._100(),
+        (attackerPaladinStrength * (defenderKnightStrength * this.config.disadvantagePercent)) /
+          attackerPaladinStrength /
+          Percentage._100(),
       );
     let attackerPaladinStrengthWithDisadvantageMax =
       attackerPaladinStrength - Percentage.get(attackerPaladinStrength, this.config.disadvantagePercent);
