@@ -1,0 +1,2 @@
+tag = "eternum-config_systems"
+writes = [ "ns:eternum" ]
