@@ -24,10 +24,12 @@ use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
 use eternum::models::weight::Weight;
 
 use eternum::systems::combat::contracts::battle_systems::{
-    battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait,
-    IBattlePillageContractDispatcher, IBattlePillageContractDispatcherTrait
+    battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, IBattlePillageContractDispatcher,
+    IBattlePillageContractDispatcherTrait
 };
-use eternum::systems::combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait};
+use eternum::systems::combat::contracts::troop_systems::{
+    troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait
+};
 
 use eternum::systems::config::contracts::{
     config_systems, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,

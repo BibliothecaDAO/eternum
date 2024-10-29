@@ -4,8 +4,9 @@ use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::battle_systems::{
-        battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait,
-        battle_pillage_systems, IBattlePillageContractDispatcher, IBattlePillageContractDispatcherTrait},
+        battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, battle_pillage_systems,
+        IBattlePillageContractDispatcher, IBattlePillageContractDispatcherTrait
+    },
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
     hyperstructure::contracts::{
         hyperstructure_systems, IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait
@@ -60,7 +61,9 @@ fn deploy_battle_systems(world: IWorldDispatcher) -> IBattleContractDispatcher {
 
 fn deploy_battle_pillage_systems(world: IWorldDispatcher) -> IBattlePillageContractDispatcher {
     let battle_pillage_systems_address = deploy_system(world, battle_pillage_systems::TEST_CLASS_HASH);
-    let battle_pillage_systems_dispatcher = IBattlePillageContractDispatcher { contract_address: battle_pillage_systems_address };
+    let battle_pillage_systems_dispatcher = IBattlePillageContractDispatcher {
+        contract_address: battle_pillage_systems_address
+    };
     battle_pillage_systems_dispatcher
 }
 

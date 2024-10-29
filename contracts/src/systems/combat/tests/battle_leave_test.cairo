@@ -20,7 +20,8 @@ use eternum::systems::{
 };
 use eternum::utils::testing::{
     config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_system, deploy_battle_systems, deploy_troop_systems}, general::{mint, spawn_realm}
+    systems::{deploy_realm_systems, deploy_system, deploy_battle_systems, deploy_troop_systems},
+    general::{mint, spawn_realm}
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;

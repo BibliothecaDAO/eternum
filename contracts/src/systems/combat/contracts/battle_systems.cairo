@@ -1,4 +1,16 @@
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
+use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
+
+
+use eternum::models::movable::{Movable, MovableCustomTrait};
+use eternum::models::quantity::{Quantity};
+use eternum::models::{
+    combat::{
+        Army, ArmyCustomTrait, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, BattleCustomImpl,
+        BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait, BattleHealthCustomTrait, BattleEscrowImpl,
+    },
+};
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
@@ -183,7 +195,7 @@ trait IBattleContract<TContractState> {
     /// * None
     fn battle_leave(ref world: IWorldDispatcher, battle_id: ID, army_id: ID);
 
-        /// Claims ownership of a non realm structure by an army after meeting all necessary conditions.
+    /// Claims ownership of a non realm structure by an army after meeting all necessary conditions.
     ///
     /// # Preconditions:
     /// - The caller must own the `army_id`.
@@ -273,8 +285,6 @@ trait IBattlePillageContract<TContractState> {
     /// # Returns:
     /// * None
     fn battle_pillage(ref world: IWorldDispatcher, army_id: ID, structure_id: ID);
-
-
 }
 
 
@@ -332,7 +342,6 @@ mod battle_systems {
 
     #[abi(embed_v0)]
     impl BattleContractImpl of IBattleContract<ContractState> {
-
         fn battle_start(ref world: IWorldDispatcher, attacking_army_id: ID, defending_army_id: ID) -> ID {
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -650,7 +659,6 @@ mod battle_systems {
         }
 
 
-
         fn battle_claim(ref world: IWorldDispatcher, army_id: ID, structure_id: ID) {
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -714,7 +722,6 @@ mod battle_systems {
                 }
             );
         }
-
     }
 }
 
@@ -772,10 +779,6 @@ mod battle_pillage_systems {
 
     #[abi(embed_v0)]
     impl BattlePillageContractImpl of IBattlePillageContract<ContractState> {
-
-
-
-
         fn battle_pillage(ref world: IWorldDispatcher, army_id: ID, structure_id: ID,) {
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -1097,23 +1100,6 @@ mod battle_pillage_systems {
         }
     }
 }
-
-
-
-
-use eternum::models::movable::{Movable, MovableCustomTrait};
-use eternum::models::quantity::{Quantity};
-use eternum::models::{
-    combat::{
-        Army, ArmyCustomTrait,
-        TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait,
-        BattleCustomImpl, BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait,
-        BattleHealthCustomTrait, BattleEscrowImpl,
-    },
-};
-use eternum::models::config::{
-     TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
 #[generate_trait]

@@ -45,12 +45,12 @@ pub mod dev {
     pub mod contracts;
 }
 pub mod combat {
+    #[cfg(test)]
+    mod tests;
     pub mod contracts {
         pub mod battle_systems;
         pub mod troop_systems;
     }
-    #[cfg(test)]
-    mod tests;
 }
 pub mod bank {
     pub mod contracts;

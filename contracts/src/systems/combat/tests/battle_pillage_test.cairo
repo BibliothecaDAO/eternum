@@ -8,15 +8,18 @@ use eternum::{
     },
     systems::{
         config::contracts::config_systems,
-        combat::contracts::battle_systems::{battle_systems, 
-            IBattleContractDispatcher, IBattleContractDispatcherTrait,
-            IBattlePillageContractDispatcher, IBattlePillageContractDispatcherTrait,
+        combat::contracts::battle_systems::{
+            battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, IBattlePillageContractDispatcher,
+            IBattlePillageContractDispatcherTrait,
         },
         combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
     },
     utils::testing::{
         world::spawn_eternum, general::{mint, teleport, spawn_realm, create_army_with_troops},
-        systems::{deploy_system, deploy_realm_systems, deploy_battle_systems, deploy_battle_pillage_systems, deploy_troop_systems},
+        systems::{
+            deploy_system, deploy_realm_systems, deploy_battle_systems, deploy_battle_pillage_systems,
+            deploy_troop_systems
+        },
         config::{
             set_combat_config, setup_globals, set_stamina_config, set_capacity_config, set_speed_config,
             set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config,
@@ -116,8 +119,7 @@ fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
 
 #[test]
 fn combat_test_battle_pillage__near_max_capacity() {
-    let (world, battle_pillage_system_dispatcher,
-             attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
+    let (world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
 

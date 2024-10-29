@@ -126,7 +126,7 @@ mod troop_systems {
     use eternum::models::combat::{ProtectorCustomTrait};
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,CapacityConfigCategory
+        BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory
     };
     use eternum::models::movable::{Movable, MovableCustomTrait};
 
@@ -146,9 +146,8 @@ mod troop_systems {
     use eternum::models::{
         combat::{
             Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
-            BattleCustomImpl, BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait,
-            BattleHealthCustomTrait, AttackingArmyQuantityTrackerCustomTrait,
-            AttackingArmyQuantityTrackerCustomImpl,
+            BattleCustomImpl, BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait, BattleHealthCustomTrait,
+            AttackingArmyQuantityTrackerCustomTrait, AttackingArmyQuantityTrackerCustomImpl,
         },
     };
     use eternum::systems::combat::contracts::battle_systems::battle_systems::{InternalBattleImpl};
