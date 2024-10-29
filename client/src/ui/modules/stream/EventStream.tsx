@@ -17,7 +17,7 @@ import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ContractAddress, findResourceById, Position } from "@bibliothecadao/eternum";
+import { ContractAddress, findResourceById, ID, Position } from "@bibliothecadao/eternum";
 import { Component, ComponentValue, defineComponentSystem, getComponentValue, World } from "@dojoengine/recs";
 import { getEntityIdFromKeys, hexToAscii } from "@dojoengine/utils";
 import { useEffect, useState } from "react";
@@ -42,6 +42,10 @@ enum EventType {
 
 const EVENT_CONFIG: {
   [key in EventType]: {
+    to?: (
+      compononentValue: ComponentValue<ClientComponents["events"][key]["schema"]>,
+      getAddressFromEntity: (id: ID) => ContractAddress | undefined,
+    ) => ContractAddress | undefined;
     getAction: (componentValue: ComponentValue<ClientComponents["events"][key]["schema"]>) => string;
     emoji: JSX.Element;
     color: string;
@@ -65,6 +69,10 @@ const EVENT_CONFIG: {
     color: "#ED9733",
   },
   [EventType.BattleStart]: {
+    to: (
+      componentValue: ComponentValue<ClientComponents["events"][EventType.BattleStart]["schema"]>,
+      _getAddressFromEntity,
+    ) => componentValue.defender,
     getAction: (_: ComponentValue<ClientComponents["events"][EventType.BattleStart]["schema"]>) => `started a battle`,
     emoji: <Combat className="w-6 self-center fill-current" />,
     color: "#EF9A9A",
@@ -80,12 +88,20 @@ const EVENT_CONFIG: {
     color: "#90CAF9",
   },
   [EventType.BattleClaim]: {
+    to: (
+      componentValue: ComponentValue<ClientComponents["events"][EventType.BattleClaim]["schema"]>,
+      getAddressFromEntity,
+    ) => getAddressFromEntity(componentValue.structure_entity_id),
     getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.BattleClaim]["schema"]>) =>
       `claimed a ${componentValue.structure_type}`,
     emoji: <Chest className="w-6 self-center fill-current" />,
     color: "#FFCC80",
   },
   [EventType.BattlePillage]: {
+    to: (
+      componentValue: ComponentValue<ClientComponents["events"][EventType.BattlePillage]["schema"]>,
+      _getAddressFromEntity,
+    ) => componentValue.pillaged_structure_owner,
     getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.BattlePillage]["schema"]>) =>
       `pillaged a ${componentValue.structure_type}`,
     emoji: <Coins className="w-6 self-center fill-current" />,
@@ -107,18 +123,30 @@ const EVENT_CONFIG: {
     color: "#80DEEA",
   },
   [EventType.HyperstructureFinished]: {
+    to: (
+      componentValue: ComponentValue<ClientComponents["events"][EventType.HyperstructureFinished]["schema"]>,
+      getAddressFromEntity,
+    ) => getAddressFromEntity(componentValue.hyperstructure_entity_id),
     getAction: (_: ComponentValue<ClientComponents["events"][EventType.HyperstructureFinished]["schema"]>) =>
       `finished a hyperstructure`,
     emoji: <Sparkles className="w-6 self-center fill-current" />,
     color: "#FFF59D",
   },
   [EventType.HyperstructureContribution]: {
+    to: (
+      componentValue: ComponentValue<ClientComponents["events"][EventType.HyperstructureContribution]["schema"]>,
+      getAddressFromEntity,
+    ) => getAddressFromEntity(componentValue.hyperstructure_entity_id),
     getAction: (_: ComponentValue<ClientComponents["events"][EventType.HyperstructureContribution]["schema"]>) =>
       `contributed to a hyperstructure`,
     emoji: <Wrench className="w-6 self-center fill-current" />,
     color: "#FFD54F",
   },
   [EventType.AcceptOrder]: {
+    to: (
+      componentValue: ComponentValue<ClientComponents["events"][EventType.AcceptOrder]["schema"]>,
+      getAddressFromEntity,
+    ) => getAddressFromEntity(componentValue.maker_id),
     getAction: (_: ComponentValue<ClientComponents["events"][EventType.AcceptOrder]["schema"]>) =>
       `accepted a p2p order}`,
     emoji: <Check className="w-6 self-center fill-current" />,
@@ -127,6 +155,7 @@ const EVENT_CONFIG: {
 };
 
 interface EventData {
+  to: ContractAddress | undefined;
   name: string | undefined;
   action: string;
   eventType: EventType;
@@ -142,7 +171,7 @@ export const EventStream = () => {
 
   const [hideEventStream, setHideEventStream] = useState(false);
   const [eventList, setEventList] = useState<EventData[]>([]);
-  const { getAddressNameFromEntity } = useEntitiesUtils();
+  const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
 
   const createEvent = (entity: any, component: any, eventType: EventType): EventData | undefined => {
     const componentValue = getComponentValue(component, entity);
@@ -176,6 +205,7 @@ export const EventStream = () => {
       : getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityId)]));
 
     return {
+      to: EVENT_CONFIG[eventType].to?.(componentValue! as any, getPlayerAddressFromEntity),
       action: EVENT_CONFIG[eventType].getAction(componentValue! as any),
       name,
       eventType,
