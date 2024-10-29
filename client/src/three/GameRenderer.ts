@@ -3,9 +3,18 @@ import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { SceneName } from "@/types";
 import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import _ from "lodash";
+import {
+  BloomEffect,
+  BrightnessContrastEffect,
+  EffectComposer,
+  EffectPass,
+  FXAAEffect,
+  RenderPass,
+} from "postprocessing";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { SceneManager } from "./SceneManager";
 import { TransitionManager } from "./components/TransitionManager";
@@ -24,6 +33,8 @@ export default class GameRenderer {
   private raycaster!: THREE.Raycaster;
   private mouse!: THREE.Vector2;
   private controls!: MapControls;
+  private composer!: EffectComposer;
+  private renderPass!: RenderPass;
 
   private locationManager!: LocationManager;
 
@@ -111,6 +122,19 @@ export default class GameRenderer {
     );
     moveCameraFolder.close();
 
+    const rendererFolder = GUIManager.addFolder("Renderer");
+    rendererFolder
+      .add(this.renderer, "toneMapping", {
+        "No Tone Mapping": THREE.NoToneMapping,
+        "Linear Tone Mapping": THREE.LinearToneMapping,
+        "Reinhard Tone Mapping": THREE.ReinhardToneMapping,
+        "Cineon Tone Mapping": THREE.CineonToneMapping,
+        "ACESFilmic Tone Mapping": THREE.ACESFilmicToneMapping,
+      })
+      .name("Tone Mapping");
+    rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
+    rendererFolder.close();
+
     this.waitForLabelRendererElement().then((labelRendererElement) => {
       this.labelRendererElement = labelRendererElement;
       this.initializeLabelRenderer();
@@ -139,7 +163,9 @@ export default class GameRenderer {
   private initializeRenderer() {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
-      antialias: !this.isLowGraphicsMode,
+      antialias: false,
+      stencil: false,
+      depth: false,
     });
     this.renderer.setPixelRatio(this.isLowGraphicsMode ? 0.75 : window.devicePixelRatio);
     this.renderer.shadowMap.enabled = !this.isLowGraphicsMode;
@@ -148,22 +174,17 @@ export default class GameRenderer {
       this.isLowGraphicsMode ? window.innerWidth : window.innerWidth,
       this.isLowGraphicsMode ? window.innerHeight : window.innerHeight,
     );
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.7;
+    this.renderer.toneMapping = THREE.NoToneMapping;
+    this.renderer.toneMappingExposure = 1;
     this.renderer.autoClear = false;
+    this.composer = new EffectComposer(this.renderer, {
+      frameBufferType: THREE.HalfFloatType,
+    });
   }
 
   initStats() {
     this.stats = new (Stats as any)();
-    if (import.meta.env.VITE_PUBLIC_SHOW_FPS) {
-      this.stats.dom.style.left = "";
-      this.stats.dom.style.right = "0";
-      this.stats.dom.style.overflow = "hidden";
-      this.stats.dom.style.opacity = "0.35";
-      this.stats.dom.style.height = "14px";
-      this.stats.dom.style.zIndex = "1";
-      this.stats.dom.style.borderRadius = "0 0 0 3px";
-    }
+
     document.body.appendChild(this.stats.dom);
   }
 
@@ -253,7 +274,7 @@ export default class GameRenderer {
     }
   };
 
-  renderModels() {
+  async renderModels() {
     this.transitionManager = new TransitionManager(this.renderer);
 
     this.sceneManager = new SceneManager(this.transitionManager);
@@ -267,8 +288,41 @@ export default class GameRenderer {
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
+    this.applyEnvironment();
+
+    this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
+    this.composer.addPass(this.renderPass);
+
+    const obj = { brightness: 0, contrast: 0.3 };
+    const folder = GUIManager.addFolder("BrightnesContrastt");
+    folder.add(obj, "brightness").name("Brightness").min(-1).max(1).step(0.01);
+    folder.add(obj, "contrast").name("Contrast").min(-1).max(1).step(0.01);
+    this.composer.addPass(
+      new EffectPass(
+        this.camera,
+
+        new FXAAEffect(),
+        new BloomEffect({
+          luminanceThreshold: 1.1,
+          mipmapBlur: true,
+          intensity: 0.15,
+        }),
+        new BrightnessContrastEffect({
+          brightness: obj.brightness,
+          contrast: obj.contrast,
+        }),
+      ),
+    );
 
     this.sceneManager.moveCameraForScene();
+  }
+
+  applyEnvironment() {
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
+    this.hexceptionScene.setEnvironment(roomEnvironment, 0.3);
+    this.worldmapScene.setEnvironment(roomEnvironment, 0.3);
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
@@ -328,14 +382,16 @@ export default class GameRenderer {
     // Render the current game scene
     if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
       this.worldmapScene.update(deltaTime);
-      this.renderer.render(this.worldmapScene.getScene(), this.camera);
+      // @ts-ignore
+      this.renderPass.scene = this.worldmapScene.getScene();
       this.labelRenderer.render(this.worldmapScene.getScene(), this.camera);
     } else {
       this.hexceptionScene.update(deltaTime);
-      this.renderer.render(this.hexceptionScene.getScene(), this.camera);
+      // @ts-ignore
+      this.renderPass.scene = this.hexceptionScene.getScene();
       this.labelRenderer.render(this.hexceptionScene.getScene(), this.camera);
     }
-
+    this.composer.render();
     // Render the HUD scene without clearing the buffer
     this.hudScene.update(deltaTime);
     this.renderer.clearDepth(); // Clear only the depth buffer

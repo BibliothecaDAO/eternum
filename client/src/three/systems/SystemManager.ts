@@ -296,6 +296,7 @@ export class SystemManager {
         return progress;
       },
     );
+
     // Adjust percentage to account for floating-point precision issues
     if (Math.abs(percentage - 1.0) < epsilon) {
       percentage = 1.0;
