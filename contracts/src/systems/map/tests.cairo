@@ -23,7 +23,11 @@ use eternum::models::stamina::Stamina;
 use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
 use eternum::models::weight::Weight;
 
-use eternum::systems::combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait};
+use eternum::systems::combat::contracts::battle_systems::{
+    battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait,
+    IBattlePillageContractDispatcher, IBattlePillageContractDispatcherTrait
+};
+use eternum::systems::combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait};
 
 use eternum::systems::config::contracts::{
     config_systems, IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
@@ -44,7 +48,8 @@ use eternum::systems::transport::contracts::travel_systems::{
 use eternum::utils::testing::{
     world::{spawn_eternum},
     systems::{
-        deploy_realm_systems, deploy_combat_systems, deploy_system, deploy_map_systems, deploy_dev_resource_systems
+        deploy_realm_systems, deploy_battle_systems, deploy_system, deploy_map_systems, deploy_dev_resource_systems,
+        deploy_troop_systems, deploy_battle_pillage_systems
     },
     general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
     config::{
@@ -115,7 +120,7 @@ fn map_test_map_explore() {
 
 #[test]
 fn map_test_map_explore__mine_mercenaries_protector() {
-    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher) = setup();
+    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, battle_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
@@ -139,13 +144,13 @@ fn map_test_map_explore__mine_mercenaries_protector() {
 
     let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_structure(world, mine_entity_id);
 
-    let battle_entity_id = combat_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
+    let battle_entity_id = battle_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
     let battle = get!(world, battle_entity_id, Battle);
     let current_ts = starknet::get_block_timestamp();
     starknet::testing::set_block_timestamp(current_ts + battle.duration_left);
 
-    combat_systems_dispatcher.battle_leave(battle_entity_id, realm_army_unit_id);
-    combat_systems_dispatcher.battle_claim(realm_army_unit_id, mine_entity_id);
+    battle_systems_dispatcher.battle_leave(battle_entity_id, realm_army_unit_id);
+    battle_systems_dispatcher.battle_claim(realm_army_unit_id, mine_entity_id);
 
     let mine_owner_address = get!(world, mine_entity_id, Owner).address;
     let realm_owner_address = get!(world, realm_entity_id, Owner).address;
@@ -154,7 +159,7 @@ fn map_test_map_explore__mine_mercenaries_protector() {
 
 #[test]
 fn map_test_map_explore__mine_production_deadline() {
-    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _combat_systems_dispatcher) = setup();
+    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _battle_systems_dispatcher,) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
 
@@ -178,7 +183,9 @@ fn map_test_map_explore__mine_production_deadline() {
     assert_ge!(mine_earthen_shard_production_deadline.deadline_tick, min_deadline);
     assert_le!(mine_earthen_shard_production_deadline.deadline_tick, max_deadline);
 }
-fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractDispatcher) {
+
+
+fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, IBattleContractDispatcher) {
     let world = spawn_eternum();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
@@ -203,7 +210,8 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
-    let combat_systems_dispatcher = deploy_combat_systems(world);
+    let battle_systems_dispatcher = deploy_battle_systems(world);
+    let troop_systems_dispatcher = deploy_troop_systems(world);
     let map_systems_dispatcher = deploy_map_systems(world);
 
     let realm_position = get_default_realm_pos();
@@ -228,7 +236,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
         crossbowman_count: INITIAL_CROSSBOWMAN_BALANCE.try_into().unwrap()
     };
     let realm_army_unit_id: ID = create_army_with_troops(
-        world, combat_systems_dispatcher, realm_entity_id, troops, false
+        world, troop_systems_dispatcher, realm_entity_id, troops, false
     );
 
     // ensure initial stamina is 0
@@ -240,6 +248,6 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractD
     let current_ts = starknet::get_block_timestamp();
     starknet::testing::set_block_timestamp(current_ts + armies_tick_config.tick_interval_in_seconds);
 
-    (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher)
+    (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, battle_systems_dispatcher)
 }
 
