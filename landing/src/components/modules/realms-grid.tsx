@@ -10,7 +10,7 @@ interface SeasonPassRowProps {
 export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected }: SeasonPassRowProps) => {
   return (
     <>
-      {realms?.length && (
+      {realms?.length ? (
         <AnimatedGrid
           items={realms}
           renderItem={(realm, index) => {
@@ -28,7 +28,7 @@ export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected }: Season
             );
           }}
         />
-      )}
+      ) : "No Realms found"}
     </>
   );
 };

@@ -1175,12 +1175,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: realms_address.toString(),
       entrypoint: "mint",
-      calldata: [token_id, 0],
+      calldata: [uint256.bnToUint256(token_id)],
     });
   }
 
   public async mint_season_passes(props: SystemProps.MintSeasonPassesProps) {
     const {
+      recipient,
       token_ids,
       signer,
       season_pass_address, // Should this be dynamically fetched from season config instead of prop?
@@ -1189,7 +1190,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       return {
         contractAddress: season_pass_address.toString(),
         entrypoint: "mint",
-        calldata: [uint256.bnToUint256(token)],
+        calldata: [recipient, uint256.bnToUint256(token)],
       };
     });
     return await this.executeAndCheckTransaction(signer, multicall);

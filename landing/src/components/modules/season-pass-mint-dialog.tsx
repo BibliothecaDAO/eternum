@@ -11,10 +11,11 @@ interface SeasonPassMintDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   isSuccess: boolean;
+  deselectAllNfts: () => void;
   realm_ids: string[];
 }
 
-export default function SeasonPassMintDialog({ isOpen, setIsOpen, isSuccess, realm_ids }: SeasonPassMintDialogProps) {
+export default function SeasonPassMintDialog({ isOpen, setIsOpen, deselectAllNfts, isSuccess, realm_ids }: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
 
   return (
@@ -50,8 +51,11 @@ export default function SeasonPassMintDialog({ isOpen, setIsOpen, isSuccess, rea
               <div className="text-center">
                 <div className="text-lg font-semibold">Mint your passes to compete in Season 0 of Eternum</div>
                 <div className="w-full my-4">
-                  {realm_ids.map((realm) => (
-                    <span>#{Number(realm)}, </span>
+                {realm_ids.map((realm, index) => (
+                    <span key={realm}>
+                      #{Number(realm)}
+                      {index < realm_ids.length - 1 && ', '}
+                    </span>
                   ))}
                 </div>
                 {mint && (
@@ -59,6 +63,7 @@ export default function SeasonPassMintDialog({ isOpen, setIsOpen, isSuccess, rea
                     className="mx-auto"
                     onClick={() => {
                       mint(realm_ids);
+                      deselectAllNfts();
                       setIsOpen(false);
                     }}
                     variant="cta"

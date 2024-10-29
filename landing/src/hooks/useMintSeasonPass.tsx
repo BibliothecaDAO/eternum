@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 //import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
 //import { bigintEquals } from "../utils/types";
 //import { goToTokenPage } from "../utils/karat";
+import { toast } from "react-toastify";
 import { useDojo } from "./context/DojoContext";
 import useAccountOrBurner from "./useAccountOrBurner";
 
@@ -38,19 +39,16 @@ export const useMintSeasonPass = () => {
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_ids);
-        try {
-          const response = await mint_season_passes({
-            signer: account,
-            token_ids: tokenIdsNumberArray,
-            season_pass_address,
+        await mint_season_passes({ signer: account, recipient: account.address, token_ids: tokenIdsNumberArray, season_pass_address })
+          .then((v) => {
+            toast("Season Passes Minted");
+            // wait supply to change...
+          })
+          .catch((e) => {
+            console.error(`mint error:`, e);
+            setMintingTokenId(["0"]);
+            setIsMinting(false);
           });
-          // waitconsol supply to change...
-          console.log(response);
-        } catch (e) {
-          console.error(`mint error:`, e);
-          setMintingTokenId(["0"]);
-          setIsMinting(false);
-        }
       }
     },
     [account, canMint, season_pass_address, mint_season_passes],

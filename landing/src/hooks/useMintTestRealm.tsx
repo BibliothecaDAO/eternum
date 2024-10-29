@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 //import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
 //import { bigintEquals } from "../utils/types";
 //import { goToTokenPage } from "../utils/karat";
+import { toast } from "react-toastify";
 import { useDojo } from "./context/DojoContext";
 import useAccountOrBurner from "./useAccountOrBurner";
 
@@ -39,7 +40,7 @@ export const useMintTestRealm = () => {
         setMintingTokenId(token_id);
         await mint_test_realm({ signer: account, token_id, realms_address })
           .then((v) => {
-            // wait supply to change...
+            toast(`Realms #${token_id} Minted`)
           })
           .catch((e) => {
             console.error(`mint error:`, e);

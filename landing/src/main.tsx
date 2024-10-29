@@ -1,6 +1,7 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
+import "react-toastify/dist/ReactToastify.css";
 import { dojoConfig } from "../dojoConfig";
 import { setup } from "./dojo/setup";
 import "./index.css";
