@@ -2,11 +2,7 @@ import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
 
-const BIG_DETAILS_NAME = "big_details";
-const BUILDING_NAME = "building";
-export const LAND_NAME = "land";
-export const SMALL_DETAILS_NAME = "small_details";
-
+const LAND_NAME = "land";
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
@@ -43,7 +39,7 @@ export default class InstancedModel {
         tmp.userData.isInstanceModel = true;
 
         if (!enableRaycast) {
-          tmp.raycast = () => { };
+          tmp.raycast = () => {};
         }
 
         this.mixer = new AnimationMixer(gltf.scene);
