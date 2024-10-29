@@ -382,13 +382,13 @@ export default class GameRenderer {
     // Render the current game scene
     if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
       this.worldmapScene.update(deltaTime);
+      // @ts-ignore
       this.renderPass.scene = this.worldmapScene.getScene();
-      //this.renderer.render(this.worldmapScene.getScene(), this.camera);
       this.labelRenderer.render(this.worldmapScene.getScene(), this.camera);
     } else {
       this.hexceptionScene.update(deltaTime);
+      // @ts-ignore
       this.renderPass.scene = this.hexceptionScene.getScene();
-      //this.renderer.render(this.hexceptionScene.getScene(), this.camera);
       this.labelRenderer.render(this.hexceptionScene.getScene(), this.camera);
     }
     this.composer.render();
