@@ -473,7 +473,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_owner_id, is_defensive_army, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_create",
       calldata: [army_owner_id, is_defensive_army],
     });
@@ -483,7 +483,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_delete",
       calldata: [army_id],
     });
@@ -493,7 +493,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, payer_id, troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_buy_troops",
       calldata: [army_id, payer_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
     });
@@ -503,7 +503,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { from_army_id, to_army_id, troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_merge_troops",
       calldata: [from_army_id, to_army_id, troops],
     });
@@ -513,7 +513,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { attacking_army_id, defending_army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_start",
       calldata: [attacking_army_id, defending_army_id],
     });
@@ -523,7 +523,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { battle_id, defending_army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_force_start",
       calldata: [battle_id, defending_army_id],
     });
@@ -532,7 +532,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { battle_id, battle_side, army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_join",
       calldata: [battle_id, battle_side, army_id],
     });
@@ -544,7 +544,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(
       signer,
       army_ids.map((army_id) => ({
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       })),
@@ -555,7 +555,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, structure_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
       entrypoint: "battle_pillage",
       calldata: [army_id, structure_id],
     });
@@ -565,7 +565,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, structure_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_claim",
       calldata: [army_id, structure_id],
     });
@@ -576,12 +576,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       },
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_claim",
         calldata: [army_id, structure_id],
       },
@@ -593,12 +593,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       },
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
         entrypoint: "battle_pillage",
         calldata: [army_id, structure_id],
       },

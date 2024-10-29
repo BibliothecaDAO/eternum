@@ -20,11 +20,13 @@ use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
-    combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
+    combat::contracts::battle_systems::{battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait},
+    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
 use eternum::utils::testing::{
     config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_system, deploy_combat_systems}, general::{mint, teleport, spawn_realm}
+    systems::{deploy_realm_systems, deploy_system, deploy_battle_systems, deploy_troop_systems},
+    general::{mint, teleport, spawn_realm}
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -94,10 +96,11 @@ fn set_configurations(world: IWorldDispatcher) {
     )
 }
 
-fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, ID) {
+fn setup() -> (IWorldDispatcher, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) {
     let world = spawn_eternum();
     set_configurations(world);
-    let combat_system_dispatcher = deploy_combat_systems(world);
+    let battle_system_dispatcher = deploy_battle_systems(world);
+    let troop_system_dispatcher = deploy_troop_systems(world);
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     set_capacity_config(config_systems_address);
@@ -120,7 +123,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
             .span()
     );
 
-    let player_1_army_id = combat_system_dispatcher.army_create(player_1_realm_id, false);
+    let player_1_army_id = troop_system_dispatcher.army_create(player_1_realm_id, false);
     mint(world, player_1_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT),].span());
 
     let player_1_troops = Troops {
@@ -128,7 +131,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
         paladin_count: PLAYER_1_STARTING_PALADIN_COUNT.try_into().unwrap(),
         crossbowman_count: PLAYER_1_STARTING_CROSSBOWMAN_COUNT.try_into().unwrap(),
     };
-    combat_system_dispatcher.army_buy_troops(player_1_army_id, player_1_realm_id, player_1_troops);
+    troop_system_dispatcher.army_buy_troops(player_1_army_id, player_1_realm_id, player_1_troops);
 
     /// CREATE PLAYER_2 REALM AND BUY ARMY TROOPS
     //////////////////////////////////////////////
@@ -146,7 +149,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
             .span()
     );
 
-    let player_2_army_id = combat_system_dispatcher.army_create(player_2_realm_id, false);
+    let player_2_army_id = troop_system_dispatcher.army_create(player_2_realm_id, false);
     mint(world, player_2_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT),].span());
 
     let player_2_troops = Troops {
@@ -154,7 +157,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
         paladin_count: PLAYER_2_STARTING_PALADIN_COUNT.try_into().unwrap(),
         crossbowman_count: PLAYER_2_STARTING_CROSSBOWMAN_COUNT.try_into().unwrap(),
     };
-    combat_system_dispatcher.army_buy_troops(player_2_army_id, player_2_realm_id, player_2_troops);
+    troop_system_dispatcher.army_buy_troops(player_2_army_id, player_2_realm_id, player_2_troops);
 
     /// CREATE PLAYER_3 REALM AND BUY ARMY TROOPS
     //////////////////////////////////////////////
@@ -172,7 +175,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
             .span()
     );
 
-    let player_3_army_id = combat_system_dispatcher.army_create(player_3_realm_id, false);
+    let player_3_army_id = troop_system_dispatcher.army_create(player_3_realm_id, false);
     mint(world, player_3_army_id, array![(ResourceTypes::GOLD, ARMY_GOLD_RESOURCE_AMOUNT),].span());
 
     let player_3_troops = Troops {
@@ -180,7 +183,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
         paladin_count: PLAYER_3_STARTING_PALADIN_COUNT.try_into().unwrap(),
         crossbowman_count: PLAYER_3_STARTING_CROSSBOWMAN_COUNT.try_into().unwrap(),
     };
-    combat_system_dispatcher.army_buy_troops(player_3_army_id, player_3_realm_id, player_3_troops);
+    troop_system_dispatcher.army_buy_troops(player_3_army_id, player_3_realm_id, player_3_troops);
 
     // put player_1, player_2, player 3 army in the same location
     //////////////////////////////////////////////////////
@@ -190,7 +193,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 
     (
         world,
-        combat_system_dispatcher,
+        battle_system_dispatcher,
         player_1_realm_id,
         player_2_realm_id,
         player_3_realm_id,
@@ -205,7 +208,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, 
 fn combat_test_battle_start() {
     let (
         world,
-        combat_system_dispatcher,
+        battle_system_dispatcher,
         _player_1_realm_id,
         _player_2_realm_id,
         _player_3_realm_id,
@@ -219,7 +222,7 @@ fn combat_test_battle_start() {
     starknet::testing::set_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     starknet::testing::set_account_contract_address(contract_address_const::<PLAYER_1_REALM_OWNER>());
     // player 1 starts battle against player 2
-    let battle_id = combat_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
+    let battle_id = battle_system_dispatcher.battle_start(player_1_army_id, player_2_army_id);
     let battle: Battle = get!(world, battle_id, Battle);
     assert_ne!(battle.duration_left, 0);
 

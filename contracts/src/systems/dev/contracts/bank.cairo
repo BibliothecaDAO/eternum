@@ -27,7 +27,6 @@ mod dev_bank_systems {
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
-    use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
