@@ -168,7 +168,7 @@ export default class GameRenderer {
       depth: false,
     });
     this.renderer.setPixelRatio(this.isLowGraphicsMode ? 0.75 : window.devicePixelRatio);
-    this.renderer.shadowMap.enabled = false;
+    this.renderer.shadowMap.enabled = !this.isLowGraphicsMode;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setSize(
       this.isLowGraphicsMode ? window.innerWidth : window.innerWidth,

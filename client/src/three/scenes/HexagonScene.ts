@@ -349,7 +349,6 @@ export abstract class HexagonScene {
         loader.load(
           path,
           (gltf) => {
-            console.log("loaded biome", biome, gltf);
             const model = gltf.scene as THREE.Group;
             if (biome === "Outline") {
               ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).transparent = true;

@@ -3,6 +3,7 @@ import { AnimationClip, AnimationMixer } from "three";
 import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
 
 const LAND_NAME = "land";
+const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
@@ -16,7 +17,7 @@ export default class InstancedModel {
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
     this.count = count;
-    console.log("GLTF", name, gltf);
+
     this.timeOffsets = new Float32Array(count);
     for (let i = 0; i < count; i++) {
       this.timeOffsets[i] = Math.random() * 3;
@@ -109,8 +110,7 @@ export default class InstancedModel {
   }
 
   removeInstance(index: number) {
-    console.log("remove instance");
-    this.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
+    this.setMatrixAt(index, zeroScaledMatrix);
     this.needsUpdate();
   }
 
