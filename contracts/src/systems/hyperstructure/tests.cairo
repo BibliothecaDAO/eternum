@@ -1,9 +1,3 @@
-use core::option::OptionTrait;
-
-use core::traits::Into;
-
-use debug::PrintTrait;
-
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
@@ -43,14 +37,13 @@ fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     set_capacity_config(config_systems_address);
     set_settlement_config(config_systems_address);
 
-    let realm_systems_dispatcher = deploy_realm_systems(world);
     let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
 
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, 1, get_default_realm_pos().into());
 
     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
 

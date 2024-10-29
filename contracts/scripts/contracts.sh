@@ -24,6 +24,8 @@ export TRADE_SYSTEMS=$(get_contract_address "eternum-trade_systems")
 
 export RESOURCE_SYSTEMS=$(get_contract_address "eternum-resource_systems")
 
+export RESOURCE_BRIDGE_SYSTEMS=$(get_contract_address "eternum-resource_bridge_systems")
+
 export DONKEY_SYSTEMS=$(get_contract_address "eternum-donkey_systems")
 
 export TRAVEL_SYSTEMS=$(get_contract_address "eternum-travel_systems")
@@ -33,8 +35,6 @@ export REALM_SYSTEMS=$(get_contract_address "eternum-realm_systems")
 export DEV_RESOURCE_SYSTEMS=$(get_contract_address "eternum-dev_resource_systems")
 
 export COMBAT_SYSTEMS=$(get_contract_address "eternum-combat_systems")
-
-export LEVELING_SYSTEMS=$(get_contract_address "eternum-leveling_systems")
 
 export NAME_SYSTEMS=$(get_contract_address "eternum-name_systems")
 
@@ -54,18 +54,22 @@ export DEV_BANK_SYSTEMS=$(get_contract_address "eternum-dev_bank_systems")
 
 export GUILD_SYSTEMS=$(get_contract_address "eternum-guild_systems")
 
+export OWNERSHIP_SYSTEMS=$(get_contract_address "eternum-ownership_systems")
+
+export DEV_REALM_SYSTEMS=$(get_contract_address "eternum-dev_realm_systems")
+
 # Display the addresses
 echo "-------------------------ADDRESS----------------------------------------"
 echo world : $DOJO_WORLD_ADDRESS
 echo config : $CONFIG_SYSTEMS
 echo trade : $TRADE_SYSTEMS
 echo resource : $RESOURCE_SYSTEMS
+echo resource_bridge : $RESOURCE_BRIDGE_SYSTEMS
 echo donkey : $DONKEY_SYSTEMS
 echo travel : $TRAVEL_SYSTEMS
 echo realm : $REALM_SYSTEMS
 echo test_resource : $DEV_RESOURCE_SYSTEMS
 echo combat : $COMBAT_SYSTEMS
-echo leveling : $LEVELING_SYSTEMS
 echo name : $NAME_SYSTEMS
 echo bank : $BANK_SYSTEMS
 echo swap : $SWAP_SYSTEMS
@@ -75,3 +79,5 @@ echo buildings : $BUILDINGS_SYSTEMS
 echo maps : $MAP_SYSTEMS
 echo test_bank : $DEV_BANK_SYSTEMS
 echo guild : $GUILD_SYSTEMS
+echo ownership : $OWNERSHIP_SYSTEMS
+echo test_realm : $DEV_REALM_SYSTEMS

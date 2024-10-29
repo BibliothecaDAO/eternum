@@ -1,7 +1,8 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
-import { SetupResult } from "../setup";
+import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ComponentValue, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { configManager, SetupResult } from "../setup";
+import { ClientComponents } from "../createClientComponents";
 
 export class MarketManager {
   bankEntityId: ID;
@@ -19,12 +20,17 @@ export class MarketManager {
     this.player = player;
   }
 
+  public hasReserves() {
+    const market = this.getMarket();
+    return market && market.lords_amount > 0 && market.resource_amount > 0;
+  }
+
   public canRemoveLiquidity(shares: number) {
     const liquidity = this.getTotalLiquidity();
     return liquidity >= shares;
   }
 
-  public getLiquidity() {
+  public getPlayerLiquidity() {
     return getComponentValue(
       this.setup.components.Liquidity,
       getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
@@ -38,21 +44,21 @@ export class MarketManager {
     );
   }
 
-  public getSharesScaled = () => {
-    const liquidity = this.getLiquidity();
+  public getPlayerSharesScaled = () => {
+    const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0;
     return Math.floor(Number(liquidity.shares.mag) / 2 ** 64);
   };
 
   public getMyLpPercentage = () => {
-    const myShares = this.getSharesScaled();
+    const myShares = this.getPlayerSharesScaled();
     const totalShares = this.getTotalSharesScaled();
     if (totalShares === 0) return 0;
     return myShares / totalShares;
   };
 
   public getSharesUnscaled = () => {
-    const liquidity = this.getLiquidity();
+    const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0n;
     return liquidity.shares.mag;
   };
@@ -89,7 +95,7 @@ export class MarketManager {
     }
 
     // Calculate the input amount after fee
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee
@@ -114,7 +120,7 @@ export class MarketManager {
     }
 
     // Calculate the input amount after fee
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee
@@ -140,7 +146,7 @@ export class MarketManager {
     if (!market) return 0;
 
     // Calculate the input amount of Lords needed to buy the desired amount of resource
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputReserve = market.lords_amount;
     const outputReserve = market.resource_amount;
 
@@ -172,7 +178,7 @@ export class MarketManager {
     if (!market) return 0;
 
     // Calculate the input amount of Resource needed to get the desired amount of Lords
-    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
+    const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
     const inputReserve = market.resource_amount;
     const outputReserve = market.lords_amount;
 
@@ -244,12 +250,35 @@ export class MarketManager {
     return Math.floor(Number(market.total_shares.mag) / 2 ** 64);
   }
 
-  public hasLiquidity() {
-    return this.getSharesScaled() > 0;
+  public playerHasLiquidity() {
+    return this.getPlayerSharesScaled() > 0;
   }
 
   public getReserves() {
     const market = this.getMarket();
     return [Number(market?.lords_amount || 0n), Number(market?.resource_amount || 0n)];
+  }
+
+  public getLatestLiquidityEvent(playerStructureIds: ID[]) {
+    let mostRecentEvent: ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null = null;
+
+    playerStructureIds.forEach((structureId) => {
+      const liquidityEvents = runQuery([
+        HasValue(this.setup.components.events.LiquidityEvent, {
+          bank_entity_id: this.bankEntityId,
+          entity_id: structureId,
+          resource_type: this.resourceId,
+        }),
+      ]);
+
+      liquidityEvents.forEach((event) => {
+        const eventInfo = getComponentValue(this.setup.components.events.LiquidityEvent, event);
+        if (eventInfo && (!mostRecentEvent || eventInfo.timestamp > mostRecentEvent.timestamp)) {
+          mostRecentEvent = eventInfo;
+        }
+      });
+    });
+
+    return mostRecentEvent as ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null;
   }
 }

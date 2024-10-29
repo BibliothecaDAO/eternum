@@ -47,15 +47,13 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     set_battle_config(config_systems_address);
     set_travel_food_cost_config(config_systems_address);
 
-    let realm_system_dispatcher = deploy_realm_systems(world);
     let combat_system_dispatcher = deploy_combat_systems(world);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
 
     // SPAWN ATTACKER REALM & ARMY
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
-
-    let attacker_realm_entity_id = spawn_realm(world, realm_system_dispatcher, Position { entity_id: 0, x: 1, y: 1 });
+    let attacker_realm_entity_id = spawn_realm(world, 1, Coord { x: 1, y: 1 });
 
     mint(world, attacker_realm_entity_id, array![(ResourceTypes::KNIGHT, STARTING_KNIGHT_COUNT),].span());
 
@@ -71,7 +69,7 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     starknet::testing::set_contract_address(contract_address_const::<DEFENDER>());
 
     let defender_realm_entity_id = spawn_realm(
-        world, realm_system_dispatcher, Position { entity_id: 0, x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y }
+        world, 2, Coord { x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y }
     );
 
     mint(

@@ -1,7 +1,7 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{
-    models::{position::Coord, config::HyperstructureResourceConfigCustomTrait},
+    models::{position::Coord, config::HyperstructureResourceConfigCustomTrait, hyperstructure::Access},
     constants::{get_contributable_resources_with_rarity, RESOURCE_PRECISION}
 };
 use starknet::ContractAddress;
@@ -23,14 +23,14 @@ trait IHyperstructureSystems {
         hyperstructures_contributed_to: Span<ID>,
         hyperstructure_shareholder_epochs: Span<(ID, u16)>
     );
-    fn set_private(ref world: IWorldDispatcher, hyperstructure_entity_id: ID, private: bool);
+    fn set_access(ref world: IWorldDispatcher, hyperstructure_entity_id: ID, access: Access);
 }
 
 
 #[dojo::contract]
 mod hyperstructure_systems {
     use core::array::ArrayIndex;
-    use eternum::models::hyperstructure::SeasonCustomImpl;
+    use eternum::models::season::SeasonImpl;
     use eternum::{
         alias::ID,
         constants::{
@@ -39,7 +39,8 @@ mod hyperstructure_systems {
         },
         models::{
             config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig, CapacityConfigCategory},
-            capacity::{CapacityCategory}, hyperstructure::{Progress, Contribution, Hyperstructure, Epoch},
+            capacity::{CapacityCategory},
+            hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureCustomImpl, Epoch, Access},
             owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceCustomImpl, ResourceCost},
@@ -102,7 +103,7 @@ mod hyperstructure_systems {
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
         fn create(ref world: IWorldDispatcher, creator_entity_id: ID, coord: Coord) -> ID {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             get!(world, creator_entity_id, Owner).assert_caller_owner();
 
@@ -139,7 +140,7 @@ mod hyperstructure_systems {
                         completed: false,
                         last_updated_by: contract_address_const::<0>(),
                         last_updated_timestamp: current_time,
-                        private: false,
+                        access: Access::Public,
                     },
                     CapacityCategory { entity_id: new_uuid, category: CapacityConfigCategory::Structure },
                     StructureCount { coord, count: 1 },
@@ -169,7 +170,7 @@ mod hyperstructure_systems {
             contributor_entity_id: ID,
             contributions: Span<(u8, u128)>
         ) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             get!(world, contributor_entity_id, Owner).assert_caller_owner();
 
@@ -177,14 +178,7 @@ mod hyperstructure_systems {
             assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
 
             let hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
-            if (hyperstructure.private) {
-                let contributor_address = starknet::get_caller_address();
-                let guild_member = get!(world, contributor_address, GuildMember);
-
-                let hyperstructure_owner = get!(world, hyperstructure_entity_id, Owner);
-                let owner_guild_member = get!(world, hyperstructure_owner.address, GuildMember);
-                assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
-            }
+            hyperstructure.assert_access(world);
 
             let timestamp = starknet::get_block_timestamp();
 
@@ -225,7 +219,7 @@ mod hyperstructure_systems {
         fn set_co_owners(
             ref world: IWorldDispatcher, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>
         ) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             assert!(co_owners.len() <= 10, "too many co-owners");
 
@@ -276,12 +270,19 @@ mod hyperstructure_systems {
             );
         }
 
-        fn set_private(ref world: IWorldDispatcher, hyperstructure_entity_id: ID, private: bool) {
+        fn set_access(ref world: IWorldDispatcher, hyperstructure_entity_id: ID, access: Access) {
             let owner = get!(world, hyperstructure_entity_id, Owner);
             owner.assert_caller_owner();
 
             let mut hyperstructure = get!(world, hyperstructure_entity_id, Hyperstructure);
-            hyperstructure.private = private;
+            hyperstructure.access = access;
+
+            if (access == Access::GuildOnly) {
+                let caller_address = starknet::get_caller_address();
+                let caller_guild_member = get!(world, caller_address, GuildMember);
+                assert!(caller_guild_member.guild_entity_id != 0, "caller is not in a guild");
+            }
+
             set!(world, (hyperstructure,));
         }
 
@@ -290,7 +291,7 @@ mod hyperstructure_systems {
             hyperstructures_contributed_to: Span<ID>,
             hyperstructure_shareholder_epochs: Span<(ID, u16)>
         ) {
-            SeasonCustomImpl::assert_season_is_not_over(world);
+            SeasonImpl::assert_season_is_not_over(world);
 
             let mut total_points: u128 = 0;
             let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
@@ -305,7 +306,7 @@ mod hyperstructure_systems {
 
             assert!(total_points >= hyperstructure_config.points_for_win, "Not enough points to end the game");
 
-            SeasonCustomImpl::end_season(world);
+            SeasonImpl::end_season(world);
 
             emit!(
                 world,

@@ -148,19 +148,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async mint_resources_and_claim_quest(props: SystemProps.MintResourcesAndClaimProps) {
-    const { receiver_id, resources, config_ids, signer } = props;
+  public async claim_quest(props: SystemProps.ClaimQuestProps) {
+    const { receiver_id, quest_ids, signer } = props;
 
     const calldata = [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
-        entrypoint: "mint",
-        calldata: [receiver_id, resources.length / 2, ...resources],
-      },
-      ...config_ids.map((configId) => ({
+      ...quest_ids.map((questId) => ({
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
-        entrypoint: "mint_starting_resources",
-        calldata: [configId, receiver_id],
+        entrypoint: "quest_claim",
+        calldata: [questId, receiver_id],
       })),
     ];
 
@@ -168,38 +163,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_realm(props: SystemProps.CreateRealmProps) {
-    const {
-      realm_name,
-      realm_id,
-      resource_types_packed,
-      resource_types_count,
-      cities,
-      harbors,
-      rivers,
-      regions,
-      wonder,
-      order,
-      signer,
-    } = props;
+    const { realm_id, signer } = props;
 
     const tx = await this.execute(
       signer,
       [
         {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [
-            realm_name,
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-          ],
+          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
         },
       ],
       NAMESPACE,
@@ -218,41 +190,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
-    let { realms, signer } = props;
+    let { realm_ids, signer } = props;
 
-    let calldata = realms.flatMap((realm) => {
-      const {
-        realm_name,
-        realm_id,
-        resource_types_packed,
-        resource_types_count,
-        cities,
-        harbors,
-        rivers,
-        regions,
-        wonder,
-        order,
-      } = realm;
-
+    let calldata = realm_ids.flatMap((realm_id) => {
       let calldata = [
         {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [
-            realm_name,
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-          ],
+          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
         },
       ];
-
       return calldata;
     });
 
@@ -277,6 +224,19 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "send",
       calldata: [sender_entity_id, recipient_entity_id, resources.length / 2, ...resources],
     });
+  }
+
+  public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => ({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "send",
+        calldata: [call.sender_entity_id, call.recipient_entity_id, call.resources.length / 2, ...call.resources],
+      })),
+    );
   }
 
   public async pickup_resources(props: SystemProps.PickupResourcesProps) {
@@ -728,14 +688,32 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_mint_config(props: SystemProps.SetMintConfigProps) {
-    const { config_id, resources, signer } = props;
+  public async set_quest_config(props: SystemProps.SetQuestConfigProps) {
+    const { production_material_multiplier, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_mint_config",
-      calldata: [config_id, resources.length, ...resources.flatMap(({ resource, amount }) => [resource, amount])],
+      entrypoint: "set_quest_config",
+      calldata: [production_material_multiplier],
     });
+  }
+
+  public async set_quest_reward_config(props: SystemProps.SetQuestRewardConfigProps) {
+    const { calls, signer } = props;
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+          entrypoint: "set_quest_reward_config",
+          calldata: [
+            call.quest_id,
+            call.resources.length,
+            ...call.resources.flatMap(({ resource, amount }) => [resource, amount]),
+          ],
+        };
+      }),
+    );
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
@@ -782,7 +760,59 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
   }
+  public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
+    const { season_pass_address, realms_address, lords_address, signer } = props;
 
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_season_config",
+      calldata: [season_pass_address, realms_address, lords_address],
+    });
+  }
+
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+    const { token, resource_type, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_whitelist_config",
+      calldata: [token, resource_type],
+    });
+  }
+
+  public async set_resource_bridge_fees_config(props: SystemProps.SetResourceBridgeFeesConfigProps) {
+    const {
+      velords_fee_on_dpt_percent,
+      velords_fee_on_wtdr_percent,
+      season_pool_fee_on_dpt_percent,
+      season_pool_fee_on_wtdr_percent,
+      client_fee_on_dpt_percent,
+      client_fee_on_wtdr_percent,
+      velords_fee_recipient,
+      season_pool_fee_recipient,
+      max_bank_fee_dpt_percent,
+      max_bank_fee_wtdr_percent,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_fee_split_config",
+      calldata: [
+        0, // config id
+        velords_fee_on_dpt_percent,
+        velords_fee_on_wtdr_percent,
+        season_pool_fee_on_dpt_percent,
+        season_pool_fee_on_wtdr_percent,
+        client_fee_on_dpt_percent,
+        client_fee_on_wtdr_percent,
+        velords_fee_recipient,
+        season_pool_fee_recipient,
+        max_bank_fee_dpt_percent,
+        max_bank_fee_wtdr_percent,
+      ],
+    });
+  }
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { category, weight_gram, signer } = props;
 
@@ -876,6 +906,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       battle_leave_slash_num,
       battle_leave_slash_denom,
       battle_time_scale,
+      battle_max_time_seconds,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -897,6 +928,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         battle_leave_slash_num,
         battle_leave_slash_denom,
         battle_time_scale,
+        battle_max_time_seconds,
       ],
     });
   }
@@ -1035,12 +1067,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_private(props: SystemProps.SetPrivateProps) {
-    const { hyperstructure_entity_id, to_private, signer } = props;
+  public async set_access(props: SystemProps.SetAccessProps) {
+    const { hyperstructure_entity_id, access, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "set_private",
-      calldata: [hyperstructure_entity_id, to_private],
+      entrypoint: "set_access",
+      calldata: [hyperstructure_entity_id, access],
     });
   }
 

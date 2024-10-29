@@ -116,6 +116,7 @@ fn get_combat_config() -> TroopConfig {
         battle_leave_slash_num: 25,
         battle_leave_slash_denom: 100,
         battle_time_scale: 1000,
+        battle_max_time_seconds: 2 * 86400
     };
 }
 
@@ -179,8 +180,6 @@ fn set_speed_config(config_systems_address: ContractAddress) {
 }
 
 fn set_mercenaries_config(config_systems_address: ContractAddress) {
-    let mercenaries_troops = Troops { knight_count: 4_000_000, paladin_count: 4_000_000, crossbowman_count: 4_000_000 };
-
     let knights_lower_bound = 0;
     let knights_upper_bound = 4_000_000;
     let paladins_lower_bound = 0;

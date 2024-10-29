@@ -96,6 +96,14 @@ export interface SendResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
+export interface SendResourcesMultipleProps extends SystemSigner {
+  calls: {
+    sender_entity_id: num.BigNumberish;
+    recipient_entity_id: num.BigNumberish;
+    resources: num.BigNumberish[];
+  }[];
+}
+
 export interface PickupResourcesProps extends SystemSigner {
   recipient_entity_id: num.BigNumberish;
   owner_entity_id: num.BigNumberish;
@@ -129,30 +137,19 @@ export interface MintResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-export interface MintResourcesAndClaimProps extends SystemSigner {
-  config_ids: num.BigNumberish[];
+export interface ClaimQuestProps extends SystemSigner {
+  quest_ids: num.BigNumberish[];
   receiver_id: num.BigNumberish;
-  resources: num.BigNumberish[];
-}
-
-interface Realm {
-  realm_name: string;
-  realm_id: num.BigNumberish;
-  resource_types_packed: num.BigNumberish;
-  resource_types_count: num.BigNumberish;
-  cities: num.BigNumberish;
-  harbors: num.BigNumberish;
-  rivers: num.BigNumberish;
-  regions: num.BigNumberish;
-  wonder: num.BigNumberish;
-  order: num.BigNumberish;
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
-  realms: Realm[];
+  realm_ids: num.BigNumberish[];
 }
 
-export interface CreateRealmProps extends Realm, SystemSigner {}
+export interface CreateRealmProps extends SystemSigner {
+  realm_id: num.BigNumberish;
+}
+
 export interface UpgradeRealmProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
 }
@@ -376,9 +373,15 @@ interface ResourceCosts {
   amount: num.BigNumberish;
 }
 
-export interface SetMintConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
-  resources: ResourceCosts[];
+export interface SetQuestConfigProps extends SystemSigner {
+  production_material_multiplier: num.BigNumberish;
+}
+
+export interface SetQuestRewardConfigProps extends SystemSigner {
+  calls: {
+    quest_id: num.BigNumberish;
+    resources: ResourceCosts[];
+  }[];
 }
 
 export interface SetMapConfigProps extends SystemSigner {
@@ -453,6 +456,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   battle_leave_slash_num: num.BigNumberish;
   battle_leave_slash_denom: num.BigNumberish;
   battle_time_scale: num.BigNumberish;
+  battle_max_time_seconds: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
@@ -496,6 +500,30 @@ export interface SetSpeedConfigProps extends SystemSigner {
   sec_per_km: num.BigNumberish;
 }
 
+export interface SetSeasonConfigProps extends SystemSigner {
+  season_pass_address: num.BigNumberish;
+  realms_address: num.BigNumberish;
+  lords_address: num.BigNumberish;
+}
+
+export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
+  token: num.BigNumberish;
+  resource_type: num.BigNumberish;
+}
+
+export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
+  velords_fee_on_dpt_percent: num.BigNumberish;
+  velords_fee_on_wtdr_percent: num.BigNumberish;
+  season_pool_fee_on_dpt_percent: num.BigNumberish;
+  season_pool_fee_on_wtdr_percent: num.BigNumberish;
+  client_fee_on_dpt_percent: num.BigNumberish;
+  client_fee_on_wtdr_percent: num.BigNumberish;
+  velords_fee_recipient: num.BigNumberish;
+  season_pool_fee_recipient: num.BigNumberish;
+  max_bank_fee_dpt_percent: num.BigNumberish;
+  max_bank_fee_wtdr_percent: num.BigNumberish;
+}
+
 export interface SetHyperstructureConfig extends SystemSigner {
   resources_for_completion: { resource: number; amount: number }[];
   time_between_shares_change: num.BigNumberish;
@@ -515,9 +543,9 @@ export interface ContributeToConstructionProps extends SystemSigner {
   contributions: { resource: number; amount: number }[];
 }
 
-export interface SetPrivateProps extends SystemSigner {
+export interface SetAccessProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
-  to_private: boolean;
+  access: num.BigNumberish;
 }
 
 export interface EndGameProps extends SystemSigner {

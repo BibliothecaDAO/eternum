@@ -9,7 +9,7 @@ import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures
 import { Structure, useIsStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { formatTime } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType, TickIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
@@ -21,6 +21,7 @@ type StructureListItemProps = {
   structure: Structure;
   setShowMergeTroopsPopup: (show: boolean) => void;
   ownArmySelected: ArmyInfo | undefined;
+  maxInventory?: number;
 };
 
 const immuneTooltipContent = (
@@ -31,7 +32,12 @@ const immuneTooltipContent = (
   </>
 );
 
-export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmySelected }: StructureListItemProps) => {
+export const StructureListItem = ({
+  structure,
+  setShowMergeTroopsPopup,
+  ownArmySelected,
+  maxInventory = Infinity,
+}: StructureListItemProps) => {
   const dojo = useDojo();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
@@ -61,8 +67,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
 
   const immunityEndTimestamp =
-    Number(structure?.created_at) +
-    configManager.getBattleGraceTickCount() * EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    Number(structure?.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies);
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;
@@ -204,6 +209,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
           <div className="flex flex-col content-center w-[55%]">
             <TroopMenuRow troops={updatedBattle?.defence_army?.troops || structure.protector?.troops} />
             <InventoryResources
+              max={maxInventory}
               entityIds={[structure.entity_id]}
               className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
               resourcesIconSize="xs"

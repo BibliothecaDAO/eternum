@@ -1,22 +1,15 @@
+import { configManager } from "@/dojo/setup";
 import { Prize } from "@/hooks/helpers/useQuests";
 import { BUILDING_IMAGES_PATH, BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  CapacityConfigCategory,
-  EternumGlobalConfig,
-  QuestType,
-  ResourcesIds,
-  TROOPS_FOOD_CONSUMPTION,
-} from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfigCategory, QuestType, ResourcesIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ResourceWeight } from "../resources/ResourceWeight";
 
 interface StaticQuestInfo {
   name: string;
+  view: string;
   description: string | React.ReactNode;
   steps: (string | React.ReactNode)[];
   prizes: Prize[];
@@ -41,7 +34,7 @@ const navigationStep = (imgPath: string) => {
 };
 
 export enum QuestId {
-  Settle,
+  Settle = 1,
   BuildFood,
   BuildResource,
   PauseProduction,
@@ -62,6 +55,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Settle,
     {
       name: "Settle",
+      view: "",
       description: (
         <div className="space-y-2">
           <p>A gift of food from the gods.</p>
@@ -80,6 +74,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildFood,
     {
       name: "Build a Farm or a Fishing Village",
+      view: "REALM",
       description:
         "Wheat and Fish are the lifeblood of your people. Go to the construction menu and build a Farm or a Fishing Village",
       steps: [
@@ -130,6 +125,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildResource,
     {
       name: "Build a Resource Facility",
+      view: "REALM",
       description: (
         <div className="space-y-2">
           <div>Eternum thrives on resources. Construct resource facilities to harvest them efficiently.</div>
@@ -144,7 +140,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
         "2. Select one of the Resource Buildings in the 'Resources' tab",
         "3. Left click on a hex to build it, or right click to cancel",
       ],
-      prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
+      prizes: [{ id: QuestType.Trade, title: "Donkeys" }],
       depth: 2,
     },
   ],
@@ -152,6 +148,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.PauseProduction,
     {
       name: "Pause Production",
+      view: "REALM",
       description:
         "Resource facilities will produce resources automatically. Pause production to stop its consumption.",
       steps: ["1. Left mouse click on the building's model", "2. Pause its production"],
@@ -163,6 +160,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.CreateTrade,
     {
       name: "Create a Trade",
+      view: "",
       description: "Trading is the lifeblood of Eternum. Create a trade to start your economy",
       steps: [navigationStep(BuildingThumbs.scale), "2. Create a 'Buy' or 'Sell' order."],
       prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
@@ -173,6 +171,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.CreateDefenseArmy,
     {
       name: "Create a Defensive Army",
+      view: "REALM",
       description: "Your realm is always at risk. Create a defensive army to protect it",
       steps: [
         navigationStep(BuildingThumbs.military),
@@ -187,6 +186,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.CreateAttackArmy,
     {
       name: "Create an attacking Army",
+      view: "REALM",
       description: "Conquest is fulfilling. Create an attacking army to conquer your enemies",
       steps: [
         navigationStep(BuildingThumbs.military),
@@ -201,6 +201,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Travel,
     {
       name: "Move with your Army",
+      view: "WORLD",
       description: (
         <div className="space-y-4 text-base">
           <p>
@@ -215,7 +216,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                   <span className="mr-2">🏃‍♂️</span>
                   Costs{" "}
                   <span className="font-semibold text-brilliance mx-1">
-                    {EternumGlobalConfig.stamina.travelCost}
+                    {configManager.getTravelStaminaCost()}
                   </span>{" "}
                   stamina per hex
                 </li>
@@ -252,15 +253,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                     <tbody>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_fish_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).travelFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
@@ -268,15 +267,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                       </tr>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].travel_wheat_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).travelWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].travel_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].travel_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
@@ -295,7 +292,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                   <span className="mr-2">🌎</span>
                   Costs{" "}
                   <span className="font-semibold text-brilliance mx-1">
-                    {EternumGlobalConfig.stamina.exploreCost}
+                    {configManager.getExploreStaminaCost()}
                   </span>{" "}
                   stamina per hex
                 </li>
@@ -332,15 +329,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                     <tbody>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_fish_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).exploreFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).exploreFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_fish_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreFishBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
@@ -348,15 +343,13 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
                       </tr>
                       <tr>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(
-                            TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman].explore_wheat_burn_amount,
-                          )}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman).exploreWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight].explore_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Knight).exploreWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
-                          {multiplyByPrecision(TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin].explore_wheat_burn_amount)}
+                          {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreWheatBurnAmount}
                         </td>
                         <td className="border border-gold/10 p-2 text-center">
                           <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
@@ -389,8 +382,11 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.BuildWorkersHut,
     {
       name: "Build a workers hut",
-      description: `Each building takes up population in your realm. You realm starts with a population of ${BASE_POPULATION_CAPACITY}. 
-      Build worker huts to extend your population capacity by ${EternumGlobalConfig.populationCapacity.workerHuts}.`,
+      view: "REALM",
+      description: `Each building takes up population in your realm. You realm starts with a population of ${configManager.getBasePopulationCapacity()}. 
+      Build worker huts to extend your population capacity by ${
+        configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity
+      }.`,
       steps: [
         navigationStep(BuildingThumbs.construction),
         "2. Select the worker hut building",
@@ -404,16 +400,14 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Market,
     {
       name: "Build a market",
+      view: "REALM",
       description: (
         <div>
           <div className="mt-2">Build a market to produce donkeys. Donkeys are a resource used to transport goods.</div>{" "}
           <div className="flex flex-row mt-2">
             <ResourceIcon size="sm" resource={ResourcesIds[ResourcesIds.Donkey]} />
-            <div>
-              {" "}
-              Donkeys can transport{" "}
-              {Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]) / 1000} kg{" "}
-            </div>
+            <div> Donkeys can transport </div>
+            {configManager.getCapacityConfig(CapacityConfigCategory.Donkey) / 1000} kg{" "}
           </div>
           <ResourceWeight className="mt-2" />
         </div>
@@ -431,6 +425,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Pillage,
     {
       name: "Pillage a structure",
+      view: "WORLD",
       description:
         "Pillage a realm, hyperstructure or fragment mine. To pillage a structure, travel with your army to your target first, then pillage it.",
       steps: [
@@ -447,6 +442,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Mine,
     {
       name: "Claim a Fragment mine",
+      view: "WORLD",
       description: "Explore the world, find Fragment mines and battle bandits for its ownership",
       steps: [
         "1. Go to world view",
@@ -462,12 +458,12 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Contribution,
     {
       name: "Contribute to a hyperstructure",
+      view: "",
       description: "Contribute to a Hyperstructure",
       steps: [
-        "1. Go to world view",
-        "2. Right click on your army",
-        "3. Travel with your army to a Hyperstructure",
-        "4. Contribute to the Hyperstructure",
+        navigationStep(BuildingThumbs.worldStructures),
+        "2. Select a Hyperstructure",
+        "4. Contribute to the Hyperstructure's construction",
       ],
       prizes: [{ id: QuestType.Contribution, title: "Contribution" }],
       depth: 6,
@@ -477,6 +473,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
     QuestId.Hyperstructure,
     {
       name: "Build a hyperstructure",
+      view: "WORLD",
       description: "Build a Hyperstructure",
       steps: [
         navigationStep(BuildingThumbs.construction),

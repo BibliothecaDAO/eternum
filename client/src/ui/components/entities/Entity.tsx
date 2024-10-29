@@ -29,9 +29,18 @@ type EntityProps = {
   entityId: ID;
   idleOnly?: boolean;
   selectedCaravan?: number;
+  setEntitiesReadyForDeposit: React.Dispatch<
+    React.SetStateAction<
+      {
+        senderEntityId: ID;
+        recipientEntityId: ID;
+        resources: bigint[];
+      }[]
+    >
+  >;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Entity = ({ entityId, ...props }: EntityProps) => {
+export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: EntityProps) => {
   const dojo = useDojo();
 
   const { getEntityInfo, getEntityName } = useEntitiesUtils();
@@ -109,7 +118,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2   text-gold border border-gold/10", props.className, bgColour)}
+      className={clsx("flex flex-col p-2 text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
       <div className="flex items-center text-xs flex-wrap">
@@ -125,6 +134,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
             entityId={entityId}
             battleInProgress={battleInProgress}
             armyInBattle={Boolean(army?.battle_id)}
+            setEntitiesReadyForDeposit={setEntitiesReadyForDeposit}
           />
         )}
         <div className="flex gap-3 text-xs items-center whitespace-nowrap">
