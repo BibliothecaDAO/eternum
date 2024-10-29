@@ -35,7 +35,7 @@ mod map_systems {
     use eternum::models::season::SeasonImpl;
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
-    use eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
+    use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
     use eternum::utils::map::biomes::{Biome, get_biome};
@@ -247,7 +247,7 @@ mod map_systems {
         fn add_mercenaries_to_structure(world: IWorldDispatcher, structure_entity_id: ID) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
-            let army_entity_id = InternalTroopImpl::create_defensive_army(
+            let army_entity_id = InternalCombatImpl::create_defensive_army(
                 world, structure_entity_id, starknet::contract_address_const::<0x0>()
             );
 
@@ -286,7 +286,7 @@ mod map_systems {
 
             troops.normalize_counts();
 
-            InternalTroopImpl::add_troops_to_army(world, troops, army_entity_id);
+            InternalCombatImpl::add_troops_to_army(world, troops, army_entity_id);
 
             army_entity_id
         }

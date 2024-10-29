@@ -9,8 +9,7 @@ use eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat
 use eternum::systems::{
     hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},
     realm::contracts::realm_systems::InternalRealmLogicImpl,
-    combat::contracts::battle_systems::{battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait},
-    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
+    combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::map::biomes::Biome;
 
@@ -41,14 +40,14 @@ fn spawn_hyperstructure(
 
 fn create_army_with_troops(
     world: IWorldDispatcher,
-    troop_systems_dispatcher: ITroopContractDispatcher,
+    combat_systems_dispatcher: ICombatContractDispatcher,
     realm_entity_id: ID,
     troops: Troops,
     is_defender: bool
 ) -> ID {
-    let realm_army_unit_id: ID = troop_systems_dispatcher.army_create(realm_entity_id, false);
+    let realm_army_unit_id: ID = combat_systems_dispatcher.army_create(realm_entity_id, false);
 
-    troop_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
+    combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
     realm_army_unit_id
 }
 

@@ -8,15 +8,11 @@ use eternum::{
     },
     systems::{
         config::contracts::config_systems,
-        combat::contracts::battle_systems::{battle_systems, 
-            IBattleContractDispatcher, IBattleContractDispatcherTrait,
-            IBattlePillageContractDispatcher, IBattlePillageContractDispatcherTrait,
-        },
-        combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
+        combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
     },
     utils::testing::{
         world::spawn_eternum, general::{mint, teleport, spawn_realm, create_army_with_troops},
-        systems::{deploy_system, deploy_realm_systems, deploy_battle_systems, deploy_battle_pillage_systems, deploy_troop_systems},
+        systems::{deploy_system, deploy_realm_systems, deploy_combat_systems},
         config::{
             set_combat_config, setup_globals, set_stamina_config, set_capacity_config, set_speed_config,
             set_weight_config, set_travel_and_explore_stamina_cost_config, set_battle_config,
@@ -36,7 +32,7 @@ const STARTING_KNIGHT_COUNT: u128 = 100 * RESOURCE_PRECISION;
 const DEFENDER_REALM_COORD_X: u32 = 2;
 const DEFENDER_REALM_COORD_Y: u32 = 3;
 
-fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
+fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
@@ -51,8 +47,7 @@ fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
     set_battle_config(config_systems_address);
     set_travel_food_cost_config(config_systems_address);
 
-    let battle_pillage_system_dispatcher = deploy_battle_pillage_systems(world);
-    let troop_system_dispatcher = deploy_troop_systems(world);
+    let combat_system_dispatcher = deploy_combat_systems(world);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
 
@@ -67,7 +62,7 @@ fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
     };
 
     let attacker_realm_army_unit_id = create_army_with_troops(
-        world, troop_system_dispatcher, attacker_realm_entity_id, attacking_troops, false
+        world, combat_system_dispatcher, attacker_realm_entity_id, attacking_troops, false
     );
 
     // SPAWN DEFENDER REALM & DEFENSIVE ARMY
@@ -111,13 +106,12 @@ fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
     let defender_position = get!(world, defender_realm_entity_id, Position);
     teleport(world, attacker_realm_army_unit_id, Coord { x: defender_position.x, y: defender_position.y });
 
-    (world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id)
+    (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id)
 }
 
 #[test]
 fn combat_test_battle_pillage__near_max_capacity() {
-    let (world, battle_pillage_system_dispatcher,
-             attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
+    let (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
 
@@ -137,7 +131,7 @@ fn combat_test_battle_pillage__near_max_capacity() {
 
     let _capacity_config = get!(world, 3, CapacityConfig);
 
-    battle_pillage_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
+    combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
     let army_weight = get!(world, attacker_realm_army_unit_id, Weight).value;
 
@@ -146,7 +140,7 @@ fn combat_test_battle_pillage__near_max_capacity() {
 
 #[test]
 fn combat_test_simple_battle_pillage() {
-    let (world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
+    let (world, combat_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
 
@@ -164,7 +158,7 @@ fn combat_test_simple_battle_pillage() {
 
     let _capacity_config = get!(world, 3, CapacityConfig);
 
-    battle_pillage_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
+    combat_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
     let army_weight = get!(world, attacker_realm_army_unit_id, Weight).value;
 
