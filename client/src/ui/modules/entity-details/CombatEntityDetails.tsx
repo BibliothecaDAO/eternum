@@ -53,7 +53,7 @@ export const CombatEntityDetails = () => {
             <div>Entities</div>
           </div>
         ),
-        component: <Entities position={hexPosition} ownArmy={ownArmy} />,
+        component: selectedHex && <Entities position={hexPosition} ownArmy={ownArmy} />,
       },
       {
         key: "battles",
@@ -78,7 +78,7 @@ export const CombatEntityDetails = () => {
           ]
         : []),
     ],
-    [hexPosition, ownArmy, structure, battles],
+    [selectedHex, hexPosition, ownArmy, structure, battles],
   );
 
   const [selectedTab, setSelectedTab] = useState(0);
