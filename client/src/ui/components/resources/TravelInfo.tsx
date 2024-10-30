@@ -89,7 +89,7 @@ export const ResourceWeight = ({ className }: { className?: string }) => {
             {`${configManager.getResourceWeight(ResourcesIds.Lords) / GRAMS_PER_KG} kg/unit`}
           </li>
           <li className="flex items-center">
-              <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
             {`(Food) ${configManager.getResourceWeight(ResourcesIds.Wheat) / GRAMS_PER_KG} kg/unit`}
           </li>
           <li className="flex items-center">
