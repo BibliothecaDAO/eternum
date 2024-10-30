@@ -142,7 +142,10 @@ export const EventStream = () => {
             >
               Personal
               {hasNewEvents && activeTab !== "personal" && (
-                <div id="new-event-indicator" className="absolute -top-1 -right-1 w-2 h-2 bg-red rounded-full" />
+                <div
+                  id="new-event-indicator"
+                  className="absolute -top-1 -right-1 w-2 h-2 bg-red rounded-full animate-pulse"
+                />
               )}
             </div>
           </div>
