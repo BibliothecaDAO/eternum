@@ -263,6 +263,14 @@ export default class HexceptionScene extends HexagonScene {
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
+
+    // select center hex
+    this.state.setSelectedBuildingHex({
+      outerCol: col,
+      outerRow: row,
+      innerCol: BUILDINGS_CENTER[0],
+      innerRow: BUILDINGS_CENTER[1],
+    });
   }
 
   onSwitchOff() {
