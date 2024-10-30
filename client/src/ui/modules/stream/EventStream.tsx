@@ -116,7 +116,7 @@ export const EventStream = () => {
   });
 
   return (
-    <div className="h-full w-[30vw]">
+    <div className="h-full w-full md:w-[30vw]">
       <div className="flex flex-row text-sm text-center">
         <div
           className="bg-brown/10 h-6 w-6 rounded-t cursor-pointer"
@@ -156,7 +156,7 @@ export const EventStream = () => {
           Events
         </div>
       ) : (
-        <div className="bg-brown/40 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 h-[200px]">
+        <div className="bg-brown/40 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 h-[200px] md:h-[210px] overflow-y-auto">
           {filteredEvents
             .sort((a, b) => a.timestamp - b.timestamp)
             .slice(-EVENT_STREAM_SIZE)
@@ -164,28 +164,30 @@ export const EventStream = () => {
               const { emoji, color } = eventDetails[event.eventType as keyof typeof eventDetails];
               return (
                 <div
-                  className={`hover:bg-brown/20 w-full rounded flex gap-2 justify-between`}
+                  className={`hover:bg-brown/20 w-full rounded flex flex-row gap-2 justify-between `}
                   style={{ color }}
                   key={index}
                 >
                   <div className="flex items-center space-x-2 flex-grow overflow-hidden">
-                    <span className="text-lg" style={{ fill: color }}>
+                    <span className="text-lg flex-shrink-0" style={{ fill: color }}>
                       {emoji}
                     </span>
-                    <span className="whitespace-nowrap">[{event.name || "Unknown"}]:</span>
+                    <span className="whitespace-nowrap flex-shrink-0">[{event.name || "Unknown"}]:</span>
                     <div className="whitespace-nowrap overflow-hidden text-ellipsis">{event.action}</div>
                   </div>
-                  <div className="flex items-center space-x-2 flex-shrink-0">
+                  <div className="flex items-center space-x-2 flex-shrink-0 ml-6 md:ml-0">
                     <span className="opacity-70 text-xs whitespace-nowrap">
                       [{new Date(event.timestamp * 1000).toLocaleTimeString()}]
                     </span>
                     {event.position && (
-                      <>
+                      <div className="hidden md:flex">
                         <ViewOnMapIcon hideTooltip={true} position={event.position} />
                         <NavigateToPositionIcon hideTooltip={true} position={event.position} />
-                      </>
+                      </div>
                     )}
-                    <MessageIcon playerName={event.name} selectedPlayer={event.address ?? BigInt(0)} />
+                    <div className="hidden md:block">
+                      <MessageIcon playerName={event.name} selectedPlayer={event.address ?? BigInt(0)} />
+                    </div>
                   </div>
                 </div>
               );

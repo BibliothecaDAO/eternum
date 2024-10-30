@@ -53,7 +53,7 @@ export const RightNavigationModule = () => {
         }}
         initial="hidden"
         animate="visible"
-        className="gap-2 flex flex-col justify-start pointer-events-auto"
+        className="gap-2 flex flex-col justify-start pointer-events-auto h-[60vh]"
       >
         <div className="flex flex-col gap-2 mb-auto">
           {navigation.map((item, index) => (
