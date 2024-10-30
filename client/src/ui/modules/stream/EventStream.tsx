@@ -116,8 +116,8 @@ export const EventStream = () => {
   });
 
   return (
-    <div className="h-full w-full md:w-[30vw]">
-      <div className="flex flex-row text-sm text-center">
+    <div className="h-full w-full md:w-[30vw] md:justify-start justify-end">
+      <div className={`flex flex-row text-sm text-center md:justify-start justify-end `}>
         <div
           className="bg-brown/10 h-6 w-6 rounded-t cursor-pointer"
           onClick={() => {
@@ -152,7 +152,12 @@ export const EventStream = () => {
         )}
       </div>
       {hideEventStream ? (
-        <div className="bg-brown/5 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full">
+        <div
+          onClick={() => {
+            setHideEventStream(!hideEventStream);
+          }}
+          className="flex md:justify-start justify-end bg-brown/5 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full"
+        >
           Events
         </div>
       ) : (
