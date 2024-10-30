@@ -258,7 +258,7 @@ export const LeftNavigationModule = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
           className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-[600px] text-gold left-10 pt-20 pointer-events-none ${
