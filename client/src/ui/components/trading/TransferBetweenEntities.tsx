@@ -2,6 +2,7 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
@@ -62,6 +63,7 @@ export const TransferBetweenEntities = ({
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
+  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.donkeyScreaming);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
 
@@ -106,6 +108,8 @@ export const TransferBetweenEntities = ({
           recipient_entity_id: selectedEntityIdTo?.entityId!,
           resources: resourcesList || [],
         });
+
+    playDonkeyScreaming();
 
     systemCall.finally(() => {
       setIsLoading(false);

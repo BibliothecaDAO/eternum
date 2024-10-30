@@ -1,10 +1,10 @@
-import useSound from "use-sound";
-import useUIStore from "./store/useUIStore";
+import { ResourceMiningTypes } from "@/types";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
-import { ResourceMiningTypes } from "@/types";
+import useSound from "use-sound";
+import useUIStore from "./store/useUIStore";
 
-const dir = "/sound/";
+export const dir = "/sound/";
 
 export const soundSelector = {
   hoverClick: "ui/ui-click-1.wav",
@@ -57,6 +57,7 @@ export const soundSelector = {
   addMithral: "resources/mithral.mp3",
   addDragonhide: "resources/dragonhide.mp3",
   addLords: "resources/lords.mp3",
+  donkeyScreaming: "resources/donkey.mp3",
   unitRunning: "units/running.mp3",
   unitRunningAlternative: "units/running_2.mp3",
   battleDefeat: "events/battle_defeat.mp3",

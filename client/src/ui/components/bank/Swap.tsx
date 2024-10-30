@@ -5,6 +5,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -30,6 +31,7 @@ export const ResourceSwap = ({
 
   const { getBalance } = getResourceBalance();
   const { computeTravelTime } = useTravel();
+  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
   const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +85,7 @@ export const ResourceSwap = ({
   const onSwap = useCallback(() => {
     setIsLoading(true);
     const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
+
     operation({
       signer: account,
       bank_entity_id: bankEntityId,
@@ -91,6 +94,7 @@ export const ResourceSwap = ({
       // todo: rounding error in contracts
       amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
     }).finally(() => {
+      playLordsSound();
       setIsLoading(false);
       setOpenConfirmation(false);
     });

@@ -20,8 +20,6 @@ export interface ThreeStore {
   setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
   setSelectedBuilding: (building: BuildingType) => void;
-  selectedBuildingEntityId: ID | null;
-  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => void;
   selectedBuildingHex: {
     outerCol: number;
     outerRow: number;

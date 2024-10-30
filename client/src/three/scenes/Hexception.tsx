@@ -3,12 +3,19 @@ import * as THREE from "three";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
+import { dir, soundSelector } from "@/hooks/useUISound";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
-import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
+import {
+  ResourceIdToMiningType,
+  getEntityIdFromKeys,
+  getHexForWorldPosition,
+  getWorldPositionForHex,
+} from "@/ui/utils/utils";
 import { BuildingType, RealmLevels, ResourcesIds, findResourceById, getNeighborHexes } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -287,6 +294,13 @@ export default class HexceptionScene extends HexagonScene {
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
 
       if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
+        const building = getComponentValue(
+          this.dojo.components.Building,
+          getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+        );
+
+        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType]);
+
         this.state.setSelectedBuildingHex({
           outerCol,
           outerRow,
@@ -295,6 +309,13 @@ export default class HexceptionScene extends HexagonScene {
         });
         this.state.setLeftNavigationView(View.EntityView);
       } else if (this.tileManager.isHexOccupied(normalizedCoords)) {
+        const building = getComponentValue(
+          this.dojo.components.Building,
+          getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+        );
+
+        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType]);
+
         this.state.setSelectedBuildingHex({
           outerCol,
           outerRow,
@@ -629,3 +650,29 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 }
+
+export const playBuildingSound = (buildingType: BuildingType | undefined) => {
+  const buildingSounds: Partial<Record<BuildingType, string>> = {
+    [BuildingType.Castle]: soundSelector.buildCastle,
+    [BuildingType.WorkersHut]: soundSelector.buildWorkHut,
+    [BuildingType.WatchTower]: soundSelector.buildMageTower,
+    [BuildingType.Storehouse]: soundSelector.buildStorehouse,
+    [BuildingType.Bank]: soundSelector.buildLabor,
+    [BuildingType.FragmentMine]: soundSelector.buildMine,
+    [BuildingType.Barracks]: soundSelector.buildBarracks,
+    [BuildingType.ArcheryRange]: soundSelector.buildArcherRange,
+    [BuildingType.Stable]: soundSelector.buildStables,
+    [BuildingType.Farm]: soundSelector.buildFarm,
+    [BuildingType.FishingVillage]: soundSelector.buildFishingVillage,
+    [BuildingType.Market]: soundSelector.buildMarket,
+  };
+
+  const soundFile =
+    buildingType === undefined
+      ? soundSelector.buildCastle
+      : buildingSounds[buildingType as BuildingType] ?? soundSelector.buildMine;
+
+  const soundPath = dir + soundFile;
+
+  new Audio(soundPath).play();
+};

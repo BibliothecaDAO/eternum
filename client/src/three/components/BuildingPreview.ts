@@ -1,3 +1,4 @@
+import { dir, soundSelector } from "@/hooks/useUISound";
 import { ResourceMiningTypes } from "@/types";
 import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
@@ -9,6 +10,7 @@ export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
   private modelLoadPromises: Promise<void>[] = [];
   private buildingModels: Map<BuildingType | ResourceMiningTypes, THREE.Group> = new Map();
+  private currentHexHovered: THREE.Vector3 | null = null;
 
   constructor(private scene: THREE.Scene) {
     this.loadBuildingModels();
@@ -86,6 +88,11 @@ export class BuildingPreview {
 
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
+      if (!this.currentHexHovered || !this.currentHexHovered.equals(position)) {
+        new Audio(dir + soundSelector.hoverClick).play();
+        this.currentHexHovered = position;
+      }
+
       const model = this.getBuildingModel(this.getBuildingType() as BuildingType | ResourceMiningTypes);
       if (model) {
         model.position.copy(position);
