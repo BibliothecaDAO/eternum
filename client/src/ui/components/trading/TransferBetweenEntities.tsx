@@ -10,7 +10,7 @@ import { multiplyByPrecision } from "@/ui/utils/utils";
 import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/ResourceWeight";
+import { TravelInfo } from "../resources/TravelInfo";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { SelectEntityFromList } from "./SelectEntityFromList";
 import { SelectResources } from "./SelectResources";
@@ -259,7 +259,7 @@ export const TransferBetweenEntities = ({
           </div>
 
           <div className=" ">
-            <div className="p-10 bg-gold/10  h-auto border border-gold/40">
+            <div className="p-10 bg-gold/10  h-auto rounded-lg border border-gold/40">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
                   entityId={isOriginDonkeys ? selectedEntityIdFrom?.entityId! : selectedEntityIdTo?.entityId!}
