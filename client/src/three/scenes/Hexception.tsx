@@ -352,7 +352,7 @@ export default class HexceptionScene extends HexagonScene {
           <div className="flex items-center space-x-1">
             <ResourceIcon
               size="sm"
-              resource={findResourceById(building.produced_resource_type as ResourcesIds)!.trait}
+              resource={findResourceById(building.produced_resource_type as ResourcesIds)?.trait ?? ""}
             />
             <div>Producing {findResourceById(building.produced_resource_type as ResourcesIds)?.trait}</div>
             <div>—</div>
