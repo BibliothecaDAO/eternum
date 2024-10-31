@@ -67,7 +67,7 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   Grassland: BASE_PATH + "grassland.glb",
   TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "temperateDesert.glb",
+  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
   TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
   Outline: BASE_PATH + "outline.glb",
