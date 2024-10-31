@@ -17,7 +17,7 @@ mod ownership_systems {
     
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[abi(embed_v0)]

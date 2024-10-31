@@ -59,12 +59,12 @@ mod trade_systems {
 
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct CreateOrder {
         #[key]
         taker_id: ID,
@@ -75,7 +75,7 @@ mod trade_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct AcceptOrder {
         #[key]
         taker_id: ID,
@@ -88,7 +88,7 @@ mod trade_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct AcceptPartialOrder {
         #[key]
         taker_id: ID,
@@ -99,7 +99,7 @@ mod trade_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct CancelOrder {
         #[key]
         taker_id: ID,

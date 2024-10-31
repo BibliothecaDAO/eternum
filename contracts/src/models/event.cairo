@@ -3,7 +3,7 @@ use eternum::{alias::ID, models::combat::BattleSide, models::structure::Structur
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
-#[dojo::event]
+#[dojo::event(historical: true)]
 pub struct EternumEvent {
     #[key]
     id: ID,
@@ -33,7 +33,7 @@ pub enum EventData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
+#[dojo::event(historical: true)]
 pub struct BattleStartData {
     #[key]
     id: ID,
@@ -54,7 +54,7 @@ pub struct BattleStartData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
+#[dojo::event(historical: true)]
 pub struct BattleJoinData {
     #[key]
     id: ID,
@@ -72,7 +72,7 @@ pub struct BattleJoinData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
+#[dojo::event(historical: true)]
 pub struct BattleLeaveData {
     #[key]
     id: ID,
@@ -90,7 +90,7 @@ pub struct BattleLeaveData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
+#[dojo::event(historical: true)]
 pub struct BattleClaimData {
     #[key]
     id: ID,
@@ -108,7 +108,7 @@ pub struct BattleClaimData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
+#[dojo::event(historical: true)]
 pub struct BattlePillageData {
     #[key]
     id: ID,
@@ -130,7 +130,7 @@ pub struct BattlePillageData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
+#[dojo::event(historical: true)]
 pub struct SettleRealmData {
     #[key]
     id: ID,

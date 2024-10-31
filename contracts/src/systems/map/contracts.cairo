@@ -45,12 +45,12 @@ mod map_systems {
 
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct MapExplored {
         #[key]
         entity_id: ID,
@@ -67,7 +67,7 @@ mod map_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct FragmentMineDiscovered {
         #[key]
         entity_owner_id: ID,

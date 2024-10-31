@@ -156,7 +156,7 @@ mod troop_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
 
     #[abi(embed_v0)]
     impl TroopContractImpl of ITroopContract<ContractState> {

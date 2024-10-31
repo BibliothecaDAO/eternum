@@ -10,7 +10,7 @@ trait IResourceSystems<T> {
 
 #[dojo::contract]
 mod resource_systems {
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
     use core::array::ArrayTrait;
     use core::array::SpanTrait;
     use core::num::traits::Bounded;
@@ -44,7 +44,7 @@ mod resource_systems {
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl as travel};
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct Transfer {
         #[key]
         recipient_entity_id: ID,

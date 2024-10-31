@@ -28,7 +28,7 @@ mod guild_systems {
 
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
     use eternum::constants::DEFAULT_NS;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 

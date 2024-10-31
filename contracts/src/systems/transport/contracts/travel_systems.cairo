@@ -32,12 +32,12 @@ mod travel_systems {
     use eternum::models::season::SeasonImpl;
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
 
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct Travel {
         #[key]
         destination_coord_x: u32,

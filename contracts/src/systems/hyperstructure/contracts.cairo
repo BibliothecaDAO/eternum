@@ -51,7 +51,7 @@ mod hyperstructure_systems {
 
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
     use eternum::constants::DEFAULT_NS;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -60,7 +60,7 @@ mod hyperstructure_systems {
     use super::calculate_total_contributable_amount;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct HyperstructureFinished {
         #[key]
         id: ID,
@@ -71,7 +71,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct HyperstructureCoOwnersChange {
         #[key]
         id: ID,
@@ -82,7 +82,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct HyperstructureContribution {
         #[key]
         id: ID,
@@ -94,7 +94,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct GameEnded {
         #[key]
         winner_address: ContractAddress,

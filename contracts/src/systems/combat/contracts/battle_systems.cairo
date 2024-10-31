@@ -14,7 +14,7 @@ use eternum::models::{
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use dojo::event::EventStorage;
+use dojo::event(historical: true)::EventStorage;
 
 #[starknet::interface]
 trait IBattleContract<T> {
@@ -345,7 +345,7 @@ mod battle_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
 
 
     #[abi(embed_v0)]
@@ -802,7 +802,7 @@ mod battle_pillage_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
 
     #[abi(embed_v0)]
     impl BattlePillageContractImpl of IBattlePillageContract<ContractState> {

@@ -2,7 +2,7 @@
 mod donkey_systems {
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
-    use dojo::event::EventStorage;
+    use dojo::event(historical: true)::EventStorage;
 
     use eternum::alias::ID;
 
@@ -24,7 +24,7 @@ mod donkey_systems {
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
+    #[dojo::event(historical: true)]
     struct BurnDonkey {
         #[key]
         player_address: ContractAddress,
