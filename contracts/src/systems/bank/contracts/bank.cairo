@@ -3,9 +3,9 @@ use eternum::alias::ID;
 use eternum::models::position::{Coord};
 
 #[starknet::interface]
-trait IBankSystems {
+trait IBankSystems<T> {
     fn create_bank(
-        ref world: IWorldDispatcher,
+        ref self: T,
         realm_entity_id: ID,
         coord: Coord,
         owner_fee_num: u128,
@@ -14,10 +14,10 @@ trait IBankSystems {
         owner_bridge_fee_wtdr_percent: u16
     ) -> ID;
     fn change_owner_amm_fee(
-        ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
+        ref self: T, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
     );
     fn change_owner_bridge_fee(
-        ref world: IWorldDispatcher,
+        ref self: T,
         bank_entity_id: ID,
         owner_bridge_fee_dpt_percent: u16,
         owner_bridge_fee_wtdr_percent: u16,
@@ -40,10 +40,16 @@ mod bank_systems {
 
     use traits::Into;
 
+    use dojo::world::WorldStorage;
+    use dojo::model::ModelStorage;
+    use dojo::event::EventStorage;
+    use eternum::constants::DEFAULT_NS;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_bank(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             realm_entity_id: ID,
             coord: Coord,
             owner_fee_num: u128,
@@ -51,6 +57,7 @@ mod bank_systems {
             owner_bridge_fee_dpt_percent: u16,
             owner_bridge_fee_wtdr_percent: u16
         ) -> ID {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
             let bank_entity_id: ID = world.dispatcher.uuid();
@@ -58,82 +65,92 @@ mod bank_systems {
             //todo: check that tile is explored
 
             // ensure that the coord is not occupied by any other structure
-            let structure_count: StructureCount = get!(world, coord, StructureCount);
+            let structure_count: StructureCount = world.read_model(coord);
             structure_count.assert_none();
 
             // remove the resources from the realm
-            let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
-
-            let mut realm_resource = ResourceCustomImpl::get(ref world, (realm_entity_id, ResourceTypes::LORDS));
+            let bank_config: BankConfig = world.read_model(WORLD_CONFIG_ID);
+            let mut realm_resource: Resource = world.read_model((realm_entity_id, ResourceTypes::LORDS));
 
             realm_resource.burn(bank_config.lords_cost);
             realm_resource.save(ref world);
 
-            set!(
-                world,
-                (
-                    Structure {
-                        entity_id: bank_entity_id,
+            world.write_model(
+                @Structure {
+                    entity_id: bank_entity_id,
                         category: StructureCategory::Bank,
                         created_at: starknet::get_block_timestamp()
                     },
-                    StructureCount { coord, count: 1 },
-                    CapacityCategory { entity_id: bank_entity_id, category: CapacityConfigCategory::Structure },
-                    Bank {
+            );
+            world.write_model(
+                @StructureCount { coord, count: 1 },
+            );
+            world.write_model(
+                @CapacityCategory { entity_id: bank_entity_id, category: CapacityConfigCategory::Structure },
+            );
+            world.write_model(
+                @Bank {
                         entity_id: bank_entity_id,
                         owner_fee_num,
                         owner_fee_denom,
                         owner_bridge_fee_dpt_percent,
                         owner_bridge_fee_wtdr_percent,
                         exists: true
-                    },
-                    Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
-                    Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
-                )
+                }
+            );
+            world.write_model(  
+                @Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
+            );
+            world.write_model(
+                @Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
             );
 
             bank_entity_id
         }
 
         fn change_owner_amm_fee(
-            ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
+            ref self: ContractState, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
             let player = starknet::get_caller_address();
 
-            let owner = get!(world, bank_entity_id, Owner);
+            let owner: Owner = world.read_model(bank_entity_id);
             assert(owner.address == player, 'Only owner can change fee');
 
-            let mut bank = get!(world, bank_entity_id, Bank);
+            let mut bank: Bank = world.read_model(bank_entity_id);
             bank.owner_fee_num = new_owner_fee_num;
             bank.owner_fee_denom = new_owner_fee_denom;
-            set!(world, (bank));
+            world.write_model(@bank);
         }
 
 
         fn change_owner_bridge_fee(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             bank_entity_id: ID,
             owner_bridge_fee_dpt_percent: u16,
             owner_bridge_fee_wtdr_percent: u16
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
             let player = starknet::get_caller_address();
 
-            let owner = get!(world, bank_entity_id, Owner);
+            let owner: Owner = world.read_model(bank_entity_id);
             assert(owner.address == player, 'Only owner can change fee');
 
-            let mut bank = get!(world, bank_entity_id, Bank);
+            let mut bank: Bank = world.read_model(bank_entity_id);
             bank.owner_bridge_fee_dpt_percent = owner_bridge_fee_dpt_percent;
             bank.owner_bridge_fee_wtdr_percent = owner_bridge_fee_wtdr_percent;
-            set!(world, (bank));
+            world.write_model(@bank);
         }
     }
 
     #[generate_trait]
     pub impl InternalBankSystemsImpl of BankSystemsTrait {
         fn pickup_resources_from_bank(
-            world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resources: Span<(u8, u128)>,
+            ref world: WorldStorage, bank_entity_id: ID, entity_id: ID, resources: Span<(u8, u128)>,
         ) -> ID {
             let mut resources_clone = resources.clone();
 
@@ -155,7 +172,7 @@ mod bank_systems {
 
             // then entity picks up the resources at the bank
             let (donkey_id, _, _) = InternalResourceSystemsImpl::transfer(
-                world, bank_entity_id, entity_id, resources, entity_id, true, true
+                ref world, bank_entity_id, entity_id, resources, entity_id, true, true
             );
 
             donkey_id

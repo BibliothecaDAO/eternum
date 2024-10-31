@@ -26,16 +26,16 @@ pub mod transport {
 pub mod name {
     pub mod contracts;
 }
-// pub mod hyperstructure {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
-// pub mod buildings {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
+pub mod hyperstructure {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+pub mod buildings {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 pub mod map {
     pub mod contracts;
     #[cfg(test)]
@@ -52,11 +52,11 @@ pub mod combat {
         pub mod troop_systems;
     }
 }
-// pub mod bank {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
+pub mod bank {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 pub mod guild {
     pub mod contracts;
     #[cfg(test)]

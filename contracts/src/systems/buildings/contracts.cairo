@@ -3,15 +3,15 @@ use eternum::alias::ID;
 #[starknet::interface]
 trait IBuildingContract<TContractState> {
     fn create(
-        ref world: IWorldDispatcher,
+        ref self: TContractState,
         entity_id: ID,
         directions: Span<eternum::models::position::Direction>,
         building_category: eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
     );
-    fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: eternum::models::position::Coord);
-    fn resume_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: eternum::models::position::Coord);
-    fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: eternum::models::position::Coord);
+    fn pause_production(ref self: TContractState, entity_id: ID, building_coord: eternum::models::position::Coord);
+    fn resume_production(ref self: TContractState, entity_id: ID, building_coord: eternum::models::position::Coord);
+    fn destroy(ref self: TContractState, entity_id: ID, building_coord: eternum::models::position::Coord);
 }
 
 #[dojo::contract]
@@ -24,22 +24,29 @@ mod building_systems {
         buildings::{BuildingCategory, Building, BuildingCustomImpl}, production::{Production, ProductionRateTrait},
         realm::{Realm, RealmCustomImpl, RealmResourcesTrait}
     };
+    use dojo::world::WorldStorage;
+    use dojo::model::ModelStorage;
+    use dojo::event::EventStorage;
+    use eternum::constants::DEFAULT_NS;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[abi(embed_v0)]
     impl BuildingContractImpl of super::IBuildingContract<ContractState> {
         fn create(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             entity_id: ID,
             mut directions: Span<eternum::models::position::Direction>,
             building_category: BuildingCategory,
             produce_resource_type: Option<u8>,
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             // ensure only realms can make buildings
-            let realm: Realm = get!(world, entity_id, Realm);
+            let realm: Realm = world.read_model(entity_id);
             assert!(realm.realm_id != 0, "entity is not a realm");
 
             // ensure caller owns the realm
-            get!(world, entity_id, EntityOwner).assert_caller_owner(world);
+            let entity_owner: EntityOwner = world.read_model(entity_id);
+            entity_owner.assert_caller_owner(world);
 
             // ensure buildings can't be made outside
             // the range of what the realm level allows
@@ -67,29 +74,32 @@ mod building_systems {
 
             // todo: check that entity is a realm
             let (building, building_quantity) = BuildingCustomImpl::create(
-                world, entity_id, building_category, produce_resource_type, building_coord
+                ref world, entity_id, building_category, produce_resource_type, building_coord
             );
 
             // pay one time cost of the building
-            building.make_payment(building_quantity, world);
+            building.make_payment(building_quantity, ref world);
         }
 
-        fn pause_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+        fn pause_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            BuildingCustomImpl::pause_production(world, entity_id, building_coord);
+            BuildingCustomImpl::pause_production(ref world, entity_id, building_coord);
         }
 
-        fn resume_production(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+        fn resume_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            BuildingCustomImpl::resume_production(world, entity_id, building_coord);
+            BuildingCustomImpl::resume_production(ref world, entity_id, building_coord);
         }
 
-        fn destroy(ref world: IWorldDispatcher, entity_id: ID, building_coord: Coord) {
+        fn destroy(ref self: ContractState, entity_id: ID, building_coord: Coord) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            BuildingCustomImpl::destroy(world, entity_id, building_coord);
+            BuildingCustomImpl::destroy(ref world, entity_id, building_coord);
         }
     }
 }

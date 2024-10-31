@@ -637,7 +637,7 @@ impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCust
 
 #[generate_trait]
 impl HyperstructureResourceConfigCustomImpl of HyperstructureResourceConfigCustomTrait {
-    fn get(ref world: WorldStorage, resource_id: u8) -> HyperstructureResourceConfig {
+    fn get(world: WorldStorage, resource_id: u8) -> HyperstructureResourceConfig {
         world.read_model((HYPERSTRUCTURE_CONFIG_ID, resource_id))
     }
 }
