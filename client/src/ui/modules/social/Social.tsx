@@ -1,12 +1,19 @@
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { configManager } from "@/dojo/setup";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
+import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { social } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { GuildMembers } from "@/ui/components/worldmap/guilds/GuildMembers";
 import { Guilds } from "@/ui/components/worldmap/guilds/Guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/PlayersPanel";
+import Button from "@/ui/elements/Button";
 import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, ID } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import clsx from "clsx";
+import { useCallback, useMemo, useState } from "react";
 import { PlayerId } from "./PlayerId";
 
 export const Social = () => {
@@ -86,6 +93,9 @@ export const Social = () => {
             <Tabs.Tab key={tab.key}>{tab.label}</Tabs.Tab>
           ))}
         </Tabs.List>
+
+        <EndSeasonButton />
+
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab) => (
             <Tabs.Panel key={tab.key}>{tab.component}</Tabs.Panel>
@@ -93,5 +103,80 @@ export const Social = () => {
         </Tabs.Panels>
       </Tabs>
     </OSWindow>
+  );
+};
+
+const EndSeasonButton = () => {
+  const {
+    setup,
+    account: { account },
+  } = useDojo();
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp!;
+
+  const getContributions = useGetHyperstructuresWithContributionsFromPlayer();
+  const getEpochs = useGetPlayerEpochs();
+
+  const percentageOfPoints = useMemo(() => {
+    const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp);
+    const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
+    const playerPoints = player?.[1] ?? 0;
+
+    return Math.min((playerPoints / configManager.getHyperstructureConfig().pointsForWin) * 100, 100);
+  }, [structureEntityId, nextBlockTimestamp]);
+
+  const hasReachedFinalPoints = useMemo(() => {
+    return percentageOfPoints >= 100;
+  }, [percentageOfPoints]);
+
+  const gradient = useMemo(() => {
+    const filledPercentage = percentageOfPoints;
+    const emptyPercentage = 1 - percentageOfPoints;
+    return `linear-gradient(to right, #f3c99f80 ${filledPercentage}%, #f3c99f80 ${filledPercentage}%, #0000000d ${filledPercentage}%, #0000000d ${
+      filledPercentage + emptyPercentage
+    }%)`;
+  }, [percentageOfPoints]);
+
+  const endGame = useCallback(async () => {
+    if (!hasReachedFinalPoints) {
+      return;
+    }
+    const contributions = Array.from(getContributions());
+    const epochs = getEpochs();
+
+    await setup.systemCalls.end_game({
+      signer: account,
+      hyperstructure_contributed_to: contributions,
+      hyperstructure_shareholder_epochs: epochs,
+    });
+  }, [hasReachedFinalPoints, getContributions]);
+
+  return (
+    <Button
+      variant="outline"
+      size="xs"
+      className={clsx("self-center")}
+      onMouseOver={() => {
+        if (!hasReachedFinalPoints) {
+          setTooltip({
+            position: "bottom",
+            content: (
+              <span className="whitespace-nowrap pointer-events-none">
+                <span>Not enough points to end the season</span>
+              </span>
+            ),
+          });
+        }
+      }}
+      onMouseOut={() => {
+        setTooltip(null);
+      }}
+      style={{ background: gradient }}
+      onClick={endGame}
+    >
+      End season
+    </Button>
   );
 };

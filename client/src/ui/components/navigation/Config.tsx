@@ -1,5 +1,4 @@
 type OSWindows =
-  | "Leaderboard"
   | "World Structures"
   | "Settings"
   | "Military"
@@ -19,7 +18,6 @@ export interface OSInterface {
   hintSection?: string;
 }
 
-export const leaderboard: OSWindows = "Leaderboard";
 export const worldStructures: OSWindows = "World Structures";
 export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";
