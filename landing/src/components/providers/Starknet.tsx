@@ -1,12 +1,12 @@
 import React from "react";
 
 import ControllerConnector from "@cartridge/connector/controller";
-import { Chain, sepolia } from "@starknet-react/chains";
+import { sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, useInjectedConnectors, voyager } from "@starknet-react/core";
 import { RpcProvider } from "starknet";
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
-  function provider(chain: Chain) {
+  function provider(/*chain: Chain*/) {
     return new RpcProvider({
       nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia",
     });
