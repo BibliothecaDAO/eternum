@@ -130,7 +130,7 @@ mod trade_systems {
                     )) => {
                         assert(*resource_amount != 0, 'maker resource amount is 0');
                         // burn offered resource from maker balance
-                        let mut maker_resource: Resource = ResourceCustomImpl::get(world, (maker_id, *resource_type));
+                        let mut maker_resource: Resource = ResourceCustomImpl::get(ref world, (maker_id, *resource_type));
                         maker_resource.burn(*resource_amount);
                         maker_resource.save(ref world);
 

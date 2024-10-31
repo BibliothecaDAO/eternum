@@ -58,10 +58,10 @@ mod liquidity_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             get!(world, entity_id, Owner).assert_caller_owner();
-            let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
+            let mut resource = ResourceCustomImpl::get(ref world, (entity_id, resource_type));
             assert(resource.balance >= resource_amount, 'not enough resources');
 
-            let mut player_lords = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let mut market = get!(world, (bank_entity_id, resource_type), Market);

@@ -3,11 +3,11 @@ pub mod config {
     #[cfg(test)]
     mod tests;
 }
-// pub mod realm {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
+pub mod realm {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 // pub mod trade {
 //     pub mod contracts;
 //     #[cfg(test)]
@@ -36,22 +36,22 @@ pub mod transport {
 //     #[cfg(test)]
 //     mod tests;
 // }
-// pub mod map {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
+pub mod map {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 // pub mod dev {
 //     pub mod contracts;
 // }
-// pub mod combat {
-//     #[cfg(test)]
-//     mod tests;
-//     pub mod contracts {
-//         pub mod battle_systems;
-//         pub mod troop_systems;
-//     }
-// }
+pub mod combat {
+    #[cfg(test)]
+    mod tests;
+    pub mod contracts {
+        pub mod battle_systems;
+        pub mod troop_systems;
+    }
+}
 // pub mod bank {
 //     pub mod contracts;
 //     #[cfg(test)]

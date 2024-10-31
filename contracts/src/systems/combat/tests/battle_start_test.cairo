@@ -244,13 +244,13 @@ fn combat_test_battle_start() {
     assert_eq!(player_2_army.battle_side, BattleSide::Defence);
 
     // ensure player 1 gold resource still exists but it is locked
-    let player_1_gold_resource: Resource = ResourceCustomImpl::get(world, (player_1_army_id, ResourceTypes::GOLD));
+    let player_1_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_1_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT, player_1_gold_resource.balance);
     let player_1_resource_lock: ResourceTransferLock = get!(world, player_1_army_id, ResourceTransferLock);
     player_1_resource_lock.assert_locked();
 
     // ensure player 2 gold resource still exists but it is locked
-    let player_2_gold_resource: Resource = ResourceCustomImpl::get(world, (player_2_army_id, ResourceTypes::GOLD));
+    let player_2_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_2_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT, player_2_gold_resource.balance);
     let player_2_resource_lock: ResourceTransferLock = get!(world, player_2_army_id, ResourceTransferLock);
     player_2_resource_lock.assert_locked();

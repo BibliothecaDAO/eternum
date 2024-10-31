@@ -101,9 +101,9 @@ fn combat_test_army_buy() {
     assert_eq!(army.troops.paladin_count, STARTING_PALADIN_COUNT.try_into().unwrap());
     assert_eq!(army.troops.crossbowman_count, STARTING_CROSSBOWMAN_COUNT.try_into().unwrap());
 
-    let knight_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::KNIGHT));
-    let paladin_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::PALADIN));
-    let crossbowman_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::CROSSBOWMAN));
+    let knight_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::KNIGHT));
+    let paladin_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::PALADIN));
+    let crossbowman_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::CROSSBOWMAN));
     assert_eq!(knight_resource.balance, 0);
     assert_eq!(paladin_resource.balance, 0);
     assert_eq!(crossbowman_resource.balance, 0);

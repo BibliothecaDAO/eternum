@@ -93,7 +93,7 @@ fn mint(world: IWorldDispatcher, entity: ID, mut resources: Span<(u8, u128)>) {
             Option::Some((
                 _type, amount
             )) => {
-                let mut resource = ResourceCustomImpl::get(world, (entity, *_type));
+                let mut resource = ResourceCustomImpl::get(ref world, (entity, *_type));
                 resource.add(*amount);
                 resource.save(ref world);
             },

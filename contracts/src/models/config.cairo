@@ -586,7 +586,7 @@ pub struct TroopConfig {
 
 #[generate_trait]
 impl TroopConfigCustomImpl of TroopConfigCustomTrait {
-    fn get(ref world: WorldStorage) -> TroopConfig {
+    fn get(world: WorldStorage) -> TroopConfig {
         return world.read_model(WORLD_CONFIG_ID);
     }
 }
@@ -603,7 +603,7 @@ pub struct BattleConfig {
 
 #[generate_trait]
 impl BattleConfigCustomImpl of BattleConfigCustomTrait {
-    fn get(ref world: WorldStorage) -> BattleConfig {
+    fn get(world: WorldStorage) -> BattleConfig {
         world.read_model(WORLD_CONFIG_ID)
     }
 }

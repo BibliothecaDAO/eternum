@@ -339,7 +339,7 @@ mod hyperstructure_systems {
         fn burn_player_resources(
             world: IWorldDispatcher, resource_type: u8, resource_amount: u128, contributor_entity_id: ID
         ) {
-            let mut creator_resources = ResourceCustomImpl::get(world, (contributor_entity_id, resource_type));
+            let mut creator_resources = ResourceCustomImpl::get(ref world, (contributor_entity_id, resource_type));
 
             creator_resources.burn(resource_amount);
             creator_resources.save(ref world);

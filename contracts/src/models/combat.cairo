@@ -872,9 +872,9 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
 #[generate_trait]
 impl BattleCustomImpl of BattleCustomTrait {
-    fn get(ref world: WorldStorage, battle_id: ID) -> Battle {
+    fn get(world: WorldStorage, battle_id: ID) -> Battle {
         let mut battle: Battle = world.read_model(battle_id);
-        let troop_config: TroopConfig = TroopConfigCustomImpl::get(ref world);
+        let troop_config: TroopConfig = TroopConfigCustomImpl::get(world);
         battle.update_state(troop_config);
         return battle;
     }

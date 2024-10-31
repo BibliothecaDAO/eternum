@@ -64,7 +64,7 @@ mod bank_systems {
             // remove the resources from the realm
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
-            let mut realm_resource = ResourceCustomImpl::get(world, (realm_entity_id, ResourceTypes::LORDS));
+            let mut realm_resource = ResourceCustomImpl::get(ref world, (realm_entity_id, ResourceTypes::LORDS));
 
             realm_resource.burn(bank_config.lords_cost);
             realm_resource.save(ref world);
@@ -145,7 +145,7 @@ mod bank_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceCustomImpl::get(world, (bank_entity_id, resource_type));
+                        let mut recipient_resource = ResourceCustomImpl::get(ref world, (bank_entity_id, resource_type));
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(ref world);
                     },

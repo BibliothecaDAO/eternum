@@ -11,7 +11,7 @@ trait IResourceSystems<T> {
 #[dojo::contract]
 mod resource_systems {
     use dojo::event::EventStorage;
-use core::array::ArrayTrait;
+    use core::array::ArrayTrait;
     use core::array::SpanTrait;
     use core::num::traits::Bounded;
     use core::poseidon::poseidon_hash_span as hash;
