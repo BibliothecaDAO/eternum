@@ -9,6 +9,7 @@ import { Position } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { QuestId } from "@/ui/components/quest/questDetails";
+import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -166,7 +167,7 @@ export const TopLeftNavigation = () => {
   return (
     <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
+        <div className="flex max-w-[150px] md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -207,7 +208,7 @@ export const TopLeftNavigation = () => {
             style={{ width: `${progress}%` }}
           ></div>
         </div>
-        <div className=" bg-brown/90 bg-hex-bg   rounded-b-xl   flex gap-1">
+        <div className=" bg-brown/90 bg-hex-bg  rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -219,7 +220,7 @@ export const TopLeftNavigation = () => {
               onMouseLeave={() => {
                 setTooltip(null);
               }}
-              className="px-3 flex gap-2 self-center text-xs"
+              className="px-3 flex gap-2 self-center text-xxs md:text-xs"
             >
               <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
               <div className="self-center">{storehouses.toLocaleString() + " kg"}</div>
@@ -236,7 +237,7 @@ export const TopLeftNavigation = () => {
               onMouseLeave={() => {
                 setTooltip(null);
               }}
-              className=" px-3 flex gap-2 self-center"
+              className=" px-3 flex gap-2 self-center text-xs md:text-md"
             >
               <ResourceIcon withTooltip={false} resource="House" size="sm" />
               <div className="self-center">
@@ -245,31 +246,38 @@ export const TopLeftNavigation = () => {
             </div>
           )}
         </div>
-        <div className=" bg-brown/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
-          <TickProgress />
-          <Button
-            variant="outline"
-            size="xs"
-            className={clsx("self-center", {
-              "animate-pulse": pointToWorldButton,
-            })}
-            onClick={() => {
-              if (!isMapView) {
-                goToMapView();
-              } else {
-                goToHexView(structureEntityId);
-              }
-            }}
-          >
-            {isMapView ? "Realm" : "World"}
-          </Button>
+        <div className="bg-brown/90 bg-hex-bg rounded-b-xl text-xs md:text-md flex md:flex-row gap-2 md:gap-4 justify-between p-2 md:px-4">
+          <div className="flex justify-center md:justify-start">
+            <TickProgress />
+          </div>
+          <div className="flex justify-center md:justify-start">
+            <Button
+              variant="outline"
+              size="xs"
+              className={clsx("self-center", {
+                "animate-pulse": pointToWorldButton,
+              })}
+              onClick={() => {
+                if (!isMapView) {
+                  goToMapView();
+                } else {
+                  goToHexView(structureEntityId);
+                }
+              }}
+            >
+              {isMapView ? "Realm" : "World"}
+            </Button>
+          </div>
           {isMapView && (
-            <div className="flex flex-row items-center ">
+            <div className="flex justify-center md:justify-start items-center gap-1">
               <NavigateToPositionIcon
-                className="h-8 w-8"
+                className="h-6 w-6 md:h-8 md:w-8"
                 position={{ x: structurePosition.x, y: structurePosition.y }}
               />
-              <ViewOnMapIcon className="h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
+              <ViewOnMapIcon
+                className="h-5 w-5 md:h-7 md:w-7"
+                position={{ x: structurePosition.x, y: structurePosition.y }}
+              />
             </div>
           )}
         </div>
@@ -280,7 +288,7 @@ export const TopLeftNavigation = () => {
           </div>
         )}
       </motion.div>
-      <SecondaryMenuItems />
+      {IS_MOBILE && <SecondaryMenuItems />}
     </div>
   );
 };

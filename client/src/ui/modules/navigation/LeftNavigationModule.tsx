@@ -8,7 +8,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
-import { BuildingThumbs, MenuEnum } from "@/ui/config";
+import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
 import clsx from "clsx";
@@ -265,7 +265,9 @@ export const LeftNavigationModule = () => {
             isOffscreen(view) ? "-translate-x-[88%]" : ""
           }`}
         >
-          <BaseContainer className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh]}`}>
+          <BaseContainer
+            className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh]`}
+          >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === View.EntityView && <EntityDetails />}
               {view === View.MilitaryView && <Military entityId={structureEntityId} />}
@@ -293,10 +295,12 @@ export const LeftNavigationModule = () => {
           </motion.div>
         </div>
       </div>
-      <div className="flex">
-        <Chat />
-        <MiniMapNavigation />
-      </div>
+      {!IS_MOBILE && (
+        <div className="flex">
+          <Chat />
+          <MiniMapNavigation />
+        </div>
+      )}
     </div>
   );
 };
