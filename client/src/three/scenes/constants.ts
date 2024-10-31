@@ -88,7 +88,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Hyperstructure]: [
     "models/buildings/hyperstructure_init.glb",
     "models/buildings/hyperstructure_half.glb",
-    "models/buildings/hyperstructureAnimated.glb",
+    "models/buildings/hyperstructure.glb",
   ],
   [StructureType.Bank]: ["/models/buildings/market.glb"],
   [StructureType.FragmentMine]: ["models/buildings/mine.glb"],

@@ -49,13 +49,12 @@ export class StructureManager {
             modelPath,
             (gltf) => {
               const model = gltf.scene as THREE.Group;
-              const instancedModel = new InstancedModel(model, MAX_INSTANCES);
-              instancedModel.setCount(0);
+              const instancedModel = new InstancedModel(gltf, MAX_INSTANCES);
               resolve(instancedModel);
             },
             undefined,
             (error) => {
-              console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
+              console.error(`An error occurred while loading the ${structureType} model:`, error);
               reject(error);
             },
           );
@@ -199,6 +198,12 @@ export class StructureManager {
       }
     }
     return undefined;
+  }
+
+  updateAnimations(deltaTime: number) {
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.updateAnimations(deltaTime));
+    });
   }
 }
 
