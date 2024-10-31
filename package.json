@@ -5,6 +5,7 @@
     "dev": "pnpm --dir ./client dev",
     "build-packages": "pnpm --dir sdk/packages/eternum build",
     "build-client": "pnpm --dir ./client build",
+    "build-landing": "pnpm --dir ./landing build",
     "test-client": "pnpm --dir ./client test",
     "prettier-check": "npx prettier --check .",
     "prettier": "npx prettier --write .",
