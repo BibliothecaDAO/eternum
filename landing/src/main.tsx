@@ -7,11 +7,12 @@ import { setup } from "./dojo/setup";
 import "./index.css";
 
 // Import the generated route tree
+//import { ArkProvider } from '@ark-project/react';
+import { NuqsAdapter } from "nuqs/adapters/react";
 import { StarknetProvider } from "./components/providers/Starknet";
 import { ThemeProvider } from "./components/providers/theme-provider";
 import { DojoProvider } from "./hooks/context/DojoContext";
 import { routeTree } from "./routeTree.gen";
-
 // Create a new router instance
 const router = createRouter({ routeTree });
 
@@ -26,18 +27,25 @@ declare module "@tanstack/react-router" {
 const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
-
   const setupResult = await setup(dojoConfig);
+  /*const config = {
+    starknetNetwork: networks.mainnet,
+    arkchainNetwork: networks.mainnet,
+  };*/
 
   root.render(
     <StrictMode>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <StarknetProvider>
-          <DojoProvider value={setupResult}>
-            <RouterProvider router={router} />
-          </DojoProvider>
-        </StarknetProvider>
-      </ThemeProvider>
+      <NuqsAdapter>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <StarknetProvider>
+            <DojoProvider value={setupResult}>
+              {/*<ArkProvider config={config}>*/}
+                <RouterProvider router={router} />
+              {/*</ArkProvider>*/}
+            </DojoProvider>
+          </StarknetProvider>
+        </ThemeProvider>
+      </NuqsAdapter>
     </StrictMode>,
   );
 }

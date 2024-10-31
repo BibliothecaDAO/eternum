@@ -13,9 +13,11 @@
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
+    "@ark-project/core": "3.0.0-beta.1",
+    "@ark-project/react": "2.0.0-beta.2",
     "@bibliothecadao/eternum": "workspace:^",
-    "@cartridge/connector": "^0.4.0",
-    "@cartridge/controller": "^0.4.0",
+    "@cartridge/connector": "^0.5.0-alpha.3",
+    "@cartridge/controller": "^0.5.0-alpha.3",
     "@dojoengine/core": "1.0.0-alpha.22",
     "@dojoengine/create-burner": "1.0.0-alpha.22",
     "@dojoengine/react": "1.0.0-alpha.23",
@@ -27,6 +29,7 @@
     "@graphql-typed-document-node/core": "^3.2.0",
     "@parcel/watcher": "^2.4.1",
     "@radix-ui/react-checkbox": "^1.1.2",
+    "@radix-ui/react-collapsible": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-dropdown-menu": "^2.1.2",
     "@radix-ui/react-icons": "^1.3.0",
@@ -38,8 +41,8 @@
     "@radix-ui/react-switch": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.3",
-    "@starknet-react/chains": "^3.0.2",
-    "@starknet-react/core": "^3.0.3",
+    "@starknet-react/chains": "^3.0.6",
+    "@starknet-react/core": "^3.4.1",
     "@tanstack/react-query": "^5.59.15",
     "@tanstack/react-router": "^1.74.0",
     "class-variance-authority": "^0.7.0",
@@ -50,6 +53,7 @@
     "graphql-tag": "^2.12.6",
     "jotai": "^2.10.1",
     "lucide-react": "^0.365.0",
+    "nuqs": "^2.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-toastify": "^10.0.5",
@@ -91,6 +95,8 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.7.0",
-    "vite": "^5.4.8"
+    "vite": "^5.4.8",
+    "vite-plugin-mkcert": "^1.17.6",
+    "vite-plugin-top-level-await": "^1.4.1"
   }
 }

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { LoopIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
-import { Home, Inbox, Ship } from "lucide-react";
+import { Earth, Home, Inbox, Ship } from "lucide-react";
 
 // Menu items.
 const items = [
@@ -38,6 +38,11 @@ const items = [
     title: "Mint",
     url: "/mint",
     icon: Ship,
+  },
+  {
+    title: "My Empire",
+    url: "/my-empire",
+    icon: Earth,
   },
 ];
 

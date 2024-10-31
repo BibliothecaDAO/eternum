@@ -1,7 +1,6 @@
-import { argent, braavos, useConnect, useInjectedConnectors } from "@starknet-react/core";
+import { useConnect, useDisconnect } from "@starknet-react/core";
 import { Button } from "../ui/button";
 
-import CartridgeIcon from "@/assets/icons/cartridge-small.svg?react";
 import useAccountOrBurner from "@/hooks/useAccountOrBurner";
 import { displayAddress } from "@/lib/utils";
 import { TypeH2 } from "../typography/type-h2";
@@ -10,8 +9,8 @@ import { ModeToggle } from "./mode-toggle";
 
 export const TopNavigation = () => {
   const { account } = useAccountOrBurner();
-  const { connect } = useConnect({});
-
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
   /*useEffect(() => {
     if (status === "disconnected") {
       // on disconnect
@@ -20,11 +19,11 @@ export const TopNavigation = () => {
     }
   }, [address, status]);*/
 
-  const { connectors } = useInjectedConnectors({
+  /*const { connectors } = useInjectedConnectors({
     recommended: [argent(), braavos()],
     includeRecommended: "onlyIfNoConnectors",
     order: "random",
-  });
+  });*/
 
   return (
     <div className="flex justify-between items-center w-full">
@@ -36,17 +35,15 @@ export const TopNavigation = () => {
         <ModeToggle />
         {!account?.address ? (
           <>
-            <Button variant="cta">
-              <CartridgeIcon /> Login
-            </Button>
             {connectors.map((connector, index) => (
               <Button key={index} onClick={() => connect({ connector })} variant="cta">
+                <img className="w-5" src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark} />{" "}
                 Connect {connector.name}
               </Button>
             ))}
           </>
         ) : (
-          <Button>{displayAddress(account?.address)}</Button>
+          <Button onClick={() => disconnect}>{displayAddress(account?.address)}</Button>
         )}
       </div>
     </div>

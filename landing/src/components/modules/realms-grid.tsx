@@ -2,12 +2,13 @@ import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { AnimatedGrid } from "./animated-grid";
 import { RealmCard } from "./realm-card";
 interface SeasonPassRowProps {
-  realms: GetRealmsQuery["ercBalance"] & { seasonPassMinted: boolean };
+  realms?: GetRealmsQuery["ercBalance"];
+  seasonPassTokenIds?: string[];
   toggleNftSelection: (tokenId: string, collectionAddress: string) => void;
   isNftSelected?: (tokenId: string, contractAddress: string) => boolean;
 }
 
-export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected }: SeasonPassRowProps) => {
+export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected, seasonPassTokenIds }: SeasonPassRowProps) => {
   return (
     <>
       {realms?.length ? (
@@ -19,16 +20,23 @@ export const RealmsGrid = ({ realms, toggleNftSelection, isNftSelected }: Season
                 ? isNftSelected(realm?.tokenMetadata.tokenId, realm?.tokenMetadata.contractAddress)
                 : false;
             return (
-              <RealmCard
-                toggleNftSelection={toggleNftSelection}
-                key={`${realm?.tokenMetadata.tokenId}-${index}`}
-                isSelected={isSelected}
-                realm={realm}
-              />
+              <>
+                {realm ? (
+                  <RealmCard
+                    toggleNftSelection={toggleNftSelection}
+                    key={`${realm?.tokenMetadata.tokenId}-${index}`}
+                    isSelected={isSelected}
+                    realm={realm}
+                    seasonPassMinted={seasonPassTokenIds?.includes(realm?.tokenMetadata.tokenId)}
+                  />
+                ) : null}
+              </>
             );
           }}
         />
-      ) : "No Realms found"}
+      ) : (
+        "No Realms found"
+      )}
     </>
   );
 };

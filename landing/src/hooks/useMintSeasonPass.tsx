@@ -1,4 +1,3 @@
-import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 //import { useIsCorrectChain } from "./useChain";
 //import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
@@ -21,7 +20,7 @@ export const useMintSeasonPass = () => {
 
   //const { contractAddress } = useTokenContract();
   //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-  const { isConnected } = useAccount();
+//  const { isConnected } = useAccount();
   //const { isCorrectChain } = useIsCorrectChain()
   // const { totalSupply } = useTotalSupply()
 
@@ -40,7 +39,7 @@ export const useMintSeasonPass = () => {
         setIsMinting(true);
         setMintingTokenId(token_ids);
         await mint_season_passes({ signer: account, recipient: account.address, token_ids: tokenIdsNumberArray, season_pass_address })
-          .then((v) => {
+          .then(() => {
             toast("Season Passes Minted");
             // wait supply to change...
           })
