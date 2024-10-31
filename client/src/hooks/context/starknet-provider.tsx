@@ -7,6 +7,12 @@ import { policies } from "./policies";
 
 const theme: string = "eternum";
 
+const controller = new ControllerConnector({
+  rpc: import.meta.env.VITE_PUBLIC_NODE_URL,
+  policies,
+  theme,
+});
+
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
     return { nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL };
@@ -16,13 +22,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     <StarknetConfig
       chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={[
-        new ControllerConnector({
-          rpc: rpc().nodeUrl,
-          policies,
-          theme,
-        }) as never as Connector,
-      ]}
+      connectors={[controller as never as Connector]}
       explorer={voyager}
       autoConnect
     >
