@@ -1,7 +1,47 @@
+import { ExpandablePopup } from "@/ui/elements/ExpandablePopup";
 import { SecondaryPopup } from "../../elements/SecondaryPopup";
 import { OSInterface } from "./Config";
 
-export const OSWindow = ({ onClick, show, title, children, width = "400px", hintSection }: OSInterface) => {
+interface ExpandableOSInterface extends OSInterface {
+  expandedContent?: React.ReactNode;
+  isExpandable?: boolean;
+  expandedWidth?: string;
+  isExpanded?: boolean;
+  minHeight?: string;
+}
+
+export const OSWindow = ({
+  onClick,
+  show,
+  title,
+  children,
+  width = "400px",
+  expandedWidth = "600px",
+  hintSection,
+  expandedContent,
+  isExpandable,
+  isExpanded = false,
+}: ExpandableOSInterface) => {
+  if (isExpandable && expandedContent) {
+    return (
+      <>
+        {show && (
+          <ExpandablePopup
+            title={title}
+            onClose={() => onClick()}
+            hintSection={hintSection}
+            expandedContent={expandedContent}
+            width={width}
+            expandedWidth={expandedWidth}
+            isExpanded={isExpanded}
+          >
+            {children}
+          </ExpandablePopup>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       {show && (

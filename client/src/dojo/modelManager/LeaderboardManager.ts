@@ -1,4 +1,4 @@
-import { GuildFromPlayerAddress } from "@/hooks/helpers/useGuilds";
+import { GuildFromPlayerAddress } from "@/types/guild";
 import { ContractAddress, ID, TickIds } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";

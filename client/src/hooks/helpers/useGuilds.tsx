@@ -1,52 +1,23 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { toHexString } from "@/ui/utils/utils";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import {
+  AddressWhitelistAndName,
+  GuildAndName,
+  GuildFromPlayerAddress,
+  GuildMemberAndName,
+  GuildWhitelistAndName,
+} from "@/types/guild";
+import { formatTime, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import {
-  Component,
-  ComponentValue,
-  Entity,
-  Has,
-  HasValue,
-  NotValue,
-  getComponentValue,
-  runQuery,
-} from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import useUIStore from "../store/useUIStore";
 import { useEntitiesUtils } from "./useEntities";
 import { useRealm } from "./useRealm";
-
-export type GuildAndName = {
-  guild: ComponentValue<ClientComponents["Guild"]["schema"]>;
-  name: string;
-};
-
-export type GuildMemberAndName = {
-  guildMember: ComponentValue<ClientComponents["GuildMember"]["schema"]>;
-  name: string;
-  playerAddress: string;
-};
-
-export type GuildWhitelistAndName = {
-  guildWhitelist: ComponentValue<ClientComponents["GuildWhitelist"]["schema"]>;
-  name: string;
-  playerAddress: string;
-};
-
-export type AddressWhitelistAndName = {
-  addressWhitelist: ComponentValue<ClientComponents["GuildWhitelist"]["schema"]>;
-  name: string;
-};
-
-export type GuildFromPlayerAddress = {
-  guildEntityId: ID | undefined;
-  guildName: string | undefined;
-  isOwner: boolean;
-  memberCount: number | undefined;
-};
 
 export const useGuilds = () => {
   const {
@@ -59,11 +30,14 @@ export const useGuilds = () => {
         AddressName,
         events: { CreateGuild, JoinGuild },
       },
+      account: { account },
     },
   } = useDojo();
 
   const { getEntityName } = useEntitiesUtils();
   const { getAddressName } = useRealm();
+
+  const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
 
   const getPlayerList = (guild_entity_id: ID) => {
     const players = Array.from(runQuery([Has(AddressName)])).map((playerEntity) => {
@@ -107,15 +81,33 @@ export const useGuilds = () => {
 
   const useGuildMembers = useCallback((guildEntityId: ID) => {
     const guildMembers = useEntityQuery([HasValue(GuildMember, { guild_entity_id: guildEntityId })]);
+
     return {
-      guildMembers: formatGuildMembers(guildMembers, GuildMember, getAddressName),
+      guildMembers: formatGuildMembers(
+        guildMembers,
+        nextBlockTimestamp,
+        account.address,
+        getAddressName,
+        GuildMember,
+        Owner,
+        JoinGuild,
+      ),
     };
   }, []);
 
   const useGuildQuery = useCallback(() => {
     const guilds = useEntityQuery([Has(Guild), NotValue(Guild, { member_count: 0 })]);
     return {
-      guilds: formatGuilds(guilds, Guild, getEntityName),
+      guilds: formatGuilds(
+        guilds,
+        nextBlockTimestamp,
+        account.address,
+        getEntityName,
+        getGuildFromPlayerAddress,
+        Guild,
+        GuildMember,
+        CreateGuild,
+      ),
     };
   }, []);
 
@@ -123,7 +115,7 @@ export const useGuilds = () => {
     const whitelist = useEntityQuery([
       HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: true }),
     ]);
-    return formatGuildWhitelist(whitelist, GuildWhitelist, getAddressName);
+    return formatGuildWhitelist(whitelist, nextBlockTimestamp, GuildWhitelist, getAddressName);
   };
 
   const useAddressWhitelist = (address: ContractAddress) => {
@@ -138,14 +130,13 @@ export const useGuilds = () => {
   const getGuildFromPlayerAddress = useCallback(
     (accountAddress: ContractAddress): GuildFromPlayerAddress | undefined => {
       const guildEntityId = getComponentValue(GuildMember, getEntityIdFromKeys([accountAddress]))?.guild_entity_id;
-
       if (!guildEntityId) return;
 
-      const guildName = guildEntityId ? getEntityName(guildEntityId) : undefined;
+      const guildName = guildEntityId ? getEntityName(guildEntityId) : "Unknown";
 
       const isOwner = getGuildOwner(guildEntityId)?.address === ContractAddress(accountAddress) ? true : false;
 
-      const memberCount = getComponentValue(Guild, getEntityIdFromKeys([BigInt(guildEntityId)]))?.member_count;
+      const memberCount = getComponentValue(Guild, getEntityIdFromKeys([BigInt(guildEntityId)]))?.member_count || 0;
 
       return {
         guildEntityId,
@@ -158,10 +149,19 @@ export const useGuilds = () => {
   );
 
   const getGuildFromEntityId = useCallback((entityId: ID, accountAddress: ContractAddress) => {
-    const guild = formatGuilds([getEntityIdFromKeys([BigInt(entityId)])], Guild, getEntityName)[0];
+    const guild = formatGuilds(
+      [getEntityIdFromKeys([BigInt(entityId)])],
+      nextBlockTimestamp,
+      account.address,
+      getEntityName,
+      getGuildFromPlayerAddress,
+      Guild,
+      GuildMember,
+      CreateGuild,
+    )[0];
     if (!guild) return;
 
-    const isOwner = getGuildOwner(guild.guild.entity_id)?.address === ContractAddress(accountAddress) ? true : false;
+    const isOwner = getGuildOwner(guild.entityId)?.address === ContractAddress(accountAddress) ? true : false;
 
     return { guild, isOwner, name: guild.name };
   }, []);
@@ -203,60 +203,124 @@ export const useGuilds = () => {
 
 const formatGuilds = (
   guilds: Entity[],
-  Guild: Component<ClientComponents["Guild"]["schema"]>,
+  nextBlockTimestamp: number | undefined,
+  address: string,
   getEntityName: (entityId: ID) => string,
+  getGuildFromPlayerAddress: (accountAddress: ContractAddress) => GuildFromPlayerAddress | undefined,
+  Guild: Component<ClientComponents["Guild"]["schema"]>,
+  GuildMember: Component<ClientComponents["GuildMember"]["schema"]>,
+  CreateGuild: Component<ClientComponents["events"]["CreateGuild"]["schema"]>,
 ): GuildAndName[] => {
+  const guildsByRank = LeaderboardManager.instance().getGuildsByRank(
+    nextBlockTimestamp || 0,
+    getGuildFromPlayerAddress,
+  );
+
+  const guildMember = getComponentValue(GuildMember, getEntityIdFromKeys([ContractAddress(address)]));
+
   return guilds
     .map((guild_entity_id) => {
       const guild = getComponentValue(Guild, guild_entity_id);
       if (!guild) return;
 
-      const name = getEntityName(guild?.entity_id);
+      const name = getEntityName(guild.entity_id);
+
+      const createGuildEvent = getComponentValue(CreateGuild, getEntityIdFromKeys([BigInt(guild.entity_id)]));
+      const guildCreationTimestamp = createGuildEvent?.timestamp ?? 0;
+      const timeSinceCreation = formatTime((nextBlockTimestamp || 0) - guildCreationTimestamp, undefined, true);
+
+      const index = guildsByRank.findIndex(([guildEntityId, _]) => guildEntityId === guild.entity_id);
 
       return {
-        guild,
+        entityId: guild.entity_id,
+        isPublic: guild.is_public,
+        memberCount: guild.member_count,
+        createdSince: timeSinceCreation,
+        isMember: guild.entity_id === guildMember?.guild_entity_id,
+        rank: "#" + (index != -1 ? String(index + 1) : "NA"),
+        points: index != -1 ? guildsByRank[index][1] : 0,
         name,
       };
     })
-    .filter((guild): guild is GuildAndName => guild !== undefined);
+    .filter((guild): guild is GuildAndName => guild !== undefined)
+    .sort((a, b) => {
+      const rankA = parseInt(a.rank.substring(1)) || Infinity;
+      const rankB = parseInt(b.rank.substring(1)) || Infinity;
+      return rankA - rankB;
+    });
 };
 
 const formatGuildMembers = (
   guildMembers: Entity[],
-  GuildMember: Component<ClientComponents["GuildMember"]["schema"]>,
+  nextBlockTimestamp: number | undefined,
+  userAddress: string,
   getAddressName: (address: ContractAddress) => string | undefined,
+  GuildMember: Component<ClientComponents["GuildMember"]["schema"]>,
+  Owner: Component<ClientComponents["Owner"]["schema"]>,
+  JoinGuild: Component<ClientComponents["events"]["JoinGuild"]["schema"]>,
 ): GuildMemberAndName[] => {
+  const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0);
+
   return guildMembers
     .map((entity) => {
       const guildMember = getComponentValue(GuildMember, entity);
       if (!guildMember) return;
+
       const addressName = getAddressName(guildMember.address);
-      const playerAddress = toHexString(guildMember.address);
+
+      const joinGuildEvent = getComponentValue(
+        JoinGuild,
+        getEntityIdFromKeys([BigInt(guildMember.guild_entity_id), ContractAddress(guildMember.address)]),
+      );
+      const joinGuildTimestamp = joinGuildEvent?.timestamp ?? 0;
+      const timeSinceJoined = formatTime((nextBlockTimestamp || 0) - joinGuildTimestamp, undefined, true);
+
+      const index = playersByRank.findIndex(([address, _]) => address === guildMember.address);
+
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)]));
+
       return {
-        guildMember,
-        playerAddress,
-        name: addressName ? addressName : "Name not found",
+        address: guildMember.address,
+        guildEntityId: guildMember.guild_entity_id,
+        joinedSince: timeSinceJoined,
+        name: addressName ? addressName : "Unknown",
+        rank: "#" + (index != -1 ? String(index + 1) : "NA"),
+        points: index != -1 ? playersByRank[index][1] : 0,
+        isUser: guildMember.address === ContractAddress(userAddress),
+        isGuildMaster: owner?.address === guildMember.address,
       };
     })
-    .filter((guildMember): guildMember is GuildMemberAndName => guildMember !== undefined);
+    .filter((guildMember): guildMember is GuildMemberAndName => guildMember !== undefined)
+    .sort((a, b) => {
+      const rankA = parseInt(a.rank.substring(1)) || Infinity;
+      const rankB = parseInt(b.rank.substring(1)) || Infinity;
+      return rankA - rankB;
+    });
 };
 
 const formatGuildWhitelist = (
   whitelist: Entity[],
+  nextBlockTimestamp: number | undefined,
   GuildWhitelist: Component<ClientComponents["GuildWhitelist"]["schema"]>,
   getAddressName: (address: ContractAddress) => string | undefined,
 ): GuildWhitelistAndName[] => {
+  const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0);
+
   return whitelist
     .map((entity) => {
       const guildWhitelist = getComponentValue(GuildWhitelist, entity);
       if (!guildWhitelist) return;
 
       const addressName = getAddressName(guildWhitelist.address);
-      const playerAddress = toHexString(guildWhitelist.address);
+
+      const index = playersByRank.findIndex(([address, _]) => address === guildWhitelist.address);
+
       return {
-        guildWhitelist,
-        playerAddress,
-        name: addressName ? addressName : "player name",
+        address: guildWhitelist.address,
+        guildEntityId: guildWhitelist.guild_entity_id,
+        name: addressName ? addressName : "Unknown",
+        rank: "#" + (index != -1 ? String(index + 1) : "NA"),
+        points: index != -1 ? playersByRank[index][1] : 0,
       };
     })
     .filter((guildWhitelist): guildWhitelist is GuildWhitelistAndName => guildWhitelist !== undefined);
@@ -274,7 +338,7 @@ const formatAddressWhitelist = (
 
       const name = getEntityName(addressWhitelist.guild_entity_id);
       return {
-        addressWhitelist,
+        guildEntityId: addressWhitelist.guild_entity_id,
         name,
       };
     })

@@ -271,6 +271,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.remove_guild_member(props);
   };
 
+  const disband_guild = async (props: SystemProps.DisbandGuild) => {
+    await provider.disband_guild(props);
+  };
+
   const remove_player_from_whitelist = async (props: SystemProps.RemovePlayerFromWhitelist) => {
     await provider.remove_player_from_whitelist(props);
   };
@@ -367,6 +371,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     leave_guild: withQueueing(withErrorHandling(leave_guild)),
     transfer_guild_ownership: withQueueing(withErrorHandling(transfer_guild_ownership)),
     remove_guild_member: withQueueing(withErrorHandling(remove_guild_member)),
+    disband_guild: withQueueing(withErrorHandling(disband_guild)),
     remove_player_from_whitelist: withQueueing(withErrorHandling(remove_player_from_whitelist)),
 
     battle_start: withQueueing(withErrorHandling(battle_start)),

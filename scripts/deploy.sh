@@ -5,7 +5,7 @@ printf "\n\n"
 echo "----- Building Eternum Season Pass Contract ----- "
 
 cd season_pass/contracts && scarb --release build
-cd ../scripts/deployment && npm run deploy 
+cd ../scripts/deployment && npm run deploy
 
 # update the .env.production file with the season pass and test realms contracts addresses
 VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/dev/season_pass.json | jq -r '.address')

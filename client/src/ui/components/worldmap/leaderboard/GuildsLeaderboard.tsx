@@ -1,6 +1,7 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { GuildPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
@@ -8,7 +9,6 @@ import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { currencyIntlFormat, sortItems } from "../../../utils/utils";
-import useUIStore from "@/hooks/store/useUIStore";
 
 type GuildPointsLeaderboardKeys = keyof GuildPointsLeaderboardInterface;
 
