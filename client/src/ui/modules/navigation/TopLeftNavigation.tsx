@@ -42,20 +42,36 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
   return (
     <div className="text-xs text-gray-200 p-2 max-w-xs">
       <p className="font-semibold">Max Storage Capacity</p>
-      <ul className="list-none my-1">
-        <li className="flex items-center">
-          <ResourceIcon resource="Lords" size="xs" className="mr-1" />
-          {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
-        </li>
-        <li className="flex items-center">
-          <ResourceIcon resource="Wheat" size="xs" className="mr-1" />
-          {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
-        </li>
-        <li className="flex items-center">
-          <ResourceIcon resource="Wood" size="xs" className="mr-1" />
-          {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
-        </li>
-      </ul>
+      <div className="grid grid-cols-2 gap-x-4 my-1">
+        <ul className="list-none">
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
+          </li>
+        </ul>
+        <ul className="list-none">
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Knight)).toLocaleString()} Knights
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Crossbowman)).toLocaleString()} Crossbowmen
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Paladin)).toLocaleString()} Paladins
+          </li>
+        </ul>
+      </div>
       <p className="italic text-xs">Build Storehouses to increase capacity.</p>
     </div>
   );
