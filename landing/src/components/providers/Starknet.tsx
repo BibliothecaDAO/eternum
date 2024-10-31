@@ -1,26 +1,33 @@
 import React from "react";
 
 import ControllerConnector from "@cartridge/connector/controller";
-import { devnet, mainnet, sepolia } from "@starknet-react/chains";
-import { StarknetConfig, argent, braavos, publicProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
+import { Chain, sepolia } from "@starknet-react/chains";
+import { StarknetConfig, argent, braavos, useInjectedConnectors, voyager } from "@starknet-react/core";
+import { RpcProvider } from "starknet";
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
+  function provider(chain: Chain) {
+    return new RpcProvider({
+      nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia",
+    });
+  }
+  const ETH_TOKEN_ADDRESS =
+  "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
 
   const cartridge = new ControllerConnector({
     policies: [
       {
-        target: import.meta.env.VITE_LORDS_ADDRESS,
+        target: ETH_TOKEN_ADDRESS,
         method: "approve",
         description:
           "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
       },
-      {
-        target: import.meta.env.VITE_LORDS_ADDRESS,
-        method: "transfer",
-      },
       // Add more policies as needed
     ],
     rpc: "https://api.cartridge.gg/x/starknet/sepolia",
+    url: "https://x.cartridge.gg/",
+    indexerUrl: "https://api.cartridge.gg/x/ls-erc/torii/graphql",
+
     // Uncomment to use a custom theme
     // theme: "dope-wars",
     // colorMode: "light"
@@ -36,8 +43,8 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StarknetConfig
-      chains={[mainnet, sepolia, devnet]}
-      provider={publicProvider()}
+      chains={[sepolia]}
+      provider={provider}
       connectors={[...connectors, cartridge]}
       explorer={voyager}
     >

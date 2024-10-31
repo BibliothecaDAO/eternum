@@ -6,9 +6,9 @@
         "schema": "./schema.graphql"
       }
     ],
-    "target": "ES2020",
+    "target": "ES5",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "module": "ESNext",
     "skipLibCheck": true,
 
