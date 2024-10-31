@@ -13,8 +13,8 @@ alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.g
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
 cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
 
-#[dev-dependencies]
-#dojo_cairo_test = { path = "../../crates/dojo/core-cairo-test" }
+[dev-dependencies]
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.0.0-rc.0" }
 
 [[target.starknet-contract]]
 build-external-contracts = [ "dojo::world::world_contract::world" ]
