@@ -13,7 +13,7 @@ use eternum::models::{
 };
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
-#[dojo::interface]
+#[starknet::interface]
 trait IBattleContract<TContractState> {
     /// Initiates a battle between an attacking and defending army within the game world.
     ///
@@ -233,7 +233,7 @@ trait IBattleContract<TContractState> {
 }
 
 
-#[dojo::interface]
+#[starknet::interface]
 trait IBattlePillageContract<TContractState> {
     /// Pillage a structure.
     ///

@@ -1,6 +1,6 @@
 use eternum::alias::ID;
 
-#[dojo::interface]
+#[starknet::interface]
 trait INameSystems {
     fn set_address_name(ref world: IWorldDispatcher, name: felt252);
     fn set_entity_name(ref world: IWorldDispatcher, entity_id: ID, name: felt252);

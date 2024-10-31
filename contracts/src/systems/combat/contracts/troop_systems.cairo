@@ -1,7 +1,7 @@
 use eternum::alias::ID;
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
-#[dojo::interface]
+#[starknet::interface]
 trait ITroopContract<TContractState> {
     /// Creates an army entity.
     ///

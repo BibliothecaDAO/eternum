@@ -1,6 +1,6 @@
 use eternum::alias::ID;
 
-#[dojo::interface]
+#[starknet::interface]
 trait IBuildingContract<TContractState> {
     fn create(
         ref world: IWorldDispatcher,

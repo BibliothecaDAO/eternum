@@ -1,6 +1,6 @@
 use eternum::alias::ID;
 
-#[dojo::interface]
+#[starknet::interface]
 trait IMapSystems {
     fn explore(ref world: IWorldDispatcher, unit_id: ID, direction: eternum::models::position::Direction);
 }

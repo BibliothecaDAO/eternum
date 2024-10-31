@@ -1,7 +1,7 @@
 use eternum::alias::ID;
 use starknet::ContractAddress;
 
-#[dojo::interface]
+#[starknet::interface]
 trait IResourceBridgeSystems {
     /// Deposits tokens into the resource bridge, converting them to in-game resources.
     ///

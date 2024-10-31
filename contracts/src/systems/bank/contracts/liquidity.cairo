@@ -2,7 +2,7 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 
-#[dojo::interface]
+#[starknet::interface]
 trait ILiquiditySystems {
     fn add(
         ref world: IWorldDispatcher,

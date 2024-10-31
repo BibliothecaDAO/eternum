@@ -15,7 +15,7 @@ trait IERC20<TState> {
 }
 
 
-#[dojo::interface]
+#[starknet::interface]
 trait IRealmSystems {
     fn create(
         ref world: IWorldDispatcher, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress

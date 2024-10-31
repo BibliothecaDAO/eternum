@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::position::{Coord};
 
-#[dojo::interface]
+#[starknet::interface]
 trait IBankSystems {
     fn create_admin_bank(
         ref world: IWorldDispatcher,

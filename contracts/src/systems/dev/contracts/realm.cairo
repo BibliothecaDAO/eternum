@@ -22,7 +22,7 @@ trait IERC721Approval<TState> {
     fn approve(ref self: TState, to: ContractAddress, token_id: u256);
 }
 
-#[dojo::interface]
+#[starknet::interface]
 trait IDevRealmSystems {
     fn create(ref world: IWorldDispatcher, realm_id: ID, frontend: ContractAddress);
 }

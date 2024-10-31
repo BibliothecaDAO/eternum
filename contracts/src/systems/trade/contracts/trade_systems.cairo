@@ -1,7 +1,7 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 
-#[dojo::interface]
+#[starknet::interface]
 trait ITradeSystems {
     fn create_order(
         ref world: IWorldDispatcher,

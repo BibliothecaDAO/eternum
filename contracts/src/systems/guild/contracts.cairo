@@ -1,7 +1,7 @@
 use eternum::alias::ID;
 use starknet::ContractAddress;
 
-#[dojo::interface]
+#[starknet::interface]
 trait IGuildSystems {
     fn create_guild(ref world: IWorldDispatcher, is_public: bool, guild_name: felt252) -> ID;
     fn join_guild(ref world: IWorldDispatcher, guild_entity_id: ID);

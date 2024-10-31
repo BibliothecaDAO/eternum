@@ -2,7 +2,7 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use starknet::ContractAddress;
 
-#[dojo::interface]
+#[starknet::interface]
 trait IOwnershipSystems {
     fn transfer_ownership(ref world: IWorldDispatcher, entity_id: ID, new_owner: ContractAddress);
 }

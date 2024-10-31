@@ -18,7 +18,7 @@ mod travel_systems {
     use dojo::model::ModelStorage;
     use eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID, TravelTypes};
+    use eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
     use eternum::models::combat::Army;
     use eternum::models::config::{MapConfigImpl, TravelStaminaCostConfig, TravelFoodCostConfigImpl};
     use eternum::models::map::Tile;
@@ -67,7 +67,7 @@ mod travel_systems {
         /// * `destination_coord` - The coordinate to travel to
         ///
         fn travel(ref self: ContractState, travelling_entity_id: ID, destination_coord: Coord) {
-            let mut world = self.world_default();
+            let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
             // todo@security prevent free transport units from travelling
@@ -93,7 +93,7 @@ mod travel_systems {
 
 
         fn travel_hex(ref self: ContractState, travelling_entity_id: ID, directions: Span<Direction>) {
-            let mut world = self.world_default();
+            let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
             let travelling_entity_owner: EntityOwner = world.read_model(travelling_entity_id);
@@ -129,11 +129,6 @@ mod travel_systems {
 
     #[generate_trait]
     pub impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
-        /// Use the default namespace "ns". A function is handy since the ByteArray
-        /// can't be const.
-        fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
-            self.world(@"eternum")
-        }
 
         fn assert_tile_explored(world: WorldStorage, coord: Coord) {
             let mut tile: Tile = world.read_model((coord.x, coord.y));

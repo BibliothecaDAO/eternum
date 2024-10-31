@@ -1,7 +1,7 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 
-#[dojo::interface]
+#[starknet::interface]
 trait ISwapSystems {
     fn buy(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID;
     fn sell(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID;

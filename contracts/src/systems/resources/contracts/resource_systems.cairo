@@ -23,7 +23,7 @@ use core::array::ArrayTrait;
 
     use eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID};
+    use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
     use eternum::models::config::{
         WeightConfig, WeightConfigCustomImpl, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory
     };
@@ -67,7 +67,7 @@ use core::array::ArrayTrait;
         /// * `resources` - The resources to approve.
         ///
         fn approve(ref self: ContractState, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
-            let mut world = self.world_default();
+            let mut world = self.world(DEFAULT_NS());
             assert(entity_id != recipient_entity_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
@@ -111,7 +111,7 @@ use core::array::ArrayTrait;
         fn send(
             ref self: ContractState, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>
         ) {
-            let mut world = self.world_default();
+            let mut world = self.world(DEFAULT_NS());
             assert(sender_entity_id != recipient_entity_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
 
@@ -139,7 +139,7 @@ use core::array::ArrayTrait;
         fn pickup(
             ref self: ContractState, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>
         ) {
-            let mut world = self.world_default();
+            let mut world = self.world(DEFAULT_NS());
             assert(owner_entity_id != recipient_entity_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
 
@@ -178,9 +178,6 @@ use core::array::ArrayTrait;
 
     #[generate_trait]
     pub impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
-        fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
-            self.world(@"eternum")
-        }
         // send resources to a bank's location but retain ownership of the resources
         fn send_to_bank(ref world: WorldStorage, owner_id: ID, bank_id: ID, resource: (u8, u128),) -> ID {
             // ensure owner and bank are stationary

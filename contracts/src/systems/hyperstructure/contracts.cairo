@@ -6,7 +6,7 @@ use eternum::{
 };
 use starknet::ContractAddress;
 
-#[dojo::interface]
+#[starknet::interface]
 trait IHyperstructureSystems {
     fn create(ref world: IWorldDispatcher, creator_entity_id: ID, coord: Coord) -> ID;
     fn contribute_to_construction(
