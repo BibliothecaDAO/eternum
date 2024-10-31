@@ -63,7 +63,7 @@ export const TransferBetweenEntities = ({
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
-  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.donkeyScreaming);
+  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.burnDonkey);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
 

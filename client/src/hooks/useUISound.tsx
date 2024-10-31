@@ -57,7 +57,7 @@ export const soundSelector = {
   addMithral: "resources/mithral.mp3",
   addDragonhide: "resources/dragonhide.mp3",
   addLords: "resources/lords.mp3",
-  donkeyScreaming: "resources/donkey.mp3",
+  burnDonkey: "resources/burn_donkey.mp3",
   unitRunning: "units/running.mp3",
   unitRunningAlternative: "units/running_2.mp3",
   battleDefeat: "events/battle_defeat.mp3",

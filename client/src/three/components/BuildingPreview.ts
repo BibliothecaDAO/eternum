@@ -11,9 +11,11 @@ export class BuildingPreview {
   private modelLoadPromises: Promise<void>[] = [];
   private buildingModels: Map<BuildingType | ResourceMiningTypes, THREE.Group> = new Map();
   private currentHexHovered: THREE.Vector3 | null = null;
+  private hoverSound: HoverSound;
 
   constructor(private scene: THREE.Scene) {
     this.loadBuildingModels();
+    this.hoverSound = new HoverSound();
   }
 
   private loadBuildingModels() {
@@ -89,7 +91,7 @@ export class BuildingPreview {
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
       if (!this.currentHexHovered || !this.currentHexHovered.equals(position)) {
-        new Audio(dir + soundSelector.hoverClick).play();
+        this.hoverSound.play();
         this.currentHexHovered = position;
       }
 
@@ -116,5 +118,25 @@ export class BuildingPreview {
 
   public resetBuildingColor() {
     this.setBuildingColor(new THREE.Color(PREVIEW_BUILD_COLOR_VALID));
+  }
+}
+
+class HoverSound {
+  private firstSound: HTMLAudioElement;
+  private secondSound: HTMLAudioElement;
+  private isFirst: boolean = true;
+
+  constructor() {
+    this.firstSound = new Audio(dir + soundSelector.shovelMain);
+    this.secondSound = new Audio(dir + soundSelector.shovelAlternative);
+  }
+
+  public play() {
+    if (this.isFirst) {
+      this.firstSound.play();
+    } else {
+      this.secondSound.play();
+    }
+    this.isFirst = !this.isFirst;
   }
 }
