@@ -1,4 +1,3 @@
-import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 //import { useIsCorrectChain } from "./useChain";
 //import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
@@ -21,7 +20,7 @@ export const useMintTestRealm = () => {
 
   //const { contractAddress } = useTokenContract();
   //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-  const { isConnected } = useAccount();
+  //const { isConnected } = useAccount();
   //const { isCorrectChain } = useIsCorrectChain()
   // const { totalSupply } = useTotalSupply()
 
@@ -39,7 +38,7 @@ export const useMintTestRealm = () => {
         setIsMinting(true);
         setMintingTokenId(token_id);
         await mint_test_realm({ signer: account, token_id, realms_address })
-          .then((v) => {
+          .then(() => {
             toast(`Realms #${token_id} Minted`)
           })
           .catch((e) => {

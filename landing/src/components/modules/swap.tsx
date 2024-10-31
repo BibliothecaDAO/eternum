@@ -10,7 +10,7 @@ export const Swap = () => {
 
   const [fromAmount, setFromAmount] = useState("");
 
-  const [realms, setRealms] = useState<string>("");
+  const [, setRealms] = useState<string>("");
 
   return (
     <div className="w-96 flex flex-col gap-3">

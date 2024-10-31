@@ -1,5 +1,5 @@
 import { execute } from "@/hooks/gql/execute";
-import { GET_REALM_MINTS } from "@/hooks/query/realms";
+import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { useMintTestRealm } from "@/hooks/useMintTestRealm";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronsUpDown, Loader } from "lucide-react";
@@ -23,9 +23,9 @@ export const RealmMintDialog = ({
   setIsOpen: (isOpen: boolean) => void;
   totalOwnedRealms?: number;
 }) => {
-  const { data, isLoading } = useSuspenseQuery({
-    queryKey: ["RealmMints"],
-    queryFn: () => execute(GET_REALM_MINTS),
+  const { data } = useSuspenseQuery({
+    queryKey: ["ERCMints"],
+    queryFn: () => execute(GET_ERC_MINTS),
     //enabled: !!account?.address,
     refetchInterval: 10_000,
   });

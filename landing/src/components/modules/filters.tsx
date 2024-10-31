@@ -11,7 +11,7 @@ const frameworksList = [
   { value: "ember", label: "Ember", icon: Fish },
 ];
 
-export const Filters = () => {
+export const AttributeFilters = () => {
   const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(["react", "angular"]);
   return (
     <div className="w-full flex justify-between items-center pb-4 gap-8">

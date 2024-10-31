@@ -10,7 +10,7 @@ import { ModeToggle } from "./mode-toggle";
 export const TopNavigation = () => {
   const { account } = useAccountOrBurner();
   const { connect, connectors } = useConnect();
-  const {disconnect} = useDisconnect()
+  const { disconnect } = useDisconnect();
   /*useEffect(() => {
     if (status === "disconnected") {
       // on disconnect
@@ -37,7 +37,8 @@ export const TopNavigation = () => {
           <>
             {connectors.map((connector, index) => (
               <Button key={index} onClick={() => connect({ connector })} variant="cta">
-                <img className="w-5" src={connector.icon} /> Connect {connector.name}
+                <img className="w-5" src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark} />{" "}
+                Connect {connector.name}
               </Button>
             ))}
           </>

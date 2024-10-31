@@ -13,7 +13,7 @@ const meta = {
   },
   tags: ["autodocs"],
   decorators: [
-    (Story) => {
+    () => {
       const router = createRouter({ routeTree });
 
       return <RouterProvider router={router} />;

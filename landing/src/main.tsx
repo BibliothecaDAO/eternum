@@ -7,7 +7,6 @@ import { setup } from "./dojo/setup";
 import "./index.css";
 
 // Import the generated route tree
-import { networks } from "@ark-project/core";
 //import { ArkProvider } from '@ark-project/react';
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { StarknetProvider } from "./components/providers/Starknet";
@@ -29,10 +28,10 @@ const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   const setupResult = await setup(dojoConfig);
-  const config = {
+  /*const config = {
     starknetNetwork: networks.mainnet,
     arkchainNetwork: networks.mainnet,
-  };
+  };*/
 
   root.render(
     <StrictMode>

@@ -13,7 +13,7 @@ export const GET_REALMS = graphql(`
   }
 `);
 
-export const GET_REALM_MINTS = graphql(`
+export const GET_ERC_MINTS = graphql(`
   query getRealmMints {
     ercTransfer(accountAddress: "0x0", limit: 8000) {
       tokenMetadata {

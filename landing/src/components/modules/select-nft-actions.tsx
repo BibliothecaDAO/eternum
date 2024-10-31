@@ -2,14 +2,14 @@ import { XIcon } from "lucide-react";
 import { Button } from "../ui/button";
 
 export const SelectNftActions = ({
-  selectedTokenIds,
+  //selectedTokenIds,
   selectBatchNfts,
   totalSelectedNfts,
   batchTokenIds,
   contractAddress,
   deselectAllNfts,
 }: {
-  selectedTokenIds: string[];
+  //selectedTokenIds: string[];
   selectBatchNfts: (contractAddress: string, tokenIds: string[]) => void;
   totalSelectedNfts: number;
   batchTokenIds?: string[];

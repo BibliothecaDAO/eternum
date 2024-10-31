@@ -154,10 +154,6 @@ export const calculateOffset = (index: number, total: number, radius: number) =>
   };
 };*/
 
-const pseudoRandom = (x: number, y: number) => {
-  const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-  return n - Math.floor(n);
-};
 
 export enum TimeFormat {
   D = 1,
@@ -184,9 +180,6 @@ export const formatTime = (
   return parts.join(" ");
 };
 
-function getPropertyByPath<T>(obj: T, path: string): any {
-  return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);
-}
 
 export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
   navigator.clipboard
