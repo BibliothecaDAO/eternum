@@ -42,8 +42,3 @@ export type GuildFromPlayerAddress = {
   isOwner: boolean;
   memberCount: number;
 };
-
-export interface SelectedGuildInterface {
-  guildEntityId: ID;
-  name: string;
-}
