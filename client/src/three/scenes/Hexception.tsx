@@ -333,7 +333,7 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
     const building = this.tileManager.getBuilding(normalizedCoords);
-    if (building) {
+    if (building && building.produced_resource_type) {
       this.state.setTooltip({
         content: (
           <div className="flex items-center space-x-1">
@@ -413,11 +413,11 @@ export default class HexceptionScene extends HexagonScene {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
           let buildingType =
-            building.resource && building.resource < 254
+            building.resource && building.resource < 24
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
 
-          if (parseInt(buildingType) === BuildingType.Castle) {
+              if (parseInt(buildingType) === BuildingType.Castle) {
             buildingType = castleLevelToRealmCastle[this.castleLevel];
           }
           const buildingData = this.buildingModels.get(buildingType);
