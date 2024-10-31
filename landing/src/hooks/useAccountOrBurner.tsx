@@ -6,7 +6,7 @@ import { useDojo } from "./context/DojoContext";
 type AccountType = "burner" | "controller";
 
 // eslint-disable-next-line prefer-const
-export let ACCOUNT_CONNECTOR: AccountType = "burner";
+export let ACCOUNT_CONNECTOR: AccountType = "controller";
 
 const useAccountOrBurner = () => {
   const { account } = useAccount();
