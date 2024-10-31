@@ -225,7 +225,7 @@ mod resource_bridge_systems {
             let caller = get_caller_address();
             let (realm_systems_address, _namespace_hash) =
                 match world.dispatcher.resource(selector_from_tag!("eternum-realm_systems")) {
-                dojo::world::Resource::Contract((class_hash, contract_address)) => (class_hash, contract_address),
+                dojo::world::Resource::Contract((contract_address, namespace_hash)) => (contract_address, namespace_hash),
                 _ => (Zeroable::zero(), Zeroable::zero())
             };
             assert!(caller == realm_systems_address, "only realm systems can call this system");

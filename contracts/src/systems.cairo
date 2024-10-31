@@ -8,11 +8,11 @@ pub mod realm {
     #[cfg(test)]
     mod tests;
 }
-// pub mod trade {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
+pub mod trade {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 pub mod resources {
     pub mod contracts;
     #[cfg(test)]
@@ -23,9 +23,9 @@ pub mod transport {
     #[cfg(test)]
     mod tests;
 }
-// pub mod name {
-//     pub mod contracts;
-// }
+pub mod name {
+    pub mod contracts;
+}
 // pub mod hyperstructure {
 //     pub mod contracts;
 //     #[cfg(test)]
@@ -41,9 +41,9 @@ pub mod map {
     #[cfg(test)]
     mod tests;
 }
-// pub mod dev {
-//     pub mod contracts;
-// }
+pub mod dev {
+    pub mod contracts;
+}
 pub mod combat {
     #[cfg(test)]
     mod tests;
@@ -57,14 +57,14 @@ pub mod combat {
 //     #[cfg(test)]
 //     mod tests;
 // }
-// pub mod guild {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
+pub mod guild {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 
-// pub mod ownership {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
+pub mod ownership {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}

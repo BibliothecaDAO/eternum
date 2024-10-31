@@ -3,28 +3,28 @@ use eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait ITestRealmMint<TState> {
-    fn mint(ref self: TState, token_id: u256);
+trait ITestRealmMint<T> {
+    fn mint(ref self: T, token_id: u256);
 }
 
 #[starknet::interface]
-trait ILordsMint<TState> {
-    fn mint(ref self: TState, token_id: u256);
+trait ILordsMint<T> {
+    fn mint(ref self: T, token_id: u256);
 }
 
 #[starknet::interface]
-trait ISeasonPassMint<TState> {
-    fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
+trait ISeasonPassMint<T> {
+    fn mint(ref self: T, recipient: ContractAddress, token_id: u256);
 }
 
 #[starknet::interface]
-trait IERC721Approval<TState> {
-    fn approve(ref self: TState, to: ContractAddress, token_id: u256);
+trait IERC721Approval<T> {
+    fn approve(ref self: T, to: ContractAddress, token_id: u256);
 }
 
 #[starknet::interface]
-trait IDevRealmSystems {
-    fn create(ref world: IWorldDispatcher, realm_id: ID, frontend: ContractAddress);
+trait IDevRealmSystems<T> {
+    fn create(ref self: T, realm_id: ID, frontend: ContractAddress);
 }
 
 #[dojo::contract]
@@ -41,14 +41,21 @@ mod dev_realm_systems {
         ITestRealmMintDispatcherTrait
     };
 
+    use dojo::world::WorldStorage;
+    use dojo::model::ModelStorage;
+    use dojo::event::EventStorage;
+    use eternum::constants::DEFAULT_NS;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
     #[abi(embed_v0)]
     impl DevRealmSystemsImpl of super::IDevRealmSystems<ContractState> {
         /// A system that simplifies onboarding for test purpose
         /// in production, use realms_systems.create() directly
         ///
-        fn create(ref world: IWorldDispatcher, realm_id: ID, frontend: ContractAddress) {
+        fn create(ref self: ContractState, realm_id: ID, frontend: ContractAddress) {
             // mint test realm to this contract
-            let season: SeasonConfig = get!(world, WORLD_CONFIG_ID, SeasonConfig);
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let season: SeasonConfig = world.read_model(WORLD_CONFIG_ID);
             ITestRealmMintDispatcher { contract_address: season.realms_address }.mint(realm_id.into());
 
             // mint season pass to this contract
@@ -59,9 +66,9 @@ mod dev_realm_systems {
             ILordsMintDispatcher { contract_address: season.lords_address }.mint(realm_id.into());
 
             // approve realms systems contract to spend season passs
-            let (_realm_systems_class_hash, realm_systems_address) =
-                match world.resource(selector_from_tag!("eternum-realm_systems")) {
-                dojo::world::Resource::Contract((class_hash, contract_address)) => (class_hash, contract_address),
+            let (realm_systems_address, _namespace_hash) =
+                match world.dispatcher.resource(selector_from_tag!("eternum-realm_systems")) {
+                dojo::world::Resource::Contract((contract_address, namespace_hash)) => (contract_address, namespace_hash),
                 _ => (Zeroable::zero(), Zeroable::zero())
             };
             assert!(realm_systems_address != Zeroable::zero(), "realms systems contract not found");

@@ -319,7 +319,7 @@ mod realm_systems {
             // get bridge systems address
             let (bridge_systems_address, _namespace_hash) =
                 match world.dispatcher.resource(selector_from_tag!("eternum-resource_bridge_systems")) {
-                dojo::world::Resource::Contract((class_hash, contract_address)) => (class_hash, contract_address),
+                dojo::world::Resource::Contract((contract_address, namespace_hash)) => (contract_address, namespace_hash),
                 _ => (Zeroable::zero(), Zeroable::zero())
             };
 

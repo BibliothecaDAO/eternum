@@ -2,8 +2,8 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 
 #[starknet::interface]
-trait IResourceSystems {
-    fn mint(ref world: IWorldDispatcher, entity_id: ID, resources: Span<(u8, u128)>,);
+trait IResourceSystems<T> {
+    fn mint(ref self: T, entity_id: ID, resources: Span<(u8, u128)>,);
 }
 
 #[dojo::contract]
@@ -15,10 +15,17 @@ mod dev_resource_systems {
     use eternum::models::resources::{Resource, ResourceCustomTrait, ResourceCustomImpl};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
+    use dojo::world::WorldStorage;
+    use dojo::model::ModelStorage;
+    use dojo::event::EventStorage;
+    use eternum::constants::DEFAULT_NS;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
 
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
-        fn mint(ref world: IWorldDispatcher, entity_id: ID, resources: Span<(u8, u128)>,) {
+        fn mint(ref self: ContractState, entity_id: ID, resources: Span<(u8, u128)>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             let mut resources = resources;
