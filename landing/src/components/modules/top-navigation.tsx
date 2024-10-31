@@ -43,7 +43,7 @@ export const TopNavigation = () => {
             ))}
           </>
         ) : (
-          <Button onClick={() => disconnect}>{displayAddress(account?.address)}</Button>
+          <Button onClick={() => disconnect()}>{displayAddress(account?.address)}</Button>
         )}
       </div>
     </div>
