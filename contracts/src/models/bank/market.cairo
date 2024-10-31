@@ -1,9 +1,9 @@
 // External imports
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use dojo::meta::introspect::{Struct, Member};
 
 // Dojo imports
 use dojo::meta::{Ty, Introspect};
-use dojo::meta::introspect::{Struct, Member};
 use eternum::alias::ID;
 
 // Starknet imports

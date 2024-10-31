@@ -1,7 +1,7 @@
 use alexandria_math::{BitShift, pow};
 use array::SpanTrait;
-use dojo::world::WorldStorage;
 use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use eternum::alias::ID;
 use eternum::constants::WORLD_CONFIG_ID;
 use eternum::models::config::RealmMaxLevelConfig;

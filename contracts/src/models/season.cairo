@@ -1,5 +1,5 @@
-use dojo::world::WorldStorage;
 use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use eternum::{alias::ID, constants::WORLD_CONFIG_ID};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

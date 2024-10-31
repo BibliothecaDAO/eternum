@@ -2,9 +2,9 @@ use core::array::ArrayTrait;
 use core::num::traits::Bounded;
 use core::option::OptionTrait;
 use core::poseidon::poseidon_hash_span;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use dojo::world::WorldStorage;
 use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
 use eternum::models::config::{
@@ -823,7 +823,8 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
                     if to_army_won {
                         // give winner loot share
-                        let other_side_escrow_owned_resources: OwnedResourcesTracker = world.read_model(other_side_escrow_id);
+                        let other_side_escrow_owned_resources: OwnedResourcesTracker = world
+                            .read_model(other_side_escrow_id);
                         if other_side_escrow_owned_resources.owns_resource_type(resource_type) {
                             let to_army_side = if to_army.battle_side == BattleSide::Attack {
                                 self.attack_army

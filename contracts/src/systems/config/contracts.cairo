@@ -11,9 +11,7 @@ use eternum::models::position::Coord;
 #[starknet::interface]
 trait IWorldConfig<T> {
     fn set_world_config(
-        ref self: T,
-        admin_address: starknet::ContractAddress,
-        realm_l2_contract: starknet::ContractAddress
+        ref self: T, admin_address: starknet::ContractAddress, realm_l2_contract: starknet::ContractAddress
     );
 }
 
@@ -141,10 +139,7 @@ trait ITroopConfig<T> {
 trait IBuildingConfig<T> {
     fn set_building_general_config(ref self: T, base_cost_percent_increase: u16);
     fn set_building_config(
-        ref self: T,
-        building_category: BuildingCategory,
-        building_resource_type: u8,
-        cost_of_building: Span<(u8, u128)>
+        ref self: T, building_category: BuildingCategory, building_resource_type: u8, cost_of_building: Span<(u8, u128)>
     );
 }
 
@@ -201,11 +196,10 @@ trait ISettlementConfig<T> {
 }
 
 
-
 #[dojo::contract]
 mod config_systems {
-    use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use eternum::alias::ID;
@@ -252,7 +246,7 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract});
+            world.write_model(@WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract });
         }
     }
 
@@ -268,9 +262,10 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(
-                @SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address }
-            );
+            world
+                .write_model(
+                    @SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address }
+                );
         }
     }
 
@@ -304,14 +299,15 @@ mod config_systems {
                         assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as part of quest");
                         assert(resource_amount > 0, 'amount must not be 0');
 
-                        world.write_model(
-                            @DetachedResource {
-                                entity_id: detached_resource_id,
-                                index,
-                                resource_type,
-                                resource_amount: resource_amount
-                            }
-                        );
+                        world
+                            .write_model(
+                                @DetachedResource {
+                                    entity_id: detached_resource_id,
+                                    index,
+                                    resource_type,
+                                    resource_amount: resource_amount
+                                }
+                            );
 
                         index += 1;
                     },
@@ -319,9 +315,7 @@ mod config_systems {
                 };
             };
 
-            world.write_model(
-                @QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count }
-            );
+            world.write_model(@QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count });
         }
     }
 
@@ -366,9 +360,12 @@ mod config_systems {
 
             //note: if you change the weight of a resource e.g wood,
             //      it wont change the preexisting entities' weights
-            world.write_model(
-                @WeightConfig { config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram, }
-            );
+            world
+                .write_model(
+                    @WeightConfig {
+                        config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram,
+                    }
+                );
         }
     }
 
@@ -450,9 +447,10 @@ mod config_systems {
                     break;
                 }
                 let (resource_type, resource_amount) = *resource_1_costs.at(index);
-                world.write_model(
-                    @ResourceCost { entity_id: resource_1_cost_id, index, resource_type, amount: resource_amount }
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_1_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
@@ -464,9 +462,10 @@ mod config_systems {
                     break;
                 }
                 let (resource_type, resource_amount) = *resource_2_costs.at(index);
-                world.write_model(
-                    @ResourceCost { entity_id: resource_2_cost_id, index, resource_type, amount: resource_amount }
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_2_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
@@ -478,40 +477,40 @@ mod config_systems {
                     break;
                 }
                 let (resource_type, resource_amount) = *resource_3_costs.at(index);
-                world.write_model(
-                    @ResourceCost { entity_id: resource_3_cost_id, index, resource_type, amount: resource_amount }
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_3_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
 
-            world.write_model(
-                @LevelingConfig {
-                    config_id,
-                    decay_interval,
-                    max_level,
-                    wheat_base_amount,
-                    fish_base_amount,
-                    resource_1_cost_id,
-                    resource_2_cost_id,
-                    resource_3_cost_id,
-                    resource_1_cost_count: resource_1_costs.len(),
-                    resource_2_cost_count: resource_2_costs.len(),
-                    resource_3_cost_count: resource_3_costs.len(),
-                    decay_scaled,
-                    cost_percentage_scaled,
-                    base_multiplier,
-                }
-            );
+            world
+                .write_model(
+                    @LevelingConfig {
+                        config_id,
+                        decay_interval,
+                        max_level,
+                        wheat_base_amount,
+                        fish_base_amount,
+                        resource_1_cost_id,
+                        resource_2_cost_id,
+                        resource_3_cost_id,
+                        resource_1_cost_count: resource_1_costs.len(),
+                        resource_2_cost_count: resource_2_costs.len(),
+                        resource_3_cost_count: resource_3_costs.len(),
+                        decay_scaled,
+                        cost_percentage_scaled,
+                        base_multiplier,
+                    }
+                );
         }
     }
 
 
     #[abi(embed_v0)]
     impl ProductionConfigCustomImpl of super::IProductionConfig<ContractState> {
-        fn set_production_config(
-            ref self: ContractState, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>
-        ) {
+        fn set_production_config(ref self: ContractState, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
@@ -530,27 +529,30 @@ mod config_systems {
                         input_resource_type, input_resource_amount
                     )) => {
                         // update output resource's production input/material
-                        world.write_model(
-                            @ProductionInput {
-                                output_resource_type: resource_type,
-                                index: resource_production_config.input_count.try_into().unwrap(),
-                                input_resource_type: *input_resource_type,
-                                input_resource_amount: *input_resource_amount
-                            }
-                        );
+                        world
+                            .write_model(
+                                @ProductionInput {
+                                    output_resource_type: resource_type,
+                                    index: resource_production_config.input_count.try_into().unwrap(),
+                                    input_resource_type: *input_resource_type,
+                                    input_resource_amount: *input_resource_amount
+                                }
+                            );
 
                         resource_production_config.input_count += 1;
 
                         // update input resource's production output
-                        let mut input_resource_production_config: ProductionConfig = world.read_model(*input_resource_type);
+                        let mut input_resource_production_config: ProductionConfig = world
+                            .read_model(*input_resource_type);
 
-                        world.write_model(
-                            @ProductionOutput {
-                                input_resource_type: *input_resource_type,
-                                index: input_resource_production_config.output_count.try_into().unwrap(),
-                                output_resource_type: resource_type,
-                            }
-                        );
+                        world
+                            .write_model(
+                                @ProductionOutput {
+                                    input_resource_type: *input_resource_type,
+                                    index: input_resource_production_config.output_count.try_into().unwrap(),
+                                    output_resource_type: resource_type,
+                                }
+                            );
 
                         input_resource_production_config.output_count += 1;
                         world.write_model(@input_resource_production_config);
@@ -570,9 +572,10 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(
-                @SpeedConfig { config_id: WORLD_CONFIG_ID, speed_config_id: entity_type, entity_type, sec_per_km, }
-            );
+            world
+                .write_model(
+                    @SpeedConfig { config_id: WORLD_CONFIG_ID, speed_config_id: entity_type, entity_type, sec_per_km, }
+                );
         }
     }
 
@@ -594,22 +597,24 @@ mod config_systems {
             while (i < resources_for_completion.len()) {
                 let (resource_type, amount_for_completion) = *resources_for_completion.at(i);
 
-                world.write_model(
-                    @HyperstructureResourceConfig {
-                        config_id: HYPERSTRUCTURE_CONFIG_ID, resource_type, amount_for_completion
-                    }
-                );
+                world
+                    .write_model(
+                        @HyperstructureResourceConfig {
+                            config_id: HYPERSTRUCTURE_CONFIG_ID, resource_type, amount_for_completion
+                        }
+                    );
                 i += 1;
             };
-            world.write_model(
-                @HyperstructureConfig {
-                    config_id: HYPERSTRUCTURE_CONFIG_ID,
-                    time_between_shares_change,
-                    points_per_cycle,
-                    points_for_win,
-                    points_on_completion
-                }
-            );
+            world
+                .write_model(
+                    @HyperstructureConfig {
+                        config_id: HYPERSTRUCTURE_CONFIG_ID,
+                        time_between_shares_change,
+                        points_per_cycle,
+                        points_for_win,
+                        points_on_completion
+                    }
+                );
         }
     }
 
@@ -620,9 +625,7 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(
-                @BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_num, lp_fee_denom }
-            );
+            world.write_model(@BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_num, lp_fee_denom });
         }
     }
 
@@ -645,11 +648,12 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(
-                @BuildingCategoryPopConfig {
-                    config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_category, population, capacity
-                }
-            )
+            world
+                .write_model(
+                    @BuildingCategoryPopConfig {
+                        config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_category, population, capacity
+                    }
+                )
         }
     }
 
@@ -688,21 +692,23 @@ mod config_systems {
                     break;
                 }
                 let (resource_type, resource_amount) = *cost_of_building.at(index);
-                world.write_model(
-                    @ResourceCost { entity_id: resource_cost_id, index, resource_type, amount: resource_amount }
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
-            world.write_model(
-                @BuildingConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    category: building_category,
-                    resource_type: building_resource_type,
-                    resource_cost_id,
-                    resource_cost_count: cost_of_building.len()
-                }
-            );
+            world
+                .write_model(
+                    @BuildingConfig {
+                        config_id: WORLD_CONFIG_ID,
+                        category: building_category,
+                        resource_type: building_resource_type,
+                        resource_cost_id,
+                        resource_cost_count: cost_of_building.len()
+                    }
+                );
         }
     }
 
@@ -733,18 +739,19 @@ mod config_systems {
                 "crossbowmen_lower_bound must be lower than crossbowmen_upper_bound"
             );
 
-            world.write_model(
-                @MercenariesConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    knights_lower_bound,
-                    knights_upper_bound,
-                    paladins_lower_bound,
-                    paladins_upper_bound,
-                    crossbowmen_lower_bound,
-                    crossbowmen_upper_bound,
-                    rewards
-                }
-            );
+            world
+                .write_model(
+                    @MercenariesConfig {
+                        config_id: WORLD_CONFIG_ID,
+                        knights_lower_bound,
+                        knights_upper_bound,
+                        paladins_lower_bound,
+                        paladins_upper_bound,
+                        crossbowmen_lower_bound,
+                        crossbowmen_upper_bound,
+                        rewards
+                    }
+                );
         }
     }
 
@@ -810,25 +817,22 @@ mod config_systems {
                 let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                 assert(resource_amount > 0, 'amount must not be 0');
 
-                world.write_model(
-                    @DetachedResource {
-                        entity_id: detached_resource_id,
-                        index,
-                        resource_type,
-                        resource_amount
-                    }
-                );
+                world
+                    .write_model(
+                        @DetachedResource { entity_id: detached_resource_id, index, resource_type, resource_amount }
+                    );
 
                 index += 1;
             };
 
-            world.write_model(
-                @RealmLevelConfig {
-                    level,
-                    required_resources_id: detached_resource_id.into(),
-                    required_resource_count: detached_resource_count.try_into().unwrap()
-                }
-            );
+            world
+                .write_model(
+                    @RealmLevelConfig {
+                        level,
+                        required_resources_id: detached_resource_id.into(),
+                        required_resource_count: detached_resource_count.try_into().unwrap()
+                    }
+                );
         }
     }
 
@@ -848,19 +852,20 @@ mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(
-                @SettlementConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    radius,
-                    angle_scaled,
-                    center,
-                    min_distance,
-                    max_distance,
-                    min_scaling_factor_scaled,
-                    min_angle_increase,
-                    max_angle_increase,
-                }
-            );
+            world
+                .write_model(
+                    @SettlementConfig {
+                        config_id: WORLD_CONFIG_ID,
+                        radius,
+                        angle_scaled,
+                        center,
+                        min_distance,
+                        max_distance,
+                        min_scaling_factor_scaled,
+                        min_angle_increase,
+                        max_angle_increase,
+                    }
+                );
         }
     }
 }

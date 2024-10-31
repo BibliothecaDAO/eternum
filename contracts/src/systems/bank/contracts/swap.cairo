@@ -11,8 +11,14 @@ trait ISwapSystems<T> {
 mod swap_systems {
     use cubit::f128::math::ops::{mul};
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use eternum::models::bank::bank::{Bank};
     use eternum::models::bank::market::{Market, MarketCustomTrait};
@@ -24,12 +30,6 @@ mod swap_systems {
 
     use option::OptionTrait;
     use traits::{Into, TryInto};
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
     #[derive(Copy, Drop, Serde)]
@@ -174,21 +174,22 @@ mod swap_systems {
             resource_price: u128,
             buy: bool,
         ) {
-            world.emit_event(
-                @SwapEvent {
-                    id: world.dispatcher.uuid(),
-                    bank_entity_id: market.bank_entity_id,
-                    entity_id,
-                    resource_type: market.resource_type,
-                    lords_amount,
-                    resource_amount,
-                    bank_owner_fees,
-                    lp_fees,
-                    resource_price: market.quote_amount(1000),
-                    buy,
-                    timestamp: starknet::get_block_timestamp()
-                }
-            );
+            world
+                .emit_event(
+                    @SwapEvent {
+                        id: world.dispatcher.uuid(),
+                        bank_entity_id: market.bank_entity_id,
+                        entity_id,
+                        resource_type: market.resource_type,
+                        lords_amount,
+                        resource_amount,
+                        bank_owner_fees,
+                        lp_fees,
+                        resource_price: market.quote_amount(1000),
+                        buy,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
     }
 }

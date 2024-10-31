@@ -1,9 +1,9 @@
-use dojo::world::WorldStorage;
-use dojo::model::ModelStorage;
 use core::integer::BoundedU128;
 use cubit::f128::math::comp::{max as fixed_max};
 use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use eternum::alias::ID;
 use eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
@@ -310,14 +310,14 @@ impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
 
-        let knight_travel_food_cost_config: TravelFoodCostConfig 
-         = world.read_model((WORLD_CONFIG_ID,  ResourceTypes::KNIGHT));
+        let knight_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
 
-        let paladin_travel_food_cost_config: TravelFoodCostConfig 
-            = world.read_model((WORLD_CONFIG_ID,  ResourceTypes::PALADIN));
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
 
-        let crossbowman_travel_food_cost_config: TravelFoodCostConfig 
-         = world.read_model((WORLD_CONFIG_ID,  ResourceTypes::CROSSBOWMAN));
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
 
         let knight_wheat_pay_amount = knight_travel_food_cost_config.explore_wheat_burn_amount
             * troops.knight_count.into();
@@ -346,14 +346,14 @@ impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
 
-        let knight_travel_food_cost_config: TravelFoodCostConfig 
-         = world.read_model((WORLD_CONFIG_ID,  ResourceTypes::KNIGHT));
+        let knight_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
 
-        let paladin_travel_food_cost_config: TravelFoodCostConfig 
-            = world.read_model((WORLD_CONFIG_ID,  ResourceTypes::PALADIN));
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
 
-        let crossbowman_travel_food_cost_config: TravelFoodCostConfig 
-         = world.read_model((WORLD_CONFIG_ID,  ResourceTypes::CROSSBOWMAN));
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
 
         let knight_wheat_pay_amount = knight_travel_food_cost_config.travel_wheat_burn_amount
             * troops.knight_count.into()
@@ -535,13 +535,14 @@ pub struct BuildingConfig {
 #[generate_trait]
 impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
     fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
-        return world.read_model(
-            (
-                WORLD_CONFIG_ID,
-                Into::<BuildingCategory, felt252>::into(category),
-                Into::<u8, felt252>::into(resource_type)
-            )
-        );
+        return world
+            .read_model(
+                (
+                    WORLD_CONFIG_ID,
+                    Into::<BuildingCategory, felt252>::into(category),
+                    Into::<u8, felt252>::into(resource_type)
+                )
+            );
     }
 }
 

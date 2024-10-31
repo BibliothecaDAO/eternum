@@ -1,3 +1,5 @@
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::{
@@ -10,18 +12,11 @@ use starknet::ContractAddress;
 trait IHyperstructureSystems<T> {
     fn create(ref self: T, creator_entity_id: ID, coord: Coord) -> ID;
     fn contribute_to_construction(
-        ref self: T,
-        hyperstructure_entity_id: ID,
-        contributor_entity_id: ID,
-        contributions: Span<(u8, u128)>
+        ref self: T, hyperstructure_entity_id: ID, contributor_entity_id: ID, contributions: Span<(u8, u128)>
     );
-    fn set_co_owners(
-        ref self: T, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>
-    );
+    fn set_co_owners(ref self: T, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>);
     fn end_game(
-        ref self: T,
-        hyperstructures_contributed_to: Span<ID>,
-        hyperstructure_shareholder_epochs: Span<(ID, u16)>
+        ref self: T, hyperstructures_contributed_to: Span<ID>, hyperstructure_shareholder_epochs: Span<(ID, u16)>
     );
     fn set_access(ref self: T, hyperstructure_entity_id: ID, access: Access);
 }
@@ -30,6 +25,12 @@ trait IHyperstructureSystems<T> {
 #[dojo::contract]
 mod hyperstructure_systems {
     use core::array::ArrayIndex;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::constants::DEFAULT_NS;
     use eternum::models::season::SeasonImpl;
     use eternum::{
         alias::ID,
@@ -48,12 +49,6 @@ mod hyperstructure_systems {
         },
         systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
     };
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use starknet::{ContractAddress, contract_address_const};
 
@@ -132,54 +127,47 @@ mod hyperstructure_systems {
 
             let current_time = starknet::get_block_timestamp();
 
-            world.write_model(
-                @Structure {
-                    entity_id: new_uuid, category: StructureCategory::Hyperstructure, created_at: current_time
-                }
-            );
+            world
+                .write_model(
+                    @Structure {
+                        entity_id: new_uuid, category: StructureCategory::Hyperstructure, created_at: current_time
+                    }
+                );
 
-             
-            world.write_model(
-                @Hyperstructure {
-                    entity_id: new_uuid,
-                    current_epoch: 0,
-                    completed: false,
-                    last_updated_by: contract_address_const::<0>(),
-                    last_updated_timestamp: current_time,
-                    access: Access::Public,
-                }
-            );
+            world
+                .write_model(
+                    @Hyperstructure {
+                        entity_id: new_uuid,
+                        current_epoch: 0,
+                        completed: false,
+                        last_updated_by: contract_address_const::<0>(),
+                        last_updated_timestamp: current_time,
+                        access: Access::Public,
+                    }
+                );
 
-            world.write_model(
-                @CapacityCategory { entity_id: new_uuid, category: CapacityConfigCategory::Structure },
-            );
-            world.write_model(
-                @StructureCount { coord, count: 1 },
-            );
-            world.write_model(
-                @Position { entity_id: new_uuid, x: coord.x, y: coord.y },
-            );
-            world.write_model(
-                @Owner { entity_id: new_uuid, address: starknet::get_caller_address() },
-            );
-            world.write_model(
-                @EntityOwner { entity_id: new_uuid, entity_owner_id: new_uuid },
-            );
-            world.write_model(
-                @Progress {
+            world.write_model(@CapacityCategory { entity_id: new_uuid, category: CapacityConfigCategory::Structure },);
+            world.write_model(@StructureCount { coord, count: 1 },);
+            world.write_model(@Position { entity_id: new_uuid, x: coord.x, y: coord.y },);
+            world.write_model(@Owner { entity_id: new_uuid, address: starknet::get_caller_address() },);
+            world.write_model(@EntityOwner { entity_id: new_uuid, entity_owner_id: new_uuid },);
+            world
+                .write_model(
+                    @Progress {
                         hyperstructure_entity_id: new_uuid,
                         resource_type: ResourceTypes::EARTHEN_SHARD,
                         amount: hyperstructure_shards_config.amount_for_completion
-                },
-            );
-            world.write_model(
-                @Contribution {
-                    hyperstructure_entity_id: new_uuid,
-                    player_address: starknet::get_caller_address(),
-                    resource_type: ResourceTypes::EARTHEN_SHARD,
-                    amount: hyperstructure_shards_config.amount_for_completion
-                },
-            );
+                    },
+                );
+            world
+                .write_model(
+                    @Contribution {
+                        hyperstructure_entity_id: new_uuid,
+                        player_address: starknet::get_caller_address(),
+                        resource_type: ResourceTypes::EARTHEN_SHARD,
+                        amount: hyperstructure_shards_config.amount_for_completion
+                    },
+                );
 
             new_uuid
         }
@@ -204,15 +192,16 @@ mod hyperstructure_systems {
 
             let timestamp = starknet::get_block_timestamp();
 
-            world.emit_event(
-                @HyperstructureContribution {
-                    hyperstructure_entity_id, 
-                    contributor_entity_id, 
-                    contributions, 
-                    timestamp, 
-                    id: world.dispatcher.uuid()
-                }
-            );
+            world
+                .emit_event(
+                    @HyperstructureContribution {
+                        hyperstructure_entity_id,
+                        contributor_entity_id,
+                        contributions,
+                        timestamp,
+                        id: world.dispatcher.uuid()
+                    }
+                );
 
             let mut i = 0;
             let mut resource_was_completed = false;
@@ -232,14 +221,12 @@ mod hyperstructure_systems {
                 hyperstructure.completed = true;
                 world.write_model(@hyperstructure);
 
-                world.emit_event(
-                    @HyperstructureFinished {
-                        hyperstructure_entity_id, 
-                        contributor_entity_id, 
-                        timestamp, 
-                        id: world.dispatcher.uuid()
-                    }
-                );
+                world
+                    .emit_event(
+                        @HyperstructureFinished {
+                            hyperstructure_entity_id, contributor_entity_id, timestamp, id: world.dispatcher.uuid()
+                        }
+                    );
             }
         }
 
@@ -293,14 +280,12 @@ mod hyperstructure_systems {
             world.write_model(@hyperstructure);
             world.write_model(@epoch);
 
-            world.emit_event(
-                @HyperstructureCoOwnersChange {
-                    id: world.dispatcher.uuid(), 
-                    hyperstructure_entity_id, 
-                    timestamp, 
-                    co_owners
-                }
-            );
+            world
+                .emit_event(
+                    @HyperstructureCoOwnersChange {
+                        id: world.dispatcher.uuid(), hyperstructure_entity_id, timestamp, co_owners
+                    }
+                );
         }
 
         fn set_access(ref self: ContractState, hyperstructure_entity_id: ID, access: Access) {
@@ -343,12 +328,12 @@ mod hyperstructure_systems {
 
             SeasonImpl::end_season(ref world);
 
-            world.emit_event(
-                @GameEnded {
-                    winner_address: starknet::get_caller_address(), 
-                    timestamp: starknet::get_block_timestamp()
-                }
-            );
+            world
+                .emit_event(
+                    @GameEnded {
+                        winner_address: starknet::get_caller_address(), timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
     }
 
@@ -403,7 +388,8 @@ mod hyperstructure_systems {
             ref world: WorldStorage, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128,
         ) {
             let player_address = starknet::get_caller_address();
-            let mut contribution: Contribution = world.read_model((hyperstructure_entity_id, player_address, resource_type));
+            let mut contribution: Contribution = world
+                .read_model((hyperstructure_entity_id, player_address, resource_type));
             contribution.amount += resource_amount;
 
             world.write_model(@contribution);
@@ -433,9 +419,7 @@ mod hyperstructure_systems {
             return done;
         }
 
-        fn check_if_resource_completed(
-            world: WorldStorage, hyperstructure_entity_id: ID, resource_type: u8
-        ) -> bool {
+        fn check_if_resource_completed(world: WorldStorage, hyperstructure_entity_id: ID, resource_type: u8) -> bool {
             let resource_progress: Progress = world.read_model((hyperstructure_entity_id, resource_type));
 
             let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
@@ -541,7 +525,8 @@ mod hyperstructure_systems {
             while (i < resources_with_rarity.len()) {
                 let (resource_id, resource_rarity) = *resources_with_rarity.at(i);
 
-                let contribution: Contribution = world.read_model((hyperstructure_entity_id, player_address, resource_id));
+                let contribution: Contribution = world
+                    .read_model((hyperstructure_entity_id, player_address, resource_id));
 
                 total_points +=
                     Self::compute_contribution_points(
@@ -572,9 +557,6 @@ mod hyperstructure_systems {
         }
     }
 }
-
-use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
 fn calculate_total_contributable_amount(world: WorldStorage) -> u128 {
     let resources_with_rarity = get_contributable_resources_with_rarity();
     let mut total: u128 = 0;

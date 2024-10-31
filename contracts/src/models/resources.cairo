@@ -1,8 +1,8 @@
 use core::fmt::{Display, Formatter, Error};
 use core::num::traits::Bounded;
+use dojo::model::ModelStorage;
 
 use dojo::world::WorldStorage;
-use dojo::model::ModelStorage;
 use eternum::alias::ID;
 use eternum::constants::{
     get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
@@ -244,11 +244,10 @@ impl ResourceCustomImpl of ResourceCustomTrait {
             return;
         }
 
-        let resource_weight_config: WeightConfig 
-            = world.read_model((WORLD_CONFIG_ID, self.resource_type));
+        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, self.resource_type));
 
-        let storehouse_building_quantity: BuildingQuantityv2 
-            = world.read_model((self.entity_id, BuildingCategory::Storehouse));
+        let storehouse_building_quantity: BuildingQuantityv2 = world
+            .read_model((self.entity_id, BuildingCategory::Storehouse));
         let storehouse_capacity: CapacityConfig = world.read_model(CapacityConfigCategory::Storehouse);
         let storehouse_capacity_grams = storehouse_capacity.weight_gram;
         let storehouse_capacity_grams = storehouse_capacity_grams

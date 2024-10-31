@@ -1,8 +1,8 @@
 #[dojo::contract]
 mod donkey_systems {
-    use dojo::world::WorldStorage;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
+    use dojo::world::WorldStorage;
 
     use eternum::alias::ID;
 
@@ -46,13 +46,15 @@ mod donkey_systems {
             donkeys.save(ref world);
 
             // emit burn donkey event
-            world.emit_event(
-                @BurnDonkey {
-                    entity_id: payer_id,
-                    player_address: starknet::get_caller_address(),
-                    amount: donkey_amount,
-                    timestamp: starknet::get_block_timestamp()
-                });
+            world
+                .emit_event(
+                    @BurnDonkey {
+                        entity_id: payer_id,
+                        player_address: starknet::get_caller_address(),
+                        amount: donkey_amount,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
 
         fn return_donkey(ref world: WorldStorage, payer_id: ID, weight: u128) {

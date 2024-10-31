@@ -13,20 +13,21 @@ trait IBankSystems<T> {
         owner_bridge_fee_dpt_percent: u16,
         owner_bridge_fee_wtdr_percent: u16
     ) -> ID;
-    fn change_owner_amm_fee(
-        ref self: T, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
-    );
+    fn change_owner_amm_fee(ref self: T, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,);
     fn change_owner_bridge_fee(
-        ref self: T,
-        bank_entity_id: ID,
-        owner_bridge_fee_dpt_percent: u16,
-        owner_bridge_fee_wtdr_percent: u16,
+        ref self: T, bank_entity_id: ID, owner_bridge_fee_dpt_percent: u16, owner_bridge_fee_wtdr_percent: u16,
     );
 }
 
 #[dojo::contract]
 mod bank_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
     use eternum::models::bank::bank::{Bank};
     use eternum::models::capacity::{CapacityCategory};
@@ -39,12 +40,6 @@ mod bank_systems {
     use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
     use traits::Into;
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
@@ -75,35 +70,32 @@ mod bank_systems {
             realm_resource.burn(bank_config.lords_cost);
             realm_resource.save(ref world);
 
-            world.write_model(
-                @Structure {
-                    entity_id: bank_entity_id,
+            world
+                .write_model(
+                    @Structure {
+                        entity_id: bank_entity_id,
                         category: StructureCategory::Bank,
                         created_at: starknet::get_block_timestamp()
                     },
-            );
-            world.write_model(
-                @StructureCount { coord, count: 1 },
-            );
-            world.write_model(
-                @CapacityCategory { entity_id: bank_entity_id, category: CapacityConfigCategory::Structure },
-            );
-            world.write_model(
-                @Bank {
+                );
+            world.write_model(@StructureCount { coord, count: 1 },);
+            world
+                .write_model(
+                    @CapacityCategory { entity_id: bank_entity_id, category: CapacityConfigCategory::Structure },
+                );
+            world
+                .write_model(
+                    @Bank {
                         entity_id: bank_entity_id,
                         owner_fee_num,
                         owner_fee_denom,
                         owner_bridge_fee_dpt_percent,
                         owner_bridge_fee_wtdr_percent,
                         exists: true
-                }
-            );
-            world.write_model(  
-                @Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
-            );
-            world.write_model(
-                @Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
-            );
+                    }
+                );
+            world.write_model(@Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },);
+            world.write_model(@Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() });
 
             bank_entity_id
         }
@@ -162,7 +154,9 @@ mod bank_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceCustomImpl::get(ref world, (bank_entity_id, resource_type));
+                        let mut recipient_resource = ResourceCustomImpl::get(
+                            ref world, (bank_entity_id, resource_type)
+                        );
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(ref world);
                     },

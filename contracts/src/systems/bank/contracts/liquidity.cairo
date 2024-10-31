@@ -5,12 +5,7 @@ use eternum::alias::ID;
 #[starknet::interface]
 trait ILiquiditySystems<T> {
     fn add(
-        ref self: T,
-        bank_entity_id: ID,
-        entity_id: ID,
-        resource_type: u8,
-        resource_amount: u128,
-        lords_amount: u128,
+        ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, resource_amount: u128, lords_amount: u128,
     );
     fn remove(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed) -> ID;
 }
@@ -19,8 +14,14 @@ trait ILiquiditySystems<T> {
 mod liquidity_systems {
     // Extenal imports
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     // Eternum imports
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::constants::ResourceTypes;
     use eternum::models::bank::liquidity::{Liquidity};
     use eternum::models::bank::market::{Market, MarketCustomTrait};
@@ -28,12 +29,6 @@ mod liquidity_systems {
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
     use eternum::models::season::SeasonImpl;
     use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-    
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: true)]
@@ -97,13 +92,13 @@ mod liquidity_systems {
 
             world.write_model(@player_liquidity);
 
-            InternalLiquiditySystemsImpl::emit_event(ref world, market, entity_id, cost_lords, cost_resource_amount, true,);
+            InternalLiquiditySystemsImpl::emit_event(
+                ref world, market, entity_id, cost_lords, cost_resource_amount, true,
+            );
         }
 
 
-        fn remove(
-            ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed
-        ) -> ID {
+        fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -155,18 +150,19 @@ mod liquidity_systems {
             } else {
                 0
             };
-            world.emit_event(
-                @LiquidityEvent {
-                    bank_entity_id: market.bank_entity_id,
-                    entity_id,
-                    resource_type: market.resource_type,
-                    lords_amount,
-                    resource_amount,
-                    resource_price: resource_price,
-                    add,
-                    timestamp: starknet::get_block_timestamp()
-                }
-            );
+            world
+                .emit_event(
+                    @LiquidityEvent {
+                        bank_entity_id: market.bank_entity_id,
+                        entity_id,
+                        resource_type: market.resource_type,
+                        lords_amount,
+                        resource_amount,
+                        resource_price: resource_price,
+                        add,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
     }
 }

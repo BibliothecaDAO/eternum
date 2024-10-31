@@ -9,16 +9,16 @@ trait IOwnershipSystems<T> {
 
 #[dojo::contract]
 mod ownership_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
     use eternum::constants::DEFAULT_NS;
     use eternum::models::owner::{Owner, OwnerCustomImpl, OwnerCustomTrait};
     use eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
-    
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[abi(embed_v0)]
     impl OwnershipSystemsImpl of super::IOwnershipSystems<ContractState> {

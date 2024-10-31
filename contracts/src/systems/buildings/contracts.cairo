@@ -16,7 +16,12 @@ trait IBuildingContract<TContractState> {
 
 #[dojo::contract]
 mod building_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::models::season::SeasonImpl;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
@@ -24,11 +29,6 @@ mod building_systems {
         buildings::{BuildingCategory, Building, BuildingCustomImpl}, production::{Production, ProductionRateTrait},
         realm::{Realm, RealmCustomImpl, RealmResourcesTrait}
     };
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[abi(embed_v0)]
     impl BuildingContractImpl of super::IBuildingContract<ContractState> {

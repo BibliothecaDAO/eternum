@@ -8,18 +8,18 @@ trait IResourceSystems<T> {
 
 #[dojo::contract]
 mod dev_resource_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID};
     use eternum::models::config::{WorldConfig};
     use eternum::models::resources::{Resource, ResourceCustomTrait, ResourceCustomImpl};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
     #[abi(embed_v0)]

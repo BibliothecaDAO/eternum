@@ -118,6 +118,10 @@ trait ITroopContract<TContractState> {
 #[dojo::contract]
 mod troop_systems {
     use core::num::traits::Bounded;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes};
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
@@ -153,10 +157,6 @@ mod troop_systems {
     use eternum::systems::combat::contracts::battle_systems::battle_systems::{InternalBattleImpl};
 
     use super::ITroopContract;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::event(historical: true)::EventStorage;
 
     #[abi(embed_v0)]
     impl TroopContractImpl of ITroopContract<ContractState> {
@@ -341,14 +341,16 @@ mod troop_systems {
 
             let troop_config = TroopConfigCustomImpl::get(world);
             if owner_armies_quantity.count >= troop_config.army_free_per_structure.into() {
-                let archery_range_building_count : BuildingQuantityv2
-                    = world.read_model((army_owner_id, BuildingCategory::ArcheryRange));
+                let archery_range_building_count: BuildingQuantityv2 = world
+                    .read_model((army_owner_id, BuildingCategory::ArcheryRange));
                 let archery_range_building_count = archery_range_building_count.value;
 
-                let barracks_building_count: BuildingQuantityv2 = world.read_model((army_owner_id, BuildingCategory::Barracks));
+                let barracks_building_count: BuildingQuantityv2 = world
+                    .read_model((army_owner_id, BuildingCategory::Barracks));
                 let barracks_building_count = barracks_building_count.value;
 
-                let stables_building_count: BuildingQuantityv2 = world.read_model((army_owner_id, BuildingCategory::Stable));
+                let stables_building_count: BuildingQuantityv2 = world
+                    .read_model((army_owner_id, BuildingCategory::Stable));
                 let stables_building_count = stables_building_count.value;
 
                 let total_military_building_count = stables_building_count
@@ -376,32 +378,28 @@ mod troop_systems {
             let army_sec_per_km = army_sec_per_km.sec_per_km;
             let army_owner_position: Position = world.read_model(army_owner_id);
 
-            world.write_model(
-                @Movable {
-                    entity_id: army_id,
-                    sec_per_km: army_sec_per_km,
-                    blocked: false,
-                    round_trip: false,
-                    start_coord_x: army_owner_position.x,
-                    start_coord_y: army_owner_position.y,
-                    intermediate_coord_x: 0,
-                    intermediate_coord_y: 0,
-                }
-            );
+            world
+                .write_model(
+                    @Movable {
+                        entity_id: army_id,
+                        sec_per_km: army_sec_per_km,
+                        blocked: false,
+                        round_trip: false,
+                        start_coord_x: army_owner_position.x,
+                        start_coord_y: army_owner_position.y,
+                        intermediate_coord_x: 0,
+                        intermediate_coord_y: 0,
+                    }
+                );
 
-            world.write_model(
-                @CapacityCategory { entity_id: army_id, category: CapacityConfigCategory::Army }
-            );
+            world.write_model(@CapacityCategory { entity_id: army_id, category: CapacityConfigCategory::Army });
 
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
-            world.write_model(
-                @Stamina { 
-                    entity_id: army_id, 
-                    amount: 0, 
-                    last_refill_tick: armies_tick_config.current() - 1 
-                }
-            );
+            world
+                .write_model(
+                    @Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 }
+                );
 
             army_id
         }
@@ -422,15 +420,15 @@ mod troop_systems {
             // add army as structure protector
             structure_protector.army_id = army_id;
             world.write_model(@structure_protector);
-            world.write_model(
-                @Protectee { army_id, protectee_id: army_owner_id }
-            );
+            world.write_model(@Protectee { army_id, protectee_id: army_owner_id });
             // stop the army from sending or receiving resources
-            world.write_model(
-                @ResourceTransferLock {
-                    entity_id: army_id, start_at: starknet::get_block_timestamp(), release_at: Bounded::MAX
-            });
-            
+            world
+                .write_model(
+                    @ResourceTransferLock {
+                        entity_id: army_id, start_at: starknet::get_block_timestamp(), release_at: Bounded::MAX
+                    }
+                );
+
             army_id
         }
 
@@ -444,18 +442,15 @@ mod troop_systems {
             // create army
             let mut army_id: ID = world.dispatcher.uuid();
             let army_owner_position: Position = world.read_model(army_owner_id);
-            world.write_model(
-                @Army {
-                    entity_id: army_id, troops: Default::default(), battle_id: 0, battle_side: Default::default()
-                }
-            );
-            world.write_model(
-                @EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id }
-            );
-            world.write_model(
-                @Position { entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y }
-            );
-            
+            world
+                .write_model(
+                    @Army {
+                        entity_id: army_id, troops: Default::default(), battle_id: 0, battle_side: Default::default()
+                    }
+                );
+            world.write_model(@EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id });
+            world.write_model(@Position { entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y });
+
             army_id
         }
 

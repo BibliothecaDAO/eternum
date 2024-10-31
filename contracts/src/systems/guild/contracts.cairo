@@ -9,14 +9,18 @@ trait IGuildSystems<T> {
     fn leave_guild(ref self: T);
     fn transfer_guild_ownership(ref self: T, guild_entity_id: ID, to_player_address: ContractAddress);
     fn remove_guild_member(ref self: T, player_address_to_remove: ContractAddress);
-    fn remove_player_from_whitelist(
-        ref self: T, player_address_to_remove: ContractAddress, guild_entity_id: ID
-    );
+    fn remove_player_from_whitelist(ref self: T, player_address_to_remove: ContractAddress, guild_entity_id: ID);
 }
 
 #[dojo::contract]
 mod guild_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
@@ -25,12 +29,6 @@ mod guild_systems {
     use eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
@@ -48,21 +46,11 @@ mod guild_systems {
 
             let guild_uuid: ID = world.dispatcher.uuid();
 
-            world.write_model(
-                @Guild { entity_id: guild_uuid, is_public: is_public, member_count: 1 }
-            );
-            world.write_model(
-                @Owner { entity_id: guild_uuid, address: caller_address }
-            );
-            world.write_model(
-                @EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid }
-            );
-            world.write_model(
-                @EntityName { entity_id: guild_uuid, name: guild_name }
-            );
-            world.write_model(
-                @GuildMember { address: caller_address, guild_entity_id: guild_uuid }
-            );
+            world.write_model(@Guild { entity_id: guild_uuid, is_public: is_public, member_count: 1 });
+            world.write_model(@Owner { entity_id: guild_uuid, address: caller_address });
+            world.write_model(@EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid });
+            world.write_model(@EntityName { entity_id: guild_uuid, name: guild_name });
+            world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_uuid });
 
             guild_uuid
         }
@@ -85,9 +73,7 @@ mod guild_systems {
 
             guild.member_count += 1;
 
-            world.write_model(
-                @GuildMember { address: caller_address, guild_entity_id: guild_entity_id }
-            );
+            world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_entity_id });
             world.write_model(@guild);
         }
 
@@ -103,11 +89,12 @@ mod guild_systems {
             let address_name: AddressName = world.read_model(player_address_to_whitelist);
             assert(address_name.name != 0, 'Address given is not a player');
 
-            world.write_model(
-                @GuildWhitelist {
-                    address: player_address_to_whitelist, guild_entity_id: guild_entity_id, is_whitelisted: true
-                }
-            );
+            world
+                .write_model(
+                    @GuildWhitelist {
+                        address: player_address_to_whitelist, guild_entity_id: guild_entity_id, is_whitelisted: true
+                    }
+                );
         }
 
         fn leave_guild(ref self: ContractState) {
@@ -137,16 +124,12 @@ mod guild_systems {
             } else {
                 guild.member_count -= 1;
 
-                world.write_model(
-                    @GuildMember { address: caller_address, guild_entity_id: 0 }
-                );
+                world.write_model(@GuildMember { address: caller_address, guild_entity_id: 0 });
                 world.write_model(@guild);
             }
         }
 
-        fn transfer_guild_ownership(
-            ref self: ContractState, guild_entity_id: ID, to_player_address: ContractAddress
-        ) {
+        fn transfer_guild_ownership(ref self: ContractState, guild_entity_id: ID, to_player_address: ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -201,11 +184,12 @@ mod guild_systems {
                 'Cannot remove from whitelist'
             );
 
-            world.write_model(
-                @GuildWhitelist {
-                    address: player_address_to_remove, guild_entity_id: guild_entity_id, is_whitelisted: false
-                }
-            );
+            world
+                .write_model(
+                    @GuildWhitelist {
+                        address: player_address_to_remove, guild_entity_id: guild_entity_id, is_whitelisted: false
+                    }
+                );
         }
     }
 }

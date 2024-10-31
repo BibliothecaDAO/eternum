@@ -1,3 +1,6 @@
+use dojo::event::EventStorage;
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
@@ -12,9 +15,6 @@ use eternum::models::{
     },
 };
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
-use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
-use dojo::event(historical: true)::EventStorage;
 
 #[starknet::interface]
 trait IBattleContract<T> {
@@ -293,6 +293,11 @@ trait IBattlePillageContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
     use eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
@@ -341,11 +346,6 @@ mod battle_systems {
     use eternum::utils::random;
 
     use super::{IBattleContract, InternalBattleImpl};
-
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::event(historical: true)::EventStorage;
 
 
     #[abi(embed_v0)]
@@ -484,24 +484,25 @@ mod battle_systems {
             let defender_structure: Structure = world.read_model(protectee.protectee_id);
             let attacker_address_name: AddressName = world.read_model(starknet::get_caller_address());
             let defender_address_name: AddressName = world.read_model(defender);
-            world.emit_event(
-                @BattleStartData {
-                    id,
-                    event_id: EventType::BattleStart,
-                    battle_entity_id: battle_id,
-                    attacker,
-                    attacker_name: attacker_address_name.name,
-                    attacker_army_entity_id: attacking_army_id,
-                    defender_name: defender_address_name.name,
-                    defender,
-                    defender_army_entity_id: defending_army_id,
-                    duration_left: battle.duration_left,
-                    x: battle_position.x,
-                    y: battle_position.y,
-                    structure_type: defender_structure.category,
-                    timestamp: starknet::get_block_timestamp(),
-                }
-            );
+            world
+                .emit_event(
+                    @BattleStartData {
+                        id,
+                        event_id: EventType::BattleStart,
+                        battle_entity_id: battle_id,
+                        attacker,
+                        attacker_name: attacker_address_name.name,
+                        attacker_army_entity_id: attacking_army_id,
+                        defender_name: defender_address_name.name,
+                        defender,
+                        defender_army_entity_id: defending_army_id,
+                        duration_left: battle.duration_left,
+                        x: battle_position.x,
+                        y: battle_position.y,
+                        structure_type: defender_structure.category,
+                        timestamp: starknet::get_block_timestamp(),
+                    }
+                );
             battle_id
         }
 
@@ -589,21 +590,22 @@ mod battle_systems {
             let id = world.dispatcher.uuid();
             let joiner = starknet::get_caller_address();
             let joiner_name: AddressName = world.read_model(joiner);
-            world.emit_event(
-                @BattleJoinData {
-                    id,
-                    event_id: EventType::BattleJoin,
-                    battle_entity_id: battle_id,
-                    joiner,
-                    joiner_name: joiner_name.name,
-                    joiner_army_entity_id: army_id,
-                    joiner_side: battle_side,
-                    duration_left: battle.duration_left,
-                    x: battle_position.x,
-                    y: battle_position.y,
-                    timestamp: starknet::get_block_timestamp(),
-                }
-            );
+            world
+                .emit_event(
+                    @BattleJoinData {
+                        id,
+                        event_id: EventType::BattleJoin,
+                        battle_entity_id: battle_id,
+                        joiner,
+                        joiner_name: joiner_name.name,
+                        joiner_army_entity_id: army_id,
+                        joiner_side: battle_side,
+                        duration_left: battle.duration_left,
+                        x: battle_position.x,
+                        y: battle_position.y,
+                        timestamp: starknet::get_block_timestamp(),
+                    }
+                );
         }
 
 
@@ -661,21 +663,22 @@ mod battle_systems {
             // emit battle leave event
             let battle_position: Position = world.read_model(battle_id);
             let leaver_name: AddressName = world.read_model(starknet::get_caller_address());
-            world.emit_event(
-                @BattleLeaveData {
-                    id: world.dispatcher.uuid(),
-                    event_id: EventType::BattleLeave,
-                    battle_entity_id: battle_id,
-                    leaver: starknet::get_caller_address(),
-                    leaver_name: leaver_name.name,
-                    leaver_army_entity_id: army_id,
-                    leaver_side: caller_army_side,
-                    duration_left: battle.duration_left,
-                    x: battle_position.x,
-                    y: battle_position.y,
-                    timestamp: starknet::get_block_timestamp(),
-                }
-            );
+            world
+                .emit_event(
+                    @BattleLeaveData {
+                        id: world.dispatcher.uuid(),
+                        event_id: EventType::BattleLeave,
+                        battle_entity_id: battle_id,
+                        leaver: starknet::get_caller_address(),
+                        leaver_name: leaver_name.name,
+                        leaver_army_entity_id: army_id,
+                        leaver_side: caller_army_side,
+                        duration_left: battle.duration_left,
+                        x: battle_position.x,
+                        y: battle_position.y,
+                        timestamp: starknet::get_block_timestamp(),
+                    }
+                );
         }
 
 
@@ -729,27 +732,33 @@ mod battle_systems {
             // emit battle claim event
             let structure_position: Position = world.read_model(structure_id);
             let claimer_name: AddressName = world.read_model(claimer);
-            world.emit_event(
-                @BattleClaimData {
-                    id: world.dispatcher.uuid(),
-                    event_id: EventType::BattleClaim,
-                    structure_entity_id: structure_id,
-                    claimer,
-                    claimer_name: claimer_name.name,
-                    claimer_army_entity_id: army_id,
-                    previous_owner: structure_owner_before_transfer,
-                    x: structure_position.x,
-                    y: structure_position.y,
-                    structure_type: structure.category,
-                    timestamp: starknet::get_block_timestamp(),
-                }
-            );
+            world
+                .emit_event(
+                    @BattleClaimData {
+                        id: world.dispatcher.uuid(),
+                        event_id: EventType::BattleClaim,
+                        structure_entity_id: structure_id,
+                        claimer,
+                        claimer_name: claimer_name.name,
+                        claimer_army_entity_id: army_id,
+                        previous_owner: structure_owner_before_transfer,
+                        x: structure_position.x,
+                        y: structure_position.y,
+                        structure_type: structure.category,
+                        timestamp: starknet::get_block_timestamp(),
+                    }
+                );
         }
     }
 }
 
 #[dojo::contract]
 mod battle_pillage_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
     use eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
@@ -798,11 +807,6 @@ mod battle_pillage_systems {
     use eternum::utils::random;
 
     use super::{IBattlePillageContract, InternalBattleImpl};
-
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::event(historical: true)::EventStorage;
 
     #[abi(embed_v0)]
     impl BattlePillageContractImpl of IBattlePillageContract<ContractState> {
@@ -901,8 +905,8 @@ mod battle_pillage_systems {
 
                             if pillaged_resource_from_structure.balance > 0 {
                                 // find out the max resource amount carriable given entity's weight
-                                let army_capacity_config: CapacityConfig
-                                     = world.read_model(CapacityConfigCategory::Army);
+                                let army_capacity_config: CapacityConfig = world
+                                    .read_model(CapacityConfigCategory::Army);
 
                                 // Divided by resource precision because we need capacity in gram
                                 // per client unit
@@ -914,7 +918,8 @@ mod battle_pillage_systems {
 
                                 let max_carriable = (army_total_capacity - (army_weight.value))
                                     / max(
-                                        (WeightConfigCustomImpl::get_weight_grams(ref world, *chosen_resource_type, 1)), 1
+                                        (WeightConfigCustomImpl::get_weight_grams(ref world, *chosen_resource_type, 1)),
+                                        1
                                     );
 
                                 if max_carriable > 0 {
@@ -1041,8 +1046,8 @@ mod battle_pillage_systems {
 
                 if final_coord != BuildingCustomImpl::center() {
                     // check if there is a building at the destination coordinate
-                    let mut pillaged_building: Building 
-                        = world.read_model((structure_position.x, structure_position.y, final_coord.x, final_coord.y));
+                    let mut pillaged_building: Building = world
+                        .read_model((structure_position.x, structure_position.y, final_coord.x, final_coord.y));
                     if pillaged_building.entity_id.is_non_zero() {
                         // destroy building if it exists
                         let building_category = BuildingCustomImpl::destroy(ref world, structure_id, final_coord);
@@ -1108,29 +1113,30 @@ mod battle_pillage_systems {
             let structure_owner: Owner = world.read_model(structure_id);
             let structure_owner: starknet::ContractAddress = structure_owner.address;
             let pillager_address_name: AddressName = world.read_model(starknet::get_caller_address());
-            world.emit_event(
-                @BattlePillageData {
-                    id: world.dispatcher.uuid(),
-                    event_id: EventType::BattlePillage,
-                    pillager: starknet::get_caller_address(),
-                    pillager_name: pillager_address_name.name,
-                    pillager_realm_entity_id: army_owner_entity_id,
-                    pillager_army_entity_id: army_id,
-                    pillaged_structure_owner: structure_owner,
-                    pillaged_structure_entity_id: structure_id,
-                    winner: if *attack_successful {
-                        BattleSide::Attack
-                    } else {
-                        BattleSide::Defence
-                    },
-                    x: structure_position.x,
-                    y: structure_position.y,
-                    structure_type: structure.category,
-                    pillaged_resources: pillaged_resources.span(),
-                    destroyed_building_category,
-                    timestamp: starknet::get_block_timestamp(),
-                }
-            );
+            world
+                .emit_event(
+                    @BattlePillageData {
+                        id: world.dispatcher.uuid(),
+                        event_id: EventType::BattlePillage,
+                        pillager: starknet::get_caller_address(),
+                        pillager_name: pillager_address_name.name,
+                        pillager_realm_entity_id: army_owner_entity_id,
+                        pillager_army_entity_id: army_id,
+                        pillaged_structure_owner: structure_owner,
+                        pillaged_structure_entity_id: structure_id,
+                        winner: if *attack_successful {
+                            BattleSide::Attack
+                        } else {
+                            BattleSide::Defence
+                        },
+                        x: structure_position.x,
+                        y: structure_position.y,
+                        structure_type: structure.category,
+                        pillaged_resources: pillaged_resources.span(),
+                        destroyed_building_category,
+                        timestamp: starknet::get_block_timestamp(),
+                    }
+                );
         }
     }
 }

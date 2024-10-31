@@ -1,6 +1,6 @@
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use dojo::world::WorldStorage;
 use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::{
     alias::ID,
     constants::{

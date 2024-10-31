@@ -17,18 +17,16 @@ trait IERC20<TState> {
 
 #[starknet::interface]
 trait IRealmSystems<T> {
-    fn create(
-        ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress
-    ) -> ID;
+    fn create(ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID;
     fn upgrade_level(ref self: T, realm_id: ID);
     fn quest_claim(ref self: T, quest_id: ID, entity_id: ID);
 }
 
 #[dojo::contract]
 mod realm_systems {
-    use dojo::world::WorldStorage;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
+    use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use eternum::alias::ID;
@@ -112,25 +110,27 @@ mod realm_systems {
 
             // emit realm settle event
             let address_name: AddressName = world.read_model(owner);
-            world.emit_event(
-                @SettleRealmData {
-                    id: world.dispatcher.uuid(),
-                    event_id: EventType::SettleRealm,
-                    entity_id,
-                    owner_address: owner,
-                    owner_name: address_name.name,
-                    realm_name: realm_name,
-                    produced_resources: realm_produced_resources_packed,
-                    cities,
-                    harbors,
-                    rivers,
-                    regions,
-                    wonder,
-                    order,
-                    x: coord.x,
-                    y: coord.y,
-                    timestamp: starknet::get_block_timestamp(),
-            });
+            world
+                .emit_event(
+                    @SettleRealmData {
+                        id: world.dispatcher.uuid(),
+                        event_id: EventType::SettleRealm,
+                        entity_id,
+                        owner_address: owner,
+                        owner_name: address_name.name,
+                        realm_name: realm_name,
+                        produced_resources: realm_produced_resources_packed,
+                        cities,
+                        harbors,
+                        rivers,
+                        regions,
+                        wonder,
+                        order,
+                        x: coord.x,
+                        y: coord.y,
+                        timestamp: starknet::get_block_timestamp(),
+                    }
+                );
 
             entity_id.into()
         }
@@ -160,12 +160,12 @@ mod realm_systems {
                     break;
                 }
 
-                let mut required_resource: DetachedResource 
-                    = world.read_model((required_resources_id, index));
+                let mut required_resource: DetachedResource = world.read_model((required_resources_id, index));
 
                 // burn resource from realm
-                let mut realm_resource 
-                    = ResourceCustomImpl::get(ref world, (realm_id, required_resource.resource_type));
+                let mut realm_resource = ResourceCustomImpl::get(
+                    ref world, (realm_id, required_resource.resource_type)
+                );
                 realm_resource.burn(required_resource.resource_amount);
                 realm_resource.save(ref world);
                 index += 1;
@@ -199,29 +199,26 @@ mod realm_systems {
                 }
 
                 // get reward resource
-                let mut detached_resource: DetachedResource 
-                    = world.read_model((quest_reward_config.detached_resource_id, index));
+                let mut detached_resource: DetachedResource = world
+                    .read_model((quest_reward_config.detached_resource_id, index));
                 let reward_resource_type = detached_resource.resource_type;
                 let mut reward_resource_amount = detached_resource.resource_amount;
 
-                let mut quest_bonus: QuestBonus 
-                    = world.read_model((entity_id, reward_resource_type));
+                let mut quest_bonus: QuestBonus = world.read_model((entity_id, reward_resource_type));
 
                 // scale reward resource amount by quest production multiplier
                 // if the reward resource is used to produce another resource in the realm.
                 // it will only be scaled if the quest bonus has not been claimed yet and
                 // the reward resource is not food.
                 if !quest_bonus.claimed && !ResourceFoodImpl::is_food(reward_resource_type) {
-                    let reward_resource_production_config: ProductionConfig 
-                        = world.read_model(reward_resource_type);
+                    let reward_resource_production_config: ProductionConfig = world.read_model(reward_resource_type);
                     let mut jndex = 0;
                     loop {
                         if jndex == reward_resource_production_config.output_count {
                             break;
                         }
 
-                        let output_resource_type: ProductionOutput 
-                            = world.read_model((reward_resource_type, jndex));
+                        let output_resource_type: ProductionOutput = world.read_model((reward_resource_type, jndex));
                         if realm.produces_resource(output_resource_type.output_resource_type) {
                             // scale reward resource amount by quest production multiplier
                             reward_resource_amount *= quest_config.production_material_multiplier.into();
@@ -236,8 +233,7 @@ mod realm_systems {
                     }
                 }
 
-                let mut realm_resource 
-                    = ResourceCustomImpl::get(ref world, (entity_id.into(), reward_resource_type));
+                let mut realm_resource = ResourceCustomImpl::get(ref world, (entity_id.into(), reward_resource_type));
                 realm_resource.add(reward_resource_amount);
                 realm_resource.save(ref world);
 
@@ -267,16 +263,25 @@ mod realm_systems {
             let now = starknet::get_block_timestamp();
             world.write_model(@Owner { entity_id: entity_id.into(), address: owner });
             world.write_model(@EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() });
-            world.write_model(@Structure { entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: now, });
+            world
+                .write_model(
+                    @Structure { entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: now, }
+                );
             world.write_model(@StructureCount { coord, count: 1 });
-            world.write_model(@CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure });
-            world.write_model(@Realm {
-                entity_id: entity_id.into(),
-                realm_id,
-                produced_resources: realm_produced_resources_packed,
-                order,
-                level
-            });
+            world
+                .write_model(
+                    @CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure }
+                );
+            world
+                .write_model(
+                    @Realm {
+                        entity_id: entity_id.into(),
+                        realm_id,
+                        produced_resources: realm_produced_resources_packed,
+                        order,
+                        level
+                    }
+                );
             world.write_model(@Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, });
 
             // explore tile where realm sits if not already explored
@@ -319,7 +324,9 @@ mod realm_systems {
             // get bridge systems address
             let (bridge_systems_address, _namespace_hash) =
                 match world.dispatcher.resource(selector_from_tag!("eternum-resource_bridge_systems")) {
-                dojo::world::Resource::Contract((contract_address, namespace_hash)) => (contract_address, namespace_hash),
+                dojo::world::Resource::Contract((
+                    contract_address, namespace_hash
+                )) => (contract_address, namespace_hash),
                 _ => (Zeroable::zero(), Zeroable::zero())
             };
 
@@ -344,7 +351,7 @@ mod realm_systems {
             // ensure that the coord is not occupied by any other structure
             let timestamp = starknet::get_block_timestamp();
             let mut found_coords = false;
-            let mut coord: Coord = Coord { x: 0, y:0 };
+            let mut coord: Coord = Coord { x: 0, y: 0 };
             let mut settlement_config: SettlementConfig = world.read_model(WORLD_CONFIG_ID);
             while (!found_coords) {
                 coord = settlement_config.get_next_settlement_coord(timestamp);

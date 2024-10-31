@@ -29,8 +29,14 @@ trait IDevRealmSystems<T> {
 
 #[dojo::contract]
 mod dev_realm_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
     use dojo::world::Resource;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::models::config::SeasonConfig;
     use eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
@@ -40,12 +46,6 @@ mod dev_realm_systems {
         IERC721ApprovalDispatcher, IERC721ApprovalDispatcherTrait, ITestRealmMintDispatcher,
         ITestRealmMintDispatcherTrait
     };
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[abi(embed_v0)]
     impl DevRealmSystemsImpl of super::IDevRealmSystems<ContractState> {
@@ -68,7 +68,9 @@ mod dev_realm_systems {
             // approve realms systems contract to spend season passs
             let (realm_systems_address, _namespace_hash) =
                 match world.dispatcher.resource(selector_from_tag!("eternum-realm_systems")) {
-                dojo::world::Resource::Contract((contract_address, namespace_hash)) => (contract_address, namespace_hash),
+                dojo::world::Resource::Contract((
+                    contract_address, namespace_hash
+                )) => (contract_address, namespace_hash),
                 _ => (Zeroable::zero(), Zeroable::zero())
             };
             assert!(realm_systems_address != Zeroable::zero(), "realms systems contract not found");

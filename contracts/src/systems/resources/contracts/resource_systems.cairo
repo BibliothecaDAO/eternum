@@ -10,15 +10,15 @@ trait IResourceSystems<T> {
 
 #[dojo::contract]
 mod resource_systems {
-    use dojo::event(historical: true)::EventStorage;
     use core::array::ArrayTrait;
     use core::array::SpanTrait;
     use core::num::traits::Bounded;
     use core::poseidon::poseidon_hash_span as hash;
     use core::zeroable::Zeroable;
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use eternum::alias::ID;
@@ -81,13 +81,15 @@ mod resource_systems {
                         resource_type, resource_amount
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                        world.write_model(
-                            @ResourceAllowance {
-                                owner_entity_id: entity_id,
-                                approved_entity_id: recipient_entity_id,
-                                resource_type: resource_type,
-                                amount: resource_amount
-                            });
+                        world
+                            .write_model(
+                                @ResourceAllowance {
+                                    owner_entity_id: entity_id,
+                                    approved_entity_id: recipient_entity_id,
+                                    resource_type: resource_type,
+                                    amount: resource_amount
+                                }
+                            );
                     },
                     Option::None(_) => { break; }
                 };
@@ -108,9 +110,7 @@ mod resource_systems {
         /// # Returns
         ///     the resource chest id
         ///
-        fn send(
-            ref self: ContractState, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>
-        ) {
+        fn send(ref self: ContractState, sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
             assert(sender_entity_id != recipient_entity_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
@@ -136,9 +136,7 @@ mod resource_systems {
         /// # Returns
         ///    the resource chest id
         ///
-        fn pickup(
-            ref self: ContractState, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>
-        ) {
+        fn pickup(ref self: ContractState, recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
             assert(owner_entity_id != recipient_entity_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
@@ -155,8 +153,8 @@ mod resource_systems {
                         resource_type, resource_amount
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                        let mut approved_allowance: ResourceAllowance 
-                            = world.read_model((owner_entity_id, recipient_entity_id, resource_type));
+                        let mut approved_allowance: ResourceAllowance = world
+                            .read_model((owner_entity_id, recipient_entity_id, resource_type));
 
                         assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
@@ -366,7 +364,8 @@ mod resource_systems {
             // only add to balance if receiver can carry weight
             let (resource_type, resource_amount) = resource;
             let mut total_resources_weight = 0;
-            total_resources_weight += WeightConfigCustomImpl::get_weight_grams(ref world, resource_type, resource_amount);
+            total_resources_weight +=
+                WeightConfigCustomImpl::get_weight_grams(ref world, resource_type, resource_amount);
             let mut recipient_weight: Weight = world.read_model(recipient_id);
             let recipient_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(ref world, recipient_id);
             let recipient_quantity: Quantity = world.read_model(recipient_id);
@@ -410,14 +409,16 @@ mod resource_systems {
                 sending_realm_id = sending_entity_owner.get_realm_id(world);
             }
 
-            world.emit_event(
-                @Transfer {
-                    recipient_entity_id,
-                    sending_realm_id,
-                    sender_entity_id,
-                    resources,
-                    timestamp: starknet::get_block_timestamp()
-                });
+            world
+                .emit_event(
+                    @Transfer {
+                        recipient_entity_id,
+                        sending_realm_id,
+                        sender_entity_id,
+                        resources,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
     }
 }

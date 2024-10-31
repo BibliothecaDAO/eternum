@@ -8,17 +8,17 @@ trait INameSystems<T> {
 
 #[dojo::contract]
 mod name_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::models::name::{AddressName, EntityName};
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::season::SeasonImpl;
 
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {
         fn set_address_name(ref self: ContractState, name: felt252) {

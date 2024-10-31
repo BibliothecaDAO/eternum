@@ -17,7 +17,13 @@ trait IBankSystems<T> {
 
 #[dojo::contract]
 mod dev_bank_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
     use eternum::models::bank::bank::{Bank};
     use eternum::models::capacity::{CapacityCategory};
@@ -31,12 +37,6 @@ mod dev_bank_systems {
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
     use traits::Into;
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::event(historical: true)::EventStorage;
-    use eternum::constants::DEFAULT_NS;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999;
     const ADMIN_BANK_ENTITY_ID: ID = 999999998;
@@ -60,41 +60,34 @@ mod dev_bank_systems {
             let admin = starknet::get_caller_address();
 
             // bank
-            world.write_model(
-                @EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, },
-            );
-            world.write_model(
-                @Structure {
-                    entity_id: ADMIN_BANK_ENTITY_ID,
+            world.write_model(@EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, },);
+            world
+                .write_model(
+                    @Structure {
+                        entity_id: ADMIN_BANK_ENTITY_ID,
                         category: StructureCategory::Bank,
                         created_at: starknet::get_block_timestamp()
-                }
-            );
-            world.write_model(
-                @StructureCount { coord, count: 1 }
-            );
-            world.write_model(
-                @CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure }
-            );
-            world.write_model(
-                @Bank {
+                    }
+                );
+            world.write_model(@StructureCount { coord, count: 1 });
+            world
+                .write_model(
+                    @CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure }
+                );
+            world
+                .write_model(
+                    @Bank {
                         entity_id: ADMIN_BANK_ENTITY_ID,
                         owner_fee_num,
                         owner_fee_denom,
                         owner_bridge_fee_dpt_percent,
                         owner_bridge_fee_wtdr_percent,
                         exists: true
-                },
-            );
-            world.write_model(
-                @Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },
-            );
-            world.write_model(
-                @Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin },
-            );
-            world.write_model(
-                @EntityOwner { entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID },
-            );
+                    },
+                );
+            world.write_model(@Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },);
+            world.write_model(@Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin },);
+            world.write_model(@EntityOwner { entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID },);
 
             InternalMapSystemsImpl::add_mercenaries_to_structure(ref world, ADMIN_BANK_ENTITY_ID);
 

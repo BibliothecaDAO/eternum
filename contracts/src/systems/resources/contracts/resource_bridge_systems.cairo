@@ -35,11 +35,7 @@ trait IResourceBridgeSystems<T> {
     /// - Resources are deposited directly into realm balance
     ///
     fn deposit_initial(
-        ref self: T,
-        token: ContractAddress,
-        recipient_realm_id: ID,
-        amount: u256,
-        client_fee_recipient: ContractAddress
+        ref self: T, token: ContractAddress, recipient_realm_id: ID, amount: u256, client_fee_recipient: ContractAddress
     );
 
     /// Deposits tokens into the resource bridge, converting them to in-game resources.
@@ -109,9 +105,7 @@ trait IResourceBridgeSystems<T> {
     /// - This function only transfers resources to the bank;
     ///   call `finish_withdraw` to complete the process
     /// - No fees are taken at this stage
-    fn start_withdraw(
-        ref self: T, through_bank_id: ID, from_realm_id: ID, token: ContractAddress, amount: u128,
-    );
+    fn start_withdraw(ref self: T, through_bank_id: ID, from_realm_id: ID, token: ContractAddress, amount: u128,);
 
 
     /// Completes a withdrawal process, converting resources to tokens
@@ -186,6 +180,10 @@ pub trait ERC20ABI<TState> {
 
 #[dojo::contract]
 mod resource_bridge_systems {
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
     use eternum::models::bank::bank::Bank;
@@ -199,10 +197,6 @@ mod resource_bridge_systems {
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
     use super::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-
-    use dojo::world::WorldStorage;
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[derive(Copy, Drop, Serde)]
     enum TxType {
@@ -219,13 +213,14 @@ mod resource_bridge_systems {
             amount: u256,
             client_fee_recipient: ContractAddress
         ) {
-
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // ensure this system can only be called by realms systems contract
             let caller = get_caller_address();
             let (realm_systems_address, _namespace_hash) =
                 match world.dispatcher.resource(selector_from_tag!("eternum-realm_systems")) {
-                dojo::world::Resource::Contract((contract_address, namespace_hash)) => (contract_address, namespace_hash),
+                dojo::world::Resource::Contract((
+                    contract_address, namespace_hash
+                )) => (contract_address, namespace_hash),
                 _ => (Zeroable::zero(), Zeroable::zero())
             };
             assert!(caller == realm_systems_address, "only realm systems can call this system");
@@ -356,7 +351,9 @@ mod resource_bridge_systems {
 
             // transport the resource to the bank
             let resource_type = resource_bridge_token_whitelist.resource_type;
-            InternalResourceSystemsImpl::send_to_bank(ref world, from_realm_id, through_bank_id, (resource_type, amount));
+            InternalResourceSystemsImpl::send_to_bank(
+                ref world, from_realm_id, through_bank_id, (resource_type, amount)
+            );
         }
 
         fn finish_withdraw(

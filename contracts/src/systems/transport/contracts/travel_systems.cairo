@@ -1,21 +1,18 @@
 #[starknet::interface]
 trait ITravelSystems<T> {
     fn travel(
-        ref self: T,
-        travelling_entity_id: eternum::alias::ID,
-        destination_coord: eternum::models::position::Coord
+        ref self: T, travelling_entity_id: eternum::alias::ID, destination_coord: eternum::models::position::Coord
     );
     fn travel_hex(
-        ref self: T,
-        travelling_entity_id: eternum::alias::ID,
-        directions: Span<eternum::models::position::Direction>
+        ref self: T, travelling_entity_id: eternum::alias::ID, directions: Span<eternum::models::position::Direction>
     );
 }
 
 #[dojo::contract]
 mod travel_systems {
-    use dojo::world::WorldStorage;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
     use eternum::alias::ID;
 
     use eternum::constants::{WORLD_CONFIG_ID, TravelTypes, DEFAULT_NS};
@@ -32,7 +29,6 @@ mod travel_systems {
     use eternum::models::season::SeasonImpl;
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
-    use dojo::event(historical: true)::EventStorage;
 
     use starknet::ContractAddress;
 
@@ -129,7 +125,6 @@ mod travel_systems {
 
     #[generate_trait]
     pub impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
-
         fn assert_tile_explored(world: WorldStorage, coord: Coord) {
             let mut tile: Tile = world.read_model((coord.x, coord.y));
             assert(tile.explored_at != 0, 'tile not explored');
@@ -163,20 +158,26 @@ mod travel_systems {
             transport_movable.intermediate_coord_y = 0;
 
             world.write_model(@transport_movable);
-            world.write_model(@ArrivalTime { entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() });
-            world.write_model(@Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y});
+            world
+                .write_model(
+                    @ArrivalTime { entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() }
+                );
+            world.write_model(@Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y });
 
             // emit travel event
             let entityOwner: EntityOwner = world.read_model(transport_id);
-            world.emit_event(@Travel {
-                destination_coord_x: to_coord.x,
-                destination_coord_y: to_coord.y,
-                travel_time: 0,
-                travel_path: travel_path.span(),
-                owner: entityOwner.owner_address(world),
-                entity_id: transport_id,
-                timestamp: starknet::get_block_timestamp()
-            });
+            world
+                .emit_event(
+                    @Travel {
+                        destination_coord_x: to_coord.x,
+                        destination_coord_y: to_coord.y,
+                        travel_time: 0,
+                        travel_path: travel_path.span(),
+                        owner: entityOwner.owner_address(world),
+                        entity_id: transport_id,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
 
 
@@ -190,32 +191,41 @@ mod travel_systems {
 
             let current_position: Position = world.read_model(transport_id);
 
-            world.write_model(@ArrivalTime {
-                entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() + travel_time
-            });
+            world
+                .write_model(
+                    @ArrivalTime {
+                        entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() + travel_time
+                    }
+                );
             world.write_model(@Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y });
-            world.write_model(@Movable {
-                entity_id: transport_id,
-                sec_per_km: transport_movable.sec_per_km,
-                blocked: false,
-                round_trip: false,
-                start_coord_x: current_position.x,
-                start_coord_y: current_position.y,
-                intermediate_coord_x: 0,
-                intermediate_coord_y: 0,
-            });
+            world
+                .write_model(
+                    @Movable {
+                        entity_id: transport_id,
+                        sec_per_km: transport_movable.sec_per_km,
+                        blocked: false,
+                        round_trip: false,
+                        start_coord_x: current_position.x,
+                        start_coord_y: current_position.y,
+                        intermediate_coord_x: 0,
+                        intermediate_coord_y: 0,
+                    }
+                );
 
             // emit travel event
             let owner: Owner = world.read_model(transport_id);
-            world.emit_event(@Travel {
-                destination_coord_x: to_coord.x,
-                destination_coord_y: to_coord.y,
-                travel_time,
-                travel_path: array![from_coord, to_coord].span(),
-                owner: owner.address,
-                entity_id: transport_id,
-                timestamp: starknet::get_block_timestamp()
-            });
+            world
+                .emit_event(
+                    @Travel {
+                        destination_coord_x: to_coord.x,
+                        destination_coord_y: to_coord.y,
+                        travel_time,
+                        travel_path: array![from_coord, to_coord].span(),
+                        owner: owner.address,
+                        entity_id: transport_id,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
 
         fn check_owner(world: WorldStorage, transport_id: ID, addr: ContractAddress) {
