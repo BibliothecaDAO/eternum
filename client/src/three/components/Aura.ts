@@ -52,6 +52,10 @@ export class Aura {
     scene.remove(this.mesh);
   }
 
+  public setRenderOrder(order: number) {
+    this.mesh.renderOrder = order;
+  }
+
   isInScene(scene: THREE.Scene): boolean {
     return scene.children.includes(this.mesh);
   }

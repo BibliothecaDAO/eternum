@@ -15,8 +15,8 @@ import { StaminaResource } from "@/ui/elements/StaminaResource";
 import { Position } from "@bibliothecadao/eternum";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Exchange } from "../hyperstructures/StructureCard";
 import { InventoryResources } from "../resources/InventoryResources";
+import { Exchange } from "../structures/worldmap/StructureCard";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
 

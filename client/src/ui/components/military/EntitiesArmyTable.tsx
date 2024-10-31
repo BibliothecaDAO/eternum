@@ -1,13 +1,18 @@
 import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import useUIStore from "@/hooks/store/useUIStore";
+import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { BattleSimulation } from "@/ui/modules/battle-simulation/BattleSimulation";
 import { ID } from "@bibliothecadao/eternum";
 import { HintSection } from "../hints/HintModal";
+import { battleSimulation } from "../navigation/Config";
 import { ArmyChip } from "./ArmyChip";
 
 export const EntitiesArmyTable = () => {
   const { playerStructures } = useEntities();
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   return playerStructures().map((entity: any, index: number) => {
     return (
@@ -18,9 +23,15 @@ export const EntitiesArmyTable = () => {
             {index === 0 && <HintModalButton section={HintSection.Buildings} />}
           </div>
         </Headline>
+        <div className="w-full flex justify-center">
+          <Button variant="primary" className="mx-auto" size="xs" onClick={() => togglePopup(battleSimulation)}>
+            Simulate a battle
+          </Button>
+        </div>
         <div className="grid grid-cols-1 gap-4">
           <EntityArmyTable structureEntityId={entity.entity_id} />
         </div>
+        <BattleSimulation />
       </div>
     );
   });

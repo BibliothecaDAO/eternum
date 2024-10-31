@@ -1,102 +1,29 @@
-import { ReactComponent as Check } from "@/assets/icons/Check.svg";
-import { ReactComponent as Chest } from "@/assets/icons/Chest.svg";
-import { ReactComponent as Coins } from "@/assets/icons/Coins.svg";
-import { ReactComponent as Combat } from "@/assets/icons/Combat.svg";
-import { ReactComponent as Compass } from "@/assets/icons/Compass.svg";
-import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
-import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
-import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
-import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
-import { ReactComponent as Wrench } from "@/assets/icons/Wrench.svg";
 import { ReactComponent as Minimize } from "@/assets/icons/common/minimize.svg";
 import { world } from "@/dojo/world";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { ContractAddress, Position } from "@bibliothecadao/eternum";
-import { Component, World, defineComponentSystem, getComponentValue } from "@dojoengine/recs";
+import { ContractAddress } from "@bibliothecadao/eternum";
+import { Component, defineComponentSystem, getComponentValue, World } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useState } from "react";
 import { MessageIcon } from "../social/PlayerId";
-
-const EVENT_STREAM_SIZE = 8;
-
-enum EventType {
-  SettleRealm = "SettleRealmData",
-  MapExplored = "MapExplored",
-  BattleStart = "BattleStartData",
-  BattleJoin = "BattleJoinData",
-  BattleLeave = "BattleLeaveData",
-  BattleClaim = "BattleClaimData",
-  BattlePillage = "BattlePillageData",
-  Swap = "SwapEvent",
-  HyperstructureFinished = "HyperstructureFinished",
-  HyperstructureContribution = "HyperstructureContribution",
-  AcceptOrder = "AcceptOrder",
-}
-
-const EVENT_CONFIG = {
-  [EventType.SettleRealm]: {
-    action: "settled a realm",
-    emoji: <Crown className="w-6 self-center" />,
-    color: "#FFAB91",
-  },
-  [EventType.MapExplored]: {
-    action: "explored a tile",
-    emoji: <Compass className="w-6 self-center fill-[#ED9733]" />,
-    color: "#ED9733",
-  },
-  [EventType.BattleJoin]: {
-    action: "joined a battle",
-    emoji: <Combat className="w-6 self-center" />,
-    color: "#EF9A9A",
-  },
-  [EventType.BattleLeave]: { action: "left a battle", emoji: <Scroll className="w-6 self-center" />, color: "#90CAF9" },
-  [EventType.BattleClaim]: {
-    action: "claimed a structure",
-    emoji: <Chest className="w-6 self-center" />,
-    color: "#FFCC80",
-  },
-  [EventType.BattlePillage]: {
-    action: "pillaged a structure",
-    emoji: <Coins className="w-6 self-center" />,
-    color: "#CE93D8",
-  },
-  [EventType.Swap]: { action: "made a swap", emoji: <Swap className="w-6 self-center" />, color: "#80DEEA" },
-  [EventType.HyperstructureFinished]: {
-    action: "finished a hyperstructure",
-    emoji: <Sparkles className="w-6 self-center" />,
-    color: "#FFF59D",
-  },
-  [EventType.HyperstructureContribution]: {
-    action: "contributed to a hyperstructure",
-    emoji: <Wrench className="w-6 self-center" />,
-    color: "#FFD54F",
-  },
-  [EventType.AcceptOrder]: {
-    action: "accepted an order",
-    emoji: <Check className="w-6 self-center" />,
-    color: "#C5E1A5",
-  },
-};
-
-interface EventData {
-  name: string | undefined;
-  eventType: EventType;
-  timestamp: number;
-  position: Position | undefined;
-  address: ContractAddress | undefined;
-}
+import { EVENT_NOTIF_STORAGE_KEY, EVENT_STREAM_SIZE } from "./constants";
+import { eventDetails } from "./eventDetails";
+import { EventData, EventType } from "./types";
 
 export const EventStream = () => {
   const {
     setup: { components },
+    account: { account },
   } = useDojo();
 
   const [hideEventStream, setHideEventStream] = useState(false);
   const [eventList, setEventList] = useState<EventData[]>([]);
-  const { getAddressNameFromEntity } = useEntitiesUtils();
+  const [activeTab, setActiveTab] = useState<"all" | "personal">("all");
+  const [hasNewEvents, setHasNewEvents] = useState(false);
+  const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
 
   const createEvent = (entity: any, component: any, eventType: EventType): EventData | undefined => {
     const componentValue = getComponentValue(component, entity);
@@ -129,7 +56,12 @@ export const EventStream = () => {
       ? getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
       : getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityId)]));
 
+    const to = eventDetails[eventType].to?.(componentValue! as any, getPlayerAddressFromEntity);
+    const isPersonal = to === ContractAddress(account.address);
+
     return {
+      to,
+      action: eventDetails[eventType].getAction(componentValue! as any, isPersonal),
       name,
       eventType,
       timestamp: componentValue?.timestamp || 0,
@@ -145,55 +77,122 @@ export const EventStream = () => {
       (update) => {
         const event = createEvent(update.entity, component, eventType);
         if (!event) return;
-        setEventList((prev) => [event, ...prev]);
+        setEventList((prev) => {
+          const newEvents = [event, ...prev];
+          // Check if this is a personal event
+          if (event.to === ContractAddress(account.address)) {
+            const lastSeen = localStorage.getItem(EVENT_NOTIF_STORAGE_KEY) || "0";
+            if (event.timestamp > parseInt(lastSeen)) {
+              setHasNewEvents(true);
+            }
+          }
+          return newEvents;
+        });
       },
       { runOnInit: true },
     );
   };
 
-  // use effect will run 2 times in dev because of strict mode activated
-  // so events will be duplicated
   useEffect(() => {
-    Object.keys(EVENT_CONFIG).forEach((eventType) => {
+    Object.keys(eventDetails).forEach((eventType) => {
       createEventStream(world, components.events[eventType as keyof typeof components.events], eventType as EventType);
     });
 
     return () => setEventList([]);
   }, [world]);
 
+  useEffect(() => {
+    if (activeTab === "personal") {
+      setHasNewEvents(false);
+      localStorage.setItem(EVENT_NOTIF_STORAGE_KEY, Math.floor(Date.now() / 1000).toString());
+    }
+  }, [activeTab]);
+
+  const filteredEvents = eventList.filter((event) => {
+    if (activeTab === "personal") {
+      return event.to === ContractAddress(account.address);
+    }
+    return true;
+  });
+
   return (
-    <div className="h-full w-[30vw]">
-      <div
-        className="flex flex-row text-sm text-center"
-        onClick={() => {
-          setHideEventStream(!hideEventStream);
-        }}
-      >
-        <div className="bg-brown/10 h-6 w-6 rounded-t">
+    <div className="h-full w-full md:w-[30vw] md:justify-start justify-end">
+      <div className={`flex flex-row text-sm text-center md:justify-start justify-end `}>
+        <div
+          className="bg-brown/10 h-6 w-6 rounded-t cursor-pointer"
+          onClick={() => {
+            setHideEventStream(!hideEventStream);
+          }}
+        >
           <Minimize className="w-4 h-4 fill-gold self-center mx-auto" />
         </div>
+        {!hideEventStream && (
+          <div className="flex ml-2">
+            <div
+              className={`px-3 py-1 cursor-pointer ${activeTab === "all" ? "bg-brown/40 text-gold" : "bg-brown/20"}`}
+              onClick={() => setActiveTab("all")}
+            >
+              All
+            </div>
+            <div
+              className={`px-3 py-1 cursor-pointer relative ${
+                activeTab === "personal" ? "bg-brown/40 text-gold" : "bg-brown/20"
+              }`}
+              onClick={() => setActiveTab("personal")}
+            >
+              Personal
+              {hasNewEvents && activeTab !== "personal" && (
+                <div
+                  id="new-event-indicator"
+                  className="absolute -top-1 -right-1 w-2 h-2 bg-red rounded-full animate-pulse"
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
       {hideEventStream ? (
-        <div className="bg-brown/5 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full">
+        <div
+          onClick={() => {
+            setHideEventStream(!hideEventStream);
+          }}
+          className="flex md:justify-start justify-end bg-brown/5 p-1 rounded-tr rounded-bl rounded-br border border-black/10 h-full w-full min-w-full"
+        >
           Events
         </div>
       ) : (
-        <div className="bg-brown/40 bg-hex-bg  rounded-bl-2xl p-1 rounded-tr  border border-gold/40 h-full">
-          {eventList
+        <div className="bg-brown/40 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 h-[200px] md:h-[210px] overflow-y-auto">
+          {filteredEvents
             .sort((a, b) => a.timestamp - b.timestamp)
             .slice(-EVENT_STREAM_SIZE)
             .map((event, index) => {
-              const { action, emoji, color } = EVENT_CONFIG[event.eventType as keyof typeof EVENT_CONFIG];
+              const { emoji, color } = eventDetails[event.eventType as keyof typeof eventDetails];
               return (
-                <div className="hover:bg-brown/20 rounded flex gap-1 justify-between" key={index}>
-                  <div className="flex gap-1">
-                    {emoji} [{event.name || "Unknown"}]: {action}{" "}
-                    <span className="opacity-50">[{new Date(event.timestamp * 1000).toLocaleString()}]</span>
+                <div
+                  className={`hover:bg-brown/20 w-full rounded flex flex-row gap-2 justify-between `}
+                  style={{ color }}
+                  key={index}
+                >
+                  <div className="flex items-center space-x-2 flex-grow overflow-hidden">
+                    <span className="text-lg flex-shrink-0" style={{ fill: color }}>
+                      {emoji}
+                    </span>
+                    <span className="whitespace-nowrap flex-shrink-0">[{event.name || "Unknown"}]:</span>
+                    <div className="whitespace-nowrap overflow-hidden text-ellipsis">{event.action}</div>
                   </div>
-                  <div className="flex flex-row items-center space-x-2 mr-2">
-                    <MessageIcon playerName={event.name} selectedPlayer={event.address ?? BigInt(0)} />
-                    {event.position && <NavigateToPositionIcon hideTooltip={true} position={event.position} />}
-                    {event.position && <ViewOnMapIcon hideTooltip={true} position={event.position} />}
+                  <div className="flex items-center space-x-2 flex-shrink-0 ml-6 md:ml-0">
+                    <span className="opacity-70 text-xs whitespace-nowrap">
+                      [{new Date(event.timestamp * 1000).toLocaleTimeString()}]
+                    </span>
+                    {event.position && (
+                      <div className="hidden md:flex">
+                        <ViewOnMapIcon hideTooltip={true} position={event.position} />
+                        <NavigateToPositionIcon hideTooltip={true} position={event.position} />
+                      </div>
+                    )}
+                    <div className="hidden md:block">
+                      <MessageIcon playerName={event.name} selectedPlayer={event.address ?? BigInt(0)} />
+                    </div>
                   </div>
                 </div>
               );

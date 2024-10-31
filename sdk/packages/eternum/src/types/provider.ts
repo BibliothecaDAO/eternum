@@ -96,6 +96,14 @@ export interface SendResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
+export interface SendResourcesMultipleProps extends SystemSigner {
+  calls: {
+    sender_entity_id: num.BigNumberish;
+    recipient_entity_id: num.BigNumberish;
+    resources: num.BigNumberish[];
+  }[];
+}
+
 export interface PickupResourcesProps extends SystemSigner {
   recipient_entity_id: num.BigNumberish;
   owner_entity_id: num.BigNumberish;
@@ -129,10 +137,9 @@ export interface MintResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-export interface MintResourcesAndClaimProps extends SystemSigner {
-  config_ids: num.BigNumberish[];
+export interface ClaimQuestProps extends SystemSigner {
+  quest_ids: num.BigNumberish[];
   receiver_id: num.BigNumberish;
-  resources: num.BigNumberish[];
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
@@ -370,9 +377,15 @@ interface ResourceCosts {
   amount: num.BigNumberish;
 }
 
-export interface SetMintConfigProps extends SystemSigner {
-  config_id: num.BigNumberish;
-  resources: ResourceCosts[];
+export interface SetQuestConfigProps extends SystemSigner {
+  production_material_multiplier: num.BigNumberish;
+}
+
+export interface SetQuestRewardConfigProps extends SystemSigner {
+  calls: {
+    quest_id: num.BigNumberish;
+    resources: ResourceCosts[];
+  }[];
 }
 
 export interface SetMapConfigProps extends SystemSigner {
@@ -447,6 +460,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   battle_leave_slash_num: num.BigNumberish;
   battle_leave_slash_denom: num.BigNumberish;
   battle_time_scale: num.BigNumberish;
+  battle_max_time_seconds: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {

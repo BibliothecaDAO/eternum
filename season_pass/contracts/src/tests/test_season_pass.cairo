@@ -88,7 +88,7 @@ mod tests {
 
         // alice gets pass using realms nft
         start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.mint(ALICE_REALMS_ID());
+        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
         stop_cheat_caller_address(season_pass);
 
         // ensure alice has pass
@@ -120,7 +120,7 @@ mod tests {
 
         // alice gets pass using realms nft
         start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.mint(ALICE_REALMS_ID());
+        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
         stop_cheat_caller_address(season_pass);
 
         // get free lords from pass
@@ -147,7 +147,7 @@ mod tests {
 
         // alice gets pass using realms nft
         start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.mint(ALICE_REALMS_ID());
+        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
         stop_cheat_caller_address(season_pass);
 
         // get free lords from pass
@@ -185,7 +185,7 @@ mod tests {
 
         // alice gets pass using realms nft
         start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.mint(ALICE_REALMS_ID());
+        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
         stop_cheat_caller_address(season_pass);
 
         // get free lords from pass
@@ -215,6 +215,6 @@ mod tests {
 
         // bob tries to mint pass
         start_cheat_caller_address(season_pass, BOB());
-        season_pass_dispatcher.mint(ALICE_REALMS_ID());
+        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
     }
 }

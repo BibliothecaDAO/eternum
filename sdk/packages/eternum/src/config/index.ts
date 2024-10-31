@@ -1,5 +1,12 @@
 import { Account } from "starknet";
-import { ADMIN_BANK_ENTITY_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, ResourcesIds } from "../constants";
+import {
+  ADMIN_BANK_ENTITY_ID,
+  ARMY_ENTITY_TYPE,
+  DONKEY_ENTITY_TYPE,
+  QUEST_RESOURCES,
+  QuestType,
+  ResourcesIds,
+} from "../constants";
 import { BuildingType } from "../constants/structures";
 import { EternumProvider } from "../provider";
 import { Config as EternumGlobalConfig, ResourceInputs, ResourceOutputs, TickIds, TravelTypes } from "../types";
@@ -23,6 +30,8 @@ export class EternumConfig {
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setProductionConfig(config);
+    await setQuestConfig(config);
+    await setQuestRewardConfig(config);
     await setSeasonConfig(config);
     await setResourceBridgeWhitlelistConfig(config);
     await setResourceBridgeFeesConfig(config);
@@ -102,6 +111,36 @@ export class EternumConfig {
     );
   }
 }
+
+export const setQuestConfig = async (config: Config) => {
+  const tx = await config.provider.set_quest_config({
+    signer: config.account,
+    production_material_multiplier: config.config.resources.startingResourcesInputProductionFactor,
+  });
+
+  console.log(`Configuring quest config ${tx.statusReceipt}...`);
+};
+
+export const setQuestRewardConfig = async (config: Config) => {
+  const calldataArray = [];
+
+  let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
+    QUEST_RESOURCES,
+    config.config.resources.resourceMultiplier * config.config.resources.resourcePrecision,
+  );
+
+  for (const questId of Object.keys(QUEST_RESOURCES_SCALED) as unknown as QuestType[]) {
+    const calldata = {
+      quest_id: questId,
+      resources: QUEST_RESOURCES_SCALED[questId],
+    };
+
+    calldataArray.push(calldata);
+  }
+  const tx = await config.provider.set_quest_reward_config({ signer: config.account, calls: calldataArray });
+
+  console.log(`Configuring quest reward ${tx.statusReceipt}...`);
+};
 
 export const setProductionConfig = async (config: Config) => {
   const calldataArray = [];
@@ -316,6 +355,7 @@ export const setCombatConfig = async (config: Config) => {
     battleLeaveSlashNum: battle_leave_slash_num,
     battleLeaveSlashDenom: battle_leave_slash_denom,
     battleTimeReductionScale: battle_time_scale,
+    battleMaxTimeSeconds: battle_max_time_seconds,
   } = config.config.troop;
 
   const tx = await config.provider.set_troop_config({
@@ -335,6 +375,7 @@ export const setCombatConfig = async (config: Config) => {
     battle_leave_slash_num,
     battle_leave_slash_denom,
     battle_time_scale,
+    battle_max_time_seconds,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);
@@ -579,9 +620,7 @@ export const createAdminBank = async (config: Config) => {
 
 export const mintResources = async (config: Config) => {
   const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
-
   const ammResourceIds = Object.keys(ammStartingLiquidity).map(Number);
-
   const totalResourceCount = ammResourceIds.length;
   // mint lords
   const lordsTx = await config.provider.mint_resources({
@@ -593,7 +632,6 @@ export const mintResources = async (config: Config) => {
     ],
   });
   console.log(`Minting lords ${lordsTx.statusReceipt}...`);
-
   // mint all other resources
   const resources = ammResourceIds.flatMap((resourceId) => {
     return [
@@ -602,7 +640,6 @@ export const mintResources = async (config: Config) => {
         config.config.resources.resourcePrecision,
     ];
   });
-
   const resourcesTx = await config.provider.mint_resources({
     signer: config.account,
     receiver_id: ADMIN_BANK_ENTITY_ID,

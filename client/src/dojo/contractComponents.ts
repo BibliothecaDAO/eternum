@@ -465,14 +465,14 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HasClaimedStartingResources: (() => {
+    Quest: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, config_id: RecsType.Number, claimed: RecsType.Boolean },
+        { entity_id: RecsType.Number, config_id: RecsType.Number, completed: RecsType.Boolean },
         {
           metadata: {
             namespace: "eternum",
-            name: "HasClaimedStartingResources",
+            name: "Quest",
             types: ["u32", "u32", "bool"],
             customTypes: [],
           },
@@ -948,14 +948,28 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    RealmFreeMintConfig: (() => {
+    QuestConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, detached_resource_id: RecsType.Number, detached_resource_count: RecsType.Number },
+        { config_id: RecsType.Number, production_material_multiplier: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
-            name: "RealmFreeMintConfig",
+            name: "QuestConfig",
+            types: ["u32", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    QuestRewardConfig: (() => {
+      return defineComponent(
+        world,
+        { quest_id: RecsType.Number, detached_resource_id: RecsType.Number, detached_resource_count: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "QuestRewardConfig",
             types: ["u32", "u32", "u32"],
             customTypes: [],
           },
@@ -1371,12 +1385,30 @@ export function defineContractComponents(world: World) {
           battle_leave_slash_num: RecsType.Number,
           battle_leave_slash_denom: RecsType.Number,
           battle_time_scale: RecsType.Number,
+          battle_max_time_seconds: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u64", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
+            types: [
+              "u32",
+              "u32",
+              "u8",
+              "u8",
+              "u16",
+              "u16",
+              "u16",
+              "u64",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u16",
+              "u64",
+            ],
             customTypes: [],
           },
         },
@@ -1850,6 +1882,27 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+
+      BurnDonkey: (() => {
+        return defineComponent(
+          world,
+          {
+            player_address: RecsType.BigInt,
+            entity_id: RecsType.Number,
+            amount: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "BurnDonkey",
+              types: ["ContractAddress", "u32", "u128", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
       CreateGuild: (() => {
         return defineComponent(
           world,

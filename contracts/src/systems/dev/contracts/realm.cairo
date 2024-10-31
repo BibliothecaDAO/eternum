@@ -3,8 +3,18 @@ use eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IMint<TState> {
+trait ITestRealmMint<TState> {
     fn mint(ref self: TState, token_id: u256);
+}
+
+#[starknet::interface]
+trait ILordsMint<TState> {
+    fn mint(ref self: TState, token_id: u256);
+}
+
+#[starknet::interface]
+trait ISeasonPassMint<TState> {
+    fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
 }
 
 #[starknet::interface]
@@ -25,7 +35,11 @@ mod dev_realm_systems {
     use eternum::models::config::SeasonConfig;
     use eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
     use starknet::ContractAddress;
-    use super::{IMintDispatcher, IMintDispatcherTrait, IERC721ApprovalDispatcher, IERC721ApprovalDispatcherTrait};
+    use super::{
+        ILordsMintDispatcher, ILordsMintDispatcherTrait, ISeasonPassMintDispatcher, ISeasonPassMintDispatcherTrait,
+        IERC721ApprovalDispatcher, IERC721ApprovalDispatcherTrait, ITestRealmMintDispatcher,
+        ITestRealmMintDispatcherTrait
+    };
 
     #[abi(embed_v0)]
     impl DevRealmSystemsImpl of super::IDevRealmSystems<ContractState> {
@@ -35,13 +49,14 @@ mod dev_realm_systems {
         fn create(ref world: IWorldDispatcher, realm_id: ID, frontend: ContractAddress) {
             // mint test realm to this contract
             let season: SeasonConfig = get!(world, WORLD_CONFIG_ID, SeasonConfig);
-            IMintDispatcher { contract_address: season.realms_address }.mint(realm_id.into());
+            ITestRealmMintDispatcher { contract_address: season.realms_address }.mint(realm_id.into());
 
             // mint season pass to this contract
-            IMintDispatcher { contract_address: season.season_pass_address }.mint(realm_id.into());
+            ISeasonPassMintDispatcher { contract_address: season.season_pass_address }
+                .mint(starknet::get_contract_address(), realm_id.into());
 
             // mint free lords attached to season pass
-            IMintDispatcher { contract_address: season.lords_address }.mint(realm_id.into());
+            ILordsMintDispatcher { contract_address: season.lords_address }.mint(realm_id.into());
 
             // approve realms systems contract to spend season passs
             let (_realm_systems_class_hash, realm_systems_address) =

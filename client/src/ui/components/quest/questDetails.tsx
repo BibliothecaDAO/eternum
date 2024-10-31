@@ -34,7 +34,7 @@ const navigationStep = (imgPath: string) => {
 };
 
 export enum QuestId {
-  Settle,
+  Settle = 1,
   BuildFood,
   BuildResource,
   PauseProduction,
@@ -140,7 +140,7 @@ export const questDetails = new Map<QuestId, StaticQuestInfo>([
         "2. Select one of the Resource Buildings in the 'Resources' tab",
         "3. Left click on a hex to build it, or right click to cancel",
       ],
-      prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
+      prizes: [{ id: QuestType.Trade, title: "Donkeys" }],
       depth: 2,
     },
   ],

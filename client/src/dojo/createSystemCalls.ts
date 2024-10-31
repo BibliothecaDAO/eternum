@@ -127,6 +127,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.send_resources(props);
   };
 
+  const send_resources_multiple = async (props: SystemProps.SendResourcesMultipleProps) => {
+    await provider.send_resources_multiple(props);
+  };
+
   const pickup_resources = async (props: SystemProps.PickupResourcesProps) => {
     await provider.pickup_resources(props);
   };
@@ -215,16 +219,12 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.army_merge_troops(props);
   };
 
-  const mint_starting_resources = async (props: SystemProps.MintStartingResources) => {
-    await provider.mint_starting_resources(props);
+  const claim_quest = async (props: SystemProps.ClaimQuestProps) => {
+    await provider.claim_quest(props);
   };
 
   const mint_resources = async (props: SystemProps.MintResourcesProps) => {
     await provider.mint_resources(props);
-  };
-
-  const mint_resources_and_claim_quest = async (props: SystemProps.MintResourcesAndClaimProps) => {
-    await provider.mint_resources_and_claim_quest(props);
   };
 
   const create_hyperstructure = async (props: SystemProps.CreateHyperstructureProps) => {
@@ -322,6 +322,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const systemCalls = {
     send_resources: withQueueing(withErrorHandling(send_resources)),
+    send_resources_multiple: withQueueing(withErrorHandling(send_resources_multiple)),
     pickup_resources: withQueueing(withErrorHandling(pickup_resources)),
     remove_liquidity: withQueueing(withErrorHandling(remove_liquidity)),
     add_liquidity: withQueueing(withErrorHandling(add_liquidity)),
@@ -358,9 +359,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
     end_game: withQueueing(withErrorHandling(end_game)),
 
+    claim_quest: withQueueing(withErrorHandling(claim_quest)),
     mint_resources: withQueueing(withErrorHandling(mint_resources)),
-    mint_starting_resources: withQueueing(withErrorHandling(mint_starting_resources)),
-    mint_resources_and_claim_quest: withQueueing(withErrorHandling(mint_resources_and_claim_quest)),
 
     army_buy_troops: withQueueing(withErrorHandling(army_buy_troops)),
     army_merge_troops: withQueueing(withErrorHandling(army_merge_troops)),

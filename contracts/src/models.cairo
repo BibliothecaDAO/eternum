@@ -16,6 +16,7 @@ mod population;
 mod position;
 mod production;
 mod quantity;
+mod quest;
 mod realm;
 mod resources;
 mod season;

@@ -14,11 +14,11 @@ use eternum::models::combat::protectee;
 use eternum::models::combat::protector;
 use eternum::models::config::{
     world_config, speed_config, capacity_config, weight_config, hyperstructure_resource_config, stamina_config,
-    stamina_refill_config, tick_config, map_config, realm_free_mint_config, mercenaries_config, leveling_config,
-    production_config, bank_config, building_config, troop_config, battle_config, building_category_pop_config,
-    population_config, has_claimed_starting_resources, hyperstructure_config, travel_stamina_cost_config,
-    resource_bridge_config, resource_bridge_fee_split_config, resource_bridge_whitelist_config, settlement_config,
-    realm_level_config, realm_max_level_config, travel_food_cost_config
+    stamina_refill_config, tick_config, map_config, mercenaries_config, leveling_config, production_config, bank_config,
+    building_config, troop_config, battle_config, building_category_pop_config, population_config,
+    hyperstructure_config, travel_stamina_cost_config, resource_bridge_config, resource_bridge_fee_split_config,
+    resource_bridge_whitelist_config, settlement_config, realm_level_config, realm_max_level_config,
+    travel_food_cost_config, quest_reward_config, quest_config
 };
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{
@@ -36,6 +36,7 @@ use eternum::models::population::population;
 use eternum::models::position::{position};
 use eternum::models::production::{production, production_input, production_output, production_deadline};
 use eternum::models::quantity::{quantity, Quantity, quantity_tracker, QuantityTracker};
+use eternum::models::quest::{quest, quest_bonus};
 use eternum::models::realm::{realm, Realm};
 use eternum::models::resources::detached_resource;
 use eternum::models::resources::owned_resources_tracker;
@@ -49,6 +50,7 @@ use eternum::models::structure::structure;
 use eternum::models::structure::structure_count;
 use eternum::models::trade::{status, Status, trade, Trade,};
 use eternum::models::weight::weight;
+use starknet::ContractAddress;
 
 use starknet::contract_address_const;
 
@@ -84,7 +86,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         guild_member::TEST_CLASS_HASH,
         guild_whitelist::TEST_CLASS_HASH,
         map_config::TEST_CLASS_HASH,
-        realm_free_mint_config::TEST_CLASS_HASH,
         mercenaries_config::TEST_CLASS_HASH,
         settlement_config::TEST_CLASS_HASH,
         leveling_config::TEST_CLASS_HASH,
@@ -95,7 +96,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         battle_config::TEST_CLASS_HASH,
         building_category_pop_config::TEST_CLASS_HASH,
         population_config::TEST_CLASS_HASH,
-        has_claimed_starting_resources::TEST_CLASS_HASH,
         owner::TEST_CLASS_HASH,
         movable::TEST_CLASS_HASH,
         quantity::TEST_CLASS_HASH,
@@ -133,6 +133,10 @@ fn spawn_eternum() -> IWorldDispatcher {
         realm_level_config::TEST_CLASS_HASH,
         realm_max_level_config::TEST_CLASS_HASH,
         travel_food_cost_config::TEST_CLASS_HASH,
+        quest_config::TEST_CLASS_HASH,
+        quest_reward_config::TEST_CLASS_HASH,
+        quest_bonus::TEST_CLASS_HASH,
+        quest::TEST_CLASS_HASH,
     ];
 
     let world = spawn_test_world(["eternum"].span(), models.span());
@@ -154,5 +158,30 @@ fn spawn_eternum() -> IWorldDispatcher {
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'taker'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'0'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'takers_other_realm'>());
+    world
+}
+
+
+fn spawn_eternum_custom(models_list: Array<Array<felt252>>, owners_list: Span<ContractAddress>) -> IWorldDispatcher {
+    let mut world_models = array![];
+    let mut model_added: Felt252Dict<bool> = Default::default();
+
+    for models in models_list {
+        for model in models {
+            if model_added.get(model) == false {
+                model_added.insert(model, true);
+                world_models.append(model);
+            }
+        }
+    };
+
+    let world = spawn_test_world(["eternum"].span(), world_models.span());
+
+    world.uuid();
+
+    for owner in owners_list {
+        world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), *owner);
+    };
+
     world
 }

@@ -50,15 +50,6 @@ pub struct SeasonConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct RealmFreeMintConfig {
-    #[key]
-    config_id: ID,
-    detached_resource_id: ID,
-    detached_resource_count: u32
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct HyperstructureResourceConfig {
     #[key]
     config_id: ID,
@@ -594,7 +585,8 @@ pub struct TroopConfig {
     battle_leave_slash_denom: u8,
     // 1_000. multiply this number by 2 to reduce battle time by 2x,
     // and reduce by 2x to increase battle time by 2x, etc
-    battle_time_scale: u16
+    battle_time_scale: u16,
+    battle_max_time_seconds: u64
 }
 
 
@@ -658,12 +650,20 @@ impl HyperstructureResourceConfigCustomImpl of HyperstructureResourceConfigCusto
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct HasClaimedStartingResources {
-    #[key]
-    entity_id: ID,
+pub struct QuestConfig {
     #[key]
     config_id: ID,
-    claimed: bool,
+    production_material_multiplier: u16,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct QuestRewardConfig {
+    #[key]
+    quest_id: ID,
+    detached_resource_id: ID,
+    detached_resource_count: u32
 }
 
 

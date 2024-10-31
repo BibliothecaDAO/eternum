@@ -21,6 +21,7 @@ type StructureListItemProps = {
   structure: Structure;
   setShowMergeTroopsPopup: (show: boolean) => void;
   ownArmySelected: ArmyInfo | undefined;
+  maxInventory?: number;
 };
 
 const immuneTooltipContent = (
@@ -31,7 +32,12 @@ const immuneTooltipContent = (
   </>
 );
 
-export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmySelected }: StructureListItemProps) => {
+export const StructureListItem = ({
+  structure,
+  setShowMergeTroopsPopup,
+  ownArmySelected,
+  maxInventory = Infinity,
+}: StructureListItemProps) => {
   const dojo = useDojo();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
@@ -203,6 +209,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
           <div className="flex flex-col content-center w-[55%]">
             <TroopMenuRow troops={updatedBattle?.defence_army?.troops || structure.protector?.troops} />
             <InventoryResources
+              max={maxInventory}
               entityIds={[structure.entity_id]}
               className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
               resourcesIconSize="xs"

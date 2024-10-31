@@ -327,6 +327,7 @@ export interface Config {
     battleLeaveSlashDenom: number;
     // 1_000. multiply this number by 2 to reduce battle time by 2x, etc.
     battleTimeReductionScale: number;
+    battleMaxTimeSeconds: number;
     troopStaminas: { [key: number]: number };
     troopFoodConsumption: Record<number, TroopFoodConsumption>;
   };

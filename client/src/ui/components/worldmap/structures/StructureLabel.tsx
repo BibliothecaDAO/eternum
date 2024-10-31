@@ -4,9 +4,10 @@ import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructur
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
+import { TickIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { TickIds } from "@bibliothecadao/eternum";
+import { StructureListItem } from "./StructureListItem";
 
 export const ImmunityTimer = ({ isImmune, timer }: { isImmune: boolean; timer: number }) => {
   if (!isImmune) return null;
@@ -51,13 +52,17 @@ export const StructureInfoLabel = () => {
   return (
     <>
       {structure && isMapView && (
-        <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-[250px]`}>
+        <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-[350px]`}>
           <div className="flex flex-col gap-1">
             <Headline className="text-center text-lg">
               <div>{structure.ownerName}</div>
             </Headline>
-            <div className="text-sm">Structure Name: {structure.name}</div>
-            <div className="text-sm">Category: {structure.category}</div>
+            <StructureListItem
+              structure={structure}
+              ownArmySelected={undefined}
+              setShowMergeTroopsPopup={() => {}}
+              maxInventory={3}
+            />
             <ImmunityTimer isImmune={isImmune} timer={timer} />
           </div>
         </BaseThreeTooltip>

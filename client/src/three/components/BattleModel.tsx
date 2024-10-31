@@ -1,4 +1,3 @@
-import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
@@ -77,9 +76,6 @@ export class BattleModel {
   updateAnimations(deltaTime: number) {
     if (this.mixer && this.mesh && this.animation) {
       const time = performance.now() * 0.001;
-      if (IS_LOW_GRAPHICS_ENABLED) {
-        return;
-      }
       for (let i = 0; i < this.mesh.count; i++) {
         if (!this.animationActions.has(i)) {
           const action = this.mixer.clipAction(this.animation);

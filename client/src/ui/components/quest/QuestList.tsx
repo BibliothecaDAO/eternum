@@ -1,11 +1,10 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
+import { Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ID } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { areAllQuestsClaimed, groupQuestsByDepth } from "./utils";
@@ -124,33 +123,21 @@ const SkipTutorial = ({
 }) => {
   const {
     setup: {
-      systemCalls: { mint_resources_and_claim_quest },
+      systemCalls: { claim_quest },
     },
     account: { account },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const { getQuestResources } = useRealm();
-
-  const questResources = getQuestResources();
-
-  const resourcesToMint =
-    unclaimedQuests?.flatMap((quest: Quest) =>
-      quest.prizes.flatMap((prize: Prize) => {
-        const resources = questResources[prize.id];
-        return resources.flatMap((resource) => [resource.resource as number, multiplyByPrecision(resource.amount)]);
-      }),
-    ) ?? [];
 
   const claimAllQuests = async () => {
-    if (resourcesToMint && unclaimedQuests) {
+    if (unclaimedQuests) {
       setIsLoading(true);
       try {
-        await mint_resources_and_claim_quest({
+        await claim_quest({
           signer: account,
-          config_ids: unclaimedQuests.flatMap((quest) => quest.prizes.map((prize) => BigInt(prize.id))),
+          quest_ids: unclaimedQuests.flatMap((quest) => quest.prizes.map((prize) => BigInt(prize.id))),
           receiver_id: entityId,
-          resources: resourcesToMint,
         });
       } catch (error) {
         console.error(`Failed to claim resources for quests:`, error);

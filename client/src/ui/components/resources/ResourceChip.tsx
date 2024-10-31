@@ -7,9 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "../../utils/utils";
 
-const DISPLAY_RATE_TIME_MS = 5_000;
-const TRANSITION_DURATION_MS = 400;
-
 export const ResourceChip = ({
   isLabor = false,
   resourceId,
@@ -21,15 +18,12 @@ export const ResourceChip = ({
   entityId: ID;
   maxStorehouseCapacityKg: number;
 }) => {
-  const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [showPerHour, setShowPerHour] = useState(true);
-  const [displayedNetRate, setDisplayedNetRate] = useState("");
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const [balance, setBalance] = useState(productionManager.balance(currentDefaultTick));
+  const [balance, setBalance] = useState(productionManager.balance(useUIStore.getState().currentDefaultTick));
 
   const production = useMemo(() => {
     return productionManager.getProduction();
@@ -40,14 +34,14 @@ export const ResourceChip = ({
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {
-    return productionManager.timeUntilValueReached(currentDefaultTick, 0);
-  }, [productionManager, production, currentDefaultTick]);
+    return productionManager.timeUntilValueReached(useUIStore.getState().currentDefaultTick, 0);
+  }, [productionManager, production?.production_rate]);
 
   const netRate = useMemo(() => {
     let netRate = productionManager.netRate();
     if (netRate[1] < 0) {
       // net rate is negative
-      if (Math.abs(netRate[1]) > productionManager.balance(currentDefaultTick)) {
+      if (Math.abs(netRate[1]) > productionManager.balance(useUIStore.getState().currentDefaultTick)) {
         return 0;
       }
     }
@@ -57,10 +51,11 @@ export const ResourceChip = ({
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
 
-    let realTick = currentDefaultTick;
+    let realTick = useUIStore.getState().currentDefaultTick;
 
     const resource = productionManager.getResource();
     const [sign, rate] = productionManager.netRate();
+
     const productionDuration = productionManager.productionDuration(realTick);
     const depletionDuration = productionManager.depletionDuration(realTick);
 
@@ -95,12 +90,12 @@ export const ResourceChip = ({
       }, tickTime);
       return () => clearInterval(interval);
     }
-  }, [currentDefaultTick, setBalance, productionManager, netRate, resourceId]);
+  }, [setBalance, productionManager, netRate, resourceId, production]);
 
   const isConsumingInputsWithoutOutput = useMemo(() => {
     if (!production?.production_rate) return false;
-    return productionManager.isConsumingInputsWithoutOutput(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick, entityId]);
+    return productionManager.isConsumingInputsWithoutOutput(useUIStore.getState().currentDefaultTick);
+  }, [productionManager, production, entityId]);
 
   const icon = useMemo(
     () => (
@@ -120,34 +115,13 @@ export const ResourceChip = ({
   }, [maxAmountStorable, balance, netRate]);
 
   const timeUntilFinishTick = useMemo(() => {
-    return productionManager.timeUntilFinishTick(currentDefaultTick);
-  }, [productionManager, currentDefaultTick]);
+    return productionManager.timeUntilFinishTick(useUIStore.getState().currentDefaultTick);
+  }, [productionManager, production]);
 
   const isProducingOrConsuming = useMemo(() => {
     if (netRate > 0 && timeUntilFinishTick <= 0) return false;
     return Math.abs(netRate) > 0 && !reachedMaxCap && !isConsumingInputsWithoutOutput && balance > 0;
   }, [netRate, reachedMaxCap, isConsumingInputsWithoutOutput, balance, timeUntilFinishTick]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowPerHour((prev) => !prev);
-    }, DISPLAY_RATE_TIME_MS);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const newRate = showPerHour
-      ? `${currencyIntlFormat(netRate * 3.6, 2)}/h`
-      : `${currencyIntlFormat(netRate / 1000, 2)}/s`;
-    if (newRate !== displayedNetRate) {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setDisplayedNetRate(newRate);
-        setIsTransitioning(false);
-      }, TRANSITION_DURATION_MS / 2);
-    }
-  }, [netRate, showPerHour]);
 
   return (
     <div
@@ -157,9 +131,11 @@ export const ResourceChip = ({
           position: "top",
           content: <>{findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}</>,
         });
+        setShowPerHour(!showPerHour);
       }}
       onMouseLeave={() => {
         setTooltip(null);
+        setShowPerHour(!showPerHour);
       }}
     >
       {icon}
@@ -178,13 +154,9 @@ export const ResourceChip = ({
               Number(netRate) < 0 ? "text-light-red" : "text-green/80"
             } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
           >
-            <div
-              className={`self-center transition-opacity duration-${TRANSITION_DURATION_MS} ${
-                isTransitioning ? "opacity-0" : "opacity-100"
-              }`}
-            >
+            <div className={`self-center`}>
               {parseFloat(netRate.toString()) < 0 ? "" : "+"}
-              {displayedNetRate}
+              {showPerHour ? `${currencyIntlFormat(netRate * 3.6, 2)}/h` : `${currencyIntlFormat(netRate / 1000, 2)}/s`}
             </div>
           </div>
         ) : (

@@ -277,7 +277,7 @@ export const useEntitiesUtils = () => {
     return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
   };
 
-  const getPlayerAddressFromEntity = (entityId: ID) => {
+  const getPlayerAddressFromEntity = (entityId: ID): ContractAddress | undefined => {
     const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(entityId)]));
     return entityOwner?.entity_owner_id
       ? getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))?.address

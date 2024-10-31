@@ -2,8 +2,6 @@ use core::array::ArrayTrait;
 use core::num::traits::Bounded;
 use core::option::OptionTrait;
 use core::poseidon::poseidon_hash_span;
-use core::traits::Into;
-use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
@@ -233,6 +231,12 @@ impl TroopsImpl of TroopsTrait {
             return (1, 1);
         }
 
+        let (bigger_strength, smaller_strength) = if self_total_strength >= enemy_total_strength {
+            (self_total_strength, enemy_total_strength)
+        } else {
+            (enemy_total_strength, self_total_strength)
+        };
+
         /// the damage received is calculated as the number of self troops divided
         /// by a percentage of the enemy's strength
         /// i.e `self_count / (x / 100 * the enemy's strength)`
@@ -242,10 +246,22 @@ impl TroopsImpl of TroopsTrait {
         /// we add 1 to prevent division by 0 errors
         let self_seconds_till_death_scaled: u64 = 1
             + ((self.count() * self_seconds_till_death) / troop_config.battle_time_scale.into());
+
+        /// limit time till death using the formula
+        /// (x * n)/(n + 100_000) * smaller_strength / bigger_strength
+        /// where x is the max time, n is the scaled time till death
+        let self_seconds_till_death_limited: u256 = 1
+            + ((troop_config.battle_max_time_seconds.into()
+                * self_seconds_till_death_scaled.into()
+                * smaller_strength.into())
+                / (self_seconds_till_death_scaled.into() + 100_000)
+                / bigger_strength.into());
+        let self_seconds_till_death_limited: u64 = self_seconds_till_death_limited.try_into().unwrap();
+
         /// calculate damage received based on seconds till death
         /// we add 1 to prevent division by 0 errors
         let self_damage_received: u64 = 1
-            + (self_health.current / self_seconds_till_death_scaled.into()).try_into().unwrap();
+            + (self_health.current / self_seconds_till_death_limited.into()).try_into().unwrap();
 
         /// the damage received is calculated as the number of enemy troops divided
         /// by a percentage of self's strength
@@ -256,10 +272,21 @@ impl TroopsImpl of TroopsTrait {
         /// we add 1 to prevent division by 0 errors
         let enemy_seconds_till_death_scaled: u64 = 1
             + ((enemy_troops.count() * enemy_seconds_till_death) / troop_config.battle_time_scale.into());
+
+        /// limit time till death using the formula
+        /// (x * n)/(n + 100_000) * smaller_strength / bigger_strength
+        /// where x is the max time, n is the scaled time till death
+        let enemy_seconds_till_death_limited: u256 = 1
+            + ((troop_config.battle_max_time_seconds.into()
+                * enemy_seconds_till_death_scaled.into()
+                * smaller_strength.into())
+                / (enemy_seconds_till_death_scaled.into() + 100_000)
+                / bigger_strength.into());
+        let enemy_seconds_till_death_limited: u64 = enemy_seconds_till_death_limited.try_into().unwrap();
         /// calculate damage received based on seconds till death
         /// we add 1 to prevent division by 0 errors
         let enemy_damage_received: u64 = 1
-            + (enemy_health.current / enemy_seconds_till_death_scaled.into()).try_into().unwrap();
+            + (enemy_health.current / enemy_seconds_till_death_limited.into()).try_into().unwrap();
 
         return (enemy_damage_received, self_damage_received);
     }
@@ -309,7 +336,8 @@ impl TroopsImpl of TroopsTrait {
         ///
         ///
         let self_knight_strength_with_advantage = self_knight_strength
-            + (enemy_paladin_strength
+            + (self_knight_strength
+                * enemy_paladin_strength
                 * troop_config.advantage_percent.into()
                 / self_knight_strength
                 / PercentageValueImpl::_100());
@@ -324,7 +352,8 @@ impl TroopsImpl of TroopsTrait {
         ///
         let self_knight_strength_with_disadvantage = cap_minus(
             self_knight_strength,
-            (enemy_crossbowman_strength
+            (self_knight_strength
+                * enemy_crossbowman_strength
                 * troop_config.disadvantage_percent.into()
                 / self_knight_strength
                 / PercentageValueImpl::_100())
@@ -341,7 +370,8 @@ impl TroopsImpl of TroopsTrait {
         /// CROSSBOWMAN ADVANTAGE CALCULATION AGAINST ENEMY'S KNIGHT
         ///
         let self_crossbowman_strength_with_advantage = self_crossbowman_strength
-            + (enemy_knight_strength
+            + (self_crossbowman_strength
+                * enemy_knight_strength
                 * troop_config.advantage_percent.into()
                 / self_crossbowman_strength
                 / PercentageValueImpl::_100());
@@ -356,7 +386,8 @@ impl TroopsImpl of TroopsTrait {
         ///
         let self_crossbowman_strength_with_disadvantage = cap_minus(
             self_crossbowman_strength,
-            (enemy_paladin_strength
+            (self_crossbowman_strength
+                * enemy_paladin_strength
                 * troop_config.disadvantage_percent.into()
                 / self_crossbowman_strength
                 / PercentageValueImpl::_100())
@@ -373,7 +404,8 @@ impl TroopsImpl of TroopsTrait {
         /// PALADIN ADVANTAGE CALCULATION AGAINST ENEMY'S CROSSBOWMAN
         ///
         let self_paladin_strength_with_advantage = self_paladin_strength
-            + (enemy_crossbowman_strength
+            + (self_paladin_strength
+                * enemy_crossbowman_strength
                 * troop_config.advantage_percent.into()
                 / self_paladin_strength
                 / PercentageValueImpl::_100());
@@ -388,7 +420,8 @@ impl TroopsImpl of TroopsTrait {
         ///
         let self_paladin_strength_with_disadvantage = cap_minus(
             self_paladin_strength,
-            (enemy_knight_strength
+            (self_paladin_strength
+                * enemy_knight_strength
                 * troop_config.disadvantage_percent.into()
                 / self_paladin_strength
                 / PercentageValueImpl::_100())
@@ -1109,7 +1142,8 @@ mod health_model_tests {
             army_max_per_structure: 0,
             battle_leave_slash_num: 0,
             battle_leave_slash_denom: 0,
-            battle_time_scale: 0
+            battle_time_scale: 0,
+            battle_max_time_seconds: 0
         }
     }
 
@@ -1205,7 +1239,8 @@ mod tests {
             army_max_per_structure: 200,
             battle_leave_slash_num: 25,
             battle_leave_slash_denom: 100,
-            battle_time_scale: 1000
+            battle_time_scale: 1000,
+            battle_max_time_seconds: 2 * 86400
         }
     }
 
