@@ -39,7 +39,7 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 //     // let completion_cost = array![(ResourceTypes::STONE, 10_u128)].span();
 
 //     // // let world.uuid start from 1
-//     // world.uuid();
+//     // world.dispatcher.uuid();
 // }
 
 

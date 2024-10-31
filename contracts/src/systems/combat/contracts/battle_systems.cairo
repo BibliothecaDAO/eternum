@@ -351,7 +351,7 @@ mod battle_systems {
             let attacking_army_entity_owner = get!(world, attacking_army_id, EntityOwner);
             attacking_army_entity_owner.assert_caller_owner(world);
 
-            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
             let battle_config = BattleConfigCustomImpl::get(world);
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
@@ -402,7 +402,7 @@ mod battle_systems {
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             attacking_army_position.assert_same_location(defending_army_position.into());
 
-            let battle_id: ID = world.uuid();
+            let battle_id: ID = world.dispatcher.uuid();
             attacking_army.battle_id = battle_id;
             attacking_army.battle_side = BattleSide::Attack;
             set!(world, (attacking_army));
@@ -435,8 +435,8 @@ mod battle_systems {
             battle.attack_army_lifetime = attacking_army.into();
             battle.defence_army = defending_army.into();
             battle.defence_army_lifetime = defending_army.into();
-            battle.attackers_resources_escrow_id = world.uuid();
-            battle.defenders_resources_escrow_id = world.uuid();
+            battle.attackers_resources_escrow_id = world.dispatcher.uuid();
+            battle.defenders_resources_escrow_id = world.dispatcher.uuid();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = now;
@@ -462,7 +462,7 @@ mod battle_systems {
 
             set!(world, (battle));
 
-            let id = world.uuid();
+            let id = world.dispatcher.uuid();
 
             let attacker = starknet::get_caller_address();
             let defender_entity_owner = get!(world, defending_army_id, EntityOwner).entity_owner_id;
@@ -569,7 +569,7 @@ mod battle_systems {
             battle.reset_delta(troop_config);
             set!(world, (battle));
 
-            let id = world.uuid();
+            let id = world.dispatcher.uuid();
             let joiner = starknet::get_caller_address();
 
             emit!(
@@ -643,7 +643,7 @@ mod battle_systems {
             emit!(
                 world,
                 BattleLeaveData {
-                    id: world.uuid(),
+                    id: world.dispatcher.uuid(),
                     event_id: EventType::BattleLeave,
                     battle_entity_id: battle_id,
                     leaver: starknet::get_caller_address(),
@@ -669,7 +669,7 @@ mod battle_systems {
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
 
-            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
             let battle_config = BattleConfigCustomImpl::get(world);
             structure.assert_can_be_attacked(battle_config, armies_tick_config);
 
@@ -708,7 +708,7 @@ mod battle_systems {
             emit!(
                 world,
                 BattleClaimData {
-                    id: world.uuid(),
+                    id: world.dispatcher.uuid(),
                     event_id: EventType::BattleClaim,
                     structure_entity_id: structure_id,
                     claimer,
@@ -788,7 +788,7 @@ mod battle_pillage_systems {
             // ensure entity being pillaged is a structure
             let structure: Structure = get!(world, structure_id, Structure);
             structure.assert_is_structure();
-            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
             let battle_config = BattleConfigCustomImpl::get(world);
             structure.assert_can_be_attacked(battle_config, armies_tick_config);
 
@@ -1076,7 +1076,7 @@ mod battle_pillage_systems {
             emit!(
                 world,
                 BattlePillageData {
-                    id: world.uuid(),
+                    id: world.dispatcher.uuid(),
                     event_id: EventType::BattlePillage,
                     pillager: starknet::get_caller_address(),
                     pillager_name: get!(world, starknet::get_caller_address(), AddressName).name,

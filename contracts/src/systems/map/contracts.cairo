@@ -46,7 +46,6 @@ mod map_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct MapExplored {
         #[key]
         entity_id: ID,
@@ -64,7 +63,6 @@ mod map_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct FragmentMineDiscovered {
         #[key]
         entity_owner_id: ID,
@@ -140,7 +138,7 @@ mod map_systems {
             emit!(
                 world,
                 (MapExplored {
-                    id: world.uuid(),
+                    id: world.dispatcher.uuid(),
                     entity_id: entity_id,
                     entity_owner_id: entity_owned_by.entity_owner_id,
                     col: tile.col,
@@ -200,7 +198,7 @@ mod map_systems {
         }
 
         fn create_shard_mine_structure(world: IWorldDispatcher, coord: Coord) -> ID {
-            let entity_id: ID = world.uuid();
+            let entity_id: ID = world.dispatcher.uuid();
             set!(
                 world,
                 (
@@ -237,7 +235,7 @@ mod map_systems {
                 / earthen_shard_production_amount_per_tick)
                 .try_into()
                 .unwrap();
-            let tick = TickImpl::get_default_tick_config(world);
+            let tick = TickImpl::get_default_tick_config(ref world);
             let deadline_tick = tick.current() + num_ticks_to_full_production;
 
             set!(world, (ProductionDeadline { entity_id: mine_entity_id, deadline_tick }));

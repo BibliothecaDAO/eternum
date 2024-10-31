@@ -386,7 +386,7 @@ mod resource_bridge_systems {
             let mut resource: Resource = ResourceCustomImpl::get(world, (from_entity_id, resource_type));
             let resource_amount = resource.balance;
             resource.burn(resource_amount);
-            resource.save(world);
+            resource.save(ref world);
 
             let token_amount = InternalBridgeImpl::resource_amount_to_token_amount(token, resource_amount);
             let bank_resource_fee_amount = InternalBridgeImpl::send_bank_fees(
@@ -469,7 +469,7 @@ mod resource_bridge_systems {
                     // add fees to bank
                     let mut bank_resource = ResourceCustomImpl::get(world, (bank_id, resource_type));
                     bank_resource.add(bank_fee_amount);
-                    bank_resource.save(world);
+                    bank_resource.save(ref world);
                     return bank_fee_amount;
                 }
             }

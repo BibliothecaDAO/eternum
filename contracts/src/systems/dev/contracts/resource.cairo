@@ -32,7 +32,7 @@ mod dev_resource_systems {
 
                         let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
                         resource.add(amount);
-                        resource.save(world);
+                        resource.save(ref world);
                     },
                     Option::None => { break; }
                 };

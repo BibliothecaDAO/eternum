@@ -53,7 +53,7 @@ mod bank_systems {
         ) -> ID {
             SeasonImpl::assert_season_is_not_over(world);
 
-            let bank_entity_id: ID = world.uuid();
+            let bank_entity_id: ID = world.dispatcher.uuid();
 
             //todo: check that tile is explored
 
@@ -67,7 +67,7 @@ mod bank_systems {
             let mut realm_resource = ResourceCustomImpl::get(world, (realm_entity_id, ResourceTypes::LORDS));
 
             realm_resource.burn(bank_config.lords_cost);
-            realm_resource.save(world);
+            realm_resource.save(ref world);
 
             set!(
                 world,
@@ -147,7 +147,7 @@ mod bank_systems {
                         // add resources to recipient's balance
                         let mut recipient_resource = ResourceCustomImpl::get(world, (bank_entity_id, resource_type));
                         recipient_resource.add(resource_amount);
-                        recipient_resource.save(world);
+                        recipient_resource.save(ref world);
                     },
                     Option::None => { break; }
                 }

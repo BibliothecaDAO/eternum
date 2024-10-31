@@ -57,7 +57,6 @@ mod trade_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct CreateOrder {
         #[key]
         taker_id: ID,
@@ -69,7 +68,6 @@ mod trade_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct AcceptOrder {
         #[key]
         taker_id: ID,
@@ -83,7 +81,6 @@ mod trade_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct AcceptPartialOrder {
         #[key]
         taker_id: ID,
@@ -95,7 +92,6 @@ mod trade_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct CancelOrder {
         #[key]
         taker_id: ID,
@@ -123,7 +119,7 @@ mod trade_systems {
             let maker_owner = get!(world, maker_id, Owner);
             assert(maker_owner.address == caller, 'caller not maker');
 
-            let maker_gives_resources_id: ID = world.uuid();
+            let maker_gives_resources_id: ID = world.dispatcher.uuid();
             let mut maker_gives_resources_count: u32 = 0;
             let mut maker_gives_resources_felt_arr: Array<felt252> = array![];
             let mut maker_gives_resources_weight = 0;
@@ -136,7 +132,7 @@ mod trade_systems {
                         // burn offered resource from maker balance
                         let mut maker_resource: Resource = ResourceCustomImpl::get(world, (maker_id, *resource_type));
                         maker_resource.burn(*resource_amount);
-                        maker_resource.save(world);
+                        maker_resource.save(ref world);
 
                         // save maker's traded resources
                         set!(
@@ -169,7 +165,7 @@ mod trade_systems {
             maker_weight.deduct(maker_capacity, maker_gives_resources_weight);
             set!(world, (maker_weight));
 
-            let taker_gives_resources_id: ID = world.uuid();
+            let taker_gives_resources_id: ID = world.dispatcher.uuid();
             let mut taker_gives_resources_count: u32 = 0;
             let mut taker_gives_resources_felt_arr: Array<felt252> = array![];
             let mut taker_gives_resources_weight = 0;
@@ -207,7 +203,7 @@ mod trade_systems {
             donkey::burn_donkey(world, maker_id, taker_gives_resources_weight);
 
             // create trade entity
-            let trade_id = world.uuid();
+            let trade_id = world.dispatcher.uuid();
             set!(
                 world,
                 (
@@ -345,8 +341,8 @@ mod trade_systems {
                 let new_taker_gives_resources_felt_arr = array![
                     taker_gives_resource_type.into(), taker_gives_actual_amount.into()
                 ];
-                let new_maker_gives_resources_felt_arr_id: ID = world.uuid();
-                let new_taker_gives_resources_felt_arr_id: ID = world.uuid();
+                let new_maker_gives_resources_felt_arr_id: ID = world.dispatcher.uuid();
+                let new_taker_gives_resources_felt_arr_id: ID = world.dispatcher.uuid();
                 set!(
                     world,
                     (
@@ -365,7 +361,7 @@ mod trade_systems {
                     )
                 );
 
-                let new_trade_id = world.uuid();
+                let new_trade_id = world.dispatcher.uuid();
                 set!(
                     world,
                     (
@@ -408,8 +404,8 @@ mod trade_systems {
                         hash(array![taker_gives_resource_type.into(), taker_amount_left.into()].span());
                 trade.maker_gives_resources_weight -= maker_gives_resources_actual_weight;
                 trade.taker_gives_resources_weight -= taker_gives_resources_actual_weight;
-                trade.maker_gives_resources_id = world.uuid();
-                trade.taker_gives_resources_id = world.uuid();
+                trade.maker_gives_resources_id = world.dispatcher.uuid();
+                trade.taker_gives_resources_id = world.dispatcher.uuid();
                 // Update detached resources for maker and taker
                 set!(
                     world,
@@ -520,7 +516,7 @@ mod trade_systems {
             emit!(
                 world,
                 (AcceptOrder {
-                    id: world.uuid(),
+                    id: world.dispatcher.uuid(),
                     taker_id,
                     maker_id: trade.maker_id,
                     trade_id,

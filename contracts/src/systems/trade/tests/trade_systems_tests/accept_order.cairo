@@ -7,7 +7,6 @@ use eternum::alias::ID;
 use eternum::constants::ResourceTypes;
 use eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
 use eternum::models::config::{CapacityConfig, CapacityConfigCategory};
-use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::order::{Orders, OrdersCustomTrait};
 use eternum::models::owner::Owner;

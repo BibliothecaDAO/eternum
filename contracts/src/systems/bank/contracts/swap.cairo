@@ -27,7 +27,6 @@ mod swap_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct SwapEvent {
         #[key]
         bank_entity_id: ID,
@@ -64,12 +63,12 @@ mod swap_systems {
             // udpate player lords
             let mut player_lords = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::LORDS));
             player_lords.burn(total_lords_cost);
-            player_lords.save(world);
+            player_lords.save(ref world);
 
             // add bank fees to bank
             let mut bank_lords = ResourceCustomImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
             bank_lords.add(bank_lords_fee_amount);
-            bank_lords.save(world);
+            bank_lords.save(ref world);
 
             // update market liquidity
             market.lords_amount += lords_cost_from_amm;
@@ -117,12 +116,12 @@ mod swap_systems {
             // burn the resource the player is exchanging for lords
             let mut player_resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
             player_resource.burn(amount);
-            player_resource.save(world);
+            player_resource.save(ref world);
 
             // add bank fees to bank
             let mut bank_lords = ResourceCustomImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
             bank_lords.add(bank_lords_fee_amount);
-            bank_lords.save(world);
+            bank_lords.save(ref world);
 
             // update market liquidity
             market.lords_amount -= lords_received_from_amm;
@@ -169,7 +168,7 @@ mod swap_systems {
             emit!(
                 world,
                 (SwapEvent {
-                    id: world.uuid(),
+                    id: world.dispatcher.uuid(),
                     bank_entity_id: market.bank_entity_id,
                     entity_id,
                     resource_type: market.resource_type,

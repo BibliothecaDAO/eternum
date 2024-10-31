@@ -1,6 +1,7 @@
 use alexandria_math::{BitShift, pow};
 use array::SpanTrait;
-use dojo::world::IWorldDispatcher;
+use dojo::world::WorldStorage;
+use dojo::model::ModelStorage;
 use eternum::alias::ID;
 use eternum::constants::WORLD_CONFIG_ID;
 use eternum::models::config::RealmMaxLevelConfig;
@@ -22,8 +23,9 @@ pub struct Realm {
 
 #[generate_trait]
 impl RealmCustomImpl of RealmCustomTrait {
-    fn max_level(self: Realm, world: IWorldDispatcher) -> u8 {
-        get!(world, WORLD_CONFIG_ID, RealmMaxLevelConfig).max_level
+    fn max_level(ref world: WorldStorage) -> u8 {
+        let realm_max_level_config: RealmMaxLevelConfig = world.read_model(WORLD_CONFIG_ID);
+        realm_max_level_config.max_level
     }
 
     fn assert_is_set(self: Realm) {

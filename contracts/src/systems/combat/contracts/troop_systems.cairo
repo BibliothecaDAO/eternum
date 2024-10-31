@@ -225,9 +225,9 @@ mod troop_systems {
             let crossbowman_resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::CROSSBOWMAN));
             let (mut knight_resource, mut paladin_resource, mut crossbowman_resource) = troops
                 .purchase(payer_id, (knight_resource, paladin_resource, crossbowman_resource));
-            knight_resource.save(world);
-            paladin_resource.save(world);
-            crossbowman_resource.save(world);
+            knight_resource.save(ref world);
+            paladin_resource.save(ref world);
+            crossbowman_resource.save(ref world);
 
             let mut army: Army = get!(world, army_id, Army);
             if army.is_in_battle() {
@@ -382,7 +382,7 @@ mod troop_systems {
             );
 
             // create stamina for map exploration
-            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
             set!(
                 world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
             );
@@ -423,7 +423,7 @@ mod troop_systems {
             get!(world, army_owner_id, Structure).assert_is_structure();
 
             // create army
-            let mut army_id: ID = world.uuid();
+            let mut army_id: ID = world.dispatcher.uuid();
             let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,

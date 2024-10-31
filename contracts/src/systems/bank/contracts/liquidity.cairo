@@ -31,7 +31,6 @@ mod liquidity_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct LiquidityEvent {
         #[key]
         bank_entity_id: ID,
@@ -77,11 +76,11 @@ mod liquidity_systems {
             set!(world, (market,));
 
             player_lords.burn(cost_lords);
-            player_lords.save(world);
+            player_lords.save(ref world);
 
             // update player resource
             resource.burn(cost_resource_amount);
-            resource.save(world);
+            resource.save(ref world);
 
             // update player liquidity
             let player = starknet::get_caller_address();

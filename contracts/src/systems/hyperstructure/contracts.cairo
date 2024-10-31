@@ -55,7 +55,6 @@ mod hyperstructure_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct HyperstructureFinished {
         #[key]
         id: ID,
@@ -67,7 +66,6 @@ mod hyperstructure_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct HyperstructureCoOwnersChange {
         #[key]
         id: ID,
@@ -79,7 +77,6 @@ mod hyperstructure_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct HyperstructureContribution {
         #[key]
         id: ID,
@@ -92,7 +89,6 @@ mod hyperstructure_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct GameEnded {
         #[key]
         winner_address: ContractAddress,
@@ -122,9 +118,9 @@ mod hyperstructure_systems {
             );
 
             creator_resources.burn(hyperstructure_shards_config.amount_for_completion);
-            creator_resources.save(world);
+            creator_resources.save(ref world);
 
-            let new_uuid: ID = world.uuid();
+            let new_uuid: ID = world.dispatcher.uuid();
 
             let current_time = starknet::get_block_timestamp();
 
@@ -185,7 +181,7 @@ mod hyperstructure_systems {
             emit!(
                 world,
                 (HyperstructureContribution {
-                    hyperstructure_entity_id, contributor_entity_id, contributions, timestamp, id: world.uuid()
+                    hyperstructure_entity_id, contributor_entity_id, contributions, timestamp, id: world.dispatcher.uuid()
                 }),
             );
 
@@ -210,7 +206,7 @@ mod hyperstructure_systems {
                 emit!(
                     world,
                     (HyperstructureFinished {
-                        hyperstructure_entity_id, contributor_entity_id, timestamp, id: world.uuid()
+                        hyperstructure_entity_id, contributor_entity_id, timestamp, id: world.dispatcher.uuid()
                     }),
                 );
             }
@@ -266,7 +262,7 @@ mod hyperstructure_systems {
 
             emit!(
                 world,
-                (HyperstructureCoOwnersChange { id: world.uuid(), hyperstructure_entity_id, timestamp, co_owners })
+                (HyperstructureCoOwnersChange { id: world.dispatcher.uuid(), hyperstructure_entity_id, timestamp, co_owners })
             );
         }
 
@@ -346,7 +342,7 @@ mod hyperstructure_systems {
             let mut creator_resources = ResourceCustomImpl::get(world, (contributor_entity_id, resource_type));
 
             creator_resources.burn(resource_amount);
-            creator_resources.save(world);
+            creator_resources.save(ref world);
         }
 
         fn get_max_contribution_size(

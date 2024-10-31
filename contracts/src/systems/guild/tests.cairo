@@ -31,7 +31,7 @@ fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
-    world.uuid();
+    world.dispatcher.uuid();
 
     let guild_systems_address = deploy_system(world, guild_systems::TEST_CLASS_HASH);
     let guild_systems_dispatcher = IGuildSystemsDispatcher { contract_address: guild_systems_address };

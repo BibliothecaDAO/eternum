@@ -1,5 +1,9 @@
 #[dojo::contract]
 mod donkey_systems {
+    use dojo::world::WorldStorage;
+    use dojo::model::ModelStorage;
+    use dojo::event::EventStorage;
+
     use eternum::alias::ID;
 
     use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
@@ -21,7 +25,6 @@ mod donkey_systems {
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
-    #[dojo::model]
     struct BurnDonkey {
         #[key]
         player_address: ContractAddress,
@@ -33,39 +36,37 @@ mod donkey_systems {
 
     #[generate_trait]
     pub impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
-        fn burn_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
+        fn burn_donkey(ref world: WorldStorage, payer_id: ID, weight: u128) {
             // get number of donkeys needed
-            let donkey_amount = Self::get_donkey_needed(world, weight);
+            let donkey_amount = Self::get_donkey_needed(ref world, weight);
 
             // burn amount of donkey needed
-            let mut donkeys: Resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceCustomImpl::get(ref world, (payer_id, ResourceTypes::DONKEY));
             donkeys.burn(donkey_amount);
-            donkeys.save(world);
+            donkeys.save(ref world);
 
             // emit burn donkey event
-            emit!(
-                world,
-                (BurnDonkey {
+            world.emit_event(
+                @BurnDonkey {
                     entity_id: payer_id,
                     player_address: starknet::get_caller_address(),
                     amount: donkey_amount,
                     timestamp: starknet::get_block_timestamp()
-                })
-            );
+                });
         }
 
-        fn return_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
+        fn return_donkey(ref world: WorldStorage, payer_id: ID, weight: u128) {
             // get number of donkeys needed
-            let donkey_amount = Self::get_donkey_needed(world, weight);
+            let donkey_amount = Self::get_donkey_needed(ref world, weight);
 
             // return amount of donkey needed
-            let mut donkeys: Resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceCustomImpl::get(ref world, (payer_id, ResourceTypes::DONKEY));
             donkeys.add(donkey_amount);
-            donkeys.save(world);
+            donkeys.save(ref world);
         }
 
         fn create_donkey(
-            world: IWorldDispatcher,
+            ref world: WorldStorage,
             is_round_trip: bool,
             donkey_id: ID,
             receiver_id: ID,
@@ -74,29 +75,24 @@ mod donkey_systems {
         ) -> ID {
             let arrives_at: u64 = starknet::get_block_timestamp()
                 + Self::get_donkey_travel_time(
-                    world,
+                    ref world,
                     start_coord,
                     intermediate_coord,
-                    MovableCustomImpl::sec_per_km(world, DONKEY_ENTITY_TYPE),
+                    MovableCustomImpl::sec_per_km(ref world, DONKEY_ENTITY_TYPE),
                     is_round_trip
                 );
 
             let delivery_coord: Coord = intermediate_coord;
-            set!(
-                world,
-                (
-                    EntityOwner { entity_id: donkey_id, entity_owner_id: receiver_id, },
-                    ArrivalTime { entity_id: donkey_id, arrives_at: arrives_at, },
-                    Position { entity_id: donkey_id, x: delivery_coord.x, y: delivery_coord.y },
-                    CapacityCategory { entity_id: donkey_id, category: CapacityConfigCategory::Donkey },
-                )
-            );
+            world.write_model(@EntityOwner { entity_id: donkey_id, entity_owner_id: receiver_id, });
+            world.write_model(@ArrivalTime { entity_id: donkey_id, arrives_at: arrives_at, });
+            world.write_model(@Position { entity_id: donkey_id, x: delivery_coord.x, y: delivery_coord.y });
+            world.write_model(@CapacityCategory { entity_id: donkey_id, category: CapacityConfigCategory::Donkey });
 
             return donkey_id;
         }
 
-        fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {
-            let donkey_capacity = CapacityConfigCustomImpl::get(world, CapacityConfigCategory::Donkey);
+        fn get_donkey_needed(ref world: WorldStorage, resources_weight: u128,) -> u128 {
+            let donkey_capacity = CapacityConfigCustomImpl::get(ref world, CapacityConfigCategory::Donkey);
             let reminder = resources_weight % donkey_capacity.weight_gram;
             let donkeys = if reminder == 0 {
                 resources_weight / donkey_capacity.weight_gram
@@ -107,7 +103,7 @@ mod donkey_systems {
         }
 
         fn get_donkey_travel_time(
-            world: IWorldDispatcher,
+            ref world: WorldStorage,
             resources_coord: Coord,
             destination_coord: Coord,
             sec_per_km: u16,

@@ -4,7 +4,6 @@ use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct EternumEvent {
     #[key]
     id: ID,
@@ -35,7 +34,6 @@ pub enum EventData {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct BattleStartData {
     #[key]
     id: ID,
@@ -57,7 +55,6 @@ pub struct BattleStartData {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct BattleJoinData {
     #[key]
     id: ID,
@@ -76,7 +73,6 @@ pub struct BattleJoinData {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct BattleLeaveData {
     #[key]
     id: ID,
@@ -95,7 +91,6 @@ pub struct BattleLeaveData {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct BattleClaimData {
     #[key]
     id: ID,
@@ -114,7 +109,6 @@ pub struct BattleClaimData {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct BattlePillageData {
     #[key]
     id: ID,
@@ -137,7 +131,6 @@ pub struct BattlePillageData {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct SettleRealmData {
     #[key]
     id: ID,

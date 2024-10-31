@@ -1,4 +1,5 @@
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::WorldStorage;
+use dojo::model::ModelStorage;
 use eternum::alias::ID;
 use eternum::constants::WORLD_CONFIG_ID;
 use eternum::models::config::{SpeedConfig};
@@ -20,8 +21,9 @@ pub struct Movable {
 
 #[generate_trait]
 impl MovableCustomImpl of MovableCustomTrait {
-    fn sec_per_km(world: IWorldDispatcher, entity_type: ID) -> u16 {
-        get!(world, (WORLD_CONFIG_ID, entity_type), SpeedConfig).sec_per_km
+    fn sec_per_km(ref world: WorldStorage, entity_type: ID) -> u16 {
+        let speed_config: SpeedConfig = world.read_model((WORLD_CONFIG_ID, entity_type));
+        speed_config.sec_per_km
     }
     fn assert_moveable(self: Movable) {
         assert!(!self.blocked, "Entity is blocked");

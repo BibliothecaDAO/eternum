@@ -108,7 +108,7 @@ mod realm_systems {
             emit!(
                 world,
                 (SettleRealmData {
-                    id: world.uuid(),
+                    id: world.dispatcher.uuid(),
                     event_id: EventType::SettleRealm,
                     entity_id,
                     owner_address: owner,
@@ -158,7 +158,7 @@ mod realm_systems {
                 // burn resource from realm
                 let mut realm_resource = ResourceCustomImpl::get(world, (realm_id, required_resource.resource_type));
                 realm_resource.burn(required_resource.resource_amount);
-                realm_resource.save(world);
+                realm_resource.save(ref world);
                 index += 1;
             };
 
@@ -229,7 +229,7 @@ mod realm_systems {
 
                 let mut realm_resource = ResourceCustomImpl::get(world, (entity_id.into(), reward_resource_type));
                 realm_resource.add(reward_resource_amount);
-                realm_resource.save(world);
+                realm_resource.save(ref world);
 
                 index += 1;
             };
@@ -253,7 +253,7 @@ mod realm_systems {
         ) -> (ID, u128) {
             // create realm
             let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
-            let entity_id = world.uuid();
+            let entity_id = world.dispatcher.uuid();
             let now = starknet::get_block_timestamp();
             set!(
                 world,

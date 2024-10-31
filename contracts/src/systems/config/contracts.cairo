@@ -281,7 +281,7 @@ mod config_systems {
             // ensure quest id is greater than 0
             assert!(quest_id.is_non_zero(), "quest id must be greater than 0");
 
-            let detached_resource_id = world.uuid();
+            let detached_resource_id = world.dispatcher.uuid();
             let detached_resource_count = resources.len();
             let mut resources = resources;
             let mut index = 0;
@@ -424,7 +424,7 @@ mod config_systems {
         ) {
             assert_caller_is_admin(world);
 
-            let resource_1_cost_id = world.uuid();
+            let resource_1_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == resource_1_costs.len() {
@@ -439,7 +439,7 @@ mod config_systems {
                 index += 1;
             };
 
-            let resource_2_cost_id = world.uuid();
+            let resource_2_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == resource_2_costs.len() {
@@ -454,7 +454,7 @@ mod config_systems {
                 index += 1;
             };
 
-            let resource_3_cost_id = world.uuid();
+            let resource_3_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == resource_3_costs.len() {
@@ -664,7 +664,7 @@ mod config_systems {
         ) {
             assert_caller_is_admin(world);
 
-            let resource_cost_id = world.uuid();
+            let resource_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == cost_of_building.len() {
@@ -782,7 +782,7 @@ mod config_systems {
             // ensure only admin can set this
             assert_caller_is_admin(world);
 
-            let detached_resource_id = world.uuid();
+            let detached_resource_id = world.dispatcher.uuid();
             let detached_resource_count = resources.len();
             let mut index = 0;
             for (

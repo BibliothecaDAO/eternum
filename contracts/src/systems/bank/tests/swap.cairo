@@ -48,7 +48,7 @@ fn setup(
     let world = spawn_eternum();
 
     // allows to start from entity_id 1
-    let _ = world.uuid();
+    let _ = world.dispatcher.uuid();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };

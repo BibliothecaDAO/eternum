@@ -2,7 +2,8 @@ use core::Zeroable;
 use core::debug::PrintTrait;
 use core::num::traits::Bounded;
 use core::option::OptionTrait;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::WorldStorage;
+use dojo::model::ModelStorage;
 use eternum::alias::ID;
 use eternum::models::config::{ProductionConfig};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
@@ -158,8 +159,9 @@ pub struct ProductionDeadline {
 
 #[generate_trait]
 impl ProductionDeadlineImpl of ProductionDeadlineTrait {
-    fn deadline(self: @Production, world: IWorldDispatcher, tick: @TickConfig) -> u64 {
-        let production_deadline = get!(world, *self.entity_id, ProductionDeadline);
+    fn deadline(self: @Production, world: WorldStorage, tick: @TickConfig) -> u64 {
+        let production_deadline: ProductionDeadline 
+            = world.read_model(*self.entity_id);
         if production_deadline.deadline_tick.is_zero() {
             return (*tick).at(Bounded::MAX);
         }
@@ -184,9 +186,9 @@ impl ProductionInputCustomImpl of ProductionInputCustomTrait {
     /// Production ends when any input material runs out of balance so what this
     /// function does is that it finds the first input resource to run out of balance that
     /// returns the tick it runs out
-    fn first_input_finish_tick(production: @Production, world: IWorldDispatcher) -> u64 {
-        let production_config = get!(world, *production.resource_type, ProductionConfig);
-        let tick_config = TickImpl::get_default_tick_config(world);
+    fn first_input_finish_tick(production: @Production, ref world: WorldStorage) -> u64 {
+        let production_config: ProductionConfig = world.read_model(*production.resource_type);
+        let tick_config = TickImpl::get_default_tick_config(ref world);
 
         let mut least_tick: u64 = tick_config.at(Bounded::MAX);
         let mut count = 0;
@@ -195,15 +197,13 @@ impl ProductionInputCustomImpl of ProductionInputCustomTrait {
             if count == production_config.input_count {
                 break;
             }
-            let production_input: ProductionInput = get!(world, (*production.resource_type, count), ProductionInput);
-
+            let production_input: ProductionInput = world.read_model((*production.resource_type, count));
             let mut input_resource: Resource = ResourceCustomImpl::get(
-                world, (*production.entity_id, production_input.input_resource_type)
+                ref world, (*production.entity_id, production_input.input_resource_type)
             );
 
-            let mut input_production: Production = get!(
-                world, (*production.entity_id, production_input.input_resource_type), Production
-            );
+            let mut input_production: Production 
+                = world.read_model((*production.entity_id, production_input.input_resource_type));
             let exhaustion_tick = input_production.balance_exhaustion_tick(@input_resource, @tick_config);
             if exhaustion_tick < least_tick {
                 least_tick = exhaustion_tick;
@@ -236,13 +236,14 @@ pub struct ProductionOutput {
 impl ProductionOutputCustomImpl of ProductionOutputCustomTrait {
     /// Updates end ticks for dependent resources based
     /// on changes in this resource's balance.
-    fn sync_all_inputs_exhaustion_ticks_for(resource: @Resource, world: IWorldDispatcher) {
+    fn sync_all_inputs_exhaustion_ticks_for(resource: @Resource, ref world: WorldStorage) {
         let resource = *resource;
         // Get the production configuration of the current resource
-        let resource_production_config: ProductionConfig = get!(world, resource.resource_type, ProductionConfig);
+        let resource_production_config: ProductionConfig 
+            = world.read_model(resource.resource_type);
 
         // Get the current tick from the world
-        let tick = TickImpl::get_default_tick_config(world);
+        let tick = TickImpl::get_default_tick_config(ref world);
 
         // Iterate through each dependent output resource
         let mut count = 0;
@@ -252,27 +253,25 @@ impl ProductionOutputCustomImpl of ProductionOutputCustomTrait {
             }
 
             // Get the output resource type from the production output configuration
-            let output_resource_type: u8 = get!(world, (resource.resource_type, count), ProductionOutput)
-                .output_resource_type;
+            let output_resource_type: ProductionOutput = world.read_model((resource.resource_type, count));
+            let output_resource_type: u8 = output_resource_type.output_resource_type;
 
-            let mut output_resource: Resource = get!(world, (resource.entity_id, output_resource_type), Resource);
-
+            let mut output_resource: Resource = world.read_model((resource.entity_id, output_resource_type));
             // Get the production details of the output resource
-            let mut output_resource_production: Production = get!(
-                world, (resource.entity_id, output_resource_type), Production
-            );
+            let mut output_resource_production: Production = world.read_model((resource.entity_id, output_resource_type));
 
             if output_resource_production.building_count > 0 {
                 // Update the end tick for the output resource
                 let output_resource_production_finish_tick = ProductionInputCustomImpl::first_input_finish_tick(
-                    @output_resource_production, world
+                    @output_resource_production, ref world
                 );
 
                 output_resource_production
                     .set__input_finish_tick(ref output_resource, @tick, output_resource_production_finish_tick);
 
                 // Save the updated production details of the output resource back to the world
-                set!(world, (output_resource, output_resource_production));
+                world.write_model(@output_resource);
+                world.write_model(@output_resource_production);
             }
 
             count += 1;

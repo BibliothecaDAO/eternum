@@ -1,5 +1,6 @@
 use alexandria_data_structures::array_ext::ArrayTraitExt;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::WorldStorage;
+use dojo::model::ModelStorage;
 use eternum::alias::ID;
 use eternum::{
     models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
@@ -17,49 +18,49 @@ pub struct Stamina {
 
 #[generate_trait]
 impl StaminaCustomImpl of StaminaCustomTrait {
-    fn handle_stamina_costs(army_entity_id: ID, stamina_cost: u16, world: IWorldDispatcher) {
-        let mut stamina = get!(world, (army_entity_id), Stamina);
-        stamina.refill_if_next_tick(world);
+    fn handle_stamina_costs(army_entity_id: ID, stamina_cost: u16, ref world: WorldStorage) {
+        let mut stamina: Stamina = world.read_model((army_entity_id));
+        stamina.refill_if_next_tick(ref world);
         stamina.assert_enough_stamina(stamina_cost);
-        stamina.substract_costs(stamina_cost, world);
+        stamina.substract_costs(stamina_cost, ref world);
     }
 
-    fn refill_if_next_tick(ref self: Stamina, world: IWorldDispatcher) {
-        let armies_tick_config = TickImpl::get_armies_tick_config(world);
+    fn refill_if_next_tick(ref self: Stamina, ref world: WorldStorage) {
+        let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
         if (self.last_refill_tick != armies_tick_config.current()) {
-            self.refill(world);
+            self.refill(ref world);
         }
     }
 
-    fn drain(ref self: Stamina, world: IWorldDispatcher) {
-        self.refill_if_next_tick(world);
-        self.substract_costs(self.amount, world);
+    fn drain(ref self: Stamina, ref world: WorldStorage) {
+        self.refill_if_next_tick(ref world);
+        self.substract_costs(self.amount, ref world);
     }
 
-    fn substract_costs(ref self: Stamina, costs: u16, world: IWorldDispatcher) {
+    fn substract_costs(ref self: Stamina, costs: u16, ref world: WorldStorage) {
         self.amount -= costs;
-        self.sset(world);
+        self.sset(ref world);
     }
 
-    fn sset(ref self: Stamina, world: IWorldDispatcher) {
-        set!(world, (self));
+    fn sset(ref self: Stamina, ref world: WorldStorage) {
+        world.write_model(@self);
     }
 
-    fn max(ref self: Stamina, world: IWorldDispatcher) -> u16 {
-        let army = get!(world, (self.entity_id,), Army);
+    fn max(ref self: Stamina, ref world: WorldStorage) -> u16 {
+        let army: Army = world.read_model(self.entity_id);
         let troops = army.troops;
         let mut maxes = array![];
 
         if (troops.knight_count > 0) {
-            let knight_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), StaminaConfig);
+            let knight_config: StaminaConfig = world.read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
             maxes.append(knight_config.max_stamina);
         }
         if (troops.paladin_count > 0) {
-            let paladin_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), StaminaConfig);
+            let paladin_config: StaminaConfig = world.read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
             maxes.append(paladin_config.max_stamina);
         }
         if (troops.crossbowman_count > 0) {
-            let crossbowman_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), StaminaConfig);
+            let crossbowman_config: StaminaConfig = world.read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
             maxes.append(crossbowman_config.max_stamina);
         }
 
@@ -68,22 +69,22 @@ impl StaminaCustomImpl of StaminaCustomTrait {
         maxes.min().unwrap()
     }
 
-    fn refill(ref self: Stamina, world: IWorldDispatcher) {
-        let stamina_refill_config = get!(world, WORLD_CONFIG_ID, StaminaRefillConfig);
+    fn refill(ref self: Stamina, ref world: WorldStorage) {
+        let stamina_refill_config: StaminaRefillConfig = world.read_model(WORLD_CONFIG_ID);
         let stamina_per_tick = stamina_refill_config.amount_per_tick;
 
-        let current_tick = TickImpl::get_armies_tick_config(world).current();
+        let current_tick = TickImpl::get_armies_tick_config(ref world).current();
         let num_ticks_passed = current_tick - self.last_refill_tick;
 
         let total_stamina = num_ticks_passed * stamina_per_tick.into();
         let total_stamina_since_last_tick: u16 = match total_stamina.try_into() {
             Option::Some(value) => value,
-            Option::None => { self.max(world) }
+            Option::None => { self.max(ref world) }
         };
 
-        self.amount = core::cmp::min(self.amount + total_stamina_since_last_tick, self.max(world));
+        self.amount = core::cmp::min(self.amount + total_stamina_since_last_tick, self.max(ref world));
         self.last_refill_tick = current_tick;
-        self.sset(world);
+        self.sset(ref world);
     }
 
 

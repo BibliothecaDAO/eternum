@@ -51,7 +51,7 @@ fn setup() -> (
 ) {
     let world = spawn_eternum();
     // allows to start from entity_id 1
-    let _ = world.uuid();
+    let _ = world.dispatcher.uuid();
 
     let owner_fee_num: u128 = FEE_NUM;
     let owner_fee_denom: u128 = FEE_DENOM;
