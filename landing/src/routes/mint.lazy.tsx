@@ -1,5 +1,5 @@
-import { Filters } from "@/components/modules/filters";
-import { RealmMintButton } from "@/components/modules/realm-mint-button";
+import { AttributeFilters } from "@/components/modules/filters";
+import { RealmMintDialog } from "@/components/modules/realm-mint-dialog";
 import { RealmsGrid } from "@/components/modules/realms-grid";
 import SeasonPassMintDialog from "@/components/modules/season-pass-mint-dialog";
 import { SelectNftActions } from "@/components/modules/select-nft-actions";
@@ -21,6 +21,8 @@ export const Route = createLazyFileRoute("/mint")({
 function Mint() {
   const { account } = useAccountOrBurner();
   const [isOpen, setIsOpen] = useState(false);
+  const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
+
   const realms_address = import.meta.env.VITE_REALMS_ADDRESS;
   const season_pass_address = import.meta.env.VITE_SEASON_PASS_ADDRESS;
 
@@ -57,7 +59,7 @@ function Mint() {
       {account?.address && (
         <>
           <div className="sticky top-0 z-10">
-            <Filters />
+            <AttributeFilters />
           </div>
 
           <div className="flex-grow overflow-y-auto">
@@ -72,7 +74,9 @@ function Mint() {
             </div>
           </div>
           <div className="flex justify-between border border-gold/15 p-4 rounded-xl mt-4 sticky bottom-0 bg-brown gap-8">
-            <RealmMintButton />
+            <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
+              Mint Realms
+            </Button>
             <div className="flex items-center gap-x-4">
               {data?.ercBalance ? (
                 <SelectNftActions
@@ -100,6 +104,7 @@ function Mint() {
               realm_ids={selectedTokenIds}
               //selectedRealms={}
             />
+            <RealmMintDialog totalOwnedRealms={realmsErcBalance?.length} isOpen={isRealmMintOpen} setIsOpen={setIsRealmMintIsOpen} />
           </div>
         </>
       )}
