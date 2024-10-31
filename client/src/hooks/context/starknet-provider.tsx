@@ -1,13 +1,14 @@
 import React, { useCallback } from "react";
 
-import { Chain, mainnet, sepolia } from "@starknet-react/chains";
-import { StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
-import { getConnectors } from "./connectors";
+import ControllerConnector from "@cartridge/connector/controller";
+import { mainnet, sepolia } from "@starknet-react/chains";
+import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
+import { policies } from "./policies";
 
-const { connectors } = getConnectors();
+const theme: string = "eternum";
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
-  const rpc = useCallback((_chain: Chain) => {
+  const rpc = useCallback(() => {
     return { nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL };
   }, []);
 
@@ -15,7 +16,13 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     <StarknetConfig
       chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={connectors}
+      connectors={[
+        new ControllerConnector({
+          rpc: rpc().nodeUrl,
+          policies,
+          theme,
+        }) as never as Connector,
+      ]}
       explorer={voyager}
       autoConnect
     >
