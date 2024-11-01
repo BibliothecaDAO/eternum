@@ -128,7 +128,7 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
     [rpcProvider, masterAddress, privateKey],
   );
 
-  const { create, list, get, account, select, isDeploying, clear } = useBurnerManager({
+  const { create, list, get, select, isDeploying, clear } = useBurnerManager({
     burnerManager: value.network.burnerManager,
   });
 

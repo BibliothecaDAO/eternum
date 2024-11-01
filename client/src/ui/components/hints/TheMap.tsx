@@ -2,7 +2,6 @@ import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg
 import { configManager } from "@/dojo/setup";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import {} from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 

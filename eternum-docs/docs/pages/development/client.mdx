@@ -1,5 +1,26 @@
 # Client
 
+## Run the dev server
+
+From the root of the project, run:
+
+Easy method:
+
+```bash
+./scripts/client.sh
+```
+
+Manual method:
+
+```bash
+pnpm i && pnpm dev
+```
+
+The client requires environment variables to be set. See the [Environment Variables](/development/environment-variables)
+page for more information.
+
+## Project Structure
+
 ### Elements
 
 - Small reusable react UI components
@@ -19,3 +40,81 @@
 ### Layouts
 
 - Collection of containers composed into a full layout
+
+## useDojo Hook
+
+The `useDojo` hook is a core part of the Dojo framework that provides access to essential game functionality, account
+management, and network interactions.
+
+### Usage
+
+```tsx
+import { useDojo } from "@/hooks/context/DojoContext";
+function GameComponent() {
+  const { account, network, masterAccount } = useDojo();
+  // ... your game logic
+}
+```
+
+### Features
+
+#### Account Management
+
+The hook provides comprehensive wallet and account management capabilities:
+
+- **Burner Wallet Creation**: Create temporary wallets for players
+- **Account Selection**: Switch between different burner wallets
+- **Account Listing**: View all available burner wallets
+- **Master Account Access**: Access to the game's master account
+- **Deployment Status**: Track wallet deployment status
+
+#### Network Integration
+
+Access to network configuration and setup results for interacting with the Starknet blockchain.
+
+#### Game Setup
+
+Provides access to all initialized game systems, components, and world configurations.
+
+### Requirements
+
+The hook must be used within a `DojoProvider` component and requires the following environment variables:
+
+- `VITE_PUBLIC_MASTER_ADDRESS`
+- `VITE_PUBLIC_MASTER_PRIVATE_KEY`
+- `VITE_PUBLIC_ACCOUNT_CLASS_HASH`
+
+### Return Value
+
+The hook returns an object containing:
+
+- `setup`: Complete Dojo context including game systems and components
+- `account`: Account management functions and state
+- `network`: Network configuration and setup results
+- `masterAccount`: The master account instance
+
+### Example
+
+```tsx
+function GameUI() {
+  const { account } = useDojo();
+  return (
+    <div>
+      <p>Current Account: {account.account.address}</p>
+    </div>
+  );
+}
+```
+
+## Eternum provider
+
+wrapper around the DojoProvider, which itself is a wrapper around a generic Starknet provider, an API to easy interact
+with your contract’s API via the RPC. Each layer of abstraction adds its own set of functionalities, with the Eternum
+Provider mainly providing easy access to all the system calls that our systems expose (create_army, etc…)
+
+## Offchain messages
+
+You can use offchain messages to store information in the indexer, but it is not persisted onchain. Some examples of use
+cases for this are in-game messages. Refer to
+[this code](https://github.com/BibliothecaDAO/eternum/blob/1490dfcf513d72f51e5a84138be743d774338caf/client/src/ui/modules/chat/InputField.tsx#L50)
+for an example of how to use offchain messages

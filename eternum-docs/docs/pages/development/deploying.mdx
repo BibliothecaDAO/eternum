@@ -1,0 +1,52 @@
+---
+layout: docs
+---
+
+# Deploying
+
+## Prerequisites
+
+- [Dojo onchain game engine](https://book.dojoengine.org)
+- React
+
+## Setup
+
+Install dojo via
+
+`curl -L https://install.dojoengine.org | bash`
+
+Make sure install the same version within the `Scarb.toml` file.
+
+Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. So you will need pnpm
+installed also.
+
+`npm install -g pnpm`
+
+## Easy Method (3 commands)
+
+We have bundled up three scripts to run in three different CLI terminals. Run the scripts in order and leave the window
+open.
+
+### Terminal 1 - Client setup
+
+This will set the client up, however you **must** run the other scripts otherwise it will not work
+
+```
+sh scripts/client.sh
+```
+
+### Terminal 2 - Build the contracts and run the sequencer
+
+```
+sh scripts/contracts.sh
+```
+
+### Terminal 3 - Migrate the contracts and start the indexer
+
+```
+<!-- to set config -->
+sh scripts/indexer.sh --setConfig
+
+<!-- to just build and index -->
+sh scripts/indexer.sh
+```

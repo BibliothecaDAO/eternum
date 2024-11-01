@@ -26,7 +26,6 @@ const checkIfGameIsRunningOnLaptop = async () => {
 };
 
 export const IS_LOW_GRAPHICS_ENABLED = await checkIfGameIsRunningOnLaptop();
-console.log("IS_LOW_GRAPHICS_ENABLED", IS_LOW_GRAPHICS_ENABLED);
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 

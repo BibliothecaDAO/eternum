@@ -1,15 +1,32 @@
 import { defineConfig } from "vocs";
 
 export default defineConfig({
-  title: "Docs",
+  title: "Eternum",
   sidebar: [
     {
-      text: "Getting Started",
-      link: "/getting-started",
+      text: "Game",
+      link: "/game",
+      collapsed: true,
+      items: [
+        { text: "Banking", link: "/game/banking" },
+        { text: "Hyperstructures", link: "/game/hyperstructures" },
+        { text: "Hexception", link: "/game/land-hexagons" },
+        { text: "Resources", link: "/game/resources" },
+        { text: "Realms", link: "/game/realms" },
+        { text: "World Map", link: "/game/world-map-hex" },
+      ],
     },
     {
-      text: "Example",
-      link: "/example",
+      text: "Development",
+      link: "/development",
+      collapsed: true,
+      items: [
+        { text: "Client", link: "/development/client" },
+        { text: "Contracts", link: "/development/contracts" },
+        { text: "Deploying", link: "/development/deploying" },
+        { text: "SDK", link: "/development/sdk" },
+        { text: "Common issues", link: "/development/common-issues" },
+      ],
     },
   ],
 });

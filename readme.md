@@ -69,7 +69,7 @@ inhabitants.
 
 ## Development of Eternum
 
-Development of Eternum is open-source. All efforts are funded via OnlyDust. If you would like to contribute comment on
+Development of Eternum is open-source. If you would like to contribute comment on
 an open issue.
 
 ## Prerequisites
@@ -83,7 +83,7 @@ Install dojo via
 
 `curl -L https://install.dojoengine.org | bash`
 
-Make sure install the same version within the `Scarb.toml` file. Currently this is `0.7.3`
+Make sure install the same version within the `Scarb.toml` file.
 
 Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. So you will need pnpm
 installed also.
@@ -118,53 +118,6 @@ sh scripts/indexer.sh --setConfig
 <!-- to just build and index -->
 sh scripts/indexer.sh
 ```
-
-## Manual Method
-
-### Terminal 1 - Client Setup
-
-- **Dependencies:** Install deps
-  ```bash
-  # @dev: Client will not work until the next step is also complete
-  pnpm i && pnpm build-packages && pnpm dev
-  ```
-
-### Contracts, Katana and Indexing
-
-For local setup and execution on Katana, follow these steps:
-
-1. **Navigate to Contracts Directory:**
-   ```bash
-   cd contracts
-   ```
-2. **Build Contracts:**
-   ```bash
-   sozo build
-   ```
-3. **Run Katana:**
-   ```bash
-   katana --disable-fee
-   ```
-4. **Apply Migrations:**
-   ```bash
-   sozo migrate
-   ```
-5. **Run Indexer (in another cli window):**
-   ```bash
-   torii --world <WORLD ADDRESS>
-   ```
-6. **Set Environment Variables:**
-   ```bash
-   source scripts/env_variables.sh
-   ```
-7. **Configure Settings:**
-
-   ```
-   # Install all necessary packages in the config directory
-   pnpm install
-   # Run the bun command with the specified environment file and target index file
-   bun --env-file=../client/.env.development ../config/index.ts
-   ```
 
 ## License
 
