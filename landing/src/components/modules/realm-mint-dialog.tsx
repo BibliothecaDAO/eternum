@@ -107,7 +107,7 @@ export const RealmMintDialog = ({
                   <Label className="text-sm text-muted-foreground uppercase justify-self-start">Random Realms</Label>
                   <div className="grid grid-cols-5 gap-2">
                     {randomIds.map((randomRealm) => (
-                      <Button onClick={() => setTokenId(randomRealm.toString())} variant={"outline"}>
+                      <Button key={randomRealm} onClick={() => setTokenId(randomRealm.toString())} variant={"outline"}>
                         {randomRealm}
                       </Button>
                     ))}

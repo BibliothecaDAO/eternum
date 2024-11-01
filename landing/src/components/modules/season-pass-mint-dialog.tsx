@@ -5,7 +5,10 @@ import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 //import TokenActionsTokenOverview from "~/app/token/[contractAddress]/[tokenId]/components/token-actions-token-overview";
 //import type { CollectionToken, Token } from "~/types";
 import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
+import { checkCartridgeConnector } from "@/lib/utils";
+import { useConnect } from "@starknet-react/core";
 import { Loader } from "lucide-react";
+import { CartridgeConnectButton } from "./cartridge-connect-button";
 
 interface SeasonPassMintDialogProps {
   isOpen: boolean;
@@ -15,8 +18,17 @@ interface SeasonPassMintDialogProps {
   realm_ids: string[];
 }
 
-export default function SeasonPassMintDialog({ isOpen, setIsOpen, deselectAllNfts, isSuccess, realm_ids }: SeasonPassMintDialogProps) {
+export default function SeasonPassMintDialog({
+  isOpen,
+  setIsOpen,
+  deselectAllNfts,
+  isSuccess,
+  realm_ids,
+}: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
+  const { connector } = useConnect();
+
+  const checkCartridge = checkCartridgeConnector(connector);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -51,10 +63,11 @@ export default function SeasonPassMintDialog({ isOpen, setIsOpen, deselectAllNft
               <div className="text-center">
                 <div className="text-lg font-semibold">Mint your passes to compete in Season 0 of Eternum</div>
                 <div className="w-full my-4">
-                {realm_ids.map((realm, index) => (
+                  {!checkCartridge && <CartridgeConnectButton className="w-full" />}
+                  {realm_ids.map((realm, index) => (
                     <span key={realm}>
                       #{Number(realm)}
-                      {index < realm_ids.length - 1 && ', '}
+                      {index < realm_ids.length - 1 && ", "}
                     </span>
                   ))}
                 </div>
