@@ -7,6 +7,7 @@ import {
   type Resource,
 } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Connector } from "@starknet-react/core";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -18,6 +19,10 @@ export function cn(...inputs: ClassValue[]) {
 
 export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
+};
+
+export const checkCartridgeConnector = (connector?: Connector) => {
+  return connector?.id === "controller";
 };
 
 export const formatNumber = (num: number, decimals: number): string => {
@@ -78,81 +83,6 @@ export function calculateDistance(start: Position, destination: Position): numbe
     return distance;
   }
 }
-/*
-export const getHexagonCoordinates = (
-  instancedMesh: THREE.InstancedMesh,
-  instanceId: number,
-): { hexCoords: HexPosition; position: THREE.Vector3 } => {
-  const matrix = new THREE.Matrix4();
-  instancedMesh.getMatrixAt(instanceId, matrix);
-  const position = new THREE.Vector3();
-  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
-
-  const hexCoords = getHexForWorldPosition(position);
-
-  return { hexCoords, position };
-};
-
-export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const col = hexCoords.col;
-  const row = hexCoords.row;
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const x = col * horizDist - rowOffset;
-  const z = row * vertDist;
-  const y = flat ? 0 : pseudoRandom(x, z) * 2;
-  return new THREE.Vector3(x, y, z);
-};
-
-export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const row = Math.round(worldPosition.z / vertDist);
-  // hexception offsets hack
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const col = Math.round((worldPosition.x + rowOffset) / horizDist);
-
-  return {
-    col,
-    row,
-  };
-};
-
-export const calculateDistanceInHexes = (start: Position, destination: Position): number | undefined => {
-  const distance = calculateDistance(start, destination);
-  if (distance) {
-    return Math.round(distance / HEX_SIZE / 2);
-  }
-  return undefined;
-};
-
-export const calculateOffset = (index: number, total: number, radius: number) => {
-  if (total === 1) return { x: 0, y: 0 };
-
-  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
-  let angle = angleIncrement * (index % 6);
-  let offsetRadius = radius;
-
-  if (index >= 6) {
-    // Adjustments for more than 6 armies, placing them in another layer
-    offsetRadius += 0.5; // Increase radius for each new layer
-    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
-  }
-
-  return {
-    x: offsetRadius * Math.cos(angle),
-    z: offsetRadius * Math.sin(angle),
-  };
-};*/
 
 
 export enum TimeFormat {
