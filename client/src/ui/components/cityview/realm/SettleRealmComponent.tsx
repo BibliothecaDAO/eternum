@@ -43,6 +43,8 @@ const SettleRealmComponent = () => {
       calldata.push(Number(realm.realmId));
     }
 
+    console.log(calldata);
+
     await create_multiple_realms({
       signer: account,
       realm_ids: [calldata[0]],

@@ -52,4 +52,5 @@ slot deployments create -t epic eternum-rc0 torii --version v1.0.0-rc.0 --world 
 
 echo "Setting up config..."
 
+# NOTE: THE SEASON PASS MUST BE SETUP BEFORE THE CONFIG IS SETUP
 bun --env-file=../client/.env.production ../config/index.ts
