@@ -5,7 +5,7 @@ printf "\n\n"
 echo "----- Building Eternum Season Pass Contract ----- "
 
 cd season_pass/contracts && scarb --release build
-cd ../scripts/deployment && npm run deploy 
+cd ../scripts/deployment && npm run deploy::prod 
 
 # update the .env.production file with the season pass and test realms contracts addresses
 VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/dev/season_pass.json | jq -r '.address')
@@ -38,12 +38,31 @@ slot deployments delete eternum-40 torii
 slot deployments delete eternum-40 katana
 
 echo "Deploying world to Realms L3..."
+<<<<<<< HEAD
+slot deployments create -t epic eternum-45 katana --version v1.0.0-alpha.19 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+=======
 slot deployments create -t epic eternum-42 katana --version v1.0.0-rc.0 --invoke-max-steps 25000000 --disable-fee true --block-time 1000
+>>>>>>> rc-1
 
 # get accounts
-slot deployments accounts eternum-42 katana 
+slot deployments accounts eternum-45 katana 
 
 echo "Migrating world..."
+<<<<<<< HEAD
+# the --dev allows batch migration
+sozo --profile prod migrate apply
+
+echo "Setting up remote indexer on slot..."
+slot deployments create -t epic eternum-46 torii --version v1.0.0-alpha.18 --world 0x320b2713e324fe3125bbc42d85ff69cb3c0908b436fa38a35746dbc45deeb11 --rpc https://api.cartridge.gg/x/eternum-45/katana --start-block 0  --index-pending true
+
+echo "Setting up config..."
+
+# update the config with the accounts from above 
+source ./scripts/env_variables.sh prod
+
+./scripts/set_writer.sh --interval 1 --mode prod
+
+=======
 sozo --profile prod migrate
 
 echo "Setting up remote indexer on slot..."
@@ -51,4 +70,5 @@ slot deployments create -t epic eternum-42 torii --version v1.0.0-rc.0 --world 0
 
 echo "Setting up config..."
 
+>>>>>>> rc-1
 bun --env-file=../client/.env.production ../config/index.ts

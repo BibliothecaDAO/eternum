@@ -2,16 +2,16 @@
 default = "eternum"
 
 [env]
-account_address = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"
-private_key = "0x4ab5a607d92f0870cfd82ef9cecb2fe903830441180fd432b831a8863c08097"
-rpc_url = "https://api.cartridge.gg/x/eternum-42/katana"
+account_address = "0x40f749bc315c75f3dc575490955b3595c736378054cc8ee80379e811f36fc7d"
+private_key = "0x1c2304d35a10f6199004c2e4ef913194ac86622852388db7f3ce2a6816cfa90"
+rpc_url = "https://api.cartridge.gg/x/eternum-45/katana"
 
 [world]
 seed = "eternum"
 name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
-website = "https://alpha-eternum.realms.world/"
+website = "https://eternum.realms.world/"
 
 [writers]
 "eternum" = [

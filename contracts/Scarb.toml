@@ -17,7 +17,7 @@ cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
 dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.0.0-rc.0" }
 
 [[target.starknet-contract]]
-build-external-contracts = [ "dojo::world::world_contract::world" ]
+build-external-contracts = ["dojo::world::world_contract::world"]
 
 [tool.fmt]
 sort-module-level-items = true
