@@ -7,6 +7,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
+import { IS_MOBILE } from "../config";
 
 // Lazy load components
 
@@ -111,9 +112,13 @@ export const World = () => {
           <Onboarding />
         </BlankOverlayContainer>
         <ActionInfo />
-        <ArmyInfoLabel />
-        <StructureInfoLabel />
-        <BattleInfoLabel />
+        {!IS_MOBILE && (
+          <>
+            <ArmyInfoLabel />
+            <StructureInfoLabel />
+            <BattleInfoLabel />
+          </>
+        )}
 
         <BattleContainer>
           <BattleView />
@@ -132,13 +137,16 @@ export const World = () => {
             <SelectedArmy />
           </BottomMiddleContainer>
 
-          <BottomRightContainer>
-            <EventStream />
-          </BottomRightContainer>
-
-          <RightMiddleContainer>
-            <RightNavigationModule />
-          </RightMiddleContainer>
+          {!IS_MOBILE && (
+            <>
+              <BottomRightContainer>
+                <EventStream />
+              </BottomRightContainer>
+              <RightMiddleContainer>
+                <RightNavigationModule />
+              </RightMiddleContainer>
+            </>
+          )}
 
           <TopLeftContainer>
             <TopLeftNavigation />
