@@ -246,7 +246,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, IBattleContractD
     assert!(realm_army_unit_stamina.amount.is_zero(), "stamina should be zero");
 
     // move to next tick
-    let armies_tick_config = TickImpl::get_armies_tick_config(world);
+    let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
     let current_ts = starknet::get_block_timestamp();
     starknet::testing::set_block_timestamp(current_ts + armies_tick_config.tick_interval_in_seconds);
 

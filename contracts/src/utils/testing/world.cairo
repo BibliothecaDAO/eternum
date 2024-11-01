@@ -25,7 +25,6 @@ use eternum::models::hyperstructure::{
     Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch
 };
 use eternum::models::map::tile;
-use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
 use eternum::models::name::{address_name, AddressName};
 use eternum::models::name::{entity_name, EntityName};
@@ -106,7 +105,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         quantity_tracker::TEST_CLASS_HASH,
         position::TEST_CLASS_HASH,
         arrival_time::TEST_CLASS_HASH,
-        foreign_key::TEST_CLASS_HASH,
         trade::TEST_CLASS_HASH,
         resource::TEST_CLASS_HASH,
         resource_cost::TEST_CLASS_HASH,
@@ -141,7 +139,7 @@ fn spawn_eternum() -> IWorldDispatcher {
 
     let world = spawn_test_world(["eternum"].span(), models.span());
 
-    world.uuid();
+    world.dispatcher.uuid();
 
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>());
     world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>());
@@ -177,7 +175,7 @@ fn spawn_eternum_custom(models_list: Array<Array<felt252>>, owners_list: Span<Co
 
     let world = spawn_test_world(["eternum"].span(), world_models.span());
 
-    world.uuid();
+    world.dispatcher.uuid();
 
     for owner in owners_list {
         world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), *owner);

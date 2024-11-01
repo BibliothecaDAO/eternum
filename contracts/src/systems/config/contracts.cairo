@@ -8,82 +8,80 @@ use eternum::models::config::{
 };
 use eternum::models::position::Coord;
 
-#[dojo::interface]
-trait IWorldConfig {
+#[starknet::interface]
+trait IWorldConfig<T> {
     fn set_world_config(
-        ref world: IWorldDispatcher,
-        admin_address: starknet::ContractAddress,
-        realm_l2_contract: starknet::ContractAddress
+        ref self: T, admin_address: starknet::ContractAddress, realm_l2_contract: starknet::ContractAddress
     );
 }
 
 
-#[dojo::interface]
-trait ISeasonConfig {
+#[starknet::interface]
+trait ISeasonConfig<T> {
     fn set_season_config(
-        ref world: IWorldDispatcher,
+        ref self: T,
         season_pass_address: starknet::ContractAddress,
         realms_address: starknet::ContractAddress,
         lords_address: starknet::ContractAddress
     );
 }
 
-#[dojo::interface]
-trait IQuestConfig {
-    fn set_quest_config(ref world: IWorldDispatcher, production_material_multiplier: u16);
-    fn set_quest_reward_config(ref world: IWorldDispatcher, quest_id: ID, resources: Span<(u8, u128)>);
+#[starknet::interface]
+trait IQuestConfig<T> {
+    fn set_quest_config(ref self: T, production_material_multiplier: u16);
+    fn set_quest_reward_config(ref self: T, quest_id: ID, resources: Span<(u8, u128)>);
 }
 
-#[dojo::interface]
-trait IRealmLevelConfig {
-    fn set_realm_max_level_config(ref world: IWorldDispatcher, new_max_level: u8);
-    fn set_realm_level_config(ref world: IWorldDispatcher, level: u8, resources: Span<(u8, u128)>);
+#[starknet::interface]
+trait IRealmLevelConfig<T> {
+    fn set_realm_max_level_config(ref self: T, new_max_level: u8);
+    fn set_realm_level_config(ref self: T, level: u8, resources: Span<(u8, u128)>);
 }
 
-#[dojo::interface]
-trait IWeightConfig {
-    fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
+#[starknet::interface]
+trait IWeightConfig<T> {
+    fn set_weight_config(ref self: T, entity_type: ID, weight_gram: u128);
 }
 
-#[dojo::interface]
-trait IBattleConfig {
-    fn set_battle_config(ref world: IWorldDispatcher, battle_config: BattleConfig);
+#[starknet::interface]
+trait IBattleConfig<T> {
+    fn set_battle_config(ref self: T, battle_config: BattleConfig);
 }
 
-#[dojo::interface]
-trait ICapacityConfig {
-    fn set_capacity_config(ref world: IWorldDispatcher, capacity_config: CapacityConfig);
+#[starknet::interface]
+trait ICapacityConfig<T> {
+    fn set_capacity_config(ref self: T, capacity_config: CapacityConfig);
 }
 
-#[dojo::interface]
-trait ITickConfig {
-    fn set_tick_config(ref world: IWorldDispatcher, tick_id: u8, tick_interval_in_seconds: u64);
+#[starknet::interface]
+trait ITickConfig<T> {
+    fn set_tick_config(ref self: T, tick_id: u8, tick_interval_in_seconds: u64);
 }
 
-#[dojo::interface]
-trait IStaminaConfig {
-    fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16);
+#[starknet::interface]
+trait IStaminaConfig<T> {
+    fn set_stamina_config(ref self: T, unit_type: u8, max_stamina: u16);
 }
 
-#[dojo::interface]
-trait ITravelFoodCostConfig {
-    fn set_travel_food_cost_config(ref world: IWorldDispatcher, travel_food_cost_config: TravelFoodCostConfig);
+#[starknet::interface]
+trait ITravelFoodCostConfig<T> {
+    fn set_travel_food_cost_config(ref self: T, travel_food_cost_config: TravelFoodCostConfig);
 }
 
-#[dojo::interface]
-trait IStaminaRefillConfig {
-    fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16);
+#[starknet::interface]
+trait IStaminaRefillConfig<T> {
+    fn set_stamina_refill_config(ref self: T, amount: u16);
 }
 
-#[dojo::interface]
-trait ITransportConfig {
-    fn set_speed_config(ref world: IWorldDispatcher, entity_type: ID, sec_per_km: u16);
+#[starknet::interface]
+trait ITransportConfig<T> {
+    fn set_speed_config(ref self: T, entity_type: ID, sec_per_km: u16);
 }
 
-#[dojo::interface]
-trait IHyperstructureConfig {
+#[starknet::interface]
+trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
-        ref world: IWorldDispatcher,
+        ref self: T,
         resources_for_completion: Span<(u8, u128)>,
         time_between_shares_change: u64,
         points_per_cycle: u128,
@@ -92,10 +90,10 @@ trait IHyperstructureConfig {
     );
 }
 
-#[dojo::interface]
-trait ILevelingConfig {
+#[starknet::interface]
+trait ILevelingConfig<T> {
     fn set_leveling_config(
-        ref world: IWorldDispatcher,
+        ref self: T,
         config_id: ID,
         decay_interval: u64,
         max_level: u64,
@@ -110,60 +108,57 @@ trait ILevelingConfig {
     );
 }
 
-#[dojo::interface]
-trait IBankConfig {
-    fn set_bank_config(ref world: IWorldDispatcher, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128);
+#[starknet::interface]
+trait IBankConfig<T> {
+    fn set_bank_config(ref self: T, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128);
 }
 
 
-#[dojo::interface]
-trait IMapConfig {
-    fn set_map_config(ref world: IWorldDispatcher, map_config: MapConfig);
+#[starknet::interface]
+trait IMapConfig<T> {
+    fn set_map_config(ref self: T, map_config: MapConfig);
 }
 
 
-#[dojo::interface]
-trait IProductionConfig {
-    fn set_production_config(ref world: IWorldDispatcher, resource_type: u8, amount: u128, cost: Span<(u8, u128)>);
+#[starknet::interface]
+trait IProductionConfig<T> {
+    fn set_production_config(ref self: T, resource_type: u8, amount: u128, cost: Span<(u8, u128)>);
 }
 
-#[dojo::interface]
-trait ITravelStaminaCostConfig {
-    fn set_travel_stamina_cost_config(ref world: IWorldDispatcher, travel_type: u8, cost: u16);
+#[starknet::interface]
+trait ITravelStaminaCostConfig<T> {
+    fn set_travel_stamina_cost_config(ref self: T, travel_type: u8, cost: u16);
 }
 
-#[dojo::interface]
-trait ITroopConfig {
-    fn set_troop_config(ref world: IWorldDispatcher, troop_config: TroopConfig);
+#[starknet::interface]
+trait ITroopConfig<T> {
+    fn set_troop_config(ref self: T, troop_config: TroopConfig);
 }
 
-#[dojo::interface]
-trait IBuildingConfig {
-    fn set_building_general_config(ref world: IWorldDispatcher, base_cost_percent_increase: u16);
+#[starknet::interface]
+trait IBuildingConfig<T> {
+    fn set_building_general_config(ref self: T, base_cost_percent_increase: u16);
     fn set_building_config(
-        ref world: IWorldDispatcher,
-        building_category: BuildingCategory,
-        building_resource_type: u8,
-        cost_of_building: Span<(u8, u128)>
+        ref self: T, building_category: BuildingCategory, building_resource_type: u8, cost_of_building: Span<(u8, u128)>
     );
 }
 
-#[dojo::interface]
-trait IBuildingCategoryPopConfig {
+#[starknet::interface]
+trait IBuildingCategoryPopConfig<T> {
     fn set_building_category_pop_config(
-        ref world: IWorldDispatcher, building_category: BuildingCategory, population: u32, capacity: u32
+        ref self: T, building_category: BuildingCategory, population: u32, capacity: u32
     );
 }
 
-#[dojo::interface]
-trait IPopulationConfig {
-    fn set_population_config(ref world: IWorldDispatcher, base_population: u32);
+#[starknet::interface]
+trait IPopulationConfig<T> {
+    fn set_population_config(ref self: T, base_population: u32);
 }
 
-#[dojo::interface]
-trait IMercenariesConfig {
+#[starknet::interface]
+trait IMercenariesConfig<T> {
     fn set_mercenaries_config(
-        ref world: IWorldDispatcher,
+        ref self: T,
         knights_lower_bound: u64,
         knights_upper_bound: u64,
         paladins_lower_bound: u64,
@@ -174,21 +169,21 @@ trait IMercenariesConfig {
     );
 }
 
-#[dojo::interface]
-trait IResourceBridgeConfig {
-    fn set_resource_bridge_config(ref world: IWorldDispatcher, resource_bridge_config: ResourceBridgeConfig);
+#[starknet::interface]
+trait IResourceBridgeConfig<T> {
+    fn set_resource_bridge_config(ref self: T, resource_bridge_config: ResourceBridgeConfig);
     fn set_resource_bridge_fee_split_config(
-        ref world: IWorldDispatcher, resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
+        ref self: T, resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
     );
     fn set_resource_bridge_whitelist_config(
-        ref world: IWorldDispatcher, resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
+        ref self: T, resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
     );
 }
 
-#[dojo::interface]
-trait ISettlementConfig {
+#[starknet::interface]
+trait ISettlementConfig<T> {
     fn set_settlement_config(
-        ref world: IWorldDispatcher,
+        ref self: T,
         radius: u32,
         angle_scaled: u128,
         center: u32,
@@ -203,12 +198,16 @@ trait ISettlementConfig {
 
 #[dojo::contract]
 mod config_systems {
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
     use eternum::alias::ID;
 
     use eternum::constants::{
         ResourceTypes, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
         HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-        POPULATION_CONFIG_ID
+        POPULATION_CONFIG_ID, DEFAULT_NS
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
@@ -229,8 +228,9 @@ mod config_systems {
     use eternum::models::season::SeasonImpl;
 
 
-    fn assert_caller_is_admin(world: IWorldDispatcher) {
-        let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
+    fn assert_caller_is_admin(world: WorldStorage) {
+        let world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
+        let admin_address = world_config.admin_address;
         if admin_address != Zeroable::zero() {
             assert(starknet::get_caller_address() == admin_address, 'caller not admin');
         }
@@ -239,13 +239,14 @@ mod config_systems {
     #[abi(embed_v0)]
     impl WorldConfigCustomImpl of super::IWorldConfig<ContractState> {
         fn set_world_config(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             admin_address: starknet::ContractAddress,
             realm_l2_contract: starknet::ContractAddress
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract }));
+            world.write_model(@WorldConfig { config_id: WORLD_CONFIG_ID, admin_address, realm_l2_contract });
         }
     }
 
@@ -253,35 +254,38 @@ mod config_systems {
     #[abi(embed_v0)]
     impl SeasonConfigCustomImpl of super::ISeasonConfig<ContractState> {
         fn set_season_config(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             season_pass_address: starknet::ContractAddress,
             realms_address: starknet::ContractAddress,
             lords_address: starknet::ContractAddress
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(
-                world, (SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address })
-            )
+            world
+                .write_model(
+                    @SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address }
+                );
         }
     }
 
     #[abi(embed_v0)]
     impl QuestConfigCustomImpl of super::IQuestConfig<ContractState> {
-        fn set_quest_config(ref world: IWorldDispatcher, production_material_multiplier: u16) {
+        fn set_quest_config(ref self: ContractState, production_material_multiplier: u16) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (QuestConfig { config_id: WORLD_CONFIG_ID, production_material_multiplier }));
+            world.write_model(@QuestConfig { config_id: WORLD_CONFIG_ID, production_material_multiplier });
         }
 
-        fn set_quest_reward_config(ref world: IWorldDispatcher, quest_id: ID, resources: Span<(u8, u128)>) {
-            // ensure caller is admin
+        fn set_quest_reward_config(ref self: ContractState, quest_id: ID, resources: Span<(u8, u128)>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             // ensure quest id is greater than 0
             assert!(quest_id.is_non_zero(), "quest id must be greater than 0");
 
-            let detached_resource_id = world.uuid();
+            let detached_resource_id = world.dispatcher.uuid();
             let detached_resource_count = resources.len();
             let mut resources = resources;
             let mut index = 0;
@@ -295,17 +299,15 @@ mod config_systems {
                         assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as part of quest");
                         assert(resource_amount > 0, 'amount must not be 0');
 
-                        set!(
-                            world,
-                            (
-                                DetachedResource {
+                        world
+                            .write_model(
+                                @DetachedResource {
                                     entity_id: detached_resource_id,
                                     index,
                                     resource_type,
                                     resource_amount: resource_amount
-                                },
-                            )
-                        );
+                                }
+                            );
 
                         index += 1;
                     },
@@ -313,103 +315,116 @@ mod config_systems {
                 };
             };
 
-            set!(world, (QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count }));
+            world.write_model(@QuestRewardConfig { quest_id, detached_resource_id, detached_resource_count });
         }
     }
+
+
     #[abi(embed_v0)]
     impl MapConfigCustomImpl of super::IMapConfig<ContractState> {
-        fn set_map_config(ref world: IWorldDispatcher, mut map_config: MapConfig) {
+        fn set_map_config(ref self: ContractState, mut map_config: MapConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             map_config.config_id = WORLD_CONFIG_ID;
-            set!(world, (map_config));
+            world.write_model(@map_config);
         }
     }
 
 
     #[abi(embed_v0)]
     impl CapacityConfigCustomImpl of super::ICapacityConfig<ContractState> {
-        fn set_capacity_config(ref world: IWorldDispatcher, capacity_config: CapacityConfig) {
+        fn set_capacity_config(ref self: ContractState, capacity_config: CapacityConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (capacity_config));
+            world.write_model(@capacity_config);
         }
     }
 
     #[abi(embed_v0)]
     impl TravelStaminaCostConfigImpl of super::ITravelStaminaCostConfig<ContractState> {
-        fn set_travel_stamina_cost_config(ref world: IWorldDispatcher, travel_type: u8, cost: u16) {
+        fn set_travel_stamina_cost_config(ref self: ContractState, travel_type: u8, cost: u16) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (TravelStaminaCostConfig { config_id: WORLD_CONFIG_ID, travel_type, cost }));
+            world.write_model(@TravelStaminaCostConfig { config_id: WORLD_CONFIG_ID, travel_type, cost });
         }
     }
 
     #[abi(embed_v0)]
     impl WeightConfigCustomImpl of super::IWeightConfig<ContractState> {
-        fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128) {
+        fn set_weight_config(ref self: ContractState, entity_type: ID, weight_gram: u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             //note: if you change the weight of a resource e.g wood,
             //      it wont change the preexisting entities' weights
-            set!(
-                world,
-                (WeightConfig { config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram, })
-            );
+            world
+                .write_model(
+                    @WeightConfig {
+                        config_id: WORLD_CONFIG_ID, weight_config_id: entity_type, entity_type, weight_gram,
+                    }
+                );
         }
     }
 
     #[abi(embed_v0)]
     impl BattleConfigCustomImpl of super::IBattleConfig<ContractState> {
-        fn set_battle_config(ref world: IWorldDispatcher, mut battle_config: BattleConfig) {
+        fn set_battle_config(ref self: ContractState, mut battle_config: BattleConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             battle_config.config_id = WORLD_CONFIG_ID;
-            set!(world, (battle_config));
+            world.write_model(@battle_config);
         }
     }
 
     #[abi(embed_v0)]
     impl TickConfigCustomImpl of super::ITickConfig<ContractState> {
-        fn set_tick_config(ref world: IWorldDispatcher, tick_id: u8, tick_interval_in_seconds: u64) {
+        fn set_tick_config(ref self: ContractState, tick_id: u8, tick_interval_in_seconds: u64) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (TickConfig { config_id: WORLD_CONFIG_ID, tick_id, tick_interval_in_seconds }));
+            world.write_model(@TickConfig { config_id: WORLD_CONFIG_ID, tick_id, tick_interval_in_seconds });
         }
     }
 
     #[abi(embed_v0)]
     impl StaminaConfigCustomImpl of super::IStaminaConfig<ContractState> {
-        fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16) {
+        fn set_stamina_config(ref self: ContractState, unit_type: u8, max_stamina: u16) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina }));
+            world.write_model(@StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina });
         }
     }
 
     #[abi(embed_v0)]
     impl TravelFoodCostConfigCustomImpl of super::ITravelFoodCostConfig<ContractState> {
-        fn set_travel_food_cost_config(ref world: IWorldDispatcher, mut travel_food_cost_config: TravelFoodCostConfig) {
+        fn set_travel_food_cost_config(ref self: ContractState, mut travel_food_cost_config: TravelFoodCostConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             travel_food_cost_config.config_id = WORLD_CONFIG_ID;
-            set!(world, (travel_food_cost_config));
+            world.write_model(@travel_food_cost_config);
         }
     }
 
     #[abi(embed_v0)]
     impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
-        fn set_stamina_refill_config(ref world: IWorldDispatcher, amount: u16) {
+        fn set_stamina_refill_config(ref self: ContractState, amount: u16) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: amount }));
+            world.write_model(@StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: amount });
         }
     }
 
     #[abi(embed_v0)]
     impl LevelingConfigCustomImpl of super::ILevelingConfig<ContractState> {
         fn set_leveling_config(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             config_id: ID,
             decay_interval: u64,
             max_level: u64,
@@ -422,84 +437,84 @@ mod config_systems {
             resource_2_costs: Span<(u8, u128)>,
             resource_3_costs: Span<(u8, u128)>,
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let resource_1_cost_id = world.uuid();
+            let resource_1_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == resource_1_costs.len() {
                     break;
                 }
                 let (resource_type, resource_amount) = *resource_1_costs.at(index);
-                set!(
-                    world,
-                    (ResourceCost { entity_id: resource_1_cost_id, index, resource_type, amount: resource_amount })
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_1_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
 
-            let resource_2_cost_id = world.uuid();
+            let resource_2_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == resource_2_costs.len() {
                     break;
                 }
                 let (resource_type, resource_amount) = *resource_2_costs.at(index);
-                set!(
-                    world,
-                    (ResourceCost { entity_id: resource_2_cost_id, index, resource_type, amount: resource_amount })
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_2_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
 
-            let resource_3_cost_id = world.uuid();
+            let resource_3_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == resource_3_costs.len() {
                     break;
                 }
                 let (resource_type, resource_amount) = *resource_3_costs.at(index);
-                set!(
-                    world,
-                    (ResourceCost { entity_id: resource_3_cost_id, index, resource_type, amount: resource_amount })
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_3_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
 
-            set!(
-                world,
-                (LevelingConfig {
-                    config_id,
-                    decay_interval,
-                    max_level,
-                    wheat_base_amount,
-                    fish_base_amount,
-                    resource_1_cost_id,
-                    resource_2_cost_id,
-                    resource_3_cost_id,
-                    resource_1_cost_count: resource_1_costs.len(),
-                    resource_2_cost_count: resource_2_costs.len(),
-                    resource_3_cost_count: resource_3_costs.len(),
-                    decay_scaled,
-                    cost_percentage_scaled,
-                    base_multiplier,
-                })
-            );
+            world
+                .write_model(
+                    @LevelingConfig {
+                        config_id,
+                        decay_interval,
+                        max_level,
+                        wheat_base_amount,
+                        fish_base_amount,
+                        resource_1_cost_id,
+                        resource_2_cost_id,
+                        resource_3_cost_id,
+                        resource_1_cost_count: resource_1_costs.len(),
+                        resource_2_cost_count: resource_2_costs.len(),
+                        resource_3_cost_count: resource_3_costs.len(),
+                        decay_scaled,
+                        cost_percentage_scaled,
+                        base_multiplier,
+                    }
+                );
         }
     }
 
 
     #[abi(embed_v0)]
     impl ProductionConfigCustomImpl of super::IProductionConfig<ContractState> {
-        fn set_production_config(
-            ref world: IWorldDispatcher, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>
-        ) {
+        fn set_production_config(ref self: ContractState, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut resource_production_config: ProductionConfig = get!(world, resource_type, ProductionConfig);
+            let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
             assert!(
                 resource_production_config.amount.is_zero(),
                 "Production config already set for {} resource",
@@ -514,53 +529,53 @@ mod config_systems {
                         input_resource_type, input_resource_amount
                     )) => {
                         // update output resource's production input/material
-                        set!(
-                            world,
-                            (ProductionInput {
-                                output_resource_type: resource_type,
-                                index: resource_production_config.input_count.try_into().unwrap(),
-                                input_resource_type: *input_resource_type,
-                                input_resource_amount: *input_resource_amount
-                            })
-                        );
+                        world
+                            .write_model(
+                                @ProductionInput {
+                                    output_resource_type: resource_type,
+                                    index: resource_production_config.input_count.try_into().unwrap(),
+                                    input_resource_type: *input_resource_type,
+                                    input_resource_amount: *input_resource_amount
+                                }
+                            );
 
                         resource_production_config.input_count += 1;
 
                         // update input resource's production output
-                        let mut input_resource_production_config: ProductionConfig = get!(
-                            world, *input_resource_type, ProductionConfig
-                        );
+                        let mut input_resource_production_config: ProductionConfig = world
+                            .read_model(*input_resource_type);
 
-                        set!(
-                            world,
-                            (ProductionOutput {
-                                input_resource_type: *input_resource_type,
-                                index: input_resource_production_config.output_count.try_into().unwrap(),
-                                output_resource_type: resource_type,
-                            })
-                        );
+                        world
+                            .write_model(
+                                @ProductionOutput {
+                                    input_resource_type: *input_resource_type,
+                                    index: input_resource_production_config.output_count.try_into().unwrap(),
+                                    output_resource_type: resource_type,
+                                }
+                            );
 
                         input_resource_production_config.output_count += 1;
-                        set!(world, (input_resource_production_config));
+                        world.write_model(@input_resource_production_config);
                     },
                     Option::None => { break; }
                 }
             };
 
-            set!(world, (resource_production_config));
+            world.write_model(@resource_production_config);
         }
     }
 
 
     #[abi(embed_v0)]
     impl TransportConfigCustomImpl of super::ITransportConfig<ContractState> {
-        fn set_speed_config(ref world: IWorldDispatcher, entity_type: ID, sec_per_km: u16) {
+        fn set_speed_config(ref self: ContractState, entity_type: ID, sec_per_km: u16) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(
-                world,
-                (SpeedConfig { config_id: WORLD_CONFIG_ID, speed_config_id: entity_type, entity_type, sec_per_km, })
-            );
+            world
+                .write_model(
+                    @SpeedConfig { config_id: WORLD_CONFIG_ID, speed_config_id: entity_type, entity_type, sec_per_km, }
+                );
         }
     }
 
@@ -568,132 +583,139 @@ mod config_systems {
     #[abi(embed_v0)]
     impl HyperstructureConfigCustomImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             resources_for_completion: Span<(u8, u128)>,
             time_between_shares_change: u64,
             points_per_cycle: u128,
             points_for_win: u128,
             points_on_completion: u128
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
+
             let mut i = 0;
             while (i < resources_for_completion.len()) {
                 let (resource_type, amount_for_completion) = *resources_for_completion.at(i);
 
-                set!(
-                    world,
-                    (
-                        HyperstructureResourceConfig {
+                world
+                    .write_model(
+                        @HyperstructureResourceConfig {
                             config_id: HYPERSTRUCTURE_CONFIG_ID, resource_type, amount_for_completion
-                        },
-                    )
-                );
+                        }
+                    );
                 i += 1;
             };
-            set!(
-                world,
-                (HyperstructureConfig {
-                    config_id: HYPERSTRUCTURE_CONFIG_ID,
-                    time_between_shares_change,
-                    points_per_cycle,
-                    points_for_win,
-                    points_on_completion
-                })
-            );
+            world
+                .write_model(
+                    @HyperstructureConfig {
+                        config_id: HYPERSTRUCTURE_CONFIG_ID,
+                        time_between_shares_change,
+                        points_per_cycle,
+                        points_for_win,
+                        points_on_completion
+                    }
+                );
         }
     }
 
 
     #[abi(embed_v0)]
     impl BankConfigCustomImpl of super::IBankConfig<ContractState> {
-        fn set_bank_config(ref world: IWorldDispatcher, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128) {
+        fn set_bank_config(ref self: ContractState, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_num, lp_fee_denom }));
+            world.write_model(@BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_num, lp_fee_denom });
         }
     }
 
     #[abi(embed_v0)]
     impl TroopConfigCustomImpl of super::ITroopConfig<ContractState> {
-        fn set_troop_config(ref world: IWorldDispatcher, mut troop_config: TroopConfig) {
+        fn set_troop_config(ref self: ContractState, mut troop_config: TroopConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             troop_config.config_id = WORLD_CONFIG_ID;
-            set!(world, (troop_config));
+            world.write_model(@troop_config);
         }
     }
 
     #[abi(embed_v0)]
     impl BuildingCategoryPopulationConfigCustomImpl of super::IBuildingCategoryPopConfig<ContractState> {
         fn set_building_category_pop_config(
-            ref world: IWorldDispatcher, building_category: BuildingCategory, population: u32, capacity: u32
+            ref self: ContractState, building_category: BuildingCategory, population: u32, capacity: u32
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(
-                world,
-                BuildingCategoryPopConfig {
-                    config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_category, population, capacity
-                }
-            )
+            world
+                .write_model(
+                    @BuildingCategoryPopConfig {
+                        config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_category, population, capacity
+                    }
+                )
         }
     }
 
     #[abi(embed_v0)]
     impl PopulationConfigCustomImpl of super::IPopulationConfig<ContractState> {
-        fn set_population_config(ref world: IWorldDispatcher, base_population: u32,) {
+        fn set_population_config(ref self: ContractState, base_population: u32) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, PopulationConfig { config_id: POPULATION_CONFIG_ID, base_population })
+            world.write_model(@PopulationConfig { config_id: POPULATION_CONFIG_ID, base_population });
         }
     }
 
     #[abi(embed_v0)]
     impl BuildingConfigCustomImpl of super::IBuildingConfig<ContractState> {
-        fn set_building_general_config(ref world: IWorldDispatcher, base_cost_percent_increase: u16) {
+        fn set_building_general_config(ref self: ContractState, base_cost_percent_increase: u16) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, BuildingGeneralConfig { config_id: WORLD_CONFIG_ID, base_cost_percent_increase });
+            world.write_model(@BuildingGeneralConfig { config_id: WORLD_CONFIG_ID, base_cost_percent_increase });
         }
 
         fn set_building_config(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             building_category: BuildingCategory,
             building_resource_type: u8,
             cost_of_building: Span<(u8, u128)>
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let resource_cost_id = world.uuid();
+            let resource_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
                 if index == cost_of_building.len() {
                     break;
                 }
                 let (resource_type, resource_amount) = *cost_of_building.at(index);
-                set!(
-                    world, (ResourceCost { entity_id: resource_cost_id, index, resource_type, amount: resource_amount })
-                );
+                world
+                    .write_model(
+                        @ResourceCost { entity_id: resource_cost_id, index, resource_type, amount: resource_amount }
+                    );
 
                 index += 1;
             };
-            set!(
-                world,
-                (BuildingConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    category: building_category,
-                    resource_type: building_resource_type,
-                    resource_cost_id,
-                    resource_cost_count: cost_of_building.len()
-                })
-            );
+            world
+                .write_model(
+                    @BuildingConfig {
+                        config_id: WORLD_CONFIG_ID,
+                        category: building_category,
+                        resource_type: building_resource_type,
+                        resource_cost_id,
+                        resource_cost_count: cost_of_building.len()
+                    }
+                );
         }
     }
 
     #[abi(embed_v0)]
     impl IMercenariesConfig of super::IMercenariesConfig<ContractState> {
         fn set_mercenaries_config(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             knights_lower_bound: u64,
             knights_upper_bound: u64,
             paladins_lower_bound: u64,
@@ -702,6 +724,7 @@ mod config_systems {
             crossbowmen_upper_bound: u64,
             rewards: Span<(u8, u128)>
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             assert!(
@@ -716,43 +739,46 @@ mod config_systems {
                 "crossbowmen_lower_bound must be lower than crossbowmen_upper_bound"
             );
 
-            set!(
-                world,
-                (MercenariesConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    knights_lower_bound,
-                    knights_upper_bound,
-                    paladins_lower_bound,
-                    paladins_upper_bound,
-                    crossbowmen_lower_bound,
-                    crossbowmen_upper_bound,
-                    rewards
-                })
-            );
+            world
+                .write_model(
+                    @MercenariesConfig {
+                        config_id: WORLD_CONFIG_ID,
+                        knights_lower_bound,
+                        knights_upper_bound,
+                        paladins_lower_bound,
+                        paladins_upper_bound,
+                        crossbowmen_lower_bound,
+                        crossbowmen_upper_bound,
+                        rewards
+                    }
+                );
         }
     }
 
     #[abi(embed_v0)]
     impl IResourceBridgeConfig of super::IResourceBridgeConfig<ContractState> {
-        fn set_resource_bridge_config(ref world: IWorldDispatcher, mut resource_bridge_config: ResourceBridgeConfig) {
+        fn set_resource_bridge_config(ref self: ContractState, mut resource_bridge_config: ResourceBridgeConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             resource_bridge_config.config_id = WORLD_CONFIG_ID;
-            set!(world, (resource_bridge_config));
+            world.write_model(@resource_bridge_config);
         }
 
         fn set_resource_bridge_fee_split_config(
-            ref world: IWorldDispatcher, mut resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
+            ref self: ContractState, mut resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             resource_bridge_fee_split_config.config_id = WORLD_CONFIG_ID;
-            set!(world, (resource_bridge_fee_split_config));
+            world.write_model(@resource_bridge_fee_split_config);
         }
 
         fn set_resource_bridge_whitelist_config(
-            ref world: IWorldDispatcher, mut resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
+            ref self: ContractState, mut resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             // note: if we are whitelisting a NEW resource type, we WILL need to
@@ -765,24 +791,24 @@ mod config_systems {
                 "the system only supports at most 255 resource types"
             );
 
-            set!(world, (resource_bridge_whitelist_config));
+            world.write_model(@resource_bridge_whitelist_config);
         }
     }
 
     #[abi(embed_v0)]
     impl RealmLevelConfigCustomImpl of super::IRealmLevelConfig<ContractState> {
-        fn set_realm_max_level_config(ref world: IWorldDispatcher, new_max_level: u8) {
-            // ensure only admin can set this
+        fn set_realm_max_level_config(ref self: ContractState, new_max_level: u8) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            set!(world, (RealmMaxLevelConfig { config_id: WORLD_CONFIG_ID, max_level: new_max_level }));
+            world.write_model(@RealmMaxLevelConfig { config_id: WORLD_CONFIG_ID, max_level: new_max_level });
         }
 
-        fn set_realm_level_config(ref world: IWorldDispatcher, level: u8, mut resources: Span<(u8, u128)>) {
-            // ensure only admin can set this
+        fn set_realm_level_config(ref self: ContractState, level: u8, mut resources: Span<(u8, u128)>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let detached_resource_id = world.uuid();
+            let detached_resource_id = world.dispatcher.uuid();
             let detached_resource_count = resources.len();
             let mut index = 0;
             for (
@@ -791,33 +817,29 @@ mod config_systems {
                 let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                 assert(resource_amount > 0, 'amount must not be 0');
 
-                set!(
-                    world,
-                    (
-                        DetachedResource {
-                            entity_id: detached_resource_id, index, resource_type, resource_amount: resource_amount
-                        },
-                    )
-                );
+                world
+                    .write_model(
+                        @DetachedResource { entity_id: detached_resource_id, index, resource_type, resource_amount }
+                    );
 
                 index += 1;
             };
 
-            set!(
-                world,
-                (RealmLevelConfig {
-                    level,
-                    required_resources_id: detached_resource_id.into(),
-                    required_resource_count: detached_resource_count.try_into().unwrap()
-                })
-            );
+            world
+                .write_model(
+                    @RealmLevelConfig {
+                        level,
+                        required_resources_id: detached_resource_id.into(),
+                        required_resource_count: detached_resource_count.try_into().unwrap()
+                    }
+                );
         }
     }
 
     #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
         fn set_settlement_config(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             radius: u32,
             angle_scaled: u128,
             center: u32,
@@ -827,21 +849,23 @@ mod config_systems {
             min_angle_increase: u64,
             max_angle_increase: u64
         ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
-            set!(
-                world,
-                (SettlementConfig {
-                    config_id: WORLD_CONFIG_ID,
-                    radius,
-                    angle_scaled,
-                    center,
-                    min_distance,
-                    max_distance,
-                    min_scaling_factor_scaled,
-                    min_angle_increase,
-                    max_angle_increase,
-                })
-            );
+
+            world
+                .write_model(
+                    @SettlementConfig {
+                        config_id: WORLD_CONFIG_ID,
+                        radius,
+                        angle_scaled,
+                        center,
+                        min_distance,
+                        max_distance,
+                        min_scaling_factor_scaled,
+                        min_angle_increase,
+                        max_angle_increase,
+                    }
+                );
         }
     }
 }

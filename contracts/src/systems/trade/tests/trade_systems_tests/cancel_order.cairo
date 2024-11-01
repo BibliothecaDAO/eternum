@@ -33,7 +33,7 @@ use starknet::contract_address_const;
 
 fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
-    world.uuid();
+    world.dispatcher.uuid();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 

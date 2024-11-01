@@ -12,7 +12,6 @@ mod resource_transfer_system_tests {
     use eternum::models::capacity::CapacityCategory;
     use eternum::models::config::WeightConfig;
     use eternum::models::config::{CapacityConfig, CapacityConfigCategory};
-    use eternum::models::metadata::ForeignKey;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
     use eternum::models::quantity::Quantity;
@@ -84,8 +83,8 @@ mod resource_transfer_system_tests {
             )
         );
 
-        // call world.uuid() to ensure next id isn't 0
-        world.uuid();
+        // call world.dispatcher.uuid() to ensure next id isn't 0
+        world.dispatcher.uuid();
     }
 
 
