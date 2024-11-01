@@ -23,7 +23,7 @@ async function init() {
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
-  if (import.meta.env.VITE_PUBLIC_CONSTRUCTION_FLAG) {
+  if (import.meta.env.VITE_PUBLIC_CONSTRUCTION_FLAG == "true") {
     root.render(<LoadingScreen />);
     return;
   }
