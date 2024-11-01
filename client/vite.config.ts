@@ -19,6 +19,9 @@ export default defineConfig({
       devOptions: {
         enabled: true,
       },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4000000,
+      },
       manifest: {
         name: "Eternum",
         short_name: "Eternum",
