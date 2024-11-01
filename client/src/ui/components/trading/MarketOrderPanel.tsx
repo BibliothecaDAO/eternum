@@ -6,6 +6,7 @@ import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -101,9 +102,6 @@ export const MarketOrderPanel = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
-  const dojo = useDojo();
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
   const selectedResourceBidOffers = useMemo(() => {
     return resourceBidOffers
       .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
@@ -247,6 +245,8 @@ const OrderRow = ({
   const { computeTravelTime } = useTravel();
   const dojo = useDojo();
 
+  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+
   const lordsManager = new ProductionManager(dojo.setup, entityId, ResourcesIds.Lords);
   const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [updateBalance]);
 
@@ -366,6 +366,7 @@ const OrderRow = ({
     } catch (error) {
       console.error("Failed to accept order", error);
     } finally {
+      playLordsSound();
       setUpdateBalance(!updateBalance);
       setLoading(false);
     }
@@ -493,6 +494,8 @@ const OrderCreation = ({
   const [lords, setLords] = useState(100);
   const [bid, setBid] = useState(String(lords / resource));
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+
   const {
     account: { account },
     setup: {
@@ -535,6 +538,7 @@ const OrderCreation = ({
       taker_gives_resources: takerGives,
       expires_at: nextBlockTimestamp + ONE_MONTH,
     }).finally(() => {
+      playLordsSound();
       setLoading(false);
     });
   };

@@ -17,6 +17,7 @@ import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengin
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { SetupResult } from "../setup";
+import { playBuildingSound } from "@/three/scenes/Hexception";
 
 export class TileManager {
   private col: number;
@@ -234,7 +235,9 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    const _ = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+
+    playBuildingSound(buildingType);
 
     await this.setup.systemCalls.create_building({
       signer: this.setup.network.burnerManager.account!,
