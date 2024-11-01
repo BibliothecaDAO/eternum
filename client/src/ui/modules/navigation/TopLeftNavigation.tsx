@@ -165,7 +165,7 @@ export const TopLeftNavigation = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
+    <div className="pointer-events-auto mx-2 w-screen flex justify-between md:pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
         <div className="flex max-w-[150px] md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
           <div className="self-center flex justify-between w-full">

@@ -112,9 +112,13 @@ export const World = () => {
           <Onboarding />
         </BlankOverlayContainer>
         <ActionInfo />
-        <ArmyInfoLabel />
-        <StructureInfoLabel />
-        <BattleInfoLabel />
+        {!IS_MOBILE && (
+          <>
+            <ArmyInfoLabel />
+            <StructureInfoLabel />
+            <BattleInfoLabel />
+          </>
+        )}
 
         <BattleContainer>
           <BattleView />
@@ -129,11 +133,12 @@ export const World = () => {
             <TopMiddleNavigation />
           </TopCenterContainer>
 
+          <BottomMiddleContainer>
+            <SelectedArmy />
+          </BottomMiddleContainer>
+
           {!IS_MOBILE && (
             <>
-              <BottomMiddleContainer>
-                <SelectedArmy />
-              </BottomMiddleContainer>
               <BottomRightContainer>
                 <EventStream />
               </BottomRightContainer>

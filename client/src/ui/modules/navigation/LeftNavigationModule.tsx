@@ -281,7 +281,7 @@ export const LeftNavigationModule = () => {
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-[600px] text-gold left-10 md:pt-20 pointer-events-none ${
+          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold left-10 md:pt-20 pointer-events-none ${
             isOffscreen(view) ? (IS_MOBILE ? "-translate-x-[92%]" : "-translate-x-[88%]") : ""
           }`}
         >
