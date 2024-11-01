@@ -40,7 +40,7 @@ if (!rootElement.innerHTML) {
           <StarknetProvider>
             <DojoProvider value={setupResult}>
               {/*<ArkProvider config={config}>*/}
-                <RouterProvider router={router} />
+              <RouterProvider router={router} />
               {/*</ArkProvider>*/}
             </DojoProvider>
           </StarknetProvider>

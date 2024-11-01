@@ -6,17 +6,12 @@ export const itemsPerPage = 50;
 
 export const collectionSortDirectionKey = "direction";
 export const collectionSortDirectionsValues = ["asc", "desc"] as const;
-export const collectionSortDirectionsParser = parseAsStringLiteral(
-  collectionSortDirectionsValues,
-).withDefault("asc");
-export type CollectionSortDirection =
-  (typeof collectionSortDirectionsValues)[number];
+export const collectionSortDirectionsParser = parseAsStringLiteral(collectionSortDirectionsValues).withDefault("asc");
+export type CollectionSortDirection = (typeof collectionSortDirectionsValues)[number];
 
 export const collectionSortByKey = "sort";
 export const collectionSortByValues = ["price"] as const;
-export const collectionSortByParser = parseAsStringLiteral(
-  collectionSortByValues,
-).withDefault("price");
+export const collectionSortByParser = parseAsStringLiteral(collectionSortByValues).withDefault("price");
 export type CollectionSortBy = (typeof collectionSortByValues)[number];
 
 /*export const collectionPageSearchParamsCache = createSearchParamsCache({
@@ -68,7 +63,9 @@ export async function getCollectionTokens({
     queryParams.push(`direction=${sortDirection}`);
   }
 
-  const url = `${import.meta.env.VITE_PUBLIC_ARK_MARKETPLACE_API}/collections/${collectionAddress}/0x534e5f4d41494e/tokens?${queryParams.join("&")}`;
+  const url = `${
+    import.meta.env.VITE_PUBLIC_ARK_MARKETPLACE_API
+  }/collections/${collectionAddress}/0x534e5f4d41494e/tokens?${queryParams.join("&")}`;
   const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
@@ -103,7 +100,9 @@ export function getMediaSrc(
 
   if (mediaKey && width && height) {
     const resolutionParam = `:${width}:${height}`;
-    return `${import.meta.env.VITE_PUBLIC_IMAGE_PROXY_URL}/_/rs:fit${resolutionParam}/plain/${import.meta.env.NEXT_PUBLIC_IMAGE_CDN_URL}/${mediaKey}`;
+    return `${import.meta.env.VITE_PUBLIC_IMAGE_PROXY_URL}/_/rs:fit${resolutionParam}/plain/${
+      import.meta.env.NEXT_PUBLIC_IMAGE_CDN_URL
+    }/${mediaKey}`;
   }
   return src?.replace("ipfs://", import.meta.env.VITE_PUBLIC_IPFS_GATEWAY);
 }

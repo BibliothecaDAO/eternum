@@ -6,7 +6,7 @@ export const CartridgeConnectButton = (props: ButtonProps) => {
 
   return (
     <Button variant="cta" onClick={() => connect({ connector: connectors[2] })} {...props}>
-      <img className="w-6" src={connectors[2].icon  as string} /> Log In
+      <img className="w-6" src={connectors[2].icon as string} /> Log In
     </Button>
   );
 };

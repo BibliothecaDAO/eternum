@@ -8,7 +8,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
 export default defineConfig({
-  plugins: [mkcert(), svgr(), TanStackRouterVite(), react(), wasm(),topLevelAwait()],
+  plugins: [mkcert(), svgr(), TanStackRouterVite(), react(), wasm(), topLevelAwait()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

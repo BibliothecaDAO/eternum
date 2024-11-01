@@ -105,7 +105,10 @@ function Mint() {
         <>
           {controllerAddress && (
             <div className="text-xl py-4 flex items-center">
-              Minting to: <Badge variant={"secondary"} className="text-lg ml-4 py-1.5"><img className="w-6 pr-2" src={connectors[2].icon as string} /> {displayAddress(controllerAddress)}</Badge>
+              Minting to:{" "}
+              <Badge variant={"secondary"} className="text-lg ml-4 py-1.5">
+                <img className="w-6 pr-2" src={connectors[2].icon as string} /> {displayAddress(controllerAddress)}
+              </Badge>
             </div>
           )}
           {account?.address ? (

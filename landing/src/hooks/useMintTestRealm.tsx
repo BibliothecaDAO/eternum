@@ -39,7 +39,7 @@ export const useMintTestRealm = () => {
         setMintingTokenId(token_id);
         await mint_test_realm({ signer: account, token_id, realms_address })
           .then(() => {
-            toast(`Realms #${token_id} Minted`)
+            toast(`Realms #${token_id} Minted`);
           })
           .catch((e) => {
             console.error(`mint error:`, e);

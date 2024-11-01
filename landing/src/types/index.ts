@@ -346,11 +346,7 @@ export interface TrendingNow {
   collection_name: string;
   floor_difference: number;
   floor_price: string | null;
-  preview_nfts: [
-    { metadata?: TokenMetadata },
-    { metadata?: TokenMetadata },
-    { metadata?: TokenMetadata },
-  ];
+  preview_nfts: [{ metadata?: TokenMetadata }, { metadata?: TokenMetadata }, { metadata?: TokenMetadata }];
 }
 
 export interface LiveAuctions {

@@ -84,7 +84,6 @@ export function calculateDistance(start: Position, destination: Position): numbe
   }
 }
 
-
 export enum TimeFormat {
   D = 1,
   H = 2,
@@ -109,7 +108,6 @@ export const formatTime = (
 
   return parts.join(" ");
 };
-
 
 export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
   navigator.clipboard

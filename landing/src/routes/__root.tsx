@@ -12,7 +12,7 @@ export const Route = createRootRoute({
         <AppSidebar />
         <DashboardLayout>
           <Outlet />
-          <ToastContainer style={{ zIndex: 1100, top: 76}} />
+          <ToastContainer style={{ zIndex: 1100, top: 76 }} />
         </DashboardLayout>
       </SidebarProvider>
       <TanStackRouterDevtools />

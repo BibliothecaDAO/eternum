@@ -17,10 +17,9 @@ const cartridgeController = new ControllerConnector({
   // Uncomment to use a custom theme
   // theme: "dope-wars",
   // colorMode: "light"
-  });
+});
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
- 
- const { connectors } = useInjectedConnectors({
+  const { connectors } = useInjectedConnectors({
     // Show these connectors if the user has no connector installed.
     recommended: [argent(), braavos()],
     // Hide recommended connectors if the user has any connector installed.

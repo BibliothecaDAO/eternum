@@ -19,7 +19,6 @@ export const Sidebar = () => {
       <Link to="/bridge" className="[&.active]:font-bold">
         <Button variant="ghost">Bridge</Button>
       </Link>
-      
     </div>
   );
 };

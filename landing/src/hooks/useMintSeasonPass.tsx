@@ -20,7 +20,7 @@ export const useMintSeasonPass = () => {
 
   //const { contractAddress } = useTokenContract();
   //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-//  const { isConnected } = useAccount();
+  //  const { isConnected } = useAccount();
   //const { isCorrectChain } = useIsCorrectChain()
   // const { totalSupply } = useTotalSupply()
 
@@ -38,7 +38,12 @@ export const useMintSeasonPass = () => {
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_ids);
-        await mint_season_passes({ signer: account, recipient: account.address, token_ids: tokenIdsNumberArray, season_pass_address })
+        await mint_season_passes({
+          signer: account,
+          recipient: account.address,
+          token_ids: tokenIdsNumberArray,
+          season_pass_address,
+        })
           .then(() => {
             toast("Season Passes Minted");
             // wait supply to change...

@@ -24,7 +24,6 @@ const seasonPasses = [
     owner: "0x2468...ace0",
     name: "Iron Shield",
   },
-  
 ];
 
 export const Route = createLazyFileRoute("/passes")({
@@ -32,7 +31,7 @@ export const Route = createLazyFileRoute("/passes")({
 });
 
 function Passes() {
-/*
+  /*
   const [sortBy, setSortBy] = useQueryState(
     collectionSortByKey,
     collectionSortByParser,

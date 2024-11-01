@@ -1,9 +1,9 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 
 import type {
-    CollectionSortBy,
-    CollectionSortDirection,
-    CollectionTokensApiResponse,
+  CollectionSortBy,
+  CollectionSortDirection,
+  CollectionTokensApiResponse,
 } from "@/lib/ark/getCollectionTokens";
 import type { Filters } from "@/types";
 
@@ -14,24 +14,22 @@ interface useCollectionTokensProps {
   sortBy: CollectionSortBy;
   sortDirection: CollectionSortDirection;
   filters: Filters;
-  buyNow:boolean;
+  buyNow: boolean;
 }
 
 const REFETCH_INTERVAL = 10_000;
 
-export default function useCollectionTokens({ collectionAddress, sortDirection, sortBy, filters, buyNow }: useCollectionTokensProps) {
+export default function useCollectionTokens({
+  collectionAddress,
+  sortDirection,
+  sortBy,
+  filters,
+  buyNow,
+}: useCollectionTokensProps) {
   const result = useSuspenseInfiniteQuery({
-    queryKey: [
-      "collectionTokens",
-      sortDirection,
-      sortBy,
-      collectionAddress,
-      filters,
-      buyNow
-    ],
+    queryKey: ["collectionTokens", sortDirection, sortBy, collectionAddress, filters, buyNow],
     refetchInterval: REFETCH_INTERVAL,
-    getNextPageParam: (lastPage: CollectionTokensApiResponse) =>
-      lastPage.next_page,
+    getNextPageParam: (lastPage: CollectionTokensApiResponse) => lastPage.next_page,
     initialPageParam: undefined as number | undefined,
     queryFn: ({ pageParam }) =>
       getCollectionTokens({
@@ -40,7 +38,7 @@ export default function useCollectionTokens({ collectionAddress, sortDirection, 
         sortDirection,
         sortBy,
         filters,
-        buyNow
+        buyNow,
       }),
   });
   return result;
