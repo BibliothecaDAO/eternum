@@ -1,7 +1,7 @@
 import { ResourcesIds } from ".";
 
 export const ADMIN_BANK_ENTITY_ID = 999999998n;
-export const LORDS_LIQUIDITY_PER_RESOURCE = 5_000;
+export const LORDS_LIQUIDITY_PER_RESOURCE = 1_000;
 
 export const AMM_STARTING_LIQUIDITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Wood]: 500_000,
@@ -28,6 +28,6 @@ export const AMM_STARTING_LIQUIDITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Dragonhide]: 50_000,
 
   [ResourcesIds.Donkey]: 100_000,
-  [ResourcesIds.Fish]: 10_000_000,
-  [ResourcesIds.Wheat]: 10_000_000,
+  [ResourcesIds.Fish]: 1_000_000,
+  [ResourcesIds.Wheat]: 1_000_000,
 };

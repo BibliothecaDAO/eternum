@@ -27,8 +27,8 @@ torii-relay = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.
 dojo-world = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
 
 cainome = { git = "https://github.com/cartridge-gg/cainome" }
-cairo-lang-filesystem = "=2.7.0"
-scarb = { git = "https://github.com/software-mansion/scarb", tag = "v2.7.0" }
+cairo-lang-filesystem = "=2.8.4"
+scarb = { git = "https://github.com/software-mansion/scarb", tag = "v2.8.4" }
 shuttle-runtime = { version = "0.47.0" }
 shuttle-serenity = { version = "0.47.0" }
 shuttle-rocket = { version = "0.47.0" }

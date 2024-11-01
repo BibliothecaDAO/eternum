@@ -248,7 +248,7 @@ fn combat_test_battle_leave_by_winner() {
     // ensure the player_1 took all the reward from the contest pot
     // the player_1's gold balance should now be triple since it took
     // (player_2 and player 3)'s gold balance after battle ended
-    let player_1_gold_resource: Resource = ResourceCustomImpl::get(world, (player_1_army_id, ResourceTypes::GOLD));
+    let player_1_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_1_army_id, ResourceTypes::GOLD));
     assert_eq!(ARMY_GOLD_RESOURCE_AMOUNT * 3, player_1_gold_resource.balance);
 
     // ensure player_1's army troop count is correct
@@ -309,7 +309,7 @@ fn combat_test_battle_leave_by_loser() {
     battle_system_dispatcher.battle_leave(battle_id, player_2_army_id);
 
     // ensure the player_2 took no reward and lost balance
-    let player_2_gold_resource: Resource = ResourceCustomImpl::get(world, (player_2_army_id, ResourceTypes::GOLD));
+    let player_2_gold_resource: Resource = ResourceCustomImpl::get(ref world, (player_2_army_id, ResourceTypes::GOLD));
     assert_eq!(0, player_2_gold_resource.balance);
 
     // ensure player_3's army troop count is correct

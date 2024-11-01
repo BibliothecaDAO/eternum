@@ -6,7 +6,7 @@ import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsStructureImmune, useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { soundSelector, useBuildingSound, useUiSounds } from "@/hooks/useUISound";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
@@ -67,7 +67,7 @@ export const BuildingEntityDetails = () => {
 
   const selectedStructureInfo = getEntityInfo(structureEntityId);
 
-  let isCastleSelected = useMemo(
+  const isCastleSelected = useMemo(
     () =>
       selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
       selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&

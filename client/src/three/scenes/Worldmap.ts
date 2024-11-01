@@ -5,6 +5,7 @@ import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMoveme
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
+import { dir, soundSelector } from "@/hooks/useUISound";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
@@ -50,7 +51,7 @@ export default class WorldmapScene extends HexagonScene {
   private armySubscription: any;
   private selectedHexManager: SelectedHexManager;
   private minimap!: Minimap;
-
+  private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
@@ -198,6 +199,10 @@ export default class WorldmapScene extends HexagonScene {
     const { hexCoords } = hex;
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
+      if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
+        new Audio(dir + soundSelector.hoverClick).play();
+        this.previouslyHoveredHex = hexCoords;
+      }
       this.state.updateHoveredHex(hexCoords);
     }
     this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
@@ -299,6 +304,10 @@ export default class WorldmapScene extends HexagonScene {
       this.clearEntitySelection();
       return;
     }
+
+    const audio = new Audio(dir + soundSelector.unitSelected2);
+    audio.play();
+
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
     const travelPaths = armyMovementManager.findPaths(
       this.exploredTiles,
