@@ -84,17 +84,17 @@ fn trade_test_create_order() {
         );
 
     // check maker balances
-    let maker_stone_balance = ResourceCustomImpl::get(world, (maker_id, ResourceTypes::STONE)).balance;
+    let maker_stone_balance = ResourceCustomImpl::get(ref world, (maker_id, ResourceTypes::STONE)).balance;
     assert(maker_stone_balance == 0, 'm stone balance should be 0');
 
-    let maker_gold_balance = ResourceCustomImpl::get(world, (maker_id, ResourceTypes::GOLD)).balance;
+    let maker_gold_balance = ResourceCustomImpl::get(ref world, (maker_id, ResourceTypes::GOLD)).balance;
     assert(maker_gold_balance == 0, 'm gold balance should be 0');
 
     // check that taker balance is unmodified
-    let taker_stone_balance = ResourceCustomImpl::get(world, (taker_id, ResourceTypes::STONE)).balance;
+    let taker_stone_balance = ResourceCustomImpl::get(ref world, (taker_id, ResourceTypes::STONE)).balance;
     assert(taker_stone_balance == 500, 't stone balance should be 500');
 
-    let taker_gold_balance = ResourceCustomImpl::get(world, (taker_id, ResourceTypes::GOLD)).balance;
+    let taker_gold_balance = ResourceCustomImpl::get(ref world, (taker_id, ResourceTypes::GOLD)).balance;
     assert(taker_gold_balance == 500, 't gold balance should be 500');
 
     let trade = get!(world, trade_id, Trade);

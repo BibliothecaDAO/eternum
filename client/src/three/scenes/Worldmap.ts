@@ -325,6 +325,12 @@ export default class WorldmapScene extends HexagonScene {
     this.moveCameraToURLLocation();
     this.minimap.moveMinimapCenterToUrlLocation();
     this.minimap.showMinimap();
+
+    // Set the currently selected building hex as the default world map selection
+    if (this.state.selectedBuildingHex) {
+      const { outerCol, outerRow } = this.state.selectedBuildingHex;
+      this.state.setSelectedHex({ col: outerCol, row: outerRow });
+    }
   }
 
   onSwitchOff() {

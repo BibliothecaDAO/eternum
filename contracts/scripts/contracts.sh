@@ -34,7 +34,11 @@ export REALM_SYSTEMS=$(get_contract_address "eternum-realm_systems")
 
 export DEV_RESOURCE_SYSTEMS=$(get_contract_address "eternum-dev_resource_systems")
 
-export COMBAT_SYSTEMS=$(get_contract_address "eternum-combat_systems")
+export TROOP_SYSTEMS=$(get_contract_address "eternum-troop_systems")
+
+export BATTLE_SYSTEMS=$(get_contract_address "eternum-battle_systems")
+
+export BATTLE_PILLAGE_SYSTEMS=$(get_contract_address "eternum-battle_pillage_systems")
 
 export NAME_SYSTEMS=$(get_contract_address "eternum-name_systems")
 
@@ -69,7 +73,9 @@ echo donkey : $DONKEY_SYSTEMS
 echo travel : $TRAVEL_SYSTEMS
 echo realm : $REALM_SYSTEMS
 echo test_resource : $DEV_RESOURCE_SYSTEMS
-echo combat : $COMBAT_SYSTEMS
+echo battle : $BATTLE_SYSTEMS
+echo battle_pillage : $BATTLE_PILLAGE_SYSTEMS
+echo troop : $TROOP_SYSTEMS
 echo name : $NAME_SYSTEMS
 echo bank : $BANK_SYSTEMS
 echo swap : $SWAP_SYSTEMS

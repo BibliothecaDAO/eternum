@@ -1,6 +1,6 @@
 import type { Config } from "@bibliothecadao/eternum";
-import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
-import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
+import devManifest from "../contracts/manifest_dev.json";
+import productionManifest from "../contracts/manifest_prod.json";
 
 import { EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";

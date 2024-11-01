@@ -1,4 +1,5 @@
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use eternum::alias::ID;
 use eternum::constants::ErrorMessages;
 use eternum::models::realm::Realm;
@@ -42,17 +43,19 @@ impl OwnerCustomImpl of OwnerCustomTrait {
 
 #[generate_trait]
 impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
-    fn assert_caller_owner(self: EntityOwner, world: IWorldDispatcher) {
-        let owner: Owner = get!(world, self.entity_owner_id, Owner);
+    fn assert_caller_owner(self: EntityOwner, world: WorldStorage) {
+        let owner: Owner = world.read_model(self.entity_owner_id);
         owner.assert_caller_owner();
     }
 
-    fn owner_address(self: EntityOwner, world: IWorldDispatcher) -> ContractAddress {
-        return get!(world, self.entity_owner_id, Owner).address;
+    fn owner_address(self: EntityOwner, world: WorldStorage) -> ContractAddress {
+        let owner: Owner = world.read_model(self.entity_owner_id);
+        owner.address
     }
 
-    fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> ID {
-        get!(world, (self.entity_owner_id), Realm).realm_id
+    fn get_realm_id(self: EntityOwner, world: WorldStorage) -> ID {
+        let realm: Realm = world.read_model(self.entity_owner_id);
+        realm.realm_id
     }
 }
 

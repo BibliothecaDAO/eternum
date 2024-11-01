@@ -6,7 +6,7 @@ const PARTICLE_SPEED = 1;
 const PARTICLE_RESET_Y = 2.5;
 const PARTICLE_START_Y = -0.5;
 const LIGHT_COLOR = new THREE.Color(2, 2, 1);
-const PARICLE_COLOR = new THREE.Color("lightyellow");
+const PARICLE_COLOR = new THREE.Color(3, 10, 5);
 
 //  particle position ranges
 const PARTICLE_X_RANGE = 1;

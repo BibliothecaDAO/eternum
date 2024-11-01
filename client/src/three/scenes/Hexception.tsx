@@ -24,6 +24,7 @@ import { HexagonScene } from "./HexagonScene";
 import {
   BUILDINGS_CENTER,
   HEX_SIZE,
+  MinesMaterialsParams,
   buildingModelPaths,
   castleLevelToRealmCastle,
   structureTypeToBuildingType,
@@ -102,6 +103,7 @@ export default class HexceptionScene extends HexagonScene {
     label: CSS2DObject;
   }[] = [];
   private castleLevel: RealmLevels = RealmLevels.Settlement;
+  private minesMaterials: Map<number, THREE.MeshStandardMaterial> = new Map();
 
   constructor(
     controls: MapControls,
@@ -261,6 +263,14 @@ export default class HexceptionScene extends HexagonScene {
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
+
+    // select center hex
+    this.state.setSelectedBuildingHex({
+      outerCol: col,
+      outerRow: row,
+      innerCol: BUILDINGS_CENTER[0],
+      innerRow: BUILDINGS_CENTER[1],
+    });
   }
 
   onSwitchOff() {
@@ -353,6 +363,7 @@ export default class HexceptionScene extends HexagonScene {
 
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
+
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],
       DeepOcean: [],
@@ -414,7 +425,18 @@ export default class HexceptionScene extends HexagonScene {
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
-
+            if (buildingType === ResourceMiningTypes.Mine) {
+              const crystalMesh1 = instance.children[1] as THREE.Mesh;
+              const crystalMesh2 = instance.children[2] as THREE.Mesh;
+              if (!this.minesMaterials.has(building.resource)) {
+                const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                this.minesMaterials.set(building.resource, material);
+              }
+              // @ts-ignoreq
+              crystalMesh1.material = this.minesMaterials.get(building.resource);
+              // @ts-ignore
+              crystalMesh2.material = this.minesMaterials.get(building.resource);
+            }
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
 
@@ -559,6 +581,10 @@ export default class HexceptionScene extends HexagonScene {
       dummy.position.z = position.z;
       dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+      const rotationSeed = this.hashCoordinates(position.col, position.row);
+      const rotationIndex = Math.floor(rotationSeed * 6);
+      const randomRotation = (rotationIndex * Math.PI) / 3;
+      dummy.rotation.y = randomRotation;
       dummy.updateMatrix();
       biomeHexes[biome].push(dummy.matrix.clone());
     });

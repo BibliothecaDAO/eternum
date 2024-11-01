@@ -7,7 +7,7 @@ import { Health } from "@/types";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
-function formatTimeDifference(time: Date) {
+export function formatTimeDifference(time: Date) {
   const diffInMs = Number(time) - Number(new Date(0));
   const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
   if (days > 0) {

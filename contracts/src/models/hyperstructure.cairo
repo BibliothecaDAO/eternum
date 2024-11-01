@@ -1,5 +1,6 @@
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use eternum::{
     alias::ID,
     constants::{
@@ -71,17 +72,17 @@ pub struct Epoch {
 
 #[generate_trait]
 pub impl EpochCustomImpl of EpochCustomTrait {
-    fn get(world: IWorldDispatcher, hyperstructure_entity_id: ID, index: u16) -> Epoch {
-        let epoch = get!(world, (hyperstructure_entity_id, index), Epoch);
+    fn get(ref world: WorldStorage, hyperstructure_entity_id: ID, index: u16) -> Epoch {
+        let epoch: Epoch = world.read_model((hyperstructure_entity_id, index));
         epoch
     }
 }
 
 #[generate_trait]
 pub impl HyperstructureCustomImpl of HyperstructureCustomTrait {
-    fn assert_access(self: Hyperstructure, world: IWorldDispatcher) {
+    fn assert_access(self: Hyperstructure, ref world: WorldStorage) {
         let contributor_address = starknet::get_caller_address();
-        let hyperstructure_owner = get!(world, self.entity_id, Owner);
+        let hyperstructure_owner: Owner = world.read_model(self.entity_id);
 
         match self.access {
             Access::Public => {},
@@ -89,9 +90,8 @@ pub impl HyperstructureCustomImpl of HyperstructureCustomTrait {
                 assert!(contributor_address == hyperstructure_owner.address, "Hyperstructure is private");
             },
             Access::GuildOnly => {
-                let guild_member = get!(world, contributor_address, GuildMember);
-
-                let owner_guild_member = get!(world, hyperstructure_owner.address, GuildMember);
+                let guild_member: GuildMember = world.read_model(contributor_address);
+                let owner_guild_member: GuildMember = world.read_model(hyperstructure_owner.address);
                 assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
             }
         }

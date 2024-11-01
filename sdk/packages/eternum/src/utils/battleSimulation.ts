@@ -46,10 +46,18 @@ export class TroopsSimulator {
   paladin_count: bigint;
   crossbowman_count: bigint;
 
+  lifetime_knight_count: bigint;
+  lifetime_paladin_count: bigint;
+  lifetime_crossbowman_count: bigint;
+
   constructor(knight_count: bigint, paladin_count: bigint, crossbowman_count: bigint) {
     this.knight_count = knight_count;
     this.paladin_count = paladin_count;
     this.crossbowman_count = crossbowman_count;
+
+    this.lifetime_knight_count = knight_count;
+    this.lifetime_paladin_count = paladin_count;
+    this.lifetime_crossbowman_count = crossbowman_count;
   }
 
   count() {
@@ -149,10 +157,13 @@ export class Battle {
     let defenderCrossbowmanStrength = 1 + Number(defender.crossbowman_count) * this.config.crossbowmanStrength;
 
     /* knight advantage calculation against enemy paladin */
-
     let attackerKnightStrengthWithAdvantage =
       attackerKnightStrength +
-      Math.floor((defenderPaladinStrength * this.config.advantagePercent) / attackerKnightStrength / Percentage._100());
+      Math.floor(
+        (attackerKnightStrength * (defenderPaladinStrength * this.config.advantagePercent)) /
+          attackerKnightStrength /
+          Percentage._100(),
+      );
     // attacker can only get a max of advantagePercent of its own size
     let attackerKnightStrengthWithAdvantageMax =
       attackerKnightStrength + Percentage.get(attackerKnightStrength, this.config.advantagePercent);
@@ -162,11 +173,13 @@ export class Battle {
     );
 
     /* knight disadvantage calculation against enemy crossbowman */
-
     let attackerKnightStrengthWithDisadvantage =
       attackerKnightStrength -
       Math.floor(
-        (defenderCrossbowmanStrength * this.config.disadvantagePercent) / attackerKnightStrength / Percentage._100(),
+        attackerKnightStrength *
+          ((defenderCrossbowmanStrength * this.config.disadvantagePercent) /
+            attackerKnightStrength /
+            Percentage._100()),
       );
     // attacker can only lose a max of disadvantagePercent of its own size
     let attackerKnightStrengthWithDisadvantageMax =
@@ -181,7 +194,9 @@ export class Battle {
     let attackerCrossbowmanStrengthWithAdvantage =
       attackerCrossbowmanStrength +
       Math.floor(
-        (defenderKnightStrength * this.config.advantagePercent) / attackerCrossbowmanStrength / Percentage._100(),
+        (attackerCrossbowmanStrength * (defenderKnightStrength * this.config.advantagePercent)) /
+          attackerCrossbowmanStrength /
+          Percentage._100(),
       );
     let attackerCrossbowmanStrengthWithAdvantageMax =
       attackerCrossbowmanStrength + Percentage.get(attackerCrossbowmanStrength, this.config.advantagePercent);
@@ -194,7 +209,9 @@ export class Battle {
     let attackerCrossbowmanStrengthWithDisadvantage =
       attackerCrossbowmanStrength -
       Math.floor(
-        (defenderPaladinStrength * this.config.disadvantagePercent) / attackerCrossbowmanStrength / Percentage._100(),
+        (attackerCrossbowmanStrength * (defenderPaladinStrength * this.config.disadvantagePercent)) /
+          attackerCrossbowmanStrength /
+          Percentage._100(),
       );
     let attackerCrossbowmanStrengthWithDisadvantageMax =
       attackerCrossbowmanStrength - Percentage.get(attackerCrossbowmanStrength, this.config.disadvantagePercent);
@@ -208,7 +225,9 @@ export class Battle {
     let attackerPaladinStrengthWithAdvantage =
       attackerPaladinStrength +
       Math.floor(
-        (defenderCrossbowmanStrength * this.config.advantagePercent) / attackerPaladinStrength / Percentage._100(),
+        (attackerPaladinStrength * (defenderCrossbowmanStrength * this.config.advantagePercent)) /
+          attackerPaladinStrength /
+          Percentage._100(),
       );
     let attackerPaladinStrengthWithAdvantageMax =
       attackerPaladinStrength + Percentage.get(attackerPaladinStrength, this.config.advantagePercent);
@@ -221,7 +240,9 @@ export class Battle {
     let attackerPaladinStrengthWithDisadvantage =
       attackerPaladinStrength -
       Math.floor(
-        (defenderKnightStrength * this.config.disadvantagePercent) / attackerPaladinStrength / Percentage._100(),
+        (attackerPaladinStrength * (defenderKnightStrength * this.config.disadvantagePercent)) /
+          attackerPaladinStrength /
+          Percentage._100(),
       );
     let attackerPaladinStrengthWithDisadvantageMax =
       attackerPaladinStrength - Percentage.get(attackerPaladinStrength, this.config.disadvantagePercent);
@@ -297,5 +318,74 @@ export class Battle {
     const defenceStepsToDie = this.defenceHealth.stepsToDie(BigInt(attackDelta), this.config);
 
     return Math.min(attackStepsToDie, defenceStepsToDie);
+  }
+
+  private getUpdatedTroops = (
+    health: Health,
+    currentTroops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint },
+  ): { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint } => {
+    if (health.current > health.lifetime) {
+      return {
+        knight_count: 0n,
+        paladin_count: 0n,
+        crossbowman_count: 0n,
+      };
+    }
+
+    if (health.lifetime === 0n) {
+      return {
+        knight_count: 0n,
+        paladin_count: 0n,
+        crossbowman_count: 0n,
+      };
+    }
+
+    let knight_count = (health.current * currentTroops.knight_count) / health.lifetime;
+    let paladin_count = (health.current * currentTroops.paladin_count) / health.lifetime;
+    let crossbowman_count = (health.current * currentTroops.crossbowman_count) / health.lifetime;
+
+    if (knight_count < EternumGlobalConfig.resources.resourcePrecision) {
+      knight_count = 0n;
+    }
+    if (paladin_count < EternumGlobalConfig.resources.resourcePrecision) {
+      paladin_count = 0n;
+    }
+    if (crossbowman_count < EternumGlobalConfig.resources.resourcePrecision) {
+      crossbowman_count = 0n;
+    }
+
+    return {
+      knight_count: knight_count - (knight_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      paladin_count: paladin_count - (paladin_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+      crossbowman_count:
+        crossbowman_count - (crossbowman_count % BigInt(EternumGlobalConfig.resources.resourcePrecision)),
+    };
+  };
+
+  getWinner() {
+    const [attackDelta, defenceDelta] = this.computeDelta();
+    return attackDelta > defenceDelta ? this.attackArmy : this.defenceArmy;
+  }
+
+  getRemainingTroops() {
+    const [attackDelta, defenceDelta] = this.computeDelta();
+
+    const duration = this.calculateDuration();
+    const attackerHealth = new Health({
+      current: this.attackHealth.current - BigInt(defenceDelta) * BigInt(duration),
+      lifetime: this.attackHealth.lifetime,
+    });
+    const defenderHealth = new Health({
+      current: this.defenceHealth.current - BigInt(attackDelta) * BigInt(duration),
+      lifetime: this.defenceHealth.lifetime,
+    });
+
+    const attackerTroops = this.getUpdatedTroops(attackerHealth, this.attackArmy);
+    const defenderTroops = this.getUpdatedTroops(defenderHealth, this.defenceArmy);
+
+    return {
+      attackerTroops,
+      defenderTroops,
+    };
   }
 }
