@@ -137,12 +137,11 @@ export const World = () => {
               <BottomRightContainer>
                 <EventStream />
               </BottomRightContainer>
+              <RightMiddleContainer>
+                <RightNavigationModule />
+              </RightMiddleContainer>
             </>
           )}
-
-          <RightMiddleContainer>
-            <RightNavigationModule />
-          </RightMiddleContainer>
 
           <TopLeftContainer>
             <TopLeftNavigation />

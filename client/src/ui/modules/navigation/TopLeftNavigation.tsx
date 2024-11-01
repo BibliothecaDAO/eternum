@@ -9,7 +9,6 @@ import { Position } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { QuestId } from "@/ui/components/quest/questDetails";
-import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -288,7 +287,7 @@ export const TopLeftNavigation = () => {
           </div>
         )}
       </motion.div>
-      {IS_MOBILE && <SecondaryMenuItems />}
+      <SecondaryMenuItems />
     </div>
   );
 };

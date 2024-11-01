@@ -36,7 +36,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "../navigation/LeftNavigationModule";
+import { LeftView } from "../navigation/LeftNavigationModule";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
@@ -128,7 +128,7 @@ export const BuildingEntityDetails = () => {
     } else {
       playDestroyWooden();
     }
-    setLeftNavigationView(View.None);
+    setLeftNavigationView(LeftView.None);
   }, [selectedBuildingHex, buildingState]);
   return (
     <div className="flex flex-col h-full">

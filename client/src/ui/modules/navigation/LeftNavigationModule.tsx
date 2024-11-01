@@ -7,6 +7,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
@@ -47,13 +48,14 @@ const AllResourceArrivals = lazy(() =>
   import("../../components/trading/ResourceArrivals").then((module) => ({ default: module.AllResourceArrivals })),
 );
 
-export enum View {
+export enum LeftView {
   None,
   MilitaryView,
   EntityView,
   ConstructionView,
   WorldStructuresView,
   ResourceArrivals,
+  ResourceTable,
 }
 
 export const LeftNavigationModule = () => {
@@ -98,7 +100,7 @@ export const LeftNavigationModule = () => {
     const handleKeyPress = (event: KeyboardEvent) => {
       switch (event.key.toLowerCase()) {
         case "e":
-          setView(view === View.EntityView ? View.None : View.EntityView);
+          setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView);
           break;
       }
     };
@@ -120,11 +122,13 @@ export const LeftNavigationModule = () => {
               image={BuildingThumbs.hex}
               tooltipLocation="top"
               label="Details"
-              active={view === View.EntityView}
-              size="xl"
-              onClick={() => setView(view === View.EntityView ? View.None : View.EntityView)}
+              active={view === LeftView.EntityView}
+              size={IS_MOBILE ? "lg" : "xl"}
+              onClick={() => setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView)}
             />
-            <KeyBoardKey invertColors={view === View.EntityView} className="absolute top-1 right-1" keyName="E" />
+            {!IS_MOBILE && (
+              <KeyBoardKey invertColors={view === LeftView.EntityView} className="absolute top-1 right-1" keyName="E" />
+            )}
           </div>
         ),
       },
@@ -135,7 +139,7 @@ export const LeftNavigationModule = () => {
             disabled={!structureIsMine}
             className={clsx({
               "animate-pulse":
-                view !== View.ConstructionView &&
+                view !== LeftView.ConstructionView &&
                 selectedQuest?.id === QuestId.CreateAttackArmy &&
                 isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.CreateTrade] && isRealm,
@@ -143,9 +147,9 @@ export const LeftNavigationModule = () => {
             image={BuildingThumbs.military}
             tooltipLocation="top"
             label={military}
-            active={view === View.MilitaryView}
-            size="xl"
-            onClick={() => setView(view === View.MilitaryView ? View.None : View.MilitaryView)}
+            active={view === LeftView.MilitaryView}
+            size={IS_MOBILE ? "lg" : "xl"}
+            onClick={() => setView(view === LeftView.MilitaryView ? LeftView.None : LeftView.MilitaryView)}
           />
         ),
       },
@@ -155,15 +159,15 @@ export const LeftNavigationModule = () => {
           <CircleButton
             disabled={!structureIsMine || !isRealm}
             className={clsx({
-              "animate-pulse": view !== View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
+              "animate-pulse": view !== LeftView.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.Settle] && isRealm,
             })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"
             label={construction}
-            active={view === View.ConstructionView}
-            size="xl"
-            onClick={() => setView(view === View.ConstructionView ? View.None : View.ConstructionView)}
+            active={view === LeftView.ConstructionView}
+            size={IS_MOBILE ? "lg" : "xl"}
+            onClick={() => setView(view === LeftView.ConstructionView ? LeftView.None : LeftView.ConstructionView)}
           />
         ),
       },
@@ -176,9 +180,9 @@ export const LeftNavigationModule = () => {
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label="Resource Arrivals"
-            active={view === View.ResourceArrivals}
-            size="xl"
-            onClick={() => setView(view === View.ResourceArrivals ? View.None : View.ResourceArrivals)}
+            active={view === LeftView.ResourceArrivals}
+            size={IS_MOBILE ? "lg" : "xl"}
+            onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
             notification={notificationLength}
             notificationLocation="topleft"
           />
@@ -192,16 +196,18 @@ export const LeftNavigationModule = () => {
             className={clsx({
               hidden: !questClaimStatus[QuestId.CreateAttackArmy] && isRealm,
               "animate-pulse":
-                view !== View.ConstructionView &&
+                view !== LeftView.ConstructionView &&
                 selectedQuest?.id === QuestId.Contribution &&
                 isPopupOpen(questsPopup),
             })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
             label={worldStructures}
-            active={view === View.WorldStructuresView}
-            size="xl"
-            onClick={() => setView(view === View.WorldStructuresView ? View.None : View.WorldStructuresView)}
+            active={view === LeftView.WorldStructuresView}
+            size={IS_MOBILE ? "lg" : "xl"}
+            onClick={() =>
+              setView(view === LeftView.WorldStructuresView ? LeftView.None : LeftView.WorldStructuresView)
+            }
           />
         ),
       },
@@ -221,8 +227,21 @@ export const LeftNavigationModule = () => {
             tooltipLocation="top"
             label={trade}
             active={isPopupOpen(trade)}
-            size="xl"
+            size={IS_MOBILE ? "lg" : "xl"}
             onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
+          />
+        ),
+      },
+      {
+        name: MenuEnum.resourceTable,
+        button: (
+          <CircleButton
+            image={BuildingThumbs.resources}
+            size={IS_MOBILE ? "lg" : "xl"}
+            tooltipLocation="top"
+            label="Balance"
+            active={view === LeftView.ResourceTable}
+            onClick={() => setView(view === LeftView.ResourceTable ? LeftView.None : LeftView.ResourceTable)}
           />
         ),
       },
@@ -236,6 +255,7 @@ export const LeftNavigationModule = () => {
         MenuEnum.worldStructures,
         MenuEnum.resourceArrivals,
         MenuEnum.trade,
+        ...(IS_MOBILE ? [MenuEnum.resourceTable] : []),
       ].includes(item.name as MenuEnum),
     );
 
@@ -261,24 +281,27 @@ export const LeftNavigationModule = () => {
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-[600px] text-gold left-10 pt-20 pointer-events-none ${
-            isOffscreen(view) ? "-translate-x-[88%]" : ""
+          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-[600px] text-gold left-10 md:pt-20 pointer-events-none ${
+            isOffscreen(view) ? (IS_MOBILE ? "-translate-x-[92%]" : "-translate-x-[88%]") : ""
           }`}
         >
           <BaseContainer
             className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh]`}
           >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
-              {view === View.EntityView && <EntityDetails />}
-              {view === View.MilitaryView && <Military entityId={structureEntityId} />}
-              {!isMapView && view === View.ConstructionView && (
+              {view === LeftView.EntityView && <EntityDetails />}
+              {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
+              {!isMapView && view === LeftView.ConstructionView && (
                 <SelectPreviewBuildingMenu entityId={structureEntityId} />
               )}
-              {isMapView && view === View.ConstructionView && (
+              {isMapView && view === LeftView.ConstructionView && (
                 <StructureConstructionMenu entityId={structureEntityId} />
               )}
-              {view === View.WorldStructuresView && <WorldStructuresMenu />}
-              {view === View.ResourceArrivals && <AllResourceArrivals setNotificationLength={setNotificationLength} />}
+              {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
+              {view === LeftView.ResourceArrivals && (
+                <AllResourceArrivals setNotificationLength={setNotificationLength} />
+              )}
+              {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>
           <motion.div
@@ -287,7 +310,7 @@ export const LeftNavigationModule = () => {
             animate="visible"
             className="flex flex-col justify-center pointer-events-auto"
           >
-            <div className="flex flex-col gap-2 mb-auto">
+            <div className="flex flex-col gap-1 md:gap-2 mb-auto">
               {navigation.map((item, index) => (
                 <div key={index}>{item.button}</div>
               ))}
@@ -305,6 +328,6 @@ export const LeftNavigationModule = () => {
   );
 };
 
-const isOffscreen = (view: View) => {
-  return view === View.None;
+const isOffscreen = (view: LeftView) => {
+  return view === LeftView.None;
 };

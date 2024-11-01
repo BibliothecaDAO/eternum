@@ -6,7 +6,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { ResourceIdToMiningType, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
 import { BuildingType, RealmLevels, ResourcesIds, findResourceById, getNeighborHexes } from "@bibliothecadao/eternum";
 import clsx from "clsx";
@@ -301,7 +301,7 @@ export default class HexceptionScene extends HexagonScene {
           innerCol: hexCoords.col,
           innerRow: hexCoords.row,
         });
-        this.state.setLeftNavigationView(View.EntityView);
+        this.state.setLeftNavigationView(LeftView.EntityView);
       } else if (this.tileManager.isHexOccupied(normalizedCoords)) {
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -309,7 +309,7 @@ export default class HexceptionScene extends HexagonScene {
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
-        this.state.setLeftNavigationView(View.EntityView);
+        this.state.setLeftNavigationView(LeftView.EntityView);
       }
     }
   }

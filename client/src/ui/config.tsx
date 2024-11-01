@@ -78,4 +78,5 @@ export enum MenuEnum {
   entityDetails = "entityDetails",
   resourceArrivals = "resourceArrivals",
   trade = "trade",
+  resourceTable = "resourceTable",
 }

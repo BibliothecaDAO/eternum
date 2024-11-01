@@ -9,7 +9,7 @@ import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
@@ -273,7 +273,7 @@ export default class WorldmapScene extends HexagonScene {
         row: contractHexPosition.y,
       });
     } else {
-      this.state.setLeftNavigationView(View.EntityView);
+      this.state.setLeftNavigationView(LeftView.EntityView);
     }
   }
 
