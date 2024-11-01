@@ -7,7 +7,7 @@ import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
-import { FELT_CENTER } from "@/ui/config";
+import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
@@ -142,14 +142,16 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.minimap = new Minimap(
-      this,
-      this.exploredTiles,
-      this.camera,
-      this.structureManager,
-      this.armyManager,
-      this.biome,
-    );
+    if (!IS_MOBILE) {
+      this.minimap = new Minimap(
+        this,
+        this.exploredTiles,
+        this.camera,
+        this.structureManager,
+        this.armyManager,
+        this.biome,
+      );
+    }
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -323,8 +325,10 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
+    if (!IS_MOBILE) {
+      this.minimap.moveMinimapCenterToUrlLocation();
+      this.minimap.showMinimap();
+    }
 
     // Set the currently selected building hex as the default world map selection
     if (this.state.selectedBuildingHex) {
@@ -334,7 +338,9 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   onSwitchOff() {
-    this.minimap.hideMinimap();
+    if (!IS_MOBILE) {
+      this.minimap.hideMinimap();
+    }
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -606,6 +612,8 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.battleManager.update(deltaTime);
-    this.minimap.update();
+    if (!IS_MOBILE) {
+      this.minimap.update();
+    }
   }
 }
