@@ -10,7 +10,7 @@ import { LocationManager } from "../helpers/LocationManager";
 
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
-import { SceneName } from "@/types";
+import { HexPosition, SceneName } from "@/types";
 import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
