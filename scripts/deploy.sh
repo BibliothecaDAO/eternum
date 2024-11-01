@@ -37,17 +37,18 @@ echo "Deleting previous indexer and network..."
 slot deployments delete eternum-40 torii
 slot deployments delete eternum-40 katana
 
+# If deploying to slot
 echo "Deploying world to Realms L3..."
-slot deployments create -t epic eternum-42 katana --version v1.0.0-rc.0 --invoke-max-steps 25000000 --disable-fee true --block-time 1000
+slot deployments create -t epic eternum-rc0 katana --version v1.0.0-rc.0 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts
-slot deployments accounts eternum-45 katana 
+slot deployments accounts eternum-rc0 katana 
 
 echo "Migrating world..."
 sozo --profile prod migrate
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-42 torii --version v1.0.0-rc.0 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-42/katana --start-block 0  --index-pending true
+slot deployments create -t epic eternum-rc0 torii --version v1.0.0-rc.0 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-rc0/katana --start-block 0  --index-pending true
 
 echo "Setting up config..."
 

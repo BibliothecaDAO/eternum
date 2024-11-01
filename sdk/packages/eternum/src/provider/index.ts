@@ -197,7 +197,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
+          calldata: [realm_id, "0x46f957b7fe3335010607174edd5c4c3fae87b12c3760dc167ac738959d8c03b"],
         },
       ];
       return calldata;

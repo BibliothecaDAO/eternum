@@ -3,8 +3,8 @@ default = "eternum"
 
 [env]
 ## dev
-account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+account_address = "0x46f957b7fe3335010607174edd5c4c3fae87b12c3760dc167ac738959d8c03b"
+private_key = "0x66184a4482615568262bb3e63eb02517eece88afc39c3b5222467e7551611ad"
 
 [world]
 seed = "eternum"
