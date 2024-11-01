@@ -88,4 +88,4 @@ fi
 
 echo "-----  Started indexer ----- "
 rm torii.db
-torii --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --database torii.db --allowed-origins "*"
+torii --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --database torii.db --allowed-origins "*" --config torii.toml
