@@ -1,10 +1,21 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount } from "@starknet-react/core";
-import { ReactNode, createContext, useContext, useMemo } from "react";
+import { ReactNode, createContext, useContext, useEffect, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
+import { create } from "zustand";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress } from "../../ui/utils/utils";
+
+interface AccountState {
+  account: any | null;
+  setAccount: (account: any) => void;
+}
+
+export const useAccountStore = create<AccountState>((set) => ({
+  account: null,
+  setAccount: (account) => set({ account }),
+}));
 
 interface DojoAccount {
   create: () => void;
@@ -70,7 +81,13 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
 
   const { account: controllerAccount } = useAccount();
 
-  console.log(controllerAccount, "controllerAccount");
+  useEffect(() => {
+    if (controllerAccount) {
+      useAccountStore.getState().setAccount(controllerAccount);
+    }
+
+    console.log(useAccountStore.getState().account, "controllerAccount");
+  }, [controllerAccount]);
 
   return (
     <BurnerProvider initOptions={{ masterAccount, accountClassHash, rpcProvider, feeTokenAddress }}>
