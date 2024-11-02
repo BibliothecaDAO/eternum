@@ -1,4 +1,4 @@
-import { useAccountStore } from "@/hooks/context/DojoContext";
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { playBuildingSound } from "@/three/scenes/Hexception";
 import { HexPosition } from "@/types";
@@ -116,7 +116,6 @@ export class TileManager {
   };
 
   private _getOwnerEntityId = () => {
-    console.log(this.address, "this.address");
     const entities = Array.from(
       runQuery([
         Has(this.setup.components.Owner),

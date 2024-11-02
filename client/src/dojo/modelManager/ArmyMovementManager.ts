@@ -1,4 +1,4 @@
-import { useAccountStore } from "@/hooks/context/DojoContext";
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { type HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import {
@@ -98,6 +98,7 @@ export class ArmyMovementManager {
 
     useAccountStore.subscribe((state) => {
       const account = state.account;
+
       if (account) {
         this.address = BigInt(account.address);
         this.account = account;
@@ -282,11 +283,20 @@ export class ArmyMovementManager {
 
     const overrideId = this._optimisticExplore(path[1].col, path[1].row, currentArmiesTick);
 
+    useAccountStore.subscribe((state) => {
+      const account = state.account;
+
+      if (account) {
+        this.address = BigInt(account.address);
+        this.account = account;
+      }
+    });
+
     this.setup.systemCalls
       .explore({
         unit_id: this.entityId,
         direction,
-        signer: this.account!,
+        signer: useAccountStore.getState().account!,
       })
       .catch((e) => {
         this.setup.components.Position.removeOverride(overrideId);
