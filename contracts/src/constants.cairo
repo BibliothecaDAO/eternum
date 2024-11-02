@@ -340,3 +340,7 @@ mod TravelTypes {
 fn DEFAULT_NS() -> @ByteArray {
     @"eternum"
 }
+
+fn DEFAULT_NS_STR() -> ByteArray {
+    "eternum"
+}
