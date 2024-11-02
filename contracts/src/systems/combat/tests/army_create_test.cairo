@@ -158,7 +158,7 @@ fn combat_test_army_create___defending_army() {
     let army_protectee: Protectee = world.read_model(army_id);
     assert_eq!(army_protectee.protectee_id, realm_id);
 
-    let structure_protector: Protector = world.read_model(army_id);
+    let structure_protector: Protector = world.read_model(realm_id);
     assert_eq!(structure_protector.army_id, army_id);
 }
 
