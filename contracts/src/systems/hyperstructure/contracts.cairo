@@ -193,6 +193,11 @@ mod hyperstructure_systems {
                     },
                 );
 
+            // [Achievement] Hyperstructure Creation
+            let player_id: felt252 = creator_owner.address.into();
+            let task_id: felt252 = Task::Builder.identifier();
+            self.achievable.update(world, player_id, task_id, count: 1,);
+
             new_uuid
         }
 
@@ -357,12 +362,13 @@ mod hyperstructure_systems {
 
             SeasonImpl::end_season(ref world);
 
-            world
-                .emit_event(
-                    @GameEnded {
-                        winner_address: starknet::get_caller_address(), timestamp: starknet::get_block_timestamp()
-                    }
-                );
+            let winner_address = starknet::get_caller_address();
+            world.emit_event(@GameEnded { winner_address, timestamp: starknet::get_block_timestamp() });
+
+            // [Achievement] Win the game
+            let player_id: felt252 = winner_address.into();
+            let task_id: felt252 = Task::Warlord.identifier();
+            self.achievable.update(world, player_id, task_id, count: 1,);
         }
     }
 
