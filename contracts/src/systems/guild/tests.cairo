@@ -26,8 +26,8 @@ fn felt_to_bool(value: felt252) -> bool {
     return false;
 }
 
-fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, IGuildSystemsDispatcher) {
+    let mut world = spawn_eternum();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -49,7 +49,7 @@ fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_create_guild() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -88,7 +88,7 @@ fn guild_test_create_multiple_guilds() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_join_guild() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -177,7 +177,7 @@ fn guild_test_whitelist_player_as_not_owner() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_leave_guild() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -196,7 +196,7 @@ fn guild_test_leave_guild() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_leave_guild_as_owner() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -265,7 +265,7 @@ fn guild_test_whitelist_wrong_address() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_transfer_guild_ownership() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -337,7 +337,7 @@ fn guild_test_remove_guild_member_not_guild_member() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_remove_self_from_whitelist() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -361,7 +361,7 @@ fn guild_test_remove_self_from_whitelist() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_remove_from_whitelist_as_owner() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -384,7 +384,7 @@ fn guild_test_remove_from_whitelist_as_owner() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Player is not whitelisted', 'ENTRYPOINT_FAILED'))]
 fn guild_test_remove_from_whitelist_not_whitelisted() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -401,7 +401,7 @@ fn guild_test_remove_from_whitelist_not_whitelisted() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Cannot remove from whitelist', 'ENTRYPOINT_FAILED'))]
 fn guild_test_remove_from_whitelist_as_random() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());

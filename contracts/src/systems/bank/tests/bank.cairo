@@ -15,8 +15,8 @@ use starknet::contract_address_const;
 use traits::Into;
 
 
-fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, ID) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, IBankConfigDispatcher, IBankSystemsDispatcher, ID) {
+    let mut world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };

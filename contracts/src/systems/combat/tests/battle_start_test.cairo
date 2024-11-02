@@ -96,8 +96,8 @@ fn set_configurations(world: IWorldDispatcher) {
     )
 }
 
-fn setup() -> (IWorldDispatcher, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, IBattleContractDispatcher, ID, ID, ID, ID, ID, ID) {
+    let mut world = spawn_eternum();
     set_configurations(world);
     let battle_system_dispatcher = deploy_battle_systems(world);
     let troop_system_dispatcher = deploy_troop_systems(world);

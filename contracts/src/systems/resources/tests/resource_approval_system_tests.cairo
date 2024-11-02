@@ -22,8 +22,8 @@ mod resource_approval_system_tests {
     use starknet::contract_address_const;
 
 
-    fn setup() -> (IWorldDispatcher, IResourceSystemsDispatcher) {
-        let world = spawn_eternum();
+    fn setup() -> (WorldStorage, IResourceSystemsDispatcher) {
+        let mut world = spawn_eternum();
 
         let resource_systems_address = deploy_system(world, resource_systems::TEST_CLASS_HASH);
 
@@ -62,7 +62,7 @@ mod resource_approval_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     fn resources_test_approve() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id: ID = 11;
         let receiver_entity_id: ID = 12;
@@ -102,7 +102,7 @@ mod resource_approval_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     fn resources_test_approve__infinite_approval() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id: ID = 11;
         let receiver_entity_id: ID = 12;
@@ -143,7 +143,7 @@ mod resource_approval_system_tests {
     #[available_gas(30000000000000)]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn resources_test_approve__not_owner() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id: ID = 11;
         let receiver_entity_id: ID = 12;

@@ -31,8 +31,8 @@ use eternum::utils::testing::{
 use starknet::contract_address_const;
 
 
-fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
+    let mut world = spawn_eternum();
     world.dispatcher.uuid();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
@@ -111,7 +111,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
 #[test]
 #[available_gas(3000000000000)]
 fn trade_test_cancel() {
-    let (world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
+    let (mut world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
 
     let _trade = get!(world, trade_id, Trade);
 
@@ -138,7 +138,7 @@ fn trade_test_cancel() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED'))]
 fn trade_test_cancel_after_acceptance() {
-    let (world, trade_id, _, _, trade_systems_dispatcher) = setup();
+    let (mut world, trade_id, _, _, trade_systems_dispatcher) = setup();
 
     // accept order
 

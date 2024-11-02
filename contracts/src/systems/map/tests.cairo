@@ -80,7 +80,7 @@ const TICK_INTERVAL_IN_SECONDS: u64 = 7_200;
 
 #[test]
 fn map_test_map_explore() {
-    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _) = setup();
+    let (mut world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
@@ -122,7 +122,7 @@ fn map_test_map_explore() {
 
 #[test]
 fn map_test_map_explore__mine_mercenaries_protector() {
-    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, battle_systems_dispatcher) = setup();
+    let (mut world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, battle_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
@@ -161,7 +161,7 @@ fn map_test_map_explore__mine_mercenaries_protector() {
 
 #[test]
 fn map_test_map_explore__mine_production_deadline() {
-    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _battle_systems_dispatcher,) = setup();
+    let (mut world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _battle_systems_dispatcher,) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
 
@@ -187,8 +187,8 @@ fn map_test_map_explore__mine_production_deadline() {
 }
 
 
-fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, IBattleContractDispatcher) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, ID, ID, IMapSystemsDispatcher, IBattleContractDispatcher) {
+    let mut world = spawn_eternum();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 

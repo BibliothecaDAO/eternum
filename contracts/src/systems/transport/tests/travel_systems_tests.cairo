@@ -32,8 +32,8 @@ use eternum::utils::testing::{
 };
 use starknet::contract_address_const;
 
-fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
+    let mut world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
@@ -79,7 +79,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatch
 #[test]
 #[available_gas(30000000000000)]
 fn transport_test_travel() {
-    let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -135,7 +135,7 @@ fn transport_test_no_speed() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
 fn transport_test_blocked() {
-    let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -160,7 +160,7 @@ fn transport_test_blocked() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
 fn transport_test_in_transit() {
-    let (world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -193,8 +193,8 @@ const MAX_STAMINA: u16 = 30;
 const ORIGINAL_WHEAT_BALANCE: u128 = 1000;
 const ORIGINAL_FISH_BALANCE: u128 = 1000;
 
-fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatcher) {
-    let world = spawn_eternum();
+fn setup_hex_travel() -> (WorldStorage, ID, Position, ITravelSystemsDispatcher) {
+    let mut world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     set_travel_and_explore_stamina_cost_config(config_systems_address);
@@ -307,7 +307,7 @@ fn get_and_explore_destination_tiles(
 #[test]
 #[available_gas(30000000000000)]
 fn transport_test_travel_hex() {
-    let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
+    let (mut world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // make destination tile explored
     let travel_directions = array![Direction::East, Direction::East, Direction::East].span();
@@ -350,7 +350,7 @@ fn transport_test_travel_hex__destination_tile_not_explored() {
 #[test]
 #[should_panic(expected: ('not enough stamina', 'ENTRYPOINT_FAILED'))]
 fn transport_test_travel_hex__exceed_max_stamina() {
-    let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
+    let (mut world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) = setup_hex_travel();
 
     // max hex moves per tick is 30 /5 = 6 so we try to travel 7 hexes
     let travel_directions = array![

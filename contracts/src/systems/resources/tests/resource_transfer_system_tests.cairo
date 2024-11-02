@@ -27,8 +27,8 @@ mod resource_transfer_system_tests {
     use starknet::contract_address_const;
 
 
-    fn setup() -> (IWorldDispatcher, IResourceSystemsDispatcher) {
-        let world = spawn_eternum();
+    fn setup() -> (WorldStorage, IResourceSystemsDispatcher) {
+        let mut world = spawn_eternum();
 
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
@@ -95,7 +95,7 @@ mod resource_transfer_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     fn resources_test_transfer() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let sender_entity_id: ID = 11;
         let receiver_entity_id: ID = 12;
@@ -128,7 +128,7 @@ mod resource_transfer_system_tests {
         )
     )]
     fn resources_test_transfer__not_enough_donkey() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let sender_entity_id = 11;
         let receiver_entity_id = 12;
@@ -194,7 +194,7 @@ mod resource_transfer_system_tests {
         )
     )]
     fn resources_test_transfer__insufficient_balance() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let sender_entity_id = 11;
         let receiver_entity_id = 12;
@@ -220,7 +220,7 @@ mod resource_transfer_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     fn resources_test_transfer_from() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id = 11;
         let receiver_entity_id = 12;
@@ -275,7 +275,7 @@ mod resource_transfer_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     fn resources_test_transfer_from__with_infinite_approval() {
-        let (world, resource_systems_dispatcher) = setup();
+        let (mut world, resource_systems_dispatcher) = setup();
 
         let owner_entity_id = 11;
         let receiver_entity_id = 12;

@@ -30,8 +30,8 @@ use eternum::utils::testing::{
 use starknet::contract_address_const;
 
 
-fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, ID, ID, ITradeSystemsDispatcher) {
+    let mut world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let dev_resource_systems = deploy_dev_resource_systems(world);
@@ -69,7 +69,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
 #[test]
 #[available_gas(3000000000000)]
 fn trade_test_create_order() {
-    let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
+    let (mut world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -136,7 +136,7 @@ fn trade_test_caller_not_maker() {
     )
 )]
 fn trade_test_transport_not_enough_capacity() {
-    let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
+    let (mut world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
