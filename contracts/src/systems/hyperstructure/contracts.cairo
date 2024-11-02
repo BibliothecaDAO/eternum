@@ -24,6 +24,7 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 mod hyperstructure_systems {
+    use bushido_trophy::components::achievable::AchievableComponent;
     use core::array::ArrayIndex;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -32,6 +33,7 @@ mod hyperstructure_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::constants::DEFAULT_NS;
     use eternum::models::season::SeasonImpl;
+    use eternum::utils::tasks::index::{Task, TaskTrait};
     use eternum::{
         alias::ID,
         constants::{
@@ -53,6 +55,28 @@ mod hyperstructure_systems {
     use starknet::{ContractAddress, contract_address_const};
 
     use super::calculate_total_contributable_amount;
+
+    // Components
+
+    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+
+    // Storage
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievable: AchievableComponent::Storage,
+    }
+
+    // Events
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievableEvent: AchievableComponent::Event,
+    }
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: true)]
@@ -228,6 +252,11 @@ mod hyperstructure_systems {
                         }
                     );
             }
+
+            // [Achievement] Hyperstructure Contribution
+            let player_id: felt252 = contributor_owner.address.into();
+            let task_id: felt252 = Task::Opportunist.identifier();
+            self.achievable.update(world, player_id, task_id, count: 1,);
         }
 
         fn set_co_owners(
