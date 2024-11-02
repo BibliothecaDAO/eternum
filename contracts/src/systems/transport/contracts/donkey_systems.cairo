@@ -1,5 +1,6 @@
 #[dojo::contract]
 mod donkey_systems {
+    use bushido_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -20,6 +21,7 @@ mod donkey_systems {
     use eternum::systems::resources::contracts::resource_systems::resource_systems::{
         ResourceSystemsImpl, InternalResourceSystemsImpl
     };
+    use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
 
@@ -46,15 +48,26 @@ mod donkey_systems {
             donkeys.save(ref world);
 
             // emit burn donkey event
+            let time = starknet::get_block_timestamp();
             world
                 .emit_event(
                     @BurnDonkey {
                         entity_id: payer_id,
                         player_address: starknet::get_caller_address(),
                         amount: donkey_amount,
-                        timestamp: starknet::get_block_timestamp()
+                        timestamp: time
                     }
                 );
+
+            // [Achievement] Consume donkeys
+            if donkey_amount != 0 {
+                let count = (donkey_amount % core::integer::BoundedU32::max().into()).try_into().unwrap();
+                let player_id: felt252 = starknet::get_caller_address().into();
+                let task_id = Task::Breeder.identifier();
+                // Raw version of emitting trophy progress when ContractState is not available
+                let mut store = StoreTrait::new(world);
+                store.update(player_id, task_id, count, time);
+            }
         }
 
         fn return_donkey(ref world: WorldStorage, payer_id: ID, weight: u128) {
