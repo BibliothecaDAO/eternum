@@ -43,8 +43,7 @@ impl Warlord of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let difficulty: u8 = 0;
         let count: u32 = 1;
-        Task::Warlord.tasks(difficulty, count)
+        Task::Warlord.tasks(count)
     }
 }

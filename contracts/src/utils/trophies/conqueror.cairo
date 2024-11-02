@@ -63,13 +63,12 @@ impl Conqueror of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let difficulty: u8 = 0;
         let count: u32 = match level {
             0 => 1,
             1 => 5,
             2 => 10,
             _ => 0,
         };
-        Task::Conqueror.tasks(difficulty, count)
+        Task::Conqueror.tasks(count)
     }
 }

@@ -43,8 +43,7 @@ impl Maximalist of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let difficulty: u8 = 0;
         let count: u32 = 1;
-        Task::Maximalist.tasks(difficulty, count)
+        Task::Maximalist.tasks(count)
     }
 }

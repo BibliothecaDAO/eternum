@@ -1,13 +1,13 @@
 use eternum::utils::tasks::interface::TaskTrait;
 
-impl Maximalist of TaskTrait {
+impl Builder of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
-        'MAXIMALIST'
+        'BUILDER'
     }
 
     #[inline]
     fn description(count: u32) -> ByteArray {
-        "Max out the Realms levels"
+        "Build a Hyperstructure"
     }
 }

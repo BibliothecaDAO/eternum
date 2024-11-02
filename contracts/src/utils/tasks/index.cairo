@@ -16,7 +16,9 @@ enum Task {
     Battlelord,
     Conqueror,
     Breeder,
-    Strategist,
+    Builder,
+    Discoverer,
+    Claimer,
     Opportunist,
     Ruler,
     Maximalist,
@@ -36,7 +38,9 @@ impl TaskImpl of TaskTrait {
             Task::Battlelord => tasks::battlelord::Battlelord::identifier(),
             Task::Conqueror => tasks::conqueror::Conqueror::identifier(),
             Task::Breeder => tasks::breeder::Breeder::identifier(),
-            Task::Strategist => tasks::strategist::Strategist::identifier(),
+            Task::Builder => tasks::builder::Builder::identifier(),
+            Task::Discoverer => tasks::discoverer::Discoverer::identifier(),
+            Task::Claimer => tasks::claimer::Claimer::identifier(),
             Task::Opportunist => tasks::opportunist::Opportunist::identifier(),
             Task::Ruler => tasks::ruler::Ruler::identifier(),
             Task::Maximalist => tasks::maximalist::Maximalist::identifier(),
@@ -45,26 +49,28 @@ impl TaskImpl of TaskTrait {
     }
 
     #[inline]
-    fn description(self: Task, difficulty: u8, count: u32) -> ByteArray {
+    fn description(self: Task, count: u32) -> ByteArray {
         match self {
             Task::None => "",
-            Task::Squire => tasks::squire::Squire::description(difficulty, count),
-            Task::Explorer => tasks::explorer::Explorer::description(difficulty, count),
-            Task::Battlelord => tasks::battlelord::Battlelord::description(difficulty, count),
-            Task::Conqueror => tasks::conqueror::Conqueror::description(difficulty, count),
-            Task::Breeder => tasks::breeder::Breeder::description(difficulty, count),
-            Task::Strategist => tasks::strategist::Strategist::description(difficulty, count),
-            Task::Opportunist => tasks::opportunist::Opportunist::description(difficulty, count),
-            Task::Ruler => tasks::ruler::Ruler::description(difficulty, count),
-            Task::Maximalist => tasks::maximalist::Maximalist::description(difficulty, count),
-            Task::Warlord => tasks::warlord::Warlord::description(difficulty, count),
+            Task::Squire => tasks::squire::Squire::description(count),
+            Task::Explorer => tasks::explorer::Explorer::description(count),
+            Task::Battlelord => tasks::battlelord::Battlelord::description(count),
+            Task::Conqueror => tasks::conqueror::Conqueror::description(count),
+            Task::Breeder => tasks::breeder::Breeder::description(count),
+            Task::Builder => tasks::builder::Builder::description(count),
+            Task::Discoverer => tasks::discoverer::Discoverer::description(count),
+            Task::Claimer => tasks::claimer::Claimer::description(count),
+            Task::Opportunist => tasks::opportunist::Opportunist::description(count),
+            Task::Ruler => tasks::ruler::Ruler::description(count),
+            Task::Maximalist => tasks::maximalist::Maximalist::description(count),
+            Task::Warlord => tasks::warlord::Warlord::description(count),
         }
     }
 
     #[inline]
-    fn tasks(self: Task, difficulty: u8, count: u32) -> Span<BushidoTask> {
+    fn tasks(self: Task, count: u32) -> Span<BushidoTask> {
         let task_id: felt252 = self.identifier();
-        let description: ByteArray = self.description(difficulty, count);
+        let description: ByteArray = self.description(count);
         array![BushidoTaskTrait::new(task_id, count, description)].span()
     }
 }
@@ -79,11 +85,13 @@ impl IntoTaskU8 of core::Into<Task, u8> {
             Task::Battlelord => 3,
             Task::Conqueror => 4,
             Task::Breeder => 5,
-            Task::Strategist => 6,
-            Task::Opportunist => 7,
-            Task::Ruler => 8,
-            Task::Maximalist => 9,
-            Task::Warlord => 10,
+            Task::Builder => 6,
+            Task::Discoverer => 7,
+            Task::Claimer => 8,
+            Task::Opportunist => 9,
+            Task::Ruler => 10,
+            Task::Maximalist => 11,
+            Task::Warlord => 12,
         }
     }
 }
@@ -99,11 +107,13 @@ impl IntoU8Task of core::Into<u8, Task> {
             3 => Task::Battlelord,
             4 => Task::Conqueror,
             5 => Task::Breeder,
-            6 => Task::Strategist,
-            7 => Task::Opportunist,
-            8 => Task::Ruler,
-            9 => Task::Maximalist,
-            10 => Task::Warlord,
+            6 => Task::Builder,
+            7 => Task::Discoverer,
+            8 => Task::Claimer,
+            9 => Task::Opportunist,
+            10 => Task::Ruler,
+            11 => Task::Maximalist,
+            12 => Task::Warlord,
             _ => Task::None,
         }
     }

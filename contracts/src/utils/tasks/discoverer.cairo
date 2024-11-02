@@ -1,13 +1,13 @@
 use eternum::utils::tasks::interface::TaskTrait;
 
-impl Maximalist of TaskTrait {
+impl Discoverer of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
-        'MAXIMALIST'
+        'DISCOVERER'
     }
 
     #[inline]
     fn description(count: u32) -> ByteArray {
-        "Max out the Realms levels"
+        "Discover a Fragment Mine"
     }
 }

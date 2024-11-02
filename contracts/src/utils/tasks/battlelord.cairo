@@ -7,7 +7,7 @@ impl Battlelord of TaskTrait {
     }
 
     #[inline]
-    fn description(difficulty: u8, count: u32) -> ByteArray {
+    fn description(count: u32) -> ByteArray {
         match count {
             0 => "",
             1 => "Win 1 battle",

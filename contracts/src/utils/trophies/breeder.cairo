@@ -58,13 +58,12 @@ impl Breeder of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let difficulty: u8 = 0;
         let count: u32 = match level {
             0 => 1000,
             1 => 10000,
             2 => 100000,
             _ => 0,
         };
-        Task::Breeder.tasks(difficulty, count)
+        Task::Breeder.tasks(count)
     }
 }

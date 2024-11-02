@@ -58,13 +58,12 @@ impl Battlelord of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let difficulty: u8 = 0;
         let count: u32 = match level {
             0 => 1,
             1 => 10,
             2 => 100,
             _ => 0,
         };
-        Task::Battlelord.tasks(difficulty, count)
+        Task::Battlelord.tasks(count)
     }
 }

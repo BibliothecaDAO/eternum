@@ -63,13 +63,12 @@ impl Explorer of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let difficulty: u8 = 0;
         let count: u32 = match level {
             0 => 10,
             1 => 100,
             2 => 1000,
             _ => 0,
         };
-        Task::Explorer.tasks(difficulty, count)
+        Task::Explorer.tasks(count)
     }
 }

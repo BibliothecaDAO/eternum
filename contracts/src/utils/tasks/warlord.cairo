@@ -7,7 +7,7 @@ impl Warlord of TaskTrait {
     }
 
     #[inline]
-    fn description(difficulty: u8, count: u32) -> ByteArray {
+    fn description(count: u32) -> ByteArray {
         "Claim the victory"
     }
 }

@@ -1,13 +1,13 @@
 use eternum::utils::tasks::interface::TaskTrait;
 
-impl Maximalist of TaskTrait {
+impl Claimer of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
-        'MAXIMALIST'
+        'CLAIMER'
     }
 
     #[inline]
     fn description(count: u32) -> ByteArray {
-        "Max out the Realms levels"
+        "Claim a Fragment Mine"
     }
 }
