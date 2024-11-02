@@ -687,7 +687,7 @@ mod battle_systems {
             } else if caller_army.troops.count() > 0 {
                 // [Achievement] Win a battle if the army is not dead
                 let player_id: felt252 = leaver.into();
-                let task_id: felt252 = Task::Builder.identifier();
+                let task_id: felt252 = Task::Battlelord.identifier();
                 self.achievable.update(world, player_id, task_id, count: 1,);
             }
 
@@ -739,6 +739,7 @@ mod battle_systems {
             claimer_army_position.assert_same_location(structure_position.into());
 
             // ensure structure has no army protecting it
+            let claimer = starknet::get_caller_address();
             let structure_protector: Protector = world.read_model(structure_id);
             let structure_army_id: ID = structure_protector.army_id;
             if structure_army_id.is_non_zero() {
@@ -746,6 +747,10 @@ mod battle_systems {
                 if structure_army.is_in_battle() {
                     let mut battle = BattleCustomImpl::get(world, structure_army.battle_id);
                     InternalBattleImpl::leave_battle_if_ended(ref world, ref battle, ref structure_army);
+                    // [Achievement] Win a battle
+                    let player_id: felt252 = claimer.into();
+                    let task_id: felt252 = Task::Battlelord.identifier();
+                    self.achievable.update(world, player_id, task_id, count: 1,);
                 }
 
                 // ensure structure army is dead
@@ -754,7 +759,6 @@ mod battle_systems {
             }
 
             // transfer structure ownership to claimer
-            let claimer = starknet::get_caller_address();
             let mut structure_owner: Owner = world.read_model(structure_id);
             let structure_owner_before_transfer = structure_owner.address;
             structure_owner.transfer(claimer);
@@ -779,6 +783,26 @@ mod battle_systems {
                         timestamp: starknet::get_block_timestamp(),
                     }
                 );
+
+            // [Achievement] Claim either a realm, bank or fragment mine
+            match structure.category {
+                StructureCategory::Realm => {
+                    let player_id: felt252 = claimer.into();
+                    let task_id: felt252 = Task::Conqueror.identifier();
+                    self.achievable.update(world, player_id, task_id, count: 1,);
+                },
+                StructureCategory::Bank => {
+                    let player_id: felt252 = claimer.into();
+                    let task_id: felt252 = Task::Ruler.identifier();
+                    self.achievable.update(world, player_id, task_id, count: 1,);
+                },
+                StructureCategory::FragmentMine => {
+                    let player_id: felt252 = claimer.into();
+                    let task_id: felt252 = Task::Claimer.identifier();
+                    self.achievable.update(world, player_id, task_id, count: 1,);
+                },
+                _ => {},
+            }
         }
     }
 }
