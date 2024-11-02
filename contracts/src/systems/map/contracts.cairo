@@ -143,7 +143,7 @@ mod map_systems {
             let current_coord: Coord = current_position.into();
             let next_coord = current_coord.neighbor(direction);
             InternalMapSystemsImpl::explore(ref world, unit_id, next_coord, exploration_reward);
-            InternalMapSystemsImpl::discover_shards_mine(ref world, unit_entity_owner, next_coord);
+            let is_shards_mine = InternalMapSystemsImpl::discover_shards_mine(ref world, unit_entity_owner, next_coord);
 
             // travel to explored tile location
             InternalTravelSystemsImpl::travel_hex(ref world, unit_id, current_coord, array![direction].span());
@@ -152,6 +152,12 @@ mod map_systems {
             let player_id: felt252 = starknet::get_caller_address().into();
             let task_id: felt252 = Task::Explorer.identifier();
             self.achievable.update(world, player_id: player_id, task_id: task_id, count: 1,);
+
+            // [Achievement] Discover a shards mine
+            if is_shards_mine {
+                let task_id: felt252 = Task::Discoverer.identifier();
+                self.achievable.update(world, player_id: player_id, task_id: task_id, count: 1,);
+            }
         }
     }
 
