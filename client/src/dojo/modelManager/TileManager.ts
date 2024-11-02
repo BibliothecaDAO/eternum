@@ -116,6 +116,22 @@ export class TileManager {
     }
   };
 
+  private _getBonusFromNeighborBuildings = (col: number, row: number) => {
+    const neighborBuildingCoords = getNeighborHexes(col, row);
+
+    let bonusPercent = 0;
+    neighborBuildingCoords.map((coord) => {
+      const building = getComponentValue(
+        this.setup.components.Building,
+        getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(coord.col), BigInt(coord.row)]),
+      );
+
+      if (building?.category === BuildingType[BuildingType.Farm]) bonusPercent += building.bonus_percent;
+    });
+
+    return bonusPercent;
+  };
+
   private _optimisticBuilding = (
     entityId: ID,
     col: number,
@@ -140,6 +156,8 @@ export class TileManager {
         break;
     }
 
+    const bonus_percent = this._getBonusFromNeighborBuildings(col, row);
+
     this.setup.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -149,7 +167,7 @@ export class TileManager {
         inner_row: row,
         category: BuildingType[buildingType],
         produced_resource_type,
-        bonus_percent: 0,
+        bonus_percent,
         entity_id: entityId,
         outer_entity_id: entityId,
         paused: false,
