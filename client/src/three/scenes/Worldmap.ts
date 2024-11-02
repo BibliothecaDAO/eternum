@@ -5,11 +5,12 @@ import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMoveme
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
+import { dir, soundSelector } from "@/hooks/useUISound";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
-import { FELT_CENTER } from "@/ui/config";
+import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
@@ -50,7 +51,7 @@ export default class WorldmapScene extends HexagonScene {
   private armySubscription: any;
   private selectedHexManager: SelectedHexManager;
   private minimap!: Minimap;
-
+  private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
@@ -142,14 +143,16 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.minimap = new Minimap(
-      this,
-      this.exploredTiles,
-      this.camera,
-      this.structureManager,
-      this.armyManager,
-      this.biome,
-    );
+    if (!IS_MOBILE) {
+      this.minimap = new Minimap(
+        this,
+        this.exploredTiles,
+        this.camera,
+        this.structureManager,
+        this.armyManager,
+        this.biome,
+      );
+    }
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -196,6 +199,10 @@ export default class WorldmapScene extends HexagonScene {
     const { hexCoords } = hex;
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
+      if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
+        new Audio(dir + soundSelector.hoverClick).play();
+        this.previouslyHoveredHex = hexCoords;
+      }
       this.state.updateHoveredHex(hexCoords);
     }
     this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
@@ -273,7 +280,7 @@ export default class WorldmapScene extends HexagonScene {
         row: contractHexPosition.y,
       });
     } else {
-      this.state.setLeftNavigationView(View.EntityView);
+      this.state.setLeftNavigationView(LeftView.EntityView);
     }
   }
 
@@ -297,6 +304,10 @@ export default class WorldmapScene extends HexagonScene {
       this.clearEntitySelection();
       return;
     }
+
+    const audio = new Audio(dir + soundSelector.unitSelected2);
+    audio.play();
+
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
     const travelPaths = armyMovementManager.findPaths(
       this.exploredTiles,
@@ -323,8 +334,10 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
+    if (!IS_MOBILE) {
+      this.minimap.moveMinimapCenterToUrlLocation();
+      this.minimap.showMinimap();
+    }
 
     // Set the currently selected building hex as the default world map selection
     if (this.state.selectedBuildingHex) {
@@ -334,7 +347,9 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   onSwitchOff() {
-    this.minimap.hideMinimap();
+    if (!IS_MOBILE) {
+      this.minimap.hideMinimap();
+    }
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -606,6 +621,8 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.battleManager.update(deltaTime);
-    this.minimap.update();
+    if (!IS_MOBILE) {
+      this.minimap.update();
+    }
   }
 }

@@ -409,20 +409,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ForeignKey: (() => {
-      return defineComponent(
-        world,
-        { foreign_key: RecsType.BigInt, entity_id: RecsType.Number },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "ForeignKey",
-            types: ["felt252", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Guild: (() => {
       return defineComponent(
         world,

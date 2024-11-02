@@ -23,6 +23,13 @@ const NETWORKS = {
     feeder_gateway_url: "http://127.0.0.1:5050/feeder_gateway",
     gateway_url: "http://127.0.0.1:5050/gateway",
   },
+  katana: {
+    name: "katana",
+    explorer_url: "https://katana.voyager.online",
+    rpc_url: process.env.RPC_API_KEY,
+    feeder_gateway_url: process.env.RPC_API_KEY + "/feeder_gateway",
+    gateway_url: process.env.RPC_API_KEY + "/gateway",
+  },
 };
 
 export const getNetwork = (network) => {

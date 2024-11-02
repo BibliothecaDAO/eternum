@@ -9,7 +9,7 @@ import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, EntityType, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/ResourceWeight";
+import { TravelInfo } from "../resources/TravelInfo";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
 type LiquidityResourceRowProps = {
@@ -122,8 +122,8 @@ export const LiquidityResourceRow = ({
               </div>
             ))}
           </div>
-          <div className="bg-gold/10 p-2 m-2  h-auto">
-            <div className="flex flex-col p-2 items-center">
+          <div className="bg-gold/10 p-2 mt-2 rounded-lg h-auto">
+            <div className="flex flex-col items-center">
               <TravelInfo
                 entityId={entityId}
                 resources={travelResources}

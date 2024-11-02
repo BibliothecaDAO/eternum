@@ -2,10 +2,10 @@ use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::position::{Coord};
 
-#[dojo::interface]
-trait IBankSystems {
+#[starknet::interface]
+trait IBankSystems<T> {
     fn create_admin_bank(
-        ref world: IWorldDispatcher,
+        ref self: T,
         name: felt252,
         coord: Coord,
         owner_fee_num: u128,
@@ -17,7 +17,13 @@ trait IBankSystems {
 
 #[dojo::contract]
 mod dev_bank_systems {
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
+
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
+    use eternum::constants::DEFAULT_NS;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
     use eternum::models::bank::bank::{Bank};
     use eternum::models::capacity::{CapacityCategory};
@@ -38,7 +44,7 @@ mod dev_bank_systems {
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_admin_bank(
-            ref world: IWorldDispatcher,
+            ref self: ContractState,
             name: felt252,
             coord: Coord,
             owner_fee_num: u128,
@@ -47,24 +53,30 @@ mod dev_bank_systems {
             owner_bridge_fee_wtdr_percent: u16
         ) -> ID {
             // explore the tile
-            InternalMapSystemsImpl::explore(world, 0, coord, array![].span());
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            InternalMapSystemsImpl::explore(ref world, 0, coord, array![].span());
 
             assert_caller_is_admin(world);
             let admin = starknet::get_caller_address();
 
             // bank
-            set!(
-                world,
-                (
-                    EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, },
-                    Structure {
+            world.write_model(@EntityName { entity_id: ADMIN_BANK_ENTITY_ID, name, },);
+            world
+                .write_model(
+                    @Structure {
                         entity_id: ADMIN_BANK_ENTITY_ID,
                         category: StructureCategory::Bank,
                         created_at: starknet::get_block_timestamp()
-                    },
-                    StructureCount { coord, count: 1 },
-                    CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure },
-                    Bank {
+                    }
+                );
+            world.write_model(@StructureCount { coord, count: 1 });
+            world
+                .write_model(
+                    @CapacityCategory { entity_id: ADMIN_BANK_ENTITY_ID, category: CapacityConfigCategory::Structure }
+                );
+            world
+                .write_model(
+                    @Bank {
                         entity_id: ADMIN_BANK_ENTITY_ID,
                         owner_fee_num,
                         owner_fee_denom,
@@ -72,13 +84,12 @@ mod dev_bank_systems {
                         owner_bridge_fee_wtdr_percent,
                         exists: true
                     },
-                    Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },
-                    Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin },
-                    EntityOwner { entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID },
-                )
-            );
+                );
+            world.write_model(@Position { entity_id: ADMIN_BANK_ENTITY_ID, x: coord.x, y: coord.y },);
+            world.write_model(@Owner { entity_id: ADMIN_BANK_ENTITY_ID, address: admin },);
+            world.write_model(@EntityOwner { entity_id: ADMIN_BANK_ENTITY_ID, entity_owner_id: ADMIN_BANK_ENTITY_ID },);
 
-            InternalMapSystemsImpl::add_mercenaries_to_structure(world, ADMIN_BANK_ENTITY_ID);
+            InternalMapSystemsImpl::add_mercenaries_to_structure(ref world, ADMIN_BANK_ENTITY_ID);
 
             ADMIN_BANK_ENTITY_ID
         }

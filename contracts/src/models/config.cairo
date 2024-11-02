@@ -2,9 +2,8 @@ use core::integer::BoundedU128;
 use cubit::f128::math::comp::{max as fixed_max};
 use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use debug::PrintTrait;
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use eternum::alias::ID;
 use eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
@@ -102,13 +101,13 @@ pub struct CapacityConfig {
 
 #[generate_trait]
 impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
-    fn get(world: IWorldDispatcher, category: CapacityConfigCategory) -> CapacityConfig {
-        get!(world, category, CapacityConfig)
+    fn get(ref world: WorldStorage, category: CapacityConfigCategory) -> CapacityConfig {
+        world.read_model(category)
     }
 
-    fn get_from_entity(world: IWorldDispatcher, entity_id: ID) -> CapacityConfig {
-        let capacity_category = CapacityCategoryCustomImpl::assert_exists_and_get(world, entity_id);
-        return get!(world, capacity_category.category, CapacityConfig);
+    fn get_from_entity(ref world: WorldStorage, entity_id: ID) -> CapacityConfig {
+        let capacity_category = CapacityCategoryCustomImpl::assert_exists_and_get(ref world, entity_id);
+        return world.read_model(capacity_category.category);
     }
 
     fn assert_can_carry(self: CapacityConfig, quantity: Quantity, weight: Weight) {
@@ -254,11 +253,11 @@ impl SettlementConfigImpl of SettlementConfigTrait {
 
 #[generate_trait]
 impl MapConfigImpl of MapConfigTrait {
-    fn random_reward(world: IWorldDispatcher) -> Span<(u8, u128)> {
+    fn random_reward(ref world: WorldStorage) -> Span<(u8, u128)> {
         let (resource_types, resources_probs) = split_resources_and_probs();
         let reward_resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);
 
-        let explore_config: MapConfig = get!(world, WORLD_CONFIG_ID, MapConfig);
+        let explore_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
         let reward_resource_amount: u128 = explore_config.reward_resource_amount;
         return array![(reward_resource_id, reward_resource_amount)].span();
     }
@@ -307,19 +306,18 @@ pub struct TravelFoodCostConfig {
 
 #[generate_trait]
 impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
-    fn pay_exploration_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, troops: Troops) {
+    fn pay_exploration_cost(ref world: WorldStorage, unit_entity_owner: EntityOwner, troops: Troops) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for exploration payment");
 
-        let knight_travel_food_cost_config: TravelFoodCostConfig = get!(
-            world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), TravelFoodCostConfig
-        );
-        let paladin_travel_food_cost_config: TravelFoodCostConfig = get!(
-            world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), TravelFoodCostConfig
-        );
-        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = get!(
-            world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), TravelFoodCostConfig
-        );
+        let knight_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
+
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
+
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
 
         let knight_wheat_pay_amount = knight_travel_food_cost_config.explore_wheat_burn_amount
             * troops.knight_count.into();
@@ -341,22 +339,21 @@ impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
         assert!(wheat_pay_amount != 0, "Cannot explore with 0 troops");
         assert!(fish_pay_amount != 0, "Cannot explore with 0 troops");
 
-        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
+        ResourceFoodImpl::pay(ref world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 
-    fn pay_travel_cost(world: IWorldDispatcher, unit_entity_owner: EntityOwner, troops: Troops, steps: usize) {
+    fn pay_travel_cost(ref world: WorldStorage, unit_entity_owner: EntityOwner, troops: Troops, steps: usize) {
         let unit_owner_id = unit_entity_owner.entity_owner_id;
         assert!(unit_owner_id.is_non_zero(), "entity has no owner for travel payment");
 
-        let knight_travel_food_cost_config: TravelFoodCostConfig = get!(
-            world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), TravelFoodCostConfig
-        );
-        let paladin_travel_food_cost_config: TravelFoodCostConfig = get!(
-            world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), TravelFoodCostConfig
-        );
-        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = get!(
-            world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), TravelFoodCostConfig
-        );
+        let knight_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
+
+        let paladin_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
+
+        let crossbowman_travel_food_cost_config: TravelFoodCostConfig = world
+            .read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
 
         let knight_wheat_pay_amount = knight_travel_food_cost_config.travel_wheat_burn_amount
             * troops.knight_count.into()
@@ -384,7 +381,7 @@ impl TravelFoodCostConfigImpl of TravelFoodCostConfigTrait {
         assert!(wheat_pay_amount != 0, "Cannot travel with 0 troops");
         assert!(fish_pay_amount != 0, "Cannot travel with 0 troops");
 
-        ResourceFoodImpl::pay(world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
+        ResourceFoodImpl::pay(ref world, unit_owner_id, wheat_pay_amount, fish_pay_amount);
     }
 }
 
@@ -405,13 +402,13 @@ pub struct MercenariesConfig {
 
 #[generate_trait]
 impl TickImpl of TickTrait {
-    fn get_default_tick_config(world: IWorldDispatcher) -> TickConfig {
-        let tick_config: TickConfig = get!(world, (WORLD_CONFIG_ID, TickIds::DEFAULT), TickConfig);
+    fn get_default_tick_config(ref world: WorldStorage) -> TickConfig {
+        let tick_config: TickConfig = world.read_model((WORLD_CONFIG_ID, TickIds::DEFAULT));
         return tick_config;
     }
 
-    fn get_armies_tick_config(world: IWorldDispatcher) -> TickConfig {
-        let tick_config: TickConfig = get!(world, (WORLD_CONFIG_ID, TickIds::ARMIES), TickConfig);
+    fn get_armies_tick_config(ref world: WorldStorage) -> TickConfig {
+        let tick_config: TickConfig = world.read_model((WORLD_CONFIG_ID, TickIds::ARMIES));
         return tick_config;
     }
 
@@ -455,14 +452,13 @@ pub struct WeightConfig {
 
 #[generate_trait]
 impl WeightConfigCustomImpl of WeightConfigCustomTrait {
-    fn get_weight_grams(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
-        let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
-
+    fn get_weight_grams(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
+        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
         (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
     }
 
-    fn get_weight_grams_with_precision(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
-        let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
+    fn get_weight_grams_with_precision(ref world: WorldStorage, resource_type: u8, amount: u128) -> u128 {
+        let resource_weight_config: WeightConfig = world.read_model((WORLD_CONFIG_ID, resource_type));
         (resource_weight_config.weight_gram * amount)
     }
 }
@@ -538,16 +534,15 @@ pub struct BuildingConfig {
 
 #[generate_trait]
 impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
-    fn get(world: IWorldDispatcher, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
-        return get!(
-            world,
-            (
-                WORLD_CONFIG_ID,
-                Into::<BuildingCategory, felt252>::into(category),
-                Into::<u8, felt252>::into(resource_type)
-            ),
-            BuildingConfig
-        );
+    fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
+        return world
+            .read_model(
+                (
+                    WORLD_CONFIG_ID,
+                    Into::<BuildingCategory, felt252>::into(category),
+                    Into::<u8, felt252>::into(resource_type)
+                )
+            );
     }
 }
 
@@ -592,8 +587,8 @@ pub struct TroopConfig {
 
 #[generate_trait]
 impl TroopConfigCustomImpl of TroopConfigCustomTrait {
-    fn get(world: IWorldDispatcher) -> TroopConfig {
-        return get!(world, WORLD_CONFIG_ID, TroopConfig);
+    fn get(world: WorldStorage) -> TroopConfig {
+        return world.read_model(WORLD_CONFIG_ID);
     }
 }
 
@@ -609,8 +604,8 @@ pub struct BattleConfig {
 
 #[generate_trait]
 impl BattleConfigCustomImpl of BattleConfigCustomTrait {
-    fn get(world: IWorldDispatcher) -> BattleConfig {
-        get!(world, WORLD_CONFIG_ID, BattleConfig)
+    fn get(world: WorldStorage) -> BattleConfig {
+        world.read_model(WORLD_CONFIG_ID)
     }
 }
 
@@ -636,15 +631,15 @@ pub struct PopulationConfig {
 
 #[generate_trait]
 impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCustomTrait {
-    fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        get!(world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig)
+    fn get(ref world: WorldStorage, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
+        world.read_model((BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id))
     }
 }
 
 #[generate_trait]
 impl HyperstructureResourceConfigCustomImpl of HyperstructureResourceConfigCustomTrait {
-    fn get(world: IWorldDispatcher, resource_id: u8) -> HyperstructureResourceConfig {
-        get!(world, (HYPERSTRUCTURE_CONFIG_ID, resource_id), HyperstructureResourceConfig)
+    fn get(world: WorldStorage, resource_id: u8) -> HyperstructureResourceConfig {
+        world.read_model((HYPERSTRUCTURE_CONFIG_ID, resource_id))
     }
 }
 

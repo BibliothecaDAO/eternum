@@ -1,3 +1,4 @@
+import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
@@ -12,11 +13,12 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
 import Button from "@/ui/elements/Button";
-import ListSelect from "@/ui/elements/ListSelect";
+// import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
+import { formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
+import { useAccount, useConnect } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +43,17 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const StepOne = ({ onNext }: { onNext: () => void }) => {
+  const {
+    account: { account },
+  } = useDojo();
+  const { connect, connectors } = useConnect();
+  const { isConnected } = useAccount();
+  const connectWallet = async () => {
+    connect({ connector: connectors[0] });
+  };
+
+  console.log(account);
+
   return (
     <StepContainer>
       <div className="w-full text-center pt-6">
@@ -50,10 +63,15 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
         <h2 className="">It's time to build...</h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
-        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-          Choose your Leader
-          <ArrowRight className="w-2 ml-2 fill-current" />
+        <Button className="px-4 " variant={"secondary"} onClick={connectWallet}>
+          <CartridgeSmall className="w-6 mr-2 fill-current" /> Log in with Controller
         </Button>
+        {isConnected && (
+          <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+            Choose your Leader
+            <ArrowRight className="w-2 ml-2 fill-current" />
+          </Button>
+        )}
       </div>
     </StepContainer>
   );
@@ -96,6 +114,8 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     if (input.current && !addressIsMaster) {
       const inputNameValidAscii = toValidAscii(input.current);
       const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
+
+      console.log(account);
       await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(input.current);
       setLoading(false);
@@ -194,7 +214,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               </div>
             )}
           </div>
-          <div className="flex items-center mb-4">
+          {/* <div className="flex items-center mb-4">
             <ListSelect
               className="flex-grow mr-2"
               title="Active Account: "
@@ -215,7 +235,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
             <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
               {isDeploying ? "" : "Create New"}
             </Button>
-          </div>
+          </div> */}
         </div>
         <div className="flex items-center space-x-4 mt-2">
           <Cross
