@@ -44,7 +44,7 @@ fn setup() -> (WorldStorage, IRealmSystemsDispatcher) {
 
     let realm_systems_dispatcher = deploy_realm_systems(ref world);
 
-    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
 
     set_capacity_config(config_systems_address);
     set_realm_level_config(config_systems_address);

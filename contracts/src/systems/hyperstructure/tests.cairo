@@ -37,7 +37,7 @@ const POINTS_ON_COMPLETION: u128 = 2_000_000;
 
 fn setup() -> (WorldStorage, ID, IHyperstructureSystemsDispatcher) {
     let mut world = spawn_eternum();
-    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     set_capacity_config(config_systems_address);
     set_settlement_config(config_systems_address);
 

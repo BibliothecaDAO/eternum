@@ -131,7 +131,7 @@ mod resource_bridge_system_tests {
         }
 
         fn deploy_resource_bridge_systems(ref world: WorldStorage) -> IResourceBridgeSystemsDispatcher {
-            let resource_bridge_systems_address = deploy_system(ref world, resource_bridge_systems::TEST_CLASS_HASH);
+            let resource_bridge_systems_address = deploy_system(ref world, "resource_bridge_systems");
             IResourceBridgeSystemsDispatcher { contract_address: resource_bridge_systems_address }
         }
 
@@ -167,7 +167,7 @@ mod resource_bridge_system_tests {
         }
 
         fn setup_capacity_config(ref world: WorldStorage) {
-            let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+            let config_systems_address = deploy_system(ref world, "config_systems");
             set_capacity_config(config_systems_address);
         }
 

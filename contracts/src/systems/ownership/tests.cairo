@@ -22,7 +22,7 @@ const SECOND_OWNER: felt252 = 'second_owner';
 fn setup() -> (WorldStorage, ContractAddress, Owner) {
     let mut world = spawn_eternum();
 
-    let ownership_systems_address = deploy_system(ref world, ownership_systems::TEST_CLASS_HASH);
+    let ownership_systems_address = deploy_system(ref world, "ownership_systems");
 
     // set initial owner
     let owner = Owner { entity_id: OWNER_ENTITY_ID, address: contract_address_const::<FIRST_OWNER>() };

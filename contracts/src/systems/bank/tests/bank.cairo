@@ -22,7 +22,7 @@ use traits::Into;
 fn setup() -> (WorldStorage, IBankConfigDispatcher, IBankSystemsDispatcher, ID) {
     let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
     let owner_fee_num: u128 = 1;
@@ -30,7 +30,7 @@ fn setup() -> (WorldStorage, IBankConfigDispatcher, IBankSystemsDispatcher, ID) 
     let owner_bridge_fee_dpt_percent: u16 = 100; // 100/10_000  = 1%
     let owner_bridge_fee_wtdr_percent: u16 = 100; // 100/10_000  = 1%
 
-    let bank_systems_address = deploy_system(ref world, bank_systems::TEST_CLASS_HASH);
+    let bank_systems_address = deploy_system(ref world, "bank_systems");
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let bank_entity_id = bank_systems_dispatcher

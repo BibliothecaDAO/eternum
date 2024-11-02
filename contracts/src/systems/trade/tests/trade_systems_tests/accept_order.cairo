@@ -41,7 +41,7 @@ use starknet::contract_address_const;
 fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
     let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     let dev_resource_systems = deploy_dev_resource_systems(ref world);
 
     set_settlement_config(config_systems_address);
@@ -97,7 +97,7 @@ fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatch
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
-    let trade_systems_address = deploy_system(ref world, trade_systems::TEST_CLASS_HASH);
+    let trade_systems_address = deploy_system(ref world, "trade_systems");
     let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     // create order

@@ -27,7 +27,7 @@ mod resource_approval_system_tests {
     fn setup() -> (WorldStorage, IResourceSystemsDispatcher) {
         let mut world = spawn_eternum();
 
-        let resource_systems_address = deploy_system(ref world, resource_systems::TEST_CLASS_HASH);
+        let resource_systems_address = deploy_system(ref world, "resource_systems");
 
         let resource_systems_dispatcher = IResourceSystemsDispatcher { contract_address: resource_systems_address };
 

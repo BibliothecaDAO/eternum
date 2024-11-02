@@ -197,7 +197,7 @@ fn setup() -> (WorldStorage, ID, ID, IMapSystemsDispatcher, IBattleContractDispa
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
 
     set_combat_config(config_systems_address);
     set_capacity_config(config_systems_address);

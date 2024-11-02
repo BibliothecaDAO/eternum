@@ -37,7 +37,7 @@ use starknet::contract_address_const;
 fn setup() -> (WorldStorage, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
     let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     set_travel_and_explore_stamina_cost_config(config_systems_address);
 
     // set as executor
@@ -65,7 +65,7 @@ fn setup() -> (WorldStorage, ID, ID, Position, Coord, ITravelSystemsDispatcher) 
     destination_tile.explored_at = 78671;
     world.write_model_test(@destination_tile);
 
-    let travel_systems_address = deploy_system(ref world, travel_systems::TEST_CLASS_HASH);
+    let travel_systems_address = deploy_system(ref world, "travel_systems");
     let travel_systems_dispatcher = ITravelSystemsDispatcher { contract_address: travel_systems_address };
 
     (
@@ -197,7 +197,7 @@ const ORIGINAL_FISH_BALANCE: u128 = 1000;
 fn setup_hex_travel() -> (WorldStorage, ID, Position, ITravelSystemsDispatcher) {
     let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     set_travel_and_explore_stamina_cost_config(config_systems_address);
     set_travel_food_cost_config(config_systems_address);
 
@@ -287,7 +287,7 @@ fn setup_hex_travel() -> (WorldStorage, ID, Position, ITravelSystemsDispatcher) 
             }
         );
 
-    let travel_systems_address = deploy_system(ref world, travel_systems::TEST_CLASS_HASH);
+    let travel_systems_address = deploy_system(ref world, "travel_systems");
     let travel_systems_dispatcher = ITravelSystemsDispatcher { contract_address: travel_systems_address };
 
     (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher)

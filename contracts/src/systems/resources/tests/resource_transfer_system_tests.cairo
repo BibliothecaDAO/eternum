@@ -32,7 +32,7 @@ mod resource_transfer_system_tests {
     fn setup() -> (WorldStorage, IResourceSystemsDispatcher) {
         let mut world = spawn_eternum();
 
-        let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+        let config_systems_address = deploy_system(ref world, "config_systems");
 
         set_capacity_config(config_systems_address);
 
@@ -47,7 +47,7 @@ mod resource_transfer_system_tests {
         // set donkey config
         world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: 1_000_000 });
 
-        let resource_systems_address = deploy_system(ref world, resource_systems::TEST_CLASS_HASH);
+        let resource_systems_address = deploy_system(ref world, "resource_systems");
 
         let resource_systems_dispatcher = IResourceSystemsDispatcher { contract_address: resource_systems_address };
 
