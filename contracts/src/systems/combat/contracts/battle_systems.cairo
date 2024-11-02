@@ -293,6 +293,7 @@ trait IBattlePillageContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
+    use bushido_trophy::components::achievable::AchievableComponent;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -344,8 +345,31 @@ mod battle_systems {
     use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
     use eternum::utils::math::{min, max};
     use eternum::utils::random;
+    use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use super::{IBattleContract, InternalBattleImpl};
+
+    // Components
+
+    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+
+    // Storage
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievable: AchievableComponent::Storage,
+    }
+
+    // Events
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievableEvent: AchievableComponent::Event,
+    }
 
 
     #[abi(embed_v0)]
@@ -634,8 +658,10 @@ mod battle_systems {
             InternalBattleImpl::leave_battle(ref world, ref battle, ref caller_army);
 
             // slash army if battle was not concluded before they left
+            let leaver = starknet::get_caller_address();
             if army_left_early {
                 let troop_config = TroopConfigCustomImpl::get(world);
+                // FIXME: can we re-use the caller_army?
                 let mut army: Army = world.read_model(army_id);
                 let troops_deducted = Troops {
                     knight_count: (army.troops.knight_count * troop_config.battle_leave_slash_num.into())
@@ -658,6 +684,11 @@ mod battle_systems {
                 world.write_model(@army);
                 world.write_model(@army_health);
                 world.write_model(@army_quantity);
+            } else if caller_army.troops.count() > 0 {
+                // [Achievement] Win a battle if the army is not dead
+                let player_id: felt252 = leaver.into();
+                let task_id: felt252 = Task::Builder.identifier();
+                self.achievable.update(world, player_id, task_id, count: 1,);
             }
 
             // emit battle leave event
@@ -669,7 +700,7 @@ mod battle_systems {
                         id: world.dispatcher.uuid(),
                         event_id: EventType::BattleLeave,
                         battle_entity_id: battle_id,
-                        leaver: starknet::get_caller_address(),
+                        leaver: leaver,
                         leaver_name: leaver_name.name,
                         leaver_army_entity_id: army_id,
                         leaver_side: caller_army_side,
