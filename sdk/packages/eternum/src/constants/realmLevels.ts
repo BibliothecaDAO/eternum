@@ -36,10 +36,10 @@ export const REALM_UPGRADE_COSTS: { [key in RealmLevels]: ResourceCost[] } = {
   ],
 
   [RealmLevels.Empire]: [
-    { resource: ResourcesIds.AlchemicalSilver, amount: 100 },
-    { resource: ResourcesIds.Adamantine, amount: 100 },
-    { resource: ResourcesIds.Mithral, amount: 100 },
-    { resource: ResourcesIds.Dragonhide, amount: 100 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 20 },
+    { resource: ResourcesIds.Adamantine, amount: 20 },
+    { resource: ResourcesIds.Mithral, amount: 20 },
+    { resource: ResourcesIds.Dragonhide, amount: 20 },
     { resource: ResourcesIds.Wheat, amount: 10000 },
     { resource: ResourcesIds.Fish, amount: 10000 },
   ],

@@ -11,7 +11,7 @@ import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "../navigation/LeftNavigationModule";
+import { LeftView } from "../navigation/LeftNavigationModule";
 import { RealmDetails } from "./realm/RealmDetails";
 
 export const BuildingEntityDetails = () => {
@@ -43,7 +43,7 @@ export const BuildingEntityDetails = () => {
 
   const selectedStructureInfo = getEntityInfo(structureEntityId);
 
-  let isCastleSelected = useMemo(
+  const isCastleSelected = useMemo(
     () =>
       selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
       selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&
@@ -104,7 +104,7 @@ export const BuildingEntityDetails = () => {
     } else {
       playDestroyWooden();
     }
-    setLeftNavigationView(View.None);
+    setLeftNavigationView(LeftView.None);
   }, [selectedBuildingHex, buildingState]);
   return (
     <div className="flex flex-col h-full">

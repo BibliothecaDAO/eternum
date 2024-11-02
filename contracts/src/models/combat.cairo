@@ -2,6 +2,8 @@ use core::array::ArrayTrait;
 use core::num::traits::Bounded;
 use core::option::OptionTrait;
 use core::poseidon::poseidon_hash_span;
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
@@ -702,9 +704,9 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
 
 #[generate_trait]
 impl BattleEscrowImpl of BattleEscrowTrait {
-    fn deposit_lock_immediately(ref self: Battle, world: IWorldDispatcher, army_protectee: Protectee) {
+    fn deposit_lock_immediately(ref self: Battle, ref world: WorldStorage, army_protectee: Protectee) {
         let army_protectee_id = army_protectee.protected_entity();
-        let mut army_resource_lock: ResourceTransferLock = get!(world, army_protectee_id, ResourceTransferLock);
+        let mut army_resource_lock: ResourceTransferLock = world.read_model(army_protectee_id);
         army_resource_lock.assert_not_locked();
 
         let now = starknet::get_block_timestamp();
@@ -712,18 +714,17 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         assert!(army_resource_lock.release_at > now, "wrong lock invariant (2)");
 
         army_resource_lock.start_at = now;
-        set!(world, (army_resource_lock));
+        world.write_model(@army_resource_lock);
     }
 
 
-    fn deposit_balance(ref self: Battle, world: IWorldDispatcher, from_army: Army, from_army_protectee: Protectee) {
+    fn deposit_balance(ref self: Battle, ref world: WorldStorage, from_army: Army, from_army_protectee: Protectee) {
         let from_army_protectee_id = from_army_protectee.protected_entity();
-        let from_army_protectee_is_self: bool = !get!(world, from_army_protectee_id, Structure).is_structure();
+        let from_army_protectee_structure: Structure = world.read_model(from_army_protectee_id);
+        let from_army_protectee_is_self: bool = !from_army_protectee_structure.is_structure();
 
         // ensure resources were not previously locked
-        let mut from_army_resource_lock: ResourceTransferLock = get!(
-            world, from_army_protectee_id, ResourceTransferLock
-        );
+        let mut from_army_resource_lock: ResourceTransferLock = world.read_model(from_army_protectee_id);
         from_army_resource_lock.assert_not_locked();
 
         if from_army_protectee_is_self {
@@ -733,9 +734,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                 BattleSide::Attack => { self.attackers_resources_escrow_id },
                 BattleSide::Defence => { self.defenders_resources_escrow_id }
             };
-            let from_army_owned_resources: OwnedResourcesTracker = get!(
-                world, from_army_protectee_id, OwnedResourcesTracker
-            );
+            let from_army_owned_resources: OwnedResourcesTracker = world.read_model(from_army_protectee_id);
 
             let mut all_resources = all_resource_ids();
             loop {
@@ -743,11 +742,11 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                     Option::Some(resource_type) => {
                         if from_army_owned_resources.owns_resource_type(resource_type) {
                             let from_army_resource = ResourceCustomImpl::get(
-                                world, (from_army_protectee_id, resource_type)
+                                ref world, (from_army_protectee_id, resource_type)
                             );
-                            let mut escrow_resource = ResourceCustomImpl::get(world, (escrow_id, resource_type));
+                            let mut escrow_resource = ResourceCustomImpl::get(ref world, (escrow_id, resource_type));
                             escrow_resource.add(from_army_resource.balance);
-                            escrow_resource.save(world);
+                            escrow_resource.save(ref world);
                         }
                     },
                     Option::None => { break; }
@@ -757,18 +756,18 @@ impl BattleEscrowImpl of BattleEscrowTrait {
             // lock the resources protected by the army immediately
             from_army_resource_lock.start_at = starknet::get_block_timestamp();
             from_army_resource_lock.release_at = Bounded::MAX;
-            set!(world, (from_army_resource_lock));
+            world.write_model(@from_army_resource_lock);
         } else {
             // lock resources of the entity being protected starting from
             // when the  battle starts to account for battle.start_at delay
             from_army_resource_lock.start_at = self.start_at;
             from_army_resource_lock.release_at = Bounded::MAX;
-            set!(world, (from_army_resource_lock));
+            world.write_model(@from_army_resource_lock);
         }
     }
 
     fn withdraw_balance_and_reward(
-        ref self: Battle, world: IWorldDispatcher, to_army: Army, to_army_protectee: Protectee
+        ref self: Battle, ref world: WorldStorage, to_army: Army, to_army_protectee: Protectee
     ) {
         let (escrow_id, other_side_escrow_id) = match to_army.battle_side {
             BattleSide::None => { panic!("wrong battle side") },
@@ -777,7 +776,8 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         };
 
         let to_army_protectee_id = to_army_protectee.protected_entity();
-        let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure).is_structure();
+        let to_army_protectee_structure: Structure = world.read_model(to_army_protectee_id);
+        let to_army_protectee_is_self: bool = !to_army_protectee_structure.is_structure();
 
         let winner_side: BattleSide = self.winner();
         let to_army_dead = to_army.troops.count().is_zero();
@@ -790,7 +790,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let to_army_won = (winner_side == to_army.battle_side && winner_side != BattleSide::None);
         let to_army_lost_or_battle_not_ended = (self.has_started() && !self.has_ended())
             || (self.has_ended() && to_army_lost);
-        let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
+        let to_army_owned_resources: OwnedResourcesTracker = world.read_model(to_army_protectee_id);
         let mut all_resources = all_resource_ids();
         let mut subtracted_resources_weight = 0;
 
@@ -799,33 +799,32 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                 Option::Some(resource_type) => {
                     if to_army_protectee_is_self && to_army_owned_resources.owns_resource_type(resource_type) {
                         let mut to_army_resource = ResourceCustomImpl::get(
-                            world, (to_army_protectee_id, resource_type)
+                            ref world, (to_army_protectee_id, resource_type)
                         );
                         if to_army_lost_or_battle_not_ended {
                             // update army's subtracted weight
                             subtracted_resources_weight +=
                                 WeightConfigCustomImpl::get_weight_grams(
-                                    world, resource_type, to_army_resource.balance
+                                    ref world, resource_type, to_army_resource.balance
                                 );
 
                             // army forfeits resources
                             to_army_resource.burn((to_army_resource.balance));
-                            to_army_resource.save(world);
+                            to_army_resource.save(ref world);
                         } else {
                             // army won or drew so it can leave with its resources
                             //
                             // remove items from from battle escrow
-                            let mut escrow_resource = ResourceCustomImpl::get(world, (escrow_id, resource_type));
+                            let mut escrow_resource = ResourceCustomImpl::get(ref world, (escrow_id, resource_type));
                             escrow_resource.burn(to_army_resource.balance);
-                            escrow_resource.save(world);
+                            escrow_resource.save(ref world);
                         }
                     }
 
                     if to_army_won {
                         // give winner loot share
-                        let other_side_escrow_owned_resources: OwnedResourcesTracker = get!(
-                            world, other_side_escrow_id, OwnedResourcesTracker
-                        );
+                        let other_side_escrow_owned_resources: OwnedResourcesTracker = world
+                            .read_model(other_side_escrow_id);
                         if other_side_escrow_owned_resources.owns_resource_type(resource_type) {
                             let to_army_side = if to_army.battle_side == BattleSide::Attack {
                                 self.attack_army
@@ -834,7 +833,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             };
 
                             let mut other_side_escrow_resource = ResourceCustomImpl::get(
-                                world, (other_side_escrow_id, resource_type)
+                                ref world, (other_side_escrow_id, resource_type)
                             );
 
                             let share_amount = (other_side_escrow_resource.balance * to_army.troops.count().into())
@@ -842,11 +841,11 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
                             // burn share from escrow balance
                             other_side_escrow_resource.burn(share_amount);
-                            other_side_escrow_resource.save(world);
+                            other_side_escrow_resource.save(ref world);
 
                             // send loot to winner
                             InternalResourceSystemsImpl::mint_if_adequate_capacity(
-                                world, to_army_protectee_id, (resource_type, share_amount), false
+                                ref world, to_army_protectee_id, (resource_type, share_amount), false
                             );
                         }
                     }
@@ -856,27 +855,27 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         };
 
         // update weight after balance update
-        let mut to_army_protectee_weight: Weight = get!(world, to_army_protectee_id, Weight);
-        let to_army_protectee_capacity: CapacityConfig = get!(world, CapacityConfigCategory::Army, CapacityConfig);
+        let mut to_army_protectee_weight: Weight = world.read_model(to_army_protectee_id);
+        let to_army_protectee_capacity: CapacityConfig = world.read_model(CapacityConfigCategory::Army);
         // decrease protectee weight if necessary
         if subtracted_resources_weight.is_non_zero() {
             to_army_protectee_weight.deduct(to_army_protectee_capacity, subtracted_resources_weight);
         }
 
         // release lock on resource
-        let mut to_army_resource_lock: ResourceTransferLock = get!(world, to_army_protectee_id, ResourceTransferLock);
+        let mut to_army_resource_lock: ResourceTransferLock = world.read_model(to_army_protectee_id);
         to_army_resource_lock.start_at = starknet::get_block_timestamp();
         to_army_resource_lock.release_at = starknet::get_block_timestamp();
-        set!(world, (to_army_resource_lock));
+        world.write_model(@to_army_resource_lock);
     }
 }
 
 
 #[generate_trait]
 impl BattleCustomImpl of BattleCustomTrait {
-    fn get(world: IWorldDispatcher, battle_id: ID) -> Battle {
-        let mut battle = get!(world, battle_id, Battle);
-        let troop_config = TroopConfigCustomImpl::get(world);
+    fn get(world: WorldStorage, battle_id: ID) -> Battle {
+        let mut battle: Battle = world.read_model(battle_id);
+        let troop_config: TroopConfig = TroopConfigCustomImpl::get(world);
         battle.update_state(troop_config);
         return battle;
     }
@@ -1358,11 +1357,11 @@ mod tests {
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
         let world = spawn_eternum();
-        world.uuid(); // use id 0;
+        world.dispatcher.uuid(); // use id 0;
 
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1375,8 +1374,8 @@ mod tests {
         let mut attack_army_coal_resource = Resource {
             entity_id: attack_army.entity_id, resource_type: ResourceTypes::COAL, balance: 844
         };
-        attack_army_wheat_resource.save(world);
-        attack_army_coal_resource.save(world);
+        attack_army_wheat_resource.save(ref world);
+        attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
         let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);
@@ -1406,11 +1405,11 @@ mod tests {
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
         let world = spawn_eternum();
-        world.uuid(); // use id 0;
+        world.dispatcher.uuid(); // use id 0;
 
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1423,8 +1422,8 @@ mod tests {
         let mut attack_army_coal_resource = Resource {
             entity_id: attack_army.entity_id, resource_type: ResourceTypes::COAL, balance: 844
         };
-        attack_army_wheat_resource.save(world);
-        attack_army_coal_resource.save(world);
+        attack_army_wheat_resource.save(ref world);
+        attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
         let attack_army_protectee = Protectee { army_id: attack_army.entity_id, protectee_id: 67890989 // non zero
@@ -1459,13 +1458,13 @@ mod tests {
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
         let world = spawn_eternum();
-        world.uuid(); // use id 0;
+        world.dispatcher.uuid(); // use id 0;
 
         //////////////////////    Defence Army    /////////////////////////
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1475,7 +1474,7 @@ mod tests {
         let mut defence_army_stone_resource: Resource = Resource {
             entity_id: defence_army.entity_id, resource_type: ResourceTypes::STONE, balance: 344
         };
-        defence_army_stone_resource.save(world);
+        defence_army_stone_resource.save(ref world);
 
         // deposit everything the defence army owns
         let defence_army_protectee = get!(world, defence_army.entity_id, Protectee);
@@ -1485,7 +1484,7 @@ mod tests {
         ///
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each), // has no effect on outcome
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1498,8 +1497,8 @@ mod tests {
         let mut attack_army_coal_resource = Resource {
             entity_id: attack_army.entity_id, resource_type: ResourceTypes::COAL, balance: 844
         };
-        attack_army_wheat_resource.save(world);
-        attack_army_coal_resource.save(world);
+        attack_army_wheat_resource.save(ref world);
+        attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
         let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);
@@ -1548,12 +1547,12 @@ mod tests {
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
         let world = spawn_eternum();
-        world.uuid(); // use id 0;
+        world.dispatcher.uuid(); // use id 0;
         //////////////////////    Defence Army    /////////////////////////
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1563,7 +1562,7 @@ mod tests {
         let mut defence_army_stone_resource: Resource = Resource {
             entity_id: defence_army.entity_id, resource_type: ResourceTypes::STONE, balance: 344
         };
-        defence_army_stone_resource.save(world);
+        defence_army_stone_resource.save(ref world);
 
         // deposit everything the defence army owns
         let defence_army_protectee = get!(world, defence_army.entity_id, Protectee);
@@ -1573,7 +1572,7 @@ mod tests {
         ///
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1586,8 +1585,8 @@ mod tests {
         let mut attack_army_coal_resource = Resource {
             entity_id: attack_army.entity_id, resource_type: ResourceTypes::COAL, balance: 844
         };
-        attack_army_wheat_resource.save(world);
-        attack_army_coal_resource.save(world);
+        attack_army_wheat_resource.save(ref world);
+        attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
         let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);
@@ -1637,13 +1636,13 @@ mod tests {
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
         let world = spawn_eternum();
-        world.uuid(); // use id 0;
+        world.dispatcher.uuid(); // use id 0;
 
         //////////////////////    Defence Army    /////////////////////////
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1655,7 +1654,7 @@ mod tests {
         let mut defence_army_stone_resource: Resource = Resource {
             entity_id: defence_army.entity_id, resource_type: ResourceTypes::STONE, balance: 344
         };
-        defence_army_stone_resource.save(world);
+        defence_army_stone_resource.save(ref world);
 
         // deposit everything the defence army owns
         let defence_army_protectee = get!(world, defence_army.entity_id, Protectee);
@@ -1665,7 +1664,7 @@ mod tests {
         ///
         // recreate attack army for testing
         let attack_army = Army {
-            entity_id: world.uuid(),
+            entity_id: world.dispatcher.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1682,8 +1681,8 @@ mod tests {
         let mut attack_army_coal_resource = Resource {
             entity_id: attack_army.entity_id, resource_type: ResourceTypes::COAL, balance: 844
         };
-        attack_army_wheat_resource.save(world);
-        attack_army_coal_resource.save(world);
+        attack_army_wheat_resource.save(ref world);
+        attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
         let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);

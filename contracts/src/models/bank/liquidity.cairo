@@ -1,7 +1,6 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use dojo::model::introspect::{Struct, Ty, Introspect, Member};
+use dojo::meta::introspect::{Struct, Ty, Introspect, Member};
 use eternum::alias::ID;
-
 use starknet::ContractAddress;
 
 impl IntrospectFixed of Introspect<Fixed> {
@@ -11,8 +10,8 @@ impl IntrospectFixed of Introspect<Fixed> {
     }
 
     #[inline(always)]
-    fn layout() -> dojo::model::Layout {
-        dojo::model::Layout::Fixed(array![128, 1].span())
+    fn layout() -> dojo::meta::Layout {
+        dojo::meta::Layout::Fixed(array![128, 1].span())
     }
 
     #[inline(always)]

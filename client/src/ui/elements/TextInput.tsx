@@ -23,7 +23,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
         (e.target as any).reset();
       }}
       className={clsx(
-        "w-full  transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent border border-gold/40 rounded-sm font-bold",
+        "w-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-brown border border-gold/40 rounded-sm font-bold",
         className,
       )}
     >
@@ -31,7 +31,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
         ref={ref}
         autoFocus={true}
         className={clsx(
-          "w-full p-2 h-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent rounded-sm font-bold",
+          "w-full p-2 h-full text-gold  transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder:text-gold flex-grow bg-brown rounded-sm font-bold",
         )}
         disabled={disabled || false}
         type="text"

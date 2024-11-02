@@ -13,7 +13,7 @@ export const QuestPanel = ({ entityId }: { entityId: ID | undefined }) => {
   const updatedSelectedQuest = quests.find((quest) => quest.id === selectedQuest?.id);
 
   return selectedQuest ? (
-    <div className="p-3 flex flex-col gap-2">
+    <div className="p-3 flex flex-col gap-2 ">
       <QuestInfo quest={updatedSelectedQuest!} entityId={entityId || 0} />
     </div>
   ) : (

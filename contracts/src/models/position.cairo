@@ -1,6 +1,5 @@
 use core::fmt::{Display, Formatter, Error};
 use core::zeroable::Zeroable;
-use debug::PrintTrait;
 use eternum::alias::ID;
 
 use eternum::utils::number::{NumberTrait};
