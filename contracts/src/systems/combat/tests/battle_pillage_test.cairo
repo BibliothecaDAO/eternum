@@ -48,7 +48,7 @@ const DEFENDER_REALM_COORD_Y: u32 = 3;
 fn setup() -> (WorldStorage, IBattlePillageContractDispatcher, ID, ID) {
     let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
     set_settlement_config(config_systems_address);
     set_combat_config(config_systems_address);
     setup_globals(config_systems_address);

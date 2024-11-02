@@ -24,7 +24,7 @@ use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDefT
 fn setup() -> (WorldStorage, ContractAddress, Owner) {
     let mut world = spawn_eternum();
 
-    let ownership_systems_address = deploy_system(world, ownership_systems::TEST_CLASS_HASH);
+    let ownership_systems_address = deploy_system(ref world, ownership_systems::TEST_CLASS_HASH);
 
     // set initial owner
     let owner = Owner { entity_id: OWNER_ENTITY_ID, address: contract_address_const::<FIRST_OWNER>() };

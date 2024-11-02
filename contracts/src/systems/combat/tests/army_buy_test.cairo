@@ -60,7 +60,7 @@ fn setup() -> (WorldStorage, ITroopContractDispatcher, ID, ID) {
     set_configurations(ref world);
     let troop_system_dispatcher = deploy_troop_systems(world);
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
     set_capacity_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);

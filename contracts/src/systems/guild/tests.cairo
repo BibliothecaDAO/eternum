@@ -38,10 +38,10 @@ fn setup() -> (WorldStorage, IGuildSystemsDispatcher) {
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     world.dispatcher.uuid();
 
-    let guild_systems_address = deploy_system(world, guild_systems::TEST_CLASS_HASH);
+    let guild_systems_address = deploy_system(ref world, guild_systems::TEST_CLASS_HASH);
     let guild_systems_dispatcher = IGuildSystemsDispatcher { contract_address: guild_systems_address };
 
-    let name_systems_address = deploy_system(world, name_systems::TEST_CLASS_HASH);
+    let name_systems_address = deploy_system(ref world, name_systems::TEST_CLASS_HASH);
     let name_systems_dispatcher = INameSystemsDispatcher { contract_address: name_systems_address };
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());

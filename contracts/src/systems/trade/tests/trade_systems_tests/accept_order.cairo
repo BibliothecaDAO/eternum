@@ -1,6 +1,8 @@
 use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
-
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 
@@ -39,8 +41,8 @@ use starknet::contract_address_const;
 fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
     let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-    let dev_resource_systems = deploy_dev_resource_systems(world);
+    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
+    let dev_resource_systems = deploy_dev_resource_systems(ref world);
 
     set_settlement_config(config_systems_address);
     set_capacity_config(config_systems_address);
@@ -72,14 +74,18 @@ fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatch
     let maker_position = Position { x: 100000, y: 200000, entity_id: 1 };
     let taker_position = Position { x: 200000, y: 1000000, entity_id: 1 };
 
-    let maker_realm_entity_id = spawn_realm(world, 1, maker_position.into());
-    let taker_realm_entity_id = spawn_realm(world, 2, taker_position.into());
+    let maker_realm_entity_id = spawn_realm(ref world, 1, maker_position.into());
+    let taker_realm_entity_id = spawn_realm(ref world, 2, taker_position.into());
 
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;
 
-    set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
-    set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }));
+    world.write_model_test(
+        @Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }
+    );
+    world.write_model_test(
+        @Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }
+    );
 
     dev_resource_systems
         .mint(
@@ -95,7 +101,7 @@ fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatch
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
-    let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
+    let trade_systems_address = deploy_system(ref world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     // create order
@@ -134,16 +140,16 @@ fn trade_test_accept_order_free_trade() {
         );
 
     // check that taker balance is correct
-    let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+    let taker_wood_resource: Resource = world.read_model((taker_id, ResourceTypes::WOOD));
     assert(taker_wood_resource.balance == 300, 'wrong taker balance');
 
-    let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
+    let taker_silver_resource: Resource = world.read_model((taker_id, ResourceTypes::SILVER));
     assert(taker_silver_resource.balance == 300, 'wrong taker balance');
 
-    let trade = get!(world, trade_id, Trade);
+    let trade: Trade = world.read_model(trade_id);
     assert(trade.taker_id == taker_id, 'wrong taker id');
 
-    let trade_status = get!(world, trade_id, Status);
+    let trade_status: Status = world.read_model(trade_id);
     assert(trade_status.value == TradeStatus::ACCEPTED, 'wrong trade status');
 }
 
@@ -162,16 +168,16 @@ fn trade_test_accept_order_direct_trade() {
         );
 
     // check that taker balance is correct
-    let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+    let taker_wood_resource: Resource = world.read_model((taker_id, ResourceTypes::WOOD));
     assert(taker_wood_resource.balance == 300, 'wrong taker balance');
 
-    let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
+    let taker_silver_resource: Resource = world.read_model((taker_id, ResourceTypes::SILVER));
     assert(taker_silver_resource.balance == 300, 'wrong taker balance');
 
-    let trade = get!(world, trade_id, Trade);
+    let trade: Trade = world.read_model(trade_id);
     assert(trade.taker_id == taker_id, 'wrong taker id');
 
-    let trade_status = get!(world, trade_id, Status);
+    let trade_status: Status = world.read_model(trade_id);
     assert(trade_status.value == TradeStatus::ACCEPTED, 'wrong trade status');
 }
 
@@ -186,7 +192,9 @@ fn trade_test_not_trade_taker_id() {
     // who wants to accept is the intended recepient
 
     let taker_id = 9999; // set arbitrarily
-    set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>() }));
+    world.write_model_test(
+        @Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>() }
+    );
 
     // create order with a caller that isnt the owner of maker_id
     starknet::testing::set_contract_address(contract_address_const::<'takers_other_realm'>());
@@ -233,7 +241,9 @@ fn trade_test_caller_not_taker() {
 fn trade_test_transport_not_enough_donkey_capacity() {
     let (mut world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
+    world.write_model_test(
+        @Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }
+    );
 
     starknet::testing::set_contract_address(contract_address_const::<'taker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'taker'>());

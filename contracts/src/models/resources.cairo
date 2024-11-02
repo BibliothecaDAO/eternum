@@ -352,7 +352,7 @@ mod tests_resource_traits {
         //
 
         let mut world = spawn_eternum();
-        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+        let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
 
         set_capacity_config(config_systems_address);
         // set tick config
@@ -513,7 +513,7 @@ mod owned_resources_tracker_tests {
     fn resources_test_get_and_set_resource_ownership_after_resource_save() {
         let mut world = spawn_eternum();
 
-        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+        let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
         set_capacity_config(config_systems_address);
 
         let entity_id = 44;

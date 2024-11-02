@@ -197,7 +197,7 @@ fn setup() -> (WorldStorage, ID, ID, IMapSystemsDispatcher, IBattleContractDispa
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
 
     set_combat_config(config_systems_address);
     set_capacity_config(config_systems_address);
@@ -227,7 +227,7 @@ fn setup() -> (WorldStorage, ID, ID, IMapSystemsDispatcher, IBattleContractDispa
     let realm_position = get_default_realm_pos();
     let realm_entity_id = spawn_realm(ref world, 1, realm_position.into());
 
-    deploy_dev_resource_systems(world)
+    deploy_dev_resource_systems(ref world)
         .mint(
             realm_entity_id,
             array![

@@ -54,23 +54,23 @@ fn setup(
     // allows to start from entity_id 1
     let _ = world.dispatcher.uuid();
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
     bank_config_dispatcher.set_bank_config(0, lp_fee_num, lp_fee_denom);
 
     set_capacity_config(config_systems_address);
 
-    let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
+    let bank_systems_address = deploy_system(ref world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let bank_entity_id = bank_systems_dispatcher
         .create_bank(BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0);
 
-    let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
+    let liquidity_systems_address = deploy_system(ref world, liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher { contract_address: liquidity_systems_address };
 
-    let swap_systems_address = deploy_system(world, swap_systems::TEST_CLASS_HASH);
+    let swap_systems_address = deploy_system(ref world, swap_systems::TEST_CLASS_HASH);
     let swap_systems_dispatcher = ISwapSystemsDispatcher { contract_address: swap_systems_address };
 
     // donkeys capcaity
