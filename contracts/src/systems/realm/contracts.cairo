@@ -24,6 +24,7 @@ trait IRealmSystems<T> {
 
 #[dojo::contract]
 mod realm_systems {
+    use bushido_trophy::components::achievable::AchievableComponent;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -58,9 +59,32 @@ mod realm_systems {
     use eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
     };
+    use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
+
+    // Components
+
+    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+
+    // Storage
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievable: AchievableComponent::Storage,
+    }
+
+    // Events
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievableEvent: AchievableComponent::Event,
+    }
 
 
     #[abi(embed_v0)]
@@ -147,7 +171,8 @@ mod realm_systems {
             realm.assert_is_set();
 
             // ensure realm is not already at max level
-            assert(realm.level < realm.max_level(world), 'realm is already at max level');
+            let max_level = realm.max_level(world);
+            assert(realm.level < max_level, 'realm is already at max level');
 
             // make payment to upgrade to next level
             let next_level = realm.level + 1;
@@ -174,6 +199,13 @@ mod realm_systems {
             // set new level
             realm.level = next_level;
             world.write_model(@realm);
+
+            // [Achievement] Upgrade to max level
+            if realm.level == max_level {
+                let player_id: felt252 = starknet::get_caller_address().into();
+                let task_id: felt252 = Task::Maximalist.identifier();
+                self.achievable.update(world, player_id: player_id, task_id: task_id, count: 1,);
+            }
         }
 
         fn quest_claim(ref self: ContractState, quest_id: ID, entity_id: ID) {
@@ -309,7 +341,8 @@ mod realm_systems {
             season_pass.detach_lords(realm_id.into(), token_lords_balance);
             assert!(season_pass.lords_balance(realm_id.into()).is_zero(), "lords amount attached to realm should be 0");
 
-            // at this point, this contract's lords balance must have increased by `token_lords_balance`
+            // at this point, this contract's lords balance must have increased by
+            // `token_lords_balance`
             token_lords_balance
         }
 
