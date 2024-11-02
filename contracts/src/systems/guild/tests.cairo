@@ -1,4 +1,7 @@
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
 use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
 use eternum::models::name::EntityName;
@@ -14,10 +17,6 @@ use eternum::systems::name::contracts::{
 
 use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::contract_address_const;
-
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
 
 const PUBLIC: felt252 = 1;
@@ -350,19 +349,13 @@ fn guild_test_remove_self_from_whitelist() {
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
     let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
-    assert(
-        guild_whitelist.is_whitelisted == true,
-        'Whitelisted not removed'
-    );
+    assert(guild_whitelist.is_whitelisted == true, 'Whitelisted not removed');
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
     let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
-    assert(
-        guild_whitelist.is_whitelisted == false,
-        'Whitelisted not removed'
-    );
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }
 
 #[test]
@@ -376,17 +369,11 @@ fn guild_test_remove_from_whitelist_as_owner() {
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
     let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
-    assert(
-        guild_whitelist.is_whitelisted == true,
-        'Whitelisted not removed'
-    );
+    assert(guild_whitelist.is_whitelisted == true, 'Whitelisted not removed');
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
     let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
-    assert(
-        guild_whitelist.is_whitelisted == false,
-        'Whitelisted not removed'
-    );
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }
 
 #[test]
@@ -401,10 +388,7 @@ fn guild_test_remove_from_whitelist_not_whitelisted() {
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
     let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
-    assert(
-        guild_whitelist.is_whitelisted == false,
-        'Whitelisted not removed'
-    );
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }
 
 #[test]
@@ -419,18 +403,12 @@ fn guild_test_remove_from_whitelist_as_random() {
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
     let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
-    assert(
-        guild_whitelist.is_whitelisted == true,
-        'Whitelisted not removed'
-    );
+    assert(guild_whitelist.is_whitelisted == true, 'Whitelisted not removed');
 
     starknet::testing::set_contract_address(contract_address_const::<'player3'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player3'>());
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
     let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
-    assert(
-        guild_whitelist.is_whitelisted == false,
-        'Whitelisted not removed'
-    );   
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }

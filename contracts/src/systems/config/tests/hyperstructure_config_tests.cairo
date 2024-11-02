@@ -1,7 +1,7 @@
 use core::array::{ArrayTrait, SpanTrait};
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 

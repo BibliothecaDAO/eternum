@@ -61,16 +61,15 @@ impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
 
 #[cfg(test)]
 mod tests {
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
     use eternum::alias::ID;
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
     use eternum::models::realm::Realm;
     use eternum::utils::testing::world::spawn_eternum;
     use starknet::contract_address_const;
-
-    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
     #[test]
     fn owner_test_entity_owner_get_realm_id() {

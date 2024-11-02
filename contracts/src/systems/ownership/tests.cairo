@@ -1,4 +1,7 @@
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID};
 use eternum::models::owner::Owner;
@@ -14,11 +17,6 @@ use starknet::contract_address_const;
 const OWNER_ENTITY_ID: ID = 199999;
 const FIRST_OWNER: felt252 = 'first_owner';
 const SECOND_OWNER: felt252 = 'second_owner';
-
-
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDefTrait};
 
 
 fn setup() -> (WorldStorage, ContractAddress, Owner) {

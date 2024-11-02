@@ -1,6 +1,11 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
+
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
 use eternum::models::bank::liquidity::{Liquidity};
@@ -23,11 +28,6 @@ use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
 use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
 
-
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-
 use starknet::contract_address_const;
 
 use traits::Into;
@@ -47,12 +47,7 @@ const BANK_ID: ID = 1;
 const DONKEY_CAPACITY: u128 = 1000;
 
 fn setup() -> (
-    WorldStorage,
-    ID,
-    ILiquiditySystemsDispatcher,
-    ISwapSystemsDispatcher,
-    IBankSystemsDispatcher,
-    IBankConfigDispatcher
+    WorldStorage, ID, ILiquiditySystemsDispatcher, ISwapSystemsDispatcher, IBankSystemsDispatcher, IBankConfigDispatcher
 ) {
     let mut world = spawn_eternum();
     // allows to start from entity_id 1
@@ -92,11 +87,20 @@ fn setup() -> (
     // wood
     // lords
     // donkeys
-    world.write_model_test(@Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource {
-        entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-    });
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
+            }
+        );
     world.write_model_test(@Owner { entity_id: PLAYER_3_ID, address: contract_address_const::<'player3'>() });
 
     // player 3
@@ -104,11 +108,20 @@ fn setup() -> (
     // wood
     // lords
     // donkeys
-    world.write_model_test(@Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource {
-        entity_id: PLAYER_3_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-    });
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: PLAYER_3_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
+            }
+        );
 
     (
         world,
@@ -212,12 +225,20 @@ fn bank_test_liquidity_buy() {
     let MARKET_TOTAL_SHARES = MARKET_TOTAL_SHARES * 10;
     let INITIAL_RESOURCE_BALANCE = INITIAL_RESOURCE_BALANCE * 10;
 
-    world.write_model_test(@Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource {
-        entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-    });
-
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
+            }
+        );
 
     // bank owner
     let player = starknet::get_caller_address();

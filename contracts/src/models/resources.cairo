@@ -319,7 +319,12 @@ mod tests_resource_traits {
     use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use debug::PrintTrait;
+
+
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
     use eternum::models::config::{TickConfig, TickImpl, TickTrait};
@@ -332,11 +337,6 @@ mod tests_resource_traits {
     use super::{Production, ProductionOutputCustomImpl, Resource, ResourceCustomImpl};
     use traits::Into;
     use traits::TryInto;
-
-
-    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
 
     fn setup() -> (WorldStorage, ID, u128, Span<(u8, u128)>) {
@@ -363,9 +363,12 @@ mod tests_resource_traits {
 
         // make entity a structure
         let entity_id: ID = 1;
-        world.write_model_test(
-            @Structure { entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp() }
-        );
+        world
+            .write_model_test(
+                @Structure {
+                    entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp()
+                }
+            );
 
         // The entity pays 3 gold for wood production per tick
         let wood_cost_gold_rate: u128 = 3;
@@ -404,7 +407,6 @@ mod tests_resource_traits {
         };
         world.write_model_test(@gold_production);
         world.write_model_test(@gold_resource);
-        
 
         IProductionConfigDispatcher { contract_address: config_systems_address }
             .set_production_config(ResourceTypes::WOOD, wood_production_rate, wood_cost.span());
@@ -482,8 +484,8 @@ mod tests_resource_traits {
 
 #[cfg(test)]
 mod owned_resources_tracker_tests {
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
@@ -522,9 +524,12 @@ mod owned_resources_tracker_tests {
 
         let entity_id = 44;
         // make entity a structure
-        world.write_model_test(
-            @Structure { entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp() }
-        );
+        world
+            .write_model_test(
+                @Structure {
+                    entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp()
+                }
+            );
         let mut entity_gold_resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::GOLD));
         entity_gold_resource.balance += 300;
         entity_gold_resource.save(ref world);

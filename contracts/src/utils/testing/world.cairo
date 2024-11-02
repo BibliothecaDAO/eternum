@@ -1,5 +1,5 @@
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use core::array::{ArrayTrait, SpanTrait};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDefTrait};
 
 use eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR};
@@ -15,43 +15,15 @@ use eternum::models::combat::m_Health;
 use eternum::models::combat::m_Protectee;
 use eternum::models::combat::m_Protector;
 use eternum::models::config::{
-    m_WorldConfig, 
-    m_SpeedConfig, 
-    m_CapacityConfig, 
-    m_WeightConfig, 
-    m_HyperstructureResourceConfig, 
-    m_StaminaConfig,
-    m_StaminaRefillConfig, 
-    m_TickConfig, 
-    m_MapConfig, 
-    m_MercenariesConfig, 
-    m_LevelingConfig, 
-    m_ProductionConfig, 
-    m_BankConfig,
-    m_BuildingConfig, 
-    m_TroopConfig, 
-    m_BattleConfig, 
-    m_BuildingCategoryPopConfig, 
-    m_PopulationConfig,
-    m_HyperstructureConfig, 
-    m_TravelStaminaCostConfig, 
-    m_ResourceBridgeConfig, 
-    m_ResourceBridgeFeeSplitConfig,
-    m_ResourceBridgeWhitelistConfig, 
-    m_SettlementConfig, 
-    m_RealmLevelConfig, 
-    m_RealmMaxLevelConfig,
-    m_TravelFoodCostConfig, 
-    m_QuestRewardConfig, 
-    m_QuestConfig
+    m_WorldConfig, m_SpeedConfig, m_CapacityConfig, m_WeightConfig, m_HyperstructureResourceConfig, m_StaminaConfig,
+    m_StaminaRefillConfig, m_TickConfig, m_MapConfig, m_MercenariesConfig, m_LevelingConfig, m_ProductionConfig,
+    m_BankConfig, m_BuildingConfig, m_TroopConfig, m_BattleConfig, m_BuildingCategoryPopConfig, m_PopulationConfig,
+    m_HyperstructureConfig, m_TravelStaminaCostConfig, m_ResourceBridgeConfig, m_ResourceBridgeFeeSplitConfig,
+    m_ResourceBridgeWhitelistConfig, m_SettlementConfig, m_RealmLevelConfig, m_RealmMaxLevelConfig,
+    m_TravelFoodCostConfig, m_QuestRewardConfig, m_QuestConfig
 };
 use eternum::models::guild::{m_Guild, m_GuildMember, m_GuildWhitelist};
-use eternum::models::hyperstructure::{
-    m_Progress, 
-    m_Contribution, 
-    m_Hyperstructure, 
-    m_Epoch
-};
+use eternum::models::hyperstructure::{m_Progress, m_Contribution, m_Hyperstructure, m_Epoch};
 use eternum::models::map::m_Tile;
 use eternum::models::movable::{m_Movable, m_ArrivalTime};
 use eternum::models::name::{m_AddressName};
@@ -61,12 +33,7 @@ use eternum::models::owner::m_EntityOwner;
 use eternum::models::owner::{m_Owner};
 use eternum::models::population::m_Population;
 use eternum::models::position::{m_Position};
-use eternum::models::production::{
-    m_Production, 
-    m_ProductionInput, 
-    m_ProductionOutput, 
-    m_ProductionDeadline
-};
+use eternum::models::production::{m_Production, m_ProductionInput, m_ProductionOutput, m_ProductionDeadline};
 use eternum::models::quantity::{m_Quantity, m_QuantityTracker};
 use eternum::models::quest::{m_Quest, m_QuestBonus};
 use eternum::models::realm::{m_Realm};
@@ -74,15 +41,14 @@ use eternum::models::resources::m_DetachedResource;
 use eternum::models::resources::m_OwnedResourcesTracker;
 use eternum::models::resources::m_ResourceAllowance;
 use eternum::models::resources::m_ResourceTransferLock;
-use eternum::models::resources::{m_Resource};
 use eternum::models::resources::{m_ResourceCost};
+use eternum::models::resources::{m_Resource};
 use eternum::models::season::m_Season;
 use eternum::models::stamina::m_Stamina;
 use eternum::models::structure::m_Structure;
 use eternum::models::structure::m_StructureCount;
 use eternum::models::trade::{m_Status, m_Trade};
 use eternum::models::weight::m_Weight;
-use starknet::ContractAddress;
 
 use eternum::systems::bank::contracts::bank::bank_systems;
 use eternum::systems::bank::contracts::liquidity::liquidity_systems;
@@ -90,10 +56,7 @@ use eternum::systems::bank::contracts::swap::swap_systems;
 
 
 use eternum::systems::buildings::contracts::building_systems;
-use eternum::systems::combat::contracts::battle_systems::{
-    battle_systems,
-    battle_pillage_systems
-};
+use eternum::systems::combat::contracts::battle_systems::{battle_systems, battle_pillage_systems};
 use eternum::systems::combat::contracts::troop_systems::troop_systems;
 
 use eternum::systems::config::contracts::config_systems;
@@ -108,12 +71,12 @@ use eternum::systems::name::contracts::name_systems;
 use eternum::systems::ownership::contracts::ownership_systems;
 use eternum::systems::realm::contracts::realm_systems;
 use eternum::systems::resources::contracts::{
-    resource_bridge_systems::resource_bridge_systems, 
-    resource_systems::resource_systems
+    resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems
 };
 use eternum::systems::trade::contracts::trade_systems::trade_systems;
-use eternum::systems::transport::contracts::travel_systems::travel_systems;
 use eternum::systems::transport::contracts::donkey_systems::donkey_systems;
+use eternum::systems::transport::contracts::travel_systems::travel_systems;
+use starknet::ContractAddress;
 
 use starknet::contract_address_const;
 
@@ -199,115 +162,92 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Status::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Trade::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Weight::TEST_CLASS_HASH.try_into().unwrap()),
-            
             // TestResource::Event(actions::e_Moved::TEST_CLASS_HASH.try_into().unwrap()),
-            
+
             TestResource::Contract(
                 ContractDefTrait::new(bank_systems::TEST_CLASS_HASH, "bank_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
             ),
-
             TestResource::Contract(
                 ContractDefTrait::new(liquidity_systems::TEST_CLASS_HASH, "liquidity_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
-           
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(swap_systems::TEST_CLASS_HASH, "swap_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(building_systems::TEST_CLASS_HASH, "building_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(battle_systems::TEST_CLASS_HASH, "battle_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(battle_pillage_systems::TEST_CLASS_HASH, "battle_pillage_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(troop_systems::TEST_CLASS_HASH, "troop_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(config_systems::TEST_CLASS_HASH, "config_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(dev_bank_systems::TEST_CLASS_HASH, "dev_bank_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(dev_realm_systems::TEST_CLASS_HASH, "dev_realm_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(dev_resource_systems::TEST_CLASS_HASH, "dev_resource_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(guild_systems::TEST_CLASS_HASH, "guild_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(hyperstructure_systems::TEST_CLASS_HASH, "hyperstructure_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(map_systems::TEST_CLASS_HASH, "map_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(name_systems::TEST_CLASS_HASH, "name_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(ownership_systems::TEST_CLASS_HASH, "ownership_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(realm_systems::TEST_CLASS_HASH, "realm_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(resource_bridge_systems::TEST_CLASS_HASH, "resource_bridge_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(resource_systems::TEST_CLASS_HASH, "resource_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(trade_systems::TEST_CLASS_HASH, "trade_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(travel_systems::TEST_CLASS_HASH, "travel_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            ),           
-            
+            ),
             TestResource::Contract(
                 ContractDefTrait::new(donkey_systems::TEST_CLASS_HASH, "donkey_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
@@ -317,7 +257,6 @@ fn namespace_def() -> NamespaceDef {
 
     ndef
 }
-
 
 
 // used to spawn a test world with all the models and systems registered

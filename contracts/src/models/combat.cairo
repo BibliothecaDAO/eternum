@@ -1205,7 +1205,10 @@ mod health_model_tests {
 
 #[cfg(test)]
 mod tests {
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
     use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
     use eternum::constants::ID;
     use eternum::constants::ResourceTypes;
     use eternum::models::capacity::{CapacityCategory};
@@ -1222,10 +1225,6 @@ mod tests {
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::world::spawn_eternum;
     use super::{Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyCustomImpl, Protectee};
-
-    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
     fn mock_troop_config() -> TroopConfig {
         TroopConfig {
@@ -1444,8 +1443,7 @@ mod tests {
         assert_eq!(escrow_coal.balance, 0);
 
         // ensure transfer lock was enabled
-        let army_transfer_lock: ResourceTransferLock 
-            = world.read_model(attack_army_protectee.protectee_id);
+        let army_transfer_lock: ResourceTransferLock = world.read_model(attack_army_protectee.protectee_id);
         army_transfer_lock.assert_locked();
     }
 
@@ -1593,7 +1591,7 @@ mod tests {
         attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
-        let attack_army_protectee : Protectee = world.read_model(attack_army.entity_id);
+        let attack_army_protectee: Protectee = world.read_model(attack_army.entity_id);
         battle.deposit_balance(ref world, attack_army, attack_army_protectee);
 
         // lose battle
@@ -1652,7 +1650,10 @@ mod tests {
             battle_side: BattleSide::Defence
         };
         // set defence army capacity category
-        world.write_model_test(@CapacityCategory { entity_id: defence_army.entity_id, category: CapacityConfigCategory::Army });
+        world
+            .write_model_test(
+                @CapacityCategory { entity_id: defence_army.entity_id, category: CapacityConfigCategory::Army }
+            );
 
         // give defence army stone
         let mut defence_army_stone_resource: Resource = Resource {
@@ -1676,7 +1677,10 @@ mod tests {
 
         // set attack army capacity category
 
-        world.write_model_test(@CapacityCategory { entity_id: attack_army.entity_id, category: CapacityConfigCategory::Army });
+        world
+            .write_model_test(
+                @CapacityCategory { entity_id: attack_army.entity_id, category: CapacityConfigCategory::Army }
+            );
 
         // give the army wheat and coal
         let mut attack_army_wheat_resource: Resource = Resource {

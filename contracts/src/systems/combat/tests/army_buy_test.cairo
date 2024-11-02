@@ -1,5 +1,9 @@
 use core::array::SpanTrait;
+
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
@@ -21,10 +25,6 @@ use eternum::utils::testing::{
     general::{mint, get_default_realm_pos, spawn_realm}
 };
 
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-
 use starknet::ContractAddress;
 use starknet::contract_address_const;
 use traits::Into;
@@ -41,18 +41,24 @@ const REALM_COORD_Y: u32 = 3;
 
 fn set_configurations(ref world: WorldStorage) {
     world.write_model_test(@get_combat_config());
-    world.write_model_test(@TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 });
-    world.write_model_test(@SettlementConfig {
-        config_id: WORLD_CONFIG_ID,
-        radius: 50,
-        angle_scaled: 0,
-        center: 2147483646,
-        min_distance: 1,
-        max_distance: 5,
-        min_scaling_factor_scaled: 1844674407370955161,
-        min_angle_increase: 30,
-        max_angle_increase: 100,
-    });
+    world
+        .write_model_test(
+            @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
+        );
+    world
+        .write_model_test(
+            @SettlementConfig {
+                config_id: WORLD_CONFIG_ID,
+                radius: 50,
+                angle_scaled: 0,
+                center: 2147483646,
+                min_distance: 1,
+                max_distance: 5,
+                min_scaling_factor_scaled: 1844674407370955161,
+                min_angle_increase: 30,
+                max_angle_increase: 100,
+            }
+        );
 }
 
 fn setup() -> (WorldStorage, ITroopContractDispatcher, ID, ID) {

@@ -1,4 +1,8 @@
+use dojo::model::ModelStorage;
+
+use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo_cairo_test::deploy_contract;
 use eternum::systems::config::contracts::config_systems;
 
 use eternum::systems::{
@@ -15,11 +19,6 @@ use eternum::systems::{
     dev::contracts::resource::{dev_resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait},
 };
 use starknet::{ContractAddress};
-
-use dojo::world::WorldStorage;
-use dojo::model::ModelStorage;
-use dojo_cairo_test::deploy_contract;
-
 
 
 fn deploy_system(ref world: WorldStorage, class_hash_felt: felt252) -> ContractAddress {

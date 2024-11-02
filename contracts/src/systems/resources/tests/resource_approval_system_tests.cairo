@@ -3,9 +3,9 @@ mod resource_approval_system_tests {
 
     use core::traits::Into;
     use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
 
     use eternum::constants::ResourceTypes;
@@ -39,25 +39,33 @@ mod resource_approval_system_tests {
         let owner_entity_position = Position { x: 100_000, y: 200_000, entity_id: owner_entity_id.into() };
 
         world.write_model_test(@owner_entity_position);
-        world.write_model_test(@Owner { address: contract_address_const::<'owner_entity'>(), entity_id: owner_entity_id.into() });
-        world.write_model_test(
-            @EntityOwner { entity_id: owner_entity_id.into(), entity_owner_id: owner_entity_id.into() }
-        );
-        world.write_model_test(
-            @Resource { entity_id: owner_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 }
-        );
-        world.write_model_test(
-            @Resource { entity_id: owner_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
-        );
+        world
+            .write_model_test(
+                @Owner { address: contract_address_const::<'owner_entity'>(), entity_id: owner_entity_id.into() }
+            );
+        world
+            .write_model_test(
+                @EntityOwner { entity_id: owner_entity_id.into(), entity_owner_id: owner_entity_id.into() }
+            );
+        world
+            .write_model_test(
+                @Resource { entity_id: owner_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 }
+            );
+        world
+            .write_model_test(
+                @Resource { entity_id: owner_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
+            );
 
         let receiver_entity_position = Position { x: 100_000, y: 200_000, entity_id: receiver_entity_id.into() };
         world.write_model_test(@receiver_entity_position);
-        world.write_model_test(
-            @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 }
-        );
-        world.write_model_test(
-            @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
-        );
+        world
+            .write_model_test(
+                @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 }
+            );
+        world
+            .write_model_test(
+                @Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
+            );
     }
 
 
@@ -72,12 +80,14 @@ mod resource_approval_system_tests {
 
         let approved_entity_id: ID = 13;
 
-        world.write_model_test(
-            @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
-        );
-        world.write_model_test(
-            @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
-        );
+        world
+            .write_model_test(
+                @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
+            );
+        world
+            .write_model_test(
+                @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
+            );
 
         // owner approves approved
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
@@ -89,10 +99,10 @@ mod resource_approval_system_tests {
             );
 
         // check approval balance
-        let approved_entity_stone_allowance: ResourceAllowance 
-            = world.read_model((owner_entity_id, approved_entity_id, ResourceTypes::STONE));
-        let approved_entity_wood_allowance: ResourceAllowance 
-            = world.read_model((owner_entity_id, approved_entity_id, ResourceTypes::WOOD));
+        let approved_entity_stone_allowance: ResourceAllowance = world
+            .read_model((owner_entity_id, approved_entity_id, ResourceTypes::STONE));
+        let approved_entity_wood_allowance: ResourceAllowance = world
+            .read_model((owner_entity_id, approved_entity_id, ResourceTypes::WOOD));
         assert(approved_entity_stone_allowance.amount == 600, 'stone allowance mismatch');
         assert(approved_entity_wood_allowance.amount == 800, 'wood allowance mismatch');
     }
@@ -108,12 +118,14 @@ mod resource_approval_system_tests {
         make_owner_and_receiver(ref world, owner_entity_id, receiver_entity_id);
 
         let approved_entity_id: ID = 13;
-        world.write_model_test(
-            @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
-        );
-        world.write_model_test(
-            @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
-        );
+        world
+            .write_model_test(
+                @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
+            );
+        world
+            .write_model_test(
+                @EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
+            );
 
         // owner approves approved
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
@@ -125,10 +137,10 @@ mod resource_approval_system_tests {
             );
 
         // check approval balance
-        let approved_entity_stone_allowance: ResourceAllowance 
-            = world.read_model((owner_entity_id, approved_entity_id, ResourceTypes::STONE));
-        let approved_entity_wood_allowance: ResourceAllowance 
-            = world.read_model((owner_entity_id, approved_entity_id, ResourceTypes::WOOD));
+        let approved_entity_stone_allowance: ResourceAllowance = world
+            .read_model((owner_entity_id, approved_entity_id, ResourceTypes::STONE));
+        let approved_entity_wood_allowance: ResourceAllowance = world
+            .read_model((owner_entity_id, approved_entity_id, ResourceTypes::WOOD));
         assert(approved_entity_stone_allowance.amount == Bounded::MAX, 'stone allowance mismatch');
         assert(approved_entity_wood_allowance.amount == Bounded::MAX, 'wood allowance mismatch');
     }
@@ -146,9 +158,10 @@ mod resource_approval_system_tests {
 
         let approved_entity_id: ID = 13;
 
-        world.write_model_test(
-            @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
-        );
+        world
+            .write_model_test(
+                @Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() }
+            );
 
         // some unknown entity calls approve
         starknet::testing::set_contract_address(contract_address_const::<'unknown_entity'>());

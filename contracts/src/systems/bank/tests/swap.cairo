@@ -1,6 +1,10 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
 
@@ -21,10 +25,6 @@ use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
 use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
 
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-
 use starknet::contract_address_const;
 
 use traits::Into;
@@ -42,12 +42,7 @@ const DONKEY_CAPACITY: u128 = 10_000;
 fn setup(
     owner_fee_num: u128, owner_fee_denom: u128, lp_fee_num: u128, lp_fee_denom: u128
 ) -> (
-    WorldStorage,
-    ID,
-    ILiquiditySystemsDispatcher,
-    ISwapSystemsDispatcher,
-    IBankSystemsDispatcher,
-    IBankConfigDispatcher
+    WorldStorage, ID, ILiquiditySystemsDispatcher, ISwapSystemsDispatcher, IBankSystemsDispatcher, IBankConfigDispatcher
 ) {
     let mut world = spawn_eternum();
 
@@ -78,11 +73,20 @@ fn setup(
 
     // add some resources in the player balance
     // wood, lords, donkeys
-    world.write_model_test(@Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE });
-    world.write_model_test(@Resource {
-        entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-    });
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
+            }
+        );
 
     (
         world,
@@ -182,7 +186,7 @@ fn bank_test_swap_buy_with_fees() {
     assert_eq!(lords.balance, 88_642);
 
     let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
-    let liquidity: Liquidity =  world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
 
     // 10_000 (reserve) + 11_235 (lords cost)
     assert(market.lords_amount == 11_235, 'market.lords_amount');
@@ -277,7 +281,7 @@ fn bank_test_swap_sell_with_fees() {
     assert(lords.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'lords.balance');
 
     let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
-    let liquidity: Liquidity =  world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
 
     // payout for wood = 825 lords so 10,000 - 825
     assert_eq!(market.lords_amount, 9175);

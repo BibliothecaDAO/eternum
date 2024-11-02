@@ -1,9 +1,9 @@
 use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 
 use eternum::constants::ResourceTypes;
@@ -80,12 +80,8 @@ fn setup(direct_trade: bool) -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatch
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;
 
-    world.write_model_test(
-        @Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }
-    );
-    world.write_model_test(
-        @Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }
-    );
+    world.write_model_test(@Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() });
+    world.write_model_test(@Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() });
 
     dev_resource_systems
         .mint(
@@ -192,9 +188,7 @@ fn trade_test_not_trade_taker_id() {
     // who wants to accept is the intended recepient
 
     let taker_id = 9999; // set arbitrarily
-    world.write_model_test(
-        @Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>() }
-    );
+    world.write_model_test(@Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>() });
 
     // create order with a caller that isnt the owner of maker_id
     starknet::testing::set_contract_address(contract_address_const::<'takers_other_realm'>());
@@ -241,9 +235,7 @@ fn trade_test_caller_not_taker() {
 fn trade_test_transport_not_enough_donkey_capacity() {
     let (mut world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
-    world.write_model_test(
-        @Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }
-    );
+    world.write_model_test(@Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 });
 
     starknet::testing::set_contract_address(contract_address_const::<'taker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'taker'>());

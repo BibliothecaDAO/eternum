@@ -1,4 +1,7 @@
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
 use eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
@@ -22,11 +25,6 @@ use eternum::utils::testing::{
     general::{spawn_realm, get_default_realm_pos, spawn_hyperstructure, get_default_hyperstructure_coord},
     config::{set_capacity_config, set_settlement_config}
 };
-
-
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
 
 use starknet::contract_address_const;
@@ -53,13 +51,12 @@ fn setup() -> (WorldStorage, ID, IHyperstructureSystemsDispatcher) {
 
     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher { contract_address: config_systems_address };
 
-    world.write_model_test(
-        @Resource{ 
-            entity_id: realm_entity_id, 
-            resource_type: ResourceTypes::EARTHEN_SHARD, 
-            balance: TEST_AMOUNT * 10,
-        }
-    );
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: realm_entity_id, resource_type: ResourceTypes::EARTHEN_SHARD, balance: TEST_AMOUNT * 10,
+            }
+        );
 
     let resources_without_earthenshards = get_resources_without_earthenshards();
     let mut i = 0;
@@ -69,13 +66,7 @@ fn setup() -> (WorldStorage, ID, IHyperstructureSystemsDispatcher) {
 
         resources_for_completion.append((resource_type, TEST_AMOUNT));
 
-        world.write_model_test(
-            @Resource{ 
-                entity_id: realm_entity_id, 
-                resource_type, 
-                balance: TEST_AMOUNT * 10,
-            }
-        );
+        world.write_model_test(@Resource { entity_id: realm_entity_id, resource_type, balance: TEST_AMOUNT * 10, });
 
         i += 1;
     };
@@ -120,9 +111,8 @@ fn hyperstructure_test_create_hyperstructure() {
     let progress: Progress = world.read_model((hyperstructure_entity_id, ResourceTypes::EARTHEN_SHARD));
     assert(progress.amount == TEST_AMOUNT, 'Invalid progress');
 
-    let contribution: Contribution = world.read_model(
-        (hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::EARTHEN_SHARD)
-    );
+    let contribution: Contribution = world
+        .read_model((hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::EARTHEN_SHARD));
     assert(contribution.amount == TEST_AMOUNT, 'Invalid contribution amount');
     assert(contribution.player_address == contract_address_const::<'player1'>(), 'invalid contribution address');
     assert(contribution.resource_type == ResourceTypes::EARTHEN_SHARD, 'invalid contribution resource');
@@ -144,15 +134,14 @@ fn hyperstructure_test_create_hyperstructure_not_enough_eartenshards() {
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
-    world.write_model_test(
-        @Resource{ 
-            entity_id: realm_entity_id, 
-            resource_type: ResourceTypes::EARTHEN_SHARD, 
-            balance: 0,
-        }
-    );
+    world
+        .write_model_test(
+            @Resource { entity_id: realm_entity_id, resource_type: ResourceTypes::EARTHEN_SHARD, balance: 0, }
+        );
 
-    spawn_hyperstructure(ref world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord());
+    spawn_hyperstructure(
+        ref world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
+    );
 }
 
 #[test]
@@ -173,9 +162,8 @@ fn hyperstructure_test_contribute_one_resource() {
     hyperstructure_systems_dispatcher
         .contribute_to_construction(hyperstructure_entity_id, realm_entity_id, contributions);
 
-    let wood_contribution: Contribution = world.read_model(
-        (hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD)
-    );
+    let wood_contribution: Contribution = world
+        .read_model((hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD));
     assert(wood_contribution.amount == contribution_amount, 'invalid contribution amount');
 
     let wood_progress: Progress = world.read_model((hyperstructure_entity_id, ResourceTypes::WOOD));
@@ -183,9 +171,8 @@ fn hyperstructure_test_contribute_one_resource() {
 
     hyperstructure_systems_dispatcher
         .contribute_to_construction(hyperstructure_entity_id, realm_entity_id, contributions);
-    let wood_contribution: Contribution = world.read_model(
-        (hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD)
-    );
+    let wood_contribution: Contribution = world
+        .read_model((hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD));
     assert(wood_contribution.amount == contribution_amount * 2, 'invalid contribution amount');
 
     let wood_progress: Progress = world.read_model((hyperstructure_entity_id, ResourceTypes::WOOD));
@@ -215,17 +202,15 @@ fn hyperstructure_test_contribute_two_resources() {
     hyperstructure_systems_dispatcher
         .contribute_to_construction(hyperstructure_entity_id, realm_entity_id, contributions);
 
-    let wood_contribution: Contribution = world.read_model(
-        (hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD)
-    );
+    let wood_contribution: Contribution = world
+        .read_model((hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD));
     assert(wood_contribution.amount == wood_contribution_amount, 'invalid contribution amount');
 
     let wood_progress: Progress = world.read_model((hyperstructure_entity_id, ResourceTypes::WOOD));
     assert(wood_progress.amount == wood_contribution_amount, 'invalid wood progress');
 
-    let stone_contribution: Contribution = world.read_model(
-        (hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::STONE)
-    );
+    let stone_contribution: Contribution = world
+        .read_model((hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::STONE));
     assert(stone_contribution.amount == stone_contribution_amount, 'invalid contribution amount');
 
     let stone_progress: Progress = world.read_model((hyperstructure_entity_id, ResourceTypes::STONE));
@@ -235,17 +220,15 @@ fn hyperstructure_test_contribute_two_resources() {
     hyperstructure_systems_dispatcher
         .contribute_to_construction(hyperstructure_entity_id, realm_entity_id, contributions);
 
-    let wood_contribution: Contribution = world.read_model(
-        (hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD)
-    );
+    let wood_contribution: Contribution = world
+        .read_model((hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::WOOD));
     assert(wood_contribution.amount == wood_contribution_amount * 2, 'invalid contribution amount');
 
     let wood_progress: Progress = world.read_model((hyperstructure_entity_id, ResourceTypes::WOOD));
     assert(wood_progress.amount == wood_contribution_amount * 2, 'invalid wood progress');
 
-    let stone_contribution: Contribution = world.read_model(
-        (hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::STONE)
-    );
+    let stone_contribution: Contribution = world
+        .read_model((hyperstructure_entity_id, contract_address_const::<'player1'>(), ResourceTypes::STONE));
     assert(stone_contribution.amount == stone_contribution_amount * 2, 'invalid contribution amount');
 
     let stone_progress: Progress = world.read_model((hyperstructure_entity_id, ResourceTypes::STONE));

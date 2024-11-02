@@ -1,8 +1,8 @@
 use core::array::{ArrayTrait, SpanTrait};
 use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 
 use eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
@@ -58,9 +58,7 @@ fn setup() -> (WorldStorage, ID, ID, ITradeSystemsDispatcher) {
             array![(ResourceTypes::STONE, 500), (ResourceTypes::GOLD, 500), (ResourceTypes::DONKEY, 20_000)].span()
         );
 
-    world.write_model_test(
-        @Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }
-    );
+    world.write_model_test(@Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() });
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
     let trade_systems_address = deploy_system(ref world, trade_systems::TEST_CLASS_HASH);
@@ -142,9 +140,7 @@ fn trade_test_caller_not_maker() {
 fn trade_test_transport_not_enough_capacity() {
     let (mut world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
-    world.write_model_test(
-        @Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }
-    );
+    world.write_model_test(@Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 });
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 

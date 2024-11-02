@@ -1,6 +1,10 @@
 use core::array::{ArrayTrait, SpanTrait};
 
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 
 use eternum::constants::{MAX_REALMS_PER_ADDRESS};
@@ -13,10 +17,6 @@ use eternum::systems::{
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
 use eternum::utils::map::biomes::Biome;
-
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
 
 fn spawn_realm(ref world: WorldStorage, realm_id: ID, coord: Coord) -> ID {
@@ -86,9 +86,10 @@ fn get_default_hyperstructure_coord() -> Coord {
 }
 
 fn explore_tile(ref world: WorldStorage, explorer_id: ID, coords: Coord) {
-    world.write_model_test(
-        @Tile { col: coords.x, row: coords.y, explored_by_id: explorer_id, explored_at: 1, biome: Biome::Beach }
-    );
+    world
+        .write_model_test(
+            @Tile { col: coords.x, row: coords.y, explored_by_id: explorer_id, explored_at: 1, biome: Biome::Beach }
+        );
 }
 
 

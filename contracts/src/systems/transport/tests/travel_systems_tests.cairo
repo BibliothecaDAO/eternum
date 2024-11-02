@@ -2,9 +2,9 @@ use core::serde::Serde;
 
 use core::traits::Into;
 use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::LevelIndex;
 use eternum::constants::{REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
@@ -47,15 +47,15 @@ fn setup() -> (WorldStorage, ID, ID, Position, Coord, ITravelSystemsDispatcher) 
     let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id.into() };
 
     world.write_model_test(@travelling_entity_position);
-    world.write_model_test(
-        @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: travelling_entity_id.into() }
-    );
-    world.write_model_test(
-        @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: realm_entity_id.into() }
-    );
-    world.write_model_test(
-        @EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id }
-    );
+    world
+        .write_model_test(
+            @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: travelling_entity_id.into() }
+        );
+    world
+        .write_model_test(
+            @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: realm_entity_id.into() }
+        );
+    world.write_model_test(@EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id });
 
     let destination_coord = Coord { x: 900_000, y: 100_000 };
 
@@ -84,18 +84,19 @@ fn setup() -> (WorldStorage, ID, ID, Position, Coord, ITravelSystemsDispatcher) 
 fn transport_test_travel() {
     let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
-    world.write_model_test(
-        @Movable {
-            entity_id: travelling_entity_id.into(),
-            sec_per_km: 10,
-            blocked: false,
-            round_trip: false,
-            start_coord_x: 0,
-            start_coord_y: 0,
-            intermediate_coord_x: 0,
-            intermediate_coord_y: 0,
-        }
-    );
+    world
+        .write_model_test(
+            @Movable {
+                entity_id: travelling_entity_id.into(),
+                sec_per_km: 10,
+                blocked: false,
+                round_trip: false,
+                start_coord_x: 0,
+                start_coord_y: 0,
+                intermediate_coord_x: 0,
+                intermediate_coord_y: 0,
+            }
+        );
 
     // travelling entity travels
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
@@ -139,18 +140,19 @@ fn transport_test_no_speed() {
 fn transport_test_blocked() {
     let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
-    world.write_model_test(
-        @Movable {
-            entity_id: travelling_entity_id.into(),
-            sec_per_km: 10,
-            blocked: true,
-            round_trip: false,
-            start_coord_x: 0,
-            start_coord_y: 0,
-            intermediate_coord_x: 0,
-            intermediate_coord_y: 0,
-        }
-    );
+    world
+        .write_model_test(
+            @Movable {
+                entity_id: travelling_entity_id.into(),
+                sec_per_km: 10,
+                blocked: true,
+                round_trip: false,
+                start_coord_x: 0,
+                start_coord_y: 0,
+                intermediate_coord_x: 0,
+                intermediate_coord_y: 0,
+            }
+        );
 
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
@@ -163,21 +165,20 @@ fn transport_test_blocked() {
 fn transport_test_in_transit() {
     let (mut world, _realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
-    world.write_model_test(
-        @Movable {
-            entity_id: travelling_entity_id.into(),
-            sec_per_km: 10,
-            blocked: false,
-            round_trip: false,
-            start_coord_x: 0,
-            start_coord_y: 0,
-            intermediate_coord_x: 0,
-            intermediate_coord_y: 0,
-        }
-    );
-    world.write_model_test(
-        @ArrivalTime { entity_id: travelling_entity_id.into(), arrives_at: 100 }
-    );
+    world
+        .write_model_test(
+            @Movable {
+                entity_id: travelling_entity_id.into(),
+                sec_per_km: 10,
+                blocked: false,
+                round_trip: false,
+                start_coord_x: 0,
+                start_coord_y: 0,
+                intermediate_coord_x: 0,
+                intermediate_coord_y: 0,
+            }
+        );
+    world.write_model_test(@ArrivalTime { entity_id: travelling_entity_id.into(), arrives_at: 100 });
 
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
@@ -202,27 +203,33 @@ fn setup_hex_travel() -> (WorldStorage, ID, Position, ITravelSystemsDispatcher) 
 
     // set tick config
     let tick_config = TickConfig {
-        config_id: WORLD_CONFIG_ID, 
-        tick_id: TickIds::ARMIES, 
-        tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
+        config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
     };
     world.write_model_test(@tick_config);
 
     world.write_model_test(@StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: MAX_STAMINA });
 
-    world.write_model_test(
-        @StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::KNIGHT, max_stamina: MAX_STAMINA, }
-    );
+    world
+        .write_model_test(
+            @StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::KNIGHT, max_stamina: MAX_STAMINA, }
+        );
 
-    world.write_model_test(
-        @StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::CROSSBOWMAN, max_stamina: MAX_STAMINA, }
-    );
+    world
+        .write_model_test(
+            @StaminaConfig {
+                config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::CROSSBOWMAN, max_stamina: MAX_STAMINA,
+            }
+        );
 
-    world.write_model_test(
-        @StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::PALADIN, max_stamina: MAX_STAMINA, }
-    );
+    world
+        .write_model_test(
+            @StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::PALADIN, max_stamina: MAX_STAMINA, }
+        );
 
-    world.write_model_test(@MapConfig { config_id: WORLD_CONFIG_ID, reward_resource_amount: 100, shards_mines_fail_probability: 0 });
+    world
+        .write_model_test(
+            @MapConfig { config_id: WORLD_CONFIG_ID, reward_resource_amount: 100, shards_mines_fail_probability: 0 }
+        );
     // change time such that we will be in the third tick
     starknet::testing::set_block_timestamp(tick_config.next_tick_timestamp());
 
@@ -231,54 +238,54 @@ fn setup_hex_travel() -> (WorldStorage, ID, Position, ITravelSystemsDispatcher) 
     let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id };
 
     world.write_model_test(@travelling_entity_position);
-    world.write_model_test(
-        @Army {
-            entity_id: travelling_entity_id,
-            troops: Troops { knight_count: 1, paladin_count: 0, crossbowman_count: 0, },
-            battle_id: 0,
-            battle_side: BattleSide::None
-        }
-    );
+    world
+        .write_model_test(
+            @Army {
+                entity_id: travelling_entity_id,
+                troops: Troops { knight_count: 1, paladin_count: 0, crossbowman_count: 0, },
+                battle_id: 0,
+                battle_side: BattleSide::None
+            }
+        );
 
-    world.write_model_test(
-        @Resource {
-            entity_id: owner_entity_id, 
-            resource_type: ResourceTypes::WHEAT, 
-            balance: ORIGINAL_WHEAT_BALANCE
-    });
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: ORIGINAL_WHEAT_BALANCE
+            }
+        );
 
-    world.write_model_test(
-        @Resource {
-            entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: ORIGINAL_WHEAT_BALANCE
-        }
-    );
-    world.write_model_test(
-        @Resource {
-            entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: ORIGINAL_FISH_BALANCE
-        }
-    );
+    world
+        .write_model_test(
+            @Resource {
+                entity_id: owner_entity_id, resource_type: ResourceTypes::WHEAT, balance: ORIGINAL_WHEAT_BALANCE
+            }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: owner_entity_id, resource_type: ResourceTypes::FISH, balance: ORIGINAL_FISH_BALANCE }
+        );
 
+    world
+        .write_model_test(
+            @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: owner_entity_id.into() }
+        );
 
-    world.write_model_test(
-        @Owner { address: contract_address_const::<'travelling_entity'>(), entity_id: owner_entity_id.into() }
-    );
+    world.write_model_test(@EntityOwner { entity_id: travelling_entity_id, entity_owner_id: owner_entity_id });
 
-    world.write_model_test(
-        @EntityOwner { entity_id: travelling_entity_id, entity_owner_id: owner_entity_id }
-    );
-
-    world.write_model_test(
-        @Movable {
-            entity_id: travelling_entity_id,
-            sec_per_km: 10,
-            blocked: false,
-            round_trip: false,
-            start_coord_x: 0,
-            start_coord_y: 0,
-            intermediate_coord_x: 0,
-            intermediate_coord_y: 0,
-        }
-    );
+    world
+        .write_model_test(
+            @Movable {
+                entity_id: travelling_entity_id,
+                sec_per_km: 10,
+                blocked: false,
+                round_trip: false,
+                start_coord_x: 0,
+                start_coord_y: 0,
+                intermediate_coord_x: 0,
+                intermediate_coord_y: 0,
+            }
+        );
 
     let travel_systems_address = deploy_system(ref world, travel_systems::TEST_CLASS_HASH);
     let travel_systems_dispatcher = ITravelSystemsDispatcher { contract_address: travel_systems_address };

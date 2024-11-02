@@ -1,5 +1,10 @@
 use core::array::SpanTrait;
+
+
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::{
     alias::ID,
     models::{
@@ -28,12 +33,6 @@ use eternum::{
     },
 };
 use starknet::contract_address_const;
-
-
-use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-
 
 
 const DEFAULT_BLOCK_TIMESTAMP: u64 = 20_000;

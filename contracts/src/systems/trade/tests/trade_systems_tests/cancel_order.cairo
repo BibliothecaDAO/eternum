@@ -1,9 +1,9 @@
 use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::DONKEY_ENTITY_TYPE;
 
@@ -77,35 +77,18 @@ fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;
 
-    world.write_model_test(
-        @Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }
-    );
-    world.write_model_test(
-        @Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }
-    );
+    world.write_model_test(@Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() });
+    world.write_model_test(@Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() });
 
     //
-    world.write_model_test(
-        @Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 }
-    );
-    world.write_model_test(
-        @Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 }
-    );
-    world.write_model_test(
-        @Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }
-    );
+    world.write_model_test(@Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 });
+    world.write_model_test(@Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 });
+    world.write_model_test(@Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 });
 
     //
-    world.write_model_test(
-        @Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 }
-    );
-    world.write_model_test(
-        @Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }
-    );
-    world.write_model_test(
-        @Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }
-    );
-
+    world.write_model_test(@Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 });
+    world.write_model_test(@Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 });
+    world.write_model_test(@Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 });
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
@@ -136,7 +119,6 @@ fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
 fn trade_test_cancel() {
     let (mut world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
 
-
     // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
@@ -164,9 +146,7 @@ fn trade_test_cancel_after_acceptance() {
 
     // accept order
 
-    world.write_model_test(
-        @Status { trade_id, value: TradeStatus::ACCEPTED, }
-    );
+    world.write_model_test(@Status { trade_id, value: TradeStatus::ACCEPTED, });
 
     // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());

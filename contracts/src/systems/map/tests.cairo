@@ -1,9 +1,9 @@
 use core::traits::TryInto;
 
 use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
@@ -212,10 +212,8 @@ fn setup() -> (WorldStorage, ID, ID, IMapSystemsDispatcher, IBattleContractDispa
     set_travel_and_explore_stamina_cost_config(config_systems_address);
     set_travel_food_cost_config(config_systems_address);
 
-    world.write_model_test(@CapacityConfig {
-        category: CapacityConfigCategory::Storehouse, 
-        weight_gram: 1_000_000_000 
-    });
+    world
+        .write_model_test(@CapacityConfig { category: CapacityConfigCategory::Storehouse, weight_gram: 1_000_000_000 });
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
