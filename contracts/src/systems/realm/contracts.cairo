@@ -281,7 +281,7 @@ mod realm_systems {
             // if the next quest has no rewards, the player has completed all quests
             if (next_quest_reward_config.detached_resource_count == 0) {
                 let player_id: felt252 = starknet::get_caller_address().into();
-                let task_id: felt252 = Task::Maximalist.identifier();
+                let task_id: felt252 = Task::Squire.identifier();
                 self.achievable.update(world, player_id, task_id, count: 1,);
             };
         }
