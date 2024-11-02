@@ -204,7 +204,7 @@ mod realm_systems {
             if realm.level == max_level {
                 let player_id: felt252 = starknet::get_caller_address().into();
                 let task_id: felt252 = Task::Maximalist.identifier();
-                self.achievable.update(world, player_id: player_id, task_id: task_id, count: 1,);
+                self.achievable.update(world, player_id, task_id, count: 1,);
             }
         }
 
@@ -274,6 +274,16 @@ mod realm_systems {
 
             quest.completed = true;
             world.write_model(@quest);
+
+            // [Achievement] Complete all quests
+            let next_quest_id: ID = (quest_id + 1).into();
+            let next_quest_reward_config: QuestRewardConfig = world.read_model(next_quest_id);
+            // if the next quest has no rewards, the player has completed all quests
+            if (next_quest_reward_config.detached_resource_count == 0) {
+                let player_id: felt252 = starknet::get_caller_address().into();
+                let task_id: felt252 = Task::Maximalist.identifier();
+                self.achievable.update(world, player_id, task_id, count: 1,);
+            };
         }
     }
 
