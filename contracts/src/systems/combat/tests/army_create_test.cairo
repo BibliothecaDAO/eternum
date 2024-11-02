@@ -55,7 +55,7 @@ fn set_configurations(ref world: WorldStorage) {
 fn setup() -> (WorldStorage, ITroopContractDispatcher, ID,) {
     let mut world = spawn_eternum();
     set_configurations(ref world);
-    let troop_system_dispatcher = deploy_troop_systems(world);
+    let troop_system_dispatcher = deploy_troop_systems(ref world);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());

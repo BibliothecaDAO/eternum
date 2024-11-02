@@ -88,7 +88,7 @@ fn map_test_map_explore() {
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
-    let (initial_realm_wheat, initial_realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
+    let (initial_realm_wheat, initial_realm_fish) = ResourceFoodImpl::get(ref world, realm_entity_id);
     assert_eq!(initial_realm_wheat.balance, INITIAL_WHEAT_BALANCE, "wrong initial wheat balance");
     assert_eq!(initial_realm_fish.balance, INITIAL_FISH_BALANCE, "wrong initial wheat balance");
 
@@ -132,7 +132,7 @@ fn map_test_map_explore__mine_mercenaries_protector() {
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
-    let (initial_realm_wheat, initial_realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
+    let (initial_realm_wheat, initial_realm_fish) = ResourceFoodImpl::get(ref world, realm_entity_id);
     assert_eq!(initial_realm_wheat.balance, INITIAL_WHEAT_BALANCE, "wrong initial wheat balance");
     assert_eq!(initial_realm_fish.balance, INITIAL_FISH_BALANCE, "wrong initial wheat balance");
 
@@ -140,9 +140,9 @@ fn map_test_map_explore__mine_mercenaries_protector() {
 
     map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
 
-    let army_position = world.read_model(realm_army_unit_id);
+    let army_position: Position = world.read_model(realm_army_unit_id);
 
-    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(ref world, army_position);
+    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
     let mine_entity_owner: EntityOwner = world.read_model(mine_entity_id);
     assert_eq!(mine_entity_owner.entity_owner_id, mine_entity_id, "wrong initial owner");
 
@@ -220,9 +220,9 @@ fn setup() -> (WorldStorage, ID, ID, IMapSystemsDispatcher, IBattleContractDispa
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'realm_owner'>());
 
-    let battle_systems_dispatcher = deploy_battle_systems(world);
-    let troop_systems_dispatcher = deploy_troop_systems(world);
-    let map_systems_dispatcher = deploy_map_systems(world);
+    let battle_systems_dispatcher = deploy_battle_systems(ref world);
+    let troop_systems_dispatcher = deploy_troop_systems(ref world);
+    let map_systems_dispatcher = deploy_map_systems(ref world);
 
     let realm_position = get_default_realm_pos();
     let realm_entity_id = spawn_realm(ref world, 1, realm_position.into());

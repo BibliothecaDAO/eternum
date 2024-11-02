@@ -410,7 +410,7 @@ mod tests_resource_traits {
             .set_production_config(ResourceTypes::WOOD, wood_production_rate, wood_cost.span());
 
         // update wood end tick
-        ProductionOutputCustomImpl::sync_all_inputs_exhaustion_ticks_for(@gold_resource, world);
+        ProductionOutputCustomImpl::sync_all_inputs_exhaustion_ticks_for(@gold_resource, ref world);
 
         return (world, entity_id, wood_production_rate, wood_cost.span());
     }
@@ -483,6 +483,10 @@ mod tests_resource_traits {
 #[cfg(test)]
 mod owned_resources_tracker_tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+
     use eternum::constants::ResourceTypes;
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::structure::{Structure, StructureCategory};

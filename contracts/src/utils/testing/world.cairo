@@ -2,7 +2,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use core::array::{ArrayTrait, SpanTrait};
 use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDefTrait};
 
-use eternum::constants::DEFAULT_NS;
+use eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR};
 use eternum::models::bank::bank::{m_Bank};
 use eternum::models::bank::liquidity::m_Liquidity;
 use eternum::models::bank::market::m_Market;
@@ -119,7 +119,7 @@ use starknet::contract_address_const;
 
 fn namespace_def() -> NamespaceDef {
     let ndef = NamespaceDef {
-        namespace: *DEFAULT_NS(), resources: [
+        namespace: DEFAULT_NS_STR(), resources: [
             TestResource::Model(m_Bank::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Liquidity::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Market::TEST_CLASS_HASH.try_into().unwrap()),

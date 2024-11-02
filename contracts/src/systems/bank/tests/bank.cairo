@@ -1,4 +1,8 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+
 use eternum::alias::ID;
 
 use eternum::models::position::{Coord};

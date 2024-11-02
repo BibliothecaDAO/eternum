@@ -42,7 +42,7 @@ const QUEST_ID: ID = 1;
 fn setup() -> (WorldStorage, IRealmSystemsDispatcher) {
     let mut world = spawn_eternum();
 
-    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let realm_systems_dispatcher = deploy_realm_systems(ref world);
 
     let config_systems_address = deploy_system(ref world, config_systems::TEST_CLASS_HASH);
 
@@ -128,7 +128,7 @@ fn realm_test_claim_quest_reward_twice() {
 fn realm_test_claim_quest_reward__not_realm() {
     let (mut world, realm_systems_dispatcher) = setup();
 
-    let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
+    let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(ref world);
 
     starknet::testing::set_contract_address(contract_address_const::<'caller'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'caller'>());

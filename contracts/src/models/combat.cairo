@@ -1529,7 +1529,7 @@ mod tests {
 
         // ensure the army didn't get balance back
         let attack_army_wheat: Resource = world.read_model((attack_army.entity_id, ResourceTypes::WHEAT));
-        let attack_army_coal: Resource = world.read_model(attack_army.entity_id, ResourceTypes::COAL));
+        let attack_army_coal: Resource = world.read_model((attack_army.entity_id, ResourceTypes::COAL));
         assert!(attack_army_wheat.balance == 0, "attacking army wheat balance should be 0");
         assert!(attack_army_coal.balance == 0, "attacking army coal balance should be 0");
 

@@ -43,7 +43,7 @@ fn setup() -> (WorldStorage, ID, IHyperstructureSystemsDispatcher) {
     set_capacity_config(config_systems_address);
     set_settlement_config(config_systems_address);
 
-    let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
+    let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(ref world);
 
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());

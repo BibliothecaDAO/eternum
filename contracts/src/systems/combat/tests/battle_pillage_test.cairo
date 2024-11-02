@@ -60,8 +60,8 @@ fn setup() -> (WorldStorage, IBattlePillageContractDispatcher, ID, ID) {
     set_battle_config(config_systems_address);
     set_travel_food_cost_config(config_systems_address);
 
-    let battle_pillage_system_dispatcher = deploy_battle_pillage_systems(world);
-    let troop_system_dispatcher = deploy_troop_systems(world);
+    let battle_pillage_system_dispatcher = deploy_battle_pillage_systems(ref world);
+    let troop_system_dispatcher = deploy_troop_systems(ref world);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
 

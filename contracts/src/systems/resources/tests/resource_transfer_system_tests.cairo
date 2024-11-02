@@ -274,7 +274,7 @@ mod resource_transfer_system_tests {
         // check approval balance
         let approved_entity_stone_allowance: ResourceAllowance = world.read_model((owner_entity_id, approved_entity_id, ResourceTypes::STONE));
         let approved_entity_wood_allowance: ResourceAllowance = world.read_model((owner_entity_id, approved_entity_id, ResourceTypes::WOOD));
-        );
+        
         assert(approved_entity_stone_allowance.amount == 200, 'stone allowance mismatch');
         assert(approved_entity_wood_allowance.amount == 100, 'wood allowance mismatch');
 

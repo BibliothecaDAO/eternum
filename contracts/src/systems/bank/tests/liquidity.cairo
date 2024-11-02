@@ -123,7 +123,7 @@ fn setup() -> (
 #[test]
 fn bank_test_liquidity_add() {
     let (
-        world,
+        mut world,
         bank_entity_id,
         liquidity_systems_dispatcher,
         _swap_systems_dispatcher,

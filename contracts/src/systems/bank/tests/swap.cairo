@@ -276,7 +276,7 @@ fn bank_test_swap_sell_with_fees() {
     assert(wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT - SWAP_AMOUNT, 'wood.balance');
     assert(lords.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'lords.balance');
 
-    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD);
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
     let liquidity: Liquidity =  world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
 
     // payout for wood = 825 lords so 10,000 - 825

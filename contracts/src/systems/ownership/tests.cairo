@@ -7,7 +7,7 @@ use eternum::models::season::Season;
 use eternum::systems::ownership::contracts::ownership_systems;
 use eternum::systems::ownership::contracts::{IOwnershipSystemsDispatcher, IOwnershipSystemsDispatcherTrait};
 
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, constants::ownership_systems_models};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::ContractAddress;
 use starknet::contract_address_const;
 
