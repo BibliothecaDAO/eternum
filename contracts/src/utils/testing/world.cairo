@@ -162,8 +162,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Status::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Trade::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Weight::TEST_CLASS_HASH.try_into().unwrap()),
-            // TestResource::Event(actions::e_Moved::TEST_CLASS_HASH.try_into().unwrap()),
-
             TestResource::Contract(
                 ContractDefTrait::new(bank_systems::TEST_CLASS_HASH, "bank_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
@@ -251,7 +249,33 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(
                 ContractDefTrait::new(donkey_systems::TEST_CLASS_HASH, "donkey_systems")
                     .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
-            )
+            ),
+            TestResource::Event(liquidity_systems::e_LiquidityEvent::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(swap_systems::e_SwapEvent::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(hyperstructure_systems::e_HyperstructureFinished::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(
+                hyperstructure_systems::e_HyperstructureCoOwnersChange::TEST_CLASS_HASH.try_into().unwrap()
+            ),
+            TestResource::Event(
+                hyperstructure_systems::e_HyperstructureContribution::TEST_CLASS_HASH.try_into().unwrap()
+            ),
+            TestResource::Event(hyperstructure_systems::e_GameEnded::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(map_systems::e_MapExplored::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(map_systems::e_FragmentMineDiscovered::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(resource_systems::e_Transfer::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_CreateOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_AcceptOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_AcceptPartialOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_CancelOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(donkey_systems::e_BurnDonkey::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(travel_systems::e_Travel::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_EternumEvent::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleStartData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleJoinData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleLeaveData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleClaimData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattlePillageData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_SettleRealmData::TEST_CLASS_HASH.try_into().unwrap()),
         ].span()
     };
 
@@ -263,6 +287,30 @@ fn namespace_def() -> NamespaceDef {
 fn spawn_eternum() -> dojo::world::WorldStorage {
     let ndef = namespace_def();
     let mut world = spawn_test_world([ndef].span());
+
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player1'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player2'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player3'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player_1_realm_owner'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player_2_realm_owner'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player_3_realm_owner'>());
+
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'realms_owner'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'realm_owner'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'caller'>());
+
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'maker'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'taker'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'0'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'takers_other_realm'>());
 
     world.dispatcher.uuid();
 
