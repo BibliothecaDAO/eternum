@@ -54,6 +54,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bushido_trophy"
+version = "0.0.0"
+source = "git+https://github.com/cartridge-gg/bushido?rev=fb0ff09#fb0ff090e70baa0c02d2a8678265b9b2b1ec1957"
+dependencies = [
+ "dojo",
+]
+
+[[package]]
 name = "cubit"
 version = "1.3.0"
 source = "git+https://github.com/dojoengine/cubit?branch=cairo_2.7#53020b6320a10f2ab55b661be9b8d895aca945e9"
@@ -85,6 +93,7 @@ version = "1.0.0"
 dependencies = [
  "alexandria_data_structures",
  "alexandria_math",
+ "bushido_trophy",
  "cubit",
  "dojo",
  "dojo_cairo_test",
