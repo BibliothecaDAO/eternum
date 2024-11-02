@@ -869,7 +869,7 @@ mod resource_bridge_system_tests {
         let expected_withdraw_amount = InternalBridgeImpl::resource_amount_to_token_amount(
             token.contract_address, initial_lords_balance
         );
-        let fee_split_config = world.read_model(WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
+        let fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
         let total_fee_percent = fee_split_config.velords_fee_on_wtdr_percent
             + fee_split_config.season_pool_fee_on_wtdr_percent
             + fee_split_config.client_fee_on_wtdr_percent
@@ -912,13 +912,16 @@ mod resource_bridge_system_tests {
         // Set initial LORDS balance for the realm's donkey at the bank
         let donkey_id: u32 = 1;
         let initial_lords_balance: u128 = 1000 * RESOURCE_PRECISION;
-        set!(
-            world,
-            (
-                Resource { entity_id: donkey_id, resource_type: ResourceTypes::LORDS, balance: initial_lords_balance },
-                Position { entity_id: donkey_id, x: BANK_COORD().x, y: BANK_COORD().y },
-                EntityOwner { entity_id: donkey_id, entity_owner_id: realm_id }
-            )
+        world.write_model_test(
+            @Resource {
+                entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
+            }
+        );
+        world.write_model_test(
+            @Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y }
+        );
+        world.write_model_test(
+            @EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id }
         );
 
         // Set caller to a non-owner address
@@ -940,18 +943,25 @@ mod resource_bridge_system_tests {
         SetupImpl::make_realm(ref world, realm_id);
 
         // Create a structure that is not a bank
-        set!(world, (Structure { entity_id: not_bank_id, category: StructureCategory::Realm, created_at: 1 }));
+        world.write_model_test(
+            @Structure {
+                entity_id: not_bank_id.into(), category: StructureCategory::Realm, created_at: 1
+            }
+        );
 
         // Set initial LORDS balance for the realm's donkey at the non-bank location
         let donkey_id: u32 = 1;
         let initial_lords_balance: u128 = 1000 * RESOURCE_PRECISION;
-        set!(
-            world,
-            (
-                Resource { entity_id: donkey_id, resource_type: ResourceTypes::LORDS, balance: initial_lords_balance },
-                Position { entity_id: donkey_id, x: 0, y: 0 },
-                EntityOwner { entity_id: donkey_id, entity_owner_id: realm_id }
-            )
+        world.write_model_test(
+            @Resource {
+                entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
+            }
+        );
+        world.write_model_test(
+            @Position { entity_id: donkey_id.into(), x: 0, y: 0 }
+        );
+        world.write_model_test(
+            @EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id }
         );
 
         // Make realm owner the caller
@@ -980,13 +990,16 @@ mod resource_bridge_system_tests {
         // Set initial LORDS balance for the realm's donkey at a different location
         let donkey_id: u32 = 1;
         let initial_lords_balance: u128 = 1000 * RESOURCE_PRECISION;
-        set!(
-            world,
-            (
-                Resource { entity_id: donkey_id, resource_type: ResourceTypes::LORDS, balance: initial_lords_balance },
-                Position { entity_id: donkey_id, x: 0, y: 0 },
-                EntityOwner { entity_id: donkey_id, entity_owner_id: realm_id }
-            )
+        world.write_model_test(
+            @Resource {
+                entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
+            }
+        );
+        world.write_model_test(
+            @Position { entity_id: donkey_id.into(), x: 0, y: 0 }
+        );
+        world.write_model_test( 
+            @EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id }
         );
 
         // Make realm owner the caller
@@ -1011,18 +1024,21 @@ mod resource_bridge_system_tests {
         // Set initial LORDS balance for the realm's donkey at the bank
         let donkey_id: u32 = 1;
         let initial_lords_balance: u128 = 1000 * RESOURCE_PRECISION;
-        set!(
-            world,
-            (
-                Resource { entity_id: donkey_id, resource_type: ResourceTypes::LORDS, balance: initial_lords_balance },
-                Position { entity_id: donkey_id, x: BANK_COORD().x, y: BANK_COORD().y },
-                EntityOwner { entity_id: donkey_id, entity_owner_id: realm_id }
-            )
+        world.write_model_test(
+            @Resource {
+                entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
+            }
+        );
+        world.write_model_test(
+            @Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y }
+        );
+        world.write_model_test  (
+            @EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id }
         );
 
         // Pause withdrawals
-        set!(
-            world, (ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true })
+        world.write_model_test(
+            @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true }
         );
 
         // Make realm owner the caller
@@ -1047,13 +1063,16 @@ mod resource_bridge_system_tests {
         // Set initial LORDS balance for the realm's donkey at the bank
         let donkey_id: u32 = 1;
         let initial_lords_balance: u128 = 1000 * RESOURCE_PRECISION;
-        set!(
-            world,
-            (
-                Resource { entity_id: donkey_id, resource_type: ResourceTypes::LORDS, balance: initial_lords_balance },
-                Position { entity_id: donkey_id, x: BANK_COORD().x, y: BANK_COORD().y },
-                EntityOwner { entity_id: donkey_id, entity_owner_id: realm_id }
-            )
+        world.write_model_test(
+            @Resource {
+                entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
+            }
+        );
+        world.write_model_test(
+            @Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y }
+        );
+        world.write_model_test(
+            @EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id }
         );
 
         // Make realm owner the caller
@@ -1082,18 +1101,23 @@ mod resource_bridge_system_tests {
         token.transfer(resource_bridge_systems.contract_address, lords_amount);
 
         // Set the bank owner as the owner of the realm as well
-        set!(world, (Owner { entity_id: realm_id, address: BANK_OWNER_ADDRESS() }));
+        world.write_model_test(
+            @Owner { entity_id: realm_id, address: BANK_OWNER_ADDRESS() }
+        );
 
         // Set initial LORDS balance for the realm's donkey at the bank
         let donkey_id: u32 = 1;
         let initial_lords_balance: u128 = 1000 * RESOURCE_PRECISION;
-        set!(
-            world,
-            (
-                Resource { entity_id: donkey_id, resource_type: ResourceTypes::LORDS, balance: initial_lords_balance },
-                Position { entity_id: donkey_id, x: BANK_COORD().x, y: BANK_COORD().y },
-                EntityOwner { entity_id: donkey_id, entity_owner_id: realm_id }
-            )
+        world.write_model_test(
+            @Resource {
+                entity_id: donkey_id.into(), resource_type: ResourceTypes::LORDS, balance: initial_lords_balance
+            }
+        );
+        world.write_model_test(
+            @Position { entity_id: donkey_id.into(), x: BANK_COORD().x, y: BANK_COORD().y }
+        );
+        world.write_model_test(
+            @EntityOwner { entity_id: donkey_id.into(), entity_owner_id: realm_id }
         );
 
         // Make bank owner the caller
@@ -1113,7 +1137,7 @@ mod resource_bridge_system_tests {
         let expected_withdraw_amount = InternalBridgeImpl::resource_amount_to_token_amount(
             token.contract_address, initial_lords_balance
         );
-        let fee_split_config = world.read_model(WORLD_CONFIG_ID, ResourceBridgeFeeSplitConfig);
+        let fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
         let total_fee_percent = fee_split_config.velords_fee_on_wtdr_percent
             + fee_split_config.season_pool_fee_on_wtdr_percent
             + fee_split_config.client_fee_on_wtdr_percent;
