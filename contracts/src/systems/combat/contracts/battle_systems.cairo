@@ -659,10 +659,9 @@ mod battle_systems {
 
             // slash army if battle was not concluded before they left
             let leaver = starknet::get_caller_address();
+            let mut army: Army = world.read_model(army_id);
             if army_left_early {
                 let troop_config = TroopConfigCustomImpl::get(world);
-                // FIXME: can we re-use the caller_army?
-                let mut army: Army = world.read_model(army_id);
                 let troops_deducted = Troops {
                     knight_count: (army.troops.knight_count * troop_config.battle_leave_slash_num.into())
                         / troop_config.battle_leave_slash_denom.into(),
@@ -684,7 +683,7 @@ mod battle_systems {
                 world.write_model(@army);
                 world.write_model(@army_health);
                 world.write_model(@army_quantity);
-            } else if caller_army.troops.count() > 0 {
+            } else if army.troops.count() > 0 {
                 // [Achievement] Win a battle if the army is not dead
                 let player_id: felt252 = leaver.into();
                 let task_id: felt252 = Task::Battlelord.identifier();
