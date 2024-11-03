@@ -1385,8 +1385,8 @@
       "systems": []
     },
     {
-      "address": "0x2c8e32260ca84dc15a791caf77a5d62b1bca82c7447823967cf1b633f5cd95",
-      "class_hash": "0x1dcb8333cd8a1c2d2bb84b80c5f9ca036455fef623720f4998c80b9c7ed8e39",
+      "address": "0x6d5ef29e2e99abdb66d5d63bc0ac690f55cc283654b5490ce49e0ad91172892",
+      "class_hash": "0x35972e38134892edf8070f106499f7277024bde280c362fc5e544cf7c697083",
       "abi": [
         {
           "type": "impl",
@@ -2231,8 +2231,8 @@
       "systems": []
     },
     {
-      "address": "0x5a6fb34ec686cc15afa10d7b3bf08128e1b0cce7acfc31a7c203bad8fb27d1f",
-      "class_hash": "0x1fac09a0e4f505f3bbef8031c16ff2812c0f05ef3481d49c97abf5244e0c53",
+      "address": "0x25c9d10b72cd3c2b33a3fdaac07cad28fca4cb7e2438bd545ea3fa58b932a87",
+      "class_hash": "0x28deed80fa14e75a7961a41ec2ab40e7421e6e185ab78248d1c602141d126bd",
       "abi": [
         {
           "type": "impl",
@@ -2701,8 +2701,12 @@
               "name": "set_stamina_refill_config",
               "inputs": [
                 {
-                  "name": "amount",
+                  "name": "amount_per_tick",
                   "type": "core::integer::u16"
+                },
+                {
+                  "name": "start_boost_tick_count",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -5209,8 +5213,8 @@
       "systems": []
     },
     {
-      "address": "0x77241d3243625aacb1d4899121800db3d2ae7313a104555f7a04f8c84f661aa",
-      "class_hash": "0x69756c885a2912f87380e6bbb478926c0819b5d27713f0496f97ef9f614eb06",
+      "address": "0x28ad91274eada96bf93cdcc9badfe82f3a981a30685ddf2a918444bfe1e7bee",
+      "class_hash": "0x785267bb3bc4dfad4c15bb897e2cf23d0b297a38bfcd29f550572e65c0f1d95",
       "abi": [
         {
           "type": "impl",
@@ -7097,8 +7101,8 @@
       "systems": []
     },
     {
-      "address": "0x492e89b379f73314a95450b554f17f5bd963b96ad69cadd90d1d11c7e44a171",
-      "class_hash": "0x5028b2646ea31a397df1ff7bb99f5ff5a611fd9b66bc02b8bfbb9536ea8087e",
+      "address": "0xa509688f9999f83063526f58c6a67ae3b9b5be1592bf0d8643dca998655b0f",
+      "class_hash": "0x33978daedf16b363e57a1117351b303bd18ff9a9d8561cba438e96ef4d2e345",
       "abi": [
         {
           "type": "impl",
@@ -7357,8 +7361,8 @@
       "systems": []
     },
     {
-      "address": "0x1135c92a5065e7a7bd2468b89ba6b1e74217102dccf0663aa259b424aa4a878",
-      "class_hash": "0x5f5b592cf7464e68f92b7d57e5ac828d65acc7117d190176a2ae99264281152",
+      "address": "0x4ed3b74e688e16461ad2079955be0cb68846297f59459fbd892c67ecb5fde84",
+      "class_hash": "0x13f8c4f1bd43cb3c2bd23dfbecc3ffd0766efc85fa2b0b94cb041da0b435fbf",
       "abi": [
         {
           "type": "impl",
@@ -7983,7 +7987,7 @@
     },
     {
       "members": [],
-      "class_hash": "0xd2bed3f1eaf17f16e918d4f64c34b9038726e2115b532ef2373d5f04640f5f",
+      "class_hash": "0x1a4e09ba72da244929b1baad9bfa54a716960288c148d16fd2d3ef071094558",
       "tag": "StaminaRefillConfig"
     },
     {
