@@ -59,11 +59,10 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
 const BuildingsHeader = () => {
   return (
-    <div className="flex grid grid-cols-7 gap-2 mb-4 uppercase text-xs font-bold border-b-2 ">
-      <div className="col-span-2">Type</div>
-      <div className="col-span-2">Produces /s</div>
-      <div className="col-span-2 text-center">Consumes /s</div>
-      <></>
+    <div className="grid grid-cols-3 gap-2 mb-4 uppercase text-xs font-bold">
+      <div>Type</div>
+      <div className="text-center">Produces /s</div>
+      <div className="text-center">Consumes /s</div>
     </div>
   );
 };
@@ -98,20 +97,20 @@ const BuildingRow = ({ buildingEntity, handlePauseResumeProduction, isLoading, B
   }
 
   return (
-    <div className="flex grid grid-cols-7 gap-2 p-1 text-md items-center border-b">
-      <p className="col-span-2">{buildingName}</p>
+    <div className="grid grid-cols-3 gap-2 p-1 text-md items-center border-b border-gold/20">
+      <p>{buildingName}</p>
 
-      <div className="flex flex-row col-span-2">
+      <div className="flex flex-row justify-start">
         {!building.paused && (
           <>
-            <p className="text-green/80">+{(produced.amount * (1 + building.bonus_percent / 10000)).toFixed(1)}</p>
+            <p className="text-green">+{(produced.amount * (1 + building.bonus_percent / 10000)).toFixed(1)}</p>
             <ResourceIcon resource={ResourcesIds[produced.resource]} size={"sm"} />
             {building.bonus_percent !== 0 && <p className="ml-2 text-green">(+{building.bonus_percent / 100}%)</p>}
           </>
         )}
       </div>
 
-      <div className="col-span-2">
+      <div className="flex flex-col items-center">
         {!building.paused &&
           consumed.map((resource, index) => {
             return (
@@ -121,9 +120,6 @@ const BuildingRow = ({ buildingEntity, handlePauseResumeProduction, isLoading, B
               </div>
             );
           })}
-      </div>
-
-      <div>
         <Button
           onClick={() => {
             handlePauseResumeProduction(building.paused, building.inner_col, building.inner_row);
@@ -131,8 +127,9 @@ const BuildingRow = ({ buildingEntity, handlePauseResumeProduction, isLoading, B
           isLoading={isLoading}
           variant="outline"
           withoutSound
+          className="mt-2"
         >
-          {building.paused ? "Resume" : "Pause"}
+          {building.paused ? "Resume Production" : "Pause Production"}
         </Button>
       </div>
     </div>

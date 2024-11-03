@@ -50,9 +50,9 @@ export const RealmDetails = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <>
-      <div className="flex justify-between ">
-        <h3 className="pb-2 text-4xl flex justify-between">
+    <div className="p-2">
+      <div className="flex justify-between">
+        <h3 className="text-4xl flex justify-between">
           {structure.name} <HintModalButton section={HintSection.Realm} />
         </h3>
 
@@ -71,7 +71,7 @@ export const RealmDetails = () => {
               });
             }}
             onMouseLeave={() => setTooltip(null)}
-            className="font-bold text-lg animate-pulse text-white"
+            className="font-bold text-lg animate-pulse text-green"
           >
             Immune for: {formatTime(timer)}
           </div>
@@ -91,15 +91,14 @@ export const RealmDetails = () => {
           </span>
         </div>
       </div>
-      <hr />
 
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: number) => setSelectedTab(index)}
         variant="default"
-        className="h-full"
+        className="h-full "
       >
-        <Tabs.List>
+        <Tabs.List className="border border-gold/20 rounded-lg p-1">
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
@@ -110,6 +109,6 @@ export const RealmDetails = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-    </>
+    </div>
   );
 };
