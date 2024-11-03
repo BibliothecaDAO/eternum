@@ -28,6 +28,7 @@ use eternum::systems::resources::contracts::resource_systems::resource_systems::
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max, cap_minus};
 use eternum::utils::number::NumberTrait;
 
+
 const STRENGTH_PRECISION: u256 = 10_000;
 
 
@@ -1204,7 +1205,10 @@ mod health_model_tests {
 
 #[cfg(test)]
 mod tests {
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
     use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
     use eternum::constants::ID;
     use eternum::constants::ResourceTypes;
     use eternum::models::capacity::{CapacityCategory};
@@ -1356,7 +1360,7 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
-        let world = spawn_eternum();
+        let mut world = spawn_eternum();
         world.dispatcher.uuid(); // use id 0;
 
         // recreate army for testing
@@ -1378,18 +1382,18 @@ mod tests {
         attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
-        let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);
-        battle.deposit_balance(world, attack_army, attack_army_protectee);
+        let attack_army_protectee: Protectee = world.read_model(attack_army.entity_id);
+        battle.deposit_balance(ref world, attack_army, attack_army_protectee);
 
         // ensure the deposit was sent to the right escrow
         let escrow_id = battle.attackers_resources_escrow_id;
-        let escrow_wheat: Resource = get!(world, (escrow_id, ResourceTypes::WHEAT), Resource);
-        let escrow_coal: Resource = get!(world, (escrow_id, ResourceTypes::COAL), Resource);
+        let escrow_wheat: Resource = world.read_model((escrow_id, ResourceTypes::WHEAT));
+        let escrow_coal: Resource = world.read_model((escrow_id, ResourceTypes::COAL));
         assert_eq!(escrow_wheat.balance, attack_army_wheat_resource.balance);
         assert_eq!(escrow_coal.balance, attack_army_coal_resource.balance);
 
         // ensure transfer lock was enabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = world.read_model(attack_army.entity_id);
         army_transfer_lock.assert_locked();
     }
 
@@ -1404,7 +1408,7 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
-        let world = spawn_eternum();
+        let mut world = spawn_eternum();
         world.dispatcher.uuid(); // use id 0;
 
         // recreate army for testing
@@ -1428,20 +1432,18 @@ mod tests {
         // deposit everything the army owns
         let attack_army_protectee = Protectee { army_id: attack_army.entity_id, protectee_id: 67890989 // non zero
          };
-        battle.deposit_balance(world, attack_army, attack_army_protectee);
+        battle.deposit_balance(ref world, attack_army, attack_army_protectee);
 
         // ensure escrow does not receive the resources because
         // it will cost too much gas
         let escrow_id = battle.attackers_resources_escrow_id;
-        let escrow_wheat: Resource = get!(world, (escrow_id, ResourceTypes::WHEAT), Resource);
-        let escrow_coal: Resource = get!(world, (escrow_id, ResourceTypes::COAL), Resource);
+        let escrow_wheat: Resource = world.read_model((escrow_id, ResourceTypes::WHEAT));
+        let escrow_coal: Resource = world.read_model((escrow_id, ResourceTypes::COAL));
         assert_eq!(escrow_wheat.balance, 0);
         assert_eq!(escrow_coal.balance, 0);
 
         // ensure transfer lock was enabled
-        let army_transfer_lock: ResourceTransferLock = get!(
-            world, attack_army_protectee.protectee_id, ResourceTransferLock
-        );
+        let army_transfer_lock: ResourceTransferLock = world.read_model(attack_army_protectee.protectee_id);
         army_transfer_lock.assert_locked();
     }
 
@@ -1457,7 +1459,7 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
-        let world = spawn_eternum();
+        let mut world = spawn_eternum();
         world.dispatcher.uuid(); // use id 0;
 
         //////////////////////    Defence Army    /////////////////////////
@@ -1477,8 +1479,8 @@ mod tests {
         defence_army_stone_resource.save(ref world);
 
         // deposit everything the defence army owns
-        let defence_army_protectee = get!(world, defence_army.entity_id, Protectee);
-        battle.deposit_balance(world, defence_army, defence_army_protectee);
+        let defence_army_protectee: Protectee = world.read_model(defence_army.entity_id);
+        battle.deposit_balance(ref world, defence_army, defence_army_protectee);
 
         //////////////////////    Attack Army    /////////////////////////
         ///
@@ -1501,8 +1503,8 @@ mod tests {
         attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
-        let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);
-        battle.deposit_balance(world, attack_army, attack_army_protectee);
+        let attack_army_protectee = world.read_model(attack_army.entity_id);
+        battle.deposit_balance(ref world, attack_army, attack_army_protectee);
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
@@ -1516,21 +1518,21 @@ mod tests {
         let attack_army_left_quantity = Quantity {
             entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
         };
-        set!(world, (attack_army_left_quantity));
-        battle.withdraw_balance_and_reward(world, attack_army, attack_army_protectee);
+        world.write_model_test(@attack_army_left_quantity);
+        battle.withdraw_balance_and_reward(ref world, attack_army, attack_army_protectee);
 
         // ensure transfer lock was reenabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = world.read_model(attack_army.entity_id);
         army_transfer_lock.assert_not_locked();
 
         // ensure the army didn't get balance back
-        let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
-        let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
+        let attack_army_wheat: Resource = world.read_model((attack_army.entity_id, ResourceTypes::WHEAT));
+        let attack_army_coal: Resource = world.read_model((attack_army.entity_id, ResourceTypes::COAL));
         assert!(attack_army_wheat.balance == 0, "attacking army wheat balance should be 0");
         assert!(attack_army_coal.balance == 0, "attacking army coal balance should be 0");
 
         // ensure attacker got no reward
-        let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
+        let attack_army_stone: Resource = world.read_model((attack_army.entity_id, ResourceTypes::STONE));
         assert_eq!(attack_army_stone.balance, 0);
     }
 
@@ -1546,7 +1548,7 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
-        let world = spawn_eternum();
+        let mut world = spawn_eternum();
         world.dispatcher.uuid(); // use id 0;
         //////////////////////    Defence Army    /////////////////////////
         ///
@@ -1565,8 +1567,8 @@ mod tests {
         defence_army_stone_resource.save(ref world);
 
         // deposit everything the defence army owns
-        let defence_army_protectee = get!(world, defence_army.entity_id, Protectee);
-        battle.deposit_balance(world, defence_army, defence_army_protectee);
+        let defence_army_protectee: Protectee = world.read_model(defence_army.entity_id);
+        battle.deposit_balance(ref world, defence_army, defence_army_protectee);
 
         //////////////////////    Attack Army    /////////////////////////
         ///
@@ -1589,8 +1591,8 @@ mod tests {
         attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
-        let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);
-        battle.deposit_balance(world, attack_army, attack_army_protectee);
+        let attack_army_protectee: Protectee = world.read_model(attack_army.entity_id);
+        battle.deposit_balance(ref world, attack_army, attack_army_protectee);
 
         // lose battle
         starknet::testing::set_block_timestamp(battle.duration_left + 1); // original ts was 1
@@ -1604,22 +1606,22 @@ mod tests {
         let attack_army_left_quantity = Quantity {
             entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
         };
-        set!(world, (attack_army_left_quantity));
-        battle.withdraw_balance_and_reward(world, attack_army_left, attack_army_protectee);
+        world.write_model_test(@attack_army_left_quantity);
+        battle.withdraw_balance_and_reward(ref world, attack_army_left, attack_army_protectee);
 
         // ensure transfer lock was reenabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = world.read_model(attack_army.entity_id);
         army_transfer_lock.assert_not_locked();
 
         // ensure the army gets balance back
-        let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
-        let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
+        let attack_army_wheat: Resource = world.read_model((attack_army.entity_id, ResourceTypes::WHEAT));
+        let attack_army_coal: Resource = world.read_model((attack_army.entity_id, ResourceTypes::COAL));
 
         assert_eq!(attack_army_wheat.balance, 0);
         assert_eq!(attack_army_coal.balance, 0);
 
         // ensure attacker got no reward
-        let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
+        let attack_army_stone: Resource = world.read_model((attack_army.entity_id, ResourceTypes::STONE));
         assert_eq!(attack_army_stone.balance, 0);
     }
 
@@ -1635,7 +1637,7 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
-        let world = spawn_eternum();
+        let mut world = spawn_eternum();
         world.dispatcher.uuid(); // use id 0;
 
         //////////////////////    Defence Army    /////////////////////////
@@ -1648,7 +1650,10 @@ mod tests {
             battle_side: BattleSide::Defence
         };
         // set defence army capacity category
-        set!(world, (CapacityCategory { entity_id: defence_army.entity_id, category: CapacityConfigCategory::Army }));
+        world
+            .write_model_test(
+                @CapacityCategory { entity_id: defence_army.entity_id, category: CapacityConfigCategory::Army }
+            );
 
         // give defence army stone
         let mut defence_army_stone_resource: Resource = Resource {
@@ -1657,8 +1662,8 @@ mod tests {
         defence_army_stone_resource.save(ref world);
 
         // deposit everything the defence army owns
-        let defence_army_protectee = get!(world, defence_army.entity_id, Protectee);
-        battle.deposit_balance(world, defence_army, defence_army_protectee);
+        let defence_army_protectee: Protectee = world.read_model(defence_army.entity_id);
+        battle.deposit_balance(ref world, defence_army, defence_army_protectee);
 
         //////////////////////    Attack Army    /////////////////////////
         ///
@@ -1672,7 +1677,10 @@ mod tests {
 
         // set attack army capacity category
 
-        set!(world, (CapacityCategory { entity_id: attack_army.entity_id, category: CapacityConfigCategory::Army }));
+        world
+            .write_model_test(
+                @CapacityCategory { entity_id: attack_army.entity_id, category: CapacityConfigCategory::Army }
+            );
 
         // give the army wheat and coal
         let mut attack_army_wheat_resource: Resource = Resource {
@@ -1685,8 +1693,8 @@ mod tests {
         attack_army_coal_resource.save(ref world);
 
         // deposit everything the army owns
-        let attack_army_protectee = get!(world, attack_army.entity_id, Protectee);
-        battle.deposit_balance(world, attack_army, attack_army_protectee);
+        let attack_army_protectee: Protectee = world.read_model(attack_army.entity_id);
+        battle.deposit_balance(ref world, attack_army, attack_army_protectee);
 
         //////////////////////    Battle    /////////////////////////
 
@@ -1702,16 +1710,16 @@ mod tests {
         let attack_army_left_quantity = Quantity {
             entity_id: attack_army.entity_id, value: attack_army_left.troops.count().into()
         };
-        set!(world, (attack_army_left_quantity));
-        battle.withdraw_balance_and_reward(world, attack_army_left, attack_army_protectee);
+        world.write_model_test(@attack_army_left_quantity);
+        battle.withdraw_balance_and_reward(ref world, attack_army_left, attack_army_protectee);
 
         // ensure transfer lock was reenabled
-        let army_transfer_lock: ResourceTransferLock = get!(world, attack_army.entity_id, ResourceTransferLock);
+        let army_transfer_lock: ResourceTransferLock = world.read_model(attack_army.entity_id);
         army_transfer_lock.assert_not_locked();
 
         // ensure the army gets balance back
-        let attack_army_wheat: Resource = get!(world, (attack_army.entity_id, ResourceTypes::WHEAT), Resource);
-        let attack_army_coal: Resource = get!(world, (attack_army.entity_id, ResourceTypes::COAL), Resource);
+        let attack_army_wheat: Resource = world.read_model((attack_army.entity_id, ResourceTypes::WHEAT));
+        let attack_army_coal: Resource = world.read_model((attack_army.entity_id, ResourceTypes::COAL));
         assert!(
             attack_army_wheat.balance == attack_army_wheat_resource.balance,
             "attacking army wheat balance should be > 0"
@@ -1721,7 +1729,7 @@ mod tests {
         );
 
         // ensure the attack army gets reward
-        let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
+        let attack_army_stone: Resource = world.read_model((attack_army.entity_id, ResourceTypes::STONE));
         assert_eq!(attack_army_stone.balance, defence_army_stone_resource.balance);
     }
     // #[test]
