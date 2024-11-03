@@ -7,7 +7,7 @@ import { dir, soundSelector } from "@/hooks/useUISound";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import {
   ResourceIdToMiningType,
   getEntityIdFromKeys,
@@ -315,7 +315,7 @@ export default class HexceptionScene extends HexagonScene {
           innerCol: hexCoords.col,
           innerRow: hexCoords.row,
         });
-        this.state.setLeftNavigationView(View.EntityView);
+        this.state.setLeftNavigationView(LeftView.EntityView);
       } else if (this.tileManager.isHexOccupied(normalizedCoords)) {
         const building = getComponentValue(
           this.dojo.components.Building,
@@ -330,7 +330,7 @@ export default class HexceptionScene extends HexagonScene {
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
-        this.state.setLeftNavigationView(View.EntityView);
+        this.state.setLeftNavigationView(LeftView.EntityView);
       }
     }
   }

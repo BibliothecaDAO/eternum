@@ -1,4 +1,3 @@
-import clsx from "clsx";
 import { Leva } from "leva";
 import { lazy, Suspense } from "react";
 import { Redirect } from "wouter";
@@ -7,6 +6,8 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
+import { IS_MOBILE } from "../config";
+import { LoadingOroborus } from "../modules/loading-oroborus";
 
 // Lazy load components
 
@@ -97,23 +98,20 @@ export const World = () => {
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
     >
       <div className="vignette" />
-      <div
-        className={clsx(
-          "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-brown duration-300 transition-opacity",
-          isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
-        )}
-      >
-        <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
-      </div>
+      <LoadingOroborus loading={isLoadingScreenEnabled} />
       <Suspense fallback={<div>Loading...</div>}>
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
         <BlankOverlayContainer open={showBlankOverlay}>
           <Onboarding />
         </BlankOverlayContainer>
         <ActionInfo />
-        <ArmyInfoLabel />
-        <StructureInfoLabel />
-        <BattleInfoLabel />
+        {!IS_MOBILE && (
+          <>
+            <ArmyInfoLabel />
+            <StructureInfoLabel />
+            <BattleInfoLabel />
+          </>
+        )}
 
         <BattleContainer>
           <BattleView />
@@ -132,13 +130,16 @@ export const World = () => {
             <SelectedArmy />
           </BottomMiddleContainer>
 
-          <BottomRightContainer>
-            <EventStream />
-          </BottomRightContainer>
-
-          <RightMiddleContainer>
-            <RightNavigationModule />
-          </RightMiddleContainer>
+          {!IS_MOBILE && (
+            <>
+              <BottomRightContainer>
+                <EventStream />
+              </BottomRightContainer>
+              <RightMiddleContainer>
+                <RightNavigationModule />
+              </RightMiddleContainer>
+            </>
+          )}
 
           <TopLeftContainer>
             <TopLeftNavigation />

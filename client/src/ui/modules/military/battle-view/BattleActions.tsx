@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "../../navigation/LeftNavigationModule";
+import { LeftView } from "../../navigation/LeftNavigationModule";
 
 import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
@@ -111,7 +111,7 @@ export const BattleActions = ({
         </ModalContainer>,
       );
       setBattleView(null);
-      setView(View.None);
+      setView(LeftView.None);
     } catch (error) {
       console.error("Error during pillage:", error);
     }
@@ -168,7 +168,7 @@ export const BattleActions = ({
       console.error("Error during claim:", error);
     }
     setBattleView(null);
-    setView(View.None);
+    setView(LeftView.None);
 
     setLoading(Loading.None);
   };
@@ -192,7 +192,7 @@ export const BattleActions = ({
     });
     setLoading(Loading.None);
     setBattleView(null);
-    setView(View.None);
+    setView(LeftView.None);
   };
 
   const claimStatus = useMemo(

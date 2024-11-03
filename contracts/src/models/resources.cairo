@@ -319,7 +319,12 @@ mod tests_resource_traits {
     use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use debug::PrintTrait;
+
+
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
     use eternum::models::config::{TickConfig, TickImpl, TickTrait};
@@ -333,7 +338,8 @@ mod tests_resource_traits {
     use traits::Into;
     use traits::TryInto;
 
-    fn setup() -> (IWorldDispatcher, ID, u128, Span<(u8, u128)>) {
+
+    fn setup() -> (WorldStorage, ID, u128, Span<(u8, u128)>) {
         // SCENERIO
         // There are two buildings in the structure. One producing
         // something which consumes `2` wood per tick. The only important
@@ -345,22 +351,24 @@ mod tests_resource_traits {
         // The entity has 100 gold initially.
         //
 
-        let world = spawn_eternum();
-        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+        let mut world = spawn_eternum();
+        let config_systems_address = deploy_system(ref world, "config_systems");
 
         set_capacity_config(config_systems_address);
         // set tick config
         let tick_config = TickConfig {
             config_id: WORLD_CONFIG_ID, tick_id: TickIds::DEFAULT, tick_interval_in_seconds: 5
         };
-        set!(world, (tick_config));
+        world.write_model_test(@tick_config);
 
         // make entity a structure
         let entity_id: ID = 1;
-        set!(
-            world,
-            (Structure { entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp() })
-        );
+        world
+            .write_model_test(
+                @Structure {
+                    entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp()
+                }
+            );
 
         // The entity pays 3 gold for wood production per tick
         let wood_cost_gold_rate: u128 = 3;
@@ -378,7 +386,7 @@ mod tests_resource_traits {
             last_updated_tick: 0,
             input_finish_tick: 0
         };
-        set!(world, (wood_production));
+        world.write_model_test(@wood_production);
 
         // set gold consumption because wood production consumes gold
         let mut gold_production: Production = Production {
@@ -397,13 +405,14 @@ mod tests_resource_traits {
         let mut gold_resource = Resource {
             entity_id, resource_type: ResourceTypes::GOLD, balance: initial_gold_balance
         };
-        set!(world, (gold_production, gold_resource));
+        world.write_model_test(@gold_production);
+        world.write_model_test(@gold_resource);
 
         IProductionConfigDispatcher { contract_address: config_systems_address }
             .set_production_config(ResourceTypes::WOOD, wood_production_rate, wood_cost.span());
 
         // update wood end tick
-        ProductionOutputCustomImpl::sync_all_inputs_exhaustion_ticks_for(@gold_resource, world);
+        ProductionOutputCustomImpl::sync_all_inputs_exhaustion_ticks_for(@gold_resource, ref world);
 
         return (world, entity_id, wood_production_rate, wood_cost.span());
     }
@@ -413,7 +422,7 @@ mod tests_resource_traits {
         // Ensure production is harvested and added to the
         // resource's balance when ResourceCustomImpl::get is called
         //
-        let (world, entity_id, _, _) = setup();
+        let (mut world, entity_id, _, _) = setup();
 
         let tick_config = TickImpl::get_default_tick_config(ref world);
 
@@ -428,9 +437,9 @@ mod tests_resource_traits {
         assert_eq!(wood_resource.balance, (50 - 2) * tick_passed.into());
 
         // check that wood production end tick was computed correctly
-        let gold_resource: Resource = get!(world, (entity_id, ResourceTypes::GOLD), Resource);
+        let gold_resource: Resource = world.read_model((entity_id, ResourceTypes::GOLD));
         let gold_production_end = gold_resource.balance / 3; // wood_cost_gold_rate
-        let wood_production: Production = get!(world, (entity_id, ResourceTypes::WOOD), Production);
+        let wood_production: Production = world.read_model((entity_id, ResourceTypes::WOOD));
         assert_eq!(gold_production_end, wood_production.input_finish_tick.into());
     }
 
@@ -440,7 +449,7 @@ mod tests_resource_traits {
         // Ensure production is harvested and added to the
         // resource's balance when ResourceCustomImpl::get is called
         //
-        let (world, entity_id, _, _) = setup();
+        let (mut world, entity_id, _, _) = setup();
 
         let tick_config = TickImpl::get_default_tick_config(ref world);
 
@@ -457,7 +466,7 @@ mod tests_resource_traits {
         // Ensure wood production end tick is reset after
         // gold's balance gets updated
         //
-        let (world, entity_id, _, _) = setup();
+        let (mut world, entity_id, _, _) = setup();
         let mut gold_resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::GOLD));
         gold_resource.balance += 4; // makes balance 104
         gold_resource.save(ref world);
@@ -468,14 +477,18 @@ mod tests_resource_traits {
         //
         // now we have 104 gold, so wood production should end at tick 34
         // the calculation being, 104 / 3 = 34.66 // 34
-        let wood_production: Production = get!(world, (entity_id, ResourceTypes::WOOD), Production);
+        let wood_production: Production = world.read_model((entity_id, ResourceTypes::WOOD));
         assert_eq!(wood_production.input_finish_tick, 34);
     }
 }
 
 #[cfg(test)]
 mod owned_resources_tracker_tests {
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
+
     use eternum::constants::ResourceTypes;
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::structure::{Structure, StructureCategory};
@@ -504,22 +517,24 @@ mod owned_resources_tracker_tests {
 
     #[test]
     fn resources_test_get_and_set_resource_ownership_after_resource_save() {
-        let world = spawn_eternum();
+        let mut world = spawn_eternum();
 
-        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+        let config_systems_address = deploy_system(ref world, "config_systems");
         set_capacity_config(config_systems_address);
 
         let entity_id = 44;
         // make entity a structure
-        set!(
-            world,
-            (Structure { entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp() })
-        );
+        world
+            .write_model_test(
+                @Structure {
+                    entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp()
+                }
+            );
         let mut entity_gold_resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::GOLD));
         entity_gold_resource.balance += 300;
         entity_gold_resource.save(ref world);
 
-        let mut ort: OwnedResourcesTracker = get!(world, (entity_id), OwnedResourcesTracker);
+        let mut ort: OwnedResourcesTracker = world.read_model(entity_id);
         assert!(ort.owns_resource_type(ResourceTypes::GOLD), "should be true");
         assert!(ort.owns_resource_type(ResourceTypes::FISH) == false, "should be false");
     }

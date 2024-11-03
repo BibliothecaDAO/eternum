@@ -1,4 +1,4 @@
-import { useAccountStore } from "@/hooks/context/DojoContext";
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { type HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import {
@@ -17,7 +17,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
-import { AccountInterface } from "starknet";
 import { configManager, type SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
 import { StaminaManager } from "./StaminaManager";
@@ -80,8 +79,6 @@ export class ArmyMovementManager {
   private readonly wheatManager: ProductionManager;
   private readonly staminaManager: StaminaManager;
 
-  private account: AccountInterface | null;
-
   constructor(
     private readonly setup: SetupResult,
     entityId: ID,
@@ -93,16 +90,7 @@ export class ArmyMovementManager {
     this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.setup, entityId);
 
-    this.account = null;
     this.address = BigInt(useAccountStore.getState().account?.address || 0n);
-
-    useAccountStore.subscribe((state) => {
-      const account = state.account;
-      if (account) {
-        this.address = BigInt(account.address);
-        this.account = account;
-      }
-    });
   }
 
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
@@ -286,7 +274,7 @@ export class ArmyMovementManager {
       .explore({
         unit_id: this.entityId,
         direction,
-        signer: this.account!,
+        signer: useAccountStore.getState().account!,
       })
       .catch((e) => {
         this.setup.components.Position.removeOverride(overrideId);
@@ -333,7 +321,7 @@ export class ArmyMovementManager {
 
     this.setup.systemCalls
       .travel_hex({
-        signer: this.account!,
+        signer: useAccountStore.getState().account!,
         travelling_entity_id: this.entityId,
         directions,
       })

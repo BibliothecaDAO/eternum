@@ -14,6 +14,7 @@
     "client/src/three/components/FogManager.ts",
     "client/src/hooks/useUISound.tsx",
     "balancing/**",
-    "landing/**"
+    "landing/**",
+    "client/pwa-assets.config.ts"
   ]
 }

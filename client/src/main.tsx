@@ -31,7 +31,9 @@ async function init() {
   const graphic = new GameRenderer(setupResult);
 
   graphic.initScene();
-  graphic.initStats();
+  if (import.meta.env.VITE_PUBLIC_SHOW_FPS == "true") {
+    graphic.initStats();
+  }
 
   inject();
   root.render(

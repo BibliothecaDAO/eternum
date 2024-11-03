@@ -2,12 +2,12 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
-import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
+import { BuildingThumbs, FELT_CENTER, IS_MOBILE } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
-import { computeExploreFoodCosts, computeTravelFoodCosts, divideByPrecision } from "@/ui/utils/utils";
+import { computeExploreFoodCosts, computeTravelFoodCosts } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -56,8 +56,10 @@ export const ActionInfo = () => {
   return (
     <>
       {selectedEntityId && (
-        <div className="text-xs fixed top-0 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-center py-2 z-50 w-[300px] top-[60px] rounded-lg animate-pulse pointer-events-none">
-          Press Esc to exit travel mode
+        <div className="text-xs fixed  left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-green text-center text-xxs md:text-base textpy-1 md:py-2 z-50 w-[200px] md:w-[300px] top-[60px] rounded-lg animate-pulse pointer-events-none">
+          {IS_MOBILE ? "Tap another hex to exit travel mode" : "Press Esc to exit travel mode. "}
+          {IS_MOBILE ? <br /> : null}
+          {IS_MOBILE ? "Long press to confirm movement" : "Right-click to confirm movement"}
         </div>
       )}
       {showTooltip && (

@@ -27,6 +27,8 @@ const checkIfGameIsRunningOnLaptop = async () => {
 
 export const IS_LOW_GRAPHICS_ENABLED = await checkIfGameIsRunningOnLaptop();
 
+export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 
 export const BUILDING_IMAGES_PATH = {
@@ -75,4 +77,5 @@ export enum MenuEnum {
   entityDetails = "entityDetails",
   resourceArrivals = "resourceArrivals",
   trade = "trade",
+  resourceTable = "resourceTable",
 }

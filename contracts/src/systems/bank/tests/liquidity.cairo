@@ -1,6 +1,11 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
+
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
 use eternum::models::bank::liquidity::{Liquidity};
@@ -42,14 +47,9 @@ const BANK_ID: ID = 1;
 const DONKEY_CAPACITY: u128 = 1000;
 
 fn setup() -> (
-    IWorldDispatcher,
-    ID,
-    ILiquiditySystemsDispatcher,
-    ISwapSystemsDispatcher,
-    IBankSystemsDispatcher,
-    IBankConfigDispatcher
+    WorldStorage, ID, ILiquiditySystemsDispatcher, ISwapSystemsDispatcher, IBankSystemsDispatcher, IBankConfigDispatcher
 ) {
-    let world = spawn_eternum();
+    let mut world = spawn_eternum();
     // allows to start from entity_id 1
     let _ = world.dispatcher.uuid();
 
@@ -59,63 +59,69 @@ fn setup() -> (
     let lp_fee_num: u128 = FEE_NUM;
     let lp_fee_denom: u128 = FEE_DENOM;
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     set_capacity_config(config_systems_address);
 
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
     bank_config_dispatcher.set_bank_config(0, lp_fee_num, lp_fee_denom);
 
-    let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
+    let bank_systems_address = deploy_system(ref world, "bank_systems");
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
     let bank_entity_id = bank_systems_dispatcher
         .create_bank(BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom, 0, 0);
 
-    let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
+    let liquidity_systems_address = deploy_system(ref world, "liquidity_systems");
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher { contract_address: liquidity_systems_address };
 
-    let swap_systems_address = deploy_system(world, swap_systems::TEST_CLASS_HASH);
+    let swap_systems_address = deploy_system(ref world, "swap_systems");
     let swap_systems_dispatcher = ISwapSystemsDispatcher { contract_address: swap_systems_address };
 
     let player = starknet::get_contract_address();
     // set owner to player
-    set!(world, Owner { entity_id: PLAYER_2_ID, address: player });
+    world.write_model_test(@Owner { entity_id: PLAYER_2_ID, address: player });
 
     // donkeys capcaity
-    set!(world, (CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: DONKEY_CAPACITY, }));
+    world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Donkey, weight_gram: DONKEY_CAPACITY, });
 
     // add some resources inside second player bank account
     // wood
     // lords
     // donkeys
-    set!(
-        world,
-        (
-            Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
-            Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE },
-            Resource {
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource {
                 entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-            },
-        )
-    );
-
-    // set owner to player
-    set!(world, Owner { entity_id: PLAYER_3_ID, address: contract_address_const::<'player3'>() });
+            }
+        );
+    world.write_model_test(@Owner { entity_id: PLAYER_3_ID, address: contract_address_const::<'player3'>() });
 
     // player 3
     // add some resources inside third player bank account
     // wood
     // lords
     // donkeys
-    set!(
-        world,
-        (
-            Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
-            Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE },
-            Resource {
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_3_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource {
                 entity_id: PLAYER_3_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-            },
-        )
-    );
+            }
+        );
 
     (
         world,
@@ -130,7 +136,7 @@ fn setup() -> (
 #[test]
 fn bank_test_liquidity_add() {
     let (
-        world,
+        mut world,
         bank_entity_id,
         liquidity_systems_dispatcher,
         _swap_systems_dispatcher,
@@ -147,8 +153,8 @@ fn bank_test_liquidity_add() {
     let wood = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::WOOD));
     let lords = ResourceCustomImpl::get(ref world, (PLAYER_2_ID, ResourceTypes::LORDS));
 
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
-    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
 
     assert(market.lords_amount == LIQUIDITY_AMOUNT, 'market.lords_amount');
     assert(market.resource_amount == LIQUIDITY_AMOUNT, 'market.resource_amount');
@@ -163,7 +169,7 @@ fn bank_test_liquidity_add() {
 #[test]
 fn bank_test_liquidity_remove() {
     let (
-        world,
+        mut world,
         bank_entity_id,
         liquidity_systems_dispatcher,
         _swap_systems_dispatcher,
@@ -176,13 +182,13 @@ fn bank_test_liquidity_remove() {
 
     liquidity_systems_dispatcher
         .add(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
-    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
     let donkey_id = liquidity_systems_dispatcher
         .remove(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, liquidity.shares);
 
     // state
-    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
     // player resources
     let donkey_wood = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::WOOD));
     let donkey_lords = ResourceCustomImpl::get(ref world, (donkey_id, ResourceTypes::LORDS));
@@ -204,7 +210,7 @@ fn bank_test_liquidity_remove() {
 #[test]
 fn bank_test_liquidity_buy() {
     let (
-        world,
+        mut world,
         bank_entity_id,
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
@@ -218,16 +224,21 @@ fn bank_test_liquidity_buy() {
     let SWAP_AMOUNT = SWAP_AMOUNT * 10;
     let MARKET_TOTAL_SHARES = MARKET_TOTAL_SHARES * 10;
     let INITIAL_RESOURCE_BALANCE = INITIAL_RESOURCE_BALANCE * 10;
-    set!(
-        world,
-        (
-            Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE },
-            Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE },
-            Resource {
+
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource { entity_id: PLAYER_2_ID, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE }
+        );
+    world
+        .write_model_test(
+            @Resource {
                 entity_id: PLAYER_2_ID, resource_type: ResourceTypes::DONKEY, balance: INITIAL_RESOURCE_BALANCE
-            },
-        )
-    );
+            }
+        );
 
     // bank owner
     let player = starknet::get_caller_address();
@@ -236,12 +247,13 @@ fn bank_test_liquidity_buy() {
         .add(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
 
     // check state
-    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
     assert(liquidity.shares.mag == MARKET_TOTAL_SHARES, 'liquidity.shares');
     // swap
     let donkey_1_id = swap_systems_dispatcher.buy(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
+
     // initial reserves + 11_112 lords (swap cost (including lp fee))
     assert_eq!(market.lords_amount, 21_112);
     assert(market.resource_amount == SWAP_AMOUNT, 'market.resource_amount');
@@ -251,8 +263,8 @@ fn bank_test_liquidity_buy() {
         .remove(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, liquidity.shares);
 
     // check state
-    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
 
     // // player resources
     // are on donkey
@@ -288,7 +300,7 @@ fn bank_test_liquidity_buy() {
 #[test]
 fn bank_test_liquidity_sell() {
     let (
-        world,
+        mut world,
         bank_entity_id,
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
@@ -304,13 +316,13 @@ fn bank_test_liquidity_sell() {
         .add(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
 
     // check state
-    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
     assert(liquidity.shares.mag == MARKET_TOTAL_SHARES, 'liquidity.shares');
 
     // swap
     let donkey_1_id = swap_systems_dispatcher.sell(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
     assert_eq!(market.lords_amount, 690);
     // initial reserves + sold resouce amount
     assert_eq!(market.resource_amount, 1500);
@@ -320,8 +332,8 @@ fn bank_test_liquidity_sell() {
         .remove(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, liquidity.shares);
 
     // check state
-    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player, ResourceTypes::WOOD));
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
 
     // player resources
     // are on donkey
@@ -360,7 +372,7 @@ fn bank_test_liquidity_sell() {
 #[test]
 fn bank_test_liquidity_no_drain() {
     let (
-        world,
+        mut world,
         bank_entity_id,
         liquidity_systems_dispatcher,
         swap_systems_dispatcher,
@@ -383,7 +395,7 @@ fn bank_test_liquidity_no_drain() {
 
     // get current reserves
     // check state
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
     let lords_amount = market.lords_amount;
     let resource_amount = market.resource_amount;
 
@@ -392,12 +404,12 @@ fn bank_test_liquidity_no_drain() {
         .add(bank_entity_id, PLAYER_3_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
 
     // check state
-    let liquidity = get!(world, (bank_entity_id, player3, ResourceTypes::WOOD), Liquidity);
+    let liquidity: Liquidity = world.read_model((bank_entity_id, player3, ResourceTypes::WOOD));
     assert_eq!(liquidity.shares.mag, 12297829382473034410666);
     // new player removes liquidity
     liquidity_systems_dispatcher.remove(bank_entity_id, PLAYER_3_ID, ResourceTypes::WOOD, liquidity.shares);
 
-    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let market: Market = world.read_model((bank_entity_id, ResourceTypes::WOOD));
 
     // check that market amounts hasn't changed
     assert(market.lords_amount == lords_amount + 1, 'market.lords_amount');
