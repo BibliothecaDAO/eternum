@@ -195,28 +195,31 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               </div>
             )}
           </div>
-          <div className="flex items-center mb-4">
-            <ListSelect
-              className="flex-grow mr-2"
-              title="Active Account: "
-              options={list().map((account) => {
-                const addressName = getAddressName(ContractAddress(account.address));
-                return {
-                  id: account.address,
-                  label: (
-                    <div className="w-full truncate">{`${addressName || "unknown"} (${displayAddress(
-                      account.address,
-                    )})`}</div>
-                  ),
-                };
-              })}
-              value={useAccountStore.getState().account?.address}
-              onChange={select}
-            />
-            <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
-              {isDeploying ? "" : "Create New"}
-            </Button>
-          </div>
+
+          {import.meta.env.VITE_PUBLIC_DEV === "true" && (
+            <div className="flex items-center mb-4">
+              <ListSelect
+                className="flex-grow mr-2"
+                title="Active Account: "
+                options={list().map((account) => {
+                  const addressName = getAddressName(ContractAddress(account.address));
+                  return {
+                    id: account.address,
+                    label: (
+                      <div className="w-full truncate">{`${addressName || "unknown"} (${displayAddress(
+                        account.address,
+                      )})`}</div>
+                    ),
+                  };
+                })}
+                value={useAccountStore.getState().account?.address}
+                onChange={select}
+              />
+              <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
+                {isDeploying ? "" : "Create New"}
+              </Button>
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-4 mt-2">
           <Cross
