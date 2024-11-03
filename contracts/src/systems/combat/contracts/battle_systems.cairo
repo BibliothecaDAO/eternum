@@ -1,3 +1,4 @@
+use bushido_trophy::store::{Store, StoreTrait};
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
@@ -15,6 +16,7 @@ use eternum::models::{
     },
 };
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
+use eternum::utils::tasks::index::{Task, TaskTrait};
 
 #[starknet::interface]
 trait IBattleContract<T> {
@@ -293,6 +295,7 @@ trait IBattlePillageContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
+    use bushido_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -344,6 +347,7 @@ mod battle_systems {
     use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
     use eternum::utils::math::{min, max};
     use eternum::utils::random;
+    use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use super::{IBattleContract, InternalBattleImpl};
 
@@ -634,9 +638,10 @@ mod battle_systems {
             InternalBattleImpl::leave_battle(ref world, ref battle, ref caller_army);
 
             // slash army if battle was not concluded before they left
+            let leaver = starknet::get_caller_address();
+            let mut army: Army = world.read_model(army_id);
             if army_left_early {
                 let troop_config = TroopConfigCustomImpl::get(world);
-                let mut army: Army = world.read_model(army_id);
                 let troops_deducted = Troops {
                     knight_count: (army.troops.knight_count * troop_config.battle_leave_slash_num.into())
                         / troop_config.battle_leave_slash_denom.into(),
@@ -669,7 +674,7 @@ mod battle_systems {
                         id: world.dispatcher.uuid(),
                         event_id: EventType::BattleLeave,
                         battle_entity_id: battle_id,
-                        leaver: starknet::get_caller_address(),
+                        leaver: leaver,
                         leaver_name: leaver_name.name,
                         leaver_army_entity_id: army_id,
                         leaver_side: caller_army_side,
@@ -708,6 +713,7 @@ mod battle_systems {
             claimer_army_position.assert_same_location(structure_position.into());
 
             // ensure structure has no army protecting it
+            let claimer = starknet::get_caller_address();
             let structure_protector: Protector = world.read_model(structure_id);
             let structure_army_id: ID = structure_protector.army_id;
             if structure_army_id.is_non_zero() {
@@ -723,7 +729,6 @@ mod battle_systems {
             }
 
             // transfer structure ownership to claimer
-            let claimer = starknet::get_caller_address();
             let mut structure_owner: Owner = world.read_model(structure_id);
             let structure_owner_before_transfer = structure_owner.address;
             structure_owner.transfer(claimer);
@@ -748,6 +753,29 @@ mod battle_systems {
                         timestamp: starknet::get_block_timestamp(),
                     }
                 );
+
+            // [Achievement] Claim either a realm, bank or fragment mine
+            match structure.category {
+                StructureCategory::Realm => {
+                    let player_id: felt252 = claimer.into();
+                    let task_id: felt252 = Task::Conqueror.identifier();
+                    let mut store = StoreTrait::new(world);
+                    store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
+                },
+                StructureCategory::Bank => {
+                    let player_id: felt252 = claimer.into();
+                    let task_id: felt252 = Task::Ruler.identifier();
+                    let mut store = StoreTrait::new(world);
+                    store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
+                },
+                StructureCategory::FragmentMine => {
+                    let player_id: felt252 = claimer.into();
+                    let task_id: felt252 = Task::Claimer.identifier();
+                    let mut store = StoreTrait::new(world);
+                    store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
+                },
+                _ => {},
+            }
         }
     }
 }
@@ -1155,6 +1183,9 @@ pub impl InternalBattleImpl of InternalBattleTrait {
 
     /// Make army leave battle
     fn leave_battle(ref world: WorldStorage, ref battle: Battle, ref original_army: Army) {
+        // save battle end status for achievement
+        let battle_has_ended = battle.has_ended();
+
         // make caller army mobile again
         let army_id = original_army.entity_id;
         let mut army_protectee: Protectee = world.read_model(army_id);
@@ -1207,6 +1238,15 @@ pub impl InternalBattleImpl of InternalBattleTrait {
             lifetime: original_army.troops.full_health(troop_config)
         };
         world.write_model(@army_health);
+
+        // [Achievement] Win a battle
+        if battle_has_ended && army_left.troops.count() > 0 {
+            let player_id: felt252 = starknet::get_caller_address().into();
+            let task_id: felt252 = Task::Battlelord.identifier();
+            let time = starknet::get_block_timestamp();
+            let mut store = StoreTrait::new(world);
+            store.progress(player_id, task_id, 1, time);
+        }
     }
 }
 

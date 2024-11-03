@@ -198,6 +198,8 @@ trait ISettlementConfig<T> {
 
 #[dojo::contract]
 mod config_systems {
+    use bushido_trophy::components::achievable::AchievableComponent;
+
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -226,6 +228,56 @@ mod config_systems {
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
     use eternum::models::season::SeasonImpl;
+    use eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
+
+    // Components
+
+    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+
+    // Storage
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievable: AchievableComponent::Storage,
+    }
+
+    // Events
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievableEvent: AchievableComponent::Event,
+    }
+
+    // Constuctor
+
+    fn dojo_init(self: @ContractState,) {
+        // [Event] Emit all Trophy events
+        let mut world: WorldStorage = self.world(DEFAULT_NS());
+        let mut trophy_id: u8 = TROPHY_COUNT;
+        while trophy_id > 0 {
+            let trophy: Trophy = trophy_id.into();
+            self
+                .achievable
+                .create(
+                    world,
+                    id: trophy.identifier(),
+                    hidden: trophy.hidden(),
+                    index: trophy.index(),
+                    points: trophy.points(),
+                    group: trophy.group(),
+                    icon: trophy.icon(),
+                    title: trophy.title(),
+                    description: trophy.description(),
+                    tasks: trophy.tasks(),
+                    data: trophy.data(),
+                );
+            trophy_id -= 1;
+        }
+    }
 
 
     fn assert_caller_is_admin(world: WorldStorage) {
