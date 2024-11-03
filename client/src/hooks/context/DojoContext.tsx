@@ -156,10 +156,10 @@ const DojoContextProvider = ({
       <div className="relative h-screen w-screen pointer-events-auto">
         <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
         <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
-          <div className="self-center bg-brown/90 rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient  ">
+          <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient  ">
             <div className="w-full text-center pt-6">
               <div className="mx-auto flex mb-8">
-                <img src="/images/eternum-logo.svg" className="w-72 mx-auto" alt="Eternum Logo" />
+                <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
               </div>
             </div>
             <div className="flex space-x-2 mt-8 justify-center">
