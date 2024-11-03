@@ -3,13 +3,6 @@ import React, { useCallback } from "react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
-import { RpcProvider } from "starknet";
-//import { cartridgeController } from "./cartridge-controller";
-function provider(/*chain: Chain*/) {
-  return new RpcProvider({
-    nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia",
-  });
-}
 
 const cartridgeController = new ControllerConnector({
   policies: [],

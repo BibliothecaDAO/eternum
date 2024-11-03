@@ -37,7 +37,7 @@ export const useMintTestRealm = () => {
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_id);
-        await mint_test_realm({ signer: account, token_id, realms_address })
+        await mint_test_realm({ signer: account, token_id: BigInt(token_id), realms_address })
           .then(() => {
             toast(`Realms #${token_id} Minted`);
           })
