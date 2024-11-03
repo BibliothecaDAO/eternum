@@ -24,7 +24,7 @@ export enum HintSection {
   Combat = "Combat",
   WorldStructures = "World Structures",
   Points = "Points",
-  Guilds = "Guilds",
+  Tribes = "Tribes",
   Realm = "Realms",
 }
 
@@ -79,7 +79,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
       content: <Points />,
     },
     {
-      name: HintSection.Guilds,
+      name: HintSection.Tribes,
       content: <Guilds />,
     },
   ];

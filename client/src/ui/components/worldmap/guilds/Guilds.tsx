@@ -73,7 +73,7 @@ export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId:
       />
 
       <Button className="my-4" variant="primary" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
-        {viewGuildInvites ? "Guild Rankings" : "Guild Invites"}
+        {viewGuildInvites ? "Tribe Rankings" : "Tribe Invites"}
       </Button>
 
       <div className="mb-4">
@@ -121,7 +121,7 @@ const GuildActionButton = ({
 
   return (
     <Button isLoading={isLoading} variant="primary" onClick={toggleIsCreatingGuild}>
-      {isCreatingGuild ? "Search Guild" : "Create Guild"}
+      {isCreatingGuild ? "Search Tribe" : "Create Tribe"}
     </Button>
   );
 };
@@ -158,7 +158,7 @@ const GuildSearchOrCreate = ({
   }
 
   return (
-    <TextInput placeholder="Search Guild . . ." onChange={(guildSearchTerm) => setGuildSearchTerm(guildSearchTerm)} />
+    <TextInput placeholder="Search Tribe . . ." onChange={(guildSearchTerm) => setGuildSearchTerm(guildSearchTerm)} />
   );
 };
 
@@ -177,7 +177,7 @@ const GuildList = ({ guilds, viewGuildInvites, viewGuildMembers }: GuildListProp
           <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
         ))}
       </div>
-      {!guilds.length && viewGuildInvites && <p className="text-center italic">No Guild Invites Received</p>}
+      {!guilds.length && viewGuildInvites && <p className="text-center italic">No Tribe Invites Received</p>}
     </div>
   );
 };
@@ -239,7 +239,7 @@ const CreateGuildForm = ({
 
   return (
     <div className="flex items-center gap-4">
-      <TextInput placeholder="Guild Name . . ." onChange={setGuildName} maxLength={MAX_NAME_LENGTH} />
+      <TextInput placeholder="Tribe Name . . ." onChange={setGuildName} maxLength={MAX_NAME_LENGTH} />
       <div className="flex items-center gap-2">
         <div className={"flex items-center justify-center h-full"} onClick={() => setIsPublic(!isPublic)}>
           {isPublic ? (

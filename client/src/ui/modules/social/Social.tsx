@@ -4,6 +4,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helpers/useContributions";
 import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { social } from "@/ui/components/navigation/Config";
 import { ExpandableOSWindow } from "@/ui/components/navigation/OSWindow";
 import { GuildMembers } from "@/ui/components/worldmap/guilds/GuildMembers";
@@ -49,7 +50,7 @@ export const Social = () => {
     () => [
       {
         key: "Guild",
-        label: <div>Guilds</div>,
+        label: <div>Tribes</div>,
         component: <Guilds viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer
           ? isExpanded && (
@@ -74,7 +75,7 @@ export const Social = () => {
       onClick={() => togglePopup(social)}
       show={isOpen}
       title={social}
-      hintSection={"guilds"}
+      hintSection={HintSection.Tribes}
       expandedContent={tabs[selectedTab].expandedContent}
       isExpanded={isExpanded}
     >
