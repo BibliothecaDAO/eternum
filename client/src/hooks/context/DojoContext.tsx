@@ -1,6 +1,5 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
-import Button from "@/ui/elements/Button";
 import { LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -115,77 +114,102 @@ const DojoContextProvider = ({
   value,
   masterAccount,
   controllerAccount,
-}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface }) => {
+}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface | null }) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
-  const { create, list, get, account, select, isDeploying, clear } = useBurnerManager({
+  const {
+    create,
+    list,
+    get,
+    account: burnerAccount,
+    select,
+    isDeploying,
+    clear,
+  } = useBurnerManager({
     burnerManager: value.network.burnerManager,
   });
 
   const { connect, connectors } = useConnect();
   const { isConnected, isConnecting } = useAccount();
+
   const connectWallet = async () => {
-    connect({ connector: connectors[0] });
+    try {
+      console.log("Attempting to connect wallet...");
+      await connect({ connector: connectors[0] });
+      console.log("Wallet connected successfully.");
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+    }
   };
 
-  const storedAccount = useAccountStore((state) => state.account);
+  // Determine which account to use based on environment
+  const isDev = import.meta.env.VITE_PUBLIC_DEV === "true";
+  const accountToUse = isDev ? burnerAccount : controllerAccount;
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (import.meta.env.VITE_PUBLIC_DEV === "true") {
-        if (!account) {
-          console.log("account is null");
-        } else {
-          console.log("setting account to account");
-          useAccountStore.getState().setAccount(account);
-          clearInterval(interval);
-        }
+    if (isDev) {
+      if (burnerAccount) {
+        console.log("Setting account from burner hook:", burnerAccount);
+        useAccountStore.getState().setAccount(burnerAccount);
       } else {
-        if (controllerAccount) {
-          console.log("logging controllerAccount", controllerAccount);
-          useAccountStore.getState().setAccount(controllerAccount);
-          clearInterval(interval);
-        }
+        console.log("Burner account is null in development.");
       }
-    }, 1000);
+    } else {
+      if (controllerAccount) {
+        console.log("Setting account from controllerAccount:", controllerAccount);
+        useAccountStore.getState().setAccount(controllerAccount);
+      } else {
+        console.log("ControllerAccount is null in production or not connected.");
+        // useAccountStore.getState().setAccount(null);
+      }
+    }
+  }, [isDev, controllerAccount, burnerAccount]);
 
-    return () => clearInterval(interval);
-  }, [controllerAccount, account, isConnected, isConnecting]);
-
-  if (storedAccount === null) {
-    return <LoadingScreen />;
-  }
-
-  // Conditionally render content based on controllerAccount
-  if (!controllerAccount && import.meta.env.VITE_PUBLIC_DEV == "false") {
-    return (
-      <div className="relative h-screen w-screen pointer-events-auto">
-        <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
-        <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
-          <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient  ">
-            <div className="w-full text-center pt-6">
-              <div className="mx-auto flex mb-8">
-                <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
+  // Handle Loading Screen
+  if (isDev) {
+    if (!burnerAccount) {
+      return <LoadingScreen />;
+    }
+  } else {
+    if (isConnecting) {
+      return <LoadingScreen />;
+    }
+    if (!isConnected && !isConnecting) {
+      // User needs to connect their wallet in production
+      return (
+        <div className="relative h-screen w-screen pointer-events-auto">
+          <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="Cover" />
+          <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
+            <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient">
+              <div className="w-full text-center pt-6">
+                <div className="mx-auto flex mb-8">
+                  <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
+                </div>
               </div>
-            </div>
-            <div className="flex space-x-2 mt-8 justify-center">
-              {!isConnected && (
-                <Button
-                  className="px-4 text-[#ffc52a] border-2 border-[#ffc52a]"
-                  variant={"default"}
-                  onClick={connectWallet}
-                >
-                  <CartridgeSmall className="w-6 mr-2 fill-current" /> Login
-                </Button>
-              )}
+              <div className="flex space-x-2 mt-8 justify-center">
+                {!isConnected && (
+                  <button
+                    className="px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded-2xl text-lg fill-black uppercase"
+                    onClick={connectWallet}
+                  >
+                    <CartridgeSmall className="w-6 mr-2 fill-current self-center" /> Login
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (!controllerAccount && isConnected) {
+      // Connected but controllerAccount is not set yet
+      return <LoadingScreen />;
+    }
   }
 
+  // Once account is set, render the children
   return (
     <DojoContext.Provider
       value={{
@@ -197,9 +221,9 @@ const DojoContextProvider = ({
           get,
           select,
           clear,
-          account: storedAccount as Account | AccountInterface,
+          account: accountToUse as Account | AccountInterface,
           isDeploying,
-          accountDisplay: displayAddress(storedAccount.address || ""),
+          accountDisplay: displayAddress((accountToUse as Account | AccountInterface)?.address || ""),
         },
       }}
     >
