@@ -410,7 +410,6 @@ export abstract class HexagonScene {
     this.scene.add(mesh);
     this.groundMesh = mesh;
     this.setupGroundMeshGUI();
-
   }
 
   update(deltaTime: number): void {

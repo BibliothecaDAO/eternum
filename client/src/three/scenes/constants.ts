@@ -118,7 +118,7 @@ export const MinesMaterialsParams: Record<
   // [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
   // [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
   [ResourcesIds.Copper]: {
-    color: new THREE.Color(0.86, 0.26, 0.00),
+    color: new THREE.Color(0.86, 0.26, 0.0),
     emissive: new THREE.Color(6.71, 0.25, 0.08),
     emissiveIntensity: 5.9,
   },
@@ -133,7 +133,7 @@ export const MinesMaterialsParams: Record<
     emissiveIntensity: 8.6,
   },
   [ResourcesIds.Gold]: {
-    color: new THREE.Color(0.99, 0.83, 0.30),
+    color: new THREE.Color(0.99, 0.83, 0.3),
     emissive: new THREE.Color(9.88, 6.79, 3.02),
     emissiveIntensity: 4.9,
   },
@@ -148,7 +148,7 @@ export const MinesMaterialsParams: Record<
     emissiveIntensity: 8.4,
   },
   [ResourcesIds.Adamantine]: {
-    color: new THREE.Color(0.00, 0.27, 1.00),
+    color: new THREE.Color(0.0, 0.27, 1.0),
     emissive: new THREE.Color(1.39, 0.52, 8.16),
     emissiveIntensity: 10,
   },

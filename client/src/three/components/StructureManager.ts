@@ -154,7 +154,7 @@ export class StructureManager {
           this.dummy.position.copy(position);
 
           if (structureType === StructureType.Bank) {
-            this.dummy.rotation.y = 4 * Math.PI / 6;
+            this.dummy.rotation.y = (4 * Math.PI) / 6;
           }
           this.dummy.updateMatrix();
 

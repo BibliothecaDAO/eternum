@@ -22,7 +22,7 @@ export default class InstancedModel {
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
   timeOffsets: Float32Array;
 
-  constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = '') {
+  constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
     this.count = count;
 
@@ -35,7 +35,10 @@ export default class InstancedModel {
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count) as AnimatedInstancedMesh;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
-          if (gltf.animations[0].tracks.find((track: any) => track.name.split(".")[0] === child.name) && name !== StructureType[StructureType.FragmentMine]) {
+          if (
+            gltf.animations[0].tracks.find((track: any) => track.name.split(".")[0] === child.name) &&
+            name !== StructureType[StructureType.FragmentMine]
+          ) {
             tmp.animated = true;
             for (let i = 0; i < count; i++) {
               tmp.setMorphAt(i, biomeMesh as any);
