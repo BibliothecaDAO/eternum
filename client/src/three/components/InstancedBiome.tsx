@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
+import { LAND_NAME } from "./InstancedModel";
 
-const LAND_NAME = "land";
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 export default class InstancedModel {
   public group: THREE.Group;

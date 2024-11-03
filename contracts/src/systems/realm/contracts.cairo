@@ -24,6 +24,7 @@ trait IRealmSystems<T> {
 
 #[dojo::contract]
 mod realm_systems {
+    use bushido_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -58,10 +59,10 @@ mod realm_systems {
     use eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
     };
+    use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
-
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
@@ -147,7 +148,8 @@ mod realm_systems {
             realm.assert_is_set();
 
             // ensure realm is not already at max level
-            assert(realm.level < realm.max_level(world), 'realm is already at max level');
+            let max_level = realm.max_level(world);
+            assert(realm.level < max_level, 'realm is already at max level');
 
             // make payment to upgrade to next level
             let next_level = realm.level + 1;
@@ -174,6 +176,14 @@ mod realm_systems {
             // set new level
             realm.level = next_level;
             world.write_model(@realm);
+
+            // [Achievement] Upgrade to max level
+            if realm.level == max_level {
+                let player_id: felt252 = starknet::get_caller_address().into();
+                let task_id: felt252 = Task::Maximalist.identifier();
+                let store = StoreTrait::new(world);
+                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
+            }
         }
 
         fn quest_claim(ref self: ContractState, quest_id: ID, entity_id: ID) {
@@ -189,9 +199,11 @@ mod realm_systems {
             let mut quest: Quest = world.read_model((entity_id, quest_id));
             assert(!quest.completed, 'quest already completed');
 
-            // get index
+            // ensure quest has rewards
             let quest_config: QuestConfig = world.read_model(WORLD_CONFIG_ID);
             let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
+            assert(quest_reward_config.detached_resource_count > 0, 'quest has no rewards');
+
             let mut index = 0;
             loop {
                 if index == quest_reward_config.detached_resource_count {
@@ -242,6 +254,17 @@ mod realm_systems {
 
             quest.completed = true;
             world.write_model(@quest);
+
+            // [Achievement] Complete all quests
+            let next_quest_id: ID = (quest_id + 1).into();
+            let next_quest_reward_config: QuestRewardConfig = world.read_model(next_quest_id);
+            // if the next quest has no rewards, the player has completed all quests
+            if (next_quest_reward_config.detached_resource_count == 0) {
+                let player_id: felt252 = starknet::get_caller_address().into();
+                let task_id: felt252 = Task::Squire.identifier();
+                let store = StoreTrait::new(world);
+                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
+            };
         }
     }
 
@@ -309,7 +332,8 @@ mod realm_systems {
             season_pass.detach_lords(realm_id.into(), token_lords_balance);
             assert!(season_pass.lords_balance(realm_id.into()).is_zero(), "lords amount attached to realm should be 0");
 
-            // at this point, this contract's lords balance must have increased by `token_lords_balance`
+            // at this point, this contract's lords balance must have increased by
+            // `token_lords_balance`
             token_lords_balance
         }
 
