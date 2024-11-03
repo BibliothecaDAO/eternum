@@ -16,7 +16,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SceneManager } from "../SceneManager";
 import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
-import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
+import { SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { createPausedLabel } from "../helpers/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
@@ -188,8 +188,6 @@ export default class HexceptionScene extends HexagonScene {
               if (child instanceof THREE.Mesh) {
                 if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
                   child.castShadow = true;
-                }
-                if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
                   child.receiveShadow = true;
                 }
               }
@@ -417,7 +415,7 @@ export default class HexceptionScene extends HexagonScene {
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
 
-              if (parseInt(buildingType) === BuildingType.Castle) {
+          if (parseInt(buildingType) === BuildingType.Castle) {
             buildingType = castleLevelToRealmCastle[this.castleLevel];
           }
           const buildingData = this.buildingModels.get(buildingType);
@@ -559,10 +557,27 @@ export default class HexceptionScene extends HexagonScene {
           withBuilding = true;
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
+          buildingObj.rotation.y = rotation * 4;
           if (building.category === BuildingType[BuildingType.Castle]) {
             buildingObj.rotation.y = rotation * 2;
-          } else {
-            buildingObj.rotation.y = rotation * 4;
+          }
+          if (
+            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill
+          ) {
+            buildingObj.rotation.y = rotation * 2;
+          }
+          if (
+            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge
+          ) {
+            buildingObj.rotation.y = rotation * 6;
+          }
+          if (
+            building.resource &&
+            building.resource === ResourcesIds.Crossbowman
+          ) {
+            buildingObj.rotation.y = rotation;
           }
           buildingObj.updateMatrix();
           this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });

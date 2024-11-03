@@ -87,7 +87,7 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.1);
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.3);
     //this.scene.add(this.hemisphereLight);
   }
 
@@ -188,7 +188,7 @@ export abstract class HexagonScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.01, -0.0015, 0.01);
+    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.1, 0.1, 0.0015);
     shadowFolder.close();
   }
 
