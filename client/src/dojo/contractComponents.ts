@@ -1894,13 +1894,14 @@ const eventsComponents = (world: World) => {
           world,
           {
             guild_entity_id: RecsType.Number,
+            guild_name: RecsType.BigInt,
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "eternum",
               name: "CreateGuild",
-              types: ["u32", "u64"],
+              types: ["u32", "felt252", "u64"],
               customTypes: [],
             },
           },
@@ -1913,13 +1914,14 @@ const eventsComponents = (world: World) => {
           {
             guild_entity_id: RecsType.Number,
             address: RecsType.BigInt,
+            guild_name: RecsType.BigInt,
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "eternum",
               name: "JoinGuild",
-              types: ["u32", "ContractAddress", "u64"],
+              types: ["u32", "ContractAddress", "felt252", "u64"],
               customTypes: [],
             },
           },

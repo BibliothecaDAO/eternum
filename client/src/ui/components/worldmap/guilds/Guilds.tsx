@@ -1,11 +1,10 @@
 import { ReactComponent as LockClosed } from "@/assets/icons/common/lock-closed.svg";
 import { ReactComponent as LockOpen } from "@/assets/icons/common/lock-open.svg";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
-import { GuildAndName, GuildFromPlayerAddress } from "@/types/guild";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { ContractAddress, ID, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { ContractAddress, GuildInfo, ID, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -18,10 +17,10 @@ export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId:
     account: { account },
   } = useDojo();
 
-  const { useGuildQuery, getGuildFromPlayerAddress, useAddressWhitelist } = useGuilds();
+  const { useGuildQuery, getGuildFromPlayerAddress, usePlayerWhitelist } = useGuilds();
 
   const { guilds } = useGuildQuery();
-  const guildInvites = useAddressWhitelist(ContractAddress(account.address));
+  const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
 
   const [isLoading, setIsLoading] = useState(false);
@@ -95,7 +94,7 @@ export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId:
 };
 
 interface GuildActionButtonProps {
-  userGuild: GuildFromPlayerAddress | undefined;
+  userGuild: GuildInfo | undefined;
   isLoading: boolean;
   isCreatingGuild: boolean;
   viewGuildMembers: (guildEntityId: ID) => void;
@@ -113,9 +112,9 @@ const GuildActionButton = ({
       <Button
         className="text-ellipsis normal-case"
         variant="primary"
-        onClick={() => viewGuildMembers(userGuild.guildEntityId)}
+        onClick={() => viewGuildMembers(userGuild.entityId)}
       >
-        {userGuild.guildName}
+        {userGuild.name}
       </Button>
     );
   }
@@ -164,7 +163,7 @@ const GuildSearchOrCreate = ({
 };
 
 interface GuildListProps {
-  guilds: GuildAndName[];
+  guilds: GuildInfo[];
   viewGuildInvites: boolean;
   viewGuildMembers: (guildEntityId: ID) => void;
 }
@@ -197,7 +196,7 @@ const GuildListHeader = () => {
 };
 
 interface GuildRowProps {
-  guild: GuildAndName;
+  guild: GuildInfo;
   onClick: () => void;
 }
 
@@ -211,7 +210,7 @@ const GuildRow = ({ guild, onClick }: GuildRowProps) => {
     >
       <p>{guild.rank}</p>
       <p className="col-span-2 truncate">{guild.name}</p>
-      <p>{currencyIntlFormat(guild.points)}</p>
+      <p>{currencyIntlFormat(guild.points!)}</p>
       <p className="text-right">{guild.memberCount}</p>
       <p className="text-right text-sm">{guild.createdSince}</p>
       <div className="flex justify-end">{!guild.isPublic && <LockClosed className="fill-gold w-4" />}</div>

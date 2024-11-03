@@ -154,20 +154,20 @@ pub struct SettleRealmData {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct CreateGuild {
     #[key]
     guild_entity_id: ID,
+    guild_name: felt252,
     timestamp: u64
 }
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::event]
-#[dojo::model]
 pub struct JoinGuild {
     #[key]
     guild_entity_id: ID,
     #[key]
     address: ContractAddress,
+    guild_name: felt252,
     timestamp: u64
 }

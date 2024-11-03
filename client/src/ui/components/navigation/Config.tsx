@@ -19,6 +19,13 @@ export interface OSInterface {
   hintSection?: string;
 }
 
+export interface ExpandableOSInterface extends OSInterface {
+  expandedContent?: React.ReactNode;
+  expandedWidth?: string;
+  isExpanded?: boolean;
+  minHeight?: string;
+}
+
 export const worldStructures: OSWindows = "World Structures";
 export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";

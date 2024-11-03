@@ -20,8 +20,8 @@ mod guild_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
-    use eternum::models::event::{CreateGuild, JoinGuild};
     use eternum::constants::DEFAULT_NS;
+    use eternum::models::event::{CreateGuild, JoinGuild};
     use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
@@ -52,8 +52,9 @@ mod guild_systems {
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_uuid });
 
             let timestamp = starknet::get_block_timestamp();
-            emit!(world, CreateGuild { guild_entity_id: guild_uuid, timestamp },);
-            emit!(world, JoinGuild { guild_entity_id: guild_uuid, address: caller_address, timestamp });
+            world.emit_event(@CreateGuild { guild_entity_id: guild_uuid, guild_name, timestamp });
+            world
+                .emit_event(@JoinGuild { guild_entity_id: guild_uuid, guild_name, address: caller_address, timestamp });
 
             guild_uuid
         }
@@ -79,10 +80,14 @@ mod guild_systems {
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_entity_id });
             world.write_model(@guild);
 
-            emit!(
-                world,
-                JoinGuild { guild_entity_id, address: caller_address, timestamp: starknet::get_block_timestamp() }
-            );
+            let entity_name: EntityName = world.read_model(guild_entity_id);
+
+            world
+                .emit_event(
+                    @JoinGuild {
+                        guild_entity_id, address: caller_address, guild_name: entity_name.name, timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
 
         fn whitelist_player(

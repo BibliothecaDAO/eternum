@@ -5,7 +5,7 @@ import { useGetHyperstructuresWithContributionsFromPlayer } from "@/hooks/helper
 import { useGetPlayerEpochs } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { social } from "@/ui/components/navigation/Config";
-import { OSWindow } from "@/ui/components/navigation/OSWindow";
+import { ExpandableOSWindow } from "@/ui/components/navigation/OSWindow";
 import { GuildMembers } from "@/ui/components/worldmap/guilds/GuildMembers";
 import { Guilds } from "@/ui/components/worldmap/guilds/Guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/PlayersPanel";
@@ -68,14 +68,13 @@ export const Social = () => {
   );
 
   return (
-    <OSWindow
+    <ExpandableOSWindow
       width="400px"
-      expandedWidth={"800px"}
+      expandedWidth="800px"
       onClick={() => togglePopup(social)}
       show={isOpen}
       title={social}
       hintSection={"guilds"}
-      isExpandable={true}
       expandedContent={tabs[selectedTab].expandedContent}
       isExpanded={isExpanded}
     >
@@ -102,7 +101,7 @@ export const Social = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-    </OSWindow>
+    </ExpandableOSWindow>
   );
 };
 

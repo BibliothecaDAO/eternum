@@ -37,40 +37,52 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
     const playersByRank = LeaderboardManager.instance().getPlayersByRank(useUIStore.getState().nextBlockTimestamp!);
 
     const players = getPlayers();
-    const playersWithStructures = players.map((player) => {
-      const index = playersByRank.findIndex(([address, _]) => BigInt(address) === player.address);
+    const playersWithStructures = players
+      .map((player) => {
+        const rankIndex = playersByRank.findIndex(([address, _]) => BigInt(address) === player.address);
 
-      const structuresEntityIds = runQuery([
-        Has(Structure),
-        HasValue(Owner, { address: ContractAddress(player.address) }),
-      ]);
-      const structures = Array.from(structuresEntityIds).map((entityId) => {
-        const structure = getComponentValue(Structure, entityId);
-        if (!structure) return undefined;
+        const structuresEntityIds = runQuery([
+          Has(Structure),
+          HasValue(Owner, { address: ContractAddress(player.address) }),
+        ]);
+        const structures = Array.from(structuresEntityIds).map((entityId) => {
+          const structure = getComponentValue(Structure, entityId);
+          if (!structure) return undefined;
 
-        const structureName = getEntityName(structure.entity_id);
+          const structureName = getEntityName(structure.entity_id);
+          return {
+            structureName,
+            structure,
+          };
+        });
+
+        let isInvited = false;
+        if (userGuild) {
+          isInvited =
+            getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
+              ?.is_whitelisted ?? false;
+        }
         return {
-          structureName,
-          structure,
+          name: player.addressName,
+          address: player.address,
+          structures,
+          isUser: player.address === ContractAddress(account.address),
+          rank: "#" + (rankIndex != -1 ? String(rankIndex + 1) : "NA"),
+          points: rankIndex != -1 ? playersByRank[rankIndex][1] : 0,
+          isInvited,
         };
+      })
+      .sort((a, b) => {
+        const rankA = parseInt(a!.rank.substring(1)) || Infinity;
+        const rankB = parseInt(b!.rank.substring(1)) || Infinity;
+        return rankA - rankB;
+      })
+      .map((player, index) => {
+        if (player.rank === "#NA") {
+          player.rank = "#" + (index + 1);
+        }
+        return player;
       });
-
-      let isInvited = false;
-      if (userGuild) {
-        isInvited =
-          getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.guildEntityId)]))
-            ?.is_whitelisted ?? false;
-      }
-      return {
-        name: player.addressName,
-        address: player.address,
-        structures,
-        isUser: player.address === ContractAddress(account.address),
-        rank: "#" + (index != -1 ? String(index + 1) : "NA"),
-        points: index != -1 ? playersByRank[index][1] : 0,
-        isInvited,
-      };
-    });
     return playersWithStructures;
   }, [getPlayers, isLoading]);
 
@@ -89,7 +101,7 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
     setIsLoading(true);
     whitelist_player({
       player_address_to_whitelist: address,
-      guild_entity_id: userGuild?.guildEntityId!,
+      guild_entity_id: userGuild?.entityId!,
       signer: account,
     }).finally(() => setIsLoading(false));
   };
@@ -98,7 +110,7 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
     setIsLoading(true);
     remove_player_from_whitelist({
       player_address_to_remove: address,
-      guild_entity_id: userGuild?.guildEntityId!,
+      guild_entity_id: userGuild?.entityId!,
       signer: account,
     }).finally(() => setIsLoading(false));
   };

@@ -2,11 +2,10 @@ import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
-import { GuildMemberAndName, GuildWhitelistAndName } from "@/types/guild";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { ContractAddress, GuildMemberInfo, GuildWhitelistInfo, ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useCallback, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -33,12 +32,12 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
     account: { account },
   } = useDojo();
 
-  const { useGuildMembers, getGuildFromPlayerAddress, useGuildWhitelist, useAddressWhitelist, getGuildFromEntityId } =
+  const { useGuildMembers, getGuildFromPlayerAddress, useGuildWhitelist, usePlayerWhitelist, getGuildFromEntityId } =
     useGuilds();
 
   const { guildMembers } = useGuildMembers(selectedGuildEntityId);
   const invitedPlayers = useGuildWhitelist(selectedGuildEntityId);
-  const userWhitelist = useAddressWhitelist(ContractAddress(account.address));
+  const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
   const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address));
 
@@ -47,7 +46,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
   const [isLoading, setIsLoading] = useState(false);
   const [viewGuildInvites, setViewGuildInvites] = useState(false);
 
-  const userIsGuildMaster = userGuild?.isOwner ? userGuild.guildEntityId === selectedGuildEntityId : false;
+  const userIsGuildMaster = userGuild?.isOwner ? userGuild.entityId === selectedGuildEntityId : false;
   const userIsInvited = userWhitelist.find((list) => list.guildEntityId === selectedGuildEntityId);
 
   const removeGuildMember = useCallback((address: ContractAddress) => {
@@ -159,7 +158,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
         />
       )}
 
-      {userGuild?.guildEntityId === selectedGuildEntityId && (
+      {userGuild?.entityId === selectedGuildEntityId && (
         <Button
           className="w-full my-4"
           isLoading={isLoading}
@@ -184,7 +183,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
 };
 
 interface GuildMemberListProps {
-  guildMembers: GuildMemberAndName[];
+  guildMembers: GuildMemberInfo[];
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   userIsGuildMaster: boolean;
   removeGuildMember: (playerAddress: ContractAddress) => void;
@@ -230,7 +229,7 @@ const GuildMemberListHeader = () => {
 };
 
 interface GuildMemberRowProps {
-  guildMember: GuildMemberAndName;
+  guildMember: GuildMemberInfo;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   userIsGuildMaster: boolean;
   removeGuildMember: (playerAddress: ContractAddress) => void;
@@ -270,7 +269,7 @@ const GuildInvitesList = ({
   viewPlayerInfo,
   removePlayerFromWhitelist,
 }: {
-  invitedPlayers: GuildWhitelistAndName[];
+  invitedPlayers: GuildWhitelistInfo[];
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
 }) => {
@@ -293,7 +292,7 @@ const GuildInvitesList = ({
 };
 
 interface InviteRowProps {
-  player: GuildWhitelistAndName;
+  player: GuildWhitelistInfo;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
 }
@@ -304,18 +303,18 @@ const InviteRow = ({ player, viewPlayerInfo, removePlayerFromWhitelist }: Invite
       <div
         className={clsx("col-span-4 grid grid-cols-4 gap-1 text-md hover:opacity-70 hover:border p-1 rounded-xl", {})}
         onClick={() => {
-          viewPlayerInfo(ContractAddress(player.address));
+          viewPlayerInfo(ContractAddress(player.address!));
         }}
       >
         <p>{player.rank}</p>
         <p className="col-span-2 flex flex-row">
           <span className="truncate">{player.name}</span>
         </p>
-        <p className="text-right">{currencyIntlFormat(player.points)}</p>
+        <p className="text-right">{currencyIntlFormat(player.points!)}</p>
       </div>
 
       <Trash
-        onClick={() => removePlayerFromWhitelist(player.address)}
+        onClick={() => removePlayerFromWhitelist(player.address!)}
         className="m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
       />
     </div>
