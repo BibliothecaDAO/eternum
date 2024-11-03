@@ -1,4 +1,3 @@
-import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
@@ -18,7 +17,6 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
-import { useAccount, useConnect } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -43,12 +41,6 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const StepOne = ({ onNext }: { onNext: () => void }) => {
-  const { connect, connectors } = useConnect();
-  const { isConnected } = useAccount();
-  const connectWallet = async () => {
-    connect({ connector: connectors[0] });
-  };
-
   return (
     <StepContainer>
       <div className="w-full text-center pt-6">
@@ -57,17 +49,10 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
         </div>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
-        {!isConnected && (
-          <Button className="px-4 text-[#ffc52a] border-2 border-[#ffc52a]" variant={"default"} onClick={connectWallet}>
-            <CartridgeSmall className="w-6 mr-2 fill-current" /> Controller
-          </Button>
-        )}
-        {isConnected && (
-          <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-            Choose your Leader
-            <ArrowRight className="w-2 ml-2 fill-current" />
-          </Button>
-        )}
+        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          Choose your Leader
+          <ArrowRight className="w-2 ml-2 fill-current" />
+        </Button>
       </div>
     </StepContainer>
   );

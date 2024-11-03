@@ -1,6 +1,9 @@
+import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
+import Button from "@/ui/elements/Button";
+import { LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
-import { useAccount } from "@starknet-react/core";
+import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
@@ -120,6 +123,12 @@ const DojoContextProvider = ({
     burnerManager: value.network.burnerManager,
   });
 
+  const { connect, connectors } = useConnect();
+  const { isConnected, isConnecting } = useAccount();
+  const connectWallet = async () => {
+    connect({ connector: connectors[0] });
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (controllerAccount) {
@@ -132,13 +141,43 @@ const DojoContextProvider = ({
     return () => clearInterval(interval);
   }, [controllerAccount]);
 
-  // if (!controllerAccount) {
-  //   return (
-  //     <div className="h-screen w-screen">
-  //       <LoadingOroborus loading={true} />
-  //     </div>
-  //   );
-  // }
+  if (isConnecting || !isConnected) {
+    return (
+      // <div className="relative h-screen w-screen">
+      //   <LoadingOroborus loading={true} />
+      // </div>
+      <LoadingScreen />
+    );
+  }
+
+  // Conditionally render content based on controllerAccount
+  if (!controllerAccount) {
+    return (
+      <div className="relative h-screen w-screen pointer-events-auto">
+        <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
+        <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
+          <div className="self-center bg-brown/90 rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient  ">
+            <div className="w-full text-center pt-6">
+              <div className="mx-auto flex mb-8">
+                <img src="/images/eternum-logo.svg" className="w-72 mx-auto" alt="Eternum Logo" />
+              </div>
+            </div>
+            <div className="flex space-x-2 mt-8 justify-center">
+              {!isConnected && (
+                <Button
+                  className="px-4 text-[#ffc52a] border-2 border-[#ffc52a]"
+                  variant={"default"}
+                  onClick={connectWallet}
+                >
+                  <CartridgeSmall className="w-6 mr-2 fill-current" /> Login
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DojoContext.Provider
