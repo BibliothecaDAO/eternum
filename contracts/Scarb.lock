@@ -56,7 +56,7 @@ dependencies = [
 [[package]]
 name = "bushido_trophy"
 version = "0.0.0"
-source = "git+https://github.com/cartridge-gg/bushido?rev=fb0ff09#fb0ff090e70baa0c02d2a8678265b9b2b1ec1957"
+source = "git+https://github.com/cartridge-gg/bushido?rev=a5e0651#a5e0651808eca3adfab9065f34c258b1d9abda60"
 dependencies = [
  "dojo",
 ]

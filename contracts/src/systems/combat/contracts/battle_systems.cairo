@@ -295,7 +295,7 @@ trait IBattlePillageContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
-    use bushido_trophy::components::achievable::AchievableComponent;
+    use bushido_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -350,28 +350,6 @@ mod battle_systems {
     use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use super::{IBattleContract, InternalBattleImpl};
-
-    // Components
-
-    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
-    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
-
-    // Storage
-
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        achievable: AchievableComponent::Storage,
-    }
-
-    // Events
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        AchievableEvent: AchievableComponent::Event,
-    }
 
 
     #[abi(embed_v0)]
@@ -781,17 +759,20 @@ mod battle_systems {
                 StructureCategory::Realm => {
                     let player_id: felt252 = claimer.into();
                     let task_id: felt252 = Task::Conqueror.identifier();
-                    self.achievable.update(world, player_id, task_id, count: 1,);
+                    let mut store = StoreTrait::new(world);
+                    store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
                 },
                 StructureCategory::Bank => {
                     let player_id: felt252 = claimer.into();
                     let task_id: felt252 = Task::Ruler.identifier();
-                    self.achievable.update(world, player_id, task_id, count: 1,);
+                    let mut store = StoreTrait::new(world);
+                    store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
                 },
                 StructureCategory::FragmentMine => {
                     let player_id: felt252 = claimer.into();
                     let task_id: felt252 = Task::Claimer.identifier();
-                    self.achievable.update(world, player_id, task_id, count: 1,);
+                    let mut store = StoreTrait::new(world);
+                    store.progress(player_id, task_id, 1, starknet::get_block_timestamp());
                 },
                 _ => {},
             }
@@ -1208,7 +1189,7 @@ pub impl InternalBattleImpl of InternalBattleTrait {
             let task_id: felt252 = Task::Battlelord.identifier();
             let time = starknet::get_block_timestamp();
             let mut store = StoreTrait::new(world);
-            store.update(player_id, task_id, 1, time);
+            store.progress(player_id, task_id, 1, time);
         }
 
         // make caller army mobile again

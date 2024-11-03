@@ -24,7 +24,7 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 mod hyperstructure_systems {
-    use bushido_trophy::components::achievable::AchievableComponent;
+    use bushido_trophy::store::{Store, StoreTrait};
     use core::array::ArrayIndex;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -55,28 +55,6 @@ mod hyperstructure_systems {
     use starknet::{ContractAddress, contract_address_const};
 
     use super::calculate_total_contributable_amount;
-
-    // Components
-
-    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
-    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
-
-    // Storage
-
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        achievable: AchievableComponent::Storage,
-    }
-
-    // Events
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        AchievableEvent: AchievableComponent::Event,
-    }
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: true)]
@@ -196,7 +174,8 @@ mod hyperstructure_systems {
             // [Achievement] Hyperstructure Creation
             let player_id: felt252 = creator_owner.address.into();
             let task_id: felt252 = Task::Builder.identifier();
-            self.achievable.update(world, player_id, task_id, count: 1,);
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: current_time,);
 
             new_uuid
         }
@@ -261,7 +240,8 @@ mod hyperstructure_systems {
             // [Achievement] Hyperstructure Contribution
             let player_id: felt252 = contributor_owner.address.into();
             let task_id: felt252 = Task::Opportunist.identifier();
-            self.achievable.update(world, player_id, task_id, count: 1,);
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: timestamp,);
         }
 
         fn set_co_owners(
@@ -368,7 +348,8 @@ mod hyperstructure_systems {
             // [Achievement] Win the game
             let player_id: felt252 = winner_address.into();
             let task_id: felt252 = Task::Warlord.identifier();
-            self.achievable.update(world, player_id, task_id, count: 1,);
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
         }
     }
 

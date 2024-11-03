@@ -68,7 +68,7 @@ mod donkey_systems {
                 let task_id = Task::Breeder.identifier();
                 // Raw version of emitting trophy progress when ContractState is not available
                 let mut store = StoreTrait::new(world);
-                store.update(player_id, task_id, count, time);
+                store.progress(player_id, task_id, count, time);
             }
         }
 

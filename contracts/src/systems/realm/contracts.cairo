@@ -24,7 +24,7 @@ trait IRealmSystems<T> {
 
 #[dojo::contract]
 mod realm_systems {
-    use bushido_trophy::components::achievable::AchievableComponent;
+    use bushido_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -63,29 +63,6 @@ mod realm_systems {
 
     use starknet::ContractAddress;
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
-
-    // Components
-
-    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
-    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
-
-    // Storage
-
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        achievable: AchievableComponent::Storage,
-    }
-
-    // Events
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        AchievableEvent: AchievableComponent::Event,
-    }
-
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
@@ -204,7 +181,8 @@ mod realm_systems {
             if realm.level == max_level {
                 let player_id: felt252 = starknet::get_caller_address().into();
                 let task_id: felt252 = Task::Maximalist.identifier();
-                self.achievable.update(world, player_id, task_id, count: 1,);
+                let store = StoreTrait::new(world);
+                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
             }
         }
 
@@ -284,7 +262,8 @@ mod realm_systems {
             if (next_quest_reward_config.detached_resource_count == 0) {
                 let player_id: felt252 = starknet::get_caller_address().into();
                 let task_id: felt252 = Task::Squire.identifier();
-                self.achievable.update(world, player_id, task_id, count: 1,);
+                let store = StoreTrait::new(world);
+                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
             };
         }
     }

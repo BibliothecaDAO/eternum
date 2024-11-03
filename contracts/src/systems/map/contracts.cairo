@@ -7,7 +7,7 @@ trait IMapSystems<T> {
 
 #[dojo::contract]
 mod map_systems {
-    use bushido_trophy::components::achievable::AchievableComponent;
+    use bushido_trophy::store::{Store, StoreTrait};
     use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use core::traits::Into;
@@ -49,29 +49,6 @@ mod map_systems {
     use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
-
-    // Components
-
-    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
-    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
-
-    // Storage
-
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        achievable: AchievableComponent::Storage,
-    }
-
-    // Events
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        AchievableEvent: AchievableComponent::Event,
-    }
-
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: true)]
@@ -151,12 +128,14 @@ mod map_systems {
             // [Achievement] Explore a tile
             let player_id: felt252 = starknet::get_caller_address().into();
             let task_id: felt252 = Task::Explorer.identifier();
-            self.achievable.update(world, player_id: player_id, task_id: task_id, count: 1,);
+            let time = starknet::get_block_timestamp();
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: time,);
 
             // [Achievement] Discover a shards mine
             if is_shards_mine {
                 let task_id: felt252 = Task::Discoverer.identifier();
-                self.achievable.update(world, player_id: player_id, task_id: task_id, count: 1,);
+                store.progress(player_id, task_id, count: 1, time: time,);
             }
         }
     }
