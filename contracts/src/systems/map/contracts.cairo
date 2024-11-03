@@ -7,6 +7,7 @@ trait IMapSystems<T> {
 
 #[dojo::contract]
 mod map_systems {
+    use bushido_trophy::store::{Store, StoreTrait};
     use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use core::traits::Into;
@@ -45,9 +46,9 @@ mod map_systems {
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
     use eternum::utils::map::biomes::{Biome, get_biome};
     use eternum::utils::random;
+    use eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
-
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: true)]
@@ -119,10 +120,23 @@ mod map_systems {
             let current_coord: Coord = current_position.into();
             let next_coord = current_coord.neighbor(direction);
             InternalMapSystemsImpl::explore(ref world, unit_id, next_coord, exploration_reward);
-            InternalMapSystemsImpl::discover_shards_mine(ref world, unit_entity_owner, next_coord);
+            let is_shards_mine = InternalMapSystemsImpl::discover_shards_mine(ref world, unit_entity_owner, next_coord);
 
             // travel to explored tile location
             InternalTravelSystemsImpl::travel_hex(ref world, unit_id, current_coord, array![direction].span());
+
+            // [Achievement] Explore a tile
+            let player_id: felt252 = starknet::get_caller_address().into();
+            let task_id: felt252 = Task::Explorer.identifier();
+            let time = starknet::get_block_timestamp();
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: time,);
+
+            // [Achievement] Discover a shards mine
+            if is_shards_mine {
+                let task_id: felt252 = Task::Discoverer.identifier();
+                store.progress(player_id, task_id, count: 1, time: time,);
+            }
         }
     }
 

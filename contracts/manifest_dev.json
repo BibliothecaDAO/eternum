@@ -2275,6 +2275,13 @@
           ]
         },
         {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "view"
+        },
+        {
           "type": "impl",
           "name": "WorldConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IWorldConfig"
@@ -3438,13 +3445,6 @@
           ]
         },
         {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
           "type": "impl",
           "name": "WorldProviderImpl",
           "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
@@ -3536,6 +3536,12 @@
         },
         {
           "type": "event",
+          "name": "bushido_trophy::components::achievable::AchievableComponent::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
           "name": "eternum::systems::config::contracts::config_systems::Event",
           "kind": "enum",
           "variants": [
@@ -3548,6 +3554,11 @@
               "name": "WorldProviderEvent",
               "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
               "kind": "nested"
+            },
+            {
+              "name": "AchievableEvent",
+              "type": "bushido_trophy::components::achievable::AchievableComponent::Event",
+              "kind": "flat"
             }
           ]
         }
@@ -7862,11 +7873,6 @@
     },
     {
       "members": [],
-      "class_hash": "0x3acbb5abe8f3426af9921e2c8d337a381b77bdf67a668dc953d86f6f4223a6f",
-      "tag": "Progress"
-    },
-    {
-      "members": [],
       "class_hash": "0x1c6f3295eff92af340bf8858d8333922c0bf6da8953561ccc6410a215552489",
       "tag": "Protectee"
     },
@@ -8144,6 +8150,11 @@
     },
     {
       "members": [],
+      "class_hash": "0x6acbb3246873ba410c95ac5c1fb6d10f47827c2d4c70e8ed8516880e3e764de",
+      "tag": "Progress"
+    },
+    {
+      "members": [],
       "class_hash": "0x7980a3e5b0a59197ac955bfa21fdf34d6b1426157bd6c955785f9074f798251",
       "tag": "SettleRealmData"
     },
@@ -8161,6 +8172,11 @@
       "members": [],
       "class_hash": "0x7f074d62eba8b190d51875053a0d609ec991924c5382d94b644430335a32357",
       "tag": "Travel"
+    },
+    {
+      "members": [],
+      "class_hash": "0x1f913de2cc23134c618a5bde34a22f09f7e3ccb69900b5cf843c39602c902b1",
+      "tag": "Trophy"
     }
   ]
 }

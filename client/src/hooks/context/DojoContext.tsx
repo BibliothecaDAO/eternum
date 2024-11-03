@@ -141,7 +141,7 @@ const DojoContextProvider = ({
     return () => clearInterval(interval);
   }, [controllerAccount]);
 
-  if (isConnecting || !isConnected) {
+  if (isConnecting) {
     return (
       // <div className="relative h-screen w-screen">
       //   <LoadingOroborus loading={true} />

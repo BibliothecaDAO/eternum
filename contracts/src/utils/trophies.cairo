@@ -1,0 +1,12 @@
+mod battlelord;
+mod breeder;
+mod conqueror;
+mod explorer;
+mod index;
+mod interface;
+mod maximalist;
+mod opportunist;
+mod ruler;
+mod squire;
+mod strategist;
+mod warlord;

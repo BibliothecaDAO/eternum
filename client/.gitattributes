@@ -149,7 +149,7 @@ Procfile          text
 *.wbmp            binary
 *.webp            binary
 *.avif            binary
-
+*.hdr             binary
 
 # Audio
 *.kar             binary

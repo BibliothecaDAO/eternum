@@ -1,6 +1,7 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
+import { StructureType } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
@@ -18,11 +19,11 @@ const MINIMAP_CONFIG = {
     MY_ARMY: "#00FF00",
     CAMERA: "#FFFFFF",
     STRUCTURES: {
-      Realm: "#0000ff",
-      Hyperstructure: "#FFFFFF",
-      Bank: "#FFFF00",
-      FragmentMine: "#00FFFF",
-      Settlement: "#FFA500",
+      [StructureType.Realm]: "#0000ff",
+      [StructureType.Hyperstructure]: "#FFFFFF",
+      [StructureType.Bank]: "#FFFF00",
+      [StructureType.FragmentMine]: "#00FFFF",
+      [StructureType.Settlement]: "#FFA500",
     },
   },
   SIZES: {

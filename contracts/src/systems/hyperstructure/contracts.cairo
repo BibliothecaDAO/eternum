@@ -24,6 +24,7 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 mod hyperstructure_systems {
+    use bushido_trophy::store::{Store, StoreTrait};
     use core::array::ArrayIndex;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -32,6 +33,7 @@ mod hyperstructure_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::constants::DEFAULT_NS;
     use eternum::models::season::SeasonImpl;
+    use eternum::utils::tasks::index::{Task, TaskTrait};
     use eternum::{
         alias::ID,
         constants::{
@@ -169,6 +171,12 @@ mod hyperstructure_systems {
                     },
                 );
 
+            // [Achievement] Hyperstructure Creation
+            let player_id: felt252 = creator_owner.address.into();
+            let task_id: felt252 = Task::Builder.identifier();
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: current_time,);
+
             new_uuid
         }
 
@@ -228,6 +236,12 @@ mod hyperstructure_systems {
                         }
                     );
             }
+
+            // [Achievement] Hyperstructure Contribution
+            let player_id: felt252 = contributor_owner.address.into();
+            let task_id: felt252 = Task::Opportunist.identifier();
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: timestamp,);
         }
 
         fn set_co_owners(
@@ -328,12 +342,14 @@ mod hyperstructure_systems {
 
             SeasonImpl::end_season(ref world);
 
-            world
-                .emit_event(
-                    @GameEnded {
-                        winner_address: starknet::get_caller_address(), timestamp: starknet::get_block_timestamp()
-                    }
-                );
+            let winner_address = starknet::get_caller_address();
+            world.emit_event(@GameEnded { winner_address, timestamp: starknet::get_block_timestamp() });
+
+            // [Achievement] Win the game
+            let player_id: felt252 = winner_address.into();
+            let task_id: felt252 = Task::Warlord.identifier();
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
         }
     }
 
