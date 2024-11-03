@@ -220,6 +220,7 @@ mod resource_bridge_system_tests {
                 );
             world.write_model_test(@Owner { entity_id: bank_id.into(), address: BANK_OWNER_ADDRESS() });
             world.write_model_test(@EntityOwner { entity_id: bank_id.into(), entity_owner_id: bank_id.into() });
+            world.write_model_test(@Position { entity_id: bank_id.into(), x: BANK_COORD().x, y: BANK_COORD().y });
         }
 
         fn make_realm(ref world: WorldStorage, realm_id: ID) {
@@ -247,7 +248,7 @@ mod resource_bridge_system_tests {
 
 
     #[test]
-    fn test_deposit_success() {
+    fn resource_bridge_test_deposit_success() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -335,7 +336,7 @@ mod resource_bridge_system_tests {
 
 
     #[test]
-    fn test_deposit_success_bank_owner_no_fees() {
+    fn resource_bridge_test_deposit_success_bank_owner_no_fees() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -423,7 +424,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("ERC20: Insufficient balance", 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED'))]
-    fn test_deposit_insufficient_balance() {
+    fn resource_bridge_test_deposit_insufficient_balance() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -454,7 +455,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("ERC20: Insufficient allowance", 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED'))]
-    fn test_deposit_insufficient_allowance() {
+    fn resource_bridge_test_deposit_insufficient_allowance() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -481,7 +482,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("Bridge: deposit amount too small to take fees", 'ENTRYPOINT_FAILED'))]
-    fn test_deposit_amount_too_small() {
+    fn resource_bridge_test_deposit_amount_too_small() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -506,7 +507,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("through bank is not a bank", 'ENTRYPOINT_FAILED'))]
-    fn test_deposit_not_bank() {
+    fn resource_bridge_test_deposit_not_bank() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let not_bank_id: ID = 1;
         let realm_id: ID = REALM_ID();
@@ -535,7 +536,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("recipient structure is not a realm", 'ENTRYPOINT_FAILED'))]
-    fn test_deposit_recipient_not_realm() {
+    fn resource_bridge_test_deposit_recipient_not_realm() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let not_realm_id: ID = 1234;
@@ -572,7 +573,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("resource bridge deposit is paused", 'ENTRYPOINT_FAILED'))]
-    fn test_deposit_paused() {
+    fn resource_bridge_test_deposit_paused() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         world
             .write_model_test(
@@ -603,7 +604,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("resource id not whitelisted", 'ENTRYPOINT_FAILED'))]
-    fn test_deposit_token_not_whitelisted() {
+    fn resource_bridge_test_deposit_token_not_whitelisted() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -630,7 +631,7 @@ mod resource_bridge_system_tests {
 
 
     #[test]
-    fn test_start_withdraw_success() {
+    fn resource_bridge_test_start_withdraw_success() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -680,7 +681,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-    fn test_start_withdraw_not_owner() {
+    fn resource_bridge_test_start_withdraw_not_owner() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -698,7 +699,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("through bank is not a bank", 'ENTRYPOINT_FAILED'))]
-    fn test_start_withdraw_invalid_bank() {
+    fn resource_bridge_test_start_withdraw_invalid_bank() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let not_bank_id: ID = 1234;
         let realm_id: ID = REALM_ID();
@@ -721,7 +722,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("from structure is not a realm", 'ENTRYPOINT_FAILED'))]
-    fn test_start_withdraw_invalid_realm() {
+    fn resource_bridge_test_start_withdraw_invalid_realm() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let not_realm_id: ID = 1234;
@@ -746,7 +747,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("resource bridge withdrawal is paused", 'ENTRYPOINT_FAILED'))]
-    fn test_start_withdraw_paused() {
+    fn resource_bridge_test_start_withdraw_paused() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -770,7 +771,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("resource id not whitelisted", 'ENTRYPOINT_FAILED'))]
-    fn test_start_withdraw_non_whitelisted_token() {
+    fn resource_bridge_test_start_withdraw_non_whitelisted_token() {
         let (mut world, resource_bridge_systems, _) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -793,7 +794,7 @@ mod resource_bridge_system_tests {
             'ENTRYPOINT_FAILED'
         )
     )]
-    fn test_start_withdraw_insufficient_balance() {
+    fn resource_bridge_test_start_withdraw_insufficient_balance() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -820,7 +821,7 @@ mod resource_bridge_system_tests {
 
 
     #[test]
-    fn test_finish_withdraw_success() {
+    fn resource_bridge_test_finish_withdraw_success() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -894,7 +895,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
-    fn test_finish_withdraw_not_donkey_owner() {
+    fn resource_bridge_test_finish_withdraw_not_donkey_owner() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -925,7 +926,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("through bank is not a bank", 'ENTRYPOINT_FAILED'))]
-    fn test_finish_withdraw_invalid_bank() {
+    fn resource_bridge_test_finish_withdraw_invalid_bank() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let not_bank_id: ID = 1234;
         let realm_id: ID = REALM_ID();
@@ -965,7 +966,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("from entity and bank are not at the same location", 'ENTRYPOINT_FAILED'))]
-    fn test_finish_withdraw_donkey_not_at_bank() {
+    fn resource_bridge_test_finish_withdraw_donkey_not_at_bank() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -996,7 +997,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("resource bridge withdrawal is paused", 'ENTRYPOINT_FAILED'))]
-    fn test_finish_withdraw_paused() {
+    fn resource_bridge_test_finish_withdraw_paused() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -1033,7 +1034,7 @@ mod resource_bridge_system_tests {
 
     #[test]
     #[should_panic(expected: ("resource id not whitelisted", 'ENTRYPOINT_FAILED'))]
-    fn test_finish_withdraw_non_whitelisted_token() {
+    fn resource_bridge_test_finish_withdraw_non_whitelisted_token() {
         let (mut world, resource_bridge_systems, _) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();
@@ -1065,7 +1066,7 @@ mod resource_bridge_system_tests {
 
 
     #[test]
-    fn test_finish_withdraw_bank_owner_no_fees() {
+    fn resource_bridge_test_finish_withdraw_bank_owner_no_fees() {
         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
         let bank_id: ID = BANK_ID();
         let realm_id: ID = REALM_ID();

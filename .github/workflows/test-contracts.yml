@@ -39,7 +39,7 @@ jobs:
             hyperstructure_test,
             bank_test,
             map_test,
-            resources_test,
+            resource_bridge_test,
             trade_test,
             realm_test,
             guild_test,
