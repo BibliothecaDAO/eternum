@@ -28,7 +28,7 @@ export const Chat = () => {
   } = useDojo();
 
   const { getGuildFromPlayerAddress } = useGuilds();
-  const guildName = getGuildFromPlayerAddress(ContractAddress(account.address))?.guildName;
+  const guildName = getGuildFromPlayerAddress(ContractAddress(account.address))?.name;
   const guildKey = guildName ? shortString.encodeShortString(guildName) : undefined;
 
   const bottomChatRef = useRef<HTMLDivElement>(null);
