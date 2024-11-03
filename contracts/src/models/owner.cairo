@@ -1,4 +1,5 @@
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use eternum::alias::ID;
 use eternum::constants::ErrorMessages;
 use eternum::models::realm::Realm;
@@ -42,41 +43,42 @@ impl OwnerCustomImpl of OwnerCustomTrait {
 
 #[generate_trait]
 impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
-    fn assert_caller_owner(self: EntityOwner, world: IWorldDispatcher) {
-        let owner: Owner = get!(world, self.entity_owner_id, Owner);
+    fn assert_caller_owner(self: EntityOwner, world: WorldStorage) {
+        let owner: Owner = world.read_model(self.entity_owner_id);
         owner.assert_caller_owner();
     }
 
-    fn owner_address(self: EntityOwner, world: IWorldDispatcher) -> ContractAddress {
-        return get!(world, self.entity_owner_id, Owner).address;
+    fn owner_address(self: EntityOwner, world: WorldStorage) -> ContractAddress {
+        let owner: Owner = world.read_model(self.entity_owner_id);
+        owner.address
     }
 
-    fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> ID {
-        get!(world, (self.entity_owner_id), Realm).realm_id
+    fn get_realm_id(self: EntityOwner, world: WorldStorage) -> ID {
+        let realm: Realm = world.read_model(self.entity_owner_id);
+        realm.realm_id
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
     use eternum::alias::ID;
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
-    use eternum::models::owner::{owner, entity_owner};
     use eternum::models::realm::Realm;
-    use eternum::models::realm::realm;
-    use eternum::utils::testing::world::spawn_eternum_custom;
+    use eternum::utils::testing::world::spawn_eternum;
     use starknet::contract_address_const;
 
     #[test]
     fn owner_test_entity_owner_get_realm_id() {
-        let world = spawn_eternum_custom(
-            array![array![realm::TEST_CLASS_HASH, entity_owner::TEST_CLASS_HASH]], array![].span()
-        );
+        let mut world = spawn_eternum();
 
-        set!(world, Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0 });
-        set!(world, EntityOwner { entity_id: 2, entity_owner_id: 1 });
+        world.write_model_test(@Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0 });
+        world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });
 
-        let entity_owner = get!(world, (2), EntityOwner);
+        let entity_owner: EntityOwner = world.read_model(2);
         let realm_id = entity_owner.get_realm_id(world);
 
         assert(realm_id == 3, 'wrong realm id');

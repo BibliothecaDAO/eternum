@@ -12,10 +12,10 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
 import Button from "@/ui/elements/Button";
-import ListSelect from "@/ui/elements/ListSelect";
+// import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
+import { formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
@@ -33,7 +33,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground  ">
+      <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-gradient  ">
         {children}
       </div>
     </motion.div>
@@ -45,9 +45,8 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
     <StepContainer>
       <div className="w-full text-center pt-6">
         <div className="mx-auto flex mb-8">
-          <img src="/images/eternum-logo.svg" className="w-48 mx-auto" alt="Eternum Logo" />
+          <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
         </div>
-        <h2 className="">It's time to build...</h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
         <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
@@ -96,6 +95,8 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     if (input.current && !addressIsMaster) {
       const inputNameValidAscii = toValidAscii(input.current);
       const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
+
+      console.log(account);
       await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(input.current);
       setLoading(false);
@@ -194,7 +195,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               </div>
             )}
           </div>
-          <div className="flex items-center mb-4">
+          {/* <div className="flex items-center mb-4">
             <ListSelect
               className="flex-grow mr-2"
               title="Active Account: "
@@ -215,7 +216,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
             <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
               {isDeploying ? "" : "Create New"}
             </Button>
-          </div>
+          </div> */}
         </div>
         <div className="flex items-center space-x-4 mt-2">
           <Cross

@@ -2,6 +2,7 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
@@ -10,7 +11,7 @@ import { multiplyByPrecision } from "@/ui/utils/utils";
 import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/ResourceWeight";
+import { TravelInfo } from "../resources/TravelInfo";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { SelectEntityFromList } from "./SelectEntityFromList";
 import { SelectResources } from "./SelectResources";
@@ -62,6 +63,7 @@ export const TransferBetweenEntities = ({
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
+  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.burnDonkey);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
 
@@ -106,6 +108,8 @@ export const TransferBetweenEntities = ({
           recipient_entity_id: selectedEntityIdTo?.entityId!,
           resources: resourcesList || [],
         });
+
+    playDonkeyScreaming();
 
     systemCall.finally(() => {
       setIsLoading(false);
@@ -259,7 +263,7 @@ export const TransferBetweenEntities = ({
           </div>
 
           <div className=" ">
-            <div className="p-10 bg-gold/10  h-auto border border-gold/40">
+            <div className="p-10 bg-gold/10  h-auto rounded-lg border border-gold/40">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
                   entityId={isOriginDonkeys ? selectedEntityIdFrom?.entityId! : selectedEntityIdTo?.entityId!}

@@ -64,10 +64,11 @@ export const SelectedArmy = () => {
   return (
     <div
       className={`
-        fixed bottom-0 left-1/2 transform -translate-x-1/2
+        fixed left-1/2 transform -translate-x-1/2
         bg-black/80 p-2 rounded-lg
         transition-all duration-200 ease-in-out
-        ${showTooltip ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}
+        origin-bottom scale-75 md:scale-100
+        ${showTooltip ? "bottom-0 opacity-100" : "translate-y-full opacity-0"}
       `}
     >
       {showTooltip && (

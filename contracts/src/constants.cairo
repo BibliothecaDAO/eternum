@@ -335,3 +335,12 @@ mod TravelTypes {
     const EXPLORE: u8 = 0;
     const TRAVEL: u8 = 1;
 }
+
+
+fn DEFAULT_NS() -> @ByteArray {
+    @"eternum"
+}
+
+fn DEFAULT_NS_STR() -> ByteArray {
+    "eternum"
+}

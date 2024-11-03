@@ -44,6 +44,8 @@ export const useFetchBlockchainData = () => {
       getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Default)]),
     );
 
+    console.log(tickConfigDefault);
+
     const fetchBlockchainTimestamp = async () => {
       const timestamp = Math.floor(Date.now() / 1000);
 

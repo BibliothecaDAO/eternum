@@ -1,5 +1,5 @@
-import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
-import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import React from "react";
 import { create } from "zustand";

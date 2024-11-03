@@ -1,9 +1,14 @@
+import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
+import Button from "@/ui/elements/Button";
+import { LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
-import { ReactNode, createContext, useContext, useMemo } from "react";
+import { useAccount, useConnect } from "@starknet-react/core";
+import { ReactNode, createContext, useContext, useEffect, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress } from "../../ui/utils/utils";
+import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
   create: () => void;
@@ -43,30 +48,52 @@ type DojoProviderProps = {
   value: SetupResult;
 };
 
-export const DojoProvider = ({ children, value }: DojoProviderProps) => {
-  const currentValue = useContext(DojoContext);
-  if (currentValue) throw new Error("DojoProvider can only be used once");
+const useMasterAccount = (rpcProvider: RpcProvider) => {
+  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
+  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+  return useMemo(() => new Account(rpcProvider, masterAddress, privateKey), [rpcProvider, masterAddress, privateKey]);
+};
 
-  const rpcProvider = useMemo(
+const useRpcProvider = () => {
+  return useMemo(
     () =>
       new RpcProvider({
         nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
       }),
     [],
   );
+};
 
-  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-  const accountClassHash = import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH;
-  const feeTokenAddress = import.meta.env.VITE_NETWORK_FEE_TOKEN;
-  const masterAccount = useMemo(
-    () => new Account(rpcProvider, masterAddress, privateKey),
-    [rpcProvider, masterAddress, privateKey],
-  );
+const useControllerAccount = () => {
+  const { account: controllerAccount, isConnected } = useAccount();
+  useEffect(() => {
+    if (controllerAccount) {
+      useAccountStore.getState().setAccount(controllerAccount);
+    }
+  }, [controllerAccount, isConnected]);
+  return controllerAccount;
+};
+
+export const DojoProvider = ({ children, value }: DojoProviderProps) => {
+  const currentValue = useContext(DojoContext);
+  if (currentValue) throw new Error("DojoProvider can only be used once");
+
+  const rpcProvider = useRpcProvider();
+  const masterAccount = useMasterAccount(rpcProvider);
+  const controllerAccount = useControllerAccount();
 
   return (
-    <BurnerProvider initOptions={{ masterAccount, accountClassHash, rpcProvider, feeTokenAddress }}>
-      <DojoContextProvider value={value}>{children}</DojoContextProvider>
+    <BurnerProvider
+      initOptions={{
+        masterAccount,
+        accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH,
+        rpcProvider,
+        feeTokenAddress: import.meta.env.VITE_NETWORK_FEE_TOKEN,
+      }}
+    >
+      <DojoContextProvider value={value} masterAccount={masterAccount} controllerAccount={controllerAccount!}>
+        {children}
+      </DojoContextProvider>
     </BurnerProvider>
   );
 };
@@ -83,29 +110,74 @@ export const useDojo = (): DojoResult => {
   };
 };
 
-const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
+const DojoContextProvider = ({
+  children,
+  value,
+  masterAccount,
+  controllerAccount,
+}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface | null }) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
-
-  const rpcProvider = useMemo(
-    () =>
-      new RpcProvider({
-        nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
-      }),
-    [],
-  );
-
-  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-
-  const masterAccount = useMemo(
-    () => new Account(rpcProvider, masterAddress, privateKey),
-    [rpcProvider, masterAddress, privateKey],
-  );
 
   const { create, list, get, account, select, isDeploying, clear } = useBurnerManager({
     burnerManager: value.network.burnerManager,
   });
+
+  const { connect, connectors } = useConnect();
+  const { isConnected, isConnecting } = useAccount();
+  const connectWallet = async () => {
+    connect({ connector: connectors[0] });
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (controllerAccount) {
+        console.log("logging controllerAccount", controllerAccount);
+        useAccountStore.getState().setAccount(controllerAccount);
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [controllerAccount]);
+
+  if (isConnecting || !isConnected) {
+    return (
+      // <div className="relative h-screen w-screen">
+      //   <LoadingOroborus loading={true} />
+      // </div>
+      <LoadingScreen />
+    );
+  }
+
+  // Conditionally render content based on controllerAccount
+  if (!controllerAccount) {
+    return (
+      <div className="relative h-screen w-screen pointer-events-auto">
+        <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
+        <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
+          <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient  ">
+            <div className="w-full text-center pt-6">
+              <div className="mx-auto flex mb-8">
+                <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
+              </div>
+            </div>
+            <div className="flex space-x-2 mt-8 justify-center">
+              {!isConnected && (
+                <Button
+                  className="px-4 text-[#ffc52a] border-2 border-[#ffc52a]"
+                  variant={"default"}
+                  onClick={connectWallet}
+                >
+                  <CartridgeSmall className="w-6 mr-2 fill-current" /> Login
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DojoContext.Provider
@@ -118,9 +190,9 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
           get,
           select,
           clear,
-          account: account || masterAccount,
+          account: controllerAccount || masterAccount,
           isDeploying,
-          accountDisplay: account ? displayAddress(account.address) : displayAddress(masterAddress),
+          accountDisplay: displayAddress(controllerAccount?.address || ""),
         },
       }}
     >

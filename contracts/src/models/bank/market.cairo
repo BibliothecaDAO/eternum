@@ -1,8 +1,9 @@
 // External imports
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use dojo::meta::introspect::{Struct, Member};
 
 // Dojo imports
-use dojo::model::introspect::{Struct, Ty, Introspect, Member};
+use dojo::meta::{Ty, Introspect};
 use eternum::alias::ID;
 
 // Starknet imports
@@ -15,8 +16,8 @@ impl IntrospectFixed of Introspect<Fixed> {
     }
 
     #[inline(always)]
-    fn layout() -> dojo::model::Layout {
-        dojo::model::Layout::Fixed(array![128, 1].span())
+    fn layout() -> dojo::meta::Layout {
+        dojo::meta::Layout::Fixed(array![128, 1].span())
     }
 
     #[inline(always)]
@@ -318,7 +319,7 @@ mod tests {
     #[test]
     #[should_panic(expected: ("Output amount exceeds reserve, amount: 10, reserve: 1",))]
     fn bank_test_market_not_enough_quantity() {
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 1,
@@ -330,7 +331,7 @@ mod tests {
 
     #[test]
     fn bank_test_market_buy_no_fee() {
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 170_000,
@@ -354,7 +355,7 @@ mod tests {
 
     #[test]
     fn bank_test_market_buy_with_lp_fee() {
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 170_000,
@@ -380,7 +381,7 @@ mod tests {
 
     #[test]
     fn bank_test_market_sell_no_fee() {
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 170_000,
@@ -404,7 +405,7 @@ mod tests {
 
     #[test]
     fn bank_test_market_sell_with_fee() {
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 170_000,
@@ -429,7 +430,7 @@ mod tests {
     #[test]
     fn bank_test_market_add_liquidity_no_initial() {
         // Without initial liquidity
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 0,
@@ -456,7 +457,7 @@ mod tests {
     #[test]
     fn bank_test_market_add_liquidity_optimal() {
         // With initial liquidity
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 1,
@@ -482,7 +483,7 @@ mod tests {
     #[test]
     fn bank_test_market_add_liquidity_not_optimal() {
         // With initial liquidity
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 1,
@@ -508,7 +509,7 @@ mod tests {
 
     #[test]
     fn bank_test_market_remove_liquidity() {
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 2,
@@ -543,7 +544,7 @@ mod tests {
     #[should_panic(expected: ('insufficient liquidity',))]
     fn bank_test_market_remove_liquidity_no_initial() {
         // Without initial liquidity
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 0,
@@ -561,7 +562,7 @@ mod tests {
     #[should_panic(expected: ('insufficient liquidity',))]
     fn bank_test_market_remove_liquidity_more_than_available() {
         // With initial liquidity
-        let market = Market {
+        let market: Market = Market {
             bank_entity_id: 1,
             resource_type: 1,
             lords_amount: 2,

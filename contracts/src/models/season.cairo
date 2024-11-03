@@ -1,4 +1,5 @@
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use eternum::{alias::ID, constants::WORLD_CONFIG_ID};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -11,14 +12,15 @@ pub struct Season {
 
 #[generate_trait]
 pub impl SeasonImpl of SeasonTrait {
-    fn end_season(world: IWorldDispatcher) {
-        let mut season: Season = get!(world, WORLD_CONFIG_ID, Season);
+    fn end_season(ref world: WorldStorage) {
+        // world.read_model(
+        let mut season: Season = world.read_model(WORLD_CONFIG_ID);
         season.is_over = true;
-        set!(world, (season));
+        world.write_model(@season);
     }
 
-    fn assert_season_is_not_over(world: IWorldDispatcher) {
-        let season = get!(world, WORLD_CONFIG_ID, Season);
+    fn assert_season_is_not_over(world: WorldStorage) {
+        let season: Season = world.read_model(WORLD_CONFIG_ID);
         assert!(season.is_over == false, "Season is over");
     }
 }

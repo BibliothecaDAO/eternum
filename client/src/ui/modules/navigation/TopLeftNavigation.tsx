@@ -9,6 +9,7 @@ import { Position } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { QuestId } from "@/ui/components/quest/questDetails";
+import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -41,21 +42,37 @@ const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: 
   const capacity = kgToGram(storehouseCapacity);
   return (
     <div className="text-xs text-gray-200 p-2 max-w-xs">
-      <p className="font-semibold">Max Storage Capacity</p>
-      <ul className="list-none my-1">
-        <li className="flex items-center">
-          <ResourceIcon resource="Lords" size="xs" className="mr-1" />
-          {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
-        </li>
-        <li className="flex items-center">
-          <ResourceIcon resource="Wheat" size="xs" className="mr-1" />
-          {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
-        </li>
-        <li className="flex items-center">
-          <ResourceIcon resource="Wood" size="xs" className="mr-1" />
-          {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
-        </li>
-      </ul>
+      <p className="font-semibold">Max Storage Capacity ({storehouseCapacity.toLocaleString()} kg)</p>
+      <div className="grid grid-cols-2 gap-x-4 my-1">
+        <ul className="list-none">
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
+          </li>
+        </ul>
+        <ul className="list-none">
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Knight)).toLocaleString()} Knights
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Crossbowman)).toLocaleString()} Crossbowmen
+          </li>
+          <li className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="xs" className="mr-1" />
+            {(capacity / configManager.getResourceWeight(ResourcesIds.Paladin)).toLocaleString()} Paladins
+          </li>
+        </ul>
+      </div>
       <p className="italic text-xs">Build Storehouses to increase capacity.</p>
     </div>
   );
@@ -134,11 +151,11 @@ export const TopLeftNavigation = () => {
       getComponentValue(
         setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
-      )?.value || 0;
+      )?.value || 1;
 
     const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
 
-    return quantity * gramToKg(storehouseCapacity) + gramToKg(storehouseCapacity);
+    return { capacityKg: quantity * gramToKg(storehouseCapacity), quantity };
   }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
@@ -148,9 +165,9 @@ export const TopLeftNavigation = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <div className="pointer-events-auto mx-2 w-screen flex justify-between pl-2">
+    <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
+        <div className="flex max-w-[150px] md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -162,7 +179,7 @@ export const TopLeftNavigation = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-brown/90">
+                <SelectContent className="bg-brown/80">
                   {structures.map((structure, index) => (
                     <SelectItem
                       className="flex justify-between"
@@ -186,76 +203,86 @@ export const TopLeftNavigation = () => {
               </div>
             )}
           </div>
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
-            style={{ width: `${progress}%` }}
-          ></div>
         </div>
-        <div className=" bg-brown/90 bg-hex-bg   rounded-b-xl   flex gap-1">
+        <div className=" bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
                 setTooltip({
                   position: "bottom",
-                  content: <StorehouseTooltipContent storehouseCapacity={storehouses} />,
+                  content: <StorehouseTooltipContent storehouseCapacity={storehouses.capacityKg} />,
                 });
               }}
               onMouseLeave={() => {
                 setTooltip(null);
               }}
-              className="px-3 flex gap-2 self-center text-xs"
+              className="px-3 flex gap-2 justify-start items-center text-xxs md:text-sm"
             >
               <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-              <div className="self-center">{storehouses.toLocaleString() + " kg"}</div>
+              {IS_MOBILE ? (
+                <div className="self-center">{storehouses.quantity.toLocaleString()}</div>
+              ) : (
+                <div className="self-center">{storehouses.capacityKg.toLocaleString()} kg</div>
+              )}
             </div>
           )}
-          {population && (
-            <div
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "bottom",
-                  content: <WorkersHutTooltipContent />,
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-              className=" px-3 flex gap-2 self-center"
-            >
-              <ResourceIcon withTooltip={false} resource="House" size="sm" />
-              <div className="self-center">
-                {population.population} / {population.capacity + configManager.getBasePopulationCapacity()}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className=" bg-brown/90 bg-hex-bg  rounded-b-xl  flex gap-4 justify-between px-4">
-          <TickProgress />
-          <Button
-            variant="outline"
-            size="xs"
-            className={clsx("self-center", {
-              "animate-pulse": pointToWorldButton,
-            })}
-            onClick={() => {
-              if (!isMapView) {
-                goToMapView();
-              } else {
-                goToHexView(structureEntityId);
-              }
+
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                position: "bottom",
+                content: <WorkersHutTooltipContent />,
+              });
             }}
+            onMouseLeave={() => {
+              setTooltip(null);
+            }}
+            className="px-3 flex gap-2 justify-start items-center text-xs md:text-sm"
           >
-            {isMapView ? "Realm" : "World"}
-          </Button>
-          {isMapView && (
-            <div className="flex flex-row items-center ">
+            <ResourceIcon withTooltip={false} resource="House" size="sm" />
+            <div className="self-center">
+              {population?.population || 0} / {(population?.capacity || 0) + configManager.getBasePopulationCapacity()}
+            </div>
+          </div>
+        </div>
+        <div className="bg-brown/90 bg-hex-bg rounded-b-xl text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-2 md:px-4 relative">
+          <div className="flex justify-center md:justify-start">
+            <TickProgress />
+          </div>
+          <div className="flex justify-center md:justify-start">
+            <Button
+              variant="outline"
+              size="xs"
+              className={clsx("self-center", {
+                "animate-pulse": pointToWorldButton,
+              })}
+              onClick={() => {
+                if (!isMapView) {
+                  goToMapView();
+                } else {
+                  goToHexView(structureEntityId);
+                }
+              }}
+            >
+              {isMapView ? "Realm" : "World"}
+            </Button>
+          </div>
+          <div className="flex flex-row">
+            <div className="flex justify-center md:justify-start items-center gap-1">
               <NavigateToPositionIcon
-                className="h-8 w-8"
+                className={`h-6 w-6 md:h-8 md:w-8 ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
                 position={{ x: structurePosition.x, y: structurePosition.y }}
               />
-              <ViewOnMapIcon className="h-7 w-7" position={{ x: structurePosition.x, y: structurePosition.y }} />
+              <ViewOnMapIcon
+                className={`h-5 w-5 md:h-7 md:w-7 ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
+                position={{ x: structurePosition.x, y: structurePosition.y }}
+              />
             </div>
-          )}
+          </div>
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded-bl-2xl rounded-tr-2xl mx-1"
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
         {pointToWorldButton && (
           <div className="bg-brown/90 text-gold border border-gold/30 rounded-md shadow-lg left-1/2 transform p-3 flex flex-row items-center animate-pulse">
@@ -303,7 +330,7 @@ const TickProgress = () => {
       setTooltip({
         position: "bottom",
         content: (
-          <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
+          <div className="whitespace-nowrap pointer-events-none flex flex-col text-sm capitalize">
             <div>
               A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
             </div>

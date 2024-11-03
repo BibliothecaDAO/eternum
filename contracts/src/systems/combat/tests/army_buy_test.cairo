@@ -1,5 +1,9 @@
 use core::array::SpanTrait;
+
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
@@ -35,13 +39,15 @@ const REALM_COORD_X: u32 = 2;
 const REALM_COORD_Y: u32 = 3;
 
 
-fn set_configurations(world: IWorldDispatcher) {
-    set!(
-        world,
-        (
-            get_combat_config(),
-            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
-            SettlementConfig {
+fn set_configurations(ref world: WorldStorage) {
+    world.write_model_test(@get_combat_config());
+    world
+        .write_model_test(
+            @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
+        );
+    world
+        .write_model_test(
+            @SettlementConfig {
                 config_id: WORLD_CONFIG_ID,
                 radius: 50,
                 angle_scaled: 0,
@@ -52,24 +58,23 @@ fn set_configurations(world: IWorldDispatcher) {
                 min_angle_increase: 30,
                 max_angle_increase: 100,
             }
-        )
-    )
+        );
 }
 
-fn setup() -> (IWorldDispatcher, ITroopContractDispatcher, ID, ID) {
-    let world = spawn_eternum();
-    set_configurations(world);
-    let troop_system_dispatcher = deploy_troop_systems(world);
+fn setup() -> (WorldStorage, ITroopContractDispatcher, ID, ID) {
+    let mut world = spawn_eternum();
+    set_configurations(ref world);
+    let troop_system_dispatcher = deploy_troop_systems(ref world);
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     set_capacity_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
 
-    let realm_id = spawn_realm(world, 1, get_default_realm_pos().into());
+    let realm_id = spawn_realm(ref world, 1, get_default_realm_pos().into());
     mint(
-        world,
+        ref world,
         realm_id,
         array![
             (ResourceTypes::KNIGHT, STARTING_KNIGHT_COUNT),
@@ -86,7 +91,7 @@ fn setup() -> (IWorldDispatcher, ITroopContractDispatcher, ID, ID) {
 
 #[test]
 fn combat_test_army_buy() {
-    let (world, troop_systems_dispatcher, realm_id, army_id) = setup();
+    let (mut world, troop_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
 
     let troops = Troops {
@@ -96,14 +101,14 @@ fn combat_test_army_buy() {
     };
     troop_systems_dispatcher.army_buy_troops(army_id, realm_id, troops);
 
-    let army: Army = get!(world, army_id, Army);
+    let army: Army = world.read_model(army_id);
     assert_eq!(army.troops.knight_count, STARTING_KNIGHT_COUNT.try_into().unwrap());
     assert_eq!(army.troops.paladin_count, STARTING_PALADIN_COUNT.try_into().unwrap());
     assert_eq!(army.troops.crossbowman_count, STARTING_CROSSBOWMAN_COUNT.try_into().unwrap());
 
-    let knight_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::KNIGHT));
-    let paladin_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::PALADIN));
-    let crossbowman_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::CROSSBOWMAN));
+    let knight_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::KNIGHT));
+    let paladin_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::PALADIN));
+    let crossbowman_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::CROSSBOWMAN));
     assert_eq!(knight_resource.balance, 0);
     assert_eq!(paladin_resource.balance, 0);
     assert_eq!(crossbowman_resource.balance, 0);

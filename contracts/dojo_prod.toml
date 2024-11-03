@@ -2,13 +2,39 @@
 default = "eternum"
 
 [env]
-account_address = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"
-private_key = "0x4ab5a607d92f0870cfd82ef9cecb2fe903830441180fd432b831a8863c08097"
-rpc_url = "https://api.cartridge.gg/x/eternum-42/katana"
+account_address = "0x46f957b7fe3335010607174edd5c4c3fae87b12c3760dc167ac738959d8c03b"
+private_key = "0x66184a4482615568262bb3e63eb02517eece88afc39c3b5222467e7551611ad"
+rpc_url = "https://api.cartridge.gg/x/eternum-rc0/katana"
 
 [world]
 seed = "eternum"
 name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
-website = "https://alpha-eternum.realms.world/"
+website = "https://eternum.realms.world/"
+
+[writers]
+"eternum" = [
+    "eternum-bank_systems",
+    "eternum-battle_pillage_systems",
+    "eternum-battle_systems",
+    "eternum-building_systems",
+    "eternum-config_systems",
+    "eternum-dev_bank_systems",
+    "eternum-dev_realm_systems",
+    "eternum-dev_resource_systems",
+    "eternum-donkey_systems",
+    "eternum-guild_systems",
+    "eternum-hyperstructure_systems",
+    "eternum-liquidity_systems",
+    "eternum-map_systems",
+    "eternum-name_systems",
+    "eternum-ownership_systems",
+    "eternum-realm_systems",
+    "eternum-resource_bridge_systems",
+    "eternum-resource_systems",
+    "eternum-swap_systems",
+    "eternum-trade_systems",
+    "eternum-travel_systems",
+    "eternum-troop_systems",
+]

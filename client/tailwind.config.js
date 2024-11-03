@@ -43,24 +43,6 @@ export default {
           },
         },
       }),
-      backgroundImage: {
-        map: "url(/map.svg)",
-        // "hex-bg": "url(/hex-bg.png)",
-        "old-map": "url(/textures/paper/worldmap-bg.png)",
-      },
-      fontSize: {
-        xxs: ".625rem",
-      },
-      cursor: {
-        fancy: "url(/cursor.png), pointer",
-        pointer: "url(/cursor.png), pointer",
-        grab: "url(/grab.png), grab",
-        crosshair: "url(/cursor-cross.png), crosshair",
-        wait: "url(/images/eternum-logo_animated.png), wait",
-      },
-      strokeWidth: {
-        8: "8px",
-      },
       colors: {
         gold: "#F6C297",
         crimson: "#582C4D",
@@ -73,16 +55,18 @@ export default {
         "gray-gold": "#776756",
         "light-pink": "#CAB1A6",
         gray: "#1B1B1B",
+        "light-brown": "#14110B",
         brown: "#14100D",
         "light-red": "#EF5858",
         dark: "#010101",
-        "dark-brown": "#54433A",
+        "dark-brown": "#0C0A08",
         danger: "#C84444",
         "dark-green": "#064105",
         "dark-green-accent": "#3A3D23",
         green: "#B5BD75",
         lightest: "#FFF5EA",
         ally: "#2B2E3E",
+        cta: "#FFA200",
         enemy: "#46201D", // New color for enemies
         order: {
           power: "#F4B547",
@@ -121,6 +105,24 @@ export default {
           tropical_seasonal_forest: "#596823",
           tropical_rain_forest: "#4f6123",
         },
+      },
+      backgroundImage: {
+        map: "url(/map.svg)",
+        // "hex-bg": "url(/hex-bg.png)",
+        "old-map": "url(/textures/paper/worldmap-bg.png)",
+      },
+      fontSize: {
+        xxs: ".625rem",
+      },
+      cursor: {
+        fancy: "url(/cursor.png), pointer",
+        pointer: "url(/cursor.png), pointer",
+        grab: "url(/grab.png), grab",
+        crosshair: "url(/cursor-cross.png), crosshair",
+        wait: "url(/images/eternum-logo_animated.png), wait",
+      },
+      strokeWidth: {
+        8: "8px",
       },
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",

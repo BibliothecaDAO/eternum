@@ -1,42 +1,18 @@
 import { TileManager } from "@/dojo/modelManager/TileManager";
-import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { getResourceBalance } from "@/hooks/helpers/useResources";
-import { useIsStructureImmune, useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { ResourceMiningTypes } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/SelectPreviewBuilding";
-import { HintSection } from "@/ui/components/hints/HintModal";
-import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import {
-  ResourceIdToMiningType,
-  copyPlayerAddressToClipboard,
-  displayAddress,
-  divideByPrecision,
-  formatTime,
-  getEntityIdFromKeys,
-  toHexString,
-} from "@/ui/utils/utils";
-import {
-  BuildingType,
-  ID,
-  LEVEL_DESCRIPTIONS,
-  REALM_MAX_LEVEL,
-  RealmLevels,
-  ResourcesIds,
-  StructureType,
-  TickIds,
-} from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, ResourceIdToMiningType } from "@/ui/utils/utils";
+import { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "../navigation/LeftNavigationModule";
+import { LeftView } from "../navigation/LeftNavigationModule";
+import { RealmDetails } from "./realm/RealmDetails";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
@@ -67,7 +43,7 @@ export const BuildingEntityDetails = () => {
 
   const selectedStructureInfo = getEntityInfo(structureEntityId);
 
-  let isCastleSelected = useMemo(
+  const isCastleSelected = useMemo(
     () =>
       selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
       selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&
@@ -128,12 +104,12 @@ export const BuildingEntityDetails = () => {
     } else {
       playDestroyWooden();
     }
-    setLeftNavigationView(View.None);
+    setLeftNavigationView(LeftView.None);
   }, [selectedBuildingHex, buildingState]);
   return (
     <div className="flex flex-col h-full">
       {isCastleSelected ? (
-        <CastleDetails />
+        <RealmDetails />
       ) : (
         <>
           <div className="flex-grow w-full space-y-1 text-sm">
@@ -172,159 +148,6 @@ export const BuildingEntityDetails = () => {
           )}
         </>
       )}
-    </div>
-  );
-};
-
-const CastleDetails = () => {
-  const dojo = useDojo();
-
-  const { getBalance } = getResourceBalance();
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  const realm = useGetRealm(structureEntityId).realm;
-
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
-  const structure = useStructureByEntityId(structureEntityId);
-  if (!structure) return;
-
-  const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
-
-  const immunityEndTimestamp = useMemo(() => {
-    return (
-      Number(structure.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
-    );
-  }, [structure.created_at, configManager]);
-
-  const timer = useMemo(() => {
-    if (!nextBlockTimestamp) return 0;
-    return immunityEndTimestamp - nextBlockTimestamp!;
-  }, [nextBlockTimestamp]);
-
-  const address = toHexString(structure?.owner.address);
-
-  const getNextRealmLevel = useMemo(() => {
-    const nextLevel = realm.level + 1;
-    return nextLevel <= REALM_MAX_LEVEL ? nextLevel : null;
-  }, [realm.level]);
-
-  const checkBalance = useMemo(() => {
-    if (!getNextRealmLevel) return false;
-
-    const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
-    return Object.keys(cost).every((resourceId) => {
-      const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource);
-      return divideByPrecision(balance.balance) >= resourceCost.amount;
-    });
-  }, [getBalance, structureEntityId]);
-
-  const levelUpRealm = async () => {
-    setIsLoading(true);
-
-    await dojo.setup.systemCalls.upgrade_realm({
-      signer: dojo.account.account,
-      realm_entity_id: realm.entityId,
-    });
-    setIsLoading(false);
-  };
-
-  return (
-    <div className="w-full text-sm  p-3">
-      <div className="flex justify-between">
-        <h3 className="pb-2 text-4xl flex justify-between">
-          {structure.name} <HintModalButton section={HintSection.Realm} />
-        </h3>
-        {isImmune && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                content: (
-                  <>
-                    This structure is currently immune to attacks.
-                    <br />
-                    During this period, you are also unable to attack other players.
-                  </>
-                ),
-                position: "top",
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className="font-bold text-lg animate-pulse text-white"
-          >
-            Immune for: {formatTime(timer)}
-          </div>
-        )}
-      </div>
-
-      <div className="font-bold flex justify-between">
-        <div>
-          <div> {structure.ownerName}</div>
-        </div>
-        <div>
-          <span
-            className="ml-1 hover:text-white cursor-pointer"
-            onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
-          >
-            {displayAddress(address)}
-          </span>
-        </div>
-      </div>
-      <hr />
-
-      <div className="my-3">
-        <div className="flex justify-between py-2 gap-4">
-          <div>
-            <div className="flex gap-4">
-              <div className="text-2xl">{RealmLevels[realm.level]}</div>
-              {getNextRealmLevel && (
-                <div>
-                  <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
-                    {checkBalance ? `Upgrade to ${RealmLevels[realm.level]}` : "Need Resources"}
-                  </Button>
-                </div>
-              )}
-            </div>
-            {getNextRealmLevel && (
-              <div>
-                <p>
-                  {" "}
-                  Next Level: {RealmLevels[realm.level + 1]},{" "}
-                  {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
-                </p>
-                <div className="my-4 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
-                <div className="flex gap-2">
-                  {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => {
-                    return (
-                      <ResourceCost
-                        key={a.resource}
-                        className="!text-gold"
-                        type="vertical"
-                        size="xs"
-                        resourceId={a.resource}
-                        amount={a.amount}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <hr />
-
-        <div className="my-3">
-          {structure && structure.category === StructureType[StructureType.Realm] && (
-            <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
-          )}
-        </div>
-      </div>
     </div>
   );
 };

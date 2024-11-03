@@ -7,7 +7,6 @@ mod guild;
 mod hyperstructure;
 mod map;
 mod message;
-mod metadata;
 mod movable;
 mod name;
 mod order;

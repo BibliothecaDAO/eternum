@@ -15,6 +15,7 @@ export interface OSInterface {
   show: boolean;
   title: string;
   children: React.ReactNode;
+  height?: string;
   width?: string;
   hintSection?: string;
 }

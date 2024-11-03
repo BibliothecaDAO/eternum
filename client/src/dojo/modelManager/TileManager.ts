@@ -1,4 +1,6 @@
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
+import { playBuildingSound } from "@/three/scenes/Hexception";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -15,13 +17,14 @@ import {
 } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
-import { CairoOption, CairoOptionVariant } from "starknet";
+import { AccountInterface, CairoOption, CairoOptionVariant } from "starknet";
 import { SetupResult } from "../setup";
 
 export class TileManager {
   private col: number;
   private row: number;
   private address: bigint;
+  private account: AccountInterface | null;
 
   constructor(
     private setup: SetupResult,
@@ -29,7 +32,17 @@ export class TileManager {
   ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
-    this.address = BigInt(this.setup.network.burnerManager.account?.address || 0n);
+
+    this.account = null;
+    this.address = BigInt(useAccountStore.getState().account?.address || 0n);
+
+    useAccountStore.subscribe((state) => {
+      const account = state.account;
+      if (account) {
+        this.address = BigInt(account.address);
+        this.account = account;
+      }
+    });
   }
 
   getHexCoords = () => {
@@ -116,6 +129,22 @@ export class TileManager {
     }
   };
 
+  private _getBonusFromNeighborBuildings = (col: number, row: number) => {
+    const neighborBuildingCoords = getNeighborHexes(col, row);
+
+    let bonusPercent = 0;
+    neighborBuildingCoords.map((coord) => {
+      const building = getComponentValue(
+        this.setup.components.Building,
+        getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(coord.col), BigInt(coord.row)]),
+      );
+
+      if (building?.category === BuildingType[BuildingType.Farm]) bonusPercent += building.bonus_percent;
+    });
+
+    return bonusPercent;
+  };
+
   private _optimisticBuilding = (
     entityId: ID,
     col: number,
@@ -140,6 +169,8 @@ export class TileManager {
         break;
     }
 
+    const bonus_percent = this._getBonusFromNeighborBuildings(col, row);
+
     this.setup.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -149,7 +180,7 @@ export class TileManager {
         inner_row: row,
         category: BuildingType[buildingType],
         produced_resource_type,
-        bonus_percent: 0,
+        bonus_percent,
         entity_id: entityId,
         outer_entity_id: entityId,
         paused: false,
@@ -234,10 +265,12 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    const _ = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+
+    playBuildingSound(buildingType);
 
     await this.setup.systemCalls.create_building({
-      signer: this.setup.network.burnerManager.account!,
+      signer: this.account!,
       entity_id: entityId,
       directions: directions,
       building_category: buildingType,
@@ -256,7 +289,7 @@ export class TileManager {
     this._optimisticDestroy(entityId, col, row);
 
     await this.setup.systemCalls.destroy_building({
-      signer: this.setup.network.burnerManager.account!,
+      signer: this.account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -272,7 +305,7 @@ export class TileManager {
     this._optimisticPause(col, row);
 
     await this.setup.systemCalls.pause_production({
-      signer: this.setup.network.burnerManager.account!,
+      signer: this.account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -288,7 +321,7 @@ export class TileManager {
     this._optimisticResume(col, row);
 
     await this.setup.systemCalls.resume_production({
-      signer: this.setup.network.burnerManager.account!,
+      signer: this.account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -300,7 +333,7 @@ export class TileManager {
   placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
     if (structureType == StructureType.Hyperstructure) {
       await this.setup.systemCalls.create_hyperstructure({
-        signer: this.setup.network.burnerManager.account!,
+        signer: this.account!,
         creator_entity_id: entityId,
         coords,
       });
