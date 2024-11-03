@@ -78,7 +78,7 @@ export const RealmDetails = () => {
         )}
       </div>
 
-      <div className="font-bold flex justify-between">
+      <div className="font-bold flex justify-between my-2">
         <div>
           <div> {structure.ownerName}</div>
         </div>

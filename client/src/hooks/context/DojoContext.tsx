@@ -1,5 +1,4 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
-import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo } from "react";
@@ -133,13 +132,13 @@ const DojoContextProvider = ({
     return () => clearInterval(interval);
   }, [controllerAccount]);
 
-  if (!controllerAccount) {
-    return (
-      <div className="h-screen w-screen">
-        <LoadingOroborus loading={true} />
-      </div>
-    );
-  }
+  // if (!controllerAccount) {
+  //   return (
+  //     <div className="h-screen w-screen">
+  //       <LoadingOroborus loading={true} />
+  //     </div>
+  //   );
+  // }
 
   return (
     <DojoContext.Provider
@@ -152,9 +151,9 @@ const DojoContextProvider = ({
           get,
           select,
           clear,
-          account: controllerAccount,
+          account: controllerAccount || masterAccount,
           isDeploying,
-          accountDisplay: displayAddress(controllerAccount.address),
+          accountDisplay: displayAddress(controllerAccount?.address || ""),
         },
       }}
     >
