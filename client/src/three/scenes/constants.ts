@@ -90,7 +90,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     "models/buildings/hyperstructure_half.glb",
     "models/buildings/hyperstructure.glb",
   ],
-  [StructureType.Bank]: ["/models/buildings/market.glb"],
+  [StructureType.Bank]: ["/models/buildings/bank.glb"],
   [StructureType.FragmentMine]: ["models/buildings/mine.glb"],
   // placeholder for now
   [StructureType.Settlement]: ["models/buildings/mine.glb"],
