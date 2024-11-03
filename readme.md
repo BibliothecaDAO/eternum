@@ -69,8 +69,7 @@ inhabitants.
 
 ## Development of Eternum
 
-Development of Eternum is open-source. If you would like to contribute comment on
-an open issue.
+Development of Eternum is open-source. If you would like to contribute comment on an open issue.
 
 ## Prerequisites
 
