@@ -38,11 +38,12 @@ function Mint() {
   //const season_pass_address = import.meta.env.VITE_SEASON_PASS_ADDRESS;
 
   useEffect(() => {
-    if (mintToController && checkCartridgeConnector(connector)) {
+    console.log(checkCartridgeConnector(connector))
+    if (mintToController && checkCartridgeConnector(connector) && !controllerAddress) {
       setControllerAddress(account?.address);
       disconnect();
     }
-  }, [mintToController, account]);
+  }, [mintToController, account, controllerAddress]);
 
   const { data } = useSuspenseQuery({
     queryKey: ["erc721Balance" + account?.address],

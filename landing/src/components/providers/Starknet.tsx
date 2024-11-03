@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 import ControllerConnector from "@cartridge/connector/controller";
 import { sepolia } from "@starknet-react/chains";
-import { StarknetConfig, argent, braavos, useInjectedConnectors, voyager } from "@starknet-react/core";
+import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import { RpcProvider } from "starknet";
 //import { cartridgeController } from "./cartridge-controller";
 function provider(/*chain: Chain*/) {
@@ -13,7 +13,7 @@ function provider(/*chain: Chain*/) {
 
 const cartridgeController = new ControllerConnector({
   policies: [],
-  rpc: "https://api.cartridge.gg/x/starknet/sepolia",
+  rpc: import.meta.env.VITE_PUBLIC_NODE_URL,
   // Uncomment to use a custom theme
   // theme: "dope-wars",
   // colorMode: "light"
@@ -27,11 +27,13 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     // Randomize the order of the connectors.
     order: "random",
   });
-
+  const rpc = useCallback(() => {
+    return { nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL };
+  }, []);
   return (
     <StarknetConfig
       chains={[sepolia]}
-      provider={provider}
+      provider={jsonRpcProvider({ rpc })}
       connectors={[...connectors, cartridgeController]}
       explorer={voyager}
     >
