@@ -16,6 +16,7 @@ import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import Stats from "three/examples/jsm/libs/stats.module";
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { SceneManager } from "./SceneManager";
 import { TransitionManager } from "./components/TransitionManager";
 import { GUIManager } from "./helpers/GUIManager";
@@ -293,10 +294,18 @@ export default class GameRenderer {
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
 
-    const obj = { brightness: 0, contrast: 0.3 };
+    const obj = { brightness: -0.1, contrast: 0 };
     const folder = GUIManager.addFolder("BrightnesContrastt");
-    folder.add(obj, "brightness").name("Brightness").min(-1).max(1).step(0.01);
-    folder.add(obj, "contrast").name("Contrast").min(-1).max(1).step(0.01);
+    const BCEffect = new BrightnessContrastEffect({
+      brightness: obj.brightness,
+      contrast: obj.contrast,
+    });
+    folder.add(obj, "brightness").name("Brightness").min(-1).max(1).step(0.01).onChange((value: number) => {
+      BCEffect.brightness = value;
+    });
+    folder.add(obj, "contrast").name("Contrast").min(-1).max(1).step(0.01).onChange((value: number) => {
+      BCEffect.contrast = value;
+    });
     this.composer.addPass(
       new EffectPass(
         this.camera,
@@ -305,12 +314,9 @@ export default class GameRenderer {
         new BloomEffect({
           luminanceThreshold: 1.1,
           mipmapBlur: true,
-          intensity: 0.15,
+          intensity: 0.25,
         }),
-        new BrightnessContrastEffect({
-          brightness: obj.brightness,
-          contrast: obj.contrast,
-        }),
+        BCEffect
       ),
     );
 
@@ -321,8 +327,13 @@ export default class GameRenderer {
     const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
     const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
-    this.hexceptionScene.setEnvironment(roomEnvironment, 0.3);
-    this.worldmapScene.setEnvironment(roomEnvironment, 0.3);
+    const hdriLoader = new RGBELoader()
+    const hdriTexture = hdriLoader.load('/textures/environment/models_env.hdr', (texture) => {
+      const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
+      texture.dispose(); 
+      this.hexceptionScene.setEnvironment(envMap, 0.7);
+      this.worldmapScene.setEnvironment(envMap, 0.7);
+    })
   }
 
   handleKeyEvent(event: KeyboardEvent): void {

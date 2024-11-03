@@ -88,11 +88,11 @@ export abstract class HexagonScene {
 
   private setupHemisphereLight(): void {
     this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.1);
-    this.scene.add(this.hemisphereLight);
+    //this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
