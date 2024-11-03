@@ -423,6 +423,17 @@ export default class HexceptionScene extends HexagonScene {
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
+            if (buildingType === ResourceMiningTypes.Forge) {
+              instance.traverse((child) => {
+                if ((child.name === 'Grassland003_8') && child instanceof THREE.Mesh) {
+                  if (!this.minesMaterials.has(building.resource)) {
+                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                    this.minesMaterials.set(building.resource, material);
+                  }
+                  child.material = this.minesMaterials.get(building.resource);
+                }
+              })
+            }
             if (buildingType === ResourceMiningTypes.Mine) {
               const crystalMesh1 = instance.children[1] as THREE.Mesh;
               const crystalMesh2 = instance.children[2] as THREE.Mesh;
