@@ -61,7 +61,9 @@ mod donkey_systems {
 
             // [Achievement] Consume donkeys
             if donkey_amount != 0 {
-                let count = (donkey_amount % core::integer::BoundedU32::max().into()).try_into().unwrap();
+                let count = ((donkey_amount / RESOURCE_PRECISION) % core::integer::BoundedU32::max().into())
+                    .try_into()
+                    .unwrap();
                 let player_id: felt252 = starknet::get_caller_address().into();
                 let task_id = Task::Breeder.identifier();
                 // Raw version of emitting trophy progress when ContractState is not available
