@@ -23,7 +23,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SceneManager } from "../SceneManager";
 import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
-import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
+import { SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { createPausedLabel } from "../helpers/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
@@ -195,8 +195,6 @@ export default class HexceptionScene extends HexagonScene {
               if (child instanceof THREE.Mesh) {
                 if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
                   child.castShadow = true;
-                }
-                if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
                   child.receiveShadow = true;
                 }
               }
@@ -354,7 +352,7 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
     const building = this.tileManager.getBuilding(normalizedCoords);
-    if (building) {
+    if (building && building.produced_resource_type) {
       this.state.setTooltip({
         content: (
           <div className="flex items-center space-x-1">
@@ -434,7 +432,7 @@ export default class HexceptionScene extends HexagonScene {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
           let buildingType =
-            building.resource && building.resource < 254
+            building.resource && building.resource < 24
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
 
@@ -446,6 +444,17 @@ export default class HexceptionScene extends HexagonScene {
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
+            if (buildingType === ResourceMiningTypes.Forge) {
+              instance.traverse((child) => {
+                if (child.name === "Grassland003_8" && child instanceof THREE.Mesh) {
+                  if (!this.minesMaterials.has(building.resource)) {
+                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                    this.minesMaterials.set(building.resource, material);
+                  }
+                  child.material = this.minesMaterials.get(building.resource);
+                }
+              });
+            }
             if (buildingType === ResourceMiningTypes.Mine) {
               const crystalMesh1 = instance.children[1] as THREE.Mesh;
               const crystalMesh2 = instance.children[2] as THREE.Mesh;
@@ -580,10 +589,24 @@ export default class HexceptionScene extends HexagonScene {
           withBuilding = true;
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
+          buildingObj.rotation.y = rotation * 4;
           if (building.category === BuildingType[BuildingType.Castle]) {
             buildingObj.rotation.y = rotation * 2;
-          } else {
-            buildingObj.rotation.y = rotation * 4;
+          }
+          if (
+            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill
+          ) {
+            buildingObj.rotation.y = rotation * 2;
+          }
+          if (
+            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge
+          ) {
+            buildingObj.rotation.y = rotation * 6;
+          }
+          if (building.resource && building.resource === ResourcesIds.Crossbowman) {
+            buildingObj.rotation.y = rotation;
           }
           buildingObj.updateMatrix();
           this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });

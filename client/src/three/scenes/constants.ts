@@ -28,7 +28,7 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
   [BuildingType.Bank]: "/models/buildings/market.glb",
-  [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
+  [BuildingType.ArcheryRange]: "/models/buildings/archerrange.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
   [BuildingType.Castle]: "/models/buildings/castle1.glb",
   [BuildingType.Farm]: "/models/buildings/farm.glb",
@@ -55,7 +55,7 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
 const BASE_PATH = "/models/biomes/";
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   DeepOcean: BASE_PATH + "ocean.glb",
-  Ocean: BASE_PATH + "ocean.glb",
+  Ocean: BASE_PATH + "deepocean.glb",
   Beach: BASE_PATH + "beach.glb",
   Scorched: BASE_PATH + "scorched.glb",
   Bare: BASE_PATH + "bare.glb",
@@ -67,9 +67,9 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   Grassland: BASE_PATH + "grassland.glb",
   TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "temperateDesert.glb",
-  TropicalSeasonalForest: BASE_PATH + "deciduousforest.glb",
-  TropicalRainForest: BASE_PATH + "deciduousforest.glb",
+  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
+  TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
+  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
   Outline: BASE_PATH + "outline.glb",
 };
 
@@ -88,12 +88,12 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Hyperstructure]: [
     "models/buildings/hyperstructure_init.glb",
     "models/buildings/hyperstructure_half.glb",
-    "models/buildings/hyperstructureAnimated.glb",
+    "models/buildings/hyperstructure.glb",
   ],
-  [StructureType.Bank]: ["/models/buildings/market.glb"],
-  [StructureType.FragmentMine]: ["models/buildings/mine.glb"],
+  [StructureType.Bank]: ["/models/buildings/bank.glb"],
+  [StructureType.FragmentMine]: ["models/buildings/mine_2.glb"],
   // placeholder for now
-  [StructureType.Settlement]: ["models/buildings/mine.glb"],
+  [StructureType.Settlement]: ["models/buildings/castle2.glb"],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
@@ -110,6 +110,48 @@ export const MinesMaterialsParams: Record<
   number,
   { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number }
 > = {
+  // [ResourcesIds.Copper]: ResourceMiningTypes.Forge,
+  // [ResourcesIds.ColdIron]: ResourceMiningTypes.Forge,
+  // [ResourcesIds.Ignium]: ResourceMiningTypes.Forge,
+  // [ResourcesIds.Gold]: ResourceMiningTypes.Forge,
+  // [ResourcesIds.Silver]: ResourceMiningTypes.Forge,
+  // [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
+  // [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
+  [ResourcesIds.Copper]: {
+    color: new THREE.Color(0.86, 0.26, 0.0),
+    emissive: new THREE.Color(6.71, 0.25, 0.08),
+    emissiveIntensity: 5.9,
+  },
+  [ResourcesIds.ColdIron]: {
+    color: new THREE.Color(0.69, 0.63, 0.99),
+    emissive: new THREE.Color(0.76, 1.63, 6.82),
+    emissiveIntensity: 5.9,
+  },
+  [ResourcesIds.Ignium]: {
+    color: new THREE.Color(0.97, 0.03, 0.03),
+    emissive: new THREE.Color(6.31, 0.13, 0.04),
+    emissiveIntensity: 8.6,
+  },
+  [ResourcesIds.Gold]: {
+    color: new THREE.Color(0.99, 0.83, 0.3),
+    emissive: new THREE.Color(9.88, 6.79, 3.02),
+    emissiveIntensity: 4.9,
+  },
+  [ResourcesIds.Silver]: {
+    color: new THREE.Color(0.93, 0.93, 0.93),
+    emissive: new THREE.Color(3.55, 3.73, 5.51),
+    emissiveIntensity: 8.6,
+  },
+  [ResourcesIds.AlchemicalSilver]: {
+    color: new THREE.Color(0.93, 0.93, 0.93),
+    emissive: new THREE.Color(1.87, 4.57, 9.33),
+    emissiveIntensity: 8.4,
+  },
+  [ResourcesIds.Adamantine]: {
+    color: new THREE.Color(0.0, 0.27, 1.0),
+    emissive: new THREE.Color(1.39, 0.52, 8.16),
+    emissiveIntensity: 10,
+  },
   [ResourcesIds.Diamonds]: {
     color: new THREE.Color(1.6, 1.47, 1.96),
     emissive: new THREE.Color(0.8, 0.73, 5.93),

@@ -38,7 +38,7 @@ export class StructureManager {
     const loader = new GLTFLoader();
 
     for (const [key, modelPaths] of Object.entries(StructureModelPaths)) {
-      const structureType = StructureType[key as keyof typeof StructureType];
+      const structureType = parseInt(key) as StructureType;
 
       if (structureType === undefined) continue;
       if (!modelPaths || modelPaths.length === 0) continue;
@@ -49,13 +49,12 @@ export class StructureManager {
             modelPath,
             (gltf) => {
               const model = gltf.scene as THREE.Group;
-              const instancedModel = new InstancedModel(model, MAX_INSTANCES);
-              instancedModel.setCount(0);
+              const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, StructureType[structureType]);
               resolve(instancedModel);
             },
             undefined,
             (error) => {
-              console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
+              console.error(`An error occurred while loading the ${structureType} model:`, error);
               reject(error);
             },
           );
@@ -98,8 +97,7 @@ export class StructureManager {
       this.totalStructures++;
     }
 
-    const key = StructureType[structureType] as unknown as StructureType;
-
+    const key = structureType;
     // Add the structure to the structures map
     this.structures.addStructure(entityId, key, normalizedCoord, stage, isMine);
 
@@ -131,7 +129,8 @@ export class StructureManager {
   }
 
   private updateVisibleStructures() {
-    for (const [structureType, structures] of this.structures.getStructures()) {
+    const _structures = this.structures.getStructures();
+    for (const [structureType, structures] of _structures) {
       const visibleStructures = this.getVisibleStructures(structures);
       const models = this.structureModels.get(structureType);
 
@@ -153,6 +152,10 @@ export class StructureManager {
             this.scene.add(label);
           }
           this.dummy.position.copy(position);
+
+          if (structureType === StructureType.Bank) {
+            this.dummy.rotation.y = (4 * Math.PI) / 6;
+          }
           this.dummy.updateMatrix();
 
           const modelType = models[structure.stage];
@@ -199,6 +202,12 @@ export class StructureManager {
       }
     }
     return undefined;
+  }
+
+  updateAnimations(deltaTime: number) {
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.updateAnimations(deltaTime));
+    });
   }
 }
 
