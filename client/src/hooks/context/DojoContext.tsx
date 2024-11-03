@@ -131,27 +131,32 @@ const DojoContextProvider = ({
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (controllerAccount) {
-        console.log("logging controllerAccount", controllerAccount);
-        useAccountStore.getState().setAccount(controllerAccount);
-        clearInterval(interval);
+      if (import.meta.env.VITE_PUBLIC_DEV === "true") {
+        if (!account) {
+          console.log("account is null");
+        } else {
+          console.log("setting account to account");
+          useAccountStore.getState().setAccount(account);
+          clearInterval(interval);
+        }
+      } else {
+        if (controllerAccount) {
+          console.log("logging controllerAccount", controllerAccount);
+          useAccountStore.getState().setAccount(controllerAccount);
+          clearInterval(interval);
+        }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [controllerAccount]);
+  }, [controllerAccount, account]);
 
-  if (isConnecting) {
-    return (
-      // <div className="relative h-screen w-screen">
-      //   <LoadingOroborus loading={true} />
-      // </div>
-      <LoadingScreen />
-    );
+  if (isConnecting && import.meta.env.VITE_PUBLIC_DEV == "false") {
+    return <LoadingScreen />;
   }
 
   // Conditionally render content based on controllerAccount
-  if (!controllerAccount) {
+  if (!controllerAccount && import.meta.env.VITE_PUBLIC_DEV == "false") {
     return (
       <div className="relative h-screen w-screen pointer-events-auto">
         <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
@@ -190,9 +195,9 @@ const DojoContextProvider = ({
           get,
           select,
           clear,
-          account: controllerAccount || masterAccount,
+          account: useAccountStore.getState().account || masterAccount,
           isDeploying,
-          accountDisplay: displayAddress(controllerAccount?.address || ""),
+          accountDisplay: displayAddress(useAccountStore.getState().account?.address || ""),
         },
       }}
     >

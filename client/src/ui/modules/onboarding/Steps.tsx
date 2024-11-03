@@ -3,6 +3,7 @@ import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { configManager } from "@/dojo/setup";
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
@@ -12,10 +13,11 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
 import Button from "@/ui/elements/Button";
+import ListSelect from "@/ui/elements/ListSelect";
 // import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { formatTime, toValidAscii } from "@/ui/utils/utils";
+import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
@@ -61,11 +63,13 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
 export const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
     masterAccount,
-    account: { create, isDeploying, list, account, select, clear },
+    account: { create, isDeploying, list, select, clear },
     setup: {
       systemCalls: { set_address_name },
     },
   } = useDojo();
+
+  console.log(useAccountStore.getState().account);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -76,7 +80,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const { getAddressName } = useRealm();
 
-  const name = getAddressName(ContractAddress(account.address));
+  const name = getAddressName(ContractAddress(useAccountStore.getState().account?.address!));
   const { playerRealms } = useEntities();
 
   const input = useRef<string>("");
@@ -84,20 +88,16 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   // @dev: refactor this
   useEffect(() => {
-    if (addressIsMaster) return;
     setAddressName(name);
   }, [name]);
 
-  const addressIsMaster = account.address === masterAccount.address;
-
   const onSetName = async () => {
     setLoading(true);
-    if (input.current && !addressIsMaster) {
+    if (input.current) {
       const inputNameValidAscii = toValidAscii(input.current);
       const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
 
-      console.log(account);
-      await set_address_name({ name: inputNameBigInt, signer: account as any });
+      await set_address_name({ name: inputNameBigInt, signer: useAccountStore.getState().account as any });
       setAddressName(input.current);
       setLoading(false);
     }
@@ -106,10 +106,10 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const onCopy = () => {
     const burners = localStorage.getItem("burners");
     if (burners) {
-      const burner = JSON.parse(burners)[account.address];
+      const burner = JSON.parse(burners)[useAccountStore.getState().account?.address!];
       navigator.clipboard.writeText(
         JSON.stringify({
-          address: account.address,
+          address: useAccountStore.getState().account?.address!,
           privateKey: burner.privateKey,
           publicKey: burner.publicKey,
           active: burner.active,
@@ -185,7 +185,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                   }}
                 />
                 <Button
-                  isLoading={loading || !account}
+                  isLoading={loading || !useAccountStore.getState().account}
                   onClick={onSetName}
                   variant="primary"
                   disabled={loading || !canSetName}
@@ -195,7 +195,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               </div>
             )}
           </div>
-          {/* <div className="flex items-center mb-4">
+          <div className="flex items-center mb-4">
             <ListSelect
               className="flex-grow mr-2"
               title="Active Account: "
@@ -210,13 +210,13 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                   ),
                 };
               })}
-              value={account.address}
+              value={useAccountStore.getState().account?.address}
               onChange={select}
             />
             <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
               {isDeploying ? "" : "Create New"}
             </Button>
-          </div> */}
+          </div>
         </div>
         <div className="flex items-center space-x-4 mt-2">
           <Cross
@@ -266,13 +266,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         {playerRealms().length > 0 ? (
           <NavigateToRealm text={"begin"} />
         ) : (
-          <Button
-            disabled={!addressName || addressIsMaster}
-            size="md"
-            className="mx-auto"
-            variant="primary"
-            onClick={onNext}
-          >
+          <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
             Continue <ArrowRight className="w-2 fill-current ml-3" />
           </Button>
         )}
