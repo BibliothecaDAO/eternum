@@ -28,7 +28,7 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
   [BuildingType.Bank]: "/models/buildings/market.glb",
-  [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
+  [BuildingType.ArcheryRange]: "/models/buildings/archerrange.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
   [BuildingType.Castle]: "/models/buildings/castle1.glb",
   [BuildingType.Farm]: "/models/buildings/farm.glb",
