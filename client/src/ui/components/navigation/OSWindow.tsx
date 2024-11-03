@@ -1,6 +1,7 @@
 import { IS_MOBILE } from "@/ui/config";
+import { ExpandablePopup } from "@/ui/elements/ExpandablePopup";
 import { SecondaryPopup } from "../../elements/SecondaryPopup";
-import { OSInterface } from "./Config";
+import { ExpandableOSInterface, OSInterface } from "./Config";
 
 export const OSWindow = ({
   onClick,
@@ -22,6 +23,36 @@ export const OSWindow = ({
             {children}
           </SecondaryPopup.Body>
         </SecondaryPopup>
+      )}
+    </>
+  );
+};
+
+export const ExpandableOSWindow = ({
+  onClick,
+  show,
+  title,
+  children,
+  width = "400px",
+  expandedWidth = "600px",
+  hintSection,
+  expandedContent,
+  isExpanded = false,
+}: ExpandableOSInterface) => {
+  return (
+    <>
+      {show && (
+        <ExpandablePopup
+          title={title}
+          onClose={() => onClick()}
+          hintSection={hintSection}
+          expandedContent={expandedContent}
+          width={width}
+          expandedWidth={expandedWidth}
+          isExpanded={isExpanded}
+        >
+          {children}
+        </ExpandablePopup>
       )}
     </>
   );

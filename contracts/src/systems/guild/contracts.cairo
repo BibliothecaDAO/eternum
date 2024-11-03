@@ -21,11 +21,11 @@ mod guild_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
     use eternum::constants::DEFAULT_NS;
+    use eternum::models::event::{CreateGuild, JoinGuild};
     use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
-
     use eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
@@ -41,7 +41,6 @@ mod guild_systems {
             let guild_member: GuildMember = world.read_model(caller_address);
             guild_member.assert_has_no_guild();
 
-            // Add min name length
             assert(guild_name != 0, 'Guild name cannot be empty');
 
             let guild_uuid: ID = world.dispatcher.uuid();
@@ -51,6 +50,11 @@ mod guild_systems {
             world.write_model(@EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid });
             world.write_model(@EntityName { entity_id: guild_uuid, name: guild_name });
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_uuid });
+
+            let timestamp = starknet::get_block_timestamp();
+            world.emit_event(@CreateGuild { guild_entity_id: guild_uuid, guild_name, timestamp });
+            world
+                .emit_event(@JoinGuild { guild_entity_id: guild_uuid, guild_name, address: caller_address, timestamp });
 
             guild_uuid
         }
@@ -75,6 +79,18 @@ mod guild_systems {
 
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_entity_id });
             world.write_model(@guild);
+
+            let entity_name: EntityName = world.read_model(guild_entity_id);
+
+            world
+                .emit_event(
+                    @JoinGuild {
+                        guild_entity_id,
+                        address: caller_address,
+                        guild_name: entity_name.name,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
 
         fn whitelist_player(

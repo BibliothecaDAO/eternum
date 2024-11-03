@@ -1023,6 +1023,61 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    ResourceBridgeFeeSplitConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          velords_fee_on_dpt_percent: RecsType.Number,
+          velords_fee_on_wtdr_percent: RecsType.Number,
+          season_pool_fee_on_dpt_percent: RecsType.Number,
+          season_pool_fee_on_wtdr_percent: RecsType.Number,
+          client_fee_on_dpt_percent: RecsType.Number,
+          client_fee_on_wtdr_percent: RecsType.Number,
+          velords_fee_recipient: RecsType.BigInt,
+          season_pool_fee_recipient: RecsType.BigInt,
+          max_bank_fee_dpt_percent: RecsType.Number,
+          max_bank_fee_wtdr_percent: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "ResourceBridgeFeeSplitConfig",
+            types: [
+              "u32",
+              "u16",
+              "u16",
+              "u16",
+              "u16",
+              "u16",
+              "u16",
+              "ContractAddress",
+              "ContractAddress",
+              "u16",
+              "u16",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ResourceBridgeWhitelistConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          token: RecsType.BigInt,
+          resource_type: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "ResourceBridgeWhitelistConfig",
+            types: ["ContractAddress", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ResourceCost: (() => {
       return defineComponent(
         world,
@@ -1046,6 +1101,49 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "ResourceTransferLock",
             types: ["u32", "u64", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    SeasonConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          season_pass_address: RecsType.BigInt,
+          realms_address: RecsType.BigInt,
+          lords_address: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "SeasonConfig",
+            types: ["u32", "ContractAddress", "ContractAddress", "ContractAddress"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    SettlementConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          angle_scaled: RecsType.BigInt,
+          center: RecsType.Number,
+          min_scaling_factor_scaled: RecsType.BigInt,
+          radius: RecsType.Number,
+          min_distance: RecsType.Number,
+          max_distance: RecsType.Number,
+          min_angle_increase: RecsType.BigInt,
+          max_angle_increase: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "SettlementConfig",
+            types: ["u32", "u128", "u32", "u128", "u32", "u32", "u32", "u64", "u64"],
             customTypes: [],
           },
         },
@@ -1785,6 +1883,45 @@ const eventsComponents = (world: World) => {
               namespace: "eternum",
               name: "BurnDonkey",
               types: ["ContractAddress", "u32", "u128", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      CreateGuild: (() => {
+        return defineComponent(
+          world,
+          {
+            guild_entity_id: RecsType.Number,
+            guild_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "CreateGuild",
+              types: ["u32", "felt252", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      JoinGuild: (() => {
+        return defineComponent(
+          world,
+          {
+            guild_entity_id: RecsType.Number,
+            address: RecsType.BigInt,
+            guild_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "JoinGuild",
+              types: ["u32", "ContractAddress", "felt252", "u64"],
               customTypes: [],
             },
           },

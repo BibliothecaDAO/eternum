@@ -1,5 +1,4 @@
-import { GuildFromPlayerAddress } from "@/hooks/helpers/useGuilds";
-import { ContractAddress, ID, TickIds } from "@bibliothecadao/eternum";
+import { ContractAddress, GuildInfo, ID, TickIds } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { ClientConfigManager } from "./ConfigManager";
@@ -43,7 +42,7 @@ export class LeaderboardManager {
 
   public getGuildsByRank(
     currentTimestamp: number,
-    getGuildFromPlayerAddress: (playerAddress: ContractAddress) => GuildFromPlayerAddress | undefined,
+    getGuildFromPlayerAddress: (playerAddress: ContractAddress) => GuildInfo | undefined,
   ) {
     const pointsPerGuild = new Map<ID, number>();
 
@@ -144,16 +143,14 @@ export class LeaderboardManager {
   private setPointsGeneratedByCompletion(
     pointsPerEntity: Map<ContractAddress | ID, number>,
     hyperstructureEntityId?: ID,
-    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildFromPlayerAddress | undefined,
+    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildInfo | undefined,
   ) {
     this.pointsOnCompletionPerPlayer.forEach((playerPointsForEachHyperstructure, playerAddress) => {
       const pointsOnCompletion = hyperstructureEntityId
         ? playerPointsForEachHyperstructure.get(hyperstructureEntityId) || 0
         : Array.from(playerPointsForEachHyperstructure.values()).reduce((acc, points) => acc + points, 0);
 
-      const key = getGuildFromPlayerAddress
-        ? getGuildFromPlayerAddress(playerAddress)?.guildEntityId || 0
-        : playerAddress;
+      const key = getGuildFromPlayerAddress ? getGuildFromPlayerAddress(playerAddress)?.entityId || 0 : playerAddress;
 
       const previousPoints = pointsPerEntity.get(key);
       const newPoints = (previousPoints || 0) + pointsOnCompletion;
@@ -165,7 +162,7 @@ export class LeaderboardManager {
     currentTimestamp: number,
     pointsPerEntity: Map<ContractAddress | ID, number>,
     hyperstructureEntityId?: ID,
-    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildFromPlayerAddress | undefined,
+    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildInfo | undefined,
   ) {
     const coOwnersChangeEvents = hyperstructureEntityId
       ? this.eventsCoOwnersChange.filter((event) => event.hyperstructureEntityId === hyperstructureEntityId)
@@ -187,7 +184,7 @@ export class LeaderboardManager {
 
       event.coOwners.forEach((coOwner) => {
         const key = getGuildFromPlayerAddress
-          ? getGuildFromPlayerAddress(coOwner.address)?.guildEntityId || 0
+          ? getGuildFromPlayerAddress(coOwner.address)?.entityId || 0
           : coOwner.address;
 
         const previousPoints = pointsPerEntity.get(key) || 0;

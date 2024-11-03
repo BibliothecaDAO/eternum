@@ -31,12 +31,18 @@ pub fn subscribe_with_reconnection(config: Config, event_sender: mpsc::Sender<Ga
         let max_backoff = Duration::from_secs(60);
 
         loop {
-            let rcv = client
-                .on_event_message_updated(vec![EntityKeysClause::Keys(KeysClause {
-                    keys: vec![],
-                    pattern_matching: torii_grpc::types::PatternMatching::VariableLen,
-                    models: vec![],
-                })])
+            let rcv: Result<
+                torii_grpc::client::EntityUpdateStreaming,
+                torii_client::client::error::Error,
+            > = client
+                .on_event_message_updated(
+                    vec![EntityKeysClause::Keys(KeysClause {
+                        keys: vec![],
+                        pattern_matching: torii_grpc::types::PatternMatching::VariableLen,
+                        models: vec![],
+                    })],
+                    false,
+                )
                 .await;
 
             match rcv {

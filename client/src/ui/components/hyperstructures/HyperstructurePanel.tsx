@@ -113,11 +113,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
     return (
       entity.isOwner ||
       (hyperstructure?.access === Access[Access.GuildOnly] &&
-        playerGuild?.guildEntityId !== undefined &&
-        playerGuild.guildEntityId !== 0 &&
-        hyperstructureOwnerGuild?.guildEntityId !== undefined &&
-        hyperstructureOwnerGuild.guildEntityId !== 0 &&
-        hyperstructureOwnerGuild.guildEntityId === playerGuild.guildEntityId) ||
+        playerGuild?.entityId !== undefined &&
+        playerGuild.entityId !== 0 &&
+        hyperstructureOwnerGuild?.entityId !== undefined &&
+        hyperstructureOwnerGuild.entityId !== 0 &&
+        hyperstructureOwnerGuild.entityId === playerGuild.entityId) ||
       hyperstructure?.access === Access[Access.Public]
     );
   }, [newContributions]);
@@ -204,7 +204,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                             if (!isNaN(Number(access))) return false;
 
                             if (access === "GuildOnly") {
-                              return playerGuild?.guildEntityId !== undefined && playerGuild.guildEntityId !== 0;
+                              return playerGuild?.entityId !== undefined && playerGuild.entityId !== 0;
                             }
 
                             return access !== hyperstructure!.access;

@@ -18,7 +18,7 @@ import clsx from "clsx";
 
 import { ArrowUp } from "lucide-react";
 import { useMemo } from "react";
-import { leaderboard, quests as questsWindow, social } from "../../components/navigation/Config";
+import { quests as questsWindow, social } from "../../components/navigation/Config";
 
 export const SecondaryMenuItems = () => {
   const { toggleModal } = useModalStore();
@@ -69,19 +69,6 @@ export const SecondaryMenuItems = () => {
               </div>
             )}
           </div>
-        ),
-      },
-      {
-        button: (
-          <CircleButton
-            tooltipLocation="bottom"
-            image={BuildingThumbs.leaderboard}
-            label={leaderboard}
-            active={isPopupOpen(leaderboard)}
-            size="lg"
-            onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: !questClaimStatus[QuestId.Travel] })}
-          />
         ),
       },
       {

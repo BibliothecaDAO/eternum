@@ -394,3 +394,35 @@ export interface Player {
   address: ContractAddress;
   addressName: string;
 }
+
+export type GuildInfo = {
+  entityId: ID;
+  name: string;
+  isOwner: boolean;
+  memberCount: number;
+  rank?: string;
+  points?: number;
+  isPublic?: boolean;
+  createdSince?: string;
+  isMember?: boolean;
+};
+
+export type GuildMemberInfo = {
+  guildEntityId: ID;
+  name: string;
+  rank: string;
+  points: number;
+  address: ContractAddress;
+  joinedSince: string;
+  isUser: boolean;
+  isGuildMaster: boolean;
+};
+
+export type GuildWhitelistInfo = {
+  guildEntityId: ID;
+  guildName: string;
+  name?: string;
+  rank?: string;
+  points?: number;
+  address?: ContractAddress;
+};
