@@ -91,9 +91,9 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     "models/buildings/hyperstructure.glb",
   ],
   [StructureType.Bank]: ["/models/buildings/bank.glb"],
-  [StructureType.FragmentMine]: ["models/buildings/mine.glb"],
+  [StructureType.FragmentMine]: ["models/buildings/mine_2.glb"],
   // placeholder for now
-  [StructureType.Settlement]: ["models/buildings/mine.glb"],
+  [StructureType.Settlement]: ["models/buildings/castle2.glb"],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {

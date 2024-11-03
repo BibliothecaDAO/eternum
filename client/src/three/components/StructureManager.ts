@@ -49,7 +49,7 @@ export class StructureManager {
             modelPath,
             (gltf) => {
               const model = gltf.scene as THREE.Group;
-              const instancedModel = new InstancedModel(gltf, MAX_INSTANCES);
+              const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, StructureType[structureType]);
               resolve(instancedModel);
             },
             undefined,
