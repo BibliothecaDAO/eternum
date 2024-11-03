@@ -85,7 +85,10 @@ mod guild_systems {
             world
                 .emit_event(
                     @JoinGuild {
-                        guild_entity_id, address: caller_address, guild_name: entity_name.name, timestamp: starknet::get_block_timestamp()
+                        guild_entity_id,
+                        address: caller_address,
+                        guild_name: entity_name.name,
+                        timestamp: starknet::get_block_timestamp()
                     }
                 );
         }
