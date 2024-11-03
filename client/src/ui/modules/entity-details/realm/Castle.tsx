@@ -53,50 +53,43 @@ export const Castle = () => {
   };
 
   return (
-    <div className="w-full text-sm p-3">
+    <div className="w-full text-sm">
       <div className="my-3">
         <div className="flex justify-between py-2 gap-4">
           <div>
             <div className="flex gap-4">
               <div className="text-2xl">{RealmLevels[realm.level]}</div>
               {getNextRealmLevel && (
-                <div>
-                  <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
-                    {checkBalance ? `Upgrade to ${RealmLevels[realm.level]}` : "Need Resources"}
-                  </Button>
-                </div>
+                <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
+                  {checkBalance ? `Upgrade to ${RealmLevels[realm.level]}` : "Need Resources"}
+                </Button>
               )}
             </div>
             {getNextRealmLevel && (
               <div>
-                <p>
-                  {" "}
+                <p className="text-sm my-2">
                   Next Level: {RealmLevels[realm.level + 1]},{" "}
                   {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
                 </p>
-                <div className="my-4 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
+                <div className="my-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
                 <div className="flex gap-2">
-                  {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => {
-                    return (
-                      <ResourceCost
-                        key={a.resource}
-                        className="!text-gold"
-                        type="vertical"
-                        size="xs"
-                        resourceId={a.resource}
-                        amount={a.amount}
-                      />
-                    );
-                  })}
+                  {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => (
+                    <ResourceCost
+                      key={a.resource}
+                      className="!text-gold"
+                      type="vertical"
+                      size="xs"
+                      resourceId={a.resource}
+                      amount={a.amount}
+                    />
+                  ))}
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <hr />
-
-        <div className="my-3">
+        <div className="my-2">
           {structure && structure.category === StructureType[StructureType.Realm] && (
             <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
           )}
