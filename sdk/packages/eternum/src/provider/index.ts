@@ -678,6 +678,21 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async disband_guild(props: SystemProps.DisbandGuild) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+          entrypoint: "remove_guild_member",
+          calldata: [call.address],
+        };
+      }),
+    );
+  }
+
   public async remove_player_from_whitelist(props: SystemProps.RemovePlayerFromWhitelist) {
     const { player_address_to_remove, guild_entity_id, signer } = props;
 

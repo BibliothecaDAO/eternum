@@ -299,53 +299,77 @@ export const TopLeftNavigation = () => {
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  const cycleTime = configManager.getTick(TickIds.Armies);
 
   const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
-  let cycleTime = configManager.getTick(TickIds.Armies);
+  const progress = useMemo(() => {
+    const elapsedTime = nextBlockTimestamp % cycleTime;
+    return (elapsedTime / cycleTime) * 100;
+  }, [nextBlockTimestamp, cycleTime]);
+
+  const updateTooltip = useCallback(() => {
+    if (!isTooltipOpen) return;
+
+    setTooltip({
+      position: "bottom",
+      content: (
+        <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
+          <div>
+            A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+          </div>
+          <div>
+            Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
+          </div>
+        </div>
+      ),
+    });
+  }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
 
   useEffect(() => {
+    if (!isTooltipOpen) return;
+
     const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);
     setTimeUntilNextCycle(initialTime);
 
     const interval = setInterval(() => {
-      setTimeUntilNextCycle((prevTime) => {
-        if (prevTime <= 1) {
-          return initialTime;
-        }
-        return prevTime - 1;
-      });
+      setTimeUntilNextCycle((prevTime) => (prevTime <= 1 ? initialTime : prevTime - 1));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [nextBlockTimestamp]);
+  }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
+  // }, [nextBlockTimestamp]);
+  // }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
 
-  const progress = useMemo(() => {
-    return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
-  }, [timeUntilNextCycle]);
+  //   const progress = useMemo(() => {
+  //     return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
+  //   }, [timeUntilNextCycle]);
 
-  const updateTooltip = useCallback(() => {
-    if (isTooltipOpen) {
-      setTooltip({
-        position: "bottom",
-        content: (
-          <div className="whitespace-nowrap pointer-events-none flex flex-col text-sm capitalize">
-            <div>
-              A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
-            </div>
-            <div>
-              Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
-            </div>
-          </div>
-        ),
-      });
-    }
-  }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
+  //   const updateTooltip = useCallback(() => {
+  //     if (isTooltipOpen) {
+  //       setTooltip({
+  //         position: "bottom",
+  //         content: (
+  //           <div className="whitespace-nowrap pointer-events-none flex flex-col text-sm capitalize">
+  //             <div>
+  //               A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+  //             </div>
+  //             <div>
+  //               Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
+  //             </div>
+  //           </div>
+  //         ),
+  //       });
+  //     }
+  //   // }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
+  // }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
 
   useEffect(() => {
-    updateTooltip();
-  }, [updateTooltip]);
+    if (isTooltipOpen) {
+      updateTooltip();
+    }
+  }, [isTooltipOpen, updateTooltip]);
 
   return (
     <div

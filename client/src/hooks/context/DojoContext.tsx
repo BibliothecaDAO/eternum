@@ -115,7 +115,7 @@ const DojoContextProvider = ({
   value,
   masterAccount,
   controllerAccount,
-}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface | null }) => {
+}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface }) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
@@ -128,6 +128,8 @@ const DojoContextProvider = ({
   const connectWallet = async () => {
     connect({ connector: connectors[0] });
   };
+
+  const storedAccount = useAccountStore((state) => state.account);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -149,9 +151,9 @@ const DojoContextProvider = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [controllerAccount, account]);
+  }, [controllerAccount, account, isConnected, isConnecting]);
 
-  if (isConnecting && import.meta.env.VITE_PUBLIC_DEV == "false") {
+  if (storedAccount === null) {
     return <LoadingScreen />;
   }
 
@@ -195,9 +197,9 @@ const DojoContextProvider = ({
           get,
           select,
           clear,
-          account: useAccountStore.getState().account || masterAccount,
+          account: storedAccount as Account | AccountInterface,
           isDeploying,
-          accountDisplay: displayAddress(useAccountStore.getState().account?.address || ""),
+          accountDisplay: displayAddress(storedAccount.address || ""),
         },
       }}
     >

@@ -1,8 +1,6 @@
-import { TickIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { configManager } from "@/dojo/setup";
+import { TickIds } from "@bibliothecadao/eternum";
 import { useEffect } from "react";
-import { useDojo } from "../context/DojoContext";
 import useUIStore from "./useUIStore";
 
 export interface BlockchainStore {
@@ -24,25 +22,13 @@ export const createBlockchainStore = (set: any) => ({
 });
 
 export const useFetchBlockchainData = () => {
-  const {
-    setup: {
-      components: { TickConfig },
-    },
-  } = useDojo();
-
   const setNextBlockTimestamp = useUIStore((state) => state.setNextBlockTimestamp);
   const setCurrentDefaultTick = useUIStore((state) => state.setCurrentDefaultTick);
   const setCurrentArmiesTick = useUIStore((state) => state.setCurrentArmiesTick);
 
   useEffect(() => {
-    const tickConfigArmies = getComponentValue(
-      TickConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Armies)]),
-    );
-    const tickConfigDefault = getComponentValue(
-      TickConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Default)]),
-    );
+    const tickConfigArmies = configManager.getTick(TickIds.Armies);
+    const tickConfigDefault = configManager.getTick(TickIds.Default);
 
     console.log(tickConfigDefault);
 
@@ -51,8 +37,8 @@ export const useFetchBlockchainData = () => {
 
       if (timestamp) {
         setNextBlockTimestamp(timestamp);
-        setCurrentDefaultTick(Math.floor(timestamp / Number(tickConfigDefault!.tick_interval_in_seconds)));
-        setCurrentArmiesTick(Math.floor(timestamp / Number(tickConfigArmies!.tick_interval_in_seconds)));
+        setCurrentDefaultTick(Math.floor(timestamp / Number(tickConfigDefault)));
+        setCurrentArmiesTick(Math.floor(timestamp / Number(tickConfigArmies)));
       }
     };
 

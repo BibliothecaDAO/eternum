@@ -358,6 +358,10 @@ export interface RemoveGuildMember extends SystemSigner {
   player_address_to_remove: num.BigNumberish;
 }
 
+export interface DisbandGuild extends SystemSigner {
+  calls: { address: num.BigNumberish }[];
+}
+
 export interface RemovePlayerFromWhitelist extends SystemSigner {
   player_address_to_remove: num.BigNumberish;
   guild_entity_id: num.BigNumberish;
