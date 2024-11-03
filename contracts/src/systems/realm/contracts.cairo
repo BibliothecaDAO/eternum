@@ -221,9 +221,11 @@ mod realm_systems {
             let mut quest: Quest = world.read_model((entity_id, quest_id));
             assert(!quest.completed, 'quest already completed');
 
-            // get index
+            // ensure quest has rewards
             let quest_config: QuestConfig = world.read_model(WORLD_CONFIG_ID);
             let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
+            assert(quest_reward_config.detached_resource_count > 0, 'quest has no rewards');
+
             let mut index = 0;
             loop {
                 if index == quest_reward_config.detached_resource_count {
