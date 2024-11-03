@@ -7,7 +7,7 @@ import svgr from "vite-plugin-svgr";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
