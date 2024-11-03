@@ -1183,14 +1183,8 @@ pub impl InternalBattleImpl of InternalBattleTrait {
 
     /// Make army leave battle
     fn leave_battle(ref world: WorldStorage, ref battle: Battle, ref original_army: Army) {
-        // [Achievement] Win a battle
-        if battle.has_ended() && original_army.troops.count() > 0 {
-            let player_id: felt252 = starknet::get_caller_address().into();
-            let task_id: felt252 = Task::Battlelord.identifier();
-            let time = starknet::get_block_timestamp();
-            let mut store = StoreTrait::new(world);
-            store.progress(player_id, task_id, 1, time);
-        }
+        // save battle end status for achievement
+        let battle_has_ended = battle.has_ended();
 
         // make caller army mobile again
         let army_id = original_army.entity_id;
@@ -1244,6 +1238,15 @@ pub impl InternalBattleImpl of InternalBattleTrait {
             lifetime: original_army.troops.full_health(troop_config)
         };
         world.write_model(@army_health);
+
+        // [Achievement] Win a battle
+        if battle_has_ended && army_left.troops.count() > 0 {
+            let player_id: felt252 = starknet::get_caller_address().into();
+            let task_id: felt252 = Task::Battlelord.identifier();
+            let time = starknet::get_block_timestamp();
+            let mut store = StoreTrait::new(world);
+            store.progress(player_id, task_id, 1, time);
+        }
     }
 }
 
