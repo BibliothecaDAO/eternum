@@ -37,7 +37,7 @@ export const getBattle = (
   return battleClone;
 };
 
-const getExtraBattleInformation = (
+export const getExtraBattleInformation = (
   battles: Entity[],
   Battle: Component<Components["Battle"]["schema"]>,
   Position: Component<Components["Position"]["schema"]>,
