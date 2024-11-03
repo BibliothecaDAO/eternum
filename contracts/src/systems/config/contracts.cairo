@@ -70,7 +70,7 @@ trait ITravelFoodCostConfig<T> {
 
 #[starknet::interface]
 trait IStaminaRefillConfig<T> {
-    fn set_stamina_refill_config(ref self: T, amount: u16);
+    fn set_stamina_refill_config(ref self: T, amount_per_tick: u16, start_boost_tick_count: u8);
 }
 
 #[starknet::interface]
@@ -465,11 +465,14 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
-        fn set_stamina_refill_config(ref self: ContractState, amount: u16) {
+        fn set_stamina_refill_config(ref self: ContractState, amount_per_tick: u16, start_boost_tick_count: u8) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: amount });
+            world
+                .write_model(
+                    @StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick, start_boost_tick_count }
+                );
         }
     }
 

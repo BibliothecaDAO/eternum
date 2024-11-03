@@ -2,10 +2,10 @@
 mod tests {
     use esp::contract::{EternumSeasonPass as season_pass_contract, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
     use esp::mock::lords::{ITestLords, ITestLordsDispatcher, ITestLordsDispatcherTrait};
-    use esp::mock::realms::realms::{IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
     use esp::mock::realms::realms::{
         TestRealm as realms_contract, IERC721MinterDispatcher, IERC721MinterDispatcherTrait
     };
+    use esp::mock::realms::realms::{IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
 
     use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};

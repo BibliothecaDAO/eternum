@@ -130,7 +130,7 @@ mod troop_systems {
     use eternum::models::combat::{ProtectorCustomTrait};
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory
+        BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory, StaminaRefillConfig
     };
     use eternum::models::movable::{Movable, MovableCustomTrait};
 
@@ -396,9 +396,16 @@ mod troop_systems {
 
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
+            let stamina_refill_config: StaminaRefillConfig = world.read_model(WORLD_CONFIG_ID);
+
             world
                 .write_model(
-                    @Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 }
+                    @Stamina {
+                        entity_id: army_id,
+                        amount: 0,
+                        last_refill_tick: (armies_tick_config.current()
+                            - stamina_refill_config.start_boost_tick_count.into())
+                    }
                 );
 
             army_id

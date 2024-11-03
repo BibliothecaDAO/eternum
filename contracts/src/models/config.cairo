@@ -279,6 +279,7 @@ pub struct StaminaRefillConfig {
     #[key]
     config_id: ID,
     amount_per_tick: u16,
+    start_boost_tick_count: u8
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
