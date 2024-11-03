@@ -9,7 +9,7 @@ type AccountType = "burner" | "controller";
 export let ACCOUNT_CONNECTOR: AccountType = "controller";
 
 const useAccountOrBurner = () => {
-  const { account } = useAccount();
+  const { account, isConnected, isConnecting } = useAccount();
 
   const { account: burner } = useDojo();
 
@@ -32,7 +32,7 @@ const useAccountOrBurner = () => {
         setCustomAccount(null);
       }
     }
-  }, [burner, account]);
+  }, [burner, account, isConnected, isConnecting]);
 
   return { account: customAccount };
 };

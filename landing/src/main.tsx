@@ -28,6 +28,10 @@ const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   const setupResult = await setup(dojoConfig);
+
+  if (!setupResult) {
+    root.render(<div className="h-screen w-screen flex justify-center items-center bg-primary">Loading...</div>);
+  }
   /*const config = {
     starknetNetwork: networks.mainnet,
     arkchainNetwork: networks.mainnet,

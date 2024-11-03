@@ -18,13 +18,13 @@
     "@bibliothecadao/eternum": "workspace:^",
     "@cartridge/connector": "^0.5.0-alpha.5",
     "@cartridge/controller": "^0.5.0-alpha.5",
-    "@dojoengine/core": "1.0.0-alpha.22",
-    "@dojoengine/create-burner": "1.0.0-alpha.22",
+    "@dojoengine/core": "1.0.0-alpha.27",
+    "@dojoengine/create-burner": "1.0.0-alpha.27",
     "@dojoengine/react": "1.0.0-alpha.23",
     "@dojoengine/recs": "^2.0.13",
-    "@dojoengine/state": "1.0.0-alpha.22",
-    "@dojoengine/torii-client": "1.0.0-alpha.22",
-    "@dojoengine/utils": "1.0.0-alpha.22",
+    "@dojoengine/state": "1.0.0-alpha.27",
+    "@dojoengine/torii-client": "1.0.0-alpha.27",
+    "@dojoengine/utils": "1.0.0-alpha.27",
     "@graphql-codegen/schema-ast": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@parcel/watcher": "^2.4.1",
@@ -99,4 +99,4 @@
     "vite-plugin-mkcert": "^1.17.6",
     "vite-plugin-top-level-await": "^1.4.1"
   }
-} 
+}

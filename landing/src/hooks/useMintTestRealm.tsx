@@ -1,8 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-//import { useIsCorrectChain } from "./useChain";
-//import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
-//import { bigintEquals } from "../utils/types";
-//import { goToTokenPage } from "../utils/karat";
 import { toast } from "react-toastify";
 import { useDojo } from "./context/DojoContext";
 import useAccountOrBurner from "./useAccountOrBurner";
@@ -18,12 +14,6 @@ export const useMintTestRealm = () => {
 
   const { account } = useAccountOrBurner();
 
-  //const { contractAddress } = useTokenContract();
-  //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-  //const { isConnected } = useAccount();
-  //const { isCorrectChain } = useIsCorrectChain()
-  // const { totalSupply } = useTotalSupply()
-
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(0);
 
@@ -37,7 +27,15 @@ export const useMintTestRealm = () => {
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_id);
-        await mint_test_realm({ signer: account, token_id: BigInt(token_id), realms_address })
+
+        console.log("------> mint_test_realm", account);
+        console.log("------> mint_test_realm", token_id);
+        console.log("------> mint_test_realm", realms_address);
+        await mint_test_realm({
+          signer: account,
+          token_id: BigInt(token_id),
+          realms_address: import.meta.env.VITE_REALMS_ADDRESS,
+        })
           .then(() => {
             toast(`Realms #${token_id} Minted`);
           })

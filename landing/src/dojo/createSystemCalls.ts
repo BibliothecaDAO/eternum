@@ -111,6 +111,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.cancel_order(props);
   };
   const mint_test_realm = async (props: SystemProps.MintTestRealmProps) => {
+    console.log("------> mint_test_realm", props);
     await provider.mint_test_realm(props);
   };
 

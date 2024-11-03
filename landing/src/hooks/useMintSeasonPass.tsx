@@ -1,8 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-//import { useIsCorrectChain } from "./useChain";
-//import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
-//import { bigintEquals } from "../utils/types";
-//import { goToTokenPage } from "../utils/karat";
 import { toast } from "react-toastify";
 import { useDojo } from "./context/DojoContext";
 import useAccountOrBurner from "./useAccountOrBurner";
@@ -17,13 +13,6 @@ export const useMintSeasonPass = () => {
   const season_pass_address = BigInt(import.meta.env.VITE_SEASON_PASS_ADDRESS);
 
   const { account } = useAccountOrBurner();
-
-  //const { contractAddress } = useTokenContract();
-  //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-  //  const { isConnected } = useAccount();
-  //const { isCorrectChain } = useIsCorrectChain()
-  // const { totalSupply } = useTotalSupply()
-
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(["0"]);
 

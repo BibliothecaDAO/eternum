@@ -38,7 +38,7 @@ function Mint() {
   //const season_pass_address = import.meta.env.VITE_SEASON_PASS_ADDRESS;
 
   useEffect(() => {
-    console.log(checkCartridgeConnector(connector))
+    console.log(checkCartridgeConnector(connector));
     if (mintToController && checkCartridgeConnector(connector) && !controllerAddress) {
       setControllerAddress(account?.address);
       disconnect();
@@ -80,9 +80,7 @@ function Mint() {
       {mintToController && !controllerAddress ? (
         <Card className="w-[750px] mx-auto text-center mt-12">
           <CardHeader>
-            <CardTitle>
-              <TypeH2>Choose Mint Method</TypeH2>
-            </CardTitle>
+            <CardTitle className="text-center text-3xl">Choose Mint Method</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-x-10">
@@ -172,9 +170,7 @@ function Mint() {
           ) : (
             <Card className="w-[400px] mx-auto">
               <CardHeader>
-                <CardTitle>
-                  <TypeH2>Log In</TypeH2>
-                </CardTitle>
+                <CardTitle className="text-2xl">Log In</CardTitle>
               </CardHeader>
               <CardContent className="gap-y-4 flex flex-col">
                 <TypeP>Connect to the Starknet wallet that holds your Realms</TypeP>
