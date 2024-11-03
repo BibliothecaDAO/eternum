@@ -281,7 +281,7 @@ mod config_systems {
 
 
     fn assert_caller_is_admin(world: WorldStorage) {
-        let world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
+        let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
         let admin_address = world_config.admin_address;
         if admin_address != Zeroable::zero() {
             assert(starknet::get_caller_address() == admin_address, 'caller not admin');

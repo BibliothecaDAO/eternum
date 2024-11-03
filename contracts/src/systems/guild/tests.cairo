@@ -1,4 +1,7 @@
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
 use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
 use eternum::models::name::EntityName;
@@ -15,6 +18,7 @@ use eternum::systems::name::contracts::{
 use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::contract_address_const;
 
+
 const PUBLIC: felt252 = 1;
 const PRIVATE: felt252 = 0;
 const GUILD_NAME: felt252 = 'Guildname';
@@ -26,17 +30,17 @@ fn felt_to_bool(value: felt252) -> bool {
     return false;
 }
 
-fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, IGuildSystemsDispatcher) {
+    let mut world = spawn_eternum();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     world.dispatcher.uuid();
 
-    let guild_systems_address = deploy_system(world, guild_systems::TEST_CLASS_HASH);
+    let guild_systems_address = deploy_system(ref world, "guild_systems");
     let guild_systems_dispatcher = IGuildSystemsDispatcher { contract_address: guild_systems_address };
 
-    let name_systems_address = deploy_system(world, name_systems::TEST_CLASS_HASH);
+    let name_systems_address = deploy_system(ref world, "name_systems");
     let name_systems_dispatcher = INameSystemsDispatcher { contract_address: name_systems_address };
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
@@ -49,25 +53,25 @@ fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_create_guild() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
 
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
-    let guild = get!(world, guild_entity_id, Guild);
+    let guild: Guild = world.read_model(guild_entity_id);
     assert(guild.entity_id == guild_entity_id, 'Guild not created');
     assert(guild.is_public == felt_to_bool(PUBLIC), 'Guild not public');
     assert(guild.member_count == 1, 'Member count incorrect');
 
-    let guild_owner = get!(world, guild_entity_id, Owner);
+    let guild_owner: Owner = world.read_model(guild_entity_id);
     assert(guild_owner.address.try_into().unwrap() == 'player1', 'Not correct owner of guild');
 
-    let guild_name = get!(world, guild_entity_id, EntityName);
+    let guild_name: EntityName = world.read_model(guild_entity_id);
     assert(guild_name.name == GUILD_NAME, 'Not correct guildname');
 
-    let guild_member = get!(world, 'player1', GuildMember);
+    let guild_member: GuildMember = world.read_model('player1');
     assert(guild_member.guild_entity_id == guild_entity_id, 'Not member of guild');
 }
 
@@ -88,7 +92,7 @@ fn guild_test_create_multiple_guilds() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_join_guild() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -100,10 +104,10 @@ fn guild_test_join_guild() {
 
     guild_systems_dispatcher.join_guild(guild_entity_id);
 
-    let guild_member = get!(world, 'player2', GuildMember);
+    let guild_member: GuildMember = world.read_model('player2');
     assert(guild_member.guild_entity_id == guild_entity_id, 'Did not join the guild');
 
-    let guild = get!(world, guild_entity_id, Guild);
+    let guild: Guild = world.read_model(guild_entity_id);
     assert(guild.member_count == 2, 'Member count incorrect');
 }
 
@@ -177,7 +181,7 @@ fn guild_test_whitelist_player_as_not_owner() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_leave_guild() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -189,14 +193,14 @@ fn guild_test_leave_guild() {
 
     guild_systems_dispatcher.leave_guild();
 
-    let guild = get!(world, guild_entity_id, Guild);
+    let guild: Guild = world.read_model(guild_entity_id);
     assert(guild.member_count == 1, 'Member count incorrect');
 }
 
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_leave_guild_as_owner() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -204,7 +208,7 @@ fn guild_test_leave_guild_as_owner() {
 
     guild_systems_dispatcher.leave_guild();
 
-    let guild_owner = get!(world, guild_entity_id, Owner);
+    let guild_owner: Owner = world.read_model(guild_entity_id);
     assert(guild_owner.address != contract_address_const::<'player1'>(), 'Wrong guild owner');
 }
 #[test]
@@ -265,7 +269,7 @@ fn guild_test_whitelist_wrong_address() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_transfer_guild_ownership() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
@@ -279,7 +283,7 @@ fn guild_test_transfer_guild_ownership() {
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.transfer_guild_ownership(guild_entity_id, contract_address_const::<'player2'>());
 
-    let guild_owner = get!(world, guild_entity_id, Owner);
+    let guild_owner: Owner = world.read_model(guild_entity_id);
 
     assert(guild_owner.address == contract_address_const::<'player2'>(), 'Guild transfer failed');
 }
@@ -337,89 +341,74 @@ fn guild_test_remove_guild_member_not_guild_member() {
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_remove_self_from_whitelist() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
-    assert(
-        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == true,
-        'Whitelisted not removed'
-    );
+    let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
+    assert(guild_whitelist.is_whitelisted == true, 'Whitelisted not removed');
 
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player2'>());
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
-    assert(
-        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == false,
-        'Whitelisted not removed'
-    );
+    let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }
 
 #[test]
 #[available_gas(3000000000000)]
 fn guild_test_remove_from_whitelist_as_owner() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
-    assert(
-        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == true,
-        'Whitelisted not removed'
-    );
+    let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
+    assert(guild_whitelist.is_whitelisted == true, 'Whitelisted not removed');
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
-    assert(
-        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == false,
-        'Whitelisted not removed'
-    );
+    let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }
 
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Player is not whitelisted', 'ENTRYPOINT_FAILED'))]
 fn guild_test_remove_from_whitelist_not_whitelisted() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
-    assert(
-        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == false,
-        'Whitelisted not removed'
-    );
+    let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }
 
 #[test]
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Cannot remove from whitelist', 'ENTRYPOINT_FAILED'))]
 fn guild_test_remove_from_whitelist_as_random() {
-    let (world, guild_systems_dispatcher) = setup();
+    let (mut world, guild_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PRIVATE), GUILD_NAME);
 
     guild_systems_dispatcher.whitelist_player(contract_address_const::<'player2'>(), guild_entity_id);
-    assert(
-        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == true,
-        'Whitelisted not removed'
-    );
+    let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
+    assert(guild_whitelist.is_whitelisted == true, 'Whitelisted not removed');
 
     starknet::testing::set_contract_address(contract_address_const::<'player3'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'player3'>());
 
     guild_systems_dispatcher.remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
-
-    assert(
-        get!(world, (contract_address_const::<'player2'>(), guild_entity_id), GuildWhitelist).is_whitelisted == false,
-        'Whitelisted not removed'
-    );
+    let guild_whitelist: GuildWhitelist = world.read_model((contract_address_const::<'player2'>(), guild_entity_id));
+    assert(guild_whitelist.is_whitelisted == false, 'Whitelisted not removed');
 }

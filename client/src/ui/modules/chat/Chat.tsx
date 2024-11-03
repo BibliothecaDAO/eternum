@@ -128,7 +128,7 @@ export const Chat = () => {
         </div>
       </div>
       <div
-        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-brown/60 border-gold/40 bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
+        className={`flex flex-col w-[28vw] max-w-[28vw] border bg-brown/90 border-gold/40 bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
           hideChat ? "p-0" : "p-1"
         }`}
       >

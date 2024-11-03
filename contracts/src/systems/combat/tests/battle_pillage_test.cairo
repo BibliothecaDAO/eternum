@@ -1,5 +1,10 @@
 use core::array::SpanTrait;
+
+
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::{
     alias::ID,
     models::{
@@ -39,10 +44,10 @@ const STARTING_KNIGHT_COUNT: u128 = 100 * RESOURCE_PRECISION;
 const DEFENDER_REALM_COORD_X: u32 = 2;
 const DEFENDER_REALM_COORD_Y: u32 = 3;
 
-fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
-    let world = spawn_eternum();
+fn setup() -> (WorldStorage, IBattlePillageContractDispatcher, ID, ID) {
+    let mut world = spawn_eternum();
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     set_settlement_config(config_systems_address);
     set_combat_config(config_systems_address);
     setup_globals(config_systems_address);
@@ -54,34 +59,34 @@ fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
     set_battle_config(config_systems_address);
     set_travel_food_cost_config(config_systems_address);
 
-    let battle_pillage_system_dispatcher = deploy_battle_pillage_systems(world);
-    let troop_system_dispatcher = deploy_troop_systems(world);
+    let battle_pillage_system_dispatcher = deploy_battle_pillage_systems(ref world);
+    let troop_system_dispatcher = deploy_troop_systems(ref world);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
 
     // SPAWN ATTACKER REALM & ARMY
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
-    let attacker_realm_entity_id = spawn_realm(world, 1, Coord { x: 1, y: 1 });
+    let attacker_realm_entity_id = spawn_realm(ref world, 1, Coord { x: 1, y: 1 });
 
-    mint(world, attacker_realm_entity_id, array![(ResourceTypes::KNIGHT, STARTING_KNIGHT_COUNT),].span());
+    mint(ref world, attacker_realm_entity_id, array![(ResourceTypes::KNIGHT, STARTING_KNIGHT_COUNT),].span());
 
     let attacking_troops = Troops {
         knight_count: STARTING_KNIGHT_COUNT.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0,
     };
 
     let attacker_realm_army_unit_id = create_army_with_troops(
-        world, troop_system_dispatcher, attacker_realm_entity_id, attacking_troops, false
+        ref world, troop_system_dispatcher, attacker_realm_entity_id, attacking_troops, false
     );
 
     // SPAWN DEFENDER REALM & DEFENSIVE ARMY
     starknet::testing::set_contract_address(contract_address_const::<DEFENDER>());
 
     let defender_realm_entity_id = spawn_realm(
-        world, 2, Coord { x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y }
+        ref world, 2, Coord { x: DEFENDER_REALM_COORD_X, y: DEFENDER_REALM_COORD_Y }
     );
 
     mint(
-        world,
+        ref world,
         defender_realm_entity_id,
         array![
             (ResourceTypes::WOOD, 100_000),
@@ -111,65 +116,61 @@ fn setup() -> (IWorldDispatcher, IBattlePillageContractDispatcher, ID, ID) {
             .span()
     );
 
-    let defender_position = get!(world, defender_realm_entity_id, Position);
-    teleport(world, attacker_realm_army_unit_id, Coord { x: defender_position.x, y: defender_position.y });
+    let defender_position: Position = world.read_model(defender_realm_entity_id);
+    teleport(ref world, attacker_realm_army_unit_id, Coord { x: defender_position.x, y: defender_position.y });
 
     (world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id)
 }
 
 #[test]
 fn combat_test_battle_pillage__near_max_capacity() {
-    let (world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
+    let (mut world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
 
-    let realm_pos = get!(world, defender_realm_entity_id, Position);
-    let army_pos = get!(world, attacker_realm_army_unit_id, Position);
+    let realm_pos: Position = world.read_model(defender_realm_entity_id);
+    let army_pos: Position = world.read_model(attacker_realm_army_unit_id);
     assert_eq!(army_pos.x, realm_pos.x, "Army & realm not at same pos");
     assert_eq!(army_pos.y, realm_pos.y, "Army & realm not at same pos");
 
-    let mut army_weight = get!(world, attacker_realm_army_unit_id, Weight);
-    set!(world, Weight { entity_id: attacker_realm_army_unit_id, value: 950_000 });
+    let mut army_weight: Weight = world.read_model(attacker_realm_army_unit_id);
+    world.write_model_test(@Weight { entity_id: attacker_realm_army_unit_id, value: 950_000 });
     let initial_army_weight = army_weight.value;
     assert_eq!(initial_army_weight, 0, "Initial army weight not correct");
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
-    let _army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
+    let _army_quantity: Quantity = world.read_model(attacker_realm_army_unit_id);
 
-    let _capacity_config = get!(world, 3, CapacityConfig);
+    let _capacity_config: CapacityConfig = world.read_model(3);
 
     battle_pillage_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
-    let army_weight = get!(world, attacker_realm_army_unit_id, Weight).value;
+    let army_weight: Weight = world.read_model(attacker_realm_army_unit_id);
+    let army_weight = army_weight.value;
 
     assert_ne!(initial_army_weight, army_weight, "Weight not changed after pillage");
 }
 
 #[test]
 fn combat_test_simple_battle_pillage() {
-    let (world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
+    let (mut world, battle_pillage_system_dispatcher, attacker_realm_army_unit_id, defender_realm_entity_id) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<ATTACKER>());
 
-    let realm_pos = get!(world, defender_realm_entity_id, Position);
-    let army_pos = get!(world, attacker_realm_army_unit_id, Position);
+    let realm_pos: Position = world.read_model(defender_realm_entity_id);
+    let army_pos: Position = world.read_model(attacker_realm_army_unit_id);
     assert_eq!(army_pos.x, realm_pos.x, "Army & realm not at same pos");
     assert_eq!(army_pos.y, realm_pos.y, "Army & realm not at same pos");
 
-    let mut army_weight = get!(world, attacker_realm_army_unit_id, Weight);
+    let mut army_weight: Weight = world.read_model(attacker_realm_army_unit_id);
     let initial_army_weight = army_weight.value;
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP * 2);
 
-    let _army_quantity = get!(world, attacker_realm_army_unit_id, Quantity);
-
-    let _capacity_config = get!(world, 3, CapacityConfig);
-
     battle_pillage_system_dispatcher.battle_pillage(attacker_realm_army_unit_id, defender_realm_entity_id);
 
-    let army_weight = get!(world, attacker_realm_army_unit_id, Weight).value;
-
-    assert_ne!(initial_army_weight, army_weight, "Weight not changed after pillage");
+    let army_weight: Weight = world.read_model(attacker_realm_army_unit_id);
+    assert_ne!(initial_army_weight, army_weight.value, "Weight not changed after pillage");
 }
 

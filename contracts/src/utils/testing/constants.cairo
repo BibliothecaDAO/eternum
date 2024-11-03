@@ -2,8 +2,6 @@ use eternum::constants::{ResourceTypes, RESOURCE_PRECISION};
 
 
 use eternum::models::owner::{Owner, OwnerCustomImpl, OwnerCustomTrait};
-use eternum::models::owner::{owner};
-use eternum::models::season::{season};
 
 const MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT: u128 = 1;
 const MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT: u128 = 1;
@@ -61,7 +59,3 @@ fn get_resource_weights() -> Span<(u8, u128)> {
         .span()
 }
 
-// SET ALL MODELS USED PER SYSTEM
-fn ownership_systems_models() -> Array<felt252> {
-    array![owner::TEST_CLASS_HASH, season::TEST_CLASS_HASH,]
-}

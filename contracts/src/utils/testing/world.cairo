@@ -1,185 +1,318 @@
 use core::array::{ArrayTrait, SpanTrait};
-use dojo::utils::test::spawn_test_world;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::models::bank::bank::bank;
-use eternum::models::bank::liquidity::liquidity;
-use eternum::models::bank::market::market;
-use eternum::models::buildings::building_quantityv_2;
-use eternum::models::buildings::{building, Building};
-use eternum::models::capacity::{capacity_category, CapacityCategory};
-use eternum::models::combat::army;
-use eternum::models::combat::battle;
-use eternum::models::combat::health;
-use eternum::models::combat::protectee;
-use eternum::models::combat::protector;
+use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDefTrait};
+
+use eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR};
+use eternum::models::bank::bank::{m_Bank};
+use eternum::models::bank::liquidity::m_Liquidity;
+use eternum::models::bank::market::m_Market;
+use eternum::models::buildings::m_BuildingQuantityv2;
+use eternum::models::buildings::{m_Building};
+use eternum::models::capacity::{m_CapacityCategory};
+use eternum::models::combat::m_Army;
+use eternum::models::combat::m_Battle;
+use eternum::models::combat::m_Health;
+use eternum::models::combat::m_Protectee;
+use eternum::models::combat::m_Protector;
 use eternum::models::config::{
-    world_config, speed_config, capacity_config, weight_config, hyperstructure_resource_config, stamina_config,
-    stamina_refill_config, tick_config, map_config, mercenaries_config, leveling_config, production_config, bank_config,
-    building_config, troop_config, battle_config, building_category_pop_config, population_config,
-    hyperstructure_config, travel_stamina_cost_config, resource_bridge_config, resource_bridge_fee_split_config,
-    resource_bridge_whitelist_config, settlement_config, realm_level_config, realm_max_level_config,
-    travel_food_cost_config, quest_reward_config, quest_config
+    m_WorldConfig, m_SpeedConfig, m_CapacityConfig, m_WeightConfig, m_HyperstructureResourceConfig, m_StaminaConfig,
+    m_StaminaRefillConfig, m_TickConfig, m_MapConfig, m_MercenariesConfig, m_LevelingConfig, m_ProductionConfig,
+    m_BankConfig, m_BuildingConfig, m_TroopConfig, m_BattleConfig, m_BuildingCategoryPopConfig, m_PopulationConfig,
+    m_HyperstructureConfig, m_TravelStaminaCostConfig, m_ResourceBridgeConfig, m_ResourceBridgeFeeSplitConfig,
+    m_ResourceBridgeWhitelistConfig, m_SettlementConfig, m_RealmLevelConfig, m_RealmMaxLevelConfig,
+    m_TravelFoodCostConfig, m_QuestRewardConfig, m_QuestConfig
 };
-use eternum::models::guild::{guild, guild_member, guild_whitelist};
-use eternum::models::hyperstructure::{
-    Progress, progress, Contribution, contribution, Hyperstructure, hyperstructure, Epoch, epoch
+use eternum::models::guild::{m_Guild, m_GuildMember, m_GuildWhitelist};
+use eternum::models::hyperstructure::{m_Progress, m_Contribution, m_Hyperstructure, m_Epoch};
+use eternum::models::map::m_Tile;
+use eternum::models::movable::{m_Movable, m_ArrivalTime};
+use eternum::models::name::{m_AddressName};
+use eternum::models::name::{m_EntityName};
+use eternum::models::order::m_Orders;
+use eternum::models::owner::m_EntityOwner;
+use eternum::models::owner::{m_Owner};
+use eternum::models::population::m_Population;
+use eternum::models::position::{m_Position};
+use eternum::models::production::{m_Production, m_ProductionInput, m_ProductionOutput, m_ProductionDeadline};
+use eternum::models::quantity::{m_Quantity, m_QuantityTracker};
+use eternum::models::quest::{m_Quest, m_QuestBonus};
+use eternum::models::realm::{m_Realm};
+use eternum::models::resources::m_DetachedResource;
+use eternum::models::resources::m_OwnedResourcesTracker;
+use eternum::models::resources::m_ResourceAllowance;
+use eternum::models::resources::m_ResourceTransferLock;
+use eternum::models::resources::{m_ResourceCost};
+use eternum::models::resources::{m_Resource};
+use eternum::models::season::m_Season;
+use eternum::models::stamina::m_Stamina;
+use eternum::models::structure::m_Structure;
+use eternum::models::structure::m_StructureCount;
+use eternum::models::trade::{m_Status, m_Trade};
+use eternum::models::weight::m_Weight;
+
+use eternum::systems::bank::contracts::bank::bank_systems;
+use eternum::systems::bank::contracts::liquidity::liquidity_systems;
+use eternum::systems::bank::contracts::swap::swap_systems;
+
+
+use eternum::systems::buildings::contracts::building_systems;
+use eternum::systems::combat::contracts::battle_systems::{battle_systems, battle_pillage_systems};
+use eternum::systems::combat::contracts::troop_systems::troop_systems;
+
+use eternum::systems::config::contracts::config_systems;
+use eternum::systems::dev::contracts::bank::dev_bank_systems;
+use eternum::systems::dev::contracts::realm::dev_realm_systems;
+use eternum::systems::dev::contracts::resource::dev_resource_systems;
+
+use eternum::systems::guild::contracts::guild_systems;
+use eternum::systems::hyperstructure::contracts::hyperstructure_systems;
+use eternum::systems::map::contracts::map_systems;
+use eternum::systems::name::contracts::name_systems;
+use eternum::systems::ownership::contracts::ownership_systems;
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::resources::contracts::{
+    resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems
 };
-use eternum::models::map::tile;
-use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
-use eternum::models::name::{address_name, AddressName};
-use eternum::models::name::{entity_name, EntityName};
-use eternum::models::order::orders;
-use eternum::models::owner::entity_owner;
-use eternum::models::owner::{owner, Owner};
-use eternum::models::population::population;
-use eternum::models::position::{position};
-use eternum::models::production::{production, production_input, production_output, production_deadline};
-use eternum::models::quantity::{quantity, Quantity, quantity_tracker, QuantityTracker};
-use eternum::models::quest::{quest, quest_bonus};
-use eternum::models::realm::{realm, Realm};
-use eternum::models::resources::detached_resource;
-use eternum::models::resources::owned_resources_tracker;
-use eternum::models::resources::resource_allowance;
-use eternum::models::resources::resource_transfer_lock;
-use eternum::models::resources::{resource, Resource};
-use eternum::models::resources::{resource_cost, ResourceCost};
-use eternum::models::season::season;
-use eternum::models::stamina::stamina;
-use eternum::models::structure::structure;
-use eternum::models::structure::structure_count;
-use eternum::models::trade::{status, Status, trade, Trade,};
-use eternum::models::weight::weight;
+use eternum::systems::trade::contracts::trade_systems::trade_systems;
+use eternum::systems::transport::contracts::donkey_systems::donkey_systems;
+use eternum::systems::transport::contracts::travel_systems::travel_systems;
 use starknet::ContractAddress;
 
 use starknet::contract_address_const;
 
-// used to spawn a test world with all the models and systems registered
-fn spawn_eternum() -> IWorldDispatcher {
-    let mut models = array![
-        weight::TEST_CLASS_HASH,
-        building::TEST_CLASS_HASH,
-        health::TEST_CLASS_HASH,
-        army::TEST_CLASS_HASH,
-        protector::TEST_CLASS_HASH,
-        protectee::TEST_CLASS_HASH,
-        battle::TEST_CLASS_HASH,
-        guild::TEST_CLASS_HASH,
-        building_quantityv_2::TEST_CLASS_HASH,
-        tile::TEST_CLASS_HASH,
-        orders::TEST_CLASS_HASH,
-        entity_owner::TEST_CLASS_HASH,
-        population::TEST_CLASS_HASH,
-        production::TEST_CLASS_HASH,
-        production_input::TEST_CLASS_HASH,
-        production_output::TEST_CLASS_HASH,
-        resource_allowance::TEST_CLASS_HASH,
-        detached_resource::TEST_CLASS_HASH,
-        owned_resources_tracker::TEST_CLASS_HASH,
-        resource_transfer_lock::TEST_CLASS_HASH,
-        stamina::TEST_CLASS_HASH,
-        structure::TEST_CLASS_HASH,
-        structure_count::TEST_CLASS_HASH,
-        bank::TEST_CLASS_HASH,
-        liquidity::TEST_CLASS_HASH,
-        market::TEST_CLASS_HASH,
-        guild_member::TEST_CLASS_HASH,
-        guild_whitelist::TEST_CLASS_HASH,
-        map_config::TEST_CLASS_HASH,
-        mercenaries_config::TEST_CLASS_HASH,
-        settlement_config::TEST_CLASS_HASH,
-        leveling_config::TEST_CLASS_HASH,
-        production_config::TEST_CLASS_HASH,
-        bank_config::TEST_CLASS_HASH,
-        building_config::TEST_CLASS_HASH,
-        troop_config::TEST_CLASS_HASH,
-        battle_config::TEST_CLASS_HASH,
-        building_category_pop_config::TEST_CLASS_HASH,
-        population_config::TEST_CLASS_HASH,
-        owner::TEST_CLASS_HASH,
-        movable::TEST_CLASS_HASH,
-        quantity::TEST_CLASS_HASH,
-        realm::TEST_CLASS_HASH,
-        speed_config::TEST_CLASS_HASH,
-        capacity_config::TEST_CLASS_HASH,
-        world_config::TEST_CLASS_HASH,
-        quantity_tracker::TEST_CLASS_HASH,
-        position::TEST_CLASS_HASH,
-        arrival_time::TEST_CLASS_HASH,
-        trade::TEST_CLASS_HASH,
-        resource::TEST_CLASS_HASH,
-        resource_cost::TEST_CLASS_HASH,
-        status::TEST_CLASS_HASH,
-        weight_config::TEST_CLASS_HASH,
-        progress::TEST_CLASS_HASH,
-        contribution::TEST_CLASS_HASH,
-        hyperstructure_resource_config::TEST_CLASS_HASH,
-        hyperstructure_config::TEST_CLASS_HASH,
-        epoch::TEST_CLASS_HASH,
-        hyperstructure::TEST_CLASS_HASH,
-        season::TEST_CLASS_HASH,
-        stamina_config::TEST_CLASS_HASH,
-        stamina_refill_config::TEST_CLASS_HASH,
-        tick_config::TEST_CLASS_HASH,
-        address_name::TEST_CLASS_HASH,
-        entity_name::TEST_CLASS_HASH,
-        capacity_category::TEST_CLASS_HASH,
-        production_deadline::TEST_CLASS_HASH,
-        travel_stamina_cost_config::TEST_CLASS_HASH,
-        resource_bridge_config::TEST_CLASS_HASH,
-        resource_bridge_fee_split_config::TEST_CLASS_HASH,
-        resource_bridge_whitelist_config::TEST_CLASS_HASH,
-        realm_level_config::TEST_CLASS_HASH,
-        realm_max_level_config::TEST_CLASS_HASH,
-        travel_food_cost_config::TEST_CLASS_HASH,
-        quest_config::TEST_CLASS_HASH,
-        quest_reward_config::TEST_CLASS_HASH,
-        quest_bonus::TEST_CLASS_HASH,
-        quest::TEST_CLASS_HASH,
-    ];
+fn namespace_def() -> NamespaceDef {
+    let ndef = NamespaceDef {
+        namespace: DEFAULT_NS_STR(), resources: [
+            TestResource::Model(m_Bank::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Liquidity::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Market::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_BuildingQuantityv2::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Building::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_CapacityCategory::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Army::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Battle::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Health::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Protectee::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Protector::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_WorldConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_SpeedConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_CapacityConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_WeightConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_HyperstructureResourceConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_StaminaConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_StaminaRefillConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_TickConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_MapConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_MercenariesConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LevelingConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ProductionConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_BankConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_BuildingConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_TroopConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_BattleConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_BuildingCategoryPopConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_PopulationConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_HyperstructureConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_TravelStaminaCostConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ResourceBridgeConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ResourceBridgeFeeSplitConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ResourceBridgeWhitelistConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_SettlementConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_RealmLevelConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_RealmMaxLevelConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_TravelFoodCostConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_QuestRewardConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_QuestConfig::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Guild::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_GuildMember::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_GuildWhitelist::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Progress::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Contribution::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Hyperstructure::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Epoch::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Tile::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Movable::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ArrivalTime::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_AddressName::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_EntityName::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Orders::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_EntityOwner::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Owner::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Population::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Position::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Production::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ProductionInput::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ProductionOutput::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ProductionDeadline::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Quantity::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_QuantityTracker::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Quest::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_QuestBonus::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Realm::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_DetachedResource::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_OwnedResourcesTracker::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ResourceAllowance::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ResourceTransferLock::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Resource::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_ResourceCost::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Season::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Stamina::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Structure::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_StructureCount::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Status::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Trade::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Weight::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Contract(
+                ContractDefTrait::new(bank_systems::TEST_CLASS_HASH, "bank_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(liquidity_systems::TEST_CLASS_HASH, "liquidity_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(swap_systems::TEST_CLASS_HASH, "swap_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(building_systems::TEST_CLASS_HASH, "building_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(battle_systems::TEST_CLASS_HASH, "battle_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(battle_pillage_systems::TEST_CLASS_HASH, "battle_pillage_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(troop_systems::TEST_CLASS_HASH, "troop_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(config_systems::TEST_CLASS_HASH, "config_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(dev_bank_systems::TEST_CLASS_HASH, "dev_bank_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(dev_realm_systems::TEST_CLASS_HASH, "dev_realm_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(dev_resource_systems::TEST_CLASS_HASH, "dev_resource_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(guild_systems::TEST_CLASS_HASH, "guild_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(hyperstructure_systems::TEST_CLASS_HASH, "hyperstructure_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(map_systems::TEST_CLASS_HASH, "map_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(name_systems::TEST_CLASS_HASH, "name_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(ownership_systems::TEST_CLASS_HASH, "ownership_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(realm_systems::TEST_CLASS_HASH, "realm_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(resource_bridge_systems::TEST_CLASS_HASH, "resource_bridge_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(resource_systems::TEST_CLASS_HASH, "resource_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(trade_systems::TEST_CLASS_HASH, "trade_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(travel_systems::TEST_CLASS_HASH, "travel_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Contract(
+                ContractDefTrait::new(donkey_systems::TEST_CLASS_HASH, "donkey_systems")
+                    .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+            ),
+            TestResource::Event(liquidity_systems::e_LiquidityEvent::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(swap_systems::e_SwapEvent::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(hyperstructure_systems::e_HyperstructureFinished::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(
+                hyperstructure_systems::e_HyperstructureCoOwnersChange::TEST_CLASS_HASH.try_into().unwrap()
+            ),
+            TestResource::Event(
+                hyperstructure_systems::e_HyperstructureContribution::TEST_CLASS_HASH.try_into().unwrap()
+            ),
+            TestResource::Event(hyperstructure_systems::e_GameEnded::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(map_systems::e_MapExplored::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(map_systems::e_FragmentMineDiscovered::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(resource_systems::e_Transfer::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_CreateOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_AcceptOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_AcceptPartialOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(trade_systems::e_CancelOrder::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(donkey_systems::e_BurnDonkey::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(travel_systems::e_Travel::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_EternumEvent::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleStartData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleJoinData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleLeaveData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattleClaimData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_BattlePillageData::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(eternum::models::event::e_SettleRealmData::TEST_CLASS_HASH.try_into().unwrap()),
+        ].span()
+    };
 
-    let world = spawn_test_world(["eternum"].span(), models.span());
-
-    world.dispatcher.uuid();
-
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player1'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player2'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player3'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_1_realm_owner'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_2_realm_owner'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'player_3_realm_owner'>());
-
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realms_owner'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'realm_owner'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'caller'>());
-
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'maker'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'taker'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'0'>());
-    world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), contract_address_const::<'takers_other_realm'>());
-    world
+    ndef
 }
 
 
-fn spawn_eternum_custom(models_list: Array<Array<felt252>>, owners_list: Span<ContractAddress>) -> IWorldDispatcher {
-    let mut world_models = array![];
-    let mut model_added: Felt252Dict<bool> = Default::default();
+// used to spawn a test world with all the models and systems registered
+fn spawn_eternum() -> dojo::world::WorldStorage {
+    let ndef = namespace_def();
+    let mut world = spawn_test_world([ndef].span());
 
-    for models in models_list {
-        for model in models {
-            if model_added.get(model) == false {
-                model_added.insert(model, true);
-                world_models.append(model);
-            }
-        }
-    };
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player1'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player2'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player3'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player_1_realm_owner'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player_2_realm_owner'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'player_3_realm_owner'>());
 
-    let world = spawn_test_world(["eternum"].span(), world_models.span());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'realms_owner'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'realm_owner'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'caller'>());
+
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'maker'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'taker'>());
+    world.dispatcher.grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'0'>());
+    world
+        .dispatcher
+        .grant_owner(dojo::utils::bytearray_hash(DEFAULT_NS()), contract_address_const::<'takers_other_realm'>());
 
     world.dispatcher.uuid();
-
-    for owner in owners_list {
-        world.grant_owner(dojo::utils::bytearray_hash(@"eternum"), *owner);
-    };
 
     world
 }

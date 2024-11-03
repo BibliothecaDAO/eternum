@@ -1,21 +1,12 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
+import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
-import { create } from "zustand";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress } from "../../ui/utils/utils";
-
-interface AccountState {
-  account: any | null;
-  setAccount: (account: any) => void;
-}
-
-export const useAccountStore = create<AccountState>((set) => ({
-  account: null,
-  setAccount: (account) => set({ account }),
-}));
+import { useAccountStore } from "./accountStore";
 
 interface DojoAccount {
   create: () => void;
@@ -55,43 +46,52 @@ type DojoProviderProps = {
   value: SetupResult;
 };
 
-export const DojoProvider = ({ children, value }: DojoProviderProps) => {
-  const currentValue = useContext(DojoContext);
-  if (currentValue) throw new Error("DojoProvider can only be used once");
+const useMasterAccount = (rpcProvider: RpcProvider) => {
+  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
+  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+  return useMemo(() => new Account(rpcProvider, masterAddress, privateKey), [rpcProvider, masterAddress, privateKey]);
+};
 
-  const rpcProvider = useMemo(
+const useRpcProvider = () => {
+  return useMemo(
     () =>
       new RpcProvider({
         nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
       }),
     [],
   );
+};
 
-  const {
-    VITE_PUBLIC_MASTER_ADDRESS: masterAddress,
-    VITE_PUBLIC_MASTER_PRIVATE_KEY: privateKey,
-    VITE_PUBLIC_ACCOUNT_CLASS_HASH: accountClassHash,
-    VITE_NETWORK_FEE_TOKEN: feeTokenAddress,
-  } = import.meta.env;
-
-  const masterAccount = useMemo(
-    () => new Account(rpcProvider, masterAddress, privateKey),
-    [rpcProvider, masterAddress, privateKey],
-  );
-
-  const { account: controllerAccount } = useAccount();
-
+const useControllerAccount = () => {
+  const { account: controllerAccount, isConnected } = useAccount();
   useEffect(() => {
     if (controllerAccount) {
       useAccountStore.getState().setAccount(controllerAccount);
     }
+  }, [controllerAccount, isConnected]);
+  return controllerAccount;
+};
 
-    console.log(useAccountStore.getState().account, "controllerAccount");
-  }, [controllerAccount]);
+export const DojoProvider = ({ children, value }: DojoProviderProps) => {
+  const currentValue = useContext(DojoContext);
+  if (currentValue) throw new Error("DojoProvider can only be used once");
+
+  const rpcProvider = useRpcProvider();
+  const masterAccount = useMasterAccount(rpcProvider);
+  const controllerAccount = useControllerAccount();
 
   return (
-    <BurnerProvider initOptions={{ masterAccount, accountClassHash, rpcProvider, feeTokenAddress }}>
-      <DojoContextProvider value={value}>{children}</DojoContextProvider>
+    <BurnerProvider
+      initOptions={{
+        masterAccount,
+        accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH,
+        rpcProvider,
+        feeTokenAddress: import.meta.env.VITE_NETWORK_FEE_TOKEN,
+      }}
+    >
+      <DojoContextProvider value={value} masterAccount={masterAccount} controllerAccount={controllerAccount!}>
+        {children}
+      </DojoContextProvider>
     </BurnerProvider>
   );
 };
@@ -108,34 +108,38 @@ export const useDojo = (): DojoResult => {
   };
 };
 
-const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
+const DojoContextProvider = ({
+  children,
+  value,
+  masterAccount,
+  controllerAccount,
+}: DojoProviderProps & { masterAccount: Account; controllerAccount: AccountInterface | null }) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
-
-  const rpcProvider = useMemo(
-    () =>
-      new RpcProvider({
-        nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
-      }),
-    [],
-  );
-
-  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-
-  const masterAccount = useMemo(
-    () => new Account(rpcProvider, masterAddress, privateKey),
-    [rpcProvider, masterAddress, privateKey],
-  );
 
   const { create, list, get, account, select, isDeploying, clear } = useBurnerManager({
     burnerManager: value.network.burnerManager,
   });
 
-  // get the controller account
-  const { account: controllerAccount } = useAccount();
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (controllerAccount) {
+        console.log("logging controllerAccount", controllerAccount);
+        useAccountStore.getState().setAccount(controllerAccount);
+        clearInterval(interval);
+      }
+    }, 1000);
 
-  console.log(controllerAccount, "controllerAccount");
+    return () => clearInterval(interval);
+  }, [controllerAccount]);
+
+  if (!controllerAccount) {
+    return (
+      <div className="h-screen w-screen">
+        <LoadingOroborus loading={true} />
+      </div>
+    );
+  }
 
   return (
     <DojoContext.Provider
@@ -148,9 +152,9 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
           get,
           select,
           clear,
-          account: controllerAccount || masterAccount,
+          account: controllerAccount,
           isDeploying,
-          accountDisplay: controllerAccount ? displayAddress(controllerAccount.address) : displayAddress(masterAddress),
+          accountDisplay: displayAddress(controllerAccount.address),
         },
       }}
     >

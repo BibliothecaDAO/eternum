@@ -161,7 +161,7 @@ export const EventStream = () => {
           Events
         </div>
       ) : (
-        <div className="bg-brown/40 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 h-[200px] md:h-[210px] overflow-y-auto">
+        <div className="bg-brown/90 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 h-[200px] md:h-[210px] overflow-y-auto">
           {filteredEvents
             .sort((a, b) => a.timestamp - b.timestamp)
             .slice(-EVENT_STREAM_SIZE)

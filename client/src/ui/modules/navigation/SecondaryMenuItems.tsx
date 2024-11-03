@@ -103,7 +103,7 @@ export const SecondaryMenuItems = () => {
   }, [unclaimedQuestsCount, selectedQuest, quests, structureEntityId]);
   return (
     <div className="flex gap-1 md:gap-3">
-      <div className="self-center px-1 md:px-3 flex space-x-1 md:space-x-2 mr-2">
+      <div className="self-center px-1 md:px-3 flex space-x-1 md:space-x-2 mr-2 my-1">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}

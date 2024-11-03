@@ -165,9 +165,9 @@ export const TopLeftNavigation = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <div className="pointer-events-auto mx-2 w-screen flex justify-between md:pl-2">
+    <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex max-w-[150px] md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown border-gold/10 relative">
+        <div className="flex max-w-[150px] md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -179,7 +179,7 @@ export const TopLeftNavigation = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-brown/90">
+                <SelectContent className="bg-brown/80">
                   {structures.map((structure, index) => (
                     <SelectItem
                       className="flex justify-between"
@@ -203,12 +203,8 @@ export const TopLeftNavigation = () => {
               </div>
             )}
           </div>
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded"
-            style={{ width: `${progress}%` }}
-          ></div>
         </div>
-        <div className=" bg-brown/90 bg-hex-bg rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
+        <div className=" bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -249,7 +245,7 @@ export const TopLeftNavigation = () => {
             </div>
           </div>
         </div>
-        <div className="bg-brown/90 bg-hex-bg rounded-b-xl text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-2 md:px-4">
+        <div className="bg-brown/90 bg-hex-bg rounded-b-xl text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-2 md:px-4 relative">
           <div className="flex justify-center md:justify-start">
             <TickProgress />
           </div>
@@ -283,6 +279,10 @@ export const TopLeftNavigation = () => {
               />
             </div>
           </div>
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded-bl-2xl rounded-tr-2xl mx-1"
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
         {pointToWorldButton && (
           <div className="bg-brown/90 text-gold border border-gold/30 rounded-md shadow-lg left-1/2 transform p-3 flex flex-row items-center animate-pulse">
