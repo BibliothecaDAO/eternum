@@ -207,7 +207,12 @@ fn setup_hex_travel() -> (WorldStorage, ID, Position, ITravelSystemsDispatcher) 
     };
     world.write_model_test(@tick_config);
 
-    world.write_model_test(@StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: MAX_STAMINA });
+    world
+        .write_model_test(
+            @StaminaRefillConfig {
+                config_id: WORLD_CONFIG_ID, amount_per_tick: MAX_STAMINA, start_boost_tick_count: 0,
+            }
+        );
 
     world
         .write_model_test(
