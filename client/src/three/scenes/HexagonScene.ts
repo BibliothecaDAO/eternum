@@ -39,6 +39,8 @@ export abstract class HexagonScene {
   private hemisphereLight!: THREE.HemisphereLight;
   private lightHelper!: THREE.DirectionalLightHelper;
 
+  private groundMesh!: THREE.Mesh;
+
   constructor(
     protected sceneName: SceneName,
     protected controls: MapControls,
@@ -190,6 +192,13 @@ export abstract class HexagonScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.1, 0.1, 0.0015);
     shadowFolder.close();
+  }
+
+  private setupGroundMeshGUI(): void {
+    const groundMeshFolder = this.GUIFolder.addFolder("Ground Mesh");
+    groundMeshFolder.add(this.groundMesh.material, "metalness", 0, 1, 0.01).name("Metalness");
+    groundMeshFolder.add(this.groundMesh.material, "roughness", 0, 1, 0.01).name("Roughness");
+    groundMeshFolder.close();
   }
 
   public getScene() {
@@ -372,8 +381,8 @@ export abstract class HexagonScene {
 
   private createGroundMesh() {
     const scale = 60;
-    const metalness = 0.5;
-    const roughness = 0.7;
+    const metalness = 0;
+    const roughness = 0.1;
 
     const geometry = new THREE.PlaneGeometry(2668, 1390.35);
     const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
@@ -399,6 +408,9 @@ export abstract class HexagonScene {
     mesh.raycast = () => {};
 
     this.scene.add(mesh);
+    this.groundMesh = mesh;
+    this.setupGroundMeshGUI();
+
   }
 
   update(deltaTime: number): void {
