@@ -35,7 +35,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[800px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient animatedBackground  ">
+      <div className="self-center bg-brown/90 rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient  ">
         {children}
       </div>
     </motion.div>
@@ -43,29 +43,25 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const StepOne = ({ onNext }: { onNext: () => void }) => {
-  const {
-    account: { account },
-  } = useDojo();
   const { connect, connectors } = useConnect();
   const { isConnected } = useAccount();
   const connectWallet = async () => {
     connect({ connector: connectors[0] });
   };
 
-  console.log(account);
-
   return (
     <StepContainer>
       <div className="w-full text-center pt-6">
         <div className="mx-auto flex mb-8">
-          <img src="/images/eternum-logo.svg" className="w-48 mx-auto" alt="Eternum Logo" />
+          <img src="/images/eternum-logo.svg" className="w-72 mx-auto" alt="Eternum Logo" />
         </div>
-        <h2 className="">It's time to build...</h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
-        <Button className="px-4 " variant={"secondary"} onClick={connectWallet}>
-          <CartridgeSmall className="w-6 mr-2 fill-current" /> Log in with Controller
-        </Button>
+        {!isConnected && (
+          <Button className="px-4 text-[#ffc52a] border-2 border-[#ffc52a]" variant={"default"} onClick={connectWallet}>
+            <CartridgeSmall className="w-6 mr-2 fill-current" /> Controller
+          </Button>
+        )}
         {isConnected && (
           <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
             Choose your Leader

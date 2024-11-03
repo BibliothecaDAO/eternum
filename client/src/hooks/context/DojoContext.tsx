@@ -1,4 +1,5 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
+import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo } from "react";
@@ -132,9 +133,12 @@ const DojoContextProvider = ({
     return () => clearInterval(interval);
   }, [controllerAccount]);
 
-  // Wait until the controllerAccount is set before rendering children
   if (!controllerAccount) {
-    return null; // or a loading spinner
+    return (
+      <div className="h-screen w-screen">
+        <LoadingOroborus loading={true} />
+      </div>
+    );
   }
 
   return (
