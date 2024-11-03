@@ -916,11 +916,17 @@ mod battle_pillage_systems {
 
                                 let army_weight: Weight = world.read_model(army_id);
 
-                                let max_carriable = (army_total_capacity - (army_weight.value))
-                                    / max(
-                                        (WeightConfigCustomImpl::get_weight_grams(ref world, *chosen_resource_type, 1)),
-                                        1
-                                    );
+                                let max_carriable = if army_total_capacity > army_weight.value {
+                                    (army_total_capacity - (army_weight.value))
+                                        / max(
+                                            (WeightConfigCustomImpl::get_weight_grams(
+                                                ref world, *chosen_resource_type, 1
+                                            )),
+                                            1
+                                        )
+                                } else {
+                                    0
+                                };
 
                                 if max_carriable > 0 {
                                     let max_resource_amount_stolen: u128 = attacking_army.troops.count().into()
