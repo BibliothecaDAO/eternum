@@ -5,8 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "deploy": "node deploy_dev",
-    "deploy::prod": "node deploy_prod"
+    "deploy": "bun --env-file=.env deploy_dev",
+    "deploy::prod": "bun --env-file=.env.production deploy_prod"
   },
   "author": "",
   "license": "ISC",
