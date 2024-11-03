@@ -1104,11 +1104,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_stamina_refill_config(props: SystemProps.SetStaminaRefillConfigProps) {
-    const { amount_per_tick, signer } = props;
+    const { amount_per_tick, start_boost_tick_count, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_refill_config",
-      calldata: [amount_per_tick],
+      calldata: [amount_per_tick, start_boost_tick_count],
     });
   }
 

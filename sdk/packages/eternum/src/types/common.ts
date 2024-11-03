@@ -252,6 +252,7 @@ export interface Config {
     travelCost: number;
     exploreCost: number;
     refillPerTick: number;
+    startBoostTickCount: number;
   };
   resources: {
     resourcePrecision: number;
