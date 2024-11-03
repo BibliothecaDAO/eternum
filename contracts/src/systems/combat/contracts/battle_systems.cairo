@@ -1,3 +1,4 @@
+use bushido_trophy::store::{Store, StoreTrait};
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
@@ -15,6 +16,7 @@ use eternum::models::{
     },
 };
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
+use eternum::utils::tasks::index::{Task, TaskTrait};
 
 #[starknet::interface]
 trait IBattleContract<T> {
@@ -683,11 +685,6 @@ mod battle_systems {
                 world.write_model(@army);
                 world.write_model(@army_health);
                 world.write_model(@army_quantity);
-            } else if army.troops.count() > 0 {
-                // [Achievement] Win a battle if the army is not dead
-                let player_id: felt252 = leaver.into();
-                let task_id: felt252 = Task::Battlelord.identifier();
-                self.achievable.update(world, player_id, task_id, count: 1,);
             }
 
             // emit battle leave event
@@ -746,10 +743,6 @@ mod battle_systems {
                 if structure_army.is_in_battle() {
                     let mut battle = BattleCustomImpl::get(world, structure_army.battle_id);
                     InternalBattleImpl::leave_battle_if_ended(ref world, ref battle, ref structure_army);
-                    // [Achievement] Win a battle
-                    let player_id: felt252 = claimer.into();
-                    let task_id: felt252 = Task::Battlelord.identifier();
-                    self.achievable.update(world, player_id, task_id, count: 1,);
                 }
 
                 // ensure structure army is dead
@@ -1209,6 +1202,15 @@ pub impl InternalBattleImpl of InternalBattleTrait {
 
     /// Make army leave battle
     fn leave_battle(ref world: WorldStorage, ref battle: Battle, ref original_army: Army) {
+        // [Achievement] Win a battle
+        if battle.has_ended() && original_army.troops.count() > 0 {
+            let player_id: felt252 = starknet::get_caller_address().into();
+            let task_id: felt252 = Task::Battlelord.identifier();
+            let time = starknet::get_block_timestamp();
+            let mut store = StoreTrait::new(world);
+            store.update(player_id, task_id, 1, time);
+        }
+
         // make caller army mobile again
         let army_id = original_army.entity_id;
         let mut army_protectee: Protectee = world.read_model(army_id);
