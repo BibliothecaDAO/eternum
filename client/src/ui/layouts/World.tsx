@@ -49,11 +49,9 @@ const BattleView = lazy(() =>
 const TopMiddleNavigation = lazy(() =>
   import("../modules/navigation/TopNavigation").then((module) => ({ default: module.TopMiddleNavigation })),
 );
-
 const BottomMiddleContainer = lazy(() =>
   import("../containers/BottomMiddleContainer").then((module) => ({ default: module.BottomMiddleContainer })),
 );
-
 const LeftNavigationModule = lazy(() =>
   import("../modules/navigation/LeftNavigationModule").then((module) => ({ default: module.LeftNavigationModule })),
 );
@@ -63,7 +61,6 @@ const RightNavigationModule = lazy(() =>
 const TopLeftNavigation = lazy(() =>
   import("../modules/navigation/TopLeftNavigation").then((module) => ({ default: module.TopLeftNavigation })),
 );
-const PlayerId = lazy(() => import("../modules/social/PlayerId").then((module) => ({ default: module.PlayerId })));
 const EventStream = lazy(() =>
   import("../modules/stream/EventStream").then((module) => ({ default: module.EventStream })),
 );
@@ -145,8 +142,6 @@ export const World = () => {
             <TopLeftNavigation />
           </TopLeftContainer>
         </div>
-
-        <PlayerId />
 
         <Redirect to="/" />
         <Leva
