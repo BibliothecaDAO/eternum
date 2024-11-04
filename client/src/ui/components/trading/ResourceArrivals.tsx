@@ -4,49 +4,36 @@ import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ID } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Entity } from "../entities/Entity";
 import { HintSection } from "../hints/HintModal";
 
-export const AllResourceArrivals = ({
-  setNotificationLength,
-  className,
-}: {
-  setNotificationLength: (len: number) => void;
-  className?: string;
-}) => {
+export type EntityReadyForDeposit = {
+  carrierId: ID;
+  senderEntityId: ID;
+  recipientEntityId: ID;
+  resources: bigint[];
+};
+
+export const AllResourceArrivals = ({ className }: { className?: string }) => {
   const { account, setup } = useDojo();
 
   const arrivals = usePlayerArrivals();
-  const [entitiesReadyForDeposit, setEntitiesReadyForDeposit] = useState<
-    { senderEntityId: ID; recipientEntityId: ID; resources: bigint[] }[]
-  >([]);
+  const [entitiesReadyForDeposit, setEntitiesReadyForDeposit] = useState<EntityReadyForDeposit[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const updateNotificationLength = () => {
-      const currentTime = Date.now() / 1000;
-      const arrivedCount = arrivals.filter((arrival) => arrival.arrivesAt <= currentTime).length;
-      setNotificationLength(arrivedCount);
-    };
-
-    updateNotificationLength();
-
-    const intervalId = setInterval(updateNotificationLength, 10000);
-
-    return () => clearInterval(intervalId);
-  }, [arrivals]);
 
   const onOffload = async () => {
     setIsLoading(true);
     await setup.systemCalls
       .send_resources_multiple({
-        calls: entitiesReadyForDeposit.map((entity) => ({
-          sender_entity_id: entity.senderEntityId,
-          recipient_entity_id: entity.recipientEntityId,
-          resources: entity.resources,
-        })),
+        calls: entitiesReadyForDeposit
+          .filter((entity) => arrivals.some((arrival) => arrival.entityId === entity.carrierId))
+          .map((entity) => ({
+            sender_entity_id: entity.senderEntityId,
+            recipient_entity_id: entity.recipientEntityId,
+            resources: entity.resources,
+          })),
         signer: account.account,
       })
       .finally(() => setIsLoading(false));

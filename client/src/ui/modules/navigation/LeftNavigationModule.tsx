@@ -7,6 +7,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { usePlayerArrivalsNotificationLength } from "@/hooks/helpers/useResources";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
@@ -14,7 +15,7 @@ import { BaseContainer } from "@/ui/containers/BaseContainer";
 import { KeyBoardKey } from "@/ui/elements/KeyBoardKey";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo } from "react";
 import {
   construction,
   military,
@@ -59,8 +60,6 @@ export enum LeftView {
 }
 
 export const LeftNavigationModule = () => {
-  const [notificationLength, setNotificationLength] = useState(0);
-
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -73,6 +72,8 @@ export const LeftNavigationModule = () => {
 
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
+
+  const notificationLength = usePlayerArrivalsNotificationLength();
 
   const { questClaimStatus } = useQuestClaimStatus();
 
@@ -298,9 +299,7 @@ export const LeftNavigationModule = () => {
                 <StructureConstructionMenu entityId={structureEntityId} />
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
-              {view === LeftView.ResourceArrivals && (
-                <AllResourceArrivals setNotificationLength={setNotificationLength} />
-              )}
+              {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
               {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>

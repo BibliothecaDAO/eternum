@@ -1,4 +1,3 @@
-import { dir, soundSelector } from "@/hooks/useUISound";
 import { Position } from "@/types/Position";
 import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, orders } from "@bibliothecadao/eternum";
@@ -275,10 +274,6 @@ export class ArmyManager {
     if (!this.visibleArmies.some((army) => army.entityId === entityId)) {
       return;
     }
-
-    const marchSound = entityId % 2 === 0 ? soundSelector.unitMarching1 : soundSelector.unitMarching2;
-
-    new Audio(dir + marchSound).play();
 
     const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
     const currentPosition = new THREE.Vector3();
