@@ -47,11 +47,10 @@ class Minimap {
   private structureManager!: StructureManager;
   private armyManager!: ArmyManager;
   private biome!: Biome;
-  private displayRange: any = {
-    minCol: 150,
-    maxCol: 350,
-    minRow: 100,
-    maxRow: 200,
+  private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
+  private mapSize: { width: number; height: number } = {
+    width: MINIMAP_CONFIG.MAP_COLS_WIDTH,
+    height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT,
   };
   private scaleX!: number;
   private scaleY!: number;
@@ -109,8 +108,8 @@ class Minimap {
     this.armyManager = armyManager;
     this.biome = biome;
     this.camera = camera;
-    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
-    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
+    this.scaleX = this.canvas.width / this.mapSize.width;
+    this.scaleY = this.canvas.height / this.mapSize.height;
     this.biomeCache = new Map();
     this.scaledCoords = new Map();
     this.structureSize = { width: 0, height: 0 };
@@ -128,13 +127,18 @@ class Minimap {
   }
 
   private recomputeScales() {
-    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
-    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
+    this.scaleX = this.canvas.width / this.mapSize.width;
+    this.scaleY = this.canvas.height / this.mapSize.height;
     this.scaledCoords.clear();
-    for (let col = this.displayRange.minCol; col <= this.displayRange.maxCol; col++) {
-      for (let row = this.displayRange.minRow; row <= this.displayRange.maxRow; row++) {
-        const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
-        const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+    const minCol = this.mapCenter.col - this.mapSize.width / 2;
+    const maxCol = this.mapCenter.col + this.mapSize.width / 2;
+    const minRow = this.mapCenter.row - this.mapSize.height / 2;
+    const maxRow = this.mapCenter.row + this.mapSize.height / 2;
+
+    for (let col = minCol; col <= maxCol; col++) {
+      for (let row = minRow; row <= maxRow; row++) {
+        const scaledCol = (col - minCol) * this.scaleX;
+        const scaledRow = (row - minRow) * this.scaleY;
         this.scaledCoords.set(`${col},${row}`, { scaledCol, scaledRow });
       }
     }
@@ -159,8 +163,8 @@ class Minimap {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const col = Math.floor(x / this.scaleX) + this.displayRange.minCol;
-    const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
+    const col = Math.floor(x / this.scaleX) + (this.mapCenter.col - this.mapSize.width / 2);
+    const row = Math.floor(y / this.scaleY) + (this.mapCenter.row - this.mapSize.height / 2);
     return { col, row, x, y };
   }
 
@@ -272,10 +276,7 @@ class Minimap {
     const url = new URL(window.location.href);
     const col = parseInt(url.searchParams.get("col") || "0");
     const row = parseInt(url.searchParams.get("row") || "0");
-    this.displayRange.minCol = col - MINIMAP_CONFIG.MAP_COLS_WIDTH / 2;
-    this.displayRange.maxCol = col + MINIMAP_CONFIG.MAP_COLS_WIDTH / 2;
-    this.displayRange.minRow = row - MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
-    this.displayRange.maxRow = row + MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
+    this.mapCenter = { col, row };
     this.recomputeScales();
   }
 
@@ -303,26 +304,29 @@ class Minimap {
     this.worldmapScene.moveCameraToColRow(col, row, 0);
   }
 
-  private moveMapRange(direction: string) {
-    const colShift = Math.round((this.displayRange.maxCol - this.displayRange.minCol) / 4);
-    const rowShift = Math.round((this.displayRange.maxRow - this.displayRange.minRow) / 4);
+  private moveMapRange(direction: string, shiftSize?: number) {
+    let colShift = 0;
+    let rowShift = 0;
+    if (!shiftSize) {
+      colShift = Math.round(this.mapSize.width / 4);
+      rowShift = Math.round(this.mapSize.height / 4);
+    } else {
+      colShift = shiftSize;
+      rowShift = shiftSize;
+    }
 
     switch (direction) {
       case "left":
-        this.displayRange.minCol -= colShift;
-        this.displayRange.maxCol -= colShift;
+        this.mapCenter.col -= colShift;
         break;
       case "right":
-        this.displayRange.minCol += colShift;
-        this.displayRange.maxCol += colShift;
+        this.mapCenter.col += colShift;
         break;
       case "top":
-        this.displayRange.minRow -= rowShift;
-        this.displayRange.maxRow -= rowShift;
+        this.mapCenter.row -= rowShift;
         break;
       case "bottom":
-        this.displayRange.minRow += rowShift;
-        this.displayRange.maxRow += rowShift;
+        this.mapCenter.row += rowShift;
         break;
       default:
         return;
@@ -337,11 +341,9 @@ class Minimap {
   };
 
   private zoom(zoomOut: boolean) {
-    const currentRange = Math.abs(this.displayRange.maxCol - this.displayRange.minCol);
+    const currentRange = this.mapSize.width;
     console.log(
-      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, minCol: ${this.displayRange.minCol}, maxCol: ${
-        this.displayRange.maxCol
-      }`,
+      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, mapCenter: ${this.mapCenter.col}, ${this.mapCenter.row}`,
     );
     if (!zoomOut && currentRange < MINIMAP_CONFIG.MIN_ZOOM_RANGE) {
       return;
@@ -354,10 +356,8 @@ class Minimap {
     const delta = zoomOut ? -5 : 5;
     const deltaX = Math.round(delta * ratio);
     const deltaY = delta;
-    this.displayRange.minCol = this.displayRange.minCol + deltaX;
-    this.displayRange.maxCol = this.displayRange.maxCol - deltaX;
-    this.displayRange.minRow = this.displayRange.minRow + deltaY;
-    this.displayRange.maxRow = this.displayRange.maxRow - deltaY;
+    this.mapSize.width -= 2 * deltaX;
+    this.mapSize.height -= 2 * deltaY;
 
     this.recomputeScales();
   }
