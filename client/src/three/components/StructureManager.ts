@@ -81,8 +81,7 @@ export class StructureManager {
 
   async onUpdate(update: StructureSystemUpdate) {
     await Promise.all(this.modelLoadPromises);
-
-    const { entityId, hexCoords, isMine, structureType, stage } = update;
+    const { entityId, hexCoords, isMine, structureType, stage, level } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
 
@@ -99,7 +98,7 @@ export class StructureManager {
 
     const key = structureType;
     // Add the structure to the structures map
-    this.structures.addStructure(entityId, key, normalizedCoord, stage, isMine);
+    this.structures.addStructure(entityId, key, normalizedCoord, stage, level, isMine);
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -157,8 +156,10 @@ export class StructureManager {
             this.dummy.rotation.y = (4 * Math.PI) / 6;
           }
           this.dummy.updateMatrix();
-
-          const modelType = models[structure.stage];
+          let modelType = models[structure.stage];
+          if (structureType === StructureType.Realm) {
+            modelType = models[structure.level];
+          }
           const currentCount = modelType.getCount();
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
           modelType.setCount(currentCount + 1);
@@ -215,6 +216,7 @@ export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
   stage: number;
+  level: number;
   isMine: boolean;
 }
 
@@ -226,12 +228,13 @@ class Structures {
     structureType: StructureType,
     hexCoords: { col: number; row: number },
     stage: number = 0,
+    level: number = 0,
     isMine: boolean,
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures.get(structureType)!.set(entityId, { entityId, hexCoords, stage, isMine });
+    this.structures.get(structureType)!.set(entityId, { entityId, hexCoords, stage, level, isMine });
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {

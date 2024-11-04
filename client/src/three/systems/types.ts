@@ -19,6 +19,7 @@ export type StructureSystemUpdate = {
   structureType: StructureType;
   isMine: boolean;
   stage: StructureProgress;
+  level: number;
 };
 
 export type TileSystemUpdate = {
