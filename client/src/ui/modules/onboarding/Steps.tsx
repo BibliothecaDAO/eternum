@@ -354,7 +354,7 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
         <h2 className="mb-4">Days are {formatTime(configManager.getTick(TickIds.Armies))} long</h2>
         <p className="mb-4 text-xl">
           Each {formatTime(configManager.getTick(TickIds.Armies))} period Troops will regain energy and be able to
-          travel be able to travel again. Don't get caught out in the open.
+          travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
