@@ -1,3 +1,4 @@
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { BattleSimulationPanel } from "@/ui/components/worldmap/battles/BattleSimulationPanel";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { battleSimulation } from "../../components/navigation/Config";
@@ -13,7 +14,7 @@ export const BattleSimulation = () => {
       onClick={() => togglePopup(battleSimulation)}
       show={isOpen}
       title={"Battle simulation"}
-      hintSection={"Simulate a battle"}
+      hintSection={HintSection.Combat}
       width="600px"
     >
       <BattleSimulationPanel />
