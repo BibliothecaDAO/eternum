@@ -13,11 +13,12 @@ import { useDojo } from "../../../../hooks/context/DojoContext";
 interface GuildMembersProps {
   selectedGuildEntityId: number;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
+  setIsExpanded: (isExpanded: boolean) => void;
   isOwner?: boolean;
   ownerAddress?: string;
 }
 
-export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMembersProps) => {
+export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
   const {
     setup: {
       systemCalls: {
@@ -80,6 +81,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
       signer: account,
     }).finally(() => {
       setIsLoading(false);
+      setIsExpanded(false);
     });
   };
 
@@ -146,6 +148,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
       {viewGuildInvites ? (
         <GuildInvitesList
           invitedPlayers={invitedPlayers}
+          isLoading={isLoading}
           viewPlayerInfo={viewPlayerInfo}
           removePlayerFromWhitelist={() => removePlayerFromWhitelist}
         />
@@ -237,11 +240,13 @@ interface GuildMemberRowProps {
 
 const GuildMemberRow = ({ guildMember, viewPlayerInfo, userIsGuildMaster, removeGuildMember }: GuildMemberRowProps) => {
   return (
-    <div className=" flex-row grid grid-cols-6">
+    <div
+      className={clsx("flex-row grid grid-cols-6 rounded", {
+        "bg-blueish/20": guildMember.isUser,
+      })}
+    >
       <div
-        className={clsx("col-span-5 grid grid-cols-5 gap-1 text-md hover:opacity-70 p-1 rounded-xl", {
-          "bg-blueish/20": guildMember.isUser,
-        })}
+        className="col-span-5 grid grid-cols-5 gap-1 text-md hover:opacity-70 p-1"
         onClick={() => {
           viewPlayerInfo(ContractAddress(guildMember.address));
         }}
@@ -266,10 +271,12 @@ const GuildMemberRow = ({ guildMember, viewPlayerInfo, userIsGuildMaster, remove
 
 const GuildInvitesList = ({
   invitedPlayers,
+  isLoading,
   viewPlayerInfo,
   removePlayerFromWhitelist,
 }: {
   invitedPlayers: GuildWhitelistInfo[];
+  isLoading: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
 }) => {
@@ -281,6 +288,7 @@ const GuildInvitesList = ({
           <InviteRow
             key={player.address}
             player={player}
+            isLoading={isLoading}
             viewPlayerInfo={viewPlayerInfo}
             removePlayerFromWhitelist={removePlayerFromWhitelist}
           />
@@ -293,11 +301,12 @@ const GuildInvitesList = ({
 
 interface InviteRowProps {
   player: GuildWhitelistInfo;
+  isLoading: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
 }
 
-const InviteRow = ({ player, viewPlayerInfo, removePlayerFromWhitelist }: InviteRowProps) => {
+const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelist }: InviteRowProps) => {
   return (
     <div className="flex flex-row grid grid-cols-5">
       <div
@@ -313,10 +322,13 @@ const InviteRow = ({ player, viewPlayerInfo, removePlayerFromWhitelist }: Invite
         <p className="text-right">{currencyIntlFormat(player.points!)}</p>
       </div>
 
-      <Trash
-        onClick={() => removePlayerFromWhitelist(player.address!)}
-        className="m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
-      />
+      <Button className="px-0 py-0" isLoading={isLoading}>
+        <Trash
+          onClick={() => removePlayerFromWhitelist(player.address!)}
+          // className="m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
+          className="fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
+        />
+      </Button>
     </div>
   );
 };

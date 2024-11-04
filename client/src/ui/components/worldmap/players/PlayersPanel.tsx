@@ -26,6 +26,7 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
   const { getGuildFromPlayerAddress } = useGuilds();
 
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
+
   const [isLoading, setIsLoading] = useState(false);
 
   const [searchInput, setSearchInput] = useState("");
@@ -207,13 +208,12 @@ const PlayerRow = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
-    <div className="flex flex-row grid grid-cols-6">
-      <div
-        className={clsx("col-span-5 grid grid-cols-5  gap-1 text-md hover:opacity-70 hover:border p-1 rounded-xl", {
-          "bg-blueish/20": player.isUser,
-        })}
-        onClick={onClick}
-      >
+    <div
+      className={clsx("flex flex-row grid grid-cols-6 rounded", {
+        "bg-blueish/20": player.isUser,
+      })}
+    >
+      <div className="col-span-5 grid grid-cols-5  gap-1 text-md hover:opacity-70 p-1" onClick={onClick}>
         <p>{player.rank}</p>
         <p className="col-span-2 truncate">{player.name}</p>
         <p className="text-right">{currencyIntlFormat(player.points)}</p>
@@ -222,7 +222,7 @@ const PlayerRow = ({
       {isGuildMaster &&
         !player.isUser &&
         (player.isInvited ? (
-          <Button className="px-0 py-0 w-6 m-auto" isLoading={isLoading}>
+          <Button className="px-0 py-0" isLoading={isLoading}>
             <Trash
               onClick={() => {
                 removePlayerFromWhitelist(player.address);
@@ -239,7 +239,7 @@ const PlayerRow = ({
             />
           </Button>
         ) : (
-          <Button className="px-0 py-0 w-6 m-auto" isLoading={isLoading}>
+          <Button className="px-0 py-0" isLoading={isLoading}>
             <Invite
               onClick={() => {
                 whitelistPlayer(player.address);
