@@ -40,7 +40,10 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
         maxLength={maxLength}
         onBlur={onBlur}
         onFocus={onFocus}
-        onKeyDown={onKeyDown}
+        onKeyDown={(e) => {
+          e.stopPropagation(); // Prevent key events from propagating
+          if (onKeyDown) onKeyDown(e);
+        }}
         autoComplete="off"
       />
     </form>
