@@ -270,7 +270,7 @@ export class TileManager {
     playBuildingSound(buildingType);
 
     await this.setup.systemCalls.create_building({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       directions: directions,
       building_category: buildingType,
@@ -289,7 +289,7 @@ export class TileManager {
     this._optimisticDestroy(entityId, col, row);
 
     await this.setup.systemCalls.destroy_building({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -305,7 +305,7 @@ export class TileManager {
     this._optimisticPause(col, row);
 
     await this.setup.systemCalls.pause_production({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -321,7 +321,7 @@ export class TileManager {
     this._optimisticResume(col, row);
 
     await this.setup.systemCalls.resume_production({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -333,7 +333,7 @@ export class TileManager {
   placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
     if (structureType == StructureType.Hyperstructure) {
       await this.setup.systemCalls.create_hyperstructure({
-        signer: this.account!,
+        signer: useAccountStore.getState().account!,
         creator_entity_id: entityId,
         coords,
       });
