@@ -184,7 +184,7 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
     [CapacityConfigCategory.Donkey]: 400_000,
     [CapacityConfigCategory.Army]: 10_000,
-    [CapacityConfigCategory.Storehouse]: 30_000_000,
+    [CapacityConfigCategory.Storehouse]: 300_000_000,
   },
   speed: {
     donkey: DONKEY_SPEED,
