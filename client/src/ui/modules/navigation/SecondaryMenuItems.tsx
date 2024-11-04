@@ -80,9 +80,6 @@ export const SecondaryMenuItems = () => {
             active={isPopupOpen(social)}
             size="lg"
             onClick={() => togglePopup(social)}
-            className={clsx({
-              hidden: !questClaimStatus[QuestId.Travel],
-            })}
           />
         ),
       },
