@@ -6,6 +6,7 @@ import { throttle } from "lodash";
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
 import { ArmyManager } from "./ArmyManager";
+import { BattleManager } from "./BattleManager";
 import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
@@ -87,6 +88,7 @@ class Minimap {
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
     armyManager: ArmyManager,
+    battleManager: BattleManager,
     biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
