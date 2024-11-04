@@ -5,7 +5,7 @@ import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMoveme
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
-import { dir, soundSelector } from "@/hooks/useUISound";
+import { soundSelector } from "@/hooks/useUISound";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
@@ -23,6 +23,7 @@ import Minimap from "../components/Minimap";
 import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
 import { StructurePreview } from "../components/StructurePreview";
+import { playSound } from "../sound/utils";
 import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
@@ -201,7 +202,6 @@ export default class WorldmapScene extends HexagonScene {
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
-        new Audio(dir + soundSelector.hoverClick).play();
         this.previouslyHoveredHex = hexCoords;
       }
       this.state.updateHoveredHex(hexCoords);
@@ -275,8 +275,7 @@ export default class WorldmapScene extends HexagonScene {
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const position = getWorldPositionForHex(hexCoords);
     if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
-      const audio = new Audio(dir + soundSelector.click);
-      audio.play();
+      playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
       this.selectedHexManager.setPosition(position.x, position.z);
       this.state.setSelectedHex({
         col: contractHexPosition.x,
@@ -297,8 +296,7 @@ export default class WorldmapScene extends HexagonScene {
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
           const marchSound = selectedEntityId % 2 === 0 ? soundSelector.unitMarching1 : soundSelector.unitMarching2;
-
-          new Audio(dir + marchSound).play();
+          playSound(marchSound, this.state.isSoundOn, this.state.effectsLevel);
           armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
         }
       }

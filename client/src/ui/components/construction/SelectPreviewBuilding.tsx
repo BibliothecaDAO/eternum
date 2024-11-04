@@ -412,7 +412,7 @@ export const ResourceInfo = ({
   const population = buildingPopCapacityConfig.population;
   const capacity = buildingPopCapacityConfig.capacity;
 
-  const amountProducedPerTick = configManager.getResourceOutputs(resourceId);
+  const amountProducedPerTick = divideByPrecision(configManager.getResourceOutputs(resourceId));
 
   const { getBalance } = getResourceBalance();
 
@@ -535,7 +535,8 @@ export const BuildingInfo = ({
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   const ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || 0 : 0;
 
-  const perTick = resourceProduced !== undefined ? configManager.getResourceOutputs(resourceProduced) || 0 : 0;
+  const perTick =
+    resourceProduced !== undefined ? divideByPrecision(configManager.getResourceOutputs(resourceProduced)) || 0 : 0;
 
   const { getBalance } = getResourceBalance();
 

@@ -15,6 +15,13 @@
     "client/src/hooks/useUISound.tsx",
     "balancing/**",
     "landing/**",
-    "client/pwa-assets.config.ts"
+    "client/pwa-assets.config.ts",
+
+    "client/src/ui/modules/chat/types.tsx",
+    "client/src/ui/modules/chat/constants.tsx",
+    "client/src/ui/modules/chat/ChatTab.tsx",
+    "client/src/hooks/helpers/useGetAllPlayers.tsx",
+    "client/src/ui/modules/chat/InputField.tsx",
+    "client/src/ui/modules/chat/Chat.tsx"
   ]
 }

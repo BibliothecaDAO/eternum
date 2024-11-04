@@ -22,6 +22,7 @@ type StructureListItemProps = {
   setShowMergeTroopsPopup: (show: boolean) => void;
   ownArmySelected: ArmyInfo | undefined;
   maxInventory?: number;
+  showImmunity?: boolean;
 };
 
 const immuneTooltipContent = (
@@ -37,6 +38,7 @@ export const StructureListItem = ({
   setShowMergeTroopsPopup,
   ownArmySelected,
   maxInventory = Infinity,
+  showImmunity = false,
 }: StructureListItemProps) => {
   const dojo = useDojo();
 
@@ -187,7 +189,7 @@ export const StructureListItem = ({
             <div className="flex flex-row font-bold text-xs">
               <div className="font-bold">Owner: {addressName === "" ? "Bandits" : addressName}</div>
             </div>
-            {isImmune && (
+            {isImmune && showImmunity && (
               <div
                 onMouseEnter={() => {
                   setTooltip({
