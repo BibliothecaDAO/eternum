@@ -334,13 +334,7 @@ class Minimap {
     this.recomputeScales();
   }
 
-  private handleWheel = (event: WheelEvent) => {
-    event.stopPropagation();
-    const zoomOut = event.deltaY > 0; // Zoom out for positive deltaY, zoom in for negative
-    this.zoom(zoomOut);
-  };
-
-  private zoom(zoomOut: boolean) {
+  private zoom(zoomOut: boolean, event?: MouseEvent) {
     const currentRange = this.mapSize.width;
     console.log(
       `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, mapCenter: ${this.mapCenter.col}, ${this.mapCenter.row}`,
@@ -359,8 +353,22 @@ class Minimap {
     this.mapSize.width -= 2 * deltaX;
     this.mapSize.height -= 2 * deltaY;
 
+    if (!zoomOut && event) {
+      const { col, row } = this.getMousePosition(event);
+      const colShift = col - this.mapCenter.col;
+      const rowShift = row - this.mapCenter.row;
+      this.mapCenter.col += Math.round(colShift * 0.15); // Adjust the factor as needed
+      this.mapCenter.row += Math.round(rowShift * 0.15); // Adjust the factor as needed
+    }
+
     this.recomputeScales();
-  }
+}
+
+private handleWheel = (event: WheelEvent) => {
+    event.stopPropagation();
+    const zoomOut = event.deltaY > 0; // Zoom out for positive deltaY, zoom in for negative
+    this.zoom(zoomOut, event);
+};
 
   handleClick = (event: MouseEvent) => {
     event.stopPropagation();
