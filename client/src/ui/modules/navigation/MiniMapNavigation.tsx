@@ -38,48 +38,7 @@ export const MiniMapNavigation = () => {
       <div className={clsx("flex justify-between ml-auto w-full", isExpanded ? "bg-black/90 p-2 rounded-lg mb-1" : "")}>
         {showMinimap && (
           <>
-            <div
-              onMouseEnter={() =>
-                setTooltip({
-                  content: (
-                    <div className="flex flex-col whitespace-nowrap text-xxs">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#FF0000] rounded-full"></div>
-                        <div>Armies</div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#00FF00] rounded-full"></div>
-                        <div>My Armies</div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#0000ff] rounded-full"></div>
-                        <div>Realm</div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#FFFFFF] rounded-full"></div>
-                        <div>Hyperstructure</div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#FFFF00] rounded-full"></div>
-                        <div>Bank</div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#00FFFF] rounded-full"></div>
-                        <div>Fragment Mine</div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#FFA500] rounded-full"></div>
-                        <div>Settlement</div>
-                      </div>
-                    </div>
-                  ),
-                  position: "top",
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
-            >
-              Legend
-            </div>
+            <div>Minimap</div>
             <div onClick={toggleExpand}>
               {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
             </div>
