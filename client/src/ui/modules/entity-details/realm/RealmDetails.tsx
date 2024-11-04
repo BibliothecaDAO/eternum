@@ -5,7 +5,7 @@ import { HintSection } from "@/ui/components/hints/HintModal";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Tabs } from "@/ui/elements/tab";
 import { copyPlayerAddressToClipboard, displayAddress, formatTime, toHexString } from "@/ui/utils/utils";
-import { TickIds } from "@bibliothecadao/eternum";
+import { StructureType, TickIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { Buildings } from "./Buildings";
 import { Castle } from "./Castle";
@@ -18,6 +18,8 @@ export const RealmDetails = () => {
   const structure = useStructureByEntityId(structureEntityId);
   if (!structure) return;
 
+  const isRealm = structure.category === StructureType[StructureType.Realm];
+ 
   const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
   const address = toHexString(structure?.owner.address);
 
@@ -92,11 +94,12 @@ export const RealmDetails = () => {
         </div>
       </div>
 
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: number) => setSelectedTab(index)}
-        variant="default"
-        className="h-full "
+      {isRealm && (
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: number) => setSelectedTab(index)}
+          variant="default"
+          className="h-full "
       >
         <Tabs.List className="border border-gold/20 rounded-lg p-1">
           {tabs.map((tab, index) => (
@@ -107,8 +110,9 @@ export const RealmDetails = () => {
           {tabs.map((tab, index) => (
             <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
           ))}
-        </Tabs.Panels>
-      </Tabs>
+          </Tabs.Panels>
+        </Tabs>
+      )}
     </div>
   );
 };
