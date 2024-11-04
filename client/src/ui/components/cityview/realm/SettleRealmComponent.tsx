@@ -43,14 +43,14 @@ const SettleRealmComponent = () => {
       ),
   });
 
-  const { settleRealm, isLoading, selectedOrder, setSelectedOrder, tokenId, setTokenId } = useSettleRealm();
+  const { settleRealm, isLoading, tokenId, setTokenId, errorMessage } = useSettleRealm();
 
   return (
     <>
       <div className="flex flex-col h-min">
         <div className="flex flex-col gap-y-2">
-          <h2 className="border-b-0 text-center">Mint Realms</h2>
-          <p>Mint a maximum of 4 Realms (which you can then mint a Season Pass from each)</p>
+          <h2 className=" text-center">Settle Realms</h2>
+          <p className="text-center text-xl">Settle a maximum of 4 Realms. Select a Realm ID or a random one.</p>
 
           <Button
             variant={"primary"}
@@ -58,7 +58,7 @@ const SettleRealmComponent = () => {
               await settleRealm();
             }}
           >
-            Mint Random Realm
+            {isLoading ? "Loading..." : "Settle Random Realm"}
           </Button>
 
           <h3 className="text-center">or</h3>
@@ -70,49 +70,31 @@ const SettleRealmComponent = () => {
                 <ChevronsUpDown className="h-4 w-4" />
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-2 border p-2">
-              <label className="text-sm text-muted-foreground uppercase justify-self-start">Enter a Realm ID</label>
-              <div className="flex">
-                <NumberInput className="!bg-brown !w-24" max={8000} min={1} value={tokenId} onChange={setTokenId} />
+            <CollapsibleContent className="space-y-2 border p-2 rounded border-gold/20">
+              <div className="flex justify-center gap-4 py-4">
+                <div className="text-lg text-muted-foreground uppercase justify-self-start text-center self-center font-bold">
+                  Realm ID
+                </div>
+                <NumberInput
+                  className="  font-bold self-center !w-32"
+                  max={8000}
+                  min={1}
+                  value={tokenId}
+                  onChange={setTokenId}
+                />
                 <Button
                   isLoading={isLoading}
-                  onClick={async () => (!isLoading ? await settleRealm() : null)}
-                  className="text-xl"
+                  onClick={async () => (!isLoading ? await settleRealm(tokenId) : null)}
+                  className="text-xl self-center"
                   variant={"primary"}
                 >
-                  {!isLoading ? "Settle Empire" : ""}
+                  {!isLoading ? "Settle Realms" : ""}
                 </Button>
               </div>
             </CollapsibleContent>
           </Collapsible>
         </div>
-
-        {/* <div className="grid grid-cols-8 gap-2 pt-4">
-          {orders
-            // remove the order of the gods
-            .filter((order) => order.orderId !== 17)
-            .map(({ orderId }) => (
-              <div
-                key={orderId}
-                className={clsx(
-                  ' flex relative group items-center justify-center  w-16 h-16 border-2  rounded-lg',
-                  selectedOrder == orderId ? 'border-gold !cursor-pointer' : 'border-transparent',
-                  'hover:bg-white/10 cursor-pointer'
-                )}
-                onClick={() => { setSelectedOrder(orderId) }}
-              >
-                <OrderIcon
-                  size={'md'}
-                  withTooltip={selectedOrder == orderId}
-                  order={getOrderName(orderId)}
-                  className={clsx(selectedOrder == orderId ? 'opacity-100' : 'opacity-30 group-hover:opacity-100')}
-                />
-              </div>
-            ))}
-        </div>
-        <div className="h-[200px] mt-2 overflow-y-auto ">
-          <div className="text-lg mt-2 text-gold text-center">{order_statments[selectedOrder - 1]}</div>
-        </div> */}
+        {errorMessage && <p className="text-center text-red-500 py-2">{errorMessage}</p>}
       </div>
     </>
   );

@@ -56,9 +56,31 @@ export function useRealm() {
   };
 
   const getRandomUnsettledRealmId = () => {
+    // Query all settled realms and collect their realm_ids
     const entityIds = Array.from(runQuery([Has(Realm)]));
-    console.log(entityIds);
-    // const unsettledRealms = runQuery([Has(Realm), HasValue(Owner, { address: '0x0' })])
+    const settledRealmIds = new Set<number>();
+
+    entityIds.forEach((entityId) => {
+      const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
+      if (realm) {
+        settledRealmIds.add(Number(realm.realm_id));
+      }
+    });
+
+    // Define all possible realm_ids from 1 to 8000
+    const TOTAL_REALMS = 8000;
+    const allRealmIds = Array.from({ length: TOTAL_REALMS }, (_, i) => i + 1);
+
+    // Determine unsettled realm_ids by excluding settled ones
+    const unsettledRealmIds = allRealmIds.filter((id) => !settledRealmIds.has(id));
+
+    if (unsettledRealmIds.length === 0) {
+      throw new Error("No unsettled realms available.");
+    }
+
+    // Select a random unsettled realm ID
+    const randomIndex = Math.floor(Math.random() * unsettledRealmIds.length);
+    return unsettledRealmIds[randomIndex];
   };
 
   const getNextRealmIdForOrder = (order: number) => {
@@ -175,6 +197,7 @@ export function useRealm() {
     getRealmEntityIdFromRealmId,
     isEntityIdRealm,
     getRealmEntityIdsOnPosition,
+    getRandomUnsettledRealmId,
   };
 }
 

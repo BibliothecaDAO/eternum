@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useRealm } from "./useRealm";
 
-import { MAX_REALMS } from "@/ui/constants";
-import { getRealm } from "@/ui/utils/realms";
 import { useDojo } from "../context/DojoContext";
 import { soundSelector, useUiSounds } from "../useUISound";
 
@@ -10,8 +8,11 @@ export const useSettleRealm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(1);
   const [tokenId, setTokenId] = useState<number>(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { getNextRealmIdForOrder, getRealmIdForOrderAfter } = useRealm();
+  const { getNextRealmIdForOrder, getRealmIdForOrderAfter, getRandomUnsettledRealmId } = useRealm();
+
+  console.log(getRandomUnsettledRealmId());
 
   const { play: playSign } = useUiSounds(soundSelector.sign);
 
@@ -22,20 +23,17 @@ export const useSettleRealm = () => {
     account: { account },
   } = useDojo();
 
-  const settleRealm = async () => {
+  const settleRealm = async (id?: number) => {
+    if (!id) {
+      id = getRandomUnsettledRealmId();
+    }
+
     try {
       setIsLoading(true);
+      setErrorMessage(null); // Reset error message before attempting to settle
       const calldata = [];
-      let newRealmId = getNextRealmIdForOrder(selectedOrder);
 
-      for (let i = 0; i < MAX_REALMS; i++) {
-        if (i > 0) {
-          newRealmId = getRealmIdForOrderAfter(selectedOrder, newRealmId);
-        }
-        const realm = getRealm(newRealmId);
-        if (!realm) return;
-        calldata.push(Number(realm.realmId));
-      }
+      calldata.push(Number(id));
 
       console.log(calldata);
 
@@ -45,10 +43,13 @@ export const useSettleRealm = () => {
       });
 
       playSign();
+    } catch (error) {
+      setErrorMessage("Realm already settled. Please try a different Realm.");
+      console.error("Error during minting:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return { settleRealm, isLoading, selectedOrder, setSelectedOrder, tokenId, setTokenId };
+  return { settleRealm, isLoading, selectedOrder, setSelectedOrder, tokenId, setTokenId, errorMessage };
 };

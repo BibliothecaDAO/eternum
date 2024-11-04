@@ -266,25 +266,24 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       </div>
 
       <div className="flex space-x-2 mt-8 justify-center">
-        {playerRealms().length > 3 ? (
+        {/* {playerRealms().length > 3 ? (
           <NavigateToRealm text={"begin"} />
-        ) : (
-          <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
-            Continue <ArrowRight className="w-2 fill-current ml-3" />
-          </Button>
-        )}
+        ) : ( */}
+        <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          Continue <ArrowRight className="w-2 fill-current ml-3" />
+        </Button>
+        {/* )} */}
       </div>
     </StepContainer>
   );
 };
-export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
+export const StepTwo = ({ onNext }: { onNext: () => void }) => {
   return (
     <StepContainer>
-      <div>
-        <h3 className="text-center">Select Order</h3>
-      </div>
-
       <SettleRealmComponent />
+      <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+        Continue <ArrowRight className="w-2 fill-current ml-3" />
+      </Button>
     </StepContainer>
   );
 };
