@@ -340,7 +340,7 @@ const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="gap-10 grid grid-cols-12">
       <div className="rounded-full border  self-center col-span-4">
-        <img src="/images/buildings/thumb/squire.png" className="rounded-full border" alt="" />
+        <img src="/images/squire.png" className="rounded-full border" alt="" />
       </div>
       <div className="col-span-8 flex flex-col">{children}</div>
     </div>
@@ -353,8 +353,8 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
       <ContainerWithSquire>
         <h2 className="mb-4">Days are {formatTime(configManager.getTick(TickIds.Armies))} long</h2>
         <p className="mb-4 text-xl">
-          Each {formatTime(configManager.getTick(TickIds.Armies))} period your Realms and Troops will regain energy and
-          be able to travel again. Don't get caught out in the open.
+          Each {formatTime(configManager.getTick(TickIds.Armies))} period Troops will regain energy and be able to
+          travel be able to travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
