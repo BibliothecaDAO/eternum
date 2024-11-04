@@ -5,8 +5,8 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { BuildingType, CapacityConfigCategory, QuestType, ResourcesIds } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import { ExplorationTable } from "../hints/ExplorationTable";
 import { ResourceWeight } from "../resources/TravelInfo";
-import { ExplorationTable } from "../hints/TheMap";
 
 interface StaticQuestInfo {
   name: string;
