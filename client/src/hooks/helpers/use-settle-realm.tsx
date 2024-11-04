@@ -12,8 +12,6 @@ export const useSettleRealm = () => {
 
   const { getNextRealmIdForOrder, getRealmIdForOrderAfter, getRandomUnsettledRealmId } = useRealm();
 
-  console.log(getRandomUnsettledRealmId());
-
   const { play: playSign } = useUiSounds(soundSelector.sign);
 
   const {

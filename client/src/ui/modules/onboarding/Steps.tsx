@@ -281,9 +281,11 @@ export const StepTwo = ({ onNext }: { onNext: () => void }) => {
   return (
     <StepContainer>
       <SettleRealmComponent />
-      <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-        Continue <ArrowRight className="w-2 fill-current ml-3" />
-      </Button>
+      <div className="flex w-full justify-center">
+        <Button size="md" className="mx-auto mt-4" variant="primary" onClick={onNext}>
+          Continue <ArrowRight className="w-2 fill-current ml-3" />
+        </Button>
+      </div>
     </StepContainer>
   );
 };
