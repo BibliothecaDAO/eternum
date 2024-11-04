@@ -27,7 +27,7 @@ export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
 export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | RealmLevelNames, string> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
-  [BuildingType.Bank]: "/models/buildings/market.glb",
+  [BuildingType.Bank]: "/models/buildings/bank.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archerrange.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
   [BuildingType.Castle]: "/models/buildings/castle1.glb",

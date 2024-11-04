@@ -82,6 +82,8 @@ class Minimap {
     height: number;
   };
   private labelImages: Map<string, HTMLImageElement> = new Map();
+  private lastMousePosition: { x: number; y: number } | null = null;
+  private mouseStartPosition: { x: number; y: number } | null = null;
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -141,7 +143,6 @@ class Minimap {
 
     this.draw = throttle(this.draw, 1000 / 30);
 
-    this.canvas.addEventListener("click", this.handleClick);
     this.canvas.addEventListener("mousedown", this.handleMouseDown);
     this.canvas.addEventListener("mousemove", this.handleMouseMove);
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
@@ -341,53 +342,52 @@ class Minimap {
 
   private handleMouseDown = (event: MouseEvent) => {
     this.isDragging = true;
-    this.moveCamera(event);
+    this.mouseStartPosition = {
+      x: event.clientX,
+      y: event.clientY,
+    };
+    this.lastMousePosition = {
+      x: event.clientX,
+      y: event.clientY,
+    };
   };
 
   private handleMouseMove = (event: MouseEvent) => {
-    if (this.isDragging) {
-      this.moveCamera(event);
+    if (this.isDragging && this.lastMousePosition) {
+      const colShift = Math.round((event.clientX - this.lastMousePosition.x) / this.scaleX);
+      const rowShift = Math.round((event.clientY - this.lastMousePosition.y) / this.scaleY);
+
+      this.mapCenter.col -= colShift;
+      this.mapCenter.row -= rowShift;
+
+      this.lastMousePosition = {
+        x: event.clientX,
+        y: event.clientY,
+      };
+
+      this.recomputeScales();
+      this.draw();
     }
   };
 
-  private handleMouseUp = () => {
+  private handleMouseUp = (event: MouseEvent) => {
+    if (this.mouseStartPosition) {
+      const startX = this.mouseStartPosition.x;
+      const startY = this.mouseStartPosition.y;
+      const endX = event.clientX;
+      const endY = event.clientY;
+
+      const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+
+      if (distance < 3) {
+        this.handleClick(event);
+      }
+    }
+
     this.isDragging = false;
+    this.lastMousePosition = null;
+    this.mouseStartPosition = null;
   };
-
-  private moveCamera(event: MouseEvent) {
-    const { col, row } = this.getMousePosition(event);
-    this.worldmapScene.moveCameraToColRow(col, row, 0);
-  }
-
-  private moveMapRange(direction: string, shiftSize?: number) {
-    let colShift = 0;
-    let rowShift = 0;
-    if (!shiftSize) {
-      colShift = Math.round(this.mapSize.width / 4);
-      rowShift = Math.round(this.mapSize.height / 4);
-    } else {
-      colShift = shiftSize;
-      rowShift = shiftSize;
-    }
-
-    switch (direction) {
-      case "left":
-        this.mapCenter.col -= colShift;
-        break;
-      case "right":
-        this.mapCenter.col += colShift;
-        break;
-      case "top":
-        this.mapCenter.row -= rowShift;
-        break;
-      case "bottom":
-        this.mapCenter.row += rowShift;
-        break;
-      default:
-        return;
-    }
-    this.recomputeScales();
-  }
 
   private zoom(zoomOut: boolean, event?: MouseEvent) {
     const currentRange = this.mapSize.width;
@@ -429,18 +429,6 @@ class Minimap {
     event.stopPropagation();
     const { col, row, x, y } = this.getMousePosition(event);
 
-    const borderWidthX = this.canvas.width * this.BORDER_WIDTH_PERCENT;
-    const borderWidthY = this.canvas.height * this.BORDER_WIDTH_PERCENT;
-
-    if (x < borderWidthX) {
-      this.moveMapRange("left");
-    } else if (x > this.canvas.width - borderWidthX) {
-      this.moveMapRange("right");
-    } else if (y < borderWidthY) {
-      this.moveMapRange("top");
-    } else if (y > this.canvas.height - borderWidthY) {
-      this.moveMapRange("bottom");
-    }
     this.worldmapScene.moveCameraToColRow(col, row, 0);
   };
 
