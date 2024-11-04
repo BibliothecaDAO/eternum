@@ -21,9 +21,9 @@ export default defineConfig({
       link: "/development",
       collapsed: true,
       items: [
+        { text: "Getting Started", link: "/development/getting-started" },
         { text: "Client", link: "/development/client" },
         { text: "Contracts", link: "/development/contracts" },
-        { text: "Deploying", link: "/development/deploying" },
         { text: "SDK", link: "/development/sdk" },
         { text: "Common issues", link: "/development/common-issues" },
       ],

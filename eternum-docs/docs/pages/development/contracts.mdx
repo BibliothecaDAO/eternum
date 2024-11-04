@@ -30,6 +30,25 @@ Always use generate trait where possible to minimise code.
 #[generate_trait]
 ```
 
+### Adding a model
+
+```rust
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct Structure {
+    #[key]
+    entity_id: ID,
+    category: StructureCategory,
+    created_at: u64
+}
+```
+
+At the moment, you will need to add the model into the `system_models.json` file in the `contracts` directory so the
+authorizations can be made when deploying the world.
+
+To test this model, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.
+
 ## Event models
 
 If you need some data to be available in the client, but it doesn't need to be stored onchain, you can use an event
@@ -48,7 +67,7 @@ pub struct ExampleEvent {
 }
 ```
 
-## Systems
+## Adding a system
 
 Design systems like this in the directory
 
@@ -97,3 +116,9 @@ mod building_systems {
     }
 }
 ```
+
+For every model that your system uses, you will need to add it to the `system_models.json` file in the `contracts`
+directory so the authorizations can be made when deploying the world.
+
+To test this system, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.
