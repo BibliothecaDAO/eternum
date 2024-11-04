@@ -1,21 +1,13 @@
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { settings } from "@/ui/components/navigation/Config";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
-import { SettingsWindow } from "../settings/Settings";
-
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { QuestStatus, useQuestClaimStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
-
-import { QuestId } from "@/ui/components/quest/questDetails";
-
 import { isRealmSelected } from "@/ui/utils/utils";
-import clsx from "clsx";
-
 import { ArrowUp } from "lucide-react";
 import { useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
@@ -30,9 +22,6 @@ export const SecondaryMenuItems = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { quests } = useQuests();
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
-  const { questClaimStatus } = useQuestClaimStatus();
-
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { playerStructures } = useEntities();
   const structures = playerStructures();
@@ -84,7 +73,8 @@ export const SecondaryMenuItems = () => {
         ),
       },
     ];
-  }, [unclaimedQuestsCount, selectedQuest, quests, structureEntityId]);
+  }, [unclaimedQuestsCount, quests, structureEntityId]);
+
   return (
     <div className="flex gap-1 md:gap-3">
       <div className="self-center px-1 md:px-3 flex space-x-1 md:space-x-2 my-1">
@@ -94,20 +84,25 @@ export const SecondaryMenuItems = () => {
         <CircleButton
           image={BuildingThumbs.question}
           label={"Hints"}
-          // active={isPopupOpen(quests)}
           size="lg"
           onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
           tooltipLocation="bottom"
+          image={BuildingThumbs.discord}
+          label={"Discord"}
+          size="lg"
+          onClick={() => window.open("https://discord.gg/realmsworld")}
+        />
+        <CircleButton
+          tooltipLocation="bottom"
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
-          label={"Settings"}
+          label={"Support"}
           size="lg"
           onClick={() => togglePopup(settings)}
         />
       </div>
-      <SettingsWindow />
     </div>
   );
 };
