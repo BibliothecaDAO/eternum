@@ -46,6 +46,7 @@ SOZO_WORLD="$4"
 # Define file paths
 ENV_PRODUCTION_FILE="../client/.env.production"
 DOJO_PROD_TOML_FILE="../contracts/dojo_prod.toml"
+SEASON_PASS_ENV_PRODUCTION_FILE="../season_pass/scripts/deployment/.env.production"
 
 # Update the .env.production file with the new values
 update_variable_in_file "VITE_PUBLIC_MASTER_ADDRESS" "$VITE_PUBLIC_MASTER_ADDRESS" "$ENV_PRODUCTION_FILE"
@@ -59,6 +60,12 @@ update_variable_in_toml "account_address" "$VITE_PUBLIC_MASTER_ADDRESS" "$DOJO_P
 update_variable_in_toml "private_key" "$VITE_PUBLIC_MASTER_PRIVATE_KEY" "$DOJO_PROD_TOML_FILE"
 update_variable_in_toml "rpc_url" "https://api.cartridge.gg/x/$VITE_PUBLIC_NODE_URL/katana" "$DOJO_PROD_TOML_FILE"
 
+# Update the season_pass .env.production file with the new values
+update_variable_in_file "STARKNET_ACCOUNT_ADDRESS" "$VITE_PUBLIC_MASTER_ADDRESS" "$SEASON_PASS_ENV_PRODUCTION_FILE"
+update_variable_in_file "STARKNET_ACCOUNT_PRIVATE_KEY" "$VITE_PUBLIC_MASTER_PRIVATE_KEY" "$SEASON_PASS_ENV_PRODUCTION_FILE"
+update_variable_in_file "RPC_API_KEY" "https://api.cartridge.gg/x/$VITE_PUBLIC_NODE_URL/katana" "$SEASON_PASS_ENV_PRODUCTION_FILE"
+update_variable_in_file "SEASON_PASS_ADMIN" "$VITE_PUBLIC_MASTER_ADDRESS" "$SEASON_PASS_ENV_PRODUCTION_FILE"
+
 export STARKNET_RPC_URL="https://api.cartridge.gg/x/$VITE_PUBLIC_NODE_URL/katana"
 export DOJO_ACCOUNT_ADDRESS=$VITE_PUBLIC_MASTER_ADDRESS
 export DOJO_PRIVATE_KEY=$VITE_PUBLIC_MASTER_PRIVATE_KEY
@@ -71,4 +78,4 @@ echo "DOJO_PRIVATE_KEY: $DOJO_PRIVATE_KEY"
 echo "SOZO_WORLD: $SOZO_WORLD"
 echo "KATANA_TOML_PATH: $KATANA_TOML_PATH"
 
-echo "Updated .env.production and dojo_prod.toml with the new variables."
+echo "Updated .env.production, dojo_prod.toml, and season_pass .env.production with the new variables."
