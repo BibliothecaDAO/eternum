@@ -1,30 +1,30 @@
-import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
-import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
-import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
-import { configManager } from "@/dojo/setup";
-import { useAccountStore } from "@/hooks/context/accountStore";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { useAddressStore } from "@/hooks/store/useAddressStore";
-import useUIStore from "@/hooks/store/useUIStore";
-import { Position } from "@/types/Position";
-import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
-import Button from "@/ui/elements/Button";
-import ListSelect from "@/ui/elements/ListSelect";
+import { ReactComponent as ArrowRight } from '@/assets/icons/common/arrow-right.svg'
+import { ReactComponent as Copy } from '@/assets/icons/common/copy.svg'
+import { ReactComponent as Cross } from '@/assets/icons/common/cross.svg'
+import { ReactComponent as Import } from '@/assets/icons/common/import.svg'
+import { configManager } from '@/dojo/setup'
+import { useAccountStore } from '@/hooks/context/accountStore'
+import { useDojo } from '@/hooks/context/DojoContext'
+import { useEntities } from '@/hooks/helpers/useEntities'
+import { useQuery } from '@/hooks/helpers/useQuery'
+import { useRealm } from '@/hooks/helpers/useRealm'
+import { useAddressStore } from '@/hooks/store/useAddressStore'
+import useUIStore from '@/hooks/store/useUIStore'
+import { Position } from '@/types/Position'
+import SettleRealmComponent from '@/ui/components/cityview/realm/SettleRealmComponent'
+import Button from '@/ui/elements/Button'
+import ListSelect from '@/ui/elements/ListSelect'
 // import ListSelect from "@/ui/elements/ListSelect";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import TextInput from "@/ui/elements/TextInput";
-import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
-import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
-import { motion } from "framer-motion";
-import { LucideArrowRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { shortString } from "starknet";
+import { ResourceIcon } from '@/ui/elements/ResourceIcon'
+import TextInput from '@/ui/elements/TextInput'
+import { displayAddress, formatTime, toValidAscii } from '@/ui/utils/utils'
+import { ContractAddress, MAX_NAME_LENGTH, TickIds } from '@bibliothecadao/eternum'
+import { motion } from 'framer-motion'
+import { LucideArrowRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { shortString } from 'starknet'
 
-const ACCOUNT_CHANGE_EVENT = "addressChanged";
+const ACCOUNT_CHANGE_EVENT = 'addressChanged'
 
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -33,14 +33,14 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, y: 20 }}
       exit={{ opacity: 0 }}
-      transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
+      transition={{ type: 'ease-in-out', stiffness: 3, duration: 0.2 }}
     >
       <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-gradient  ">
         {children}
       </div>
     </motion.div>
-  );
-};
+  )
+}
 
 export const StepOne = ({ onNext }: { onNext: () => void }) => {
   return (
@@ -57,79 +57,79 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
         </Button>
       </div>
     </StepContainer>
-  );
-};
+  )
+}
 
 export const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
     masterAccount,
     account: { create, isDeploying, list, select, clear },
     setup: {
-      systemCalls: { set_address_name },
-    },
-  } = useDojo();
+      systemCalls: { set_address_name }
+    }
+  } = useDojo()
 
-  console.log(useAccountStore.getState().account);
+  console.log(useAccountStore.getState().account)
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useUIStore((state) => state.setTooltip)
 
-  const [importMessage, setImportMessage] = useState<string | null>(null);
-  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null)
+  const [copyMessage, setCopyMessage] = useState<string | null>(null)
 
-  const { loading, setLoading, addressName, setAddressName } = useAddressStore();
+  const { loading, setLoading, addressName, setAddressName } = useAddressStore()
 
-  const { getAddressName } = useRealm();
+  const { getAddressName } = useRealm()
 
-  const name = getAddressName(ContractAddress(useAccountStore.getState().account?.address!));
-  const { playerRealms } = useEntities();
+  const name = getAddressName(ContractAddress(useAccountStore.getState().account?.address!))
+  const { playerRealms } = useEntities()
 
-  const input = useRef<string>("");
-  const [canSetName, setCanSetName] = useState(false);
+  const input = useRef<string>('')
+  const [canSetName, setCanSetName] = useState(false)
 
   // @dev: refactor this
   useEffect(() => {
-    setAddressName(name);
-  }, [name]);
+    setAddressName(name)
+  }, [name])
 
   const onSetName = async () => {
-    setLoading(true);
+    setLoading(true)
     if (input.current) {
-      const inputNameValidAscii = toValidAscii(input.current);
-      const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
+      const inputNameValidAscii = toValidAscii(input.current)
+      const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii)
 
-      await set_address_name({ name: inputNameBigInt, signer: useAccountStore.getState().account as any });
-      setAddressName(input.current);
-      setLoading(false);
+      await set_address_name({ name: inputNameBigInt, signer: useAccountStore.getState().account as any })
+      setAddressName(input.current)
+      setLoading(false)
     }
-  };
+  }
 
   const onCopy = () => {
-    const burners = localStorage.getItem("burners");
+    const burners = localStorage.getItem('burners')
     if (burners) {
-      const burner = JSON.parse(burners)[useAccountStore.getState().account?.address!];
+      const burner = JSON.parse(burners)[useAccountStore.getState().account?.address!]
       navigator.clipboard.writeText(
         JSON.stringify({
           address: useAccountStore.getState().account?.address!,
           privateKey: burner.privateKey,
           publicKey: burner.publicKey,
           active: burner.active,
-          deployTx: burner.deployTx,
-        }),
-      );
-      setCopyMessage("Account exported!");
+          deployTx: burner.deployTx
+        })
+      )
+      setCopyMessage('Account exported!')
     } else {
-      setCopyMessage("No account to export");
+      setCopyMessage('No account to export')
     }
-  };
+  }
 
   const onImportAccount = () => {
     navigator.clipboard.readText().then((text) => {
       try {
-        const burner = JSON.parse(text);
-        let currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
+        const burner = JSON.parse(text)
+        const currentBurners = localStorage.getItem('burners') ? JSON.parse(localStorage.getItem('burners') || '') : {}
 
         if (currentBurners.hasOwnProperty(burner.address)) {
-          throw new Error("Account already imported");
+          throw new Error('Account already imported')
         }
 
         // Add the new burner account
@@ -137,31 +137,31 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
           privateKey: burner.privateKey,
           publicKey: burner.publicKey,
           active: burner.active,
-          deployTx: burner.deployTx,
-        };
+          deployTx: burner.deployTx
+        }
 
         // Save the updated burners object back to localStorage
-        localStorage.setItem("burners", JSON.stringify(currentBurners));
-        setImportMessage("Account imported successfully!");
+        localStorage.setItem('burners', JSON.stringify(currentBurners))
+        setImportMessage('Account imported successfully!')
       } catch (e) {
-        console.error(e);
-        setImportMessage("Invalid account");
+        console.error(e)
+        setImportMessage('Invalid account')
       }
-    });
-  };
+    })
+  }
 
   useEffect(() => {
     if (copyMessage || importMessage) {
       setTooltip({
-        position: "top",
+        position: 'top',
         content: (
           <>
-            <p className="whitespace-nowrap">{copyMessage ? copyMessage : importMessage}</p>
+            <p className="whitespace-nowrap">{copyMessage || importMessage}</p>
           </>
-        ),
-      });
+        )
+      })
     }
-  }, [copyMessage, importMessage]);
+  }, [copyMessage, importMessage])
 
   return (
     <StepContainer>
@@ -169,19 +169,23 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         <h3 className="mb-4">Select Account</h3>
         <div className="w-full max-w-md">
           <div className="mb-4">
-            {loading ? (
+            {loading
+              ? (
               <div className="p-2">Loading...</div>
-            ) : addressName ? (
+                )
+              : addressName
+                ? (
               <div className="p-2 text-2xl">{addressName}</div>
-            ) : (
+                  )
+                : (
               <div className="flex w-full">
                 <TextInput
                   className="flex-grow mr-2"
                   placeholder="Your Name... (Max 31 characters)"
                   maxLength={MAX_NAME_LENGTH}
                   onChange={(value) => {
-                    input.current = value;
-                    setCanSetName(input.current.length > 0);
+                    input.current = value
+                    setCanSetName(input.current.length > 0)
                   }}
                 />
                 <Button
@@ -193,30 +197,30 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                   Set Name
                 </Button>
               </div>
-            )}
+                  )}
           </div>
 
-          {import.meta.env.VITE_PUBLIC_DEV === "true" && (
+          {import.meta.env.VITE_PUBLIC_DEV === 'true' && (
             <div className="flex items-center mb-4">
               <ListSelect
                 className="flex-grow mr-2"
                 title="Active Account: "
                 options={list().map((account) => {
-                  const addressName = getAddressName(ContractAddress(account.address));
+                  const addressName = getAddressName(ContractAddress(account.address))
                   return {
                     id: account.address,
                     label: (
-                      <div className="w-full truncate">{`${addressName || "unknown"} (${displayAddress(
-                        account.address,
+                      <div className="w-full truncate">{`${addressName || 'unknown'} (${displayAddress(
+                        account.address
                       )})`}</div>
-                    ),
-                  };
+                    )
+                  }
                 })}
                 value={useAccountStore.getState().account?.address}
                 onChange={select}
               />
               <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
-                {isDeploying ? "" : "Create New"}
+                {isDeploying ? '' : 'Create New'}
               </Button>
             </div>
           )}
@@ -225,40 +229,42 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
           <Cross
             className="cursor-pointer text-gold fill-gold stroke-gold hover:opacity-80"
             onMouseLeave={() => {
-              setTooltip(null);
-              setCopyMessage(null);
+              setTooltip(null)
+              setCopyMessage(null)
             }}
-            onMouseEnter={() =>
+            onMouseEnter={() => {
               setTooltip({
-                position: "top",
-                content: <p className="whitespace-nowrap">Delete Accounts</p>,
+                position: 'top',
+                content: <p className="whitespace-nowrap">Delete Accounts</p>
               })
             }
+            }
             onClick={() => {
-              if (window.confirm("Are you sure want to delete all wallets?")) {
-                clear();
+              if (window.confirm('Are you sure want to delete all wallets?')) {
+                clear()
               }
             }}
           />
           <Copy
             onClick={onCopy}
             onMouseLeave={() => {
-              setTooltip(null);
-              setCopyMessage(null);
+              setTooltip(null)
+              setCopyMessage(null)
             }}
             className="cursor-pointer text-gold hover:opacity-80"
           />
           <Import
             onClick={onImportAccount}
-            onMouseEnter={() =>
+            onMouseEnter={() => {
               setTooltip({
-                position: "top",
-                content: <p className="whitespace-nowrap">Import Account</p>,
+                position: 'top',
+                content: <p className="whitespace-nowrap">Import Account</p>
               })
             }
+            }
             onMouseLeave={() => {
-              setTooltip(null);
-              setImportMessage(null);
+              setTooltip(null)
+              setImportMessage(null)
             }}
             className="cursor-pointer text-gold hover:opacity-80"
           />
@@ -266,18 +272,20 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       </div>
 
       <div className="flex space-x-2 mt-8 justify-center">
-        {playerRealms().length > 0 ? (
-          <NavigateToRealm text={"begin"} />
-        ) : (
+        {playerRealms().length > 3
+          ? (
+          <NavigateToRealm text={'begin'} />
+            )
+          : (
           <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
             Continue <ArrowRight className="w-2 fill-current ml-3" />
           </Button>
-        )}
+            )}
       </div>
     </StepContainer>
-  );
-};
-export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
+  )
+}
+export const StepTwo = ({ onPrev }: { onPrev: () => void, onNext: () => void }) => {
   return (
     <StepContainer>
       <div>
@@ -286,16 +294,16 @@ export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) 
 
       <SettleRealmComponent />
     </StepContainer>
-  );
-};
+  )
+}
 
-export const StepThree = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+export const StepThree = ({ onPrev, onNext }: { onPrev: () => void, onNext: () => void }) => {
   const {
-    account: { account },
-  } = useDojo();
+    account: { account }
+  } = useDojo()
 
-  const { getAddressName } = useRealm();
-  const name = getAddressName(ContractAddress(account.address));
+  const { getAddressName } = useRealm()
+  const name = getAddressName(ContractAddress(account.address))
 
   return (
     <StepContainer>
@@ -312,10 +320,10 @@ export const StepThree = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =
         </div>
       </ContainerWithSquire>
     </StepContainer>
-  );
-};
+  )
+}
 
-export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+export const StepFour = ({ onPrev, onNext }: { onPrev: () => void, onNext: () => void }) => {
   return (
     <StepContainer>
       <ContainerWithSquire>
@@ -332,8 +340,8 @@ export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
         </div>
       </ContainerWithSquire>
     </StepContainer>
-  );
-};
+  )
+}
 
 const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -343,10 +351,10 @@ const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
       </div>
       <div className="col-span-8 flex flex-col">{children}</div>
     </div>
-  );
-};
+  )
+}
 
-export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+export const StepFive = ({ onPrev, onNext }: { onPrev: () => void, onNext: () => void }) => {
   return (
     <StepContainer>
       <ContainerWithSquire>
@@ -362,43 +370,43 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
         </div>
       </ContainerWithSquire>
     </StepContainer>
-  );
-};
+  )
+}
 
-export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+export const StepSix = ({ onPrev, onNext }: { onPrev: () => void, onNext: () => void }) => {
   return (
     <StepContainer>
       <ResourceIcon resource="Ancient Fragment" size="xl" withTooltip={false} />
       <p className="text-2xl text-center mb-8">Follow the quests and you will survive the day.</p>
       <div className="flex w-full justify-center">
-        <NavigateToRealm text={"begin"} />
+        <NavigateToRealm text={'begin'} />
       </div>
     </StepContainer>
-  );
-};
+  )
+}
 
 const NavigateToRealm = ({ text }: { text: string }) => {
-  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const { handleUrlChange } = useQuery();
-  const { playerRealms } = useEntities();
+  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay)
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled)
+  const { handleUrlChange } = useQuery()
+  const { playerRealms } = useEntities()
 
-  const url = new Position(playerRealms()[0]?.position).toHexLocationUrl();
+  const url = new Position(playerRealms()[0]?.position).toHexLocationUrl()
 
   return (
     <Button
       size="md"
       variant="primary"
       onClick={async () => {
-        setIsLoadingScreenEnabled(true);
+        setIsLoadingScreenEnabled(true)
         setTimeout(() => {
-          showBlankOverlay(false);
-          handleUrlChange(url);
-          window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
-        }, 250);
+          showBlankOverlay(false)
+          handleUrlChange(url)
+          window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT))
+        }, 250)
       }}
     >
       {text}
     </Button>
-  );
-};
+  )
+}
