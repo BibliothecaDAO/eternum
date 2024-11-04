@@ -9,6 +9,14 @@ import { ArmyManager } from "./ArmyManager";
 import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
 
+const LABELS = {
+  [StructureType.Realm]: "/textures/realm_label.png",
+  [StructureType.Hyperstructure]: "/textures/hyper_label.png",
+  [StructureType.Bank]: "/images/resources/coin.png",
+  [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
+  [StructureType.Settlement]: "/textures/realm_label.png",
+}
+
 const MINIMAP_CONFIG = {
   MIN_ZOOM_RANGE: 75,
   MAX_ZOOM_RANGE: 300,
@@ -78,6 +86,7 @@ class Minimap {
     this.waitForMinimapElement().then((canvas) => {
       this.canvas = canvas;
       this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera);
+      this.canvas.addEventListener("canvasResized", this.handleResize);
     });
   }
 
@@ -387,6 +396,11 @@ private handleWheel = (event: WheelEvent) => {
       this.moveMapRange("bottom");
     }
     this.worldmapScene.moveCameraToColRow(col, row, 0);
+  };
+
+  private handleResize = () => {
+    this.recomputeScales();
+    this.draw();
   };
 }
 
