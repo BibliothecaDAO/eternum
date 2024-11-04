@@ -44,9 +44,9 @@ VITE_PUBLIC_MASTER_PRIVATE_KEY="$2"
 VITE_PUBLIC_NODE_URL="$3"
 SOZO_WORLD="$4"
 # Define file paths
-ENV_PRODUCTION_FILE="../client/.env.production"
-DOJO_PROD_TOML_FILE="../contracts/dojo_prod.toml"
-SEASON_PASS_ENV_PRODUCTION_FILE="../season_pass/scripts/deployment/.env.production"
+ENV_PRODUCTION_FILE="./client/.env.production"
+DOJO_PROD_TOML_FILE="./contracts/dojo_prod.toml"
+SEASON_PASS_ENV_PRODUCTION_FILE="./season_pass/scripts/deployment/.env.production"
 
 # Update the .env.production file with the new values
 update_variable_in_file "VITE_PUBLIC_MASTER_ADDRESS" "$VITE_PUBLIC_MASTER_ADDRESS" "$ENV_PRODUCTION_FILE"
