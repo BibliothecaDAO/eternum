@@ -37,7 +37,7 @@ export default class InstancedModel {
           return;
         }
         let material = child.material;
-        if ((name === StructureType[StructureType.FragmentMine]) && child.name.includes("crystal")) {
+        if (name === StructureType[StructureType.FragmentMine] && child.name.includes("crystal")) {
           material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
         const tmp = new THREE.InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;

@@ -87,7 +87,7 @@ export class StructureManager {
 
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
-    
+
     if (!this.structureHexCoords.has(normalizedCoord.col)) {
       this.structureHexCoords.set(normalizedCoord.col, new Set());
     }

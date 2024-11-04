@@ -19,7 +19,7 @@ export const RealmDetails = () => {
   if (!structure) return;
 
   const isRealm = structure.category === StructureType[StructureType.Realm];
- 
+
   const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
   const address = toHexString(structure?.owner.address);
 
@@ -100,16 +100,16 @@ export const RealmDetails = () => {
           onChange={(index: number) => setSelectedTab(index)}
           variant="default"
           className="h-full "
-      >
-        <Tabs.List className="border border-gold/20 rounded-lg p-1">
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
+        >
+          <Tabs.List className="border border-gold/20 rounded-lg p-1">
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Tabs.Panels className="">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
           </Tabs.Panels>
         </Tabs>
       )}

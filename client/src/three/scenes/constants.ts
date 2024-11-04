@@ -83,7 +83,12 @@ export enum StructureProgress {
 }
 
 export const StructureModelPaths: Record<StructureType, string[]> = {
-  [StructureType.Realm]: ["models/buildings/castle0.glb", "models/buildings/castle1.glb", "models/buildings/castle2.glb", "models/buildings/castle3.glb"],
+  [StructureType.Realm]: [
+    "models/buildings/castle0.glb",
+    "models/buildings/castle1.glb",
+    "models/buildings/castle2.glb",
+    "models/buildings/castle3.glb",
+  ],
   // Order follows StructureProgress
   [StructureType.Hyperstructure]: [
     "models/buildings/hyperstructure_init.glb",
@@ -204,7 +209,7 @@ export const MinesMaterialsParams: Record<
   },
   [ResourcesIds.AncientFragment]: {
     color: new THREE.Color(0.43, 0.85, 0.16),
-    emissive: new THREE.Color(0.0, 3.25,0.03),
+    emissive: new THREE.Color(0.0, 3.25, 0.03),
     emissiveIntensity: 5.7,
   },
 };

@@ -132,7 +132,7 @@ export class SystemManager {
             structureType: StructureType[categoryKey],
             isMine,
             stage,
-            level
+            level,
           };
         });
       },
