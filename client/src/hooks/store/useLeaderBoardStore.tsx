@@ -1,27 +1,9 @@
 import { HyperstructureFinishedEvent, LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { defineQuery, getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { useDojo } from "../context/DojoContext";
 import { useContributions } from "../helpers/useContributions";
-
-export interface PlayerPointsLeaderboardInterface {
-  address: ContractAddress;
-  addressName: string;
-  order: string;
-  totalPoints: number;
-  isYours: boolean;
-  rank: number;
-}
-
-export interface GuildPointsLeaderboardInterface {
-  guildEntityId: ID;
-  name: string;
-  totalPoints: number;
-  isYours: boolean;
-  rank: number;
-}
 
 interface LeaderboardStore {
   finishedHyperstructures: HyperstructureFinishedEvent[];

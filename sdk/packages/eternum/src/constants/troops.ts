@@ -15,21 +15,21 @@ export type TroopFoodConsumption = {
 
 export const TROOPS_FOOD_CONSUMPTION: Record<number, TroopFoodConsumption> = {
   [ResourcesIds.Paladin]: {
-    explore_wheat_burn_amount: 0.006,
-    explore_fish_burn_amount: 0.006,
-    travel_wheat_burn_amount: 0.002,
-    travel_fish_burn_amount: 0.002,
+    explore_wheat_burn_amount: 0.008,
+    explore_fish_burn_amount: 0.008,
+    travel_wheat_burn_amount: 0.004,
+    travel_fish_burn_amount: 0.004,
   },
   [ResourcesIds.Knight]: {
-    explore_wheat_burn_amount: 0.006,
-    explore_fish_burn_amount: 0.006,
-    travel_wheat_burn_amount: 0.002,
-    travel_fish_burn_amount: 0.002,
+    explore_wheat_burn_amount: 0.008,
+    explore_fish_burn_amount: 0.008,
+    travel_wheat_burn_amount: 0.004,
+    travel_fish_burn_amount: 0.004,
   },
   [ResourcesIds.Crossbowman]: {
-    explore_wheat_burn_amount: 0.003,
-    explore_fish_burn_amount: 0.003,
-    travel_wheat_burn_amount: 0.001,
-    travel_fish_burn_amount: 0.001,
+    explore_wheat_burn_amount: 0.004,
+    explore_fish_burn_amount: 0.004,
+    travel_wheat_burn_amount: 0.002,
+    travel_fish_burn_amount: 0.002,
   },
 };

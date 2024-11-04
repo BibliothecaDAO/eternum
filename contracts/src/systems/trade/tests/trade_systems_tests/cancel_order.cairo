@@ -1,7 +1,9 @@
 use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
-
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::DONKEY_ENTITY_TYPE;
 
@@ -31,11 +33,11 @@ use eternum::utils::testing::{
 use starknet::contract_address_const;
 
 
-fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
-    let world = spawn_eternum();
-    world.uuid();
+fn setup() -> (WorldStorage, ID, ID, ID, ITradeSystemsDispatcher) {
+    let mut world = spawn_eternum();
+    world.dispatcher.uuid();
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
 
     set_settlement_config(config_systems_address);
     set_capacity_config(config_systems_address);
@@ -69,26 +71,29 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
     let maker_position = Position { x: 100000, y: 2000000, entity_id: 1 };
     let taker_position = Position { x: 200000, y: 1000000, entity_id: 1 };
 
-    let realm_systems_dispatcher = deploy_realm_systems(world);
-    let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);
-    let taker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, taker_position);
+    let maker_realm_entity_id = spawn_realm(ref world, 1, maker_position.into());
+    let taker_realm_entity_id = spawn_realm(ref world, 2, taker_position.into());
 
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;
 
-    set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
-    set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }));
+    world.write_model_test(@Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() });
+    world.write_model_test(@Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() });
 
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 }));
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 }));
-    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 }));
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }));
-    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
+    //
+    world.write_model_test(@Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 });
+    world.write_model_test(@Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 });
+    world.write_model_test(@Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 });
+
+    //
+    world.write_model_test(@Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 });
+    world.write_model_test(@Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 });
+    world.write_model_test(@Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 });
+
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     starknet::testing::set_account_contract_address(contract_address_const::<'maker'>());
 
-    let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
+    let trade_systems_address = deploy_system(ref world, "trade_systems");
     let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     // create order
@@ -112,9 +117,7 @@ fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
 #[test]
 #[available_gas(3000000000000)]
 fn trade_test_cancel() {
-    let (world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
-
-    let _trade = get!(world, trade_id, Trade);
+    let (mut world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
 
     // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -123,14 +126,14 @@ fn trade_test_cancel() {
         .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
 
     // check that maker balance is correct
-    let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
+    let maker_stone_resource: Resource = world.read_model((maker_id, ResourceTypes::STONE));
     assert(maker_stone_resource.balance == 100, 'wrong maker balance');
 
-    let maker_gold_resource = get!(world, (maker_id, ResourceTypes::GOLD), Resource);
+    let maker_gold_resource: Resource = world.read_model((maker_id, ResourceTypes::GOLD));
     assert(maker_gold_resource.balance == 100, 'wrong maker balance');
 
     // check that trade status is cancelled
-    let trade_status = get!(world, trade_id, Status);
+    let trade_status: Status = world.read_model(trade_id);
     assert(trade_status.value == TradeStatus::CANCELLED, 'wrong trade status');
 }
 
@@ -139,11 +142,11 @@ fn trade_test_cancel() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED'))]
 fn trade_test_cancel_after_acceptance() {
-    let (world, trade_id, _, _, trade_systems_dispatcher) = setup();
+    let (mut world, trade_id, _, _, trade_systems_dispatcher) = setup();
 
     // accept order
 
-    set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
+    world.write_model_test(@Status { trade_id, value: TradeStatus::ACCEPTED, });
 
     // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());

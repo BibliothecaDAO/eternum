@@ -87,6 +87,7 @@ type ArrivalInfo = {
   position: Position;
   arrivesAt: bigint;
   isOwner: boolean;
+  hasResources: boolean;
 };
 
 export const usePlayerArrivals = () => {
@@ -115,11 +116,17 @@ export const usePlayerArrivals = () => {
 
   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
 
-  const queryFragments = [NotValue(OwnedResourcesTracker, { resource_types: 0n }), Has(Weight), Has(ArrivalTime)];
+  const queryFragments = [Has(OwnedResourcesTracker), Has(Weight), Has(ArrivalTime)];
 
   const getArrivalsWithResourceOnPosition = useCallback((positions: Position[]) => {
     return positions.flatMap((position) => {
-      return Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), ...queryFragments]));
+      return Array.from(
+        runQuery([
+          HasValue(Position, { x: position.x, y: position.y }),
+          NotValue(OwnedResourcesTracker, { resource_types: 0n }),
+          ...queryFragments,
+        ]),
+      );
     });
   }, []);
 
@@ -129,6 +136,7 @@ export const usePlayerArrivals = () => {
       const entityOwner = getComponentValue(EntityOwner, id);
       const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
       const position = getComponentValue(Position, id);
+      const hasResources = getComponentValue(OwnedResourcesTracker, id)?.resource_types !== 0n || false;
 
       if (!arrivalTime || !position || owner?.address !== ContractAddress(account.address)) {
         return undefined;
@@ -139,6 +147,7 @@ export const usePlayerArrivals = () => {
         arrivesAt: arrivalTime.arrives_at,
         isOwner: true,
         position: { x: position.x, y: position.y },
+        hasResources,
       };
     },
     [account],
@@ -154,19 +163,24 @@ export const usePlayerArrivals = () => {
   useEffect(() => {
     const query = defineQuery([Has(Position), ...queryFragments], { runOnInit: false });
 
+    const handleArrivalUpdate = (arrivals: ArrivalInfo[], newArrival: ArrivalInfo | undefined) => {
+      if (!newArrival) return arrivals;
+
+      if (!newArrival.hasResources) {
+        return arrivals.filter((arrival) => arrival.entityId !== newArrival.entityId);
+      }
+
+      const index = arrivals.findIndex((arrival) => arrival.entityId === newArrival.entityId);
+      if (index !== -1) {
+        return [...arrivals.slice(0, index), newArrival, ...arrivals.slice(index + 1)];
+      }
+      return [...arrivals, newArrival];
+    };
+
     const sub = query.update$.subscribe((update) => {
-      if (isComponentUpdate(update, Position)) {
+      if (isComponentUpdate(update, Position) || isComponentUpdate(update, OwnedResourcesTracker)) {
         const newArrival = createArrivalInfo(update.entity);
-        if (newArrival) {
-          setEntitiesWithInventory((arrivals) => {
-            const index = arrivals.findIndex((arrival) => arrival.entityId === newArrival.entityId);
-            if (index !== -1) {
-              return [...arrivals.slice(0, index), newArrival, ...arrivals.slice(index + 1)];
-            } else {
-              return [...arrivals, newArrival];
-            }
-          });
-        }
+        setEntitiesWithInventory((arrivals) => handleArrivalUpdate(arrivals, newArrival));
       }
     });
 
@@ -298,3 +312,27 @@ export function useOwnedEntitiesOnPosition() {
     getOwnedEntityOnPosition,
   };
 }
+
+export const usePlayerArrivalsNotificationLength = () => {
+  const [notificationLength, setNotificationLength] = useState(0);
+
+  const arrivals = usePlayerArrivals();
+
+  useEffect(() => {
+    const updateNotificationLength = () => {
+      const currentTime = useUIStore.getState().currentDefaultTick || 0;
+      const arrivedCount = arrivals.filter(
+        (arrival) => arrival.arrivesAt <= currentTime && arrival.hasResources,
+      ).length;
+      setNotificationLength(arrivedCount);
+    };
+
+    updateNotificationLength();
+
+    const intervalId = setInterval(updateNotificationLength, 10000);
+
+    return () => clearInterval(intervalId);
+  }, [arrivals]);
+
+  return notificationLength;
+};

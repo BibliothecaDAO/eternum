@@ -1,23 +1,17 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { TOTAL_CONTRIBUTABLE_AMOUNT } from "@/dojo/modelManager/utils/LeaderboardUtils";
-import { SetupResult } from "@/dojo/setup";
+import { configManager, SetupResult } from "@/dojo/setup";
 import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_RESOURCE_MULTIPLIERS,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  ID,
-  StructureType,
-} from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@/ui/utils/utils";
+import { ID, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
-  Has,
-  HasValue,
   defineComponentSystem,
   defineQuery,
   getComponentValue,
+  Has,
+  HasValue,
   isComponentUpdate,
   runQuery,
 } from "@dojoengine/recs";
@@ -81,7 +75,7 @@ export class SystemManager {
             const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
             if (protectee) return;
 
-            const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
+            const healthMultiplier = BigInt(configManager.getResourcePrecision());
 
             const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
             if (!entityOwner) return;
@@ -126,6 +120,11 @@ export class SystemManager {
           const categoryKey = structure.category as keyof typeof StructureType;
 
           const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+          let level = 0;
+          if (StructureType[categoryKey] === StructureType.Realm) {
+            const realm = getComponentValue(this.setup.components.Realm, update.entity);
+            level = realm?.level || RealmLevels.Settlement;
+          }
 
           return {
             entityId: structure.entity_id,
@@ -133,6 +132,7 @@ export class SystemManager {
             structureType: StructureType[categoryKey],
             isMine,
             stage,
+            level,
           };
         });
       },
@@ -174,7 +174,7 @@ export class SystemManager {
           const position = getComponentValue(this.setup.components.Position, update.entity);
           if (!position) return;
 
-          const healthMultiplier = BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          const healthMultiplier = BigInt(configManager.getResourcePrecision());
           const isEmpty =
             battle.attack_army_health.current < healthMultiplier &&
             battle.defence_army_health.current < healthMultiplier;
@@ -281,28 +281,33 @@ export class SystemManager {
     progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
     hyperstructureEntityId: ID,
   ) => {
+    const totalContributableAmount = configManager.getHyperstructureTotalContributableAmount();
     let percentage = 0;
-    const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
-      let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
-      let progress = {
-        hyperstructure_entity_id: hyperstructureEntityId,
-        resource_type: resource,
-        amount: !foundProgress ? 0 : Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision,
-        percentage: !foundProgress
-          ? 0
-          : Math.floor(
-              (Number(foundProgress.amount) / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100,
-            ),
-        costNeeded: resourceCost,
-      };
-      percentage +=
-        (progress.amount *
-          HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[
-            progress.resource_type as keyof typeof HYPERSTRUCTURE_RESOURCE_MULTIPLIERS
-          ]!) /
-        TOTAL_CONTRIBUTABLE_AMOUNT;
-      return progress;
-    });
+    const epsilon = 1e-10; // Small value to account for floating-point precision errors
+
+    const allProgresses = Object.values(configManager.hyperstructureTotalCosts).map(
+      ({ resource, amount: resourceCost }) => {
+        let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+        let progress = {
+          hyperstructure_entity_id: hyperstructureEntityId,
+          resource_type: resource,
+          amount: !foundProgress ? 0 : divideByPrecision(Number(foundProgress.amount)),
+          percentage: !foundProgress
+            ? 0
+            : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100),
+          costNeeded: resourceCost,
+        };
+        percentage +=
+          (progress.amount * configManager.getResourceRarity(progress.resource_type)) / totalContributableAmount;
+        return progress;
+      },
+    );
+
+    // Adjust percentage to account for floating-point precision issues
+    if (Math.abs(percentage - 1.0) < epsilon) {
+      percentage = 1.0;
+    }
+
     return { allProgresses, percentage };
   };
 }

@@ -1,15 +1,22 @@
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::{
+    alias::ID,
+    constants::{
+        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
+        get_contributable_resources_with_rarity, RESOURCE_PRECISION
+    },
+    models::{
+        owner::{Owner}, position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
+        resources::{Resource, ResourceCustomImpl, ResourceCost},
+        structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}, guild::{GuildMember}
+    },
+    systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
+};
 
-use eternum::{alias::ID, constants::WORLD_CONFIG_ID};
+use eternum::{constants::WORLD_CONFIG_ID};
 use starknet::ContractAddress;
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct Season {
-    #[key]
-    config_id: ID,
-    is_over: bool,
-}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -20,7 +27,14 @@ pub struct Hyperstructure {
     completed: bool,
     last_updated_by: ContractAddress,
     last_updated_timestamp: u64,
-    private: bool,
+    access: Access,
+}
+
+#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked)]
+pub enum Access {
+    Public,
+    Private,
+    GuildOnly,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -58,21 +72,28 @@ pub struct Epoch {
 
 #[generate_trait]
 pub impl EpochCustomImpl of EpochCustomTrait {
-    fn get(world: IWorldDispatcher, hyperstructure_entity_id: ID, index: u16) -> Epoch {
-        let epoch = get!(world, (hyperstructure_entity_id, index), Epoch);
+    fn get(ref world: WorldStorage, hyperstructure_entity_id: ID, index: u16) -> Epoch {
+        let epoch: Epoch = world.read_model((hyperstructure_entity_id, index));
         epoch
     }
 }
 
 #[generate_trait]
-pub impl SeasonCustomImpl of SeasonCustomTrait {
-    fn end_season(world: IWorldDispatcher) {
-        set!(world, (Season { config_id: WORLD_CONFIG_ID, is_over: true }));
-    }
+pub impl HyperstructureCustomImpl of HyperstructureCustomTrait {
+    fn assert_access(self: Hyperstructure, ref world: WorldStorage) {
+        let contributor_address = starknet::get_caller_address();
+        let hyperstructure_owner: Owner = world.read_model(self.entity_id);
 
-    fn assert_season_is_not_over(world: IWorldDispatcher) {
-        let season = get!(world, WORLD_CONFIG_ID, Season);
-        assert!(season.is_over == false, "Season is over");
+        match self.access {
+            Access::Public => {},
+            Access::Private => {
+                assert!(contributor_address == hyperstructure_owner.address, "Hyperstructure is private");
+            },
+            Access::GuildOnly => {
+                let guild_member: GuildMember = world.read_model(contributor_address);
+                let owner_guild_member: GuildMember = world.read_model(hyperstructure_owner.address);
+                assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
+            }
+        }
     }
 }
-

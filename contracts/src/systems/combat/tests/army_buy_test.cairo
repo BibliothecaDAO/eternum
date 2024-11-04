@@ -1,5 +1,9 @@
 use core::array::SpanTrait;
+
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
@@ -13,11 +17,12 @@ use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
-    combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
+    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
 use eternum::utils::testing::{
     config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
-    systems::{deploy_realm_systems, deploy_combat_systems, deploy_system}, general::mint
+    systems::{deploy_realm_systems, deploy_troop_systems, deploy_system},
+    general::{mint, get_default_realm_pos, spawn_realm}
 };
 
 use starknet::ContractAddress;
@@ -34,13 +39,15 @@ const REALM_COORD_X: u32 = 2;
 const REALM_COORD_Y: u32 = 3;
 
 
-fn set_configurations(world: IWorldDispatcher) {
-    set!(
-        world,
-        (
-            get_combat_config(),
-            TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 },
-            SettlementConfig {
+fn set_configurations(ref world: WorldStorage) {
+    world.write_model_test(@get_combat_config());
+    world
+        .write_model_test(
+            @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
+        );
+    world
+        .write_model_test(
+            @SettlementConfig {
                 config_id: WORLD_CONFIG_ID,
                 radius: 50,
                 angle_scaled: 0,
@@ -51,26 +58,23 @@ fn set_configurations(world: IWorldDispatcher) {
                 min_angle_increase: 30,
                 max_angle_increase: 100,
             }
-        )
-    )
+        );
 }
 
-fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
-    let world = spawn_eternum();
-    set_configurations(world);
-    let realm_system_dispatcher = deploy_realm_systems(world);
-    let combat_system_dispatcher = deploy_combat_systems(world);
+fn setup() -> (WorldStorage, ITroopContractDispatcher, ID, ID) {
+    let mut world = spawn_eternum();
+    set_configurations(ref world);
+    let troop_system_dispatcher = deploy_troop_systems(ref world);
 
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(ref world, "config_systems");
     set_capacity_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
-    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
-    let realm_id = realm_system_dispatcher.create('Mysticora', 1, 1, 1, 1, 1, 1, 1, 1, 1);
+    let realm_id = spawn_realm(ref world, 1, get_default_realm_pos().into());
     mint(
-        world,
+        ref world,
         realm_id,
         array![
             (ResourceTypes::KNIGHT, STARTING_KNIGHT_COUNT),
@@ -79,33 +83,32 @@ fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID) {
         ]
             .span()
     );
-    let army_id = combat_system_dispatcher.army_create(realm_id, false);
+    let army_id = troop_system_dispatcher.army_create(realm_id, false);
 
-    (world, combat_system_dispatcher, realm_id, army_id)
+    (world, troop_system_dispatcher, realm_id, army_id)
 }
 
 
 #[test]
 fn combat_test_army_buy() {
-    let (world, combat_systems_dispatcher, realm_id, army_id) = setup();
+    let (mut world, troop_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
-    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
     let troops = Troops {
         knight_count: STARTING_KNIGHT_COUNT.try_into().unwrap(),
         paladin_count: STARTING_PALADIN_COUNT.try_into().unwrap(),
         crossbowman_count: STARTING_CROSSBOWMAN_COUNT.try_into().unwrap(),
     };
-    combat_systems_dispatcher.army_buy_troops(army_id, realm_id, troops);
+    troop_systems_dispatcher.army_buy_troops(army_id, realm_id, troops);
 
-    let army: Army = get!(world, army_id, Army);
+    let army: Army = world.read_model(army_id);
     assert_eq!(army.troops.knight_count, STARTING_KNIGHT_COUNT.try_into().unwrap());
     assert_eq!(army.troops.paladin_count, STARTING_PALADIN_COUNT.try_into().unwrap());
     assert_eq!(army.troops.crossbowman_count, STARTING_CROSSBOWMAN_COUNT.try_into().unwrap());
 
-    let knight_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::KNIGHT));
-    let paladin_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::PALADIN));
-    let crossbowman_resource: Resource = ResourceCustomImpl::get(world, (realm_id, ResourceTypes::CROSSBOWMAN));
+    let knight_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::KNIGHT));
+    let paladin_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::PALADIN));
+    let crossbowman_resource: Resource = ResourceCustomImpl::get(ref world, (realm_id, ResourceTypes::CROSSBOWMAN));
     assert_eq!(knight_resource.balance, 0);
     assert_eq!(paladin_resource.balance, 0);
     assert_eq!(crossbowman_resource.balance, 0);
@@ -120,15 +123,14 @@ fn combat_test_army_buy() {
     )
 )]
 fn combat_test_army_buy__not_enough_resources() {
-    let (_world, combat_systems_dispatcher, realm_id, army_id) = setup();
+    let (_world, troop_systems_dispatcher, realm_id, army_id) = setup();
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
-    starknet::testing::set_account_contract_address(contract_address_const::<REALMS_OWNER>());
 
     let troops = Troops {
         knight_count: STARTING_KNIGHT_COUNT.try_into().unwrap(),
         paladin_count: STARTING_PALADIN_COUNT.try_into().unwrap(),
         crossbowman_count: STARTING_CROSSBOWMAN_COUNT.try_into().unwrap(),
     };
-    combat_systems_dispatcher.army_buy_troops(army_id, realm_id, troops);
-    combat_systems_dispatcher.army_buy_troops(army_id, realm_id, troops);
+    troop_systems_dispatcher.army_buy_troops(army_id, realm_id, troops);
+    troop_systems_dispatcher.army_buy_troops(army_id, realm_id, troops);
 }

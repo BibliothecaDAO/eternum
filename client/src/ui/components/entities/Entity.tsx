@@ -12,6 +12,7 @@ import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecad
 import clsx from "clsx";
 import React, { useMemo } from "react";
 import { DepositResources } from "../resources/DepositResources";
+import { EntityReadyForDeposit } from "../trading/ResourceArrivals";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -29,12 +30,13 @@ type EntityProps = {
   entityId: ID;
   idleOnly?: boolean;
   selectedCaravan?: number;
+  setEntitiesReadyForDeposit: React.Dispatch<React.SetStateAction<EntityReadyForDeposit[]>>;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Entity = ({ entityId, ...props }: EntityProps) => {
+export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: EntityProps) => {
   const dojo = useDojo();
 
-  const { getEntityInfo } = useEntitiesUtils();
+  const { getEntityInfo, getEntityName } = useEntitiesUtils();
   const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useUIStore.getState().nextBlockTimestamp;
@@ -70,7 +72,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       case EntityState.Idle:
       case EntityState.WaitingToOffload:
         return depositEntityId !== undefined && hasResources ? (
-          <div className="flex ml-auto italic">Waiting to offload</div>
+          <div className="flex ml-auto italic">Waiting to offload to {getEntityName(depositEntityId)}</div>
         ) : (
           <div className="flex ml-auto italic">Idle</div>
         );
@@ -109,7 +111,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2   text-gold border border-gold/10", props.className, bgColour)}
+      className={clsx("flex flex-col p-2 text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
       <div className="flex items-center text-xs flex-wrap">
@@ -125,6 +127,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
             entityId={entityId}
             battleInProgress={battleInProgress}
             armyInBattle={Boolean(army?.battle_id)}
+            setEntitiesReadyForDeposit={setEntitiesReadyForDeposit}
           />
         )}
         <div className="flex gap-3 text-xs items-center whitespace-nowrap">

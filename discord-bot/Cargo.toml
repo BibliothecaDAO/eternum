@@ -18,23 +18,23 @@ toml = { version = "0.7", default-features = false, features = ["parse", "displa
 starknet = "0.11.0"
 starknet-crypto = "0.7.0"
 starknet-types-core = "~0.1.4"
-dojo-types = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
-torii-client = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+dojo-types = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-rc.0" }
+torii-client = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-rc.0" }
 torii-grpc = { git = "https://github.com/dojoengine/dojo", features = [
     "client",
-], tag = "v1.0.0-alpha.9" }
-torii-relay = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
-dojo-world = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-alpha.9" }
+], tag = "v1.0.0-rc.0" }
+torii-relay = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-rc.0" }
+dojo-world = { git = "https://github.com/dojoengine/dojo", tag = "v1.0.0-rc.0" }
 
 cainome = { git = "https://github.com/cartridge-gg/cainome" }
-cairo-lang-filesystem = "=2.7.0"
-scarb = { git = "https://github.com/software-mansion/scarb", tag = "v2.7.0" }
-shuttle-runtime = { version = "0.47.0" }
-shuttle-serenity = { version = "0.47.0" }
-shuttle-rocket = { version = "0.47.0" }
+cairo-lang-filesystem = "=2.8.4"
+scarb = { git = "https://github.com/software-mansion/scarb", tag = "v2.8.4" }
+shuttle-runtime = { version = "0.48.0" }
+shuttle-serenity = { version = "0.48.0" }
+shuttle-rocket = { version = "0.48.0" }
 serenity = { version = "0.12.0", default-features = false, features = ["client", "gateway", "rustls_backend", "model"] }
-shuttle-shared-db = { version = "0.47.0", features = ["postgres", "sqlx"] }
-sqlx = "0.7.1"
+shuttle-shared-db = { version = "0.48.0", features = ["postgres", "sqlx"] }
+sqlx = "0.8.2"
 tokio = "1.26.0"
 
 [patch.crates-io]

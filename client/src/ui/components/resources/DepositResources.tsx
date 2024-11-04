@@ -5,15 +5,22 @@ import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { EntityState, ID, determineEntityState } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { EntityReadyForDeposit } from "../trading/ResourceArrivals";
 
 type DepositResourcesProps = {
   entityId: ID;
   battleInProgress?: boolean;
   armyInBattle: boolean;
+  setEntitiesReadyForDeposit: React.Dispatch<React.SetStateAction<EntityReadyForDeposit[]>>;
 };
 
-export const DepositResources = ({ entityId, battleInProgress, armyInBattle }: DepositResourcesProps) => {
+export const DepositResources = ({
+  entityId,
+  battleInProgress,
+  armyInBattle,
+  setEntitiesReadyForDeposit,
+}: DepositResourcesProps) => {
   const { account, setup } = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,6 +41,26 @@ export const DepositResources = ({ entityId, battleInProgress, armyInBattle }: D
     arrivalTime?.arrives_at,
     inventoryResources.length > 0,
   );
+
+  useEffect(() => {
+    if (depositEntityId && entityId && inventoryResources.length > 0) {
+      setEntitiesReadyForDeposit((prev) => {
+        if (prev.some((entity) => entity.senderEntityId === entityId && entity.recipientEntityId === depositEntityId)) {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            // here entity id is the id of the entity that carries the resources
+            carrierId: arrivalTime?.entity_id || 0,
+            senderEntityId: entityId,
+            recipientEntityId: depositEntityId,
+            resources: inventoryResources.flatMap((resource) => [BigInt(resource.resourceId), BigInt(resource.amount)]),
+          },
+        ];
+      });
+    }
+  }, []);
 
   const onOffload = async (receiverEntityId: ID) => {
     setIsLoading(true);

@@ -1,8 +1,10 @@
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { calculateCompletionPoints } from "@/dojo/modelManager/utils/LeaderboardUtils";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
 import {
   ProgressWithPercentage,
   useHyperstructureProgress,
@@ -10,20 +12,21 @@ import {
 } from "@/hooks/helpers/useHyperstructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  ContractAddress,
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  MAX_NAME_LENGTH,
-} from "@bibliothecadao/eternum";
+import { currencyIntlFormat, getEntityIdFromKeys, multiplyByPrecision, separateCamelCase } from "@/ui/utils/utils";
+import { Access, ContractAddress, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 import { ContributionSummary } from "./ContributionSummary";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
+
+enum DisplayedAccess {
+  Public = "Public",
+  Private = "Private",
+  GuildOnly = "Tribe Only",
+}
 
 enum Loading {
   None,
@@ -37,16 +40,19 @@ export const HyperstructurePanel = ({ entity }: any) => {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { contribute_to_construction, set_private },
+      systemCalls: { contribute_to_construction, set_access },
       components: { Hyperstructure },
     },
   } = useDojo();
+
+  const { getGuildFromPlayerAddress } = useGuilds();
 
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
   const [resetContributions, setResetContributions] = useState(false);
 
+  const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const progresses = useHyperstructureProgress(entity.entity_id);
@@ -64,10 +70,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
 
+  const playerGuild = useMemo(() => getGuildFromPlayerAddress(ContractAddress(account.address)), []);
+
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
-      amount: amount * EternumGlobalConfig.resources.resourcePrecision,
+      amount: multiplyByPrecision(amount),
     }));
 
     setIsLoading(Loading.Contribute);
@@ -88,7 +96,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
-    return HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
+    return Object.values(configManager.hyperstructureTotalCosts).map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
@@ -106,6 +114,20 @@ export const HyperstructurePanel = ({ entity }: any) => {
     });
   }, [progresses, myContributions]);
 
+  const canContribute = useMemo(() => {
+    const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0));
+    return (
+      entity.isOwner ||
+      (hyperstructure?.access === Access[Access.GuildOnly] &&
+        playerGuild?.entityId !== undefined &&
+        playerGuild.entityId !== 0 &&
+        hyperstructureOwnerGuild?.entityId !== undefined &&
+        hyperstructureOwnerGuild.entityId !== 0 &&
+        hyperstructureOwnerGuild.entityId === playerGuild.entityId) ||
+      hyperstructure?.access === Access[Access.Public]
+    );
+  }, [newContributions]);
+
   const initialPoints = useMemo(() => {
     return calculateCompletionPoints(myContributions);
   }, [myContributions, updates]);
@@ -114,13 +136,13 @@ export const HyperstructurePanel = ({ entity }: any) => {
     return LeaderboardManager.instance().getAddressShares(ContractAddress(account.address), entity.entity_id);
   }, [myContributions, updates]);
 
-  const setPrivate = async () => {
+  const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);
     try {
-      await set_private({
+      await set_access({
         signer: account,
         hyperstructure_entity_id: entity.entity_id,
-        to_private: !hyperstructure?.private,
+        access,
       });
     } finally {
       setIsLoading(Loading.None);
@@ -173,9 +195,36 @@ export const HyperstructurePanel = ({ entity }: any) => {
                   <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
                     edit name
                   </Button>
-                  <Button isLoading={isLoading === Loading.SetPrivate} size="xs" variant="default" onClick={setPrivate}>
-                    Make {hyperstructure?.private ? "public" : "private"}
-                  </Button>
+                  {hyperstructure && entity.isOwner && (
+                    <Select
+                      onValueChange={(access: keyof typeof Access) => {
+                        setAccess(BigInt(Access[access]));
+                      }}
+                    >
+                      <SelectTrigger className="w-[140px] text-gold h-10 text-lg">
+                        <SelectValue
+                          placeholder={DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess]}
+                        />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black/90 text-gold">
+                        {Object.keys(Access)
+                          .filter((access) => {
+                            if (!isNaN(Number(access))) return false;
+
+                            if (access === Access[Access.GuildOnly]) {
+                              return playerGuild?.entityId !== undefined && playerGuild.entityId !== 0;
+                            }
+
+                            return access !== hyperstructure!.access;
+                          })
+                          .map((access) => (
+                            <SelectItem key={access} value={access} disabled={!entity.isOwner}>
+                              {separateCamelCase(access)}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
             </div>
@@ -206,7 +255,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           <div className="flex flex-col justify-center items-center text-center">
             <div className="uppercase text-[10px]">Points/cycle</div>
             <div className="font-bold text-sm">
-              {currencyIntlFormat((myShares || 0) * HYPERSTRUCTURE_POINTS_PER_CYCLE)}
+              {currencyIntlFormat((myShares || 0) * configManager.getHyperstructureConfig().pointsPerCycle)}
             </div>
           </div>
         </div>
@@ -219,14 +268,28 @@ export const HyperstructurePanel = ({ entity }: any) => {
           <div className="">
             {resourceElements}
             <div className="flex justify-end w-full">
-              <Button
-                isLoading={isLoading === Loading.Contribute}
-                className="mt-4 bg-gold/20"
-                disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None}
-                onClick={contributeToConstruction}
+              <div
+                onMouseEnter={() => {
+                  if (!canContribute) {
+                    setTooltip({
+                      content: <>Not the correct access</>,
+                      position: "right",
+                    });
+                  }
+                }}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                }}
               >
-                Contribute
-              </Button>
+                <Button
+                  isLoading={isLoading === Loading.Contribute}
+                  className="mt-4 bg-gold/20"
+                  disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None || !canContribute}
+                  onClick={contributeToConstruction}
+                >
+                  Contribute
+                </Button>
+              </div>
             </div>
           </div>
         )}

@@ -2,20 +2,20 @@
 
 # Default values (dev)
 STARKNET_RPC_URL="http://localhost:5050"
-DOJO_ACCOUNT_ADDRESS="0xb3ff441a68610b30fd5e2abbf3a1548eb6ba6f3559f2862bf2dc757e5828ca"
-DOJO_PRIVATE_KEY="0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a"
-SOZO_WORLD="0x76ca3dfc3e96843716f882546f0db96b7da0cf988bdba284b469d0defb2f48f"
-KATANA_TOML_PATH="./manifests/dev/deployment/manifest.toml"
+DOJO_ACCOUNT_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+DOJO_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+SOZO_WORLD="0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2"
+KATANA_TOML_PATH="./manifest_dev.json"
 
 # Check if the first argument is provided and set it to "dev" or "prod"
 if [[ ! -z "$1" ]]; then
     if [[ "$1" == "prod" ]]; then
         echo "is prod"
-        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum-42/katana/"
-        # DOJO_ACCOUNT_ADDRESS="" # number 4
-        # DOJO_PRIVATE_KEY="" # number 4
-        SOZO_WORLD="0x76ca3dfc3e96843716f882546f0db96b7da0cf988bdba284b469d0defb2f48f"
-        KATANA_TOML_PATH="./manifests/prod/deployment/manifest.toml"
+        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum-rc0/katana/"
+        DOJO_ACCOUNT_ADDRESS="0x46f957b7fe3335010607174edd5c4c3fae87b12c3760dc167ac738959d8c03b"
+        DOJO_PRIVATE_KEY="0x66184a4482615568262bb3e63eb02517eece88afc39c3b5222467e7551611ad"
+        SOZO_WORLD="0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2"
+        KATANA_TOML_PATH="./manifest_prod.json"
     elif [[ "$1" != "dev" ]]; then
         echo "Invalid argument. Use 'dev' or 'prod'."
         exit 1

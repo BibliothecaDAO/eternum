@@ -127,6 +127,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.send_resources(props);
   };
 
+  const send_resources_multiple = async (props: SystemProps.SendResourcesMultipleProps) => {
+    await provider.send_resources_multiple(props);
+  };
+
   const pickup_resources = async (props: SystemProps.PickupResourcesProps) => {
     await provider.pickup_resources(props);
   };
@@ -215,16 +219,12 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.army_merge_troops(props);
   };
 
-  const mint_starting_resources = async (props: SystemProps.MintStartingResources) => {
-    await provider.mint_starting_resources(props);
+  const claim_quest = async (props: SystemProps.ClaimQuestProps) => {
+    await provider.claim_quest(props);
   };
 
   const mint_resources = async (props: SystemProps.MintResourcesProps) => {
     await provider.mint_resources(props);
-  };
-
-  const mint_resources_and_claim_quest = async (props: SystemProps.MintResourcesAndClaimProps) => {
-    await provider.mint_resources_and_claim_quest(props);
   };
 
   const create_hyperstructure = async (props: SystemProps.CreateHyperstructureProps) => {
@@ -235,8 +235,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.contribute_to_construction(props);
   };
 
-  const set_private = async (props: SystemProps.SetPrivateProps) => {
-    await provider.set_private(props);
+  const set_access = async (props: SystemProps.SetAccessProps) => {
+    await provider.set_access(props);
   };
 
   const end_game = async (props: SystemProps.EndGameProps) => {
@@ -269,6 +269,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const remove_guild_member = async (props: SystemProps.RemoveGuildMember) => {
     await provider.remove_guild_member(props);
+  };
+
+  const disband_guild = async (props: SystemProps.DisbandGuild) => {
+    await provider.disband_guild(props);
   };
 
   const remove_player_from_whitelist = async (props: SystemProps.RemovePlayerFromWhitelist) => {
@@ -318,6 +322,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const systemCalls = {
     send_resources: withQueueing(withErrorHandling(send_resources)),
+    send_resources_multiple: withQueueing(withErrorHandling(send_resources_multiple)),
     pickup_resources: withQueueing(withErrorHandling(pickup_resources)),
     remove_liquidity: withQueueing(withErrorHandling(remove_liquidity)),
     add_liquidity: withQueueing(withErrorHandling(add_liquidity)),
@@ -350,13 +355,12 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     create_hyperstructure: withQueueing(withErrorHandling(create_hyperstructure)),
     contribute_to_construction: withQueueing(withErrorHandling(contribute_to_construction)),
-    set_private: withQueueing(withErrorHandling(set_private)),
+    set_access: withQueueing(withErrorHandling(set_access)),
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
     end_game: withQueueing(withErrorHandling(end_game)),
 
+    claim_quest: withQueueing(withErrorHandling(claim_quest)),
     mint_resources: withQueueing(withErrorHandling(mint_resources)),
-    mint_starting_resources: withQueueing(withErrorHandling(mint_starting_resources)),
-    mint_resources_and_claim_quest: withQueueing(withErrorHandling(mint_resources_and_claim_quest)),
 
     army_buy_troops: withQueueing(withErrorHandling(army_buy_troops)),
     army_merge_troops: withQueueing(withErrorHandling(army_merge_troops)),
@@ -367,6 +371,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     leave_guild: withQueueing(withErrorHandling(leave_guild)),
     transfer_guild_ownership: withQueueing(withErrorHandling(transfer_guild_ownership)),
     remove_guild_member: withQueueing(withErrorHandling(remove_guild_member)),
+    disband_guild: withQueueing(withErrorHandling(disband_guild)),
     remove_player_from_whitelist: withQueueing(withErrorHandling(remove_player_from_whitelist)),
 
     battle_start: withQueueing(withErrorHandling(battle_start)),

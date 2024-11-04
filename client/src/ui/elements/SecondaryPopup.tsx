@@ -10,15 +10,19 @@ type FilterPopupProps = {
   children: React.ReactNode;
   className?: string;
   name?: string;
+  width?: string;
 };
 
-export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) => {
+export const SecondaryPopup = ({ children, className, name, width = "400px" }: FilterPopupProps) => {
   const nodeRef = useRef<any>(null);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
 
   const handleStop = (_: any, data: any) => {
+    if (data.y < -200 || data.y > window.innerHeight - 220 || data.x < -450 || data.x > window.innerWidth - 520) {
+      return false as false;
+    }
     if (name) {
       localStorage.setItem(name, JSON.stringify({ x: data.x, y: data.y }));
     }
@@ -72,7 +76,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
     <motion.div
       className="flex justify-center text-gold "
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={{ opacity: 1, width }}
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
@@ -90,6 +94,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
             onClick={handleClick}
             ref={nodeRef}
             className={clsx("fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
+            style={{ width: `${width}px` }}
           >
             {children}
           </div>
@@ -112,7 +117,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move z-30 p-2 rounded-t bg-black/90  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
+      " items-center relative cursor-move z-30 p-2 rounded-t bg-brown/90  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
       className,
     )}
     onKeyDown={(e) => {
@@ -177,7 +182,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 flex flex-col bg-black/90 border-gradient border rounded-b overflow-auto bg-hex-bg bg-repeat`,
+        `relative z-10 flex flex-col bg-brown/90 border-gradient border rounded-b overflow-auto bg-hex-bg bg-repeat`,
       )}
       style={{
         width: width ? width : "",

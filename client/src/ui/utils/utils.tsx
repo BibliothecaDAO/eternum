@@ -1,3 +1,5 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { type HexPosition, ResourceMiningTypes } from "@/types";
 import {
@@ -8,12 +10,11 @@ import {
   type Position,
   type Resource,
   ResourcesIds,
-  TROOPS_FOOD_CONSUMPTION,
-  WEIGHTS_GRAM,
+  TickIds,
 } from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
-import { type SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -61,7 +62,10 @@ export function addressToNumber(address: string) {
   }
 
   // Map the sum to a number between 1 and 10
-  return (sum % 5) + 1;
+  let result = (sum % 5) + 1;
+
+  // Pad with a 0 if the result is less than 10
+  return result < 10 ? `0${result}` : result.toString();
 }
 
 export function calculateDistance(start: Position, destination: Position): number | undefined {
@@ -183,6 +187,7 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.Dragonhide]: ResourceMiningTypes.Dragonhide,
   [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
   [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
+  [ResourcesIds.AncientFragment]: ResourceMiningTypes.Mine,
 };
 
 export enum TimeFormat {
@@ -195,6 +200,7 @@ export enum TimeFormat {
 export const formatTime = (
   seconds: number,
   format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
+  abbreviate: boolean = false,
 ): string => {
   const days = Math.floor(seconds / (3600 * 24));
   const hours = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -207,40 +213,12 @@ export const formatTime = (
   if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}m`);
   if (remainingSeconds > 0 && format & TimeFormat.S) parts.push(`${remainingSeconds}s`);
 
+  if (abbreviate) {
+    return parts[0] || "0s";
+  }
+
   return parts.join(" ");
 };
-
-// Add override
-export function sortItems<T>(items: T[], activeSort: SortInterface): T[] {
-  const sortedItems = [...items];
-
-  if (activeSort.sort !== "none") {
-    return sortedItems.sort((a, b) => {
-      const keyA = getPropertyByPath(a, activeSort.sortKey);
-      const keyB = getPropertyByPath(b, activeSort.sortKey);
-
-      let comparison = 0;
-
-      if (typeof keyA === "string" && typeof keyB === "string") {
-        comparison = keyA.localeCompare(keyB);
-      } else if (typeof keyA === "number" && typeof keyB === "number") {
-        comparison = keyA - keyB;
-      }
-
-      return activeSort.sort === "asc" ? comparison : -comparison;
-    });
-  } else {
-    return sortedItems.sort((a, b) => {
-      const keyA = getPropertyByPath(a, "realmId") as number;
-      const keyB = getPropertyByPath(b, "realmId") as number;
-      return keyB - keyA;
-    });
-  }
-}
-
-function getPropertyByPath<T>(obj: T, path: string): any {
-  return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);
-}
 
 export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
   navigator.clipboard
@@ -259,8 +237,11 @@ export const isRealmSelected = (structureEntityId: ID, structures: any) => {
 };
 
 export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
+  const configManager = ClientConfigManager.instance();
+
   return resources.reduce(
-    (total, resource) => total + (resource ? resource.amount * WEIGHTS_GRAM[resource.resourceId] || 0 : 0),
+    (total, resource) =>
+      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
     0,
   );
 };
@@ -284,7 +265,8 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
 };
 
 export const currentTickCount = (time: number) => {
-  const tickIntervalInSeconds = EternumGlobalConfig.tick.armiesTickIntervalInSeconds || 1;
+  const configManager = ClientConfigManager.instance();
+  const tickIntervalInSeconds = configManager.getTick(TickIds.Armies) || 1;
   return Number(time / tickIntervalInSeconds);
 };
 
@@ -356,22 +338,26 @@ export const toValidAscii = (str: string) => {
   return accentsToAscii(intermediateString);
 };
 
-export const computeTravelFoodCosts = (troops: any) => {
-  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
-  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
-  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+export const computeTravelFoodCosts = (
+  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
+) => {
+  const configManager = ClientConfigManager.instance();
 
-  const paladinCount = Number(troops.paladin_count);
-  const knightCount = Number(troops.knight_count);
-  const crossbowmanCount = Number(troops.crossbowman_count);
+  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
 
-  const paladinWheatConsumption = paladinFoodConsumption.travel_wheat_burn_amount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.travel_wheat_burn_amount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travel_wheat_burn_amount * crossbowmanCount;
+  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
+  const knightCount = divideByPrecision(Number(troops?.knight_count));
+  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
 
-  const paladinFishConsumption = paladinFoodConsumption.travel_fish_burn_amount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.travel_fish_burn_amount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travel_fish_burn_amount * crossbowmanCount;
+  const paladinWheatConsumption = paladinFoodConsumption.travelWheatBurnAmount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.travelWheatBurnAmount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travelWheatBurnAmount * crossbowmanCount;
+
+  const paladinFishConsumption = paladinFoodConsumption.travelFishBurnAmount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.travelFishBurnAmount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travelFishBurnAmount * crossbowmanCount;
 
   const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
   const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
@@ -382,22 +368,26 @@ export const computeTravelFoodCosts = (troops: any) => {
   };
 };
 
-export const computeExploreFoodCosts = (troops: any) => {
-  const paladinFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Paladin];
-  const knightFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Knight];
-  const crossbowmanFoodConsumption = TROOPS_FOOD_CONSUMPTION[ResourcesIds.Crossbowman];
+export const computeExploreFoodCosts = (
+  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
+) => {
+  const configManager = ClientConfigManager.instance();
 
-  const paladinCount = Number(troops.paladin_count);
-  const knightCount = Number(troops.knight_count);
-  const crossbowmanCount = Number(troops.crossbowman_count);
+  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
 
-  const paladinWheatConsumption = paladinFoodConsumption.explore_wheat_burn_amount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.explore_wheat_burn_amount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.explore_wheat_burn_amount * crossbowmanCount;
+  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
+  const knightCount = divideByPrecision(Number(troops?.knight_count));
+  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
 
-  const paladinFishConsumption = paladinFoodConsumption.explore_fish_burn_amount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.explore_fish_burn_amount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.explore_fish_burn_amount * crossbowmanCount;
+  const paladinWheatConsumption = paladinFoodConsumption.exploreWheatBurnAmount * paladinCount;
+  const knightWheatConsumption = knightFoodConsumption.exploreWheatBurnAmount * knightCount;
+  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.exploreWheatBurnAmount * crossbowmanCount;
+
+  const paladinFishConsumption = paladinFoodConsumption.exploreFishBurnAmount * paladinCount;
+  const knightFishConsumption = knightFoodConsumption.exploreFishBurnAmount * knightCount;
+  const crossbowmanFishConsumption = crossbowmanFoodConsumption.exploreFishBurnAmount * crossbowmanCount;
 
   const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
   const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
@@ -406,4 +396,13 @@ export const computeExploreFoodCosts = (troops: any) => {
     wheatPayAmount,
     fishPayAmount,
   };
+};
+
+export const separateCamelCase = (str: string): string => {
+  return str
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };

@@ -1,6 +1,6 @@
 import { StructureInfo } from "@/three/components/StructureManager";
 import { HexPosition } from "@/types";
-import { BuildingType, ID } from "@bibliothecadao/eternum";
+import { BuildingType, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
@@ -10,16 +10,16 @@ export interface ThreeStore {
   updateHoveredHex: (hoveredHex: HexPosition | null) => void;
   updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
   updateSelectedEntityId: (selectedEntityId: ID | null) => void;
-  selectedHex: HexPosition;
-  setSelectedHex: (hex: HexPosition) => void;
+  selectedHex: HexPosition | null;
+  setSelectedHex: (hex: HexPosition | null) => void;
   hoveredArmyEntityId: ID | null;
   setHoveredArmyEntityId: (id: ID | null) => void;
   hoveredStructure: StructureInfo | null;
   setHoveredStructure: (structure: StructureInfo | null) => void;
+  hoveredBattle: Position | null;
+  setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
   setSelectedBuilding: (building: BuildingType) => void;
-  selectedBuildingEntityId: ID | null;
-  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => void;
   selectedBuildingHex: {
     outerCol: number;
     outerRow: number;
@@ -56,11 +56,13 @@ export const createThreeStoreSlice = (set: any, get: any) => ({
   updateSelectedEntityId: (selectedEntityId: ID | null) =>
     set((state: any) => ({ armyActions: { ...state.armyActions, selectedEntityId } })),
   selectedHex: { col: 0, row: 0 },
-  setSelectedHex: (hex: HexPosition) => set({ selectedHex: hex }),
+  setSelectedHex: (hex: HexPosition | null) => set({ selectedHex: hex }),
   hoveredArmyEntityId: null,
   setHoveredArmyEntityId: (id: ID | null) => set({ hoveredArmyEntityId: id }),
   hoveredStructure: null,
   setHoveredStructure: (structure: StructureInfo | null) => set({ hoveredStructure: structure }),
+  hoveredBattle: null,
+  setHoveredBattle: (hex: Position | null) => set({ hoveredBattle: hex }),
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building: BuildingType) => set({ selectedBuilding: building }),
   selectedBuildingEntityId: null,

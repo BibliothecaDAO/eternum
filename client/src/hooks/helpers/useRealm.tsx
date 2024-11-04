@@ -1,13 +1,13 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
+import { type ClientComponents } from "@/dojo/createClientComponents";
+import { configManager } from "@/dojo/setup";
 import {
-  BASE_POPULATION_CAPACITY,
-  ContractAddress,
-  ID,
+  type ContractAddress,
+  type ID,
   getOrderName,
   getQuestResources as getStartingResources,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { type ComponentValue, type Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
@@ -17,16 +17,10 @@ import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 
-type RealmInfo = {
+interface RealmInfo {
   realmId: ID;
   entityId: ID;
   name: string;
-  cities: number;
-  rivers: number;
-  wonder: number;
-  harbors: number;
-  regions: number;
-  resourceTypesCount: number;
   resourceTypesPacked: bigint;
   order: number;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -35,7 +29,7 @@ type RealmInfo = {
   hasCapacity: boolean;
   owner: ContractAddress;
   ownerName: string;
-};
+}
 
 export function useRealm() {
   const {
@@ -47,7 +41,7 @@ export function useRealm() {
 
   const getQuestResources = () => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(structureEntityId)]));
-    const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
+    const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
     return getStartingResources(resourcesProduced);
   };
 
@@ -59,6 +53,34 @@ export function useRealm() {
   const isRealmIdSettled = (realmId: ID) => {
     const entityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
     return entityIds.size > 0;
+  };
+
+  const getRandomUnsettledRealmId = () => {
+    // Query all settled realms and collect their realm_ids
+    const entityIds = Array.from(runQuery([Has(Realm)]));
+    const settledRealmIds = new Set<number>();
+
+    entityIds.forEach((entityId) => {
+      const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
+      if (realm) {
+        settledRealmIds.add(Number(realm.realm_id));
+      }
+    });
+
+    // Define all possible realm_ids from 1 to 8000
+    const TOTAL_REALMS = 8000;
+    const allRealmIds = Array.from({ length: TOTAL_REALMS }, (_, i) => i + 1);
+
+    // Determine unsettled realm_ids by excluding settled ones
+    const unsettledRealmIds = allRealmIds.filter((id) => !settledRealmIds.has(id));
+
+    if (unsettledRealmIds.length === 0) {
+      throw new Error("No unsettled realms available.");
+    }
+
+    // Select a random unsettled realm ID
+    const randomIndex = Math.floor(Math.random() * unsettledRealmIds.length);
+    return unsettledRealmIds[randomIndex];
   };
 
   const getNextRealmIdForOrder = (order: number) => {
@@ -78,7 +100,7 @@ export function useRealm() {
       }
     }
 
-    const orderRealmIds = (realmIdsByOrder as { [key: string]: ID[] })[orderName];
+    const orderRealmIds = (realmIdsByOrder as Record<string, ID[]>)[orderName];
     let nextRealmIdFromOrder = 0;
 
     const maxIterations = orderRealmIds.length;
@@ -114,7 +136,7 @@ export function useRealm() {
   const getRealmIdForOrderAfter = (order: number, realmId: ID): ID => {
     const orderName = getOrderName(order);
 
-    const orderRealmIds = (realmIdsByOrder as { [key: string]: ID[] })[orderName];
+    const orderRealmIds = (realmIdsByOrder as Record<string, ID[]>)[orderName];
     const latestIndex = orderRealmIds.indexOf(realmId);
 
     if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
@@ -159,7 +181,7 @@ export function useRealm() {
 
   const isEntityIdRealm = (entityId: ID) => {
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityId)]));
-    return realm ? true : false;
+    return !!realm;
   };
 
   return {
@@ -175,6 +197,7 @@ export function useRealm() {
     getRealmEntityIdFromRealmId,
     isEntityIdRealm,
     getRealmEntityIdsOnPosition,
+    getRandomUnsettledRealmId,
   };
 }
 
@@ -189,26 +212,14 @@ export function useGetRealm(realmEntityId: ID | undefined) {
 
   const realm = useMemo((): any => {
     if (realmEntityId !== undefined) {
-      let entityId = getEntityIdFromKeys([BigInt(realmEntityId)]);
+      const entityId = getEntityIdFromKeys([BigInt(realmEntityId)]);
       const realm = getComponentValue(Realm, entityId);
       const owner = getComponentValue(Owner, entityId);
       const position = getComponentValue(Position, entityId);
       const population = getComponentValue(Population, entityId);
 
       if (realm && owner && position) {
-        const {
-          realm_id,
-          entity_id,
-          cities,
-          rivers,
-          wonder,
-          harbors,
-          regions,
-          resource_types_count,
-          resource_types_packed,
-          order,
-          level,
-        } = realm;
+        const { realm_id, entity_id, produced_resources, order, level } = realm;
 
         const name = getRealmNameById(realm_id);
 
@@ -218,18 +229,13 @@ export function useGetRealm(realmEntityId: ID | undefined) {
           realmId: realm_id,
           entityId: entity_id,
           name,
-          cities,
-          rivers,
-          wonder,
-          harbors,
-          regions,
           level,
-          resourceTypesCount: resource_types_count,
-          resourceTypesPacked: resource_types_packed,
+          resourceTypesPacked: produced_resources,
           order,
           position,
           ...population,
-          hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+          hasCapacity:
+            !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
           owner: address,
         };
       }
@@ -259,18 +265,7 @@ export function getRealms(): RealmInfo[] {
 
       if (!realm || !owner || !position) return;
 
-      const {
-        realm_id,
-        entity_id,
-        cities,
-        rivers,
-        wonder,
-        harbors,
-        regions,
-        resource_types_count,
-        resource_types_packed,
-        order,
-      } = realm;
+      const { realm_id, entity_id, produced_resources, order } = realm;
 
       const name = getRealmNameById(realm_id);
 
@@ -283,17 +278,12 @@ export function getRealms(): RealmInfo[] {
         realmId: realm_id,
         entityId: entity_id,
         name,
-        cities,
-        rivers,
-        wonder,
-        harbors,
-        regions,
-        resourceTypesCount: resource_types_count,
-        resourceTypesPacked: resource_types_packed,
+        resourceTypesPacked: produced_resources,
         order,
         position,
         ...population,
-        hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+        hasCapacity:
+          !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
         owner: address,
         ownerName,
       };

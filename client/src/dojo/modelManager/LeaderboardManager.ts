@@ -1,13 +1,7 @@
-import { GuildFromPlayerAddress } from "@/hooks/helpers/useGuilds";
-import {
-  ContractAddress,
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  ID,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, GuildInfo, ID, TickIds } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
+import { ClientConfigManager } from "./ConfigManager";
 import { computeInitialContributionPoints } from "./utils/LeaderboardUtils";
 
 export interface HyperstructureFinishedEvent {
@@ -28,8 +22,11 @@ export class LeaderboardManager {
 
   private pointsOnCompletionPerPlayer;
 
+  private configManager: ClientConfigManager;
+
   private constructor() {
     this.pointsOnCompletionPerPlayer = new Map<ContractAddress, Map<ID, number>>();
+    this.configManager = ClientConfigManager.instance();
   }
 
   public static instance() {
@@ -45,7 +42,7 @@ export class LeaderboardManager {
 
   public getGuildsByRank(
     currentTimestamp: number,
-    getGuildFromPlayerAddress: (playerAddress: ContractAddress) => GuildFromPlayerAddress | undefined,
+    getGuildFromPlayerAddress: (playerAddress: ContractAddress) => GuildInfo | undefined,
   ) {
     const pointsPerGuild = new Map<ID, number>();
 
@@ -90,6 +87,7 @@ export class LeaderboardManager {
     };
 
     const contributions = getContributions(parsedEvent.hyperstructureEntityId);
+    const pointsOnCompletion = this.configManager.getHyperstructureConfig().pointsOnCompletion;
 
     contributions.forEach((contribution) => {
       if (!contribution) return;
@@ -98,7 +96,7 @@ export class LeaderboardManager {
       const points = computeInitialContributionPoints(
         contribution.resource_type,
         contribution.amount,
-        HYPERSTRUCTURE_POINTS_ON_COMPLETION,
+        pointsOnCompletion,
       );
 
       const playerPointsForEachHyperstructure =
@@ -145,16 +143,14 @@ export class LeaderboardManager {
   private setPointsGeneratedByCompletion(
     pointsPerEntity: Map<ContractAddress | ID, number>,
     hyperstructureEntityId?: ID,
-    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildFromPlayerAddress | undefined,
+    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildInfo | undefined,
   ) {
     this.pointsOnCompletionPerPlayer.forEach((playerPointsForEachHyperstructure, playerAddress) => {
       const pointsOnCompletion = hyperstructureEntityId
         ? playerPointsForEachHyperstructure.get(hyperstructureEntityId) || 0
         : Array.from(playerPointsForEachHyperstructure.values()).reduce((acc, points) => acc + points, 0);
 
-      const key = getGuildFromPlayerAddress
-        ? getGuildFromPlayerAddress(playerAddress)?.guildEntityId || 0
-        : playerAddress;
+      const key = getGuildFromPlayerAddress ? getGuildFromPlayerAddress(playerAddress)?.entityId || 0 : playerAddress;
 
       const previousPoints = pointsPerEntity.get(key);
       const newPoints = (previousPoints || 0) + pointsOnCompletion;
@@ -166,7 +162,7 @@ export class LeaderboardManager {
     currentTimestamp: number,
     pointsPerEntity: Map<ContractAddress | ID, number>,
     hyperstructureEntityId?: ID,
-    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildFromPlayerAddress | undefined,
+    getGuildFromPlayerAddress?: (playerAddress: ContractAddress) => GuildInfo | undefined,
   ) {
     const coOwnersChangeEvents = hyperstructureEntityId
       ? this.eventsCoOwnersChange.filter((event) => event.hyperstructureEntityId === hyperstructureEntityId)
@@ -182,13 +178,13 @@ export class LeaderboardManager {
 
       const timePeriod = nextChange ? nextChange.timestamp - event.timestamp : currentTimestamp - event.timestamp;
 
-      const nbOfCycles = timePeriod / EternumGlobalConfig.tick.defaultTickIntervalInSeconds;
+      const nbOfCycles = timePeriod / this.configManager.getTick(TickIds.Default);
 
-      const totalPoints = nbOfCycles * HYPERSTRUCTURE_POINTS_PER_CYCLE;
+      const totalPoints = nbOfCycles * this.configManager.getHyperstructureConfig().pointsPerCycle;
 
       event.coOwners.forEach((coOwner) => {
         const key = getGuildFromPlayerAddress
-          ? getGuildFromPlayerAddress(coOwner.address)?.guildEntityId || 0
+          ? getGuildFromPlayerAddress(coOwner.address)?.entityId || 0
           : coOwner.address;
 
         const previousPoints = pointsPerEntity.get(key) || 0;

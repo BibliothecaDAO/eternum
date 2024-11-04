@@ -35,27 +35,21 @@ export const LoadingScreen = () => {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen bg-black">
+    <div className="relative h-screen w-screen bg-brown">
       <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-black/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
-        {import.meta.env.VITE_PUBLIC_CONSTRUCTION_FLAG == "true" ? (
-          <div className="text-center">
-            <h1 className="text-4xl">Eternum preseason will return soon...</h1>
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStatement}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -20, opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="animatedBackground"
-            >
-              {statements[currentStatement]}
-            </motion.div>
-          </AnimatePresence>
-        )}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStatement}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="animatedBackground"
+          >
+            {statements[currentStatement]}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

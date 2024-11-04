@@ -11,7 +11,6 @@ interface ChatMessage {
 export interface ChatMetadata {
   messages: ChatMessage[];
   lastMessageReceived: Date;
-  isChannel: boolean;
   channel: bigint;
   fromName: string;
   address: string;

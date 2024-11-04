@@ -8,4 +8,4 @@ echo "Building Contracts"
 cd contracts
 
 # Run katana with the disable-fee option
-katana --invoke-max-steps 25000000 --disable-fee --allowed-origins "*" --block-time 1000  --dev
+katana --invoke-max-steps 25000000 --disable-fee --allowed-origins "*" --block-time 2500  --dev

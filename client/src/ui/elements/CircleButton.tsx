@@ -17,11 +17,11 @@ type CircleButtonProps = {
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
-  xs: "w-6 h-6 rounded-full",
-  sm: "w-8 h-8 rounded-full",
-  md: "w-10 h-10 rounded-full",
-  lg: "w-12 h-12 rounded-full",
-  xl: "w-16 h-16 rounded-xl",
+  xs: "w-6 h-6 md:w-6 md:h-6 rounded-full",
+  sm: "w-7 h-7 md:w-8 md:h-8 rounded-full",
+  md: "w-8 h-8 md:w-10 md:h-10 rounded-full",
+  lg: "w-10 h-10 md:w-12 md:h-12 rounded-full",
+  xl: "w-12 h-12 md:w-16 md:h-16 rounded-xl",
 };
 
 const notificationPositions = {
@@ -54,7 +54,7 @@ const CircleButton = ({
     if (label) {
       setTooltip({
         position: tooltipLocation,
-        content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
+        content: <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span>,
       });
     }
   };
@@ -73,8 +73,8 @@ const CircleButton = ({
         onMouseLeave={() => setTooltip(null)}
         onClick={handleClick}
         className={clsx(
-          "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-white/10",
-          active ? "bg-gold !border-gold sepia-0" : "bg-black/90 border-brown/30",
+          "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-gold/40",
+          active ? "bg-gold !border-gold sepia-0" : "bg-brown/90 border-brown/30",
           className,
           sizes[size],
           { "cursor-not-allowed": disabled },
@@ -84,16 +84,16 @@ const CircleButton = ({
       >
         {children}
         {image && (
-          <div>
-            <img className="p-1" src={image} alt="icon" />
+          <div className="w-full h-full">
+            <img className="p-1 w-full h-full object-contain" src={image} alt="icon" />
           </div>
         )}
-        {disabled && <div className="absolute inset-0 bg-black opacity-50 rounded-full"></div>}
+        {disabled && <div className="absolute inset-0 bg-brown opacity-50 rounded-full"></div>}
       </button>
       {notification && !disabled ? (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-2 text-xxs z-[100] font-bold",
+            "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
             notificationPositions[notificationLocation],
           )}
         >

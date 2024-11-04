@@ -1,12 +1,28 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
 import { getHexForWorldPosition } from "@/ui/utils/utils";
+import { StructureType } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
 import { ArmyManager } from "./ArmyManager";
+import { BattleManager } from "./BattleManager";
 import { Biome, BIOME_COLORS } from "./Biome";
 import { StructureManager } from "./StructureManager";
+
+const LABELS = {
+  ARMY: "/textures/army_label.png",
+  MY_ARMY: "/textures/my_army_label.png",
+  MY_REALM: "/textures/my_realm_label.png",
+  BATTLE: "/textures/battle_label.png",
+  STRUCTURES: {
+    [StructureType.Realm]: "/textures/realm_label.png",
+    [StructureType.Hyperstructure]: "/textures/hyper_label.png",
+    [StructureType.Bank]: "/images/resources/coin.png",
+    [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
+    [StructureType.Settlement]: "/textures/realm_label.png",
+  },
+};
 
 const MINIMAP_CONFIG = {
   MIN_ZOOM_RANGE: 75,
@@ -18,11 +34,11 @@ const MINIMAP_CONFIG = {
     MY_ARMY: "#00FF00",
     CAMERA: "#FFFFFF",
     STRUCTURES: {
-      Realm: "#0000ff",
-      Hyperstructure: "#FFFFFF",
-      Bank: "#FFFF00",
-      FragmentMine: "#00FFFF",
-      Settlement: "#FFA500",
+      [StructureType.Realm]: "#0000ff",
+      [StructureType.Hyperstructure]: "#FFFFFF",
+      [StructureType.Bank]: "#FFFF00",
+      [StructureType.FragmentMine]: "#00FFFF",
+      [StructureType.Settlement]: "#FFA500",
     },
   },
   SIZES: {
@@ -45,12 +61,12 @@ class Minimap {
   private exploredTiles!: Map<number, Set<number>>;
   private structureManager!: StructureManager;
   private armyManager!: ArmyManager;
+  private battleManager!: BattleManager;
   private biome!: Biome;
-  private displayRange: any = {
-    minCol: 150,
-    maxCol: 350,
-    minRow: 100,
-    maxRow: 200,
+  private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
+  private mapSize: { width: number; height: number } = {
+    width: MINIMAP_CONFIG.MAP_COLS_WIDTH,
+    height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT,
   };
   private scaleX!: number;
   private scaleY!: number;
@@ -65,6 +81,7 @@ class Minimap {
     bottomSideWidth: number;
     height: number;
   };
+  private labelImages: Map<string, HTMLImageElement> = new Map();
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -72,12 +89,15 @@ class Minimap {
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
     armyManager: ArmyManager,
+    battleManager: BattleManager,
     biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
     this.waitForMinimapElement().then((canvas) => {
       this.canvas = canvas;
-      this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera);
+      this.loadLabelImages();
+      this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera, battleManager);
+      this.canvas.addEventListener("canvasResized", this.handleResize);
     });
   }
 
@@ -101,15 +121,17 @@ class Minimap {
     armyManager: ArmyManager,
     biome: Biome,
     camera: THREE.PerspectiveCamera,
+    battleManager: BattleManager,
   ) {
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
     this.armyManager = armyManager;
+    this.battleManager = battleManager;
     this.biome = biome;
     this.camera = camera;
-    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
-    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
+    this.scaleX = this.canvas.width / this.mapSize.width;
+    this.scaleY = this.canvas.height / this.mapSize.height;
     this.biomeCache = new Map();
     this.scaledCoords = new Map();
     this.structureSize = { width: 0, height: 0 };
@@ -127,13 +149,18 @@ class Minimap {
   }
 
   private recomputeScales() {
-    this.scaleX = this.canvas.width / (this.displayRange.maxCol - this.displayRange.minCol);
-    this.scaleY = this.canvas.height / (this.displayRange.maxRow - this.displayRange.minRow);
+    this.scaleX = this.canvas.width / this.mapSize.width;
+    this.scaleY = this.canvas.height / this.mapSize.height;
     this.scaledCoords.clear();
-    for (let col = this.displayRange.minCol; col <= this.displayRange.maxCol; col++) {
-      for (let row = this.displayRange.minRow; row <= this.displayRange.maxRow; row++) {
-        const scaledCol = (col - this.displayRange.minCol) * this.scaleX;
-        const scaledRow = (row - this.displayRange.minRow) * this.scaleY;
+    const minCol = this.mapCenter.col - this.mapSize.width / 2;
+    const maxCol = this.mapCenter.col + this.mapSize.width / 2;
+    const minRow = this.mapCenter.row - this.mapSize.height / 2;
+    const maxRow = this.mapCenter.row + this.mapSize.height / 2;
+
+    for (let col = minCol; col <= maxCol; col++) {
+      for (let row = minRow; row <= maxRow; row++) {
+        const scaledCol = (col - minCol) * this.scaleX;
+        const scaledRow = (row - minRow) * this.scaleY;
         this.scaledCoords.set(`${col},${row}`, { scaledCol, scaledRow });
       }
     }
@@ -141,11 +168,11 @@ class Minimap {
     // Precompute sizes
     this.structureSize = {
       width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
-      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleY,
+      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
     };
     this.armySize = {
       width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
-      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleY,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX,
     };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
@@ -158,8 +185,8 @@ class Minimap {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const col = Math.floor(x / this.scaleX) + this.displayRange.minCol;
-    const row = Math.floor(y / this.scaleY) + this.displayRange.minRow;
+    const col = Math.floor(x / this.scaleX) + (this.mapCenter.col - this.mapSize.width / 2);
+    const row = Math.floor(y / this.scaleY) + (this.mapCenter.row - this.mapSize.height / 2);
     return { col, row, x, y };
   }
 
@@ -168,6 +195,7 @@ class Minimap {
     this.drawExploredTiles();
     this.drawStructures();
     this.drawArmies();
+    this.drawBattles();
     this.drawCamera();
   }
 
@@ -201,14 +229,22 @@ class Minimap {
   private drawStructures() {
     const allStructures = this.structureManager.structures.getStructures();
     for (const [structureType, structures] of allStructures) {
+      let labelImg = this.labelImages.get(`STRUCTURE_${structureType}`);
+      if (!labelImg) continue;
+
       structures.forEach((structure) => {
+        if (structureType === StructureType.Realm) {
+          labelImg = structure.isMine
+            ? this.labelImages.get("MY_REALM")
+            : this.labelImages.get(`STRUCTURE_${structureType}`);
+        }
+        if (!labelImg) return;
         const { col, row } = structure.hexCoords;
         const cacheKey = `${col},${row}`;
         if (this.scaledCoords.has(cacheKey)) {
           const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-          // @ts-ignore
-          this.context.fillStyle = MINIMAP_CONFIG.COLORS.STRUCTURES[structureType];
-          this.context.fillRect(
+          this.context.drawImage(
+            labelImg,
             scaledCol - this.structureSize.width * (row % 2 !== 0 ? 1 : 0.5),
             scaledRow - this.structureSize.height / 2,
             this.structureSize.width,
@@ -226,8 +262,32 @@ class Minimap {
       const cacheKey = `${col},${row}`;
       if (this.scaledCoords.has(cacheKey)) {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        this.context.fillStyle = army.isMine ? MINIMAP_CONFIG.COLORS.MY_ARMY : MINIMAP_CONFIG.COLORS.ARMY;
-        this.context.fillRect(
+        const labelImg = this.labelImages.get(army.isMine ? "MY_ARMY" : "ARMY");
+        if (!labelImg) return;
+
+        this.context.drawImage(
+          labelImg,
+          scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.armySize.height / 2,
+          this.armySize.width,
+          this.armySize.height,
+        );
+      }
+    });
+  }
+
+  private drawBattles() {
+    const allBattles = this.battleManager.getAll();
+    allBattles.forEach((battle) => {
+      const { x: col, y: row } = battle.position.getNormalized();
+      const cacheKey = `${col},${row}`;
+      if (this.scaledCoords.has(cacheKey)) {
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+        const labelImg = this.labelImages.get("BATTLE");
+        if (!labelImg) return;
+
+        this.context.drawImage(
+          labelImg,
           scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
           scaledRow - this.armySize.height / 2,
           this.armySize.width,
@@ -271,10 +331,7 @@ class Minimap {
     const url = new URL(window.location.href);
     const col = parseInt(url.searchParams.get("col") || "0");
     const row = parseInt(url.searchParams.get("row") || "0");
-    this.displayRange.minCol = col - MINIMAP_CONFIG.MAP_COLS_WIDTH / 2;
-    this.displayRange.maxCol = col + MINIMAP_CONFIG.MAP_COLS_WIDTH / 2;
-    this.displayRange.minRow = row - MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
-    this.displayRange.maxRow = row + MINIMAP_CONFIG.MAP_ROWS_HEIGHT / 2;
+    this.mapCenter = { col, row };
     this.recomputeScales();
   }
 
@@ -302,26 +359,29 @@ class Minimap {
     this.worldmapScene.moveCameraToColRow(col, row, 0);
   }
 
-  private moveMapRange(direction: string) {
-    const colShift = Math.round((this.displayRange.maxCol - this.displayRange.minCol) / 4);
-    const rowShift = Math.round((this.displayRange.maxRow - this.displayRange.minRow) / 4);
+  private moveMapRange(direction: string, shiftSize?: number) {
+    let colShift = 0;
+    let rowShift = 0;
+    if (!shiftSize) {
+      colShift = Math.round(this.mapSize.width / 4);
+      rowShift = Math.round(this.mapSize.height / 4);
+    } else {
+      colShift = shiftSize;
+      rowShift = shiftSize;
+    }
 
     switch (direction) {
       case "left":
-        this.displayRange.minCol -= colShift;
-        this.displayRange.maxCol -= colShift;
+        this.mapCenter.col -= colShift;
         break;
       case "right":
-        this.displayRange.minCol += colShift;
-        this.displayRange.maxCol += colShift;
+        this.mapCenter.col += colShift;
         break;
       case "top":
-        this.displayRange.minRow -= rowShift;
-        this.displayRange.maxRow -= rowShift;
+        this.mapCenter.row -= rowShift;
         break;
       case "bottom":
-        this.displayRange.minRow += rowShift;
-        this.displayRange.maxRow += rowShift;
+        this.mapCenter.row += rowShift;
         break;
       default:
         return;
@@ -329,18 +389,10 @@ class Minimap {
     this.recomputeScales();
   }
 
-  private handleWheel = (event: WheelEvent) => {
-    event.stopPropagation();
-    const zoomOut = event.deltaY > 0; // Zoom out for positive deltaY, zoom in for negative
-    this.zoom(zoomOut);
-  };
-
-  private zoom(zoomOut: boolean) {
-    const currentRange = Math.abs(this.displayRange.maxCol - this.displayRange.minCol);
+  private zoom(zoomOut: boolean, event?: MouseEvent) {
+    const currentRange = this.mapSize.width;
     console.log(
-      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, minCol: ${this.displayRange.minCol}, maxCol: ${
-        this.displayRange.maxCol
-      }`,
+      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, mapCenter: ${this.mapCenter.col}, ${this.mapCenter.row}`,
     );
     if (!zoomOut && currentRange < MINIMAP_CONFIG.MIN_ZOOM_RANGE) {
       return;
@@ -353,13 +405,25 @@ class Minimap {
     const delta = zoomOut ? -5 : 5;
     const deltaX = Math.round(delta * ratio);
     const deltaY = delta;
-    this.displayRange.minCol = this.displayRange.minCol + deltaX;
-    this.displayRange.maxCol = this.displayRange.maxCol - deltaX;
-    this.displayRange.minRow = this.displayRange.minRow + deltaY;
-    this.displayRange.maxRow = this.displayRange.maxRow - deltaY;
+    this.mapSize.width -= 2 * deltaX;
+    this.mapSize.height -= 2 * deltaY;
+
+    if (!zoomOut && event) {
+      const { col, row } = this.getMousePosition(event);
+      const colShift = col - this.mapCenter.col;
+      const rowShift = row - this.mapCenter.row;
+      this.mapCenter.col += Math.round(colShift * 0.15); // Adjust the factor as needed
+      this.mapCenter.row += Math.round(rowShift * 0.15); // Adjust the factor as needed
+    }
 
     this.recomputeScales();
   }
+
+  private handleWheel = (event: WheelEvent) => {
+    event.stopPropagation();
+    const zoomOut = event.deltaY > 0; // Zoom out for positive deltaY, zoom in for negative
+    this.zoom(zoomOut, event);
+  };
 
   handleClick = (event: MouseEvent) => {
     event.stopPropagation();
@@ -379,6 +443,30 @@ class Minimap {
     }
     this.worldmapScene.moveCameraToColRow(col, row, 0);
   };
+
+  private handleResize = () => {
+    this.recomputeScales();
+    this.draw();
+  };
+
+  private loadLabelImages() {
+    // Load army labels
+    this.loadImage("ARMY", LABELS.ARMY);
+    this.loadImage("MY_ARMY", LABELS.MY_ARMY);
+    this.loadImage("BATTLE", LABELS.BATTLE);
+    this.loadImage("MY_REALM", LABELS.MY_REALM);
+
+    // Load structure labels
+    Object.entries(LABELS.STRUCTURES).forEach(([type, path]) => {
+      this.loadImage(`STRUCTURE_${type}`, path);
+    });
+  }
+
+  private loadImage(key: string, path: string) {
+    const img = new Image();
+    img.src = path;
+    this.labelImages.set(key, img);
+  }
 }
 
 export default Minimap;

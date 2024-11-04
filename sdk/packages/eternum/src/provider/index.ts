@@ -1,6 +1,6 @@
 import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
-import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
+import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
 import * as SystemProps from "../types/provider";
 
 export const NAMESPACE = "eternum";
@@ -148,19 +148,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async mint_resources_and_claim_quest(props: SystemProps.MintResourcesAndClaimProps) {
-    const { receiver_id, resources, config_ids, signer } = props;
+  public async claim_quest(props: SystemProps.ClaimQuestProps) {
+    const { receiver_id, quest_ids, signer } = props;
 
     const calldata = [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
-        entrypoint: "mint",
-        calldata: [receiver_id, resources.length / 2, ...resources],
-      },
-      ...config_ids.map((configId) => ({
+      ...quest_ids.map((questId) => ({
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
-        entrypoint: "mint_starting_resources",
-        calldata: [configId, receiver_id],
+        entrypoint: "quest_claim",
+        calldata: [questId, receiver_id],
       })),
     ];
 
@@ -168,38 +163,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_realm(props: SystemProps.CreateRealmProps) {
-    const {
-      realm_name,
-      realm_id,
-      resource_types_packed,
-      resource_types_count,
-      cities,
-      harbors,
-      rivers,
-      regions,
-      wonder,
-      order,
-      signer,
-    } = props;
+    const { realm_id, signer } = props;
 
     const tx = await this.execute(
       signer,
       [
         {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [
-            realm_name,
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-          ],
+          calldata: [realm_id, "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b"],
         },
       ],
       NAMESPACE,
@@ -218,41 +190,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
-    let { realms, signer } = props;
+    let { realm_ids, signer } = props;
 
-    let calldata = realms.flatMap((realm) => {
-      const {
-        realm_name,
-        realm_id,
-        resource_types_packed,
-        resource_types_count,
-        cities,
-        harbors,
-        rivers,
-        regions,
-        wonder,
-        order,
-      } = realm;
-
+    let calldata = realm_ids.flatMap((realm_id) => {
       let calldata = [
         {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_realm_systems`),
           entrypoint: "create",
-          calldata: [
-            realm_name,
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-          ],
+          calldata: [realm_id, "0x46f957b7fe3335010607174edd5c4c3fae87b12c3760dc167ac738959d8c03b"],
         },
       ];
-
       return calldata;
     });
 
@@ -277,6 +224,19 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "send",
       calldata: [sender_entity_id, recipient_entity_id, resources.length / 2, ...resources],
     });
+  }
+
+  public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => ({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "send",
+        calldata: [call.sender_entity_id, call.recipient_entity_id, call.resources.length / 2, ...call.resources],
+      })),
+    );
   }
 
   public async pickup_resources(props: SystemProps.PickupResourcesProps) {
@@ -513,7 +473,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_owner_id, is_defensive_army, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_create",
       calldata: [army_owner_id, is_defensive_army],
     });
@@ -523,7 +483,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_delete",
       calldata: [army_id],
     });
@@ -533,7 +493,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, payer_id, troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_buy_troops",
       calldata: [army_id, payer_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
     });
@@ -543,7 +503,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { from_army_id, to_army_id, troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
       entrypoint: "army_merge_troops",
       calldata: [from_army_id, to_army_id, troops],
     });
@@ -553,7 +513,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { attacking_army_id, defending_army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_start",
       calldata: [attacking_army_id, defending_army_id],
     });
@@ -563,7 +523,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { battle_id, defending_army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_force_start",
       calldata: [battle_id, defending_army_id],
     });
@@ -572,7 +532,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { battle_id, battle_side, army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_join",
       calldata: [battle_id, battle_side, army_id],
     });
@@ -584,7 +544,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(
       signer,
       army_ids.map((army_id) => ({
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       })),
@@ -595,7 +555,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, structure_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
       entrypoint: "battle_pillage",
       calldata: [army_id, structure_id],
     });
@@ -605,7 +565,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, structure_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
       entrypoint: "battle_claim",
       calldata: [army_id, structure_id],
     });
@@ -616,12 +576,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       },
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_claim",
         calldata: [army_id, structure_id],
       },
@@ -633,12 +593,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       },
       {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
         entrypoint: "battle_pillage",
         calldata: [army_id, structure_id],
       },
@@ -718,6 +678,21 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async disband_guild(props: SystemProps.DisbandGuild) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+          entrypoint: "remove_guild_member",
+          calldata: [call.address],
+        };
+      }),
+    );
+  }
+
   public async remove_player_from_whitelist(props: SystemProps.RemovePlayerFromWhitelist) {
     const { player_address_to_remove, guild_entity_id, signer } = props;
 
@@ -728,14 +703,32 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_mint_config(props: SystemProps.SetMintConfigProps) {
-    const { config_id, resources, signer } = props;
+  public async set_quest_config(props: SystemProps.SetQuestConfigProps) {
+    const { production_material_multiplier, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_mint_config",
-      calldata: [config_id, resources.length, ...resources.flatMap(({ resource, amount }) => [resource, amount])],
+      entrypoint: "set_quest_config",
+      calldata: [production_material_multiplier],
     });
+  }
+
+  public async set_quest_reward_config(props: SystemProps.SetQuestRewardConfigProps) {
+    const { calls, signer } = props;
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+          entrypoint: "set_quest_reward_config",
+          calldata: [
+            call.quest_id,
+            call.resources.length,
+            ...call.resources.flatMap(({ resource, amount }) => [resource, amount]),
+          ],
+        };
+      }),
+    );
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
@@ -782,7 +775,59 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
   }
+  public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
+    const { season_pass_address, realms_address, lords_address, signer } = props;
 
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_season_config",
+      calldata: [season_pass_address, realms_address, lords_address],
+    });
+  }
+
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+    const { token, resource_type, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_whitelist_config",
+      calldata: [token, resource_type],
+    });
+  }
+
+  public async set_resource_bridge_fees_config(props: SystemProps.SetResourceBridgeFeesConfigProps) {
+    const {
+      velords_fee_on_dpt_percent,
+      velords_fee_on_wtdr_percent,
+      season_pool_fee_on_dpt_percent,
+      season_pool_fee_on_wtdr_percent,
+      client_fee_on_dpt_percent,
+      client_fee_on_wtdr_percent,
+      velords_fee_recipient,
+      season_pool_fee_recipient,
+      max_bank_fee_dpt_percent,
+      max_bank_fee_wtdr_percent,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_resource_bridge_fee_split_config",
+      calldata: [
+        0, // config id
+        velords_fee_on_dpt_percent,
+        velords_fee_on_wtdr_percent,
+        season_pool_fee_on_dpt_percent,
+        season_pool_fee_on_wtdr_percent,
+        client_fee_on_dpt_percent,
+        client_fee_on_wtdr_percent,
+        velords_fee_recipient,
+        season_pool_fee_recipient,
+        max_bank_fee_dpt_percent,
+        max_bank_fee_wtdr_percent,
+      ],
+    });
+  }
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { category, weight_gram, signer } = props;
 
@@ -876,6 +921,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       battle_leave_slash_num,
       battle_leave_slash_denom,
       battle_time_scale,
+      battle_max_time_seconds,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -897,6 +943,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         battle_leave_slash_num,
         battle_leave_slash_denom,
         battle_time_scale,
+        battle_max_time_seconds,
       ],
     });
   }
@@ -1035,12 +1082,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_private(props: SystemProps.SetPrivateProps) {
-    const { hyperstructure_entity_id, to_private, signer } = props;
+  public async set_access(props: SystemProps.SetAccessProps) {
+    const { hyperstructure_entity_id, access, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "set_private",
-      calldata: [hyperstructure_entity_id, to_private],
+      entrypoint: "set_access",
+      calldata: [hyperstructure_entity_id, access],
     });
   }
 
@@ -1072,20 +1119,37 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_stamina_refill_config(props: SystemProps.SetStaminaRefillConfigProps) {
-    const { amount_per_tick, signer } = props;
+    const { amount_per_tick, start_boost_tick_count, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_refill_config",
-      calldata: [amount_per_tick],
+      calldata: [amount_per_tick, start_boost_tick_count],
     });
   }
 
   public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
-    const { troops, rewards, signer } = props;
+    const {
+      knights_lower_bound,
+      knights_upper_bound,
+      paladins_lower_bound,
+      paladins_upper_bound,
+      crossbowmen_lower_bound,
+      crossbowmen_upper_bound,
+      rewards,
+      signer,
+    } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_config",
-      calldata: [troops, rewards],
+      calldata: [
+        knights_lower_bound,
+        knights_upper_bound,
+        paladins_lower_bound,
+        paladins_upper_bound,
+        crossbowmen_lower_bound,
+        crossbowmen_upper_bound,
+        rewards,
+      ],
     });
   }
 
@@ -1115,5 +1179,35 @@ export class EternumProvider extends EnhancedDojoProvider {
         max_angle_increase,
       ],
     });
+  }
+
+  public async mint_test_realm(props: SystemProps.MintTestRealmProps) {
+    const {
+      token_id,
+      signer,
+      realms_address, // Should this be dynamically fetched from season config or passed to provider instead of prop?
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: realms_address.toString(),
+      entrypoint: "mint",
+      calldata: [uint256.bnToUint256(token_id)],
+    });
+  }
+
+  public async mint_season_passes(props: SystemProps.MintSeasonPassesProps) {
+    const {
+      recipient,
+      token_ids,
+      signer,
+      season_pass_address, // Should this be dynamically fetched from season config instead of prop?
+    } = props;
+    const multicall = token_ids.map((token) => {
+      return {
+        contractAddress: season_pass_address.toString(),
+        entrypoint: "mint",
+        calldata: [recipient, uint256.bnToUint256(token)],
+      };
+    });
+    return await this.executeAndCheckTransaction(signer, multicall);
   }
 }

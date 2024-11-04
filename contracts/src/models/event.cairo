@@ -3,8 +3,7 @@ use eternum::{alias::ID, models::combat::BattleSide, models::structure::Structur
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
+#[dojo::event(historical: true)]
 pub struct EternumEvent {
     #[key]
     id: ID,
@@ -34,8 +33,7 @@ pub enum EventData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
+#[dojo::event(historical: true)]
 pub struct BattleStartData {
     #[key]
     id: ID,
@@ -56,8 +54,7 @@ pub struct BattleStartData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
+#[dojo::event(historical: true)]
 pub struct BattleJoinData {
     #[key]
     id: ID,
@@ -75,8 +72,7 @@ pub struct BattleJoinData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
+#[dojo::event(historical: true)]
 pub struct BattleLeaveData {
     #[key]
     id: ID,
@@ -94,8 +90,7 @@ pub struct BattleLeaveData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
+#[dojo::event(historical: true)]
 pub struct BattleClaimData {
     #[key]
     id: ID,
@@ -113,8 +108,7 @@ pub struct BattleClaimData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
+#[dojo::event(historical: true)]
 pub struct BattlePillageData {
     #[key]
     id: ID,
@@ -136,8 +130,7 @@ pub struct BattlePillageData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
+#[dojo::event(historical: true)]
 pub struct SettleRealmData {
     #[key]
     id: ID,
@@ -147,8 +140,7 @@ pub struct SettleRealmData {
     owner_address: ContractAddress,
     owner_name: felt252,
     realm_name: felt252,
-    resource_types_packed: u128,
-    resource_types_count: u8,
+    produced_resources: u128,
     cities: u8,
     harbors: u8,
     rivers: u8,
@@ -158,4 +150,24 @@ pub struct SettleRealmData {
     x: u32,
     y: u32,
     timestamp: u64,
+}
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::event(historical: true)]
+pub struct CreateGuild {
+    #[key]
+    guild_entity_id: ID,
+    guild_name: felt252,
+    timestamp: u64
+}
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::event(historical: true)]
+pub struct JoinGuild {
+    #[key]
+    guild_entity_id: ID,
+    #[key]
+    address: ContractAddress,
+    guild_name: felt252,
+    timestamp: u64
 }

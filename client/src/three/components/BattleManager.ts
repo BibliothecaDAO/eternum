@@ -116,6 +116,10 @@ export class BattleManager {
     this.labels.delete(entityId);
   }
 
+  getAll() {
+    return this.battles.getAll();
+  }
+
   update(deltaTime: number) {
     this.battleModel.updateAnimations(deltaTime);
   }
@@ -151,5 +155,9 @@ class Battles {
 
   removeBattle(entityId: ID) {
     this.battles.delete(entityId);
+  }
+
+  getAll() {
+    return Array.from(this.battles.values());
   }
 }

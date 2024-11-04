@@ -1,6 +1,16 @@
+import { ReactComponent as Coins } from "@/assets/icons/Coins.svg";
+import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
+import { ReactComponent as Scroll } from "@/assets/icons/Scroll.svg";
+import { ReactComponent as Sparkles } from "@/assets/icons/Sparkles.svg";
+import { ReactComponent as Swap } from "@/assets/icons/Swap.svg";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
+import { useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { useStructureByPosition } from "@/hooks/helpers/useStructures";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import { useModalStore } from "@/hooks/store/useModalStore";
@@ -11,12 +21,14 @@ import { LoadingAnimation } from "@/ui/elements/LoadingAnimation";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
+import { formatTimeDifference } from "@/ui/modules/military/battle-view/BattleProgress";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
-import { ModalContainer } from "../ModalContainer";
 import { HintModal } from "../hints/HintModal";
+import { TroopMenuRow } from "../military/TroopChip";
+import { ModalContainer } from "../ModalContainer";
 
 const MarketResourceSidebar = lazy(() =>
   import("./MarketResourceSideBar").then((module) => ({ default: module.MarketResourceSidebar })),
@@ -37,11 +49,7 @@ const RealmProduction = lazy(() => import("./RealmProduction").then((module) => 
 const TransferView = lazy(() => import("./TransferView").then((module) => ({ default: module.TransferView })));
 
 export const MarketModal = () => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
+  const dojo = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
   const { playerStructures } = useEntities();
@@ -54,6 +62,23 @@ export const MarketModal = () => {
 
   const { bidOffers, askOffers } = useSetMarket();
 
+  const battles = useBattlesByPosition(bank?.position || { x: 0, y: 0 });
+
+  const currentBlockTimestamp = useUIStore.getState().nextBlockTimestamp || 0;
+
+  const getStructure = useStructureByPosition();
+
+  const bankStructure = getStructure(bank?.position || { x: 0, y: 0 });
+
+  const battle = useMemo(() => {
+    if (battles.length === 0) return null;
+    return battles
+      .filter((battle) => battle.isStructureBattle)
+      .sort((a, b) => Number(a.last_updated || 0) - Number(b.last_updated || 0))[0];
+  }, [battles]);
+
+  const battleManager = useMemo(() => new BattleManager(battle?.entity_id || 0, dojo), [battle?.entity_id, dojo]);
+
   // initial entity id
   const selectedEntityId = useUIStore((state) => state.structureEntityId);
   const [structureEntityId, setStructureEntityId] = useState<ID>(selectedEntityId);
@@ -63,17 +88,40 @@ export const MarketModal = () => {
 
   const structures = playerStructures();
 
+  const [isSiegeOngoing, isBattleOngoing] = useMemo(() => {
+    const isSiegeOngoing = battleManager.isSiege(currentBlockTimestamp);
+    const isBattleOngoing = battleManager.isBattleOngoing(currentBlockTimestamp);
+    return [isSiegeOngoing, isBattleOngoing];
+  }, [battleManager, currentBlockTimestamp]);
+
   const lordsBalance =
-    useComponentValue(Resource, getEntityIdFromKeys([BigInt(structureEntityId!), BigInt(ResourcesIds.Lords)]))
-      ?.balance || 0n;
+    useComponentValue(
+      dojo.setup.components.Resource,
+      getEntityIdFromKeys([BigInt(structureEntityId!), BigInt(ResourcesIds.Lords)]),
+    )?.balance || 0n;
+
+  const bankLordsBalance =
+    useComponentValue(
+      dojo.setup.components.Resource,
+      getEntityIdFromKeys([BigInt(bank?.entityId!), BigInt(ResourcesIds.Lords)]),
+    )?.balance || 0n;
+
+  const bankArmy = useArmyByArmyEntityId(bankStructure?.protector?.entity_id || 0);
+
+  // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
+  const armyInfo = useMemo(() => {
+    const updatedBattle = battleManager.getUpdatedBattle(currentBlockTimestamp);
+    return battleManager.getUpdatedArmy(bankArmy, updatedBattle);
+  }, [currentBlockTimestamp, battleManager, bankArmy]);
 
   const tabs = useMemo(
     () => [
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Order Book</div>
+          <div className="flex relative group items-center gap-2">
+            <Scroll className="w-6 fill-current" />
+            <div className="self-center">Order Book</div>
           </div>
         ),
         component: (
@@ -90,8 +138,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>AMM</div>
+          <div className="flex relative group items-center gap-2">
+            <Swap className="w-6 fill-current" />
+            <div className="self-center">AMM</div>
           </div>
         ),
         component: bank && (
@@ -107,8 +156,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>History</div>
+          <div className="flex relative group items-center gap-2">
+            <Sparkles className="w-6 fill-current" />
+            <div className="self-center">History</div>
           </div>
         ),
         component: (
@@ -120,8 +170,9 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Transfer</div>
+          <div className="flex relative group items-center gap-2">
+            <Coins className="w-6 fill-current" />
+            <div className="self-center">Transfer</div>
           </div>
         ),
         component: (
@@ -133,8 +184,9 @@ export const MarketModal = () => {
       {
         key: "resourceProd",
         label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Realm Production</div>
+          <div className="flex relative group items-center gap-2">
+            <Crown className="w-6 fill-current" />
+            <div className="self-center">Realm Production</div>
           </div>
         ),
         component: (
@@ -149,10 +201,10 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-black/90 bg-hex-bg border-gold/30  h-full row-span-12 ">
-        <div className="col-span-12  p-2 flex justify-between row-span-2">
-          <div className="self-center text-xl flex gap-2 items-center">
-            <div className="bg-black">
+      <div className="container border mx-auto  grid grid-cols-12 bg-dark border-gold/30  h-full row-span-12 rounded-2xl ">
+        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
+          <div className="self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
+            <div className="">
               <Select
                 value={structureEntityId.toString()}
                 onValueChange={(trait) => {
@@ -162,7 +214,7 @@ export const MarketModal = () => {
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-black bg-hex-bg">
+                <SelectContent>
                   {structures.map((structure, index) => (
                     <SelectItem key={index} value={structure.entity_id.toString()}>
                       {structure.name}
@@ -171,27 +223,11 @@ export const MarketModal = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className=" ml-2 bg-map align-middle flex">
+            <div className=" ml-2 bg-map align-middle flex gap-2">
               {currencyFormat(Number(lordsBalance), 0)}{" "}
               <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
             </div>
           </div>
-          <div className="self-center text-3xl">
-            <h2 className="text-center">The Lords Market</h2>
-          </div>
-          <div className="self-center flex gap-4">
-            <CircleButton
-              onClick={() => {
-                toggleModal(null);
-                toggleModal(<HintModal initialActiveSection={"Trading"} />);
-              }}
-              size={"sm"}
-              image={BuildingThumbs.question}
-            />
-          </div>
-        </div>
-
-        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
           <Suspense fallback={<LoadingAnimation />}>
             <MarketResourceSidebar
               entityId={structureEntityId}
@@ -205,19 +241,98 @@ export const MarketModal = () => {
           </Suspense>
         </div>
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
-          <Tabs
-            size="large"
-            selectedIndex={selectedTab}
-            onChange={(index: any) => setSelectedTab(index)}
-            className="h-full"
-          >
-            <div className="">
-              <Tabs.List>
-                {tabs.map((tab, index) => (
-                  <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-                ))}
-              </Tabs.List>
+          <div className="grid grid-cols-3 p-3 flex-wrap justify-between items-start gap-6 mb-8 rounded-xl shadow-lg border border-gold/20 relative">
+            <div className="self-center flex-grow max-w-2xl mx-auto">
+              <h3 className="text-5xl font-extrabold mb-1">The Lords Market</h3>
+              <div className="flex flex-row">
+                <p className="text-xs">
+                  Engage in direct player-to-player trades through the orderbook, leverage the AMM for bank liquidity
+                  trades, or boost your earnings by providing liquidity to the bank.
+                </p>
+              </div>
             </div>
+            <div className="absolute top-4 right-4">
+              <CircleButton
+                onClick={() => {
+                  toggleModal(null);
+                  toggleModal(<HintModal initialActiveSection={"Trading"} />);
+                }}
+                size={"lg"}
+                image={BuildingThumbs.question}
+                className="hover:bg-gold/20 transition-colors duration-200"
+              />
+            </div>
+            <div className="bg-brown p-3 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
+              <h3 className="text-xl font-bold mb-4">Bank Information</h3>
+              <div className="space-y-1 flex-grow">
+                <div className="flex justify-between items-center">
+                  <span className="">Current Bank Owner:</span>
+                  <span className="font-bold px-4 py-1 ">{bank?.owner}</span>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center">
+                    <span className="">Bank Owner Fees:</span>
+                    <span className="font-bold px-4">{(bank?.ownerFee || 0) * 100}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="">Bank LP Fees:</span>
+                    <span className="font-bold px-4">{configManager.getBankConfig().lpFeesNumerator}%</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Bank Reserves:</span>
+                  <span className="font-bold px-4 py-1">
+                    <div className="flex items-center">
+                      <ResourceIcon className={"mt-0.5"} resource={ResourcesIds[ResourcesIds.Lords]} size="sm" />
+                      {currencyFormat(Number(bankLordsBalance), 0)}
+                    </div>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
+              <div>
+                <h3 className="text-xl font-bold">AMM Status</h3>
+                {!isBattleOngoing && !isSiegeOngoing && (
+                  <div className="space-y-3 flex-grow">
+                    <div className="flex items-center text-green mb-2 font-medium">
+                      <span className="mr-2">✓</span> No combat on Bank, AMM available
+                    </div>
+                  </div>
+                )}
+                {isSiegeOngoing && (
+                  <div className="flex items-center text-yellow mb-2">
+                    <span className="mr-2">⚠</span> Bank siege has started,{" "}
+                    {formatTimeDifference(battleManager.getSiegeTimeLeft(currentBlockTimestamp))} remaining to swap in
+                    AMM
+                  </div>
+                )}
+                {isBattleOngoing && (
+                  <div className="flex items-center text-red">
+                    <span className="mr-2">⚠</span> Bank combat has started, AMM blocked for{" "}
+                    {formatTimeDifference(battleManager.getTimeLeft(currentBlockTimestamp) || new Date(0))} remaining
+                  </div>
+                )}
+              </div>
+              {armyInfo && (
+                <div>
+                  <h3 className="text-xl font-bold mt-2">Bank Defence</h3>
+                  <div className="flex-grow">
+                    <div className="flex items-center text-green">
+                      <TroopMenuRow troops={armyInfo.troops} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
+            <Tabs.List className=" flex w-full">
+              {tabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
 
             <Tabs.Panels className="overflow-hidden">
               {tabs.map((tab, index) => (

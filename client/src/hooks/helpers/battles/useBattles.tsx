@@ -15,14 +15,13 @@ import {
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useDojo } from "../../context/DojoContext";
-import * as module from "./useBattles";
 
 export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
   isStructureBattle: boolean;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
 };
 
-export const getBattle = (
+const getBattle = (
   battleEntityId: Entity,
   Battle: Component<Components["Battle"]["schema"]>,
 ): ComponentValue<Components["Battle"]["schema"]> | undefined => {
@@ -37,7 +36,7 @@ export const getBattle = (
   return battleClone;
 };
 
-export const getExtraBattleInformation = (
+const getExtraBattleInformation = (
   battles: Entity[],
   Battle: Component<Components["Battle"]["schema"]>,
   Position: Component<Components["Position"]["schema"]>,
@@ -45,7 +44,7 @@ export const getExtraBattleInformation = (
 ): BattleInfo[] => {
   return battles
     .map((battleEntityId) => {
-      const battle = module.getBattle(battleEntityId, Battle);
+      const battle = getBattle(battleEntityId, Battle);
       if (!battle) return;
       const position = getComponentValue(Position, battleEntityId);
       if (!position) return;

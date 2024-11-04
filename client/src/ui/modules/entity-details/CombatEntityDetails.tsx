@@ -1,7 +1,6 @@
-import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
-import { getPlayerStructures } from "@/hooks/helpers/useEntities";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
@@ -11,24 +10,26 @@ import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
-import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
 
 export const CombatEntityDetails = () => {
-  const dojo = useDojo();
-
   const selectedHex = useUIStore((state) => state.selectedHex);
-  const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
+  const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
+  const setSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
 
-  const getStructures = getPlayerStructures();
-  const hexPosition = useMemo(() => new Position({ x: selectedHex.col, y: selectedHex.row }), [selectedHex]);
+  const hexPosition = useMemo(
+    () => new Position({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }),
+    [selectedHex],
+  );
+  const { playerStructures } = useEntities();
 
   const ownArmiesAtPosition = useOwnArmiesByPosition({
     position: hexPosition.getContract(),
     inBattle: false,
-    playerStructures: getStructures(ContractAddress(dojo.account.account.address)),
+    playerStructures: playerStructures(),
   });
 
   const userArmies = useMemo(
@@ -36,19 +37,9 @@ export const CombatEntityDetails = () => {
     [ownArmiesAtPosition],
   );
 
-  const [selectedArmyEntityId, setSelectedArmyEntityId] = useState<ID>(userArmies?.[0]?.entity_id || 0);
-
-  useEffect(() => {
-    setSelectedArmyEntityId(userArmies?.[0]?.entity_id || 0);
-  }, [userArmies]);
-
-  useEffect(() => {
-    updateSelectedEntityId(selectedArmyEntityId);
-  }, [selectedArmyEntityId, updateSelectedEntityId]);
-
   const ownArmy = useMemo(() => {
-    return ownArmiesAtPosition.find((army) => army.entity_id === selectedArmyEntityId);
-  }, [ownArmiesAtPosition, selectedArmyEntityId]);
+    return ownArmiesAtPosition.find((army) => army.entity_id === selectedEntityId);
+  }, [ownArmiesAtPosition, selectedEntityId]);
 
   const structure = useStructureAtPosition(hexPosition.getContract());
   const battles = useBattlesByPosition(hexPosition.getContract());
@@ -62,7 +53,7 @@ export const CombatEntityDetails = () => {
             <div>Entities</div>
           </div>
         ),
-        component: <Entities position={hexPosition} ownArmy={ownArmy} />,
+        component: selectedHex && <Entities position={hexPosition} ownArmy={ownArmy} />,
       },
       {
         key: "battles",
@@ -87,7 +78,7 @@ export const CombatEntityDetails = () => {
           ]
         : []),
     ],
-    [hexPosition, ownArmy, structure, battles],
+    [selectedHex, hexPosition, ownArmy, structure, battles],
   );
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -112,8 +103,8 @@ export const CombatEntityDetails = () => {
             </Tabs.List>
             {selectedTab !== 2 && userArmies.length > 0 && (
               <SelectActiveArmy
-                selectedEntity={selectedArmyEntityId}
-                setOwnArmySelected={setSelectedArmyEntityId}
+                selectedEntity={selectedEntityId || 0}
+                setOwnArmySelected={setSelectedEntityId}
                 userAttackingArmies={userArmies}
               />
             )}

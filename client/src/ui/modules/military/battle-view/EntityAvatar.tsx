@@ -10,12 +10,15 @@ export const EntityAvatar = ({
   show?: boolean;
   address?: string;
 }) => {
-  const isRealm = Boolean(structure) && String(structure?.category) === "Realm";
-  const isHyperstructure = Boolean(structure) && String((structure as Structure).category) === "Hyperstructure";
-  const isFragmentMine = Boolean(structure) && String((structure as Structure).category) === "FragmentMine";
-  const isMercenary = Boolean(structure) && structure!.isMercenary;
+  const getStructureCategory = (s?: Structure) => s?.category?.toString();
+  const isCategory = (category: string, s?: Structure) => getStructureCategory(s) === category;
 
-  const randomAvatarIndex = (parseInt(address.slice(0, 8), 16) % 7) + 1;
+  const isRealm = isCategory("Realm", structure);
+  const isHyperstructure = isCategory("Hyperstructure", structure);
+  const isFragmentMine = isCategory("FragmentMine", structure);
+  const isMercenary = structure?.isMercenary;
+
+  const randomAvatarIndex = ((parseInt(address.slice(0, 8), 16) % 7) + 1).toString().padStart(2, "0");
   let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
   if (isMercenary) {
@@ -29,18 +32,18 @@ export const EntityAvatar = ({
   }
 
   const displayImg = structure || show;
-  const slideUp = {
-    hidden: { y: "100%" },
-    visible: { y: "0%", transition: { duration: 0.6 } },
-  };
+
   return (
-    <div className="mb-4 w-44 min-w-44 ">
+    <div className="mb-4 w-44 min-w-44">
       {displayImg && (
         <motion.img
           initial="hidden"
           animate="visible"
-          variants={slideUp}
-          className="h-44 w-44  rounded-full object-cover  border-gold/10 border-2 -mt-12 bg-black"
+          variants={{
+            hidden: { y: "100%" },
+            visible: { y: "0%", transition: { duration: 0.6 } },
+          }}
+          className="h-56 w-56 rounded-full object-cover border-gold/10 border-2 -mt-12 bg-brown"
           src={imgSource}
           alt=""
         />

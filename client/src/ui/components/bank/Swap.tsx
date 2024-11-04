@@ -1,20 +1,19 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, DONKEY_ENTITY_TYPE, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/ResourceWeight";
+import { TravelInfo } from "../resources/TravelInfo";
 import { ConfirmationPopup } from "./ConfirmationPopup";
-
-const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
-const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.banks.lpFeesDenominator;
 
 export const ResourceSwap = ({
   bankEntityId,
@@ -32,6 +31,7 @@ export const ResourceSwap = ({
 
   const { getBalance } = getResourceBalance();
   const { computeTravelTime } = useTravel();
+  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
   const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,8 +41,8 @@ export const ResourceSwap = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  const ownerFee = lordsAmount * OWNER_FEE;
-  const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * LP_FEE;
+  const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
+  const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
     () => new MarketManager(setup, bankEntityId, ContractAddress(account.address), resourceId),
@@ -62,11 +62,14 @@ export const ResourceSwap = ({
     }
   }, [marketManager.resourceId]);
 
+  const lordsBalance = useMemo(() => getBalance(entityId, ResourcesIds.Lords).balance, [entityId, getBalance]);
+  const resourceBalance = useMemo(() => getBalance(entityId, resourceId).balance, [entityId, resourceId, getBalance]);
+
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
-    const balanceId = isBuyResource ? BigInt(ResourcesIds.Lords) : resourceId;
-    return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
-  }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId, ownerFee]);
+    const balance = isBuyResource ? lordsBalance : resourceBalance;
+    return multiplyByPrecision(amount) <= balance;
+  }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
   const isBankResourcesLocked = useIsResourcesLocked(bankEntityId);
   const isMyResourcesLocked = useIsResourcesLocked(entityId);
@@ -82,6 +85,7 @@ export const ResourceSwap = ({
   const onSwap = useCallback(() => {
     setIsLoading(true);
     const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
+
     operation({
       signer: account,
       bank_entity_id: bankEntityId,
@@ -90,6 +94,7 @@ export const ResourceSwap = ({
       // todo: rounding error in contracts
       amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
     }).finally(() => {
+      playLordsSound();
       setIsLoading(false);
       setOpenConfirmation(false);
     });
@@ -104,15 +109,15 @@ export const ResourceSwap = ({
       const calculatedResourceAmount = divideByPrecision(
         marketManager.calculateResourceOutputForLordsInput(
           multiplyByPrecision(amount) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
       setResourceAmount(calculatedResourceAmount);
     } else {
       const calculatedResourceAmount = divideByPrecision(
         marketManager.calculateResourceInputForLordsOutput(
-          multiplyByPrecision(amount / (1 - OWNER_FEE)) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          multiplyByPrecision(amount / (1 - configManager.getAdminBankOwnerFee())) || 0,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
       setResourceAmount(calculatedResourceAmount);
@@ -126,7 +131,7 @@ export const ResourceSwap = ({
       const calculatedLordsAmount = divideByPrecision(
         marketManager.calculateLordsInputForResourceOutput(
           multiplyByPrecision(amount) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
       setLordsAmount(calculatedLordsAmount);
@@ -134,10 +139,10 @@ export const ResourceSwap = ({
       const calculatedLordsAmount = divideByPrecision(
         marketManager.calculateLordsOutputForResourceInput(
           multiplyByPrecision(amount) || 0,
-          EternumGlobalConfig.banks.lpFeesNumerator,
+          configManager.getBankConfig().lpFeesNumerator,
         ),
       );
-      const lordsAmountAfterFee = calculatedLordsAmount * (1 - OWNER_FEE);
+      const lordsAmountAfterFee = calculatedLordsAmount * (1 - configManager.getAdminBankOwnerFee());
       setLordsAmount(lordsAmountAfterFee);
     }
   };
@@ -159,6 +164,7 @@ export const ResourceSwap = ({
           resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
+          max={isLords ? divideByPrecision(lordsBalance) : Infinity}
         />
       );
     },
@@ -206,12 +212,17 @@ export const ResourceSwap = ({
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
-          <div className="bg-gold/10 p-2 h-auto">
+          <div className="bg-gold/10 p-2 rounded-lg h-auto">
             <div className="flex flex-col p-2 items-center">
               <TravelInfo
                 entityId={entityId}
                 resources={resourcesToTransport}
-                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey, true)}
+                travelTime={computeTravelTime(
+                  bankEntityId,
+                  entityId,
+                  configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+                  true,
+                )}
                 setCanCarry={setCanCarry}
                 isAmm={true}
               />
@@ -268,8 +279,8 @@ export const ResourceSwap = ({
                       {(
                         marketManager.slippage(
                           isBuyResource
-                            ? multiplyByPrecision(lordsAmount - lpFee)
-                            : multiplyByPrecision(resourceAmount - lpFee),
+                            ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
+                            : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
                           isBuyResource,
                         ) || 0
                       ).toFixed(2)}{" "}

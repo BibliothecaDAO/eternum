@@ -1,6 +1,6 @@
 import type { Config } from "@bibliothecadao/eternum";
-import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
-import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
+import devManifest from "../contracts/manifest_dev.json";
+import productionManifest from "../contracts/manifest_prod.json";
 
 import { EternumConfig, EternumGlobalConfig, EternumProvider } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
@@ -53,13 +53,20 @@ const setupConfig: Config =
       }
     : EternumGlobalConfig;
 
+// probably should be refactored
+setupConfig.season = {
+  seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
+  realmsAddress: process.env.VITE_REALMS_ADDRESS!,
+  lordsAddress: process.env.VITE_LORDS_ADDRESS!,
+};
+
 export const config = new EternumConfig(setupConfig);
 
 console.log("Setting up config...");
 await config.setup(account, provider);
 
 // Add a 20-second delay before setting up the bank
-console.log("Waiting for 15 seconds before setting up the bank...");
+console.log("Waiting for 20 seconds before setting up the bank...");
 await new Promise((resolve) => setTimeout(resolve, 20000));
 
 console.log("Setting up bank...");

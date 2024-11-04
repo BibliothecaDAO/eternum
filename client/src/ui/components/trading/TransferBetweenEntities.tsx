@@ -1,15 +1,17 @@
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
 import { Headline } from "@/ui/elements/Headline";
 import TextInput from "@/ui/elements/TextInput";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
+import { DONKEY_ENTITY_TYPE, ID } from "@bibliothecadao/eternum";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { TravelInfo } from "../resources/ResourceWeight";
+import { TravelInfo } from "../resources/TravelInfo";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { SelectEntityFromList } from "./SelectEntityFromList";
 import { SelectResources } from "./SelectResources";
@@ -61,6 +63,7 @@ export const TransferBetweenEntities = ({
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
+  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.burnDonkey);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
 
@@ -80,7 +83,7 @@ export const TransferBetweenEntities = ({
         computeTravelTime(
           selectedEntityIdFrom?.entityId,
           selectedEntityIdTo?.entityId,
-          EternumGlobalConfig.speed.donkey,
+          configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
         ),
       );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
@@ -106,10 +109,20 @@ export const TransferBetweenEntities = ({
           resources: resourcesList || [],
         });
 
+    playDonkeyScreaming();
+
     systemCall.finally(() => {
       setIsLoading(false);
       setSelectedStepId(STEP_ID.SUCCESS);
     });
+  };
+
+  const onNewTrade = () => {
+    setSelectedEntityIdFrom(null);
+    setSelectedEntityIdTo(null);
+    setSelectedResourceIds([]);
+    setSelectedResourceAmounts({});
+    setSelectedStepId(STEP_ID.SELECT_ENTITIES);
   };
 
   const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
@@ -194,7 +207,7 @@ export const TransferBetweenEntities = ({
                 {" "}
                 <div className="flex space-x-2 items-center cursor-pointer" onClick={() => filterBy(!filtered)}>
                   <Checkbox enabled={filtered} />
-                  <div>Guild Only</div>
+                  <div>Tribe Only</div>
                 </div>
               </div>
 
@@ -250,7 +263,7 @@ export const TransferBetweenEntities = ({
           </div>
 
           <div className=" ">
-            <div className="p-10 bg-gold/10  h-auto border border-gold/40">
+            <div className="p-10 bg-gold/10  h-auto rounded-lg border border-gold/40">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
                   entityId={isOriginDonkeys ? selectedEntityIdFrom?.entityId! : selectedEntityIdTo?.entityId!}
@@ -284,6 +297,9 @@ export const TransferBetweenEntities = ({
         <div className=" justify-center items-center text-center">
           <h4>Transfer successful!</h4>
           <p>Check transfers in the right sidebar transfer menu.</p>
+          <Button variant="primary" size="md" className="mt-4" onClick={onNewTrade}>
+            New transfer
+          </Button>
         </div>
       )}
     </div>

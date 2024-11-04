@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { type HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import {
@@ -9,15 +10,13 @@ import {
 import {
   CapacityConfigCategory,
   ContractAddress,
-  EternumGlobalConfig,
   ID,
   ResourcesIds,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
 } from "@bibliothecadao/eternum";
-import { getComponentValue, type ComponentValue, type Entity } from "@dojoengine/recs";
+import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
-import { type ClientComponents } from "../createClientComponents";
 import { configManager, type SetupResult } from "../setup";
 import { ProductionManager } from "./ProductionManager";
 import { StaminaManager } from "./StaminaManager";
@@ -75,11 +74,10 @@ export class TravelPaths {
 export class ArmyMovementManager {
   private readonly entity: Entity;
   private readonly entityId: ID;
-  private readonly address: ContractAddress;
+  private address: ContractAddress;
   private readonly fishManager: ProductionManager;
   private readonly wheatManager: ProductionManager;
   private readonly staminaManager: StaminaManager;
-  private readonly entityArmy: ComponentValue<ClientComponents["Army"]["schema"]>;
 
   constructor(
     private readonly setup: SetupResult,
@@ -87,32 +85,24 @@ export class ArmyMovementManager {
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    this.address = ContractAddress(this.setup.network.burnerManager.account?.address || 0n);
     const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
-    this.entityArmy = getComponentValue(this.setup.components.Army, this.entity) ?? {
-      entity_id: 0,
-      troops: {
-        knight_count: 0n,
-        paladin_count: 0n,
-        crossbowman_count: 0n,
-      },
-      battle_id: 0,
-      battle_side: "",
-    };
     this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
     this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.setup, entityId);
+
+    this.address = BigInt(useAccountStore.getState().account?.address || 0n);
   }
 
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
-    if (stamina.amount < configManager.getStaminaExploreConfig()) {
+    if (stamina.amount < configManager.getExploreStaminaCost()) {
       return false;
     }
-    const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    const exploreFoodCosts = computeExploreFoodCosts(this.entityArmy.troops);
+    const entityArmy = getComponentValue(this.setup.components.Army, this.entity);
+    const exploreFoodCosts = computeExploreFoodCosts(entityArmy?.troops);
+    const { wheat, fish } = this.getFood(currentDefaultTick);
 
     if (fish < exploreFoodCosts.fishPayAmount) {
       return false;
@@ -121,7 +111,7 @@ export class ArmyMovementManager {
       return false;
     }
 
-    if (this._getArmyRemainingCapacity() < EternumGlobalConfig.exploration.reward) {
+    if (this._getArmyRemainingCapacity() < configManager.getExploreReward()) {
       return false;
     }
 
@@ -130,9 +120,10 @@ export class ArmyMovementManager {
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    const maxStaminaSteps = Math.floor((stamina.amount || 0) / configManager.getStaminaTravelConfig());
+    const maxStaminaSteps = Math.floor((stamina.amount || 0) / configManager.getTravelStaminaCost());
 
-    const travelFoodCosts = computeTravelFoodCosts(this.entityArmy.troops);
+    const entityArmy = getComponentValue(this.setup.components.Army, this.entity);
+    const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
     const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
@@ -258,7 +249,7 @@ export class ArmyMovementManager {
   private readonly _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
     const overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost, currentArmiesTick);
+    this._optimisticStaminaUpdate(overrideId, configManager.getExploreStaminaCost(), currentArmiesTick);
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticPositionUpdate(overrideId, col, row);
 
@@ -283,7 +274,7 @@ export class ArmyMovementManager {
       .explore({
         unit_id: this.entityId,
         direction,
-        signer: this.setup.network.burnerManager.account!,
+        signer: useAccountStore.getState().account!,
       })
       .catch((e) => {
         this.setup.components.Position.removeOverride(overrideId);
@@ -297,7 +288,7 @@ export class ArmyMovementManager {
   private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number, currentArmiesTick: number) => {
     const overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength, currentArmiesTick);
+    this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
 
     this.setup.components.Position.addOverride(overrideId, {
       entity: this.entity,
@@ -330,7 +321,7 @@ export class ArmyMovementManager {
 
     this.setup.systemCalls
       .travel_hex({
-        signer: this.setup.network.burnerManager.account!,
+        signer: useAccountStore.getState().account!,
         travelling_entity_id: this.entityId,
         directions,
       })

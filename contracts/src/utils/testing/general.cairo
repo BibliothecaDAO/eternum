@@ -1,6 +1,10 @@
 use core::array::{ArrayTrait, SpanTrait};
 
+use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 use eternum::alias::ID;
 
 use eternum::constants::{MAX_REALMS_PER_ADDRESS};
@@ -8,38 +12,32 @@ use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTra
 use eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
 use eternum::systems::{
     hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},
-    realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
-    combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
+    realm::contracts::realm_systems::InternalRealmLogicImpl,
+    combat::contracts::battle_systems::{battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait},
+    combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
 use eternum::utils::map::biomes::Biome;
 
-fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position) -> ID {
-    let realm_entity_id = realm_systems_dispatcher
-        .create(
-            'Mysticora',
-            1, // realm id
-            0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
-            3, // resource_types_count
-            5, // cities
-            5, // harbors
-            5, // rivers
-            5, // regions
-            1, // wonder
-            1, // order
-        );
 
-    set!(world, Position { entity_id: realm_entity_id, x: position.x, y: position.y });
+fn spawn_realm(ref world: WorldStorage, realm_id: ID, coord: Coord) -> ID {
+    let owner = starknet::get_contract_address();
+    let realm_id = 1;
+    let produced_resources = array![];
+    let order = 1;
+    let (realm_entity_id, _realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
+        ref world, owner, realm_id, produced_resources, order, 0, coord.into()
+    );
 
     realm_entity_id
 }
 
 fn spawn_hyperstructure(
-    world: IWorldDispatcher,
+    ref world: WorldStorage,
     hyperstructure_systems_dispatcher: IHyperstructureSystemsDispatcher,
     realm_entity_id: ID,
     coord: Coord
 ) -> ID {
-    explore_tile(world, realm_entity_id, coord);
+    explore_tile(ref world, realm_entity_id, coord);
 
     let hyperstructure_entity_id = hyperstructure_systems_dispatcher.create(realm_entity_id, coord);
 
@@ -47,15 +45,15 @@ fn spawn_hyperstructure(
 }
 
 fn create_army_with_troops(
-    world: IWorldDispatcher,
-    combat_systems_dispatcher: ICombatContractDispatcher,
+    ref world: WorldStorage,
+    troop_systems_dispatcher: ITroopContractDispatcher,
     realm_entity_id: ID,
     troops: Troops,
     is_defender: bool
 ) -> ID {
-    let realm_army_unit_id: ID = combat_systems_dispatcher.army_create(realm_entity_id, false);
+    let realm_army_unit_id: ID = troop_systems_dispatcher.army_create(realm_entity_id, false);
 
-    combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
+    troop_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
     realm_army_unit_id
 }
 
@@ -87,28 +85,29 @@ fn get_default_hyperstructure_coord() -> Coord {
     Coord { x: 0, y: 0 }
 }
 
-fn explore_tile(world: IWorldDispatcher, explorer_id: ID, coords: Coord) {
-    set!(
-        world, Tile { col: coords.x, row: coords.y, explored_by_id: explorer_id, explored_at: 1, biome: Biome::Beach }
-    );
+fn explore_tile(ref world: WorldStorage, explorer_id: ID, coords: Coord) {
+    world
+        .write_model_test(
+            @Tile { col: coords.x, row: coords.y, explored_by_id: explorer_id, explored_at: 1, biome: Biome::Beach }
+        );
 }
 
 
-fn mint(world: IWorldDispatcher, entity: ID, mut resources: Span<(u8, u128)>) {
+fn mint(ref world: WorldStorage, entity: ID, mut resources: Span<(u8, u128)>) {
     loop {
         match resources.pop_back() {
             Option::Some((
                 _type, amount
             )) => {
-                let mut resource = ResourceCustomImpl::get(world, (entity, *_type));
+                let mut resource = ResourceCustomImpl::get(ref world, (entity, *_type));
                 resource.add(*amount);
-                resource.save(world);
+                resource.save(ref world);
             },
             Option::None => { break; }
         }
     };
 }
 
-fn teleport(world: IWorldDispatcher, entity_id: ID, coord: Coord) {
-    set!(world, (Position { entity_id, x: coord.x, y: coord.y, }));
+fn teleport(ref world: WorldStorage, entity_id: ID, coord: Coord) {
+    world.write_model_test(@Position { entity_id, x: coord.x, y: coord.y, });
 }

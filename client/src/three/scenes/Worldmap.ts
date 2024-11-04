@@ -5,11 +5,12 @@ import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMoveme
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
+import { dir, soundSelector } from "@/hooks/useUISound";
 import { HexPosition, SceneName } from "@/types";
 import { Position } from "@/types/Position";
-import { FELT_CENTER } from "@/ui/config";
+import { FELT_CENTER, IS_MOBILE } from "@/ui/config";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { BiomeType, getNeighborOffsets, ID } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
@@ -22,7 +23,6 @@ import Minimap from "../components/Minimap";
 import { SelectedHexManager } from "../components/SelectedHexManager";
 import { StructureManager } from "../components/StructureManager";
 import { StructurePreview } from "../components/StructurePreview";
-import { LocationManager } from "../helpers/LocationManager";
 import { ArmySystemUpdate, TileSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import { HEX_SIZE, PREVIEW_BUILD_COLOR_INVALID } from "./constants";
@@ -51,7 +51,7 @@ export default class WorldmapScene extends HexagonScene {
   private armySubscription: any;
   private selectedHexManager: SelectedHexManager;
   private minimap!: Minimap;
-
+  private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
@@ -95,7 +95,7 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.armyManager = new ArmyManager(this.scene, this.chunkSize, this.renderChunkSize);
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
     this.battleManager = new BattleManager(this.scene);
 
@@ -131,10 +131,6 @@ export default class WorldmapScene extends HexagonScene {
         this.onArmyMouseMove(entityId);
       }, 10),
     );
-    this.inputManager.addListener("click", (raycaster) => {
-      const selectedEntityId = this.armyManager.onRightClick(raycaster);
-      selectedEntityId && this.onArmySelection(selectedEntityId);
-    });
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
@@ -143,20 +139,21 @@ export default class WorldmapScene extends HexagonScene {
     useUIStore.subscribe(
       (state) => state.armyActions.selectedEntityId,
       (selectedEntityId) => {
-        if (selectedEntityId) {
-          this.onArmySelection(selectedEntityId);
-        }
+        this.onArmySelection(selectedEntityId);
       },
     );
 
-    this.minimap = new Minimap(
-      this,
-      this.exploredTiles,
-      this.camera,
-      this.structureManager,
-      this.armyManager,
-      this.biome,
-    );
+    if (!IS_MOBILE) {
+      this.minimap = new Minimap(
+        this,
+        this.exploredTiles,
+        this.camera,
+        this.structureManager,
+        this.armyManager,
+        this.battleManager,
+        this.biome,
+      );
+    }
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -165,8 +162,14 @@ export default class WorldmapScene extends HexagonScene {
           this.closeNavigationViews();
         } else {
           this.clearEntitySelection();
+          this.clearHexSelection();
         }
       }
+    });
+
+    window.addEventListener("urlChanged", () => {
+      this.clearEntitySelection();
+      this.clearHexSelection();
     });
   }
 
@@ -190,11 +193,17 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: THREE.Vector3 } | null): void {
     if (hex === null) {
       this.state.updateHoveredHex(null);
+      this.state.setHoveredStructure(null);
+      this.state.setHoveredBattle(null);
       return;
     }
     const { hexCoords } = hex;
     const { selectedEntityId, travelPaths } = this.state.armyActions;
     if (selectedEntityId && travelPaths.size > 0) {
+      if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
+        new Audio(dir + soundSelector.hoverClick).play();
+        this.previouslyHoveredHex = hexCoords;
+      }
       this.state.updateHoveredHex(hexCoords);
     }
     this.structurePreview?.setStructurePosition(getWorldPositionForHex(hexCoords));
@@ -213,6 +222,18 @@ export default class WorldmapScene extends HexagonScene {
     } else if (this.state.hoveredStructure) {
       this.state.setHoveredStructure(null);
     }
+
+    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const isBattle = this.battleManager.battles.hasByPosition(position);
+
+    if (isBattle) {
+      const contractPosition = position.getContract();
+      if (this.state.hoveredBattle?.x !== contractPosition.x || this.state.hoveredBattle?.y !== contractPosition.y) {
+        this.state.setHoveredBattle(position.getContract());
+      }
+    } else {
+      this.state.setHoveredBattle(null);
+    }
   }
 
   private _canBuildStructure(hexCoords: HexPosition) {
@@ -227,55 +248,69 @@ export default class WorldmapScene extends HexagonScene {
     return !isStructure && isExplored && !isOcean;
   }
 
-  protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-    const isBattle = this.battleManager.battles.hasByPosition(position);
-    if (isBattle) return;
-    const url = position.toHexLocationUrl();
-    LocationManager.updateUrl(url);
-  }
+  protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
   protected onHexagonClick(hexCoords: HexPosition | null) {
-    if (!hexCoords) {
-      return;
-    }
-    const { selectedEntityId, travelPaths } = this.state.armyActions;
+    if (!hexCoords) return;
 
     const buildingType = this.structurePreview?.getPreviewStructure();
 
     if (buildingType && this._canBuildStructure(hexCoords)) {
-      const normalizedHexCoords = { col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER };
-      this.tileManager.placeStructure(this.structureEntityId, buildingType.type, normalizedHexCoords);
-      this.clearEntitySelection();
-    } else if (selectedEntityId && travelPaths.size > 0) {
+      this.handleStructurePlacement(hexCoords);
+    } else {
+      this.handleHexSelection(hexCoords);
+    }
+  }
+
+  protected handleStructurePlacement(hexCoords: HexPosition) {
+    const buildingType = this.structurePreview?.getPreviewStructure();
+    if (!buildingType) return;
+
+    const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    this.tileManager.placeStructure(this.structureEntityId, buildingType.type, contractHexPosition);
+    this.clearEntitySelection();
+  }
+
+  protected handleHexSelection(hexCoords: HexPosition) {
+    const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const position = getWorldPositionForHex(hexCoords);
+    if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
+      const audio = new Audio(dir + soundSelector.click);
+      audio.play();
+      this.selectedHexManager.setPosition(position.x, position.z);
+      this.state.setSelectedHex({
+        col: contractHexPosition.x,
+        row: contractHexPosition.y,
+      });
+    } else {
+      this.state.setLeftNavigationView(LeftView.EntityView);
+    }
+  }
+
+  protected onHexagonRightClick(hexCoords: HexPosition | null): void {
+    const { selectedEntityId, travelPaths } = this.state.armyActions;
+    if (selectedEntityId && travelPaths.size > 0 && hexCoords) {
       const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
       if (travelPath) {
         const selectedPath = travelPath.path;
         const isExplored = travelPath.isExplored ?? false;
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
+          const marchSound = selectedEntityId % 2 === 0 ? soundSelector.unitMarching1 : soundSelector.unitMarching2;
+
+          new Audio(dir + marchSound).play();
           armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
-          this.clearEntitySelection();
         }
       }
-    } else {
-      const position = getWorldPositionForHex(hexCoords);
-      this.selectedHexManager.setPosition(position.x, position.z);
-      this.state.setSelectedHex({
-        col: hexCoords.col + FELT_CENTER,
-        row: hexCoords.row + FELT_CENTER,
-      });
-      this.state.setLeftNavigationView(View.EntityView);
     }
   }
-  protected onHexagonRightClick(): void {}
 
-  private onArmySelection(selectedEntityId: ID | undefined) {
+  private onArmySelection(selectedEntityId: ID | null) {
     if (!selectedEntityId) {
       this.clearEntitySelection();
       return;
     }
-    this.state.updateSelectedEntityId(selectedEntityId);
+
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
     const travelPaths = armyMovementManager.findPaths(
       this.exploredTiles,
@@ -287,10 +322,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private clearEntitySelection() {
-    this.state.updateSelectedEntityId(null);
+    // this.state.setSelectedHex(null);
     this.highlightHexManager.highlightHexes([]);
     this.state.updateTravelPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
+  }
+
+  private clearHexSelection() {
+    this.state.setSelectedHex(null);
   }
 
   setup() {
@@ -298,12 +337,22 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
+    if (!IS_MOBILE) {
+      this.minimap.moveMinimapCenterToUrlLocation();
+      this.minimap.showMinimap();
+    }
+
+    // Set the currently selected building hex as the default world map selection
+    if (this.state.selectedBuildingHex) {
+      const { outerCol, outerRow } = this.state.selectedBuildingHex;
+      this.state.setSelectedHex({ col: outerCol, row: outerRow });
+    }
   }
 
   onSwitchOff() {
-    this.minimap.hideMinimap();
+    if (!IS_MOBILE) {
+      this.minimap.hideMinimap();
+    }
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -575,6 +624,9 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.battleManager.update(deltaTime);
-    this.minimap.update();
+    this.structureManager.updateAnimations(deltaTime);
+    if (!IS_MOBILE) {
+      this.minimap.update();
+    }
   }
 }

@@ -11,13 +11,13 @@ import { LocationManager } from "../helpers/LocationManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { HexPosition, SceneName } from "@/types";
-import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
-import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
+import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import _, { throttle } from "lodash";
 import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import { BiomeType } from "../components/Biome";
-import InstancedModel from "../components/InstancedModel";
+import InstancedBiome from "../components/InstancedBiome";
 import { SystemManager } from "../systems/SystemManager";
 import { HEX_SIZE, biomeModelPaths } from "./constants";
 
@@ -30,7 +30,7 @@ export abstract class HexagonScene {
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
   protected GUIFolder!: any;
-  protected biomeModels: Map<BiomeType, InstancedModel> = new Map();
+  protected biomeModels: Map<BiomeType, InstancedBiome> = new Map();
   protected modelLoadPromises: Promise<void>[] = [];
   protected state!: AppStore;
   protected fog!: THREE.Fog;
@@ -38,6 +38,8 @@ export abstract class HexagonScene {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private hemisphereLight!: THREE.HemisphereLight;
   private lightHelper!: THREE.DirectionalLightHelper;
+
+  private groundMesh!: THREE.Mesh;
 
   constructor(
     protected sceneName: SceneName,
@@ -87,12 +89,12 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
-    this.scene.add(this.hemisphereLight);
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.3);
+    //this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
@@ -100,14 +102,15 @@ export abstract class HexagonScene {
 
   private configureDirectionalLight(): void {
     this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.width = 2048;
-    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.shadow.mapSize.width = 1024;
+    this.mainDirectionalLight.shadow.mapSize.height = 1024;
     this.mainDirectionalLight.shadow.camera.left = -22;
     this.mainDirectionalLight.shadow.camera.right = 18;
     this.mainDirectionalLight.shadow.camera.top = 14;
     this.mainDirectionalLight.shadow.camera.bottom = -12;
     this.mainDirectionalLight.shadow.camera.far = 38;
     this.mainDirectionalLight.shadow.camera.near = 8;
+    this.mainDirectionalLight.shadow.bias = -0.0015;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
   }
@@ -175,6 +178,7 @@ export abstract class HexagonScene {
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
+    directionalLightFolder.add(this.scene, "environmentIntensity", 0, 2, 0.1);
     directionalLightFolder.close();
   }
 
@@ -186,8 +190,15 @@ export abstract class HexagonScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.001, 0.001, 0.0001);
+    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.1, 0.1, 0.0015);
     shadowFolder.close();
+  }
+
+  private setupGroundMeshGUI(): void {
+    const groundMeshFolder = this.GUIFolder.addFolder("Ground Mesh");
+    groundMeshFolder.add(this.groundMesh.material, "metalness", 0, 1, 0.01).name("Metalness");
+    groundMeshFolder.add(this.groundMesh.material, "roughness", 0, 1, 0.01).name("Roughness");
+    groundMeshFolder.close();
   }
 
   public getScene() {
@@ -196,6 +207,11 @@ export abstract class HexagonScene {
 
   public getCamera() {
     return this.camera;
+  }
+
+  public setEnvironment(texture: THREE.Texture, intensity: number = 1) {
+    this.scene.environment = texture;
+    this.scene.environmentIntensity = intensity;
   }
 
   public closeNavigationViews() {
@@ -345,9 +361,9 @@ export abstract class HexagonScene {
             const model = gltf.scene as THREE.Group;
             if (biome === "Outline") {
               ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).transparent = true;
-              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.1;
+              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.3;
             }
-            const tmp = new InstancedModel(model, maxInstances);
+            const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
             resolve();
@@ -365,8 +381,8 @@ export abstract class HexagonScene {
 
   private createGroundMesh() {
     const scale = 60;
-    const metalness = 0.5;
-    const roughness = 0.7;
+    const metalness = 0;
+    const roughness = 0.1;
 
     const geometry = new THREE.PlaneGeometry(2668, 1390.35);
     const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
@@ -392,12 +408,17 @@ export abstract class HexagonScene {
     mesh.raycast = () => {};
 
     this.scene.add(mesh);
+    this.groundMesh = mesh;
+    this.setupGroundMeshGUI();
   }
 
   update(deltaTime: number): void {
     this.interactiveHexManager.update();
     this.updateLights();
     this.updateHighlightPulse();
+    this.biomeModels.forEach((biome) => {
+      biome.updateAnimations(deltaTime);
+    });
   }
 
   private updateLights = _.throttle(() => {

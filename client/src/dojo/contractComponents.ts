@@ -381,20 +381,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    EntityMetadata: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, entity_type: RecsType.Number },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "EntityMetadata",
-            types: ["u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     EntityName: (() => {
       return defineComponent(
         world,
@@ -418,20 +404,6 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "EntityOwner",
             types: ["u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ForeignKey: (() => {
-      return defineComponent(
-        world,
-        { foreign_key: RecsType.BigInt, entity_id: RecsType.Number },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "ForeignKey",
-            types: ["felt252", "u32"],
             customTypes: [],
           },
         },
@@ -479,14 +451,14 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HasClaimedStartingResources: (() => {
+    Quest: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, config_id: RecsType.Number, claimed: RecsType.Boolean },
+        { entity_id: RecsType.Number, config_id: RecsType.Number, completed: RecsType.Boolean },
         {
           metadata: {
             namespace: "eternum",
-            name: "HasClaimedStartingResources",
+            name: "Quest",
             types: ["u32", "u32", "bool"],
             customTypes: [],
           },
@@ -516,14 +488,14 @@ export function defineContractComponents(world: World) {
           completed: RecsType.Boolean,
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
-          private: RecsType.Boolean,
+          access: RecsType.String,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Hyperstructure",
-            types: ["u32", "u16", "bool", "contractaddress", "u64", "bool"],
-            customTypes: [],
+            types: ["u32", "u16", "bool", "contractaddress", "u64", "enum"],
+            customTypes: ["Access"],
           },
         },
       );
@@ -551,12 +523,18 @@ export function defineContractComponents(world: World) {
     HyperstructureConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, time_between_shares_change: RecsType.Number },
+        {
+          config_id: RecsType.Number,
+          time_between_shares_change: RecsType.Number,
+          points_per_cycle: RecsType.BigInt,
+          points_for_win: RecsType.BigInt,
+          points_on_completion: RecsType.BigInt,
+        },
         {
           metadata: {
             namespace: "eternum",
             name: "HyperstructureConfig",
-            types: ["u32", "u64"],
+            types: ["u32", "u64", "u128", "u128", "u128"],
             customTypes: [],
           },
         },
@@ -942,13 +920,7 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.Number,
           realm_id: RecsType.Number,
-          resource_types_packed: RecsType.BigInt,
-          resource_types_count: RecsType.Number,
-          cities: RecsType.Number,
-          harbors: RecsType.Number,
-          rivers: RecsType.Number,
-          regions: RecsType.Number,
-          wonder: RecsType.Number,
+          produced_resources: RecsType.BigInt,
           order: RecsType.Number,
           level: RecsType.Number,
         },
@@ -956,21 +928,63 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
+            types: ["u32", "u32", "u128", "u8", "u8"],
             customTypes: [],
           },
         },
       );
     })(),
-    RealmFreeMintConfig: (() => {
+    QuestConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, detached_resource_id: RecsType.Number, detached_resource_count: RecsType.Number },
+        { config_id: RecsType.Number, production_material_multiplier: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
-            name: "RealmFreeMintConfig",
+            name: "QuestConfig",
+            types: ["u32", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    QuestRewardConfig: (() => {
+      return defineComponent(
+        world,
+        { quest_id: RecsType.Number, detached_resource_id: RecsType.Number, detached_resource_count: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "QuestRewardConfig",
             types: ["u32", "u32", "u32"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RealmLevelConfig: (() => {
+      return defineComponent(
+        world,
+        { level: RecsType.Number, required_resources_id: RecsType.Number, required_resource_count: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "RealmLevelConfig",
+            types: ["u8", "u32", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RealmMaxLevelConfig: (() => {
+      return defineComponent(
+        world,
+        { config_id: RecsType.Number, max_level: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "RealmMaxLevelConfig",
+            types: ["u32", "u8"],
             customTypes: [],
           },
         },
@@ -1009,6 +1023,61 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    ResourceBridgeFeeSplitConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          velords_fee_on_dpt_percent: RecsType.Number,
+          velords_fee_on_wtdr_percent: RecsType.Number,
+          season_pool_fee_on_dpt_percent: RecsType.Number,
+          season_pool_fee_on_wtdr_percent: RecsType.Number,
+          client_fee_on_dpt_percent: RecsType.Number,
+          client_fee_on_wtdr_percent: RecsType.Number,
+          velords_fee_recipient: RecsType.BigInt,
+          season_pool_fee_recipient: RecsType.BigInt,
+          max_bank_fee_dpt_percent: RecsType.Number,
+          max_bank_fee_wtdr_percent: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "ResourceBridgeFeeSplitConfig",
+            types: [
+              "u32",
+              "u16",
+              "u16",
+              "u16",
+              "u16",
+              "u16",
+              "u16",
+              "ContractAddress",
+              "ContractAddress",
+              "u16",
+              "u16",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ResourceBridgeWhitelistConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          token: RecsType.BigInt,
+          resource_type: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "ResourceBridgeWhitelistConfig",
+            types: ["ContractAddress", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ResourceCost: (() => {
       return defineComponent(
         world,
@@ -1032,6 +1101,49 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "ResourceTransferLock",
             types: ["u32", "u64", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    SeasonConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          season_pass_address: RecsType.BigInt,
+          realms_address: RecsType.BigInt,
+          lords_address: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "SeasonConfig",
+            types: ["u32", "ContractAddress", "ContractAddress", "ContractAddress"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    SettlementConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          angle_scaled: RecsType.BigInt,
+          center: RecsType.Number,
+          min_scaling_factor_scaled: RecsType.BigInt,
+          radius: RecsType.Number,
+          min_distance: RecsType.Number,
+          max_distance: RecsType.Number,
+          min_angle_increase: RecsType.BigInt,
+          max_angle_increase: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "SettlementConfig",
+            types: ["u32", "u128", "u32", "u128", "u32", "u32", "u32", "u64", "u64"],
             customTypes: [],
           },
         },
@@ -1087,12 +1199,12 @@ export function defineContractComponents(world: World) {
     StaminaRefillConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, amount_per_tick: RecsType.Number },
+        { config_id: RecsType.Number, amount_per_tick: RecsType.Number, start_boost_tick_count: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
             name: "StaminaRefillConfig",
-            types: ["u32", "u16"],
+            types: ["u32", "u16", "u8"],
             customTypes: [],
           },
         },
@@ -1201,6 +1313,27 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    TravelFoodCostConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          unit_type: RecsType.Number,
+          explore_wheat_burn_amount: RecsType.BigInt,
+          explore_fish_burn_amount: RecsType.BigInt,
+          travel_wheat_burn_amount: RecsType.BigInt,
+          travel_fish_burn_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "TravelFoodCostConfig",
+            types: ["u32", "u8", "u128", "u128", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     TravelStaminaCostConfig: (() => {
       return defineComponent(
         world,
@@ -1230,6 +1363,7 @@ export function defineContractComponents(world: World) {
           crossbowman_strength: RecsType.Number,
           advantage_percent: RecsType.Number,
           disadvantage_percent: RecsType.Number,
+          max_troop_count: RecsType.Number,
           pillage_health_divisor: RecsType.Number,
           army_free_per_structure: RecsType.Number,
           army_extra_per_building: RecsType.Number,
@@ -1237,12 +1371,30 @@ export function defineContractComponents(world: World) {
           battle_leave_slash_num: RecsType.Number,
           battle_leave_slash_denom: RecsType.Number,
           battle_time_scale: RecsType.Number,
+          battle_max_time_seconds: RecsType.Number,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "TroopConfig",
-            types: ["u32", "u32", "u8", "u8", "u16", "u16", "u16", "u8", "u8", "u8", "u8", "u8", "u8", "u16"],
+            types: [
+              "u32",
+              "u32",
+              "u8",
+              "u8",
+              "u16",
+              "u16",
+              "u16",
+              "u64",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u8",
+              "u16",
+              "u64",
+            ],
             customTypes: [],
           },
         },
@@ -1654,8 +1806,7 @@ const eventsComponents = (world: World) => {
             owner_address: RecsType.BigInt,
             owner_name: RecsType.BigInt,
             realm_name: RecsType.BigInt,
-            resource_types_packed: RecsType.BigInt,
-            resource_types_count: RecsType.Number,
+            produced_resources: RecsType.BigInt,
             cities: RecsType.Number,
             harbors: RecsType.Number,
             rivers: RecsType.Number,
@@ -1684,11 +1835,93 @@ const eventsComponents = (world: World) => {
                 "u8",
                 "u8",
                 "u8",
-                "u8",
                 "u32",
                 "u32",
                 "u64",
               ],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      LiquidityEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            bank_entity_id: RecsType.Number,
+            entity_id: RecsType.Number,
+            resource_type: RecsType.Number,
+            lords_amount: RecsType.BigInt,
+            resource_amount: RecsType.BigInt,
+            resource_price: RecsType.BigInt,
+            add: RecsType.Boolean,
+            timestamp: RecsType.BigInt,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "LiquidityEvent",
+              types: ["u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      BurnDonkey: (() => {
+        return defineComponent(
+          world,
+          {
+            player_address: RecsType.BigInt,
+            entity_id: RecsType.Number,
+            amount: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "BurnDonkey",
+              types: ["ContractAddress", "u32", "u128", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      CreateGuild: (() => {
+        return defineComponent(
+          world,
+          {
+            guild_entity_id: RecsType.Number,
+            guild_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "CreateGuild",
+              types: ["u32", "felt252", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      JoinGuild: (() => {
+        return defineComponent(
+          world,
+          {
+            guild_entity_id: RecsType.Number,
+            address: RecsType.BigInt,
+            guild_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "JoinGuild",
+              types: ["u32", "ContractAddress", "felt252", "u64"],
               customTypes: [],
             },
           },

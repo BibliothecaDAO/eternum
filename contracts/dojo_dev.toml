@@ -3,8 +3,8 @@ default = "eternum"
 
 [env]
 ## dev
-account_address = "0xb3ff441a68610b30fd5e2abbf3a1548eb6ba6f3559f2862bf2dc757e5828ca"
-private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a"
+account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 
 [world]
 seed = "eternum"
@@ -12,3 +12,29 @@ name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
 website = "https://alpha-eternum.realms.world/"
+
+[writers]
+"eternum" = [
+    "eternum-bank_systems",
+    "eternum-battle_pillage_systems",
+    "eternum-battle_systems",
+    "eternum-building_systems",
+    "eternum-config_systems",
+    "eternum-dev_bank_systems",
+    "eternum-dev_realm_systems",
+    "eternum-dev_resource_systems",
+    "eternum-donkey_systems",
+    "eternum-guild_systems",
+    "eternum-hyperstructure_systems",
+    "eternum-liquidity_systems",
+    "eternum-map_systems",
+    "eternum-name_systems",
+    "eternum-ownership_systems",
+    "eternum-realm_systems",
+    "eternum-resource_bridge_systems",
+    "eternum-resource_systems",
+    "eternum-swap_systems",
+    "eternum-trade_systems",
+    "eternum-travel_systems",
+    "eternum-troop_systems",
+]

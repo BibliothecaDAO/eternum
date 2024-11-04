@@ -24,7 +24,7 @@ export enum HintSection {
   Combat = "Combat",
   WorldStructures = "World Structures",
   Points = "Points",
-  Guilds = "Guilds",
+  Tribes = "Tribes",
   Realm = "Realms",
 }
 
@@ -79,7 +79,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
       content: <Points />,
     },
     {
-      name: HintSection.Guilds,
+      name: HintSection.Tribes,
       content: <Guilds />,
     },
   ];
@@ -90,7 +90,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
 
   return (
     <ModalContainer>
-      <div className="flex container mx-auto bg-black/90 bg-hex-bg my-10 rounded-xl border border-gold/40">
+      <div className="flex container mx-auto bg-brown/90 bg-hex-bg my-10 rounded-xl border border-gold/40">
         <div className="w-1/4 border-r border-gold/10 p-4">
           <h3 className="text-center mb-4">The Lordpedia</h3>
           <div className="space-y-1">

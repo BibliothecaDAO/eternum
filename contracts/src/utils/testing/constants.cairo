@@ -1,5 +1,8 @@
 use eternum::constants::{ResourceTypes, RESOURCE_PRECISION};
 
+
+use eternum::models::owner::{Owner, OwnerCustomImpl, OwnerCustomTrait};
+
 const MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT: u128 = 1;
 const MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT: u128 = 1;
 
@@ -55,3 +58,4 @@ fn get_resource_weights() -> Span<(u8, u128)> {
     ]
         .span()
 }
+

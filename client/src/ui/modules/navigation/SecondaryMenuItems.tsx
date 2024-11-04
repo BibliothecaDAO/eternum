@@ -18,7 +18,7 @@ import clsx from "clsx";
 
 import { ArrowUp } from "lucide-react";
 import { useMemo } from "react";
-import { leaderboard, quests as questsWindow, social } from "../../components/navigation/Config";
+import { quests as questsWindow, social } from "../../components/navigation/Config";
 
 export const SecondaryMenuItems = () => {
   const { toggleModal } = useModalStore();
@@ -61,7 +61,7 @@ export const SecondaryMenuItems = () => {
             />
 
             {completedQuests.length < 8 && !isMapView && realmSelected && (
-              <div className="absolute bg-black/90 text-gold border border-gold/30 mt-3 rounded-md shadow-lg left-1/2 transform -translate-x-1/2 w-48 p-3 flex flex-col items-center animate-pulse">
+              <div className="absolute bg-brown/90 text-gold border border-gold/30 mt-3 rounded-md shadow-lg left-1/2 transform -translate-x-1/2 w-48 p-3 flex flex-col items-center animate-pulse">
                 <ArrowUp className="text-gold w-5 h-5 mb-2" />
                 <div className="text-sm font-semibold mb-2 text-center leading-tight">
                   Complete quests to master the game mechanics
@@ -75,36 +75,19 @@ export const SecondaryMenuItems = () => {
         button: (
           <CircleButton
             tooltipLocation="bottom"
-            image={BuildingThumbs.leaderboard}
-            label={leaderboard}
-            active={isPopupOpen(leaderboard)}
-            size="lg"
-            onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: !questClaimStatus[QuestId.Travel] })}
-          />
-        ),
-      },
-      {
-        button: (
-          <CircleButton
-            tooltipLocation="bottom"
             image={BuildingThumbs.guild}
             label={social}
             active={isPopupOpen(social)}
             size="lg"
             onClick={() => togglePopup(social)}
-            className={clsx({
-              hidden: !questClaimStatus[QuestId.Travel],
-            })}
           />
         ),
       },
     ];
   }, [unclaimedQuestsCount, selectedQuest, quests, structureEntityId]);
   return (
-    <div className="flex gap-3 mt-1">
-      {" "}
-      <div className="self-center px-3 flex space-x-2">
+    <div className="flex gap-1 md:gap-3">
+      <div className="self-center px-1 md:px-3 flex space-x-1 md:space-x-2 my-1">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}

@@ -1,17 +1,19 @@
 import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
+import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
-  EternumGlobalConfig,
+  DONKEY_ENTITY_TYPE,
   ONE_MONTH,
   ResourcesIds,
   findResourceById,
@@ -56,7 +58,7 @@ export const MarketResource = ({
       onClick={() => {
         onClick(resource.id);
       }}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
+      className={`w-full border-gold/5 rounded-xl h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
         active ? "bg-gold/10" : ""
       }`}
     >
@@ -100,9 +102,6 @@ export const MarketOrderPanel = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
-  const dojo = useDojo();
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
-
   const selectedResourceBidOffers = useMemo(() => {
     return resourceBidOffers
       .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
@@ -160,20 +159,25 @@ const MarketOrders = ({
     <div className=" h-full flex flex-col gap-4">
       {/* Market Price */}
       <div
-        className={`text-xl flex  font-bold  justify-between p-1 px-8 border-gold/10 border ${
-          !isBuy ? "bg-green/20" : "bg-red/20"
+        className={`text-2xl flex  font-bold  justify-between py-4 px-8 border-gold/10 border rounded-xl ${
+          !isBuy ? "bg-green/20 text-green" : "bg-red/20 text-red"
         }`}
       >
         <div className="self-center flex gap-4">
-          <ResourceIcon withTooltip={false} size="lg" resource={findResourceById(resourceId)?.trait || ""} />
-          <div className="self-center">{lowestPrice.toFixed(2)}</div>
+          <div className="flex flex-col">
+            <div className="uppercase text-sm text-opacity-80">{findResourceById(resourceId)?.trait || ""}</div>
+            <div className="flex gap-3">
+              <ResourceIcon withTooltip={false} size="lg" resource={findResourceById(resourceId)?.trait || ""} />
+              <div className="self-center">{lowestPrice.toFixed(2)}</div>
+            </div>
+          </div>
         </div>
-        <div>
+        <div className="self-center">
           {offers.length} {isBuy ? "bid" : "ask"}
         </div>
       </div>
 
-      <div className="p-1 bg-white/5  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto">
+      <div className="p-1 bg-brown  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto rounded-xl">
         <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
         <div
@@ -192,7 +196,7 @@ const MarketOrders = ({
             />
           ))}
           {isResourcesLocked && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xl text-bold">
+            <div className="absolute inset-0 bg-brown/50 flex items-center justify-center text-xl text-bold">
               Resources locked in battle
             </div>
           )}
@@ -241,6 +245,8 @@ const OrderRow = ({
   const { computeTravelTime } = useTravel();
   const dojo = useDojo();
 
+  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+
   const lordsManager = new ProductionManager(dojo.setup, entityId, ResourcesIds.Lords);
   const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [updateBalance]);
 
@@ -254,7 +260,7 @@ const OrderRow = ({
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
   const travelTime = useMemo(
-    () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
+    () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), true),
     [entityId, offer],
   );
 
@@ -296,20 +302,20 @@ const OrderRow = ({
   );
   const [inputValue, setInputValue] = useState<number>(() => {
     return isBuy
-      ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
-      : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio;
+      ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
+      : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio;
   });
 
   useEffect(() => {
     setInputValue(
       isBuy
-        ? (offer.makerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * resourceBalanceRatio
-        : (offer.takerGets[0].amount / EternumGlobalConfig.resources.resourcePrecision) * lordsBalanceRatio,
+        ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
+        : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio,
     );
   }, [resourceBalanceRatio, lordsBalanceRatio]);
 
   const calculatedResourceAmount = useMemo(() => {
-    return inputValue * EternumGlobalConfig.resources.resourcePrecision;
+    return multiplyByPrecision(inputValue);
   }, [inputValue, getsDisplay, getTotalLords]);
 
   const calculatedLords = useMemo(() => {
@@ -327,9 +333,7 @@ const OrderRow = ({
   }, [entityId, calculatedResourceAmount, calculatedLords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(
-      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
-    );
+    return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
@@ -362,6 +366,7 @@ const OrderRow = ({
     } catch (error) {
       console.error("Failed to accept order", error);
     } finally {
+      playLordsSound();
       setUpdateBalance(!updateBalance);
       setLoading(false);
     }
@@ -370,18 +375,18 @@ const OrderRow = ({
   return (
     <div
       key={offer.tradeId}
-      className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border text-xs relative ${
+      className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border relative rounded text-sm ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
       } ${isMakerResourcesLocked ? "opacity-50" : ""}`}
     >
       {isMakerResourcesLocked && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-lg">
+        <div className="absolute inset-0 bg-brown/50 flex items-center justify-center text-lg">
           Resources locked in battle
         </div>
       )}
       <div className="grid grid-cols-5 gap-1">
         <div className={`flex gap-1 font-bold ${isBuy ? "text-red" : "text-green"} `}>
-          <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
+          <ResourceIcon withTooltip={false} size="sm" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
           {getsDisplay}
         </div>
         {travelTime && (
@@ -445,16 +450,12 @@ const OrderRow = ({
                   value={inputValue}
                   className="w-full col-span-3"
                   onChange={setInputValue}
-                  max={
-                    (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
-                    (isBuy ? resourceBalanceRatio : lordsBalanceRatio)
-                  }
+                  max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
                 />
                 <Button
                   onClick={() => {
                     setInputValue(
-                      (getsDisplayNumber / EternumGlobalConfig.resources.resourcePrecision) *
-                        (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
+                      divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
                     );
                   }}
                 >
@@ -493,6 +494,8 @@ const OrderCreation = ({
   const [lords, setLords] = useState(100);
   const [bid, setBid] = useState(String(lords / resource));
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+
   const {
     account: { account },
     setup: {
@@ -535,6 +538,7 @@ const OrderCreation = ({
       taker_gives_resources: takerGives,
       expires_at: nextBlockTimestamp + ONE_MONTH,
     }).finally(() => {
+      playLordsSound();
       setLoading(false);
     });
   };
@@ -547,9 +551,7 @@ const OrderCreation = ({
   }, [resource, lords]);
 
   const donkeysNeeded = useMemo(() => {
-    return Math.ceil(
-      divideByPrecision(orderWeight) / Number(EternumGlobalConfig.carryCapacityGram[CapacityConfigCategory.Donkey]),
-    );
+    return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
@@ -593,7 +595,7 @@ const OrderCreation = ({
   }, [donkeyBalance, donkeysNeeded, resourceId]);
 
   return (
-    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border">
+    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto  bg-gold/5 border-gold/10 border rounded-xl">
       <div className="flex w-full gap-8">
         <div className="w-1/3 gap-1 flex flex-col">
           <div className="uppercase text-sm flex gap-2 font-bold">
@@ -606,7 +608,7 @@ const OrderCreation = ({
             onChange={(value) => {
               setResource(Number(value));
             }}
-            max={!isBuy ? resourceBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -638,7 +640,7 @@ const OrderCreation = ({
             onChange={(value) => {
               setLords(Number(value));
             }}
-            max={isBuy ? lordsBalance / EternumGlobalConfig.resources.resourcePrecision : Infinity}
+            max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
           />
 
           <div className="text-sm font-bold text-gold/70">
@@ -679,4 +681,8 @@ const OrderCreation = ({
       </div>
     </div>
   );
+};
+
+const calculateDonkeysNeeded = (orderWeight: number): number => {
+  return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
 };

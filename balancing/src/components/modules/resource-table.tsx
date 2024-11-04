@@ -29,7 +29,7 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
   };
 
   const getResourceWeight = (id: number) => {
-    return WEIGHTS_GRAM[id] || 0;
+    return WEIGHTS_GRAM[id as keyof typeof WEIGHTS_GRAM] || 0;
   };
 
   const getResourceTier = (id: number) => {
@@ -43,7 +43,7 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
 
   // New function to calculate adjusted resource inputs based on rarity
   const getAdjustedResourceInputs = (resourceId: number) => {
-    const multiplier = RESOURCE_RARITY[resourceId] || 1; // Default multiplier is 1
+    const multiplier = RESOURCE_RARITY[resourceId as keyof typeof RESOURCE_RARITY] || 1; // Default multiplier is 1
 
     return (
       RESOURCE_INPUTS_SCALED[resourceId]?.map((input) => ({
@@ -61,13 +61,12 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
       const buildingUsageCount = Object.values(BUILDING_COSTS_SCALED).reduce((count, costs) => {
         return count + costs.filter((cost: any) => cost.resource === resource.id).length;
       }, 0);
+
       acc[resource.id] = inputUsageCount + buildingUsageCount;
       return acc;
     },
     {} as Record<number, number>,
   );
-
-  console.log(resourceUsageCount);
 
   // Function to sum adjusted inputs
   const sumAdjustedInputs = (resourceId: number) => {

@@ -1,6 +1,6 @@
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import useUIStore from "@/hooks/store/useUIStore";
-import { BuildingThumbs } from "@/ui/config";
+import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
@@ -10,7 +10,7 @@ const EntityResourceTable = lazy(() =>
   import("../../components/resources/EntityResourceTable").then((module) => ({ default: module.EntityResourceTable })),
 );
 
-export enum View {
+export enum RightView {
   None,
   ResourceTable,
 }
@@ -22,15 +22,15 @@ export const RightNavigationModule = () => {
   const navigation = useMemo(
     () => [
       {
-        name: "resourceTable",
+        name: MenuEnum.resourceTable,
         button: (
           <CircleButton
             image={BuildingThumbs.resources}
             size="xl"
             tooltipLocation="top"
             label="Balance"
-            active={view === View.ResourceTable}
-            onClick={() => setView(view === View.ResourceTable ? View.None : View.ResourceTable)}
+            active={view === RightView.ResourceTable}
+            onClick={() => setView(view === RightView.ResourceTable ? RightView.None : RightView.ResourceTable)}
           />
         ),
       },
@@ -38,7 +38,7 @@ export const RightNavigationModule = () => {
     [view, questClaimStatus, structureEntityId],
   );
 
-  const isOffscreen = view === View.None;
+  const isOffscreen = view === RightView.None;
 
   return (
     <div
@@ -53,7 +53,7 @@ export const RightNavigationModule = () => {
         }}
         initial="hidden"
         animate="visible"
-        className="gap-2 flex flex-col justify-start pointer-events-auto"
+        className="gap-2 flex flex-col justify-start pointer-events-auto h-[60vh]"
       >
         <div className="flex flex-col gap-2 mb-auto">
           {navigation.map((item, index) => (
