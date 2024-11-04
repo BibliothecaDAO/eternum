@@ -43,29 +43,22 @@ export const TheMap = () => {
   );
 };
 
-const ExplorationTable = () => {
-  const travelStaminaCost = configManager.getTravelStaminaCost();
-  const exploreStaminaCost = configManager.getExploreStaminaCost();
-
+export const ExplorationTable = () => {
   return (
-    <table className="not-prose w-full border-collapse border border-gold/10">
-      <thead>
-        <tr>
-          <th className="border border-gold/10 p-2"></th>
-          <th className="border border-gold/10 p-2">Stamina</th>
-          <th className="border border-gold/10 p-2">Consumes per hex / unit:</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td className="border border-gold/10 p-2 font-bold">
-            <div className="flex flex-row items-center justify-center">
-              <Lightning className="fill-order-power/70 w-8"></Lightning>
-              Travel
-            </div>
-          </td>
-          <td className="border border-gold/10 p-2">{travelStaminaCost}</td>
-          <td>
+    <div className="grid grid-cols-2 gap-4">
+      <div className="bg-gray-800 rounded-lg p-4 shadow-md">
+        <h4 className="text-xl font-bold mb-3 text-gold">Travel</h4>
+        <ul className="space-y-2">
+          <li className="flex items-center">
+            <span className="mr-2">🏃‍♂️</span>
+            Costs <span className="font-semibold text-brilliance mx-1">
+              {configManager.getTravelStaminaCost()}
+            </span>{" "}
+            stamina per hex
+          </li>
+          <li>
+            <span className="mr-2">🍖</span>
+            Consumes per hex / unit:
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>
                 <tr>
@@ -116,17 +109,23 @@ const ExplorationTable = () => {
                 </tr>
               </tbody>
             </table>
-          </td>
-        </tr>
-        <tr>
-          <td className="border border-gold/10 p-2 font-bold">
-            <div className="flex flex-row items-center justify-center">
-              <Lightning className="fill-order-power/70 w-8"></Lightning>
-              Exploration
-            </div>
-          </td>
-          <td className="border border-gold/10 p-2">{exploreStaminaCost}</td>
-          <td>
+          </li>
+        </ul>
+      </div>
+
+      <div className="bg-gray-800 rounded-lg p-4 shadow-md">
+        <h4 className="text-xl font-bold mb-3 text-gold">Explore</h4>
+        <ul className="space-y-2">
+          <li className="flex items-center">
+            <span className="mr-2">🌎</span>
+            Costs <span className="font-semibold text-brilliance mx-1">
+              {configManager.getExploreStaminaCost()}
+            </span>{" "}
+            stamina per hex
+          </li>
+          <li>
+            <span className="mr-2">🍖</span>
+            Consumes per hex / unit:
             <table className="not-prose w-full p-2 border-gold/10 mt-2">
               <thead>
                 <tr>
@@ -177,9 +176,9 @@ const ExplorationTable = () => {
                 </tr>
               </tbody>
             </table>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          </li>
+        </ul>
+      </div>
+    </div>
   );
 };
