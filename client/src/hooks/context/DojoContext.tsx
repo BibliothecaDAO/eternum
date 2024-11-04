@@ -205,7 +205,12 @@ const DojoContextProvider = ({
                 )}
               </div>
               <div className="text-center text-sm text-white/50 mt-4">
-                Controller uses Passkeys for authentication. <br /> We recommened using a phone however you can also use{" "}
+                Eternum uses a next generation smart contract wallet -{" "}
+                <a href="https://cartridge.gg/" target="_blank" className="underline">
+                  Cartridge Controller
+                </a>
+                . No download, no seed or passphrase - only a Passkey. No transaction signatures needed. <br /> We
+                recommend using a phone however you can also use{" "}
                 <a href="https://www.bitwarden.com/" target="_blank" className="underline">
                   {" "}
                   <br />

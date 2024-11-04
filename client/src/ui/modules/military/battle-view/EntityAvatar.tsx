@@ -18,7 +18,7 @@ export const EntityAvatar = ({
   const isFragmentMine = isCategory("FragmentMine", structure);
   const isMercenary = structure?.isMercenary;
 
-  const randomAvatarIndex = (parseInt(address.slice(0, 8), 16) % 7) + 1;
+  const randomAvatarIndex = ((parseInt(address.slice(0, 8), 16) % 7) + 1).toString().padStart(2, "0");
   let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
   if (isMercenary) {

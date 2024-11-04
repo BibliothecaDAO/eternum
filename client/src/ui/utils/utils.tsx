@@ -62,7 +62,10 @@ export function addressToNumber(address: string) {
   }
 
   // Map the sum to a number between 1 and 10
-  return (sum % 5) + 1;
+  let result = (sum % 5) + 1;
+
+  // Pad with a 0 if the result is less than 10
+  return result < 10 ? `0${result}` : result.toString();
 }
 
 export function calculateDistance(start: Position, destination: Position): number | undefined {
