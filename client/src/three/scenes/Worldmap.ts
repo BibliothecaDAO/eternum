@@ -150,6 +150,7 @@ export default class WorldmapScene extends HexagonScene {
         this.camera,
         this.structureManager,
         this.armyManager,
+        this.battleManager,
         this.biome,
       );
     }

@@ -30,8 +30,6 @@ export const useFetchBlockchainData = () => {
     const tickConfigArmies = configManager.getTick(TickIds.Armies);
     const tickConfigDefault = configManager.getTick(TickIds.Default);
 
-    console.log(tickConfigDefault);
-
     const fetchBlockchainTimestamp = async () => {
       const timestamp = Math.floor(Date.now() / 1000);
 
