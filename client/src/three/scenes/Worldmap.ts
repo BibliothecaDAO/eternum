@@ -305,7 +305,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    const audio = new Audio(dir + soundSelector.unitSelected2);
+    const audio = new Audio(dir + soundSelector.snap);
     audio.play();
 
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
