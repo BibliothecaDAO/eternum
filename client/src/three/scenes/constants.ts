@@ -83,7 +83,7 @@ export enum StructureProgress {
 }
 
 export const StructureModelPaths: Record<StructureType, string[]> = {
-  [StructureType.Realm]: ["models/buildings/castle2.glb"],
+  [StructureType.Realm]: ["models/buildings/castle0.glb", "models/buildings/castle1.glb", "models/buildings/castle2.glb", "models/buildings/castle3.glb"],
   // Order follows StructureProgress
   [StructureType.Hyperstructure]: [
     "models/buildings/hyperstructure_init.glb",

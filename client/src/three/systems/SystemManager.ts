@@ -3,7 +3,7 @@ import { configManager, SetupResult } from "@/dojo/setup";
 import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ID, StructureType } from "@bibliothecadao/eternum";
+import { ID, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
@@ -120,6 +120,11 @@ export class SystemManager {
           const categoryKey = structure.category as keyof typeof StructureType;
 
           const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+          let level = 0;
+          if (StructureType[categoryKey] === StructureType.Realm) {
+            const realm = getComponentValue(this.setup.components.Realm, update.entity);
+            level = realm?.level || RealmLevels.Settlement;
+          }
 
           return {
             entityId: structure.entity_id,
@@ -127,6 +132,7 @@ export class SystemManager {
             structureType: StructureType[categoryKey],
             isMine,
             stage,
+            level
           };
         });
       },
