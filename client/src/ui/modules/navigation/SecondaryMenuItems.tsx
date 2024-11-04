@@ -8,14 +8,12 @@ import { SettingsWindow } from "../settings/Settings";
 
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { QuestStatus, useQuestClaimStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
+import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 
-import { QuestId } from "@/ui/components/quest/questDetails";
-
 import { isRealmSelected } from "@/ui/utils/utils";
-import clsx from "clsx";
 
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { ArrowUp } from "lucide-react";
 import { useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
@@ -30,7 +28,6 @@ export const SecondaryMenuItems = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { quests } = useQuests();
   const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
-  const { questClaimStatus } = useQuestClaimStatus();
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
@@ -42,6 +39,10 @@ export const SecondaryMenuItems = () => {
   const realmSelected = useMemo(() => {
     return isRealmSelected(structureEntityId, structures) ? true : false;
   }, [structureEntityId, structures]);
+
+  console.log("useAccountStore.getState().connector", useAccountStore.getState().connector);
+  console.log("profile", useAccountStore.getState().connector?.controller.profile);
+  console.log("iframes", useAccountStore.getState().connector?.controller.iframes);
 
   const secondaryNavigation = useMemo(() => {
     return [
@@ -91,6 +92,13 @@ export const SecondaryMenuItems = () => {
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
+        <CircleButton
+          image={BuildingThumbs.trophy}
+          label={"Trophies"}
+          // active={isPopupOpen(quests)}
+          size="lg"
+          onClick={() => useAccountStore.getState().connector?.controller.openProfile("trophies")}
+        />
         <CircleButton
           image={BuildingThumbs.question}
           label={"Hints"}

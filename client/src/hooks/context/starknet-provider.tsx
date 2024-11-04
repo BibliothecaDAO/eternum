@@ -6,9 +6,13 @@ import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-r
 import { policies } from "./policies";
 
 const theme: string = "eternum";
+const slot: string = "eternum-rc1-1";
+const namespace: string = "eternum";
 
 const controller = new ControllerConnector({
   rpc: import.meta.env.VITE_PUBLIC_NODE_URL,
+  namespace,
+  slot,
   policies,
   theme,
 });
