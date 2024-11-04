@@ -608,6 +608,9 @@ export default class HexceptionScene extends HexagonScene {
           if (building.resource && building.resource === ResourcesIds.Crossbowman) {
             buildingObj.rotation.y = rotation;
           }
+          if (building.resource && building.resource === ResourcesIds.Paladin) {
+            buildingObj.rotation.y = rotation *3;
+          }
           buildingObj.updateMatrix();
           this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
         } else if (isMainHex) {
