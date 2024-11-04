@@ -432,7 +432,7 @@ export default class HexceptionScene extends HexagonScene {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
           let buildingType =
-            building.resource && building.resource < 24
+            building.resource && (building.resource < 24 || building.resource === ResourcesIds.AncientFragment)
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
 

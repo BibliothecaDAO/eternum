@@ -187,6 +187,7 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.Dragonhide]: ResourceMiningTypes.Dragonhide,
   [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
   [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
+  [ResourcesIds.AncientFragment]: ResourceMiningTypes.Mine,
 };
 
 export enum TimeFormat {
