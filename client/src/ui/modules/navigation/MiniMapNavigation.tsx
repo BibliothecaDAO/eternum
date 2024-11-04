@@ -16,8 +16,8 @@ export const MiniMapNavigation = () => {
 
   useEffect(() => {
     if (canvasRef.current) {
-      canvasRef.current.width = isExpanded ? window.innerWidth * 0.6 : 200;
-      canvasRef.current.height = isExpanded ? window.innerHeight * 0.6 : 112;
+      canvasRef.current.width = isExpanded ? window.innerWidth * 0.6 : 300;
+      canvasRef.current.height = isExpanded ? window.innerHeight * 0.6 : 152;
 
       const resizeEvent = new CustomEvent("canvasResized", {
         detail: {
@@ -90,8 +90,8 @@ export const MiniMapNavigation = () => {
       <canvas
         ref={canvasRef}
         id="minimap"
-        width="200"
-        height="112"
+        width="300"
+        height="152"
         className={`${showMinimap ? "block" : "hidden"} border border-gold/30 bg-hex-bg ${
           isExpanded ? "rounded-xl" : "rounded-tr-xl "
         }`}
