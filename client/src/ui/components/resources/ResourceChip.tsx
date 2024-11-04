@@ -1,4 +1,4 @@
-import { findResourceById, getIconResourceId, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecadao/eternum";
 
 import { configManager } from "@/dojo/setup";
 import { useProductionManager } from "@/hooks/helpers/useResources";
@@ -139,12 +139,12 @@ export const ResourceChip = ({
       position: "top",
       content: <>{findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}</>,
     });
-    setShowPerHour(!showPerHour);
+    setShowPerHour(false);
   }, [resourceId, isLabor, setTooltip]);
 
   const handleMouseLeave = useCallback(() => {
     setTooltip(null);
-    setShowPerHour(!showPerHour);
+    setShowPerHour(true);
   }, [setTooltip]);
 
   return (
