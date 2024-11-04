@@ -3,7 +3,7 @@ import { findResourceById, getIconResourceId, ID, TickIds } from "@bibliothecada
 import { configManager } from "@/dojo/setup";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { currencyFormat, currencyIntlFormat, formatTime, gramToKg, TimeFormat } from "../../utils/utils";
 
@@ -27,10 +27,18 @@ export const ResourceChip = ({
 
   const [balance, setBalance] = useState(0);
 
-  const production = useMemo(() => {
-    setBalance(productionManager.balance(tick));
-    return productionManager.getProduction();
+  const getBalance = useCallback(() => {
+    return productionManager.balance(tick);
   }, [productionManager, tick]);
+
+  const getProduction = useCallback(() => {
+    return productionManager.getProduction();
+  }, [productionManager]);
+
+  const production = useMemo(() => {
+    setBalance(getBalance());
+    return getProduction();
+  }, [getBalance, getProduction]);
 
   const maxAmountStorable = useMemo(() => {
     return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);

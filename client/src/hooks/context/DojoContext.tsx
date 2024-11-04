@@ -208,15 +208,16 @@ const DojoContextProvider = ({
                 Eternum uses a next generation smart contract wallet -{" "}
                 <a href="https://cartridge.gg/" target="_blank" className="underline">
                   Cartridge Controller
-                </a>
-                . No download, no seed or passphrase - only a Passkey. <br />
+                </a>{" "}
+                <br />
+                No download, no seed or passphrase - only a Passkey. <br />
                 No transaction signatures needed. <br /> We recommend using a phone however you can also use{" "}
                 <a href="https://www.bitwarden.com/" target="_blank" className="underline">
                   {" "}
-                  <br />
                   bitwarden
                 </a>{" "}
-                to manage your passkeys.
+                <br />
+                to manage your passkeys
               </div>
             </div>
           </div>
