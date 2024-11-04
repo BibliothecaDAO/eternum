@@ -202,4 +202,9 @@ export const MinesMaterialsParams: Record<
     emissive: new THREE.Color(1.0, 1.0, 1),
     emissiveIntensity: 4,
   },
+  [ResourcesIds.AncientFragment]: {
+    color: new THREE.Color(0.43, 0.85, 0.16),
+    emissive: new THREE.Color(0.0, 3.25,0.03),
+    emissiveIntensity: 5.7,
+  },
 };

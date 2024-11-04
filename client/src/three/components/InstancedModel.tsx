@@ -1,7 +1,7 @@
-import { StructureType } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
-import { PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
+import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "../scenes/constants";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -30,9 +30,17 @@ export default class InstancedModel {
     for (let i = 0; i < count; i++) {
       this.timeOffsets[i] = Math.random() * 3;
     }
+
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
-        const tmp = new THREE.InstancedMesh(child.geometry, child.material, count) as AnimatedInstancedMesh;
+        if (child.scale.x !== 1) {
+          return;
+        }
+        let material = child.material;
+        if ((name === StructureType[StructureType.FragmentMine]) && child.name.includes("crystal")) {
+          material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
+        }
+        const tmp = new THREE.InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
           if (
