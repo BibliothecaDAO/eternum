@@ -1,16 +1,11 @@
-import { useState } from "react";
 import Button from "../../../elements/Button";
 
-import { MAX_REALMS } from "@/ui/constants";
+import { useSettleRealm } from "@/hooks/helpers/use-settle-realm";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/elements/Collapsible";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { useQuery } from "@tanstack/react-query";
 import request, { gql } from "graphql-request";
 import { ChevronsUpDown } from "lucide-react";
-import { useDojo } from "../../../../hooks/context/DojoContext";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { getRealm } from "../../../utils/realms";
 
 export const GET_REALMS = gql`
   query getRealms($accountAddress: String!) {
@@ -37,17 +32,6 @@ export const GET_ERC_MINTS = gql`
 `;
 
 const SettleRealmComponent = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(1);
-  const [tokenId, setTokenId] = useState<number>(0);
-
-  const {
-    setup: {
-      systemCalls: { create_multiple_realms },
-    },
-    account: { account },
-  } = useDojo();
-
   const { data: realmMints } = useQuery({
     queryKey: ["realmMints"],
     queryFn: async () =>
@@ -59,36 +43,7 @@ const SettleRealmComponent = () => {
       ),
   });
 
-  const { getNextRealmIdForOrder, getRealmIdForOrderAfter } = useRealm();
-
-  const { play: playSign } = useUiSounds(soundSelector.sign);
-
-  const settleRealm = async () => {
-    setIsLoading(true);
-    const calldata = [];
-
-    let new_realm_id = getNextRealmIdForOrder(selectedOrder);
-
-    for (let i = 0; i < MAX_REALMS; i++) {
-      // if no realm id latest realm id is 0
-      if (i > 0) {
-        new_realm_id = getRealmIdForOrderAfter(selectedOrder, new_realm_id);
-      }
-      // take next realm id
-      const realm = getRealm(new_realm_id);
-      if (!realm) return;
-      calldata.push(Number(realm.realmId));
-    }
-
-    console.log(calldata);
-
-    await create_multiple_realms({
-      signer: account,
-      realm_ids: [calldata[0]],
-    });
-    setIsLoading(false);
-    playSign();
-  };
+  const { settleRealm, isLoading, selectedOrder, setSelectedOrder, tokenId, setTokenId } = useSettleRealm();
 
   return (
     <>
@@ -118,14 +73,7 @@ const SettleRealmComponent = () => {
             <CollapsibleContent className="space-y-2 border p-2">
               <label className="text-sm text-muted-foreground uppercase justify-self-start">Enter a Realm ID</label>
               <div className="flex">
-                <NumberInput
-                  placeholder="Add ID"
-                  className="!bg-brown !w-24"
-                  max={8000}
-                  min={1}
-                  value={tokenId}
-                  onChange={setTokenId}
-                />
+                <NumberInput className="!bg-brown !w-24" max={8000} min={1} value={tokenId} onChange={setTokenId} />
                 <Button
                   isLoading={isLoading}
                   onClick={async () => (!isLoading ? await settleRealm() : null)}

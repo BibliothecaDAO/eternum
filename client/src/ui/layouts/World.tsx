@@ -8,6 +8,7 @@ import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
 import { IS_MOBILE } from "../config";
 import { LoadingScreen } from "../modules/LoadingScreen";
+import { LoadingOroborus } from "../modules/loading-oroborus";
 
 // Lazy load components
 
@@ -97,6 +98,7 @@ export const World = () => {
       <div className="vignette" />
 
       <Suspense fallback={<LoadingScreen />}>
+        <LoadingOroborus loading={isLoadingScreenEnabled} />
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
         <BlankOverlayContainer open={showBlankOverlay}>
           <Onboarding />
