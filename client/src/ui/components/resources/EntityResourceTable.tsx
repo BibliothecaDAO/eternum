@@ -12,10 +12,6 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
 
   const tick = useUIStore((state) => state.currentDefaultTick);
 
-  if (!entityId) {
-    return <div>No Entity Selected</div>; // Early return for undefined entityId
-  }
-
   const quantity =
     useComponentValue(
       dojo.setup.components.BuildingQuantityv2,
@@ -27,24 +23,22 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);
 
-  if (entityId === undefined || entityId === null) {
-    return <div>No Entity Selected</div>;
-  }
   return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
     const resources = resourceIds.map((resourceId: any) => (
       <ResourceChip
         key={resourceId}
         resourceId={resourceId}
-        entityId={entityId}
+        entityId={entityId ?? 0}
         maxStorehouseCapacityKg={maxStorehouseCapacityKg}
         tick={tick}
       />
     ));
-
-    return (
+    return entityId !== undefined && entityId !== null ? (
       <div key={tier}>
         <div className="grid grid-cols-1 flex-wrap">{resources}</div>
       </div>
+    ) : (
+      <div>No Entity Selected</div>
     );
   });
 };
