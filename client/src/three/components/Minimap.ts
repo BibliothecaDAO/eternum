@@ -61,6 +61,7 @@ class Minimap {
   private exploredTiles!: Map<number, Set<number>>;
   private structureManager!: StructureManager;
   private armyManager!: ArmyManager;
+  private battleManager!: BattleManager;
   private biome!: Biome;
   private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
   private mapSize: { width: number; height: number } = {
@@ -95,7 +96,7 @@ class Minimap {
     this.waitForMinimapElement().then((canvas) => {
       this.canvas = canvas;
       this.loadLabelImages();
-      this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera);
+      this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera, battleManager);
       this.canvas.addEventListener("canvasResized", this.handleResize);
     });
   }
@@ -120,11 +121,13 @@ class Minimap {
     armyManager: ArmyManager,
     biome: Biome,
     camera: THREE.PerspectiveCamera,
+    battleManager: BattleManager,
   ) {
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
     this.armyManager = armyManager;
+    this.battleManager = battleManager;
     this.biome = biome;
     this.camera = camera;
     this.scaleX = this.canvas.width / this.mapSize.width;
@@ -192,6 +195,7 @@ class Minimap {
     this.drawExploredTiles();
     this.drawStructures();
     this.drawArmies();
+    this.drawBattles();
     this.drawCamera();
   }
 
@@ -259,6 +263,27 @@ class Minimap {
       if (this.scaledCoords.has(cacheKey)) {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
         const labelImg = this.labelImages.get(army.isMine ? "MY_ARMY" : "ARMY");
+        if (!labelImg) return;
+
+        this.context.drawImage(
+          labelImg,
+          scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.armySize.height / 2,
+          this.armySize.width,
+          this.armySize.height,
+        );
+      }
+    });
+  }
+
+  private drawBattles() {
+    const allBattles = this.battleManager.getAll();
+    allBattles.forEach((battle) => {
+      const { x: col, y: row } = battle.position.getNormalized();
+      const cacheKey = `${col},${row}`;
+      if (this.scaledCoords.has(cacheKey)) {
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+        const labelImg = this.labelImages.get("BATTLE");
         if (!labelImg) return;
 
         this.context.drawImage(
