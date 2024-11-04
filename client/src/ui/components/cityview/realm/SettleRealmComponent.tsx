@@ -5,32 +5,7 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { MAX_REALMS } from "@/ui/constants";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/elements/Collapsible";
 import { NumberInput } from "@/ui/elements/NumberInput";
-import { gql } from "graphql-request";
 import { ChevronsUpDown } from "lucide-react";
-
-export const GET_REALMS = gql`
-  query getRealms($accountAddress: String!) {
-    ercBalance(accountAddress: $accountAddress) {
-      balance
-      type
-      tokenMetadata {
-        tokenId
-        contractAddress
-      }
-    }
-  }
-`;
-
-export const GET_ERC_MINTS = gql`
-  query getRealmMints {
-    ercTransfer(accountAddress: "0x0", limit: 8000) {
-      tokenMetadata {
-        tokenId
-        contractAddress
-      }
-    }
-  }
-`;
 
 const SettleRealmComponent = () => {
   const { playerRealms } = useEntities();
