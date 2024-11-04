@@ -65,9 +65,9 @@ impl Strategist of TrophyTrait {
     fn tasks(level: u8) -> Span<BushidoTask> {
         let count: u32 = 1;
         match level {
-            0 => Task::Builder.tasks(count),
-            1 => Task::Discoverer.tasks(count),
-            2 => Task::Claimer.tasks(count),
+            0 => Task::Discoverer.tasks(count),
+            1 => Task::Claimer.tasks(count),
+            2 => Task::Builder.tasks(count),
             _ => [].span(),
         }
     }
