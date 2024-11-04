@@ -82,6 +82,7 @@ class Minimap {
     height: number;
   };
   private labelImages: Map<string, HTMLImageElement> = new Map();
+  private lastMousePosition: { x: number; y: number } | null = null;
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -341,17 +342,38 @@ class Minimap {
 
   private handleMouseDown = (event: MouseEvent) => {
     this.isDragging = true;
-    this.moveCamera(event);
+    this.lastMousePosition = {
+      x: event.clientX,
+      y: event.clientY,
+    };
   };
 
   private handleMouseMove = (event: MouseEvent) => {
-    if (this.isDragging) {
-      this.moveCamera(event);
+    if (this.isDragging && this.lastMousePosition) {
+      const deltaX = event.clientX - this.lastMousePosition.x;
+      const deltaY = event.clientY - this.lastMousePosition.y;
+
+      // Convert pixel movement to map coordinates
+      const colShift = Math.round(deltaX / this.scaleX);
+      const rowShift = Math.round(deltaY / this.scaleY);
+
+      // Move in opposite direction of drag
+      this.mapCenter.col -= colShift;
+      this.mapCenter.row -= rowShift;
+
+      this.lastMousePosition = {
+        x: event.clientX,
+        y: event.clientY,
+      };
+
+      this.recomputeScales();
+      this.draw();
     }
   };
 
   private handleMouseUp = () => {
     this.isDragging = false;
+    this.lastMousePosition = null;
   };
 
   private moveCamera(event: MouseEvent) {
