@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import Button from '../../../elements/Button'
+import { useState } from "react";
+import Button from "../../../elements/Button";
 
-import { MAX_REALMS } from '@/ui/constants'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/ui/elements/Collapsible'
-import { NumberInput } from '@/ui/elements/NumberInput'
-import { useQuery } from '@tanstack/react-query'
-import request, { gql } from 'graphql-request'
-import { ChevronsUpDown } from 'lucide-react'
-import { useDojo } from '../../../../hooks/context/DojoContext'
-import { useRealm } from '../../../../hooks/helpers/useRealm'
-import { soundSelector, useUiSounds } from '../../../../hooks/useUISound'
-import { getRealm } from '../../../utils/realms'
+import { MAX_REALMS } from "@/ui/constants";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/elements/Collapsible";
+import { NumberInput } from "@/ui/elements/NumberInput";
+import { useQuery } from "@tanstack/react-query";
+import request, { gql } from "graphql-request";
+import { ChevronsUpDown } from "lucide-react";
+import { useDojo } from "../../../../hooks/context/DojoContext";
+import { useRealm } from "../../../../hooks/helpers/useRealm";
+import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { getRealm } from "../../../utils/realms";
 
 export const GET_REALMS = gql`
   query getRealms($accountAddress: String!) {
@@ -23,7 +23,7 @@ export const GET_REALMS = gql`
       }
     }
   }
-`
+`;
 
 export const GET_ERC_MINTS = gql`
   query getRealmMints {
@@ -34,61 +34,61 @@ export const GET_ERC_MINTS = gql`
       }
     }
   }
-`
+`;
 
 const SettleRealmComponent = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedOrder, setSelectedOrder] = useState(1)
-  const [tokenId, setTokenId] = useState<number>(0)
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(1);
+  const [tokenId, setTokenId] = useState<number>(0);
 
   const {
     setup: {
-      systemCalls: { create_multiple_realms }
+      systemCalls: { create_multiple_realms },
     },
-    account: { account }
-  } = useDojo()
+    account: { account },
+  } = useDojo();
 
   const { data: realmMints } = useQuery({
-    queryKey: ['realmMints'],
+    queryKey: ["realmMints"],
     queryFn: async () =>
       await request(
-        import.meta.env.VITE_PUBLIC_TORII + '/graphql',
-        GET_ERC_MINTS, {}
+        import.meta.env.VITE_PUBLIC_TORII + "/graphql",
+        GET_ERC_MINTS,
+        {},
         // variables are type-checked too!
+      ),
+  });
 
-      )
-  })
+  const { getNextRealmIdForOrder, getRealmIdForOrderAfter } = useRealm();
 
-  const { getNextRealmIdForOrder, getRealmIdForOrderAfter } = useRealm()
-
-  const { play: playSign } = useUiSounds(soundSelector.sign)
+  const { play: playSign } = useUiSounds(soundSelector.sign);
 
   const settleRealm = async () => {
-    setIsLoading(true)
-    const calldata = []
+    setIsLoading(true);
+    const calldata = [];
 
-    let new_realm_id = getNextRealmIdForOrder(selectedOrder)
+    let new_realm_id = getNextRealmIdForOrder(selectedOrder);
 
     for (let i = 0; i < MAX_REALMS; i++) {
       // if no realm id latest realm id is 0
       if (i > 0) {
-        new_realm_id = getRealmIdForOrderAfter(selectedOrder, new_realm_id)
+        new_realm_id = getRealmIdForOrderAfter(selectedOrder, new_realm_id);
       }
       // take next realm id
-      const realm = getRealm(new_realm_id)
-      if (!realm) return
-      calldata.push(Number(realm.realmId))
+      const realm = getRealm(new_realm_id);
+      if (!realm) return;
+      calldata.push(Number(realm.realmId));
     }
 
-    console.log(calldata)
+    console.log(calldata);
 
     await create_multiple_realms({
       signer: account,
-      realm_ids: [calldata[0]]
-    })
-    setIsLoading(false)
-    playSign()
-  }
+      realm_ids: [calldata[0]],
+    });
+    setIsLoading(false);
+    playSign();
+  };
 
   return (
     <>
@@ -97,15 +97,20 @@ const SettleRealmComponent = () => {
           <h2 className="border-b-0 text-center">Mint Realms</h2>
           <p>Mint a maximum of 4 Realms (which you can then mint a Season Pass from each)</p>
 
-          <Button variant={'primary'} onClick={async () => { await settleRealm() }}>
-             Mint Random Realm
+          <Button
+            variant={"primary"}
+            onClick={async () => {
+              await settleRealm();
+            }}
+          >
+            Mint Random Realm
           </Button>
 
-          <h3 className='text-center'>or</h3>
+          <h3 className="text-center">or</h3>
 
           <Collapsible className="space-y-2 w-full">
             <CollapsibleTrigger asChild>
-              <Button variant={'outline'} className="w-full">
+              <Button variant={"outline"} className="w-full">
                 <span>Select Realm</span>
                 <ChevronsUpDown className="h-4 w-4" />
               </Button>
@@ -125,9 +130,9 @@ const SettleRealmComponent = () => {
                   isLoading={isLoading}
                   onClick={async () => (!isLoading ? await settleRealm() : null)}
                   className="text-xl"
-                  variant={'primary'}
+                  variant={"primary"}
                 >
-                  {!isLoading ? 'Settle Empire' : ''}
+                  {!isLoading ? "Settle Empire" : ""}
                 </Button>
               </div>
             </CollapsibleContent>
@@ -162,7 +167,7 @@ const SettleRealmComponent = () => {
         </div> */}
       </div>
     </>
-  )
-}
+  );
+};
 
-export default SettleRealmComponent
+export default SettleRealmComponent;
