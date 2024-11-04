@@ -63,7 +63,7 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   Snow: BASE_PATH + "snow.glb",
 
   // OVERSIZED MODEL
-  // TemperateDesert: BASE_PATH + "temperateDesert.glb", 
+  // TemperateDesert: BASE_PATH + "temperateDesert.glb",
   TemperateDesert: BASE_PATH + "beach.glb",
 
   Shrubland: BASE_PATH + "shrubland.glb",
@@ -73,7 +73,7 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
 
   // OVERSIZED MODEL
-  // SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb", 
+  // SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
   SubtropicalDesert: BASE_PATH + "beach.glb",
 
   TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
