@@ -126,7 +126,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     navigator.clipboard.readText().then((text) => {
       try {
         const burner = JSON.parse(text);
-        let currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
+        const currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
 
         if (currentBurners.hasOwnProperty(burner.address)) {
           throw new Error("Account already imported");
@@ -156,7 +156,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         position: "top",
         content: (
           <>
-            <p className="whitespace-nowrap">{copyMessage ? copyMessage : importMessage}</p>
+            <p className="whitespace-nowrap">{copyMessage || importMessage}</p>
           </>
         ),
       });
@@ -228,12 +228,12 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               setTooltip(null);
               setCopyMessage(null);
             }}
-            onMouseEnter={() =>
+            onMouseEnter={() => {
               setTooltip({
                 position: "top",
                 content: <p className="whitespace-nowrap">Delete Accounts</p>,
-              })
-            }
+              });
+            }}
             onClick={() => {
               if (window.confirm("Are you sure want to delete all wallets?")) {
                 clear();
@@ -250,12 +250,12 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
           />
           <Import
             onClick={onImportAccount}
-            onMouseEnter={() =>
+            onMouseEnter={() => {
               setTooltip({
                 position: "top",
                 content: <p className="whitespace-nowrap">Import Account</p>,
-              })
-            }
+              });
+            }}
             onMouseLeave={() => {
               setTooltip(null);
               setImportMessage(null);
@@ -266,25 +266,26 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       </div>
 
       <div className="flex space-x-2 mt-8 justify-center">
-        {playerRealms().length > 0 ? (
+        {/* {playerRealms().length > 3 ? (
           <NavigateToRealm text={"begin"} />
-        ) : (
-          <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
-            Continue <ArrowRight className="w-2 fill-current ml-3" />
-          </Button>
-        )}
+        ) : ( */}
+        <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          Continue <ArrowRight className="w-2 fill-current ml-3" />
+        </Button>
+        {/* )} */}
       </div>
     </StepContainer>
   );
 };
-export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
+export const StepTwo = ({ onNext }: { onNext: () => void }) => {
   return (
     <StepContainer>
-      <div>
-        <h3 className="text-center">Select Order</h3>
-      </div>
-
       <SettleRealmComponent />
+      <div className="flex w-full justify-center">
+        <Button size="md" className="mx-auto mt-4" variant="primary" onClick={onNext}>
+          Continue <ArrowRight className="w-2 fill-current ml-3" />
+        </Button>
+      </div>
     </StepContainer>
   );
 };

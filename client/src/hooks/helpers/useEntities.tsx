@@ -251,7 +251,7 @@ export const useEntitiesUtils = () => {
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(entityId)]));
 
     if (structure?.category === StructureType[StructureType.Realm]) {
-      return getRealmNameById(realm!.realm_id);
+      return getRealmNameById(realm?.realm_id || 0);
     } else if (entityName) {
       return shortString.decodeShortString(entityName.name.toString());
     } else {

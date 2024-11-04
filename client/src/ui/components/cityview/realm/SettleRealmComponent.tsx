@@ -1,95 +1,88 @@
-import { useState } from "react";
 import Button from "../../../elements/Button";
 
+import { useSettleRealm } from "@/hooks/helpers/use-settle-realm";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { MAX_REALMS } from "@/ui/constants";
-import { getOrderName, orders } from "@bibliothecadao/eternum";
-import clsx from "clsx";
-import { order_statments } from "../../../../data/orders";
-import { useDojo } from "../../../../hooks/context/DojoContext";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { OrderIcon } from "../../../elements/OrderIcon";
-import { getRealm } from "../../../utils/realms";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/elements/Collapsible";
+import { NumberInput } from "@/ui/elements/NumberInput";
+import { ChevronsUpDown } from "lucide-react";
 
 const SettleRealmComponent = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(1);
+  const { playerRealms } = useEntities();
 
-  const {
-    setup: {
-      systemCalls: { create_multiple_realms },
-    },
-    account: { account },
-  } = useDojo();
+  const { settleRealm, isLoading, tokenId, setTokenId, errorMessage } = useSettleRealm();
 
-  const { getNextRealmIdForOrder, getRealmIdForOrderAfter } = useRealm();
-
-  const { play: playSign } = useUiSounds(soundSelector.sign);
-
-  const settleRealms = async () => {
-    setIsLoading(true);
-    let calldata = [];
-
-    let new_realm_id = getNextRealmIdForOrder(selectedOrder);
-
-    for (let i = 0; i < MAX_REALMS; i++) {
-      // if no realm id latest realm id is 0
-      if (i > 0) {
-        new_realm_id = getRealmIdForOrderAfter(selectedOrder, new_realm_id);
-      }
-      // take next realm id
-      let realm = getRealm(new_realm_id);
-      if (!realm) return;
-      calldata.push(Number(realm.realmId));
-    }
-
-    console.log(calldata);
-
-    await create_multiple_realms({
-      signer: account,
-      realm_ids: [calldata[0]],
-    });
-    setIsLoading(false);
-    playSign();
-  };
+  const numberRealms = playerRealms().length;
 
   return (
     <>
       <div className="flex flex-col h-min">
-        <div className="grid grid-cols-8 gap-2 pt-4">
-          {orders
-            // remove the order of the gods
-            .filter((order) => order.orderId !== 17)
-            .map(({ orderId }) => (
-              <div
-                key={orderId}
-                className={clsx(
-                  " flex relative group items-center justify-center  w-16 h-16 border-2  rounded-lg",
-                  selectedOrder == orderId ? "border-gold !cursor-pointer" : "border-transparent",
-                  "hover:bg-white/10 cursor-pointer",
-                )}
-                onClick={() => setSelectedOrder(orderId)}
-              >
-                <OrderIcon
-                  size={"md"}
-                  withTooltip={selectedOrder == orderId}
-                  order={getOrderName(orderId)}
-                  className={clsx(selectedOrder == orderId ? "opacity-100" : "opacity-30 group-hover:opacity-100")}
-                />
+        <div className="flex flex-col gap-y-2">
+          <h2 className=" text-center">Settle Realms</h2>
+
+          {numberRealms > MAX_REALMS ? (
+            <p className="text-center text-xl">You have already settled the maximum number of Realms.</p>
+          ) : (
+            <p className="text-center text-xl">Settle a maximum of 4 Realms. Select a Realm ID or a random one.</p>
+          )}
+
+          <div className="flex flex-wrap gap-2  my-3">
+            {playerRealms().map((realm) => (
+              <div className="border border-gold/20 rounded p-2" key={realm.realm_id}>
+                {realm.name}
               </div>
             ))}
+          </div>
+
+          {numberRealms < MAX_REALMS && (
+            <Button
+              variant={"primary"}
+              onClick={async () => {
+                await settleRealm();
+              }}
+            >
+              {isLoading ? "Loading..." : "Settle Random Realm"}
+            </Button>
+          )}
+
+          {numberRealms < MAX_REALMS && (
+            <>
+              <h3 className="text-center">or</h3>
+
+              <Collapsible className="space-y-2 w-full">
+                <CollapsibleTrigger asChild>
+                  <Button variant={"outline"} className="w-full">
+                    <span>Select Realm</span>
+                    <ChevronsUpDown className="h-4 w-4" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 border p-2 rounded border-gold/20">
+                  <div className="flex justify-center gap-4 py-4">
+                    <div className="text-lg text-muted-foreground uppercase justify-self-start text-center self-center font-bold">
+                      Realm ID
+                    </div>
+                    <NumberInput
+                      className="  font-bold self-center !w-32"
+                      max={8000}
+                      min={1}
+                      value={tokenId}
+                      onChange={setTokenId}
+                    />
+                    <Button
+                      isLoading={isLoading}
+                      onClick={async () => (!isLoading ? await settleRealm(tokenId) : null)}
+                      className="text-xl self-center"
+                      variant={"primary"}
+                    >
+                      {!isLoading ? "Settle Realms" : ""}
+                    </Button>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </>
+          )}
         </div>
-        <div className="h-[200px] mt-2 overflow-y-auto ">
-          <div className="text-lg mt-2 text-gold text-center">{order_statments[selectedOrder - 1]}</div>
-        </div>
-        <Button
-          isLoading={isLoading}
-          onClick={() => (!isLoading ? settleRealms() : null)}
-          className="mx-auto mt-4 text-xl"
-          variant={"primary"}
-        >
-          {!isLoading ? "Settle Empire" : ""}
-        </Button>
+        {errorMessage && <p className="text-center text-red font-bold py-2">{errorMessage}</p>}
       </div>
     </>
   );
