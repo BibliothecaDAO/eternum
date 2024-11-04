@@ -12,6 +12,7 @@ import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecad
 import clsx from "clsx";
 import React, { useMemo } from "react";
 import { DepositResources } from "../resources/DepositResources";
+import { EntityReadyForDeposit } from "../trading/ResourceArrivals";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -29,15 +30,7 @@ type EntityProps = {
   entityId: ID;
   idleOnly?: boolean;
   selectedCaravan?: number;
-  setEntitiesReadyForDeposit: React.Dispatch<
-    React.SetStateAction<
-      {
-        senderEntityId: ID;
-        recipientEntityId: ID;
-        resources: bigint[];
-      }[]
-    >
-  >;
+  setEntitiesReadyForDeposit: React.Dispatch<React.SetStateAction<EntityReadyForDeposit[]>>;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, setEntitiesReadyForDeposit, ...props }: EntityProps) => {

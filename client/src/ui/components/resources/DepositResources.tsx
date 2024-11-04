@@ -6,20 +6,13 @@ import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { EntityState, ID, determineEntityState } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useState } from "react";
+import { EntityReadyForDeposit } from "../trading/ResourceArrivals";
 
 type DepositResourcesProps = {
   entityId: ID;
   battleInProgress?: boolean;
   armyInBattle: boolean;
-  setEntitiesReadyForDeposit: React.Dispatch<
-    React.SetStateAction<
-      {
-        senderEntityId: ID;
-        recipientEntityId: ID;
-        resources: bigint[];
-      }[]
-    >
-  >;
+  setEntitiesReadyForDeposit: React.Dispatch<React.SetStateAction<EntityReadyForDeposit[]>>;
 };
 
 export const DepositResources = ({
@@ -58,6 +51,8 @@ export const DepositResources = ({
         return [
           ...prev,
           {
+            // here entity id is the id of the entity that carries the resources
+            carrierId: arrivalTime?.entity_id || 0,
             senderEntityId: entityId,
             recipientEntityId: depositEntityId,
             resources: inventoryResources.flatMap((resource) => [BigInt(resource.resourceId), BigInt(resource.amount)]),
