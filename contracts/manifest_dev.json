@@ -1385,8 +1385,8 @@
       "systems": []
     },
     {
-      "address": "0x6d5ef29e2e99abdb66d5d63bc0ac690f55cc283654b5490ce49e0ad91172892",
-      "class_hash": "0x35972e38134892edf8070f106499f7277024bde280c362fc5e544cf7c697083",
+      "address": "0x1d32b91d22600e68a7b02fcd5ad448e9f2b18036dc000d9c1e45e6e98187038",
+      "class_hash": "0xe942b3129f36d721e53003ee6cdef745ecf80a7b48fb2f3febcbc7d1c0d06e",
       "abi": [
         {
           "type": "impl",
@@ -2231,8 +2231,8 @@
       "systems": []
     },
     {
-      "address": "0x25c9d10b72cd3c2b33a3fdaac07cad28fca4cb7e2438bd545ea3fa58b932a87",
-      "class_hash": "0x28deed80fa14e75a7961a41ec2ab40e7421e6e185ab78248d1c602141d126bd",
+      "address": "0x25d906117a995a6f1dba24c03476331fbe9f69dd98711704df0d2551af5553e",
+      "class_hash": "0x63bf4d1e719df5f9bb69a6e405646862b13a289b031ba24583bd38260abdd61",
       "abi": [
         {
           "type": "impl",
@@ -4345,8 +4345,8 @@
       "systems": []
     },
     {
-      "address": "0x266536f1e60bafbac3c6c491b27e7103e7e2d2d0585b7ea9983ddf6be041a5b",
-      "class_hash": "0x7396863f257cdb27ba64a5e59102238e0b5d1601277a0e17d9e68da2f5c3097",
+      "address": "0x6ae29458e657e7d77c6edd5458c3388a15d0903ac741ec05a02d49d86d95d24",
+      "class_hash": "0x533f81bd81e8cd074a8f6db53062ed9a375cf8cca906bf2f6bb2f0a6b16ae89",
       "abi": [
         {
           "type": "impl",
@@ -5224,8 +5224,8 @@
       "systems": []
     },
     {
-      "address": "0x28ad91274eada96bf93cdcc9badfe82f3a981a30685ddf2a918444bfe1e7bee",
-      "class_hash": "0x785267bb3bc4dfad4c15bb897e2cf23d0b297a38bfcd29f550572e65c0f1d95",
+      "address": "0x71c13503550f7c7affbb85356cf28106a0780be454ae9fb1aa00a6fd2badebb",
+      "class_hash": "0x4d3148ee8985746667b0d341623066b3aa1987242662391dbc3bf8c53b3e072",
       "abi": [
         {
           "type": "impl",
@@ -7372,8 +7372,8 @@
       "systems": []
     },
     {
-      "address": "0x4ed3b74e688e16461ad2079955be0cb68846297f59459fbd892c67ecb5fde84",
-      "class_hash": "0x13f8c4f1bd43cb3c2bd23dfbecc3ffd0766efc85fa2b0b94cb041da0b435fbf",
+      "address": "0x1360fd7fbc444495d5a34230e4172af48d6f2cad762b359c50705cd7b792a1e",
+      "class_hash": "0x6d3a6e68c0027f3532e02510afc4b64910e6f2e086cdc20737d20e9c1dabc9d",
       "abi": [
         {
           "type": "impl",
@@ -8110,6 +8110,11 @@
     },
     {
       "members": [],
+      "class_hash": "0x42fe39cbb053e4c891950e3dab482de36cc579742ed3398040f3a5c2c3decec",
+      "tag": "CreateGuild"
+    },
+    {
+      "members": [],
       "class_hash": "0x2244758a42c57afbb4867dc214ab7919feba1688da80a7d2b4a1f8bc05978af",
       "tag": "CreateOrder"
     },
@@ -8142,6 +8147,11 @@
       "members": [],
       "class_hash": "0x266080dce60ff5327a545f8d00f1d010bd8e6322bff96e4cd155727a4b4b3a6",
       "tag": "HyperstructureFinished"
+    },
+    {
+      "members": [],
+      "class_hash": "0x478ab378675e1f229797bed47afde99c59f06be11b3a2a558f05059a1fd5f1f",
+      "tag": "JoinGuild"
     },
     {
       "members": [],

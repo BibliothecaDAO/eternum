@@ -40,7 +40,7 @@ export const ARMY_ENTITY_TYPE = 258;
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;
-export const STAMINA_START_BOOST_TICK_COUNT = 1;
+export const STAMINA_START_BOOST_TICK_COUNT = 2;
 export const STAMINA_TRAVEL_COST = 10;
 export const STAMINA_EXPLORE_COST = 20;
 
