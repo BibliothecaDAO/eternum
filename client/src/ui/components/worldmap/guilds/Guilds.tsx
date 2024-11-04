@@ -212,7 +212,9 @@ const GuildRow = ({ guild, onClick }: GuildRowProps) => {
       <p>{currencyIntlFormat(guild.points!)}</p>
       <p className="text-right">{guild.memberCount}</p>
       <p className="text-right text-sm">{guild.createdSince}</p>
-      <div className="flex justify-end">{!guild.isPublic && <LockClosed className="fill-gold w-4" />}</div>
+      <div className="flex justify-end">
+        {guild.isPublic ? <LockOpen className="fill-gold w-4" /> : <LockClosed className="fill-gold w-4" />}
+      </div>
     </div>
   );
 };
