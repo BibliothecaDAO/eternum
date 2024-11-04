@@ -1,10 +1,11 @@
-import { dir, soundSelector } from "@/hooks/useUISound";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ResourceMiningTypes } from "@/types";
 import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
 import { buildingModelPaths, PREVIEW_BUILD_COLOR_VALID } from "../scenes/constants";
+import { HoverSound } from "../sound/HoverSound";
 
 export class BuildingPreview {
   private previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null = null;
@@ -91,7 +92,8 @@ export class BuildingPreview {
   public setBuildingPosition(position: THREE.Vector3) {
     if (this.previewBuilding) {
       if (!this.currentHexHovered || !this.currentHexHovered.equals(position)) {
-        this.hoverSound.play();
+        const { isSoundOn, effectsLevel } = useUIStore.getState();
+        this.hoverSound.play(isSoundOn, effectsLevel);
         this.currentHexHovered = position;
       }
 
@@ -118,25 +120,5 @@ export class BuildingPreview {
 
   public resetBuildingColor() {
     this.setBuildingColor(new THREE.Color(PREVIEW_BUILD_COLOR_VALID));
-  }
-}
-
-class HoverSound {
-  private firstSound: HTMLAudioElement;
-  private secondSound: HTMLAudioElement;
-  private isFirst: boolean = true;
-
-  constructor() {
-    this.firstSound = new Audio(dir + soundSelector.shovelMain);
-    this.secondSound = new Audio(dir + soundSelector.shovelAlternative);
-  }
-
-  public play() {
-    if (this.isFirst) {
-      this.firstSound.play();
-    } else {
-      this.secondSound.play();
-    }
-    this.isFirst = !this.isFirst;
   }
 }

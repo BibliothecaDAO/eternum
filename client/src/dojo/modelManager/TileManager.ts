@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
-import { playBuildingSound } from "@/three/scenes/Hexception";
+import { playBuildingSound } from "@/three/sound/utils";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -266,8 +267,9 @@ export class TileManager {
 
     // add optimistic rendering
     const _ = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    const { isSoundOn, effectsLevel } = useUIStore.getState();
 
-    playBuildingSound(buildingType);
+    playBuildingSound(buildingType, isSoundOn, effectsLevel);
 
     await this.setup.systemCalls.create_building({
       signer: useAccountStore.getState().account!,
