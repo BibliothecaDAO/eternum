@@ -12,22 +12,25 @@ export const ResourceChip = ({
   resourceId,
   entityId,
   maxStorehouseCapacityKg,
+  tick,
 }: {
   isLabor?: boolean;
   resourceId: ID;
   entityId: ID;
   maxStorehouseCapacityKg: number;
+  tick: number;
 }) => {
   const productionManager = useProductionManager(entityId, resourceId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [showPerHour, setShowPerHour] = useState(true);
 
-  const [balance, setBalance] = useState(productionManager.balance(useUIStore.getState().currentDefaultTick));
+  const [balance, setBalance] = useState(0);
 
   const production = useMemo(() => {
+    setBalance(productionManager.balance(tick));
     return productionManager.getProduction();
-  }, [productionManager]);
+  }, [productionManager, tick]);
 
   const maxAmountStorable = useMemo(() => {
     return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
