@@ -139,7 +139,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
 
       {userIsGuildMaster && (
         <Button className="my-4" variant="primary" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
-          {viewGuildInvites ? "Guild Members" : "Guild Invites"}
+          {viewGuildInvites ? "Tribe Members" : "Tribe Invites"}
         </Button>
       )}
 
@@ -165,7 +165,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
           variant="primary"
           onClick={() => (userGuild.isOwner ? disbandGuild(selectedGuildEntityId) : leaveGuild())}
         >
-          {userGuild.isOwner ? "Disband Guild" : "Leave Guild"}
+          {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
         </Button>
       )}
       {!userGuild && (!selectedGuild?.guild.isPublic ? userIsInvited : true) && (
@@ -175,7 +175,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo }: GuildMem
           variant="primary"
           onClick={() => joinGuild(selectedGuildEntityId)}
         >
-          Join Guild
+          Join Tribe
         </Button>
       )}
     </div>
@@ -286,7 +286,7 @@ const GuildInvitesList = ({
           />
         ))}
       </div>
-      {!invitedPlayers.length && <p className="text-center italic">No Guild Invites Sent</p>}
+      {!invitedPlayers.length && <p className="text-center italic">No Tribe Invites Sent</p>}
     </div>
   );
 };

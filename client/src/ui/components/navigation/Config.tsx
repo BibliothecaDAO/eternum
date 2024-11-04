@@ -1,3 +1,5 @@
+import { HintSection } from "../hints/HintModal";
+
 type OSWindows =
   | "World Structures"
   | "Settings"
@@ -16,7 +18,7 @@ export interface OSInterface {
   children: React.ReactNode;
   height?: string;
   width?: string;
-  hintSection?: string;
+  hintSection?: HintSection;
 }
 
 export interface ExpandableOSInterface extends OSInterface {

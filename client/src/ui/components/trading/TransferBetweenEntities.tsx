@@ -207,7 +207,7 @@ export const TransferBetweenEntities = ({
                 {" "}
                 <div className="flex space-x-2 items-center cursor-pointer" onClick={() => filterBy(!filtered)}>
                   <Checkbox enabled={filtered} />
-                  <div>Guild Only</div>
+                  <div>Tribe Only</div>
                 </div>
               </div>
 

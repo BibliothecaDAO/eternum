@@ -231,7 +231,7 @@ const PlayerRow = ({
               className="fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
               onMouseEnter={() =>
                 setTooltip({
-                  content: <div>Revoke guild invitation</div>,
+                  content: <div>Revoke tribe invitation</div>,
                   position: "top",
                 })
               }
@@ -248,7 +248,7 @@ const PlayerRow = ({
               className="fill-gold/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
               onMouseEnter={() =>
                 setTooltip({
-                  content: <div>Invite to guild</div>,
+                  content: <div>Invite to tribe</div>,
                   position: "top",
                 })
               }
