@@ -241,7 +241,16 @@ export const MarketModal = () => {
           </Suspense>
         </div>
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
-          <div className="grid grid-cols-3 p-6 flex flex-wrap justify-between items-start gap-6 my-8 px-12 bg-dark-800 rounded-xl shadow-lg border border-gold/20 relative">
+          <div className="grid grid-cols-3 p-3 flex-wrap justify-between items-start gap-6 mb-8 rounded-xl shadow-lg border border-gold/20 relative">
+            <div className="self-center flex-grow max-w-2xl mx-auto">
+              <h3 className="text-5xl font-extrabold mb-1">The Lords Market</h3>
+              <div className="flex flex-row">
+                <p className="text-xs">
+                  Engage in direct player-to-player trades through the orderbook, leverage the AMM for bank liquidity
+                  trades, or boost your earnings by providing liquidity to the bank.
+                </p>
+              </div>
+            </div>
             <div className="absolute top-4 right-4">
               <CircleButton
                 onClick={() => {
@@ -253,7 +262,7 @@ export const MarketModal = () => {
                 className="hover:bg-gold/20 transition-colors duration-200"
               />
             </div>
-            <div className="bg-brown p-6 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
+            <div className="bg-brown p-3 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
               <h3 className="text-xl font-bold mb-4">Bank Information</h3>
               <div className="space-y-1 flex-grow">
                 <div className="flex justify-between items-center">
@@ -282,17 +291,7 @@ export const MarketModal = () => {
               </div>
             </div>
 
-            <div className="self-center flex-grow text-center max-w-2xl mx-auto">
-              <h3 className="text-5xl font-extrabold mb-1">The Lords Market</h3>
-              <div className="flex flex-row">
-                <p className="text-xs">
-                  Engage in direct player-to-player trades through the orderbook, leverage the AMM for bank liquidity
-                  trades, or boost your earnings by providing liquidity to the bank.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-brown border border-gold/30 p-6 rounded-xl text-sm shadow-lg h-full flex flex-col">
+            <div className="bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
               <div>
                 <h3 className="text-xl font-bold">AMM Status</h3>
                 {!isBattleOngoing && !isSiegeOngoing && (
@@ -328,12 +327,7 @@ export const MarketModal = () => {
               )}
             </div>
           </div>
-          <Tabs
-            size="large"
-            selectedIndex={selectedTab}
-            onChange={(index: any) => setSelectedTab(index)}
-            className="h-full"
-          >
+          <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
             <Tabs.List className=" flex w-full">
               {tabs.map((tab, index) => (
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
