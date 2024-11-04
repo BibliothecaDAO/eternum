@@ -325,7 +325,6 @@ const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelis
       <Button className="px-0 py-0" isLoading={isLoading}>
         <Trash
           onClick={() => removePlayerFromWhitelist(player.address!)}
-          // className="m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
           className="fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
         />
       </Button>
