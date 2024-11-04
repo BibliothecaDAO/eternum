@@ -274,6 +274,8 @@ export default class WorldmapScene extends HexagonScene {
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const position = getWorldPositionForHex(hexCoords);
     if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
+      const audio = new Audio(dir + soundSelector.click);
+      audio.play();
       this.selectedHexManager.setPosition(position.x, position.z);
       this.state.setSelectedHex({
         col: contractHexPosition.x,
@@ -304,9 +306,6 @@ export default class WorldmapScene extends HexagonScene {
       this.clearEntitySelection();
       return;
     }
-
-    const audio = new Audio(dir + soundSelector.snap);
-    audio.play();
 
     const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
     const travelPaths = armyMovementManager.findPaths(
