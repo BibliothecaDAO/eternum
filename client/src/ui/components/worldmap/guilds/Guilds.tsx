@@ -6,6 +6,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { ContractAddress, GuildInfo, ID, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 
@@ -110,11 +111,12 @@ const GuildActionButton = ({
   if (userGuild) {
     return (
       <Button
-        className="text-ellipsis normal-case"
+        className="text-ellipsis uppercase font-sans"
         variant="primary"
         onClick={() => viewGuildMembers(userGuild.entityId)}
       >
         {userGuild.name}
+        <ChevronRight className="w-4 h-4" />
       </Button>
     );
   }
@@ -170,7 +172,7 @@ interface GuildListProps {
 
 const GuildList = ({ guilds, viewGuildInvites, viewGuildMembers }: GuildListProps) => {
   return (
-    <div className="flex flex-col p-2 border rounded-xl h-full">
+    <div className="flex flex-col p-2 border border-gold/10 rounded h-full">
       <GuildListHeader />
       <div className="flex flex-col space-y-2 overflow-y-auto">
         {guilds.map((guild) => (
@@ -182,18 +184,15 @@ const GuildList = ({ guilds, viewGuildInvites, viewGuildMembers }: GuildListProp
   );
 };
 
-const GuildListHeader = () => {
-  return (
-    <div className="flex grid grid-cols-7 gap-1 mb-4 uppercase text-xs font-bold border-b">
-      <div>Rank</div>
-      <div className="col-span-2">Name</div>
-      <div>Points</div>
-      <div className="text-right">Members</div>
-      <div className="text-right">Age</div>
-      <div></div>
-    </div>
-  );
-};
+const GuildListHeader = () => (
+  <div className="grid grid-cols-7 gap-1 mb-4 uppercase text-xs font-bold border-b">
+    <div>Rank</div>
+    <div className="col-span-2">Name</div>
+    <div>Points</div>
+    <div className="text-right">Members</div>
+    <div className="text-right">Age</div>
+  </div>
+);
 
 interface GuildRowProps {
   guild: GuildInfo;
@@ -203,7 +202,7 @@ interface GuildRowProps {
 const GuildRow = ({ guild, onClick }: GuildRowProps) => {
   return (
     <div
-      className={clsx("grid grid-cols-7  gap-1 text-md hover:opacity-70 hover:border p-1 rounded-xl", {
+      className={clsx("grid grid-cols-7  gap-1 text-md hover:opacity-70 p-1 rounded", {
         "bg-blueish/20": guild.isMember,
       })}
       onClick={onClick}

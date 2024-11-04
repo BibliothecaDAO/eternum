@@ -14,6 +14,7 @@ mod TestLords {
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc20::{ERC20Component};
     use openzeppelin::token::erc20::{ERC20HooksEmptyImpl};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
     use starknet::{ContractAddress, ClassHash};
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
@@ -25,7 +26,7 @@ mod TestLords {
     impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
     #[abi(embed_v0)]
     impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
-    
+
     impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
 
     #[storage]
@@ -35,7 +36,7 @@ mod TestLords {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         season_pass: ISeasonPassDispatcher,
-        minted: LegacyMap<u256, bool>
+        minted: Map<u256, bool>
     }
 
     #[event]
@@ -50,8 +51,8 @@ mod TestLords {
     impl TestLordsImpl of super::ITestLords<ContractState> {
         fn mint(ref self: ContractState, token_id: u256) {
             // ensure this can only be done once per token id
-            assert!(self.minted.read(token_id) == false, "TL: already minted for token id");
-            self.minted.write(token_id, true);
+            assert!(self.minted.entry(token_id).read() == false, "TL: already minted for token id");
+            self.minted.entry(token_id).write(true);
 
             // mint 1000 lords to this contract
             let this = starknet::get_contract_address();

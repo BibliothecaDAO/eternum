@@ -40,6 +40,7 @@ export const ARMY_ENTITY_TYPE = 258;
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;
+export const STAMINA_START_BOOST_TICK_COUNT = 2;
 export const STAMINA_TRAVEL_COST = 10;
 export const STAMINA_EXPLORE_COST = 20;
 
@@ -141,6 +142,7 @@ export const EternumGlobalConfig: Config = {
     travelCost: STAMINA_TRAVEL_COST,
     exploreCost: STAMINA_EXPLORE_COST,
     refillPerTick: STAMINA_REFILL_PER_TICK,
+    startBoostTickCount: STAMINA_START_BOOST_TICK_COUNT,
   },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
@@ -182,7 +184,7 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
     [CapacityConfigCategory.Donkey]: 400_000,
     [CapacityConfigCategory.Army]: 10_000,
-    [CapacityConfigCategory.Storehouse]: 30_000_000,
+    [CapacityConfigCategory.Storehouse]: 300_000_000,
   },
   speed: {
     donkey: DONKEY_SPEED,

@@ -3,7 +3,7 @@ import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { LoadingScreen } from "@/ui/modules/LoadingScreen";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { ReactNode, createContext, useContext, useEffect, useMemo } from "react";
+import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress } from "../../ui/utils/utils";
@@ -133,6 +133,8 @@ const DojoContextProvider = ({
   const { connect, connectors } = useConnect();
   const { isConnected, isConnecting } = useAccount();
 
+  const [accountsInitialized, setAccountsInitialized] = useState(false);
+
   const connectWallet = async () => {
     try {
       console.log("Attempting to connect wallet...");
@@ -152,6 +154,7 @@ const DojoContextProvider = ({
       if (burnerAccount) {
         console.log("Setting account from burner hook:", burnerAccount);
         useAccountStore.getState().setAccount(burnerAccount);
+        setAccountsInitialized(true);
       } else {
         console.log("Burner account is null in development.");
       }
@@ -159,12 +162,17 @@ const DojoContextProvider = ({
       if (controllerAccount) {
         console.log("Setting account from controllerAccount:", controllerAccount);
         useAccountStore.getState().setAccount(controllerAccount);
+        setAccountsInitialized(true);
       } else {
         console.log("ControllerAccount is null in production or not connected.");
-        // useAccountStore.getState().setAccount(null);
+        setAccountsInitialized(true);
       }
     }
   }, [isDev, controllerAccount, burnerAccount]);
+
+  if (!accountsInitialized) {
+    return <LoadingScreen />;
+  }
 
   // Handle Loading Screen
   if (isDev) {
@@ -175,8 +183,7 @@ const DojoContextProvider = ({
     if (isConnecting) {
       return <LoadingScreen />;
     }
-    if (!isConnected && !isConnecting) {
-      // User needs to connect their wallet in production
+    if (!isConnected && !isConnecting && !controllerAccount) {
       return (
         <div className="relative h-screen w-screen pointer-events-auto">
           <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="Cover" />
@@ -184,18 +191,32 @@ const DojoContextProvider = ({
             <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient">
               <div className="w-full text-center pt-6">
                 <div className="mx-auto flex mb-8">
-                  <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
+                  <img src="/images/eternum_with_snake.png" className="w-96 mx-auto" alt="Eternum Logo" />
                 </div>
               </div>
               <div className="flex space-x-2 mt-8 justify-center">
                 {!isConnected && (
                   <button
-                    className="px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded-2xl text-lg fill-black uppercase"
+                    className="px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded text-lg fill-black uppercase leading-6 shadow-md hover:shadow-lg active:shadow-inner hover:scale-105 transition-all duration-300 hover:-translate-y-1"
                     onClick={connectWallet}
                   >
                     <CartridgeSmall className="w-6 mr-2 fill-current self-center" /> Login
                   </button>
                 )}
+              </div>
+              <div className="text-center text-sm text-white/50 mt-4">
+                Eternum uses a next generation smart contract wallet -{" "}
+                <a href="https://cartridge.gg/" target="_blank" className="underline">
+                  Cartridge Controller
+                </a>
+                . No download, no seed or passphrase - only a Passkey. No transaction signatures needed. <br /> We
+                recommend using a phone however you can also use{" "}
+                <a href="https://www.bitwarden.com/" target="_blank" className="underline">
+                  {" "}
+                  <br />
+                  bitwarden
+                </a>{" "}
+                to manage your passkeys.
               </div>
             </div>
           </div>

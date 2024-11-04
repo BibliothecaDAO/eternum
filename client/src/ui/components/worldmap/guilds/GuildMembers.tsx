@@ -196,7 +196,7 @@ const GuildMemberList = ({
   removeGuildMember,
 }: GuildMemberListProps) => {
   return (
-    <div className="flex flex-col p-2 border rounded-xl">
+    <div className="flex flex-col p-2 border rounded-xl border-gold/10">
       <GuildMemberListHeader />
       <div className="flex flex-col space-y-2 overflow-y-auto">
         {guildMembers.map((guildMember) => (
@@ -215,7 +215,7 @@ const GuildMemberList = ({
 
 const GuildMemberListHeader = () => {
   return (
-    <div className="grid grid-cols-6 gap-1 mb-4 uppercase text-xs font-bold border-b">
+    <div className="grid grid-cols-6 gap-1 mb-4 uppercase text-xs font-bold border-b border-gold/10">
       <div>Rank</div>
 
       <div className="col-span-2">Name</div>
@@ -237,9 +237,9 @@ interface GuildMemberRowProps {
 
 const GuildMemberRow = ({ guildMember, viewPlayerInfo, userIsGuildMaster, removeGuildMember }: GuildMemberRowProps) => {
   return (
-    <div className="flex flex-row grid grid-cols-6">
+    <div className=" flex-row grid grid-cols-6">
       <div
-        className={clsx("col-span-5 grid grid-cols-5 gap-1 text-md hover:opacity-70 hover:border p-1 rounded-xl", {
+        className={clsx("col-span-5 grid grid-cols-5 gap-1 text-md hover:opacity-70 p-1 rounded-xl", {
           "bg-blueish/20": guildMember.isUser,
         })}
         onClick={() => {
@@ -274,7 +274,7 @@ const GuildInvitesList = ({
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
 }) => {
   return (
-    <div className="flex flex-col p-2 border rounded-xl">
+    <div className="flex flex-col p-2 border rounded-xl border-gold/10">
       <GuildMemberListHeader />
       <div className="flex flex-col space-y-2 overflow-y-auto">
         {invitedPlayers.map((player) => (

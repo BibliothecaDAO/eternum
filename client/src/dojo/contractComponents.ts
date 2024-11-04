@@ -1199,12 +1199,12 @@ export function defineContractComponents(world: World) {
     StaminaRefillConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, amount_per_tick: RecsType.Number },
+        { config_id: RecsType.Number, amount_per_tick: RecsType.Number, start_boost_tick_count: RecsType.Number },
         {
           metadata: {
             namespace: "eternum",
             name: "StaminaRefillConfig",
-            types: ["u32", "u16"],
+            types: ["u32", "u16", "u8"],
             customTypes: [],
           },
         },

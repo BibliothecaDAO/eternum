@@ -6,13 +6,13 @@ import { Position as PositionType } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
+import Button from "@/ui/elements/Button";
 import { formatTime, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useChatStore } from "../chat/ChatState";
 import { getMessageKey } from "../chat/utils";
-import Button from "@/ui/elements/Button";
 
 export const MessageIcon = ({
   playerName,
@@ -182,7 +182,7 @@ export const PlayerId = ({
 };
 
 const AvatarImage = ({ address }: { address: string }) => {
-  const randomAvatarIndex = (parseInt(address.slice(0, 8), 16) % 7) + 1;
+  const randomAvatarIndex = ((parseInt(address.slice(0, 8), 16) % 7) + 1).toString().padStart(2, "0");
   let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
   return (
