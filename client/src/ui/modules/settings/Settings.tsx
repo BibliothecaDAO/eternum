@@ -1,12 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Next } from "@/assets/icons/common/fast-forward.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -14,6 +11,7 @@ import { useMusicPlayer } from "@/hooks/useMusic";
 import useScreenOrientation from "@/hooks/useScreenOrientation";
 import { settings } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
+import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import Avatar from "@/ui/elements/Avatar";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
@@ -21,8 +19,8 @@ import { Headline } from "@/ui/elements/Headline";
 import { RangeInput } from "@/ui/elements/RangeInput";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 
 export const SettingsWindow = () => {
   const {
@@ -35,7 +33,6 @@ export const SettingsWindow = () => {
 
   const addressName = getAddressName(ContractAddress(account.address));
 
-  // const addressName = useAddressStore((state) => state.addressName);
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);
