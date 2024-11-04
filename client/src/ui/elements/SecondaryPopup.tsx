@@ -20,6 +20,9 @@ export const SecondaryPopup = ({ children, className, name, width = "400px" }: F
   const [loaded, setLoaded] = useState(false);
 
   const handleStop = (_: any, data: any) => {
+    if (data.y < -200 || data.y > window.innerHeight - 220 || data.x < -450 || data.x > window.innerWidth - 520) {
+      return false as false;
+    }
     if (name) {
       localStorage.setItem(name, JSON.stringify({ x: data.x, y: data.y }));
     }
