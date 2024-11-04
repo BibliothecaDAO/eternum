@@ -295,6 +295,9 @@ export default class WorldmapScene extends HexagonScene {
         const isExplored = travelPath.isExplored ?? false;
         if (selectedPath.length > 0) {
           const armyMovementManager = new ArmyMovementManager(this.dojo, selectedEntityId);
+          const marchSound = selectedEntityId % 2 === 0 ? soundSelector.unitMarching1 : soundSelector.unitMarching2;
+
+          new Audio(dir + marchSound).play();
           armyMovementManager.moveArmy(selectedPath, isExplored, this.state.currentArmiesTick);
         }
       }
