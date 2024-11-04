@@ -129,14 +129,9 @@ mod guild_systems {
             if (guild_member.address == guild_owner.address) {
                 assert(guild.member_count == 1, 'Guild not empty');
 
-                guild.member_count = 0;
-                guild_member.guild_entity_id = 0;
-
-                guild_owner.address = contract_address_const::<'0x0'>();
-
-                world.write_model(@guild);
-                world.write_model(@guild_member);
-                world.write_model(@guild_owner);
+                world.erase_model(@guild);
+                world.erase_model(@guild_member);
+                world.erase_model(@guild_owner);
             } else {
                 guild.member_count -= 1;
 
@@ -174,12 +169,10 @@ mod guild_systems {
             let mut guild_member_to_remove: GuildMember = world.read_model(player_address_to_remove);
             assert(guild_member_to_remove.guild_entity_id == guild_entity_id, 'Player not guildmember');
 
-            guild_member_to_remove.guild_entity_id = 0;
-
             let mut guild: Guild = world.read_model(guild_entity_id);
             guild.member_count -= 1;
 
-            world.write_model(@guild_member_to_remove);
+            world.erase_model(@guild_member_to_remove);
             world.write_model(@guild);
         }
 

@@ -14,6 +14,16 @@ import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 
+interface Player {
+  name: string;
+  address: ContractAddress;
+  structures: string[];
+  isUser: boolean;
+  rank: string;
+  points: number;
+  isInvited: boolean;
+}
+
 export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddress: ContractAddress) => void }) => {
   const {
     setup: {
@@ -26,6 +36,7 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
   const { getGuildFromPlayerAddress } = useGuilds();
 
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
+
   const [isLoading, setIsLoading] = useState(false);
 
   const [searchInput, setSearchInput] = useState("");
@@ -33,7 +44,7 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
   const { getEntityName } = useEntitiesUtils();
   const getPlayers = useGetAllPlayers();
 
-  const playersWithStructures = useMemo(() => {
+  const playersWithStructures: Player[] = useMemo(() => {
     const playersByRank = LeaderboardManager.instance().getPlayersByRank(useUIStore.getState().nextBlockTimestamp!);
 
     const players = getPlayers();
@@ -45,16 +56,15 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
           Has(Structure),
           HasValue(Owner, { address: ContractAddress(player.address) }),
         ]);
-        const structures = Array.from(structuresEntityIds).map((entityId) => {
-          const structure = getComponentValue(Structure, entityId);
-          if (!structure) return undefined;
+        const structures = Array.from(structuresEntityIds)
+          .map((entityId) => {
+            const structure = getComponentValue(Structure, entityId);
+            if (!structure) return undefined;
 
-          const structureName = getEntityName(structure.entity_id);
-          return {
-            structureName,
-            structure,
-          };
-        });
+            const structureName = getEntityName(structure.entity_id);
+            return structureName;
+          })
+          .filter((structure) => structure !== undefined);
 
         let isInvited = false;
         if (userGuild) {
@@ -91,7 +101,7 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
       (player) =>
         player.name.toLowerCase().includes(searchInput.toLowerCase()) ||
         player.structures.some(
-          (structure) => structure && structure.structureName.toLowerCase().includes(searchInput.toLowerCase()),
+          (structure) => structure && structure.toLowerCase().includes(searchInput.toLowerCase()),
         ) ||
         toHexString(player.address).toLowerCase().includes(searchInput.toLowerCase()),
     );
@@ -136,8 +146,7 @@ export const PlayersPanel = ({ viewPlayerInfo }: { viewPlayerInfo: (playerAddres
 };
 
 interface PlayerListProps {
-  // TODO: replace any
-  players: any;
+  players: Player[];
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   isGuildMaster: boolean;
   whitelistPlayer: (address: ContractAddress) => void;
@@ -157,7 +166,7 @@ const PlayerList = ({
     <div className="flex flex-col p-2 border rounded-xl h-full">
       <PlayerListHeader />
       <div className="flex flex-col space-y-2 overflow-y-auto">
-        {players.map((player: any) => (
+        {players.map((player) => (
           <PlayerRow
             key={player.address}
             player={player}
@@ -188,7 +197,7 @@ const PlayerListHeader = () => {
 };
 
 interface PlayerRowProps {
-  player: any;
+  player: Player;
   onClick: () => void;
   isGuildMaster: boolean;
   whitelistPlayer: (address: ContractAddress) => void;
@@ -207,13 +216,12 @@ const PlayerRow = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
-    <div className="flex flex-row grid grid-cols-6">
-      <div
-        className={clsx("col-span-5 grid grid-cols-5  gap-1 text-md hover:opacity-70 hover:border p-1 rounded-xl", {
-          "bg-blueish/20": player.isUser,
-        })}
-        onClick={onClick}
-      >
+    <div
+      className={clsx("flex flex-row grid grid-cols-6 rounded", {
+        "bg-blueish/20": player.isUser,
+      })}
+    >
+      <div className="col-span-5 grid grid-cols-5  gap-1 text-md hover:opacity-70 p-1" onClick={onClick}>
         <p>{player.rank}</p>
         <p className="col-span-2 truncate">{player.name}</p>
         <p className="text-right">{currencyIntlFormat(player.points)}</p>
@@ -222,7 +230,7 @@ const PlayerRow = ({
       {isGuildMaster &&
         !player.isUser &&
         (player.isInvited ? (
-          <Button className="px-0 py-0 w-6 m-auto" isLoading={isLoading}>
+          <Button className="px-0 py-0" isLoading={isLoading}>
             <Trash
               onClick={() => {
                 removePlayerFromWhitelist(player.address);
@@ -239,7 +247,7 @@ const PlayerRow = ({
             />
           </Button>
         ) : (
-          <Button className="px-0 py-0 w-6 m-auto" isLoading={isLoading}>
+          <Button className="px-0 py-0" isLoading={isLoading}>
             <Invite
               onClick={() => {
                 whitelistPlayer(player.address);

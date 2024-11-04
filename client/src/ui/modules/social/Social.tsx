@@ -56,7 +56,13 @@ export const Social = () => {
           ? isExpanded && (
               <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
             )
-          : isExpanded && <GuildMembers selectedGuildEntityId={selectedGuild} viewPlayerInfo={viewPlayerInfo} />,
+          : isExpanded && (
+              <GuildMembers
+                selectedGuildEntityId={selectedGuild}
+                viewPlayerInfo={viewPlayerInfo}
+                setIsExpanded={setIsExpanded}
+              />
+            ),
       },
       {
         key: "Players",

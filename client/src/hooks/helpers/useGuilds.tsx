@@ -115,6 +115,12 @@ const formatGuildMembers = (
       const rankA = parseInt(a.rank.substring(1)) || Infinity;
       const rankB = parseInt(b.rank.substring(1)) || Infinity;
       return rankA - rankB;
+    })
+    .map((guildMember, index) => {
+      if (guildMember.rank === "#NA") {
+        guildMember.rank = "#" + (index + 1);
+      }
+      return guildMember;
     });
 };
 
