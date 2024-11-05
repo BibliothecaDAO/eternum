@@ -40,7 +40,9 @@ impl ToDiscordMessage for BattlePillage {
         let resources = self
             .pillaged_resources
             .iter()
-            .map(|(resource_id, amount)| format!("{}: {}", ResourceIds::from(*resource_id), amount / 1000))
+            .map(|(resource_id, amount)| {
+                format!("{}: {}", ResourceIds::from(*resource_id), amount / 1000)
+            })
             .collect::<Vec<String>>()
             .join(", ");
 
@@ -53,7 +55,7 @@ impl ToDiscordMessage for BattlePillage {
             ))
             .description(format!(
                 "Pillaged resources: {:?}\nStructure type: {}",
-                self.pillaged_resources,
+                resources,
                 felt_to_string(&self.structure_type).unwrap_or(UNKNOWN_USER.to_string())
             ))
             .footer(footer)

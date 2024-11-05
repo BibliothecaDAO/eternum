@@ -24,7 +24,7 @@ pub struct BattleLeave {
     pub leaver_side: Felt,
     pub duration_left: u64,
     pub position: Position,
-	pub timestamp: u64
+    pub timestamp: u64,
 }
 
 impl ToDiscordMessage for BattleLeave {
