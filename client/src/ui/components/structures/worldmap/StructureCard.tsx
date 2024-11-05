@@ -62,6 +62,7 @@ export const StructureCard = ({
             structure={structure!}
             ownArmySelected={ownArmySelected}
             setShowMergeTroopsPopup={setShowMergeTroopsPopup}
+            showImmunity={true}
           />
         )}
         {showMergeTroopsPopup && (

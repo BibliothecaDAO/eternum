@@ -69,6 +69,7 @@ export const BuildingThumbs = {
   scale: "/images/buildings/thumb/scale.png",
   settings: "/images/buildings/thumb/settings.png",
   guild: "/images/buildings/thumb/guilds.png",
+  discord: "/images/buildings/thumb/discord.png",
 };
 
 export enum MenuEnum {

@@ -54,31 +54,30 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
 
 const BASE_PATH = "/models/biomes/";
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
-  DeepOcean: BASE_PATH + "ocean.glb",
-  Ocean: BASE_PATH + "deepocean.glb",
+  Bare: BASE_PATH + "bare.glb",
   Beach: BASE_PATH + "beach.glb",
+  TemperateDeciduousForest: BASE_PATH + "deciduousForest.glb",
+  DeepOcean: BASE_PATH + "deepOcean.glb",
+  Grassland: BASE_PATH + "grassland.glb",
+  Ocean: BASE_PATH + "ocean.glb",
+  Outline: BASE_PATH + "outline.glb",
   Scorched: BASE_PATH + "scorched.glb",
   Bare: BASE_PATH + "bare.glb",
-  Tundra: BASE_PATH + "tundra.glb",
-  Snow: BASE_PATH + "snow.glb",
-
+  Tundra: BASE_PATH + "tundra.glb", 
   // OVERSIZED MODEL
   // TemperateDesert: BASE_PATH + "temperateDesert.glb",
   TemperateDesert: BASE_PATH + "beach.glb",
-
   Shrubland: BASE_PATH + "shrubland.glb",
+  Snow: BASE_PATH + "snow.glb",
+  SubtropicalDesert: BASE_PATH + "subtropicalDesert.glb",
   Taiga: BASE_PATH + "taiga.glb",
-  Grassland: BASE_PATH + "grassland.glb",
-  TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
+  TemperateDesert: BASE_PATH + "temperateDesert.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-
   // OVERSIZED MODEL
   // SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
   SubtropicalDesert: BASE_PATH + "beach.glb",
-
+  TropicalRainForest: BASE_PATH + "tropicalRainforest.glb",
   TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
-  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
-  Outline: BASE_PATH + "outline.glb",
 };
 
 export const PROGRESS_HALF_THRESHOLD = 0.5;
