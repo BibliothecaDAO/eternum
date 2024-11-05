@@ -1,6 +1,7 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -13,7 +14,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -38,7 +39,11 @@ export const StructureCard = ({
 
   const { handleUrlChange } = useQuery();
 
+  const { getGuildFromPlayerAddress } = useGuilds();
+
   const structure = useStructureAtPosition(position.getContract());
+
+  const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
 
   const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
 
@@ -78,6 +83,13 @@ export const StructureCard = ({
           <>
             <Headline className="text-center text-lg">
               <div>{structure?.ownerName}</div>
+              {playerGuild && (
+                <div>
+                  {"< "}
+                  {playerGuild.name}
+                  {" >"}
+                </div>
+              )}
             </Headline>
             <StructureListItem
               structure={structure!}
