@@ -4,7 +4,7 @@ import { throttle } from "lodash";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { gltfLoader } from "../helpers/utils";
 
 const dummyObject = new THREE.Object3D();
 const arrowOffset = new THREE.Vector3(0, 3, 0);
@@ -34,7 +34,7 @@ export class Navigator {
   }
 
   private loadArrowModel() {
-    const loader = new GLTFLoader();
+    const loader = gltfLoader;
     loader.load("/models/arrow.glb", (gltf) => {
       this.arrowModel = gltf.scene;
       this.arrowModel.scale.set(0.5, 0.5, 0.5);

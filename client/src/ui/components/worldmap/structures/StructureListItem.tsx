@@ -2,17 +2,14 @@ import { ReactComponent as Sword } from "@/assets/icons/common/cross-swords.svg"
 import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useGetHyperstructureProgress } from "@/hooks/helpers/useHyperstructures";
 import { Structure, useIsStructureImmune } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
-import { formatTime } from "@/ui/utils/utils";
-import { ResourcesIds, StructureType, TickIds } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { TroopMenuRow } from "../../military/TroopChip";
 import { InventoryResources } from "../../resources/InventoryResources";
 import { RealmResourcesIO } from "../../resources/RealmResourcesIO";
@@ -22,7 +19,7 @@ type StructureListItemProps = {
   setShowMergeTroopsPopup: (show: boolean) => void;
   ownArmySelected: ArmyInfo | undefined;
   maxInventory?: number;
-  showImmunity?: boolean;
+  showButtons?: boolean;
 };
 
 const immuneTooltipContent = (
@@ -38,16 +35,13 @@ export const StructureListItem = ({
   setShowMergeTroopsPopup,
   ownArmySelected,
   maxInventory = Infinity,
-  showImmunity = false,
+  showButtons = false,
 }: StructureListItemProps) => {
   const dojo = useDojo();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setBattleView = useUIStore((state) => state.setBattleView);
-
-  const { getRealmAddressName } = useRealm();
-  const addressName = getRealmAddressName(structure.entity_id);
 
   const getHyperstructureProgress = useGetHyperstructureProgress();
 
@@ -67,13 +61,6 @@ export const StructureListItem = ({
   const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
 
   const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
-
-  const immunityEndTimestamp =
-    Number(structure?.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies);
-  const timer = useMemo(() => {
-    if (!nextBlockTimestamp) return 0;
-    return immunityEndTimestamp - nextBlockTimestamp!;
-  }, [nextBlockTimestamp, structure]);
 
   const battleButtons = useMemo(() => {
     if (!nextBlockTimestamp) throw new Error("Current timestamp is undefined");
@@ -186,23 +173,6 @@ export const StructureListItem = ({
             {structure.category === StructureType[StructureType.Hyperstructure] && (
               <div className="text-xs">Progress: {progress?.percentage ?? 0}%</div>
             )}
-            <div className="flex flex-row font-bold text-xs">
-              <div className="font-bold">Owner: {addressName === "" ? "Bandits" : addressName}</div>
-            </div>
-            {isImmune && showImmunity && (
-              <div
-                onMouseEnter={() => {
-                  setTooltip({
-                    content: immuneTooltipContent,
-                    position: "top",
-                  });
-                }}
-                onMouseLeave={() => setTooltip(null)}
-                className="font-bold text-sm animate-pulse text-white"
-              >
-                Immune for: {formatTime(timer)}
-              </div>
-            )}
 
             {structure.category === StructureType[StructureType.Realm] && (
               <RealmResourcesIO realmEntityId={structure.entity_id} />
@@ -222,7 +192,7 @@ export const StructureListItem = ({
           </div>
         </div>
       </div>
-      {battleButtons}
+      {showButtons && battleButtons}
     </div>
   );
 };

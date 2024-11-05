@@ -39,8 +39,12 @@ const formatGuilds = (
       const name = getEntityName(guild.entity_id);
 
       const createGuildEvent = getComponentValue(CreateGuild, getEntityIdFromKeys([BigInt(guild.entity_id)]));
-      const guildCreationTimestamp = createGuildEvent?.timestamp ?? 0;
-      const timeSinceCreation = formatTime((nextBlockTimestamp || 0) - guildCreationTimestamp, undefined, true);
+
+      let timeSinceCreation = "";
+      if (createGuildEvent) {
+        const guildCreationTimestamp = createGuildEvent?.timestamp ?? 0;
+        timeSinceCreation = formatTime((nextBlockTimestamp || 0) - guildCreationTimestamp, undefined, true);
+      }
 
       const index = guildsByRank.findIndex(([guildEntityId, _]) => guildEntityId === guild.entity_id);
 
@@ -92,8 +96,12 @@ const formatGuildMembers = (
         JoinGuild,
         getEntityIdFromKeys([BigInt(guildMember.guild_entity_id), ContractAddress(guildMember.address)]),
       );
-      const joinGuildTimestamp = joinGuildEvent?.timestamp ?? 0;
-      const timeSinceJoined = formatTime((nextBlockTimestamp || 0) - joinGuildTimestamp, undefined, true);
+
+      let timeSinceJoined = "";
+      if (joinGuildEvent) {
+        const joinGuildTimestamp = joinGuildEvent?.timestamp ?? 0;
+        timeSinceJoined = formatTime((nextBlockTimestamp || 0) - joinGuildTimestamp, undefined, true);
+      }
 
       const index = playersByRank.findIndex(([address, _]) => address === guildMember.address);
 

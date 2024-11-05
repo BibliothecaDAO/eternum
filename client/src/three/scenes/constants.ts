@@ -26,33 +26,33 @@ export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
 
 export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | RealmLevelNames, string> = {
   // placeholder for now
-  [BuildingType.None]: "/models/buildings/farm.glb",
-  [BuildingType.Bank]: "/models/buildings/bank.glb",
-  [BuildingType.ArcheryRange]: "/models/buildings/archerrange.glb",
-  [BuildingType.Barracks]: "/models/buildings/barracks.glb",
-  [BuildingType.Castle]: "/models/buildings/castle1.glb",
-  [BuildingType.Farm]: "/models/buildings/farm.glb",
-  [BuildingType.FishingVillage]: "/models/buildings/fishery.glb",
-  [BuildingType.FragmentMine]: "/models/buildings/mine.glb",
-  [BuildingType.Market]: "/models/buildings/market.glb",
-  [BuildingType.Resource]: "/models/buildings/mine.glb",
-  [BuildingType.Stable]: "/models/buildings/stable.glb",
-  [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
-  [BuildingType.TradingPost]: "/models/buildings/market.glb",
-  [BuildingType.Walls]: "/models/buildings/market.glb",
-  [BuildingType.WatchTower]: "/models/buildings/market.glb",
-  [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
-  [ResourceMiningTypes.Forge]: "/models/buildings/forge.glb",
-  [ResourceMiningTypes.Mine]: "/models/buildings/mine_2.glb",
-  [ResourceMiningTypes.LumberMill]: "/models/buildings/lumber_mill.glb",
-  [ResourceMiningTypes.Dragonhide]: "/models/buildings/dragonhide.glb",
-  [RealmLevelNames.Settlement]: "/models/buildings/castle0.glb",
-  [RealmLevelNames.City]: "/models/buildings/castle1.glb",
-  [RealmLevelNames.Kingdom]: "/models/buildings/castle2.glb",
-  [RealmLevelNames.Empire]: "/models/buildings/castle3.glb",
+  [BuildingType.None]: "/models/buildings-opt/farm.glb",
+  [BuildingType.Bank]: "/models/buildings-opt/bank.glb",
+  [BuildingType.ArcheryRange]: "/models/buildings-opt/archerrange.glb",
+  [BuildingType.Barracks]: "/models/buildings-opt/barracks.glb",
+  [BuildingType.Castle]: "/models/buildings-opt/castle1.glb",
+  [BuildingType.Farm]: "/models/buildings-opt/farm.glb",
+  [BuildingType.FishingVillage]: "/models/buildings-opt/fishery.glb",
+  [BuildingType.FragmentMine]: "/models/buildings-opt/mine.glb",
+  [BuildingType.Market]: "/models/buildings-opt/market.glb",
+  [BuildingType.Resource]: "/models/buildings-opt/mine.glb",
+  [BuildingType.Stable]: "/models/buildings-opt/stable.glb",
+  [BuildingType.Storehouse]: "/models/buildings-opt/storehouse.glb",
+  [BuildingType.TradingPost]: "/models/buildings-opt/market.glb",
+  [BuildingType.Walls]: "/models/buildings-opt/market.glb",
+  [BuildingType.WatchTower]: "/models/buildings-opt/market.glb",
+  [BuildingType.WorkersHut]: "/models/buildings-opt/workers_hut.glb",
+  [ResourceMiningTypes.Forge]: "/models/buildings-opt/forge.glb",
+  [ResourceMiningTypes.Mine]: "/models/buildings-opt/mine_2.glb",
+  [ResourceMiningTypes.LumberMill]: "/models/buildings-opt/lumber_mill.glb",
+  [ResourceMiningTypes.Dragonhide]: "/models/buildings-opt/dragonhide.glb",
+  [RealmLevelNames.Settlement]: "/models/buildings-opt/castle0.glb",
+  [RealmLevelNames.City]: "/models/buildings-opt/castle1.glb",
+  [RealmLevelNames.Kingdom]: "/models/buildings-opt/castle2.glb",
+  [RealmLevelNames.Empire]: "/models/buildings-opt/castle3.glb",
 };
 
-const BASE_PATH = "/models/biomes/";
+const BASE_PATH = "/models/biomes-opt/";
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   Bare: BASE_PATH + "bare.glb",
   Beach: BASE_PATH + "beach.glb",
@@ -62,15 +62,15 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   Ocean: BASE_PATH + "ocean.glb",
   Outline: BASE_PATH + "outline.glb",
   Scorched: BASE_PATH + "scorched.glb",
+  Tundra: BASE_PATH + "tundra.glb",
+  TemperateDesert: BASE_PATH + "temperateDesert.glb",
   Shrubland: BASE_PATH + "shrubland.glb",
   Snow: BASE_PATH + "snow.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicalDesert.glb",
   Taiga: BASE_PATH + "taiga.glb",
-  TemperateDesert: BASE_PATH + "temperateDesert.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
+  SubtropicalDesert: BASE_PATH + "subtropicalDesert.glb",
   TropicalRainForest: BASE_PATH + "tropicalRainforest.glb",
   TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
-  Tundra: BASE_PATH + "tundra.glb",
 };
 
 export const PROGRESS_HALF_THRESHOLD = 0.5;
@@ -84,21 +84,21 @@ export enum StructureProgress {
 
 export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Realm]: [
-    "models/buildings/castle0.glb",
-    "models/buildings/castle1.glb",
-    "models/buildings/castle2.glb",
-    "models/buildings/castle3.glb",
+    "models/buildings-opt/castle0.glb",
+    "models/buildings-opt/castle1.glb",
+    "models/buildings-opt/castle2.glb",
+    "models/buildings-opt/castle3.glb",
   ],
   // Order follows StructureProgress
   [StructureType.Hyperstructure]: [
-    "models/buildings/hyperstructure_init.glb",
-    "models/buildings/hyperstructure_half.glb",
-    "models/buildings/hyperstructure.glb",
+    "models/buildings-opt/hyperstructure_init.glb",
+    "models/buildings-opt/hyperstructure_half.glb",
+    "models/buildings-opt/hyperstructure.glb",
   ],
-  [StructureType.Bank]: ["/models/buildings/bank.glb"],
-  [StructureType.FragmentMine]: ["models/buildings/mine_2.glb"],
+  [StructureType.Bank]: ["/models/buildings-opt/bank.glb"],
+  [StructureType.FragmentMine]: ["models/buildings-opt/mine_2.glb"],
   // placeholder for now
-  [StructureType.Settlement]: ["models/buildings/castle2.glb"],
+  [StructureType.Settlement]: ["models/buildings-opt/castle2.glb"],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {

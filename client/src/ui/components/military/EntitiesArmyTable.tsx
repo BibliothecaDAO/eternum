@@ -14,27 +14,31 @@ export const EntitiesArmyTable = () => {
   const { playerStructures } = useEntities();
   const togglePopup = useUIStore((state) => state.togglePopup);
 
-  return playerStructures().map((entity: any, index: number) => {
-    return (
-      <div key={entity.entity_id} className="p-2">
-        <Headline>
-          <div className="flex gap-2">
-            <div className="self-center">{entity.name} </div>
-            {index === 0 && <HintModalButton section={HintSection.Buildings} />}
-          </div>
-        </Headline>
-        <div className="w-full flex justify-center">
-          <Button variant="primary" className="mx-auto" size="xs" onClick={() => togglePopup(battleSimulation)}>
-            Simulate a battle
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 gap-4">
-          <EntityArmyTable structureEntityId={entity.entity_id} />
-        </div>
-        <BattleSimulation />
+  return (
+    <>
+      <div className="w-full flex justify-center mt-4">
+        <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(battleSimulation)}>
+          Simulate a battle
+        </Button>
       </div>
-    );
-  });
+      <BattleSimulation />
+      {playerStructures().map((entity: any, index: number) => {
+        return (
+          <div key={entity.entity_id} className="p-2">
+            <Headline>
+              <div className="flex gap-2">
+                <div className="self-center">{entity.name} </div>
+                {index === 0 && <HintModalButton section={HintSection.Buildings} />}
+              </div>
+            </Headline>
+            <div className="grid grid-cols-1 gap-4">
+              <EntityArmyTable structureEntityId={entity.entity_id} />
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
 };
 
 const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefined }) => {
