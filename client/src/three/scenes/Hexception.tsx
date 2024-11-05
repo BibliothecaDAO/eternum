@@ -18,13 +18,12 @@ import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SceneManager } from "../SceneManager";
 import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
 import { SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
-import { createPausedLabel } from "../helpers/utils";
+import { createPausedLabel, gltfLoader } from "../helpers/utils";
 import { playBuildingSound } from "../sound/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
@@ -37,7 +36,7 @@ import {
   structureTypeToBuildingType,
 } from "./constants";
 
-const loader = new GLTFLoader();
+const loader = gltfLoader;
 
 const generateHexPositions = (center: HexPosition, radius: number) => {
   const color = new THREE.Color("gray");

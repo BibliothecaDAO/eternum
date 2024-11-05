@@ -70,6 +70,7 @@ class Minimap {
   };
   private scaleX!: number;
   private scaleY!: number;
+  private dragSpeed: number = 1;
   private isDragging: boolean = false;
   private biomeCache!: Map<string, string>;
   private scaledCoords!: Map<string, { scaledCol: number; scaledRow: number }>;
@@ -166,6 +167,7 @@ class Minimap {
       }
     }
 
+    this.dragSpeed = this.mapSize.width / MINIMAP_CONFIG.MAX_ZOOM_RANGE;
     // Precompute sizes
     this.structureSize = {
       width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX,
@@ -354,9 +356,8 @@ class Minimap {
 
   private handleMouseMove = (event: MouseEvent) => {
     if (this.isDragging && this.lastMousePosition) {
-      const colShift = Math.round((event.clientX - this.lastMousePosition.x) / this.scaleX);
-      const rowShift = Math.round((event.clientY - this.lastMousePosition.y) / this.scaleY);
-
+      const colShift = Math.round(event.clientX - this.lastMousePosition.x);
+      const rowShift = Math.round(event.clientY - this.lastMousePosition.y);
       this.mapCenter.col -= colShift;
       this.mapCenter.row -= rowShift;
 
@@ -391,9 +392,7 @@ class Minimap {
 
   private zoom(zoomOut: boolean, event?: MouseEvent) {
     const currentRange = this.mapSize.width;
-    console.log(
-      `Zooming ${zoomOut ? "out" : "in"} from ${currentRange}, mapCenter: ${this.mapCenter.col}, ${this.mapCenter.row}`,
-    );
+
     if (!zoomOut && currentRange < MINIMAP_CONFIG.MIN_ZOOM_RANGE) {
       return;
     }

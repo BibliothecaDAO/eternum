@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { gltfLoader } from "../helpers/utils";
 
 const MAX_INSTANCES = 1000;
 
@@ -27,7 +27,7 @@ export class BattleModel {
   }
 
   private async loadModel(): Promise<void> {
-    const loader = new GLTFLoader();
+    const loader = gltfLoader;
     return new Promise((resolve, reject) => {
       loader.load(
         "models/battle.glb",

@@ -2,7 +2,7 @@ import { FELT_CENTER } from "@/ui/config";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { GLTFLoader } from "three-stdlib";
+import { gltfLoader } from "../helpers/utils";
 import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
 import { StructureSystemUpdate } from "../systems/types";
 import InstancedModel from "./InstancedModel";
@@ -35,7 +35,7 @@ export class StructureManager {
   }
 
   public async loadModels() {
-    const loader = new GLTFLoader();
+    const loader = gltfLoader;
 
     for (const [key, modelPaths] of Object.entries(StructureModelPaths)) {
       const structureType = parseInt(key) as StructureType;
