@@ -45,7 +45,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     const tx = await this.execute(signer, transactionDetails, NAMESPACE);
-
+    console.log(tx);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
     this.emit("transactionComplete", transactionResult);

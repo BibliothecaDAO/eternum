@@ -70,6 +70,7 @@ export const BuildingThumbs = {
   settings: "/images/buildings/thumb/settings.png",
   guild: "/images/buildings/thumb/guilds.png",
   trophy: "/images/buildings/thumb/trophy.png",
+  discord: "/images/buildings/thumb/discord.png",
 };
 
 export enum MenuEnum {

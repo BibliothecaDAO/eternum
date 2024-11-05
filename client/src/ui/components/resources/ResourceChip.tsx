@@ -134,20 +134,24 @@ export const ResourceChip = ({
     return Math.abs(netRate) > 0 && !reachedMaxCap && !isConsumingInputsWithoutOutput && balance > 0;
   }, [netRate, reachedMaxCap, isConsumingInputsWithoutOutput, balance, timeUntilFinishTick]);
 
+  const handleMouseEnter = useCallback(() => {
+    setTooltip({
+      position: "top",
+      content: <>{findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}</>,
+    });
+    setShowPerHour(false);
+  }, [resourceId, isLabor, setTooltip]);
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+    setShowPerHour(true);
+  }, [setTooltip]);
+
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20 `}
-      onMouseEnter={() => {
-        setTooltip({
-          position: "top",
-          content: <>{findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}</>,
-        });
-        setShowPerHour(!showPerHour);
-      }}
-      onMouseLeave={() => {
-        setTooltip(null);
-        setShowPerHour(!showPerHour);
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {icon}
       <div className="grid grid-cols-10 w-full">

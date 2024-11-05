@@ -27,7 +27,7 @@ export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
 export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | RealmLevelNames, string> = {
   // placeholder for now
   [BuildingType.None]: "/models/buildings/farm.glb",
-  [BuildingType.Bank]: "/models/buildings/market.glb",
+  [BuildingType.Bank]: "/models/buildings/bank.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archerrange.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
   [BuildingType.Castle]: "/models/buildings/castle1.glb",
@@ -54,31 +54,27 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
 
 const BASE_PATH = "/models/biomes/";
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
-  DeepOcean: BASE_PATH + "ocean.glb",
-  Ocean: BASE_PATH + "deepocean.glb",
-  Beach: BASE_PATH + "beach.glb",
-  Scorched: BASE_PATH + "scorched.glb",
   Bare: BASE_PATH + "bare.glb",
+  Beach: BASE_PATH + "beach.glb",
+  TemperateDeciduousForest: BASE_PATH + "deciduousForest.glb",
+  DeepOcean: BASE_PATH + "deepOcean.glb",
+  Grassland: BASE_PATH + "grassland.glb",
+  Ocean: BASE_PATH + "ocean.glb",
+  Outline: BASE_PATH + "outline.glb",
+  Scorched: BASE_PATH + "scorched.glb",
   Tundra: BASE_PATH + "tundra.glb",
-  Snow: BASE_PATH + "snow.glb",
-
   // OVERSIZED MODEL
   // TemperateDesert: BASE_PATH + "temperateDesert.glb",
   TemperateDesert: BASE_PATH + "beach.glb",
-
   Shrubland: BASE_PATH + "shrubland.glb",
+  Snow: BASE_PATH + "snow.glb",
   Taiga: BASE_PATH + "taiga.glb",
-  Grassland: BASE_PATH + "grassland.glb",
-  TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-
   // OVERSIZED MODEL
   // SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
   SubtropicalDesert: BASE_PATH + "beach.glb",
-
+  TropicalRainForest: BASE_PATH + "tropicalRainforest.glb",
   TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
-  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
-  Outline: BASE_PATH + "outline.glb",
 };
 
 export const PROGRESS_HALF_THRESHOLD = 0.5;
