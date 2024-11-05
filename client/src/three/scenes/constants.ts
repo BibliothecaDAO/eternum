@@ -62,16 +62,13 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   Ocean: BASE_PATH + "ocean.glb",
   Outline: BASE_PATH + "outline.glb",
   Scorched: BASE_PATH + "scorched.glb",
-  Bare: BASE_PATH + "bare.glb",
-  Tundra: BASE_PATH + "tundra.glb", 
+  Tundra: BASE_PATH + "tundra.glb",
   // OVERSIZED MODEL
   // TemperateDesert: BASE_PATH + "temperateDesert.glb",
   TemperateDesert: BASE_PATH + "beach.glb",
   Shrubland: BASE_PATH + "shrubland.glb",
   Snow: BASE_PATH + "snow.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicalDesert.glb",
   Taiga: BASE_PATH + "taiga.glb",
-  TemperateDesert: BASE_PATH + "temperateDesert.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
   // OVERSIZED MODEL
   // SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
