@@ -2,24 +2,27 @@ import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useStructureAtPosition } from "@/hooks/helpers/useStructures";
+import { useIsStructureImmune, useStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 import Button from "@/ui/elements/Button";
+import { Headline } from "@/ui/elements/Headline";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/Tabs";
 import { getTotalTroops } from "@/ui/modules/military/battle-view/BattleHistory";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ResourceExchange } from "../../hyperstructures/ResourceExchange";
+import { ImmunityTimer } from "../../worldmap/structures/StructureLabel";
 import { StructureListItem } from "../../worldmap/structures/StructureListItem";
+
 export const StructureCard = ({
   className,
   position,
@@ -30,9 +33,26 @@ export const StructureCard = ({
   ownArmySelected: ArmyInfo | undefined;
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
-  const structure = useStructureAtPosition(position.getContract());
+
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
   const { handleUrlChange } = useQuery();
+
+  const structure = useStructureAtPosition(position.getContract());
+
+  const isImmune = useIsStructureImmune(Number(structure?.created_at || 0), nextBlockTimestamp || 0);
+
+  const immunityEndTimestamp = useMemo(() => {
+    return (
+      Number(structure?.created_at || 0) +
+      configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
+    );
+  }, [structure?.created_at]);
+
+  const timer = useMemo(() => {
+    if (!nextBlockTimestamp) return 0;
+    return immunityEndTimestamp - nextBlockTimestamp!;
+  }, [immunityEndTimestamp, nextBlockTimestamp]);
 
   const goToHexView = () => {
     const url = position.toHexLocationUrl();
@@ -42,28 +62,31 @@ export const StructureCard = ({
   return (
     Boolean(structure) && (
       <div className={`px-2 py-2 ${className}`}>
-        <div className="flex flex-row">
-          Structure
-          <div className="ml-2">
-            <Button
-              variant="outline"
-              size="xs"
-              className={clsx("self-center")}
-              onClick={() => {
-                goToHexView();
-              }}
-            >
-              {"View"}
-            </Button>
-          </div>
+        <div className="ml-2">
+          <Button
+            variant="outline"
+            size="xs"
+            className={clsx("self-center")}
+            onClick={() => {
+              goToHexView();
+            }}
+          >
+            View {structure?.category}
+          </Button>
         </div>
         {!showMergeTroopsPopup && (
-          <StructureListItem
-            structure={structure!}
-            ownArmySelected={ownArmySelected}
-            setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-            showImmunity={true}
-          />
+          <>
+            <Headline className="text-center text-lg">
+              <div>{structure?.ownerName}</div>
+            </Headline>
+            <StructureListItem
+              structure={structure!}
+              ownArmySelected={ownArmySelected}
+              setShowMergeTroopsPopup={setShowMergeTroopsPopup}
+              showButtons={true}
+            />
+            <ImmunityTimer isImmune={isImmune} timer={timer} className="w-[27rem]" />
+          </>
         )}
         {showMergeTroopsPopup && (
           <div className="flex flex-col mt-2">

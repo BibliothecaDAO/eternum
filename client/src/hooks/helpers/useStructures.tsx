@@ -19,6 +19,7 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   isMine: boolean;
   isMercenary: boolean;
   name: string;
+  ownerName: string;
   protector: ArmyInfo | undefined;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
@@ -28,7 +29,7 @@ export const useStructureAtPosition = ({ x, y }: Position): Structure | undefine
   const {
     account: { account },
     setup: {
-      components: { Position, Structure, EntityOwner, Owner, Protector },
+      components: { Position, Structure, EntityOwner, Owner, Protector, AddressName },
     },
   } = useDojo();
 
@@ -53,11 +54,15 @@ export const useStructureAtPosition = ({ x, y }: Position): Structure | undefine
 
     const name = getEntityName(structure.entity_id);
 
+    const addressName = getComponentValue(AddressName, getEntityIdFromKeys([owner?.address]));
+    const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
+
     return {
       ...structure,
       entityOwner,
       owner,
       name,
+      ownerName,
       protector,
       isMine: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
       isMercenary: owner.address === 0n,

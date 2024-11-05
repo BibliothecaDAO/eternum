@@ -9,11 +9,19 @@ import { useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { StructureListItem } from "./StructureListItem";
 
-export const ImmunityTimer = ({ isImmune, timer }: { isImmune: boolean; timer: number }) => {
+export const ImmunityTimer = ({
+  isImmune,
+  timer,
+  className,
+}: {
+  isImmune: boolean;
+  timer: number;
+  className?: string;
+}) => {
   if (!isImmune) return null;
 
   return (
-    <div className="mt-2 p-2 bg-blue-500 bg-opacity-20 rounded-md">
+    <div className={`mt-2 p-2 bg-blue-500 bg-opacity-20 rounded-md ${className}`}>
       <div className="text-sm font-semibold text-blue-300">Immune</div>
       <div className="text-lg font-bold text-white animate-pulse">{formatTime(timer)}</div>
     </div>
