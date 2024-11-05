@@ -1,5 +1,5 @@
-use crate::Context;
-use crate::Error;
+use crate::init::Context;
+use crate::init::Error;
 
 #[poise::command(slash_command)]
 pub async fn add_user(

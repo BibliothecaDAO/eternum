@@ -1,6 +1,6 @@
+use crate::init::Context;
+use crate::init::Error;
 use crate::types::User;
-use crate::Context;
-use crate::Error;
 
 #[poise::command(slash_command)]
 pub async fn get_user(
