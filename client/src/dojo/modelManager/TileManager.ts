@@ -56,7 +56,7 @@ export class TileManager {
   }
 
   getRealmLevel = (): RealmLevels => {
-    const realmEntityId = this._getOwnerEntityId() || 0;
+    const realmEntityId = useUIStore.getState().structureEntityId;
     const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     return (realm?.level || RealmLevels.Settlement) as RealmLevels;
   };

@@ -108,7 +108,7 @@ const GuildActionButton = ({
   viewGuildMembers,
   toggleIsCreatingGuild,
 }: GuildActionButtonProps) => {
-  if (userGuild) {
+  if (userGuild?.entityId) {
     return (
       <Button
         className="text-ellipsis uppercase font-sans"

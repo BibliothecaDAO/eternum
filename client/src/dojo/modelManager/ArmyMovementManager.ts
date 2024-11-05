@@ -104,10 +104,10 @@ export class ArmyMovementManager {
     const exploreFoodCosts = computeExploreFoodCosts(entityArmy?.troops);
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < exploreFoodCosts.fishPayAmount) {
+    if (fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount)) {
       return false;
     }
-    if (wheat < exploreFoodCosts.wheatPayAmount) {
+    if (wheat < multiplyByPrecision(exploreFoodCosts.wheatPayAmount)) {
       return false;
     }
 

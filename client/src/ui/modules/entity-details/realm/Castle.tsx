@@ -7,7 +7,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, toHexString } from "@/ui/utils/utils";
 import { LEVEL_DESCRIPTIONS, REALM_MAX_LEVEL, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
@@ -21,6 +21,8 @@ export const Castle = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const realm = useGetRealm(structureEntityId).realm;
+
+  const isOwner = toHexString(realm.owner) === dojo.account.account.address;
 
   const structure = useStructureByEntityId(structureEntityId);
   if (!structure) return;
@@ -59,13 +61,13 @@ export const Castle = () => {
           <div>
             <div className="flex gap-4">
               <div className="text-2xl">{RealmLevels[realm.level]}</div>
-              {getNextRealmLevel && (
+              {getNextRealmLevel && isOwner && (
                 <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
-                  {checkBalance ? `Upgrade to ${RealmLevels[realm.level]}` : "Need Resources"}
+                  {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
                 </Button>
               )}
             </div>
-            {getNextRealmLevel && (
+            {getNextRealmLevel && isOwner && (
               <div>
                 <p className="text-sm my-2">
                   Next Level: {RealmLevels[realm.level + 1]},{" "}
@@ -88,7 +90,6 @@ export const Castle = () => {
             )}
           </div>
         </div>
-
         <div className="my-2">
           {structure && structure.category === StructureType[StructureType.Realm] && (
             <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />

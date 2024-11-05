@@ -171,7 +171,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo, setIsExpan
           {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
         </Button>
       )}
-      {!userGuild && (!selectedGuild?.guild.isPublic ? userIsInvited : true) && (
+      {!userGuild?.entityId && (!selectedGuild?.guild.isPublic ? userIsInvited : true) && (
         <Button
           className="w-full my-4"
           isLoading={isLoading}
