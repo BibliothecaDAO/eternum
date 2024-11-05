@@ -3,7 +3,7 @@ import { ResourceMiningTypes } from "@/types";
 import { ResourceIdToMiningType } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { GLTFLoader } from "three-stdlib";
+import { gltfLoader } from "../helpers/utils";
 import { buildingModelPaths, PREVIEW_BUILD_COLOR_VALID } from "../scenes/constants";
 import { HoverSound } from "../sound/HoverSound";
 
@@ -20,7 +20,7 @@ export class BuildingPreview {
   }
 
   private loadBuildingModels() {
-    const loader = new GLTFLoader();
+    const loader = gltfLoader;
     for (const [building, path] of Object.entries(buildingModelPaths)) {
       const loadPromise = new Promise<void>((resolve, reject) => {
         loader.load(

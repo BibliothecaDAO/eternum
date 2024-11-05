@@ -1,6 +1,7 @@
-import { StructureType, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
+import { gltfLoader } from "../helpers/utils";
 import { PREVIEW_BUILD_COLOR_VALID, StructureModelPaths } from "../scenes/constants";
 
 export class StructurePreview {
@@ -13,7 +14,7 @@ export class StructurePreview {
   }
 
   private loadStructureModels() {
-    const loader = new GLTFLoader();
+    const loader = gltfLoader;
 
     for (const [building, paths] of Object.entries(StructureModelPaths)) {
       const loadPromises = paths.map((path) => {
