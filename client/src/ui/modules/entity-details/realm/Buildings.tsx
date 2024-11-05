@@ -6,10 +6,10 @@ import { useGetRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ResourceIdToMiningType } from "@/ui/utils/utils";
+import { ResourceIdToMiningType, toHexString } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { Component, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { capitalize } from "lodash";
 import { useState } from "react";
 
@@ -21,6 +21,8 @@ export const Buildings = ({ structure }: { structure: any }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const realm = useGetRealm(structureEntityId).realm;
+
+  const isOwner = toHexString(realm.owner) === dojo.account.account.address;
 
   const buildingEntities = runQuery([
     Has(dojo.setup.components.Building),
@@ -48,8 +50,9 @@ export const Buildings = ({ structure }: { structure: any }) => {
         <BuildingRow
           key={index}
           buildingEntity={entity}
-          handlePauseResumeProduction={handlePauseResumeProduction}
+          isOwner={isOwner}
           isLoading={isLoading}
+          handlePauseResumeProduction={handlePauseResumeProduction}
           Building={dojo.setup.components.Building}
         />
       ))}
@@ -68,12 +71,19 @@ const BuildingsHeader = () => {
 };
 
 interface BuildingRowProps {
-  buildingEntity: any;
+  buildingEntity: Entity;
+  isOwner: boolean;
   isLoading: boolean;
   handlePauseResumeProduction: (paused: boolean, innerCol: number, innerRow: number) => void;
   Building: Component<ClientComponents["Building"]["schema"]>;
 }
-const BuildingRow = ({ buildingEntity, handlePauseResumeProduction, isLoading, Building }: BuildingRowProps) => {
+const BuildingRow = ({
+  buildingEntity,
+  isOwner,
+  isLoading,
+  handlePauseResumeProduction,
+  Building,
+}: BuildingRowProps) => {
   const building = useComponentValue(Building, buildingEntity);
   if (!building || !building.produced_resource_type) return;
 
@@ -120,17 +130,19 @@ const BuildingRow = ({ buildingEntity, handlePauseResumeProduction, isLoading, B
               </div>
             );
           })}
-        <Button
-          onClick={() => {
-            handlePauseResumeProduction(building.paused, building.inner_col, building.inner_row);
-          }}
-          isLoading={isLoading}
-          variant="outline"
-          withoutSound
-          className="mt-2"
-        >
-          {building.paused ? "Resume Production" : "Pause Production"}
-        </Button>
+        {isOwner && (
+          <Button
+            onClick={() => {
+              handlePauseResumeProduction(building.paused, building.inner_col, building.inner_row);
+            }}
+            isLoading={isLoading}
+            variant="outline"
+            withoutSound
+            className="mt-2"
+          >
+            {building.paused ? "Resume Production" : "Pause Production"}
+          </Button>
+        )}
       </div>
     </div>
   );
