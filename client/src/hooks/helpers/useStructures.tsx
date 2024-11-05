@@ -19,7 +19,7 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   isMine: boolean;
   isMercenary: boolean;
   name: string;
-  ownerName: string;
+  ownerName?: string;
   protector: ArmyInfo | undefined;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
