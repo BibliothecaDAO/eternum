@@ -52,7 +52,7 @@ export const buildingModelPaths: Record<BuildingType | ResourceMiningTypes | Rea
   [RealmLevelNames.Empire]: "/models/buildings/castle3.glb",
 };
 
-const BASE_PATH = "/models/biomes/";
+const BASE_PATH = "/models/biomes-opt/";
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   Bare: BASE_PATH + "bare.glb",
   Beach: BASE_PATH + "beach.glb",
