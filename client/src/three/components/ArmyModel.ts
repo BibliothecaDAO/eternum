@@ -39,7 +39,7 @@ export class ArmyModel {
     const loader = gltfLoader;
     return new Promise((resolve, reject) => {
       loader.load(
-        "models/knight.glb",
+        "models/knight-opt.glb",
         (gltf) => {
           this.armyMesh = gltf.scene.children[0];
           const geometry = (this.armyMesh as THREE.Mesh).geometry;
