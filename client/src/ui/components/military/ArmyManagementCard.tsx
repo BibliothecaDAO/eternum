@@ -27,7 +27,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 import { Position as PositionInterface } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
+import { resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { LucideArrowRight } from "lucide-react";
 
@@ -390,7 +390,7 @@ export const ViewOnMapIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: "View on Map",
-          position: "bottom",
+          position: "top",
         });
       }}
       onMouseLeave={() => {
