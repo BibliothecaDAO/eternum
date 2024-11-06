@@ -74,7 +74,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-
     BankConfig: (() => {
       return defineComponent(
         world,
@@ -409,6 +408,25 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Epoch: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.Number,
+          index: RecsType.Number,
+          start_timestamp: RecsType.Number,
+          owners: RecsType.BigIntArray,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "Epoch",
+            types: ["u32", "u16", "u64", "array"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Guild: (() => {
       return defineComponent(
         world,
@@ -451,20 +469,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Quest: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, config_id: RecsType.Number, completed: RecsType.Boolean },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "Quest",
-            types: ["u32", "u32", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Health: (() => {
       return defineComponent(
         world,
@@ -500,26 +504,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Epoch: (() => {
-      return defineComponent(
-        world,
-        {
-          hyperstructure_entity_id: RecsType.Number,
-          index: RecsType.Number,
-          start_timestamp: RecsType.Number,
-          owners: RecsType.BigIntArray,
-        },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "Epoch",
-            types: ["u32", "u16", "u64", "array"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
     HyperstructureConfig: (() => {
       return defineComponent(
         world,
@@ -756,20 +740,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ProductionDeadline: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, deadline_tick: RecsType.Number },
-        {
-          metadata: {
-            namespace: "eternum",
-            name: "ProductionDeadline",
-            types: ["u32", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Production: (() => {
       return defineComponent(
         world,
@@ -806,6 +776,20 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "ProductionConfig",
             types: ["u8", "u128", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ProductionDeadline: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.Number, deadline_tick: RecsType.Number },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "ProductionDeadline",
+            types: ["u32", "u64"],
             customTypes: [],
           },
         },
@@ -914,21 +898,29 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Realm: (() => {
+    Quest: (() => {
       return defineComponent(
         world,
-        {
-          entity_id: RecsType.Number,
-          realm_id: RecsType.Number,
-          produced_resources: RecsType.BigInt,
-          order: RecsType.Number,
-          level: RecsType.Number,
-        },
+        { entity_id: RecsType.Number, config_id: RecsType.Number, completed: RecsType.Boolean },
         {
           metadata: {
             namespace: "eternum",
-            name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8"],
+            name: "Quest",
+            types: ["u32", "u32", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    QuestBonus: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.Number, resource_type: RecsType.Number, claimed: RecsType.Boolean },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "QuestBonus",
+            types: ["u32", "u8", "bool"],
             customTypes: [],
           },
         },
@@ -957,6 +949,26 @@ export function defineContractComponents(world: World) {
             namespace: "eternum",
             name: "QuestRewardConfig",
             types: ["u32", "u32", "u32"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Realm: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.Number,
+          realm_id: RecsType.Number,
+          produced_resources: RecsType.BigInt,
+          order: RecsType.Number,
+          level: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "eternum",
+            name: "Realm",
+            types: ["u32", "u32", "u128", "u8", "u8"],
             customTypes: [],
           },
         },
@@ -1454,20 +1466,38 @@ export function defineContractComponents(world: World) {
 const eventsComponents = (world: World) => {
   return {
     events: {
-      BattleStartData: (() => {
+      AcceptOrder: (() => {
+        return defineComponent(
+          world,
+          {
+            taker_id: RecsType.Number,
+            maker_id: RecsType.Number,
+            id: RecsType.Number,
+            trade_id: RecsType.Number,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "AcceptOrder",
+              types: ["u32", "u32", "u32", "u32", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      BattleClaimData: (() => {
         return defineComponent(
           world,
           {
             id: RecsType.Number,
             event_id: RecsType.String,
-            battle_entity_id: RecsType.Number,
-            attacker: RecsType.BigInt,
-            attacker_name: RecsType.BigInt,
-            attacker_army_entity_id: RecsType.Number,
-            defender_name: RecsType.BigInt,
-            defender: RecsType.BigInt,
-            defender_army_entity_id: RecsType.Number,
-            duration_left: RecsType.Number,
+            structure_entity_id: RecsType.Number,
+            claimer: RecsType.BigInt,
+            claimer_name: RecsType.BigInt,
+            claimer_army_entity_id: RecsType.Number,
+            previous_owner: RecsType.BigInt,
             x: RecsType.Number,
             y: RecsType.Number,
             structure_type: RecsType.String,
@@ -1476,7 +1506,7 @@ const eventsComponents = (world: World) => {
           {
             metadata: {
               namespace: "eternum",
-              name: "BattleStartData",
+              name: "BattleClaimData",
               types: [
                 "u32",
                 "EventType",
@@ -1484,10 +1514,7 @@ const eventsComponents = (world: World) => {
                 "ContractAddress",
                 "felt252",
                 "u32",
-                "felt252",
                 "ContractAddress",
-                "u32",
-                "u64",
                 "u32",
                 "u32",
                 "StructureCategory",
@@ -1577,45 +1604,6 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      BattleClaimData: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            event_id: RecsType.String,
-            structure_entity_id: RecsType.Number,
-            claimer: RecsType.BigInt,
-            claimer_name: RecsType.BigInt,
-            claimer_army_entity_id: RecsType.Number,
-            previous_owner: RecsType.BigInt,
-            x: RecsType.Number,
-            y: RecsType.Number,
-            structure_type: RecsType.String,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "eternum",
-              name: "BattleClaimData",
-              types: [
-                "u32",
-                "EventType",
-                "u32",
-                "ContractAddress",
-                "felt252",
-                "u32",
-                "ContractAddress",
-                "u32",
-                "u32",
-                "StructureCategory",
-                "u64",
-              ],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
       BattlePillageData: (() => {
         return defineComponent(
           world,
@@ -1663,48 +1651,249 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      SwapEvent: (() => {
+      BattleStartData: (() => {
         return defineComponent(
           world,
           {
-            bank_entity_id: RecsType.Number,
-            entity_id: RecsType.Number,
             id: RecsType.Number,
-            resource_type: RecsType.Number,
-            lords_amount: RecsType.BigInt,
-            resource_amount: RecsType.BigInt,
-            bank_owner_fees: RecsType.BigInt,
-            lp_fees: RecsType.BigInt,
-            resource_price: RecsType.BigInt,
-            buy: RecsType.Boolean,
+            event_id: RecsType.String,
+            battle_entity_id: RecsType.Number,
+            attacker: RecsType.BigInt,
+            attacker_name: RecsType.BigInt,
+            attacker_army_entity_id: RecsType.Number,
+            defender_name: RecsType.BigInt,
+            defender: RecsType.BigInt,
+            defender_army_entity_id: RecsType.Number,
+            duration_left: RecsType.Number,
+            x: RecsType.Number,
+            y: RecsType.Number,
+            structure_type: RecsType.String,
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "eternum",
-              name: "SwapEvent",
-              types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
+              name: "BattleStartData",
+              types: [
+                "u32",
+                "EventType",
+                "u32",
+                "ContractAddress",
+                "felt252",
+                "u32",
+                "felt252",
+                "ContractAddress",
+                "u32",
+                "u64",
+                "u32",
+                "u32",
+                "StructureCategory",
+                "u64",
+              ],
               customTypes: [],
             },
           },
         );
       })(),
 
-      AcceptOrder: (() => {
+      BurnDonkey: (() => {
         return defineComponent(
           world,
           {
-            taker_id: RecsType.Number,
-            maker_id: RecsType.Number,
-            id: RecsType.Number,
-            trade_id: RecsType.Number,
+            player_address: RecsType.BigInt,
+            entity_id: RecsType.Number,
+            amount: RecsType.BigInt,
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "eternum",
-              name: "AcceptOrder",
-              types: ["u32", "u32", "u32", "u32", "u64"],
+              name: "BurnDonkey",
+              types: ["ContractAddress", "u32", "u128", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      CancelOrder: (() => {
+        return defineComponent(
+          world,
+          {
+            taker_id: RecsType.Number,
+            maker_id: RecsType.Number,
+            trade_id: RecsType.Number,
+            timestamp: RecsType.BigInt,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "CancelOrder",
+              types: ["u32", "u32", "u32", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      CreateGuild: (() => {
+        return defineComponent(
+          world,
+          {
+            guild_entity_id: RecsType.Number,
+            guild_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "CreateGuild",
+              types: ["u32", "felt252", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      CreateOrder: (() => {
+        return defineComponent(
+          world,
+          {
+            taker_id: RecsType.Number,
+            maker_id: RecsType.Number,
+            trade_id: RecsType.Number,
+            timestamp: RecsType.BigInt,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "CreateOrder",
+              types: ["u32", "u32", "u32", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      FragmentMineDiscovered: (() => {
+        return defineComponent(
+          world,
+          {
+            entity_owner_id: RecsType.Number,
+            mine_entity_id: RecsType.Number,
+            production_deadline_tick: RecsType.BigInt,
+            discovered_at: RecsType.BigInt,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "FragmentMineDiscovered",
+              types: ["u32", "u32", "u64", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      HyperstructureContribution: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            contributor_entity_id: RecsType.Number,
+            contributions: RecsType.StringArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "HyperstructureContribution",
+              types: ["u32", "u32", "u32", "array", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      HyperstructureCoOwnersChange: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            co_owners: RecsType.StringArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "HyperstructureCoOwnersChange",
+              types: ["u32", "u32", "array", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      HyperstructureFinished: (() => {
+        return defineComponent(
+          world,
+          {
+            id: RecsType.Number,
+            hyperstructure_entity_id: RecsType.Number,
+            contributor_entity_id: RecsType.Number,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "HyperstructureFinished",
+              types: ["u32", "u32", "u32", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      JoinGuild: (() => {
+        return defineComponent(
+          world,
+          {
+            guild_entity_id: RecsType.Number,
+            address: RecsType.BigInt,
+            guild_name: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "JoinGuild",
+              types: ["u32", "ContractAddress", "felt252", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      LiquidityEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            bank_entity_id: RecsType.Number,
+            entity_id: RecsType.Number,
+            resource_type: RecsType.Number,
+            lords_amount: RecsType.BigInt,
+            resource_amount: RecsType.BigInt,
+            resource_price: RecsType.BigInt,
+            add: RecsType.Boolean,
+            timestamp: RecsType.BigInt,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "LiquidityEvent",
+              types: ["u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
               customTypes: [],
             },
           },
@@ -1735,61 +1924,27 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      HyperstructureFinished: (() => {
+      SwapEvent: (() => {
         return defineComponent(
           world,
           {
+            bank_entity_id: RecsType.Number,
+            entity_id: RecsType.Number,
             id: RecsType.Number,
-            hyperstructure_entity_id: RecsType.Number,
-            contributor_entity_id: RecsType.Number,
+            resource_type: RecsType.Number,
+            lords_amount: RecsType.BigInt,
+            resource_amount: RecsType.BigInt,
+            bank_owner_fees: RecsType.BigInt,
+            lp_fees: RecsType.BigInt,
+            resource_price: RecsType.BigInt,
+            buy: RecsType.Boolean,
             timestamp: RecsType.Number,
           },
           {
             metadata: {
               namespace: "eternum",
-              name: "HyperstructureFinished",
-              types: ["u32", "u32", "u32", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      HyperstructureCoOwnersChange: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            hyperstructure_entity_id: RecsType.Number,
-            co_owners: RecsType.StringArray,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "eternum",
-              name: "HyperstructureCoOwnersChange",
-              types: ["u32", "u32", "array", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      HyperstructureContribution: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            hyperstructure_entity_id: RecsType.Number,
-            contributor_entity_id: RecsType.Number,
-            contributions: RecsType.StringArray,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "eternum",
-              name: "HyperstructureContribution",
-              types: ["u32", "u32", "u32", "array", "u64"],
+              name: "SwapEvent",
+              types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
               customTypes: [],
             },
           },
@@ -1845,84 +2000,65 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      LiquidityEvent: (() => {
+      Transfer: (() => {
         return defineComponent(
           world,
           {
-            bank_entity_id: RecsType.Number,
-            entity_id: RecsType.Number,
-            resource_type: RecsType.Number,
-            lords_amount: RecsType.BigInt,
-            resource_amount: RecsType.BigInt,
-            resource_price: RecsType.BigInt,
-            add: RecsType.Boolean,
+            recipient_entity_id: RecsType.Number,
+            sending_realm_id: RecsType.Number,
+            sender_entity_id: RecsType.Number,
+            resources: RecsType.StringArray,
             timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace: "eternum",
-              name: "LiquidityEvent",
-              types: ["u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
-              customTypes: [],
+              name: "Transfer",
+              types: ["u32", "u32", "u32", "array", "u64"],
+              customTypes: ["Coord"],
             },
           },
         );
       })(),
 
-      BurnDonkey: (() => {
+      Travel: (() => {
         return defineComponent(
           world,
           {
-            player_address: RecsType.BigInt,
+            destination_coord_x: RecsType.Number,
+            destination_coord_y: RecsType.Number,
+            owner: RecsType.BigInt,
             entity_id: RecsType.Number,
-            amount: RecsType.BigInt,
-            timestamp: RecsType.Number,
+            travel_time: RecsType.BigInt,
+            travel_path: RecsType.StringArray,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace: "eternum",
-              name: "BurnDonkey",
-              types: ["ContractAddress", "u32", "u128", "u64"],
-              customTypes: [],
+              name: "Travel",
+              types: ["u32", "u32", "ContractAddress", "u32", "array", "u64"],
+              customTypes: ["Coord"],
             },
           },
         );
       })(),
 
-      CreateGuild: (() => {
+      TrophyProgression: (() => {
         return defineComponent(
           world,
           {
-            guild_entity_id: RecsType.Number,
-            guild_name: RecsType.BigInt,
-            timestamp: RecsType.Number,
+            player_id: RecsType.BigInt,
+            task_id: RecsType.BigInt,
+            count: RecsType.Number,
+            time: RecsType.BigInt,
           },
           {
             metadata: {
               namespace: "eternum",
-              name: "CreateGuild",
-              types: ["u32", "felt252", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      JoinGuild: (() => {
-        return defineComponent(
-          world,
-          {
-            guild_entity_id: RecsType.Number,
-            address: RecsType.BigInt,
-            guild_name: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "eternum",
-              name: "JoinGuild",
-              types: ["u32", "ContractAddress", "felt252", "u64"],
-              customTypes: [],
+              name: "TrophyProgression",
+              types: ["felt252", "felt252", "u32", "u64"],
+              customTypes: [""],
             },
           },
         );
