@@ -24,7 +24,8 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
   const totalTroops = getArmyNumberOfTroops(army);
   const remainingTroops = totalTroops - deductedTroops;
   const capacityRatio = Math.floor(Number(remainingTroops) / Number(totalTroops));
-  const armyTotalCapacity = BigInt(Number(army.totalCapacity) * capacityRatio);
+
+  const armyTotalCapacity = isFinite(capacityRatio) ? BigInt(Number(army.totalCapacity) * capacityRatio) : 0n;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const remainingCapacity = useMemo(() => armyTotalCapacity - army.weight, [army]);
