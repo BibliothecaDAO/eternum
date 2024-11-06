@@ -414,7 +414,7 @@ export function defineContractComponents(world: World) {
         {
           hyperstructure_entity_id: RecsType.Number,
           index: RecsType.Number,
-          start_timestamp: RecsType.Number,
+          start_timestamp: RecsType.BigInt,
           owners: RecsType.BigIntArray,
         },
         {
@@ -2058,7 +2058,7 @@ const eventsComponents = (world: World) => {
               namespace: "eternum",
               name: "TrophyProgression",
               types: ["felt252", "felt252", "u32", "u64"],
-              customTypes: [""],
+              customTypes: [],
             },
           },
         );
