@@ -21,7 +21,7 @@ import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
 
 const ACCOUNT_CHANGE_EVENT = "addressChanged";
@@ -384,17 +384,24 @@ const NavigateToRealm = ({ text }: { text: string }) => {
   const { handleUrlChange } = useQuery();
   const { playerRealms } = useEntities();
 
-  const url = new Position(playerRealms()[0]?.position).toHexLocationUrl();
+  const realms = playerRealms();
+  const url = useMemo(() => {
+    if (realms.length <= 0) {
+      return;
+    }
+    return new Position(realms[0]?.position).toHexLocationUrl();
+  }, [playerRealms]);
 
   return (
     <Button
       size="md"
       variant="primary"
+      disabled={!url}
       onClick={async () => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
-          handleUrlChange(url);
+          handleUrlChange(url!);
           window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
         }, 250);
       }}
