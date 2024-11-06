@@ -10,13 +10,14 @@ import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
 import { ArrowUp } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
 
 export const SecondaryMenuItems = () => {
   const { toggleModal } = useModalStore();
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const { connector } = useAccountStore();
 
   const { isMapView } = useQuery();
 
@@ -32,6 +33,14 @@ export const SecondaryMenuItems = () => {
   const realmSelected = useMemo(() => {
     return isRealmSelected(structureEntityId, structures) ? true : false;
   }, [structureEntityId, structures]);
+
+  const handleTrophyClick = useCallback(() => {
+    if (!connector?.controller) {
+      console.error('Connector not initialized');
+      return;
+    }
+    connector.controller.openProfile("trophies");
+  }, [connector]);
 
   const secondaryNavigation = useMemo(() => {
     return [
@@ -87,7 +96,7 @@ export const SecondaryMenuItems = () => {
           label={"Trophies"}
           // active={isPopupOpen(quests)}
           size="lg"
-          onClick={() => useAccountStore.getState().connector?.controller.openProfile("trophies")}
+          onClick={handleTrophyClick}
         />
         <CircleButton
           image={BuildingThumbs.question}

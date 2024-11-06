@@ -65,16 +65,21 @@ const useRpcProvider = () => {
 };
 
 const useControllerAccount = () => {
-  const { account: controllerAccount, connector, isConnected } = useAccount();
+  const { account, connector, isConnected } = useAccount();
+
   useEffect(() => {
-    if (controllerAccount) {
-      useAccountStore.getState().setAccount(controllerAccount);
+    if (account) {
+      useAccountStore.getState().setAccount(account);
     }
+  }, [account, isConnected]);
+
+  useEffect(() => {
     if (connector) {
       useAccountStore.getState().setConnector(connector as ControllerConnector);
     }
-  }, [controllerAccount, isConnected, connector]);
-  return controllerAccount;
+  }, [connector, isConnected])
+
+  return account;
 };
 
 export const DojoProvider = ({ children, value }: DojoProviderProps) => {
@@ -150,7 +155,7 @@ const DojoContextProvider = ({
   };
 
   // Determine which account to use based on environment
-  const isDev = import.meta.env.VITE_PUBLIC_DEV === "true";
+  const isDev = false;
   const accountToUse = isDev ? burnerAccount : controllerAccount;
 
   useEffect(() => {
