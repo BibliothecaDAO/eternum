@@ -33,10 +33,6 @@ export const SecondaryMenuItems = () => {
     return isRealmSelected(structureEntityId, structures) ? true : false;
   }, [structureEntityId, structures]);
 
-  console.log("useAccountStore.getState().connector", useAccountStore.getState().connector);
-  console.log("profile", useAccountStore.getState().connector?.controller.profile);
-  console.log("iframes", useAccountStore.getState().connector?.controller.iframes);
-
   const secondaryNavigation = useMemo(() => {
     return [
       {
