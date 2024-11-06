@@ -77,7 +77,7 @@ const useControllerAccount = () => {
     if (connector) {
       useAccountStore.getState().setConnector(connector as ControllerConnector);
     }
-  }, [connector, isConnected])
+  }, [connector, isConnected]);
 
   return account;
 };
