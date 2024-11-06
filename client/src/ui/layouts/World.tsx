@@ -66,6 +66,9 @@ const EventStream = lazy(() =>
   import("../modules/stream/EventStream").then((module) => ({ default: module.EventStream })),
 );
 const Onboarding = lazy(() => import("./Onboarding").then((module) => ({ default: module.Onboarding })));
+const OrientationOverlay = lazy(() =>
+  import("../components/overlays/OrientationOverlay").then((module) => ({ default: module.OrientationOverlay })),
+);
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -98,6 +101,7 @@ export const World = () => {
       <div className="vignette" />
 
       <Suspense fallback={<LoadingScreen />}>
+        {IS_MOBILE && <OrientationOverlay />}
         <LoadingOroborus loading={isLoadingScreenEnabled} />
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
         <BlankOverlayContainer open={showBlankOverlay}>

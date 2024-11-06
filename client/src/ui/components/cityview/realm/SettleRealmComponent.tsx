@@ -1,3 +1,4 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import Button from "../../../elements/Button";
 
 import { useSettleRealm } from "@/hooks/helpers/use-settle-realm";
@@ -6,13 +7,45 @@ import { MAX_REALMS } from "@/ui/constants";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/elements/Collapsible";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ChevronsUpDown } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const SettleRealmComponent = () => {
+  const {
+    account: { account },
+    network: { toriiClient },
+  } = useDojo();
+
   const { playerRealms } = useEntities();
 
   const { settleRealm, isLoading, tokenId, setTokenId, errorMessage } = useSettleRealm();
 
-  const numberRealms = playerRealms().length;
+  const [mintedRealms, setMintedRealms] = useState(1000);
+
+  useEffect(() => {
+    const getEvents = async () => {
+      const events = await toriiClient.getEventMessages({
+        limit: 1000,
+        offset: 0,
+        dont_include_hashed_keys: false,
+        clause: {
+          Member: {
+            model: "eternum-SettleRealmData",
+            member: "owner_address",
+            operator: "Eq",
+            value: { Primitive: { ContractAddress: account.address } },
+          },
+        },
+      });
+
+      return events;
+    };
+    getEvents().then((events) => {
+      const len = Object.keys(events).length;
+      setMintedRealms(len);
+    });
+  }, [setMintedRealms]);
+
+  const numberRealms = Math.max(mintedRealms, playerRealms().length);
 
   return (
     <>
@@ -20,7 +53,7 @@ const SettleRealmComponent = () => {
         <div className="flex flex-col gap-y-2">
           <h2 className=" text-center">Settle Realms</h2>
 
-          {numberRealms > MAX_REALMS ? (
+          {numberRealms >= MAX_REALMS ? (
             <p className="text-center text-xl">You have already settled the maximum number of Realms.</p>
           ) : (
             <p className="text-center text-xl">Settle a maximum of 4 Realms. Select a Realm ID or a random one.</p>

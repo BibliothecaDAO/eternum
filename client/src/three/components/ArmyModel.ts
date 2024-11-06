@@ -1,7 +1,7 @@
 import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { gltfLoader } from "../helpers/utils";
 
 const MAX_INSTANCES = 1000;
 const ANIMATION_STATE_IDLE = 0;
@@ -36,10 +36,10 @@ export class ArmyModel {
   }
 
   private async loadModel(): Promise<void> {
-    const loader = new GLTFLoader();
+    const loader = gltfLoader;
     return new Promise((resolve, reject) => {
       loader.load(
-        "models/knight.glb",
+        "models/knight-opt.glb",
         (gltf) => {
           this.armyMesh = gltf.scene.children[0];
           const geometry = (this.armyMesh as THREE.Mesh).geometry;

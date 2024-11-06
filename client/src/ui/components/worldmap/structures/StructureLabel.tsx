@@ -1,19 +1,28 @@
 import { configManager } from "@/dojo/setup";
+import { useGuilds } from "@/hooks/helpers/useGuilds";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { formatTime } from "@/ui/utils/utils";
-import { TickIds } from "@bibliothecadao/eternum";
+import { ContractAddress, TickIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { StructureListItem } from "./StructureListItem";
 
-export const ImmunityTimer = ({ isImmune, timer }: { isImmune: boolean; timer: number }) => {
+export const ImmunityTimer = ({
+  isImmune,
+  timer,
+  className,
+}: {
+  isImmune: boolean;
+  timer: number;
+  className?: string;
+}) => {
   if (!isImmune) return null;
 
   return (
-    <div className="mt-2 p-2 bg-blue-500 bg-opacity-20 rounded-md">
+    <div className={`mt-2 p-2 bg-blue-500 bg-opacity-20 rounded-md ${className}`}>
       <div className="text-sm font-semibold text-blue-300">Immune</div>
       <div className="text-lg font-bold text-white animate-pulse">{formatTime(timer)}</div>
     </div>
@@ -24,6 +33,7 @@ export const StructureInfoLabel = () => {
   const { isMapView } = useQuery();
   const hoveredStructure = useUIStore((state) => state.hoveredStructure);
   const { getStructureByEntityId } = useStructures();
+  const { getGuildFromPlayerAddress } = useGuilds();
 
   const structure = useMemo(() => {
     if (hoveredStructure) {
@@ -32,6 +42,8 @@ export const StructureInfoLabel = () => {
     }
     return undefined;
   }, [hoveredStructure]);
+
+  const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n));
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
 
@@ -56,6 +68,13 @@ export const StructureInfoLabel = () => {
           <div className="flex flex-col gap-1">
             <Headline className="text-center text-lg">
               <div>{structure.ownerName}</div>
+              {playerGuild && (
+                <div>
+                  {"< "}
+                  {playerGuild.name}
+                  {" >"}
+                </div>
+              )}
             </Headline>
             <StructureListItem
               structure={structure}

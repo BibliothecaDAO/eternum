@@ -15,9 +15,9 @@ import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import _, { throttle } from "lodash";
-import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import { BiomeType } from "../components/Biome";
 import InstancedBiome from "../components/InstancedBiome";
+import { gltfLoader } from "../helpers/utils";
 import { SystemManager } from "../systems/SystemManager";
 import { HEX_SIZE, biomeModelPaths } from "./constants";
 
@@ -347,11 +347,7 @@ export abstract class HexagonScene {
   }
 
   loadBiomeModels(maxInstances: number) {
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/");
-    dracoLoader.preload();
-    loader.setDRACOLoader(dracoLoader);
+    const loader = gltfLoader;
 
     for (const [biome, path] of Object.entries(biomeModelPaths)) {
       const loadPromise = new Promise<void>((resolve, reject) => {
