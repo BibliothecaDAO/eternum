@@ -23,19 +23,22 @@ const SettleRealmComponent = () => {
 
   useEffect(() => {
     const getEvents = async () => {
-      const events = await toriiClient.getEventMessages({
-        limit: 1000,
-        offset: 0,
-        dont_include_hashed_keys: false,
-        clause: {
-          Member: {
-            model: "eternum-SettleRealmData",
-            member: "owner_address",
-            operator: "Eq",
-            value: { Primitive: { ContractAddress: account.address } },
+      const events = await toriiClient.getEventMessages(
+        {
+          limit: 1000,
+          offset: 0,
+          dont_include_hashed_keys: false,
+          clause: {
+            Member: {
+              model: "eternum-SettleRealmData",
+              member: "owner_address",
+              operator: "Eq",
+              value: { Primitive: { ContractAddress: account.address } },
+            },
           },
         },
-      });
+        true,
+      );
 
       return events;
     };

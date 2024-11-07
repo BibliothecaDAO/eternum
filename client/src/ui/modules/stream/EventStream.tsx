@@ -5,7 +5,7 @@ import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
 import { ContractAddress } from "@bibliothecadao/eternum";
-import { Component, defineComponentSystem, getComponentValue, World } from "@dojoengine/recs";
+import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useState } from "react";
 import { MessageIcon } from "../social/PlayerId";
@@ -25,7 +25,7 @@ export const EventStream = () => {
   const [hasNewEvents, setHasNewEvents] = useState(false);
   const { getAddressNameFromEntity, getPlayerAddressFromEntity } = useEntitiesUtils();
 
-  const createEvent = (entity: any, component: any, eventType: EventType): EventData | undefined => {
+  const createEvent = (entity: Entity, component: Component<any>, eventType: EventType): EventData | undefined => {
     const componentValue = getComponentValue(component, entity);
     const armyEntityId =
       componentValue?.entity_id ||
@@ -33,6 +33,7 @@ export const EventStream = () => {
       componentValue?.leaver_army_entity_id ||
       componentValue?.claimer_army_entity_id ||
       componentValue?.pillager_army_entity_id ||
+      componentValue?.attacker_army_entity_id ||
       0;
     const entityOwner = getComponentValue(components.EntityOwner, getEntityIdFromKeys([BigInt(armyEntityId)]));
     const entityId =
@@ -70,7 +71,9 @@ export const EventStream = () => {
     };
   };
 
-  const createEventStream = (world: World, component: Component<any>, eventType: EventType) => {
+  const createEventStream = (world: World, eventType: EventType) => {
+    const component = components.events[eventType as keyof typeof components.events] as Component<any>;
+
     defineComponentSystem(
       world,
       component,
@@ -79,7 +82,6 @@ export const EventStream = () => {
         if (!event) return;
         setEventList((prev) => {
           const newEvents = [event, ...prev];
-          // Check if this is a personal event
           if (event.to === ContractAddress(account.address)) {
             const lastSeen = localStorage.getItem(EVENT_NOTIF_STORAGE_KEY) || "0";
             if (event.timestamp > parseInt(lastSeen)) {
@@ -95,7 +97,7 @@ export const EventStream = () => {
 
   useEffect(() => {
     Object.keys(eventDetails).forEach((eventType) => {
-      createEventStream(world, components.events[eventType as keyof typeof components.events], eventType as EventType);
+      createEventStream(world, eventType as EventType);
     });
 
     return () => setEventList([]);
