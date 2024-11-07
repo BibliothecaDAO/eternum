@@ -144,38 +144,40 @@ export const PlayerId = ({
         </div>
       </div>
 
-      <div className="flex flex-row gap-2 w-full overflow-x-auto no-scrollbar">
-        {playerStructures?.map((structure) => {
-          if (!structure) return null;
+      <div className="flex flex-col gap-4 w-full p-1 max-h-[500px] overflow-y-auto">
+        <div className="grid grid-cols-4 gap-1">
+          {playerStructures?.map((structure) => {
+            if (!structure) return null;
 
-          let structureSpecificElement: JSX.Element | null;
-          if (structure?.category === StructureType[StructureType.Realm]) {
-            structureSpecificElement = (
-              <div key={structure.entity_id}>
-                <RealmResourcesIO
-                  className="w-full overflow-x-auto no-scrollbar font-normal"
-                  titleClassName="font-normal text-sm"
-                  realmEntityId={structure.entity_id}
-                />
+            let structureSpecificElement: JSX.Element | null;
+            if (structure?.category === StructureType[StructureType.Realm]) {
+              structureSpecificElement = (
+                <div key={structure.entity_id}>
+                  <RealmResourcesIO
+                    className="w-full font-normal"
+                    titleClassName="font-normal text-sm"
+                    realmEntityId={structure.entity_id}
+                  />
+                </div>
+              );
+            } else {
+              structureSpecificElement = null;
+            }
+
+            return (
+              <div key={structure.entity_id} className="flex flex-col gap-2 border-2 border-gold/10 p-2 rounded-md">
+                <div className="flex flex-col justify-between text-xs font-bold truncate">
+                  {structure.structureName}
+                  <div className="flex flex-row items-center">
+                    <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position.getNormalized()} />
+                    <ViewOnMapIcon className="!w-4 !h-4" position={structure.position.getNormalized()} />
+                  </div>
+                </div>
+                {structureSpecificElement}
               </div>
             );
-          } else {
-            structureSpecificElement = null;
-          }
-
-          return (
-            <div key={structure.entity_id} className="flex flex-col gap-2 border-2 border-gold/10 p-2 rounded-md w-24">
-              <div className="flex flex-col justify-between text-sm font-bold">
-                {structure.structureName}
-                <div className="flex flex-row items-center">
-                  <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position.getNormalized()} />
-                  <ViewOnMapIcon className="!w-4 !h-4" position={structure.position.getNormalized()} />
-                </div>
-              </div>
-              {structureSpecificElement}
-            </div>
-          );
-        })}
+          })}
+        </div>
       </div>
     </div>
   );
