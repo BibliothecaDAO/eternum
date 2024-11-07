@@ -1,3 +1,5 @@
+import { useAccountStore } from "@/hooks/context/accountStore";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { DRACOLoader, GLTFLoader, MeshoptDecoder } from "three-stdlib";
 export function createPausedLabel() {
   const div = document.createElement("div");
@@ -13,3 +15,7 @@ dracoLoader.preload();
 export const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 gltfLoader.setMeshoptDecoder(MeshoptDecoder());
+
+export function isAddressEqualToAccount(address: bigint): boolean {
+  return address === ContractAddress(useAccountStore.getState().account?.address || "0");
+}

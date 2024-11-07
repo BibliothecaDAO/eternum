@@ -1,8 +1,9 @@
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { FELT_CENTER } from "@/ui/config";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { gltfLoader } from "../helpers/utils";
+import { gltfLoader, isAddressEqualToAccount } from "../helpers/utils";
 import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
 import { StructureSystemUpdate } from "../systems/types";
 import InstancedModel from "./InstancedModel";
@@ -32,6 +33,10 @@ export class StructureManager {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
     this.loadModels();
+
+    useAccountStore.subscribe(() => {
+      this.structures.recheckOwnership();
+    });
   }
 
   public async loadModels() {
@@ -81,7 +86,7 @@ export class StructureManager {
 
   async onUpdate(update: StructureSystemUpdate) {
     await Promise.all(this.modelLoadPromises);
-    const { entityId, hexCoords, isMine, structureType, stage, level } = update;
+    const { entityId, hexCoords, structureType, stage, level, owner } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
 
@@ -98,7 +103,7 @@ export class StructureManager {
 
     const key = structureType;
     // Add the structure to the structures map
-    this.structures.addStructure(entityId, key, normalizedCoord, stage, level, isMine);
+    this.structures.addStructure(entityId, key, normalizedCoord, stage, level, owner);
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -218,6 +223,7 @@ export interface StructureInfo {
   stage: number;
   level: number;
   isMine: boolean;
+  owner: { address: bigint };
 }
 
 class Structures {
@@ -229,15 +235,25 @@ class Structures {
     hexCoords: { col: number; row: number },
     stage: number = 0,
     level: number = 0,
-    isMine: boolean,
+    owner: { address: bigint },
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures.get(structureType)!.set(entityId, { entityId, hexCoords, stage, level, isMine });
+    this.structures
+      .get(structureType)!
+      .set(entityId, { entityId, hexCoords, stage, level, isMine: isAddressEqualToAccount(owner.address), owner });
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
     return this.structures;
+  }
+
+  recheckOwnership() {
+    this.structures.forEach((structures) => {
+      structures.forEach((structure) => {
+        structure.isMine = isAddressEqualToAccount(structure.owner.address);
+      });
+    });
   }
 }
