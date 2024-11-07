@@ -114,6 +114,10 @@ export class BattleManager {
 
     if (!battle) return 0;
 
+    if (battle.duration_left === 0n) {
+      return 0;
+    }
+
     if (this.isSiege(currentTimestamp)) {
       return 0;
     }
@@ -135,11 +139,15 @@ export class BattleManager {
       return undefined;
     }
 
+    const date = new Date(0);
+
+    if (battle.duration_left === 0n) {
+      return date;
+    }
+
     if (this.isSiege(currentTimestamp)) {
       return new Date(Number(battle.start_at) - currentTimestamp + Number(battle.duration_left));
     }
-
-    const date = new Date(0);
 
     const durationSinceLastUpdate = currentTimestamp - Number(battle.last_updated);
     if (Number(battle.duration_left) > durationSinceLastUpdate) {
@@ -179,9 +187,13 @@ export class BattleManager {
   public isBattleOngoing(currentTimestamp: number): boolean {
     const battle = this.getBattle();
 
+    if (!battle || battle.duration_left === 0n) {
+      return false;
+    }
+
     const timeSinceLastUpdate = this.getElapsedTime(currentTimestamp);
 
-    return battle ? timeSinceLastUpdate < battle.duration_left : false;
+    return timeSinceLastUpdate < battle.duration_left;
   }
 
   public getBattle(): ComponentValue<ClientComponents["Battle"]["schema"]> | undefined {

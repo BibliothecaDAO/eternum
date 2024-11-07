@@ -46,7 +46,7 @@ export const NavigateToPositionIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: "Navigate to Army",
-          position: "bottom",
+          position: "top",
         });
       }}
       onMouseLeave={() => {

@@ -1,6 +1,7 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { LoadingScreen } from "@/ui/modules/LoadingScreen";
+import ControllerConnector from "@cartridge/connector/controller";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
@@ -64,13 +65,21 @@ const useRpcProvider = () => {
 };
 
 const useControllerAccount = () => {
-  const { account: controllerAccount, isConnected } = useAccount();
+  const { account, connector, isConnected } = useAccount();
+
   useEffect(() => {
-    if (controllerAccount) {
-      useAccountStore.getState().setAccount(controllerAccount);
+    if (account) {
+      useAccountStore.getState().setAccount(account);
     }
-  }, [controllerAccount, isConnected]);
-  return controllerAccount;
+  }, [account, isConnected]);
+
+  useEffect(() => {
+    if (connector) {
+      useAccountStore.getState().setConnector(connector as ControllerConnector);
+    }
+  }, [connector, isConnected]);
+
+  return account;
 };
 
 export const DojoProvider = ({ children, value }: DojoProviderProps) => {

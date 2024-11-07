@@ -48,6 +48,9 @@ export const MarketTradingHistory = () => {
         const takerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.taker_id)]));
         if (!takerOwner) return;
 
+        const makerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.maker_id)]));
+        if (!makerOwner) return;
+
         const { makerGets, takerGets } = getTradeResources(trade.trade_id);
 
         setTradeEvents((prevTradeEvents) => {
@@ -58,7 +61,7 @@ export const MarketTradingHistory = () => {
               event: {
                 takerId: event.taker_id,
                 makerId: event.maker_id,
-                isYours: takerOwner.address === BigInt(address),
+                isYours: takerOwner.address === BigInt(address) || makerOwner.address === BigInt(address),
                 resourceGiven: makerGets[0],
                 resourceTaken: takerGets[0],
                 eventTime: new Date(event.timestamp * 1000),
