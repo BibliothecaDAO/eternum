@@ -83,7 +83,7 @@ export const BattleSideView = ({
 
   return (
     <div
-      className={`flex col-span-5 bg-brown mx-4 bg-hex-bg -mt-16 ${
+      className={`flex col-span-5 mx-4 bg-hex-bg -mt-16 ${
         battleSide === BattleSide.Attack ? "flex-row " : "flex-row-reverse "
       }`}
     >
@@ -97,7 +97,7 @@ export const BattleSideView = ({
           {React.Children.toArray(
             ownSideArmies.map((army) => {
               if (!army) return;
-              const addressName = getAddressNameFromEntity(army.entity_id);
+              const addressName = getAddressNameFromEntity(army.entity_id) || "Mercenaries";
               return (
                 <div className="flex justify-around px-2 py-1 rounded bg-brown/70 text-xs gap-2 border-gold/10 border">
                   <span className="self-center align-middle">{addressName}</span>
