@@ -66,12 +66,13 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
             doerArmyEntityId = battleStartData.defender_army_entity_id;
           }
         } else {
-          doerName = "";
+          doerName = 0n;
           doerArmyEntityId = 0;
         }
 
         const doerArmy = getArmy(doerArmyEntityId);
 
+        const armyName = doerName === 0n ? "Mercenaries" : shortString.decodeShortString(doerName.toString());
         const elapsedTime = eventClone.timestamp - battleStartTime;
 
         const { emoji, action, className } = EVENT_CONFIG[eventClone.event_id as keyof typeof EVENT_CONFIG];
@@ -84,8 +85,7 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
                   : "Battle started"}
               </div>
               <div className="col-span-3 align-top self-start" key={eventClone.id}>
-                {emoji} {shortString.decodeShortString(doerName.toString())} {action}{" "}
-                {currencyFormat(getTotalTroops(doerArmy?.troops), 0)} troops
+                {emoji} {armyName} {action} {currencyFormat(getTotalTroops(doerArmy?.troops), 0)} troops
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4">
