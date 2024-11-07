@@ -1,5 +1,4 @@
-import { StructureInfo } from "@/three/components/StructureManager";
-import { HexPosition } from "@/types";
+import { HexPosition, StructureInfo } from "@/types";
 import { BuildingType, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
