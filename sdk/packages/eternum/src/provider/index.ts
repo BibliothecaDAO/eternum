@@ -55,9 +55,15 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   // Wrapper function to check for transaction errors
   async waitForTransactionWithCheck(transactionHash: string) {
-    const receipt = await this.provider.waitForTransaction(transactionHash, {
-      retryInterval: 500,
-    });
+    let receipt;
+    try {
+      receipt = await this.provider.waitForTransaction(transactionHash, {
+        retryInterval: 500,
+      });
+    } catch (error) {
+      console.error(`Error waiting for transaction ${transactionHash}`);
+      throw error;
+    }
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {

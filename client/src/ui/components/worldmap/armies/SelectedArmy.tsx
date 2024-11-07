@@ -6,6 +6,7 @@ import { Position } from "@/types/Position";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { InventoryResources } from "@/ui/components/resources/InventoryResources";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArmyWarning } from "./ArmyWarning";
 
 export const SelectedArmy = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -81,6 +82,7 @@ export const SelectedArmy = () => {
               </div>
             </div>
           )}
+          <ArmyWarning army={ownArmy!} />
           <ArmyChip className="w-[27rem] bg-black/90" army={ownArmy} showButtons={false} />
           <InventoryResources
             entityIds={[ownArmy!.entity_id]}

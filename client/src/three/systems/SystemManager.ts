@@ -90,16 +90,15 @@ export class SystemManager {
               this.setup.components.Owner,
               getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
             );
-            const isMine = this.isOwner(owner);
 
             callback({
               entityId: army.entity_id,
               hexCoords: { col: position.x, row: position.y },
-              isMine,
               battleId: army.battle_id,
               defender: Boolean(protectee),
               currentHealth: health.current / healthMultiplier,
               order: realm.order,
+              owner: { address: owner?.address || 0n },
             });
           }
         });
@@ -115,7 +114,6 @@ export class SystemManager {
           if (!structure) return;
 
           const owner = getComponentValue(this.setup.components.Owner, update.entity);
-          const isMine = this.isOwner(owner);
 
           const categoryKey = structure.category as keyof typeof StructureType;
 
@@ -130,9 +128,9 @@ export class SystemManager {
             entityId: structure.entity_id,
             hexCoords: this.getHexCoords(update.value),
             structureType: StructureType[categoryKey],
-            isMine,
             stage,
             level,
+            owner: { address: owner?.address || 0n },
           };
         });
       },
@@ -240,10 +238,6 @@ export class SystemManager {
         });
       },
     };
-  }
-
-  private isOwner(owner: any): boolean {
-    return owner?.address === BigInt(this.setup.network.burnerManager.account?.address || 0);
   }
 
   private getHexCoords(value: any): { col: number; row: number } {

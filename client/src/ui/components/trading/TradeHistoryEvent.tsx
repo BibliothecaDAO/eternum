@@ -2,7 +2,6 @@ import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
 import { Resource, ResourcesIds } from "@bibliothecadao/eternum";
-import { Crown } from "lucide-react";
 import { TradeEvent } from "./MarketTradingHistory";
 
 export enum EventType {
@@ -35,10 +34,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         className={`text-xs my-auto`}
       >{`${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`}</div>
       <div className={`text-sm my-auto`}>{trade.type}</div>
-      <div className={`text-sm my-auto flex flex-row items-center justify-start`}>
-        {taker}
-        {trade.event.isYours && <Crown className="h-4" />}
-      </div>
+      <div className={`text-sm my-auto flex flex-row items-center justify-start`}>{taker}</div>
       <div className="text-sm my-auto flex flex-row">
         <div>{"bought"}</div>
         <ResourceIcon resource={ResourcesIds[Number(trade.event.resourceTaken.resourceId)]} size={"sm"} />

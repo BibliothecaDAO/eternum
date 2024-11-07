@@ -5,6 +5,7 @@ import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { configManager } from "@/dojo/setup";
 import { useAccountStore } from "@/hooks/context/accountStore";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useMintedRealms } from "@/hooks/helpers/use-minted-realms";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useRealm } from "@/hooks/helpers/useRealm";
@@ -12,6 +13,7 @@ import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
+import { MAX_REALMS } from "@/ui/constants";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 // import ListSelect from "@/ui/elements/ListSelect";
@@ -62,14 +64,11 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
 
 export const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
-    masterAccount,
     account: { create, isDeploying, list, select, clear },
     setup: {
       systemCalls: { set_address_name },
     },
   } = useDojo();
-
-  console.log(useAccountStore.getState().account);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -162,6 +161,10 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       });
     }
   }, [copyMessage, importMessage]);
+
+  const mintedRealms = useMintedRealms();
+
+  const numberRealms = Math.max(mintedRealms, playerRealms().length);
 
   return (
     <StepContainer>
@@ -266,13 +269,15 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       </div>
 
       <div className="flex space-x-2 mt-8 justify-center">
-        {/* {playerRealms().length > 3 ? (
+        {numberRealms >= MAX_REALMS && playerRealms().length === 0 ? (
+          <div>You have been eliminated. Please try again next Season.</div>
+        ) : playerRealms().length > 1 ? (
           <NavigateToRealm text={"begin"} />
-        ) : ( */}
-        <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
-          Continue <ArrowRight className="w-2 fill-current ml-3" />
-        </Button>
-        {/* )} */}
+        ) : (
+          <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
+            Continue <ArrowRight className="w-2 fill-current ml-3" />
+          </Button>
+        )}
       </div>
     </StepContainer>
   );

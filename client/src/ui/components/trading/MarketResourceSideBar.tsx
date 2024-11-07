@@ -63,8 +63,8 @@ export const MarketResourceSidebar = ({
                 resource={resource}
                 active={selectedResource == resource.id}
                 onClick={onClick}
-                askPrice={askPrice === Infinity ? "0" : askPrice.toFixed(2)}
-                bidPrice={bidPrice === Infinity ? "0" : bidPrice.toFixed(2)}
+                askPrice={askPrice === Infinity ? 0 : askPrice}
+                bidPrice={bidPrice === Infinity ? 0 : bidPrice}
                 ammPrice={ammPrice}
               />
             );

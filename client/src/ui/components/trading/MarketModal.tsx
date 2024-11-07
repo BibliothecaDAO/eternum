@@ -308,7 +308,7 @@ export const MarketModal = () => {
                     AMM
                   </div>
                 )}
-                {isBattleOngoing && (
+                {!isSiegeOngoing && isBattleOngoing && (
                   <div className="flex items-center text-red">
                     <span className="mr-2">⚠</span> Bank combat has started, AMM blocked for{" "}
                     {formatTimeDifference(battleManager.getTimeLeft(currentBlockTimestamp) || new Date(0))} remaining

@@ -1,10 +1,7 @@
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { computeExploreFoodCosts, currencyFormat, multiplyByPrecision } from "../../../utils/utils";
+import { currencyFormat } from "../../../utils/utils";
 
-import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
-import { StaminaManager } from "@/dojo/modelManager/StaminaManager";
 import { configManager } from "@/dojo/setup";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useIsStructureImmune, useStructures } from "@/hooks/helpers/useStructures";
@@ -20,6 +17,7 @@ import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
 import { InventoryResources } from "../../resources/InventoryResources";
 import { ImmunityTimer } from "../structures/StructureLabel";
+import { ArmyWarning } from "./ArmyWarning";
 
 export const ArmyInfoLabel = () => {
   const { isMapView } = useQuery();
@@ -39,32 +37,14 @@ interface ArmyInfoLabelProps {
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
-  const { setup } = useDojo();
   const { getRealmAddressName } = useRealm();
   const { realm, entity_id, entityOwner, troops } = army;
 
   const realmId = realm?.realm_id || 0;
 
   const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
-  const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
-  const armyManager = useMemo(() => {
-    return new ArmyMovementManager(setup, army.entity_id);
-  }, [army]);
-
-  const food = armyManager.getFood(useUIStore.getState().currentDefaultTick);
-
-  const exploreFoodCosts = useMemo(() => computeExploreFoodCosts(army.troops), [army]);
 
   const { getStructureByEntityId } = useStructures();
-
-  const notEnoughFood =
-    food.wheat < multiplyByPrecision(exploreFoodCosts.wheatPayAmount) ||
-    food.fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount);
-
-  const stamina = useMemo(() => {
-    const staminaManager = new StaminaManager(setup, army.entity_id);
-    return staminaManager.getStamina(useUIStore.getState().currentArmiesTick);
-  }, [army]);
 
   const originRealmName = getRealmNameById(realmId);
 
@@ -99,25 +79,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
         <Headline className="text-center text-lg">
           <div>{attackerAddressName}</div>
         </Headline>
-
-        <div>
-          {stamina.amount < configManager.getTravelStaminaCost() ? (
-            <div className="text-xxs font-semibold items-center text-center">
-              ⚠️ Not enough stamina to explore or travel
-            </div>
-          ) : (
-            stamina.amount < configManager.getExploreStaminaCost() && (
-              <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough stamina to explore</div>
-            )
-          )}
-          {remainingCapacity < configManager.getExploreReward() && (
-            <div className="text-xxs font-semibold items-center text-center">⚠️ Too heavy to explore</div>
-          )}
-          {notEnoughFood && (
-            <div className="text-xxs font-semibold items-center text-center">⚠️ Not enough food to move</div>
-          )}
-        </div>
-
+        <ArmyWarning army={army} />
         <div id="army-info-label-content" className="self-center flex justify-between w-full">
           <div className="flex flex-col items-start">
             <div>{army.name}</div>

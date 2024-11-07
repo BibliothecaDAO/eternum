@@ -1,8 +1,11 @@
+import { useAccountStore } from "@/hooks/context/accountStore";
+import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { Position } from "@/types/Position";
 import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
-import { ID, orders } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GUIManager } from "../helpers/GUIManager";
+import { isAddressEqualToAccount } from "../helpers/utils";
 import { ArmySystemUpdate } from "../systems/types";
 import { ArmyModel } from "./ArmyModel";
 import { LabelManager } from "./LabelManager";
@@ -14,25 +17,15 @@ const RADIUS_OFFSET = 0.09;
 export class ArmyManager {
   private scene: THREE.Scene;
   private armyModel: ArmyModel;
-  private armies: Map<ID, { entityId: ID; matrixIndex: number; hexCoords: Position; isMine: boolean; color: string }> =
-    new Map();
+  private armies: Map<ID, ArmyData> = new Map();
   private scale: THREE.Vector3;
-  private movingArmies: Map<
-    ID,
-    { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number; matrixIndex: number }
-  > = new Map();
+  private movingArmies: Map<ID, MovingArmyData> = new Map();
   private labelManager: LabelManager;
   private labels: Map<number, THREE.Points> = new Map();
-  private movingLabels: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
+  private movingLabels: Map<number, MovingLabelData> = new Map();
   private currentChunkKey: string | null = "190,170";
-  private renderChunkSize: { width: number; height: number };
-  private visibleArmies: Array<{
-    entityId: ID;
-    hexCoords: Position;
-    isMine: boolean;
-    color: string;
-    matrixIndex: number;
-  }> = [];
+  private renderChunkSize: RenderChunkSize;
+  private visibleArmies: ArmyData[] = [];
 
   constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
@@ -58,7 +51,11 @@ export class ArmyManager {
             this.addArmy(
               createArmyParams.entityId,
               new Position({ x: createArmyParams.col, y: createArmyParams.row }),
-              createArmyParams.isMine,
+              {
+                address: createArmyParams.isMine
+                  ? ContractAddress(useAccountStore.getState().account?.address || "0")
+                  : 0n,
+              },
               1,
             );
           },
@@ -83,6 +80,10 @@ export class ArmyManager {
       )
       .name("Delete army");
     deleteArmyFolder.close();
+
+    useAccountStore.subscribe(() => {
+      this.recheckOwnership();
+    });
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -131,7 +132,7 @@ export class ArmyManager {
 
   async onUpdate(update: ArmySystemUpdate) {
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, isMine, battleId, currentHealth, order } = update;
+    const { entityId, hexCoords, owner, battleId, currentHealth, order } = update;
 
     if (currentHealth <= 0) {
       if (this.armies.has(entityId)) {
@@ -156,7 +157,7 @@ export class ArmyManager {
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, position);
     } else {
-      this.addArmy(entityId, position, isMine, order);
+      this.addArmy(entityId, position, owner, order);
     }
   }
 
@@ -216,10 +217,7 @@ export class ArmyManager {
     return isVisible;
   }
 
-  private getVisibleArmiesForChunk(
-    startRow: number,
-    startCol: number,
-  ): Array<{ entityId: ID; hexCoords: Position; isMine: boolean; color: string; matrixIndex: number }> {
+  private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
     const visibleArmies = Array.from(this.armies.entries())
       .filter(([_, army]) => {
         return this.isArmyVisible(army, startRow, startCol);
@@ -230,6 +228,7 @@ export class ArmyManager {
         isMine: army.isMine,
         color: army.color,
         matrixIndex: index,
+        owner: army.owner,
       }));
 
     return visibleArmies;
@@ -248,10 +247,17 @@ export class ArmyManager {
     });
   }
 
-  public addArmy(entityId: ID, hexCoords: Position, isMine: boolean, order: number) {
+  public addArmy(entityId: ID, hexCoords: Position, owner: { address: bigint }, order: number) {
     if (this.armies.has(entityId)) return;
     const orderColor = orders.find((_order) => _order.orderId === order)?.color || "#000000";
-    this.armies.set(entityId, { entityId, matrixIndex: this.armies.size - 1, hexCoords, isMine, color: orderColor });
+    this.armies.set(entityId, {
+      entityId,
+      matrixIndex: this.armies.size - 1,
+      hexCoords,
+      isMine: isAddressEqualToAccount(owner.address),
+      owner,
+      color: orderColor,
+    });
     this.renderVisibleArmies(this.currentChunkKey!);
   }
 
@@ -392,4 +398,10 @@ export class ArmyManager {
 
     return basePosition.add(offset);
   };
+
+  recheckOwnership() {
+    this.armies.forEach((army) => {
+      army.isMine = isAddressEqualToAccount(army.owner.address);
+    });
+  }
 }

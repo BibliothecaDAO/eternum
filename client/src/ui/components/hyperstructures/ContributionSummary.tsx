@@ -1,7 +1,7 @@
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { currencyIntlFormat, divideByPrecision, formatNumber } from "@/ui/utils/utils";
 import { ContractAddress, ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useState } from "react";
 
@@ -71,7 +71,7 @@ export const ContributionSummary = ({
             <div key={playerAddress} className="bg-gold/10 p-1 rounded">
               <div className="flex flex-row mb-1 justify-between mr-1 items-end">
                 <div className="text-sm font-bold">{getAddressName(ContractAddress(playerAddress))}</div>
-                <div className="text-xs">{percentage.toFixed(2)}%</div>
+                <div className="text-xs">{formatNumber(percentage, 2)}%</div>
               </div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(resources).map(([resourceType, amount]) => (
