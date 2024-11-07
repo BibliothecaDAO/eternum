@@ -61,7 +61,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         retryInterval: 500,
       });
     } catch (error) {
-      console.error(error);
+      console.error(`Error waiting for transaction ${transactionHash}`);
       throw error;
     }
 
