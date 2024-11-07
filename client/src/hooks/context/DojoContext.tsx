@@ -155,7 +155,7 @@ const DojoContextProvider = ({
   };
 
   // Determine which account to use based on environment
-  const isDev = false;
+  const isDev = import.meta.env.VITE_PUBLIC_DEV === "true";
   const accountToUse = isDev ? burnerAccount : controllerAccount;
 
   useEffect(() => {
