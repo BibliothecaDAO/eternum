@@ -23,7 +23,15 @@ export const toHexString = (num: bigint) => {
 };
 
 export const formatNumber = (num: number, decimals: number): string => {
-  return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+  // Convert to string with max decimals
+  let str = num.toFixed(decimals);
+
+  // Remove trailing zeros after decimal point
+  if (str.includes(".")) {
+    str = str.replace(/\.?0+$/, "");
+  }
+
+  return str;
 };
 
 export const currencyFormat = (num: number, decimals: number): string => {

@@ -10,7 +10,13 @@ import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat, divideByPrecision, getTotalResourceWeight, multiplyByPrecision } from "@/ui/utils/utils";
+import {
+  currencyFormat,
+  divideByPrecision,
+  formatNumber,
+  getTotalResourceWeight,
+  multiplyByPrecision,
+} from "@/ui/utils/utils";
 import {
   CapacityConfigCategory,
   DONKEY_ENTITY_TYPE,
@@ -38,8 +44,8 @@ export const MarketResource = ({
   resource: Resources;
   active: boolean;
   onClick: (value: number) => void;
-  askPrice: string;
-  bidPrice: string;
+  askPrice: number;
+  bidPrice: number;
   ammPrice: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
@@ -70,23 +76,9 @@ export const MarketResource = ({
         </div>
       </div>
 
-      <div className="text-green font-bold flex items-center justify-center">
-        {Number(bidPrice) === 0
-          ? "0"
-          : Number(bidPrice)
-              .toFixed(3)
-              .replace(/\.?0+$/, "")}
-      </div>
-      <div className="text-red font-bold flex items-center justify-center">
-        {Number(askPrice) === 0
-          ? "0"
-          : Number(askPrice)
-              .toFixed(3)
-              .replace(/\.?0+$/, "")}
-      </div>
-      <div className="text-blueish font-bold flex items-center justify-center">
-        {ammPrice === 0 ? "0" : ammPrice.toFixed(3).replace(/\.?0+$/, "")}
-      </div>
+      <div className="text-green font-bold flex items-center justify-center text-xs">{formatNumber(bidPrice, 4)}</div>
+      <div className="text-red font-bold flex items-center justify-center text-xs">{formatNumber(askPrice, 4)}</div>
+      <div className="text-blueish font-bold flex items-center justify-center text-xs">{formatNumber(ammPrice, 4)}</div>
     </div>
   );
 };
@@ -168,7 +160,7 @@ const MarketOrders = ({
             <div className="uppercase text-sm text-opacity-80">{findResourceById(resourceId)?.trait || ""}</div>
             <div className="flex gap-3">
               <ResourceIcon withTooltip={false} size="lg" resource={findResourceById(resourceId)?.trait || ""} />
-              <div className="self-center">{lowestPrice.toFixed(2)}</div>
+              <div className="self-center">{formatNumber(lowestPrice, 4)}</div>
             </div>
           </div>
         </div>
@@ -275,7 +267,7 @@ const OrderRow = ({
   }, [entityId, offer.makerId, offer.tradeId]);
 
   const getsDisplay = useMemo(() => {
-    return isBuy ? currencyFormat(offer.makerGets[0].amount, 2) : currencyFormat(offer.takerGets[0].amount, 2);
+    return isBuy ? currencyFormat(offer.makerGets[0].amount, 3) : currencyFormat(offer.takerGets[0].amount, 3);
   }, [entityId, offer.makerId, offer.tradeId, offer]);
 
   const getsDisplayNumber = useMemo(() => {
@@ -394,7 +386,7 @@ const OrderRow = ({
             {Math.floor(travelTime / 60)} hrs {travelTime % 60} mins
           </div>
         )}
-        <div className="flex gap-1 text-green">{offer.perLords.toFixed(2)}</div>
+        <div className="flex gap-1 text-green">{formatNumber(offer.perLords, 4)}</div>
         <div className={`flex gap-1 font-bold ${isBuy ? "text-green" : "text-red"}`}>
           <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
           {currencyFormat(getTotalLords, 0)}
