@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
+import { RenderChunkSize, StructureInfo } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
@@ -26,7 +27,7 @@ export class StructureManager {
   structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
   private currentChunk: string = "";
-  private renderChunkSize: { width: number; height: number };
+  private renderChunkSize: RenderChunkSize;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
 
   constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
@@ -215,15 +216,6 @@ export class StructureManager {
       models.forEach((model) => model.updateAnimations(deltaTime));
     });
   }
-}
-
-export interface StructureInfo {
-  entityId: ID;
-  hexCoords: { col: number; row: number };
-  stage: number;
-  level: number;
-  isMine: boolean;
-  owner: { address: bigint };
 }
 
 class Structures {

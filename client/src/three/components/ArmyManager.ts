@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
+import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { Position } from "@/types/Position";
 import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
 import { ContractAddress, ID, orders } from "@bibliothecadao/eternum";
@@ -16,35 +17,15 @@ const RADIUS_OFFSET = 0.09;
 export class ArmyManager {
   private scene: THREE.Scene;
   private armyModel: ArmyModel;
-  private armies: Map<
-    ID,
-    {
-      entityId: ID;
-      matrixIndex: number;
-      hexCoords: Position;
-      isMine: boolean;
-      owner: { address: bigint };
-      color: string;
-    }
-  > = new Map();
+  private armies: Map<ID, ArmyData> = new Map();
   private scale: THREE.Vector3;
-  private movingArmies: Map<
-    ID,
-    { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number; matrixIndex: number }
-  > = new Map();
+  private movingArmies: Map<ID, MovingArmyData> = new Map();
   private labelManager: LabelManager;
   private labels: Map<number, THREE.Points> = new Map();
-  private movingLabels: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
+  private movingLabels: Map<number, MovingLabelData> = new Map();
   private currentChunkKey: string | null = "190,170";
-  private renderChunkSize: { width: number; height: number };
-  private visibleArmies: Array<{
-    entityId: ID;
-    hexCoords: Position;
-    isMine: boolean;
-    color: string;
-    matrixIndex: number;
-    owner: { address: bigint };
-  }> = [];
+  private renderChunkSize: RenderChunkSize;
+  private visibleArmies: ArmyData[] = [];
 
   constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
@@ -236,17 +217,7 @@ export class ArmyManager {
     return isVisible;
   }
 
-  private getVisibleArmiesForChunk(
-    startRow: number,
-    startCol: number,
-  ): Array<{
-    entityId: ID;
-    hexCoords: Position;
-    isMine: boolean;
-    color: string;
-    matrixIndex: number;
-    owner: { address: bigint };
-  }> {
+  private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
     const visibleArmies = Array.from(this.armies.entries())
       .filter(([_, army]) => {
         return this.isArmyVisible(army, startRow, startCol);
