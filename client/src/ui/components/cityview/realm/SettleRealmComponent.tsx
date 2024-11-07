@@ -1,52 +1,19 @@
-import { useDojo } from "@/hooks/context/DojoContext";
 import Button from "../../../elements/Button";
 
+import { useMintedRealms } from "@/hooks/helpers/use-minted-realms";
 import { useSettleRealm } from "@/hooks/helpers/use-settle-realm";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { MAX_REALMS } from "@/ui/constants";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/elements/Collapsible";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ChevronsUpDown } from "lucide-react";
-import { useEffect, useState } from "react";
 
 const SettleRealmComponent = () => {
-  const {
-    account: { account },
-    network: { toriiClient },
-  } = useDojo();
-
   const { playerRealms } = useEntities();
 
   const { settleRealm, isLoading, tokenId, setTokenId, errorMessage } = useSettleRealm();
 
-  const [mintedRealms, setMintedRealms] = useState(1000);
-
-  useEffect(() => {
-    const getEvents = async () => {
-      const events = await toriiClient.getEventMessages(
-        {
-          limit: 1000,
-          offset: 0,
-          dont_include_hashed_keys: false,
-          clause: {
-            Member: {
-              model: "eternum-SettleRealmData",
-              member: "owner_address",
-              operator: "Eq",
-              value: { Primitive: { ContractAddress: account.address } },
-            },
-          },
-        },
-        true,
-      );
-
-      return events;
-    };
-    getEvents().then((events) => {
-      const len = Object.keys(events).length;
-      setMintedRealms(len);
-    });
-  }, [setMintedRealms]);
+  const mintedRealms = useMintedRealms();
 
   const numberRealms = Math.max(mintedRealms, playerRealms().length);
 
