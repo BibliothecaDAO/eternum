@@ -41,7 +41,7 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
         <Button
           disabled={!Boolean(unclaimedQuests?.length)}
           className={"w-1/4"}
-          variant="red"
+          variant="primary"
           onClick={() => setSkipTutorial(!skipTutorial)}
         >
           Skip Tutorial
@@ -87,7 +87,7 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
   return (
     <div
       className={`w-full border px-4 py-2 rounded-xl  ${
-        quest.status === QuestStatus.Claimed ? "border-green/40 bg-green/20" : "border-red/40 bg-red/20"
+        [QuestStatus.Completed, QuestStatus.Claimed].includes(quest.status) ? "border-green/40 bg-green/20" : ""
       }`}
     >
       <Headline className="mb-4 text-xl">{quest.name}</Headline>
