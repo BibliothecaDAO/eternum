@@ -8,17 +8,19 @@ const FELT_CENTER: u32 = 2147483646;
 const SQUARE_SIZE: u32 = 1_000_000;
 const HALF_SQUARE_SIZE: u32 = SQUARE_SIZE / 2;
 
-#[derive(CairoSerde, Debug)]
+#[derive(CairoSerde, Debug, Clone, Copy)]
 pub struct Position {
     x: u32,
     y: u32,
 }
 
 impl Position {
+    #[allow(dead_code)]
     pub fn new(x: u32, y: u32) -> Self {
         Position { x, y }
     }
 
+    #[allow(dead_code)]
     pub const fn get_contract(&self) -> (i32, i32) {
         let normalized = ((self.x as i64 - FELT_CENTER as i64).abs() > HALF_SQUARE_SIZE as i64)
             || ((self.y as i64 - FELT_CENTER as i64).abs() > HALF_SQUARE_SIZE as i64);
