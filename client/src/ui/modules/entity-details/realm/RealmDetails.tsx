@@ -16,12 +16,16 @@ export const RealmDetails = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const structure = useStructureByEntityId(structureEntityId);
-  if (!structure) return;
 
-  const isRealm = structure.category === StructureType[StructureType.Realm];
+  const isRealm = useMemo(() => {
+    return structure?.category === StructureType[StructureType.Realm];
+  }, [structure]);
 
-  const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
-  const address = toHexString(structure?.owner.address);
+  const isImmune = useIsStructureImmune(Number(structure?.created_at), nextBlockTimestamp!);
+
+  const address = useMemo(() => {
+    return toHexString(structure?.owner?.address || 0n);
+  }, [structure]);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const tabs = useMemo(
@@ -37,19 +41,21 @@ export const RealmDetails = () => {
         component: <Buildings structure={structure} />,
       },
     ],
-    [selectedTab],
+    [structure],
   );
 
   const immunityEndTimestamp = useMemo(() => {
     return (
-      Number(structure.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
+      Number(structure?.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
-  }, [structure.created_at, configManager]);
+  }, [structure?.created_at, configManager]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
     return immunityEndTimestamp - nextBlockTimestamp!;
   }, [nextBlockTimestamp]);
+
+  if (!structure) return <></>;
 
   return (
     <div className="p-2">

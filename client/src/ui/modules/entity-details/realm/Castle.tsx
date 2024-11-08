@@ -25,7 +25,6 @@ export const Castle = () => {
   const isOwner = toHexString(realm.owner) === dojo.account.account.address;
 
   const structure = useStructureByEntityId(structureEntityId);
-  if (!structure) return;
 
   const getNextRealmLevel = useMemo(() => {
     const nextLevel = realm.level + 1;
@@ -53,6 +52,8 @@ export const Castle = () => {
     });
     setIsLoading(false);
   };
+
+  if (!structure) return <></>;
 
   return (
     <div className="w-full text-sm">
