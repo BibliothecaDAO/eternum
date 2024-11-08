@@ -23,22 +23,24 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);
 
+  if (!entityId || entityId === 0) {
+    return <div>No Entity Selected</div>;
+  }
+
   return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
     const resources = resourceIds.map((resourceId: any) => (
       <ResourceChip
         key={resourceId}
         resourceId={resourceId}
-        entityId={entityId ?? 0}
+        entityId={entityId}
         maxStorehouseCapacityKg={maxStorehouseCapacityKg}
         tick={tick}
       />
     ));
-    return entityId !== undefined && entityId !== null ? (
+    return (
       <div key={tier}>
         <div className="grid grid-cols-1 flex-wrap">{resources}</div>
       </div>
-    ) : (
-      <div>No Entity Selected</div>
     );
   });
 };

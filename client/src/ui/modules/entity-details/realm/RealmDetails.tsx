@@ -16,12 +16,16 @@ export const RealmDetails = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const structure = useStructureByEntityId(structureEntityId);
-  if (!structure) return;
 
-  const isRealm = structure.category === StructureType[StructureType.Realm];
+  const isRealm = useMemo(() => {
+    return structure?.category === StructureType[StructureType.Realm];
+  }, [structure]);
 
-  const isImmune = useIsStructureImmune(Number(structure.created_at), nextBlockTimestamp!);
-  const address = toHexString(structure?.owner.address);
+  const isImmune = useIsStructureImmune(Number(structure?.created_at), nextBlockTimestamp!);
+
+  const address = useMemo(() => {
+    return toHexString(structure?.owner?.address || 0n);
+  }, [structure]);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const tabs = useMemo(
@@ -37,14 +41,14 @@ export const RealmDetails = () => {
         component: <Buildings structure={structure} />,
       },
     ],
-    [selectedTab],
+    [structure],
   );
 
   const immunityEndTimestamp = useMemo(() => {
     return (
-      Number(structure.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
+      Number(structure?.created_at) + configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies)
     );
-  }, [structure.created_at, configManager]);
+  }, [structure?.created_at, configManager]);
 
   const timer = useMemo(() => {
     if (!nextBlockTimestamp) return 0;
@@ -52,67 +56,69 @@ export const RealmDetails = () => {
   }, [nextBlockTimestamp]);
 
   return (
-    <div className="p-2">
-      <div className="flex justify-between">
-        <h3 className="text-4xl flex justify-between">
-          {structure.name} <HintModalButton section={HintSection.Realm} />
-        </h3>
+    structure && (
+      <div className="p-2">
+        <div className="flex justify-between">
+          <h3 className="text-4xl flex justify-between">
+            {structure.name} <HintModalButton section={HintSection.Realm} />
+          </h3>
 
-        {isImmune && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                content: (
-                  <>
-                    This structure is currently immune to attacks.
-                    <br />
-                    During this period, you are also unable to attack other players.
-                  </>
-                ),
-                position: "top",
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className="font-bold text-lg animate-pulse text-green"
-          >
-            Immune for: {formatTime(timer)}
+          {isImmune && (
+            <div
+              onMouseEnter={() => {
+                setTooltip({
+                  content: (
+                    <>
+                      This structure is currently immune to attacks.
+                      <br />
+                      During this period, you are also unable to attack other players.
+                    </>
+                  ),
+                  position: "top",
+                });
+              }}
+              onMouseLeave={() => setTooltip(null)}
+              className="font-bold text-lg animate-pulse text-green"
+            >
+              Immune for: {formatTime(timer)}
+            </div>
+          )}
+        </div>
+
+        <div className="font-bold flex justify-between my-2">
+          <div>
+            <div> {structure.ownerName}</div>
           </div>
+          <div>
+            <span
+              className="ml-1 hover:text-white cursor-pointer"
+              onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
+            >
+              {displayAddress(address)}
+            </span>
+          </div>
+        </div>
+
+        {isRealm && (
+          <Tabs
+            selectedIndex={selectedTab}
+            onChange={(index: number) => setSelectedTab(index)}
+            variant="default"
+            className="h-full "
+          >
+            <Tabs.List className="border border-gold/20 rounded-lg p-1">
+              {tabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
+            <Tabs.Panels className="">
+              {tabs.map((tab, index) => (
+                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+              ))}
+            </Tabs.Panels>
+          </Tabs>
         )}
       </div>
-
-      <div className="font-bold flex justify-between my-2">
-        <div>
-          <div> {structure.ownerName}</div>
-        </div>
-        <div>
-          <span
-            className="ml-1 hover:text-white cursor-pointer"
-            onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName)}
-          >
-            {displayAddress(address)}
-          </span>
-        </div>
-      </div>
-
-      {isRealm && (
-        <Tabs
-          selectedIndex={selectedTab}
-          onChange={(index: number) => setSelectedTab(index)}
-          variant="default"
-          className="h-full "
-        >
-          <Tabs.List className="border border-gold/20 rounded-lg p-1">
-            {tabs.map((tab, index) => (
-              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-            ))}
-          </Tabs.List>
-          <Tabs.Panels className="">
-            {tabs.map((tab, index) => (
-              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-            ))}
-          </Tabs.Panels>
-        </Tabs>
-      )}
-    </div>
+    )
   );
 };
