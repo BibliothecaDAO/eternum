@@ -151,11 +151,12 @@ export const TopLeftNavigation = () => {
       getComponentValue(
         setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
-      )?.value || 1;
+      )?.value || 0;
 
     const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
 
-    return { capacityKg: quantity * gramToKg(storehouseCapacity), quantity };
+    // Base capacity is storehouseCapacity, then add storehouseCapacity for each additional storehouse
+    return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
   }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
