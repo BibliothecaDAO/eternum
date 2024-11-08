@@ -25,7 +25,6 @@ export const Castle = () => {
   const isOwner = toHexString(realm.owner) === dojo.account.account.address;
 
   const structure = useStructureByEntityId(structureEntityId);
-  if (!structure) return;
 
   const getNextRealmLevel = useMemo(() => {
     const nextLevel = realm.level + 1;
@@ -55,47 +54,49 @@ export const Castle = () => {
   };
 
   return (
-    <div className="w-full text-sm">
-      <div className="my-3">
-        <div className="flex justify-between py-2 gap-4">
-          <div>
-            <div className="flex gap-4">
-              <div className="text-2xl">{RealmLevels[realm.level]}</div>
+    structure && (
+      <div className="w-full text-sm">
+        <div className="my-3">
+          <div className="flex justify-between py-2 gap-4">
+            <div>
+              <div className="flex gap-4">
+                <div className="text-2xl">{RealmLevels[realm.level]}</div>
+                {getNextRealmLevel && isOwner && (
+                  <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
+                    {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
+                  </Button>
+                )}
+              </div>
               {getNextRealmLevel && isOwner && (
-                <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
-                  {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
-                </Button>
+                <div>
+                  <p className="text-sm my-2">
+                    Next Level: {RealmLevels[realm.level + 1]},{" "}
+                    {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
+                  </p>
+                  <div className="my-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
+                  <div className="flex gap-2">
+                    {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => (
+                      <ResourceCost
+                        key={a.resource}
+                        className="!text-gold"
+                        type="vertical"
+                        size="xs"
+                        resourceId={a.resource}
+                        amount={a.amount}
+                      />
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            {getNextRealmLevel && isOwner && (
-              <div>
-                <p className="text-sm my-2">
-                  Next Level: {RealmLevels[realm.level + 1]},{" "}
-                  {LEVEL_DESCRIPTIONS[(realm.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
-                </p>
-                <div className="my-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realm.level + 1]}</div>
-                <div className="flex gap-2">
-                  {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a) => (
-                    <ResourceCost
-                      key={a.resource}
-                      className="!text-gold"
-                      type="vertical"
-                      size="xs"
-                      resourceId={a.resource}
-                      amount={a.amount}
-                    />
-                  ))}
-                </div>
-              </div>
+          </div>
+          <div className="my-2">
+            {structure && structure.category === StructureType[StructureType.Realm] && (
+              <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
             )}
           </div>
         </div>
-        <div className="my-2">
-          {structure && structure.category === StructureType[StructureType.Realm] && (
-            <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
-          )}
-        </div>
       </div>
-    </div>
+    )
   );
 };
