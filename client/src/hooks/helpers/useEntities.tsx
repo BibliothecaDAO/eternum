@@ -13,6 +13,7 @@ import { Has, getComponentValue, type Component, type ComponentValue, type Entit
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
+import useUIStore from "../store/useUIStore";
 import { getResourcesUtils } from "./useResources";
 
 export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
@@ -36,6 +37,9 @@ export const useEntities = () => {
     },
   } = useDojo();
 
+  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
+  const address = isSpectatorMode ? ContractAddress("0x0") : ContractAddress(account.address);
+
   const { getEntityName } = useEntitiesUtils();
 
   // Get all realms
@@ -44,16 +48,16 @@ export const useEntities = () => {
   const filterPlayerRealms = useMemo(() => {
     return allRealms.filter((id) => {
       const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) === ContractAddress(account.address);
+      return owner && ContractAddress(owner.address) === ContractAddress(address);
     });
-  }, [allRealms]);
+  }, [allRealms, address]);
 
   const filterOtherRealms = useMemo(() => {
     return allRealms.filter((id) => {
       const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) !== ContractAddress(account.address);
+      return owner && ContractAddress(owner.address) !== ContractAddress(address);
     });
-  }, [allRealms]);
+  }, [allRealms, address]);
 
   // Get all structures
   const allStructures = useEntityQuery([Has(Structure)]);
@@ -61,16 +65,16 @@ export const useEntities = () => {
   const filterPlayerStructures = useMemo(() => {
     return allStructures.filter((id) => {
       const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) === ContractAddress(account.address);
+      return owner && ContractAddress(owner.address) === ContractAddress(address);
     });
-  }, [allStructures]);
+  }, [allStructures, address]);
 
   const filterOtherStructures = useMemo(() => {
     return allStructures.filter((id) => {
       const owner = getComponentValue(Owner, id);
-      return owner && ContractAddress(owner.address) !== ContractAddress(account.address);
+      return owner && ContractAddress(owner.address) !== ContractAddress(address);
     });
-  }, [allStructures]);
+  }, [allStructures, address]);
 
   const playerRealms = useMemo(() => {
     return filterPlayerRealms.map((id) => {

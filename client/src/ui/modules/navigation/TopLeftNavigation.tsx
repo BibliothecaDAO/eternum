@@ -20,7 +20,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
+import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
@@ -36,6 +36,7 @@ const structureIcons: Record<string, JSX.Element> = {
   Bank: <Landmark />,
   Hyperstructure: <Sparkles />,
   FragmentMine: <Pickaxe />,
+  SpectatorMode: <EyeIcon />,
 };
 
 const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
@@ -98,6 +99,7 @@ export const TopLeftNavigation = () => {
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
 
+  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -195,11 +197,20 @@ export const TopLeftNavigation = () => {
                 </SelectContent>
               </Select>
             ) : (
-              <div>
-                <div className="self-center flex gap-4">
-                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
-                  {structure.name}
-                </div>
+              <div className="w-full px-4 py-2">
+                <h5 className="flex items-center gap-4">
+                  {isSpectatorMode ? (
+                    <>
+                      {structureIcons.SpectatorMode}
+                      <span>Spectator Mode</span>
+                    </>
+                  ) : (
+                    <>
+                      {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
+                      <span>{structure.name}</span>
+                    </>
+                  )}
+                </h5>
               </div>
             )}
           </div>

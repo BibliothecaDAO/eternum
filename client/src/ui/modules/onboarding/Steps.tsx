@@ -45,6 +45,21 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const StepOne = ({ onNext }: { onNext: () => void }) => {
+  const setSpactatorMode = useUIStore((state) => state.setSpectatorMode);
+  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const { handleUrlChange } = useQuery();
+
+  const onSpectatorModeClick = () => {
+    setIsLoadingScreenEnabled(true);
+    setSpactatorMode(true);
+    setTimeout(() => {
+      showBlankOverlay(false);
+      handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
+      window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+    }, 250);
+  };
+
   return (
     <StepContainer>
       <div className="w-full text-center pt-6">
@@ -52,11 +67,26 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
           <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
         </div>
       </div>
-      <div className="flex space-x-2 mt-8 justify-center">
-        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+      <div className="flex flex-col space-y-4 mt-8 items-center">
+        <Button size="md" className="mx-auto w-48" variant="primary" onClick={onNext}>
           Choose your Leader
           <ArrowRight className="w-2 ml-2 fill-current" />
         </Button>
+
+        <div className="relative">
+          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+            <div className="text-sm text-gold/60">or</div>
+          </div>
+          <Button
+            size="md"
+            variant="secondary"
+            className="mx-auto mt-4 w-48 border border-gold/30 hover:border-gold/50 transition-colors"
+            onClick={onSpectatorModeClick}
+          >
+            Enter as Spectator
+            <ArrowRight className="w-2 ml-2 fill-current" />
+          </Button>
+        </div>
       </div>
     </StepContainer>
   );
