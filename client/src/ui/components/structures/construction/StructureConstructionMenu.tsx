@@ -6,7 +6,7 @@ import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { ID, StructureType } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React from "react";
 import { StructureCard } from "./StructureCard";
@@ -45,10 +45,14 @@ export const StructureConstructionMenu = ({ className, entityId }: { className?:
     <div className={`${className} grid grid-cols-2 gap-2 p-2`}>
       {buildingTypes.map((structureType, index) => {
         const building = StructureType[structureType as keyof typeof StructureType];
-        const cost = configManager.structureCosts[building];
-        const hasBalance = checkBalance(cost);
 
+        // if is hyperstructure, the construction cost are only fragments
         const isHyperstructure = building === StructureType["Hyperstructure"];
+        const cost = configManager.structureCosts[building].filter(
+          (cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment,
+        );
+
+        const hasBalance = checkBalance(cost);
 
         return (
           <StructureCard
@@ -85,7 +89,11 @@ const StructureInfo = ({
   entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
-  const cost = configManager.structureCosts[structureId];
+  // if is hyperstructure, the construction cost are only fragments
+  const isHyperstructure = structureId === StructureType["Hyperstructure"];
+  const cost = configManager.structureCosts[structureId].filter(
+    (cost) => !isHyperstructure || cost.resource === ResourcesIds.AncientFragment,
+  );
 
   const perTick =
     structureId == StructureType.Hyperstructure
