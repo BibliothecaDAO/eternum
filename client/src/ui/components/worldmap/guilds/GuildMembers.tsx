@@ -1,16 +1,15 @@
-import { ReactComponent as Crown } from "@/assets/icons/Crown.svg";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyIntlFormat } from "@/ui/utils/utils";
-import { ContractAddress, GuildMemberInfo, GuildWhitelistInfo, ID } from "@bibliothecadao/eternum";
-import clsx from "clsx";
+import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { GuildInviteList } from "./GuildInvitesList";
+import { GuildMemberList } from "./GuildMemberList";
 
 interface GuildMembersProps {
+  players: Player[];
   selectedGuildEntityId: number;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   setIsExpanded: (isExpanded: boolean) => void;
@@ -18,7 +17,7 @@ interface GuildMembersProps {
   ownerAddress?: string;
 }
 
-export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
+export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
   const {
     setup: {
       systemCalls: {
@@ -36,8 +35,8 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo, setIsExpan
   const { useGuildMembers, getGuildFromPlayerAddress, useGuildWhitelist, usePlayerWhitelist, getGuildFromEntityId } =
     useGuilds();
 
-  const { guildMembers } = useGuildMembers(selectedGuildEntityId);
-  const invitedPlayers = useGuildWhitelist(selectedGuildEntityId);
+  const { guildMembers } = useGuildMembers(selectedGuildEntityId, players);
+  const invitedPlayers = useGuildWhitelist(selectedGuildEntityId, players);
   const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
   const selectedGuild = getGuildFromEntityId(selectedGuildEntityId, ContractAddress(account.address));
@@ -69,7 +68,7 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo, setIsExpan
     });
   };
 
-  const disbandGuild = (guildEntityId: ID) => {
+  const disbandGuild = () => {
     let calldata = [
       ...guildMembers.filter((member) => !member.isGuildMaster).map((member) => ({ address: member.address })),
       { address: account.address },
@@ -90,20 +89,20 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo, setIsExpan
     join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
   }, []);
 
-  const removePlayerFromWhitelist = useCallback((address: string) => {
+  const removePlayerFromWhitelist = (address: ContractAddress) => {
     setIsLoading(true);
     remove_player_from_whitelist({
       player_address_to_remove: address,
       guild_entity_id: selectedGuildEntityId,
       signer: account,
     }).finally(() => setIsLoading(false));
-  }, []);
+  };
 
   return (
-    <div className="h-full w-full p-2">
+    <div className="flex flex-col min-h-72 h-full w-full p-2 overflow-hidden">
       {editName ? (
-        <div className="flex space-x-2">
-          <TextInput placeholder="Type Name" className="h-full" onChange={(name) => setNaming(name)} />
+        <div className="flex flex-row space-x-2">
+          <TextInput placeholder="New Name" className="h-full" onChange={(name) => setNaming(name)} />
           <Button
             variant="default"
             isLoading={isLoading}
@@ -140,194 +139,52 @@ export const GuildMembers = ({ selectedGuildEntityId, viewPlayerInfo, setIsExpan
       )}
 
       {userIsGuildMaster && (
-        <Button className="my-4" variant="primary" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
+        <Button className="my-2" variant="primary" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
           {viewGuildInvites ? "Tribe Members" : "Tribe Invites"}
         </Button>
       )}
 
-      {viewGuildInvites ? (
-        <GuildInvitesList
-          invitedPlayers={invitedPlayers}
-          isLoading={isLoading}
-          viewPlayerInfo={viewPlayerInfo}
-          removePlayerFromWhitelist={() => removePlayerFromWhitelist}
-        />
-      ) : (
-        <GuildMemberList
-          guildMembers={guildMembers}
-          viewPlayerInfo={viewPlayerInfo}
-          userIsGuildMaster={userIsGuildMaster}
-          removeGuildMember={removeGuildMember}
-        />
-      )}
-
-      {userGuild?.entityId === selectedGuildEntityId && (
-        <Button
-          className="w-full my-4"
-          isLoading={isLoading}
-          variant="primary"
-          onClick={() => (userGuild.isOwner ? disbandGuild(selectedGuildEntityId) : leaveGuild())}
-        >
-          {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
-        </Button>
-      )}
-      {!userGuild?.entityId && (!selectedGuild?.guild.isPublic ? userIsInvited : true) && (
-        <Button
-          className="w-full my-4"
-          isLoading={isLoading}
-          variant="primary"
-          onClick={() => joinGuild(selectedGuildEntityId)}
-        >
-          Join Tribe
-        </Button>
-      )}
-    </div>
-  );
-};
-
-interface GuildMemberListProps {
-  guildMembers: GuildMemberInfo[];
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  userIsGuildMaster: boolean;
-  removeGuildMember: (playerAddress: ContractAddress) => void;
-}
-
-const GuildMemberList = ({
-  guildMembers,
-  viewPlayerInfo,
-  userIsGuildMaster,
-  removeGuildMember,
-}: GuildMemberListProps) => {
-  return (
-    <div className="flex flex-col p-2 border rounded-xl border-gold/10">
-      <GuildMemberListHeader />
-      <div className="flex flex-col space-y-2 overflow-y-auto">
-        {guildMembers.map((guildMember) => (
-          <GuildMemberRow
-            key={guildMember.address}
-            guildMember={guildMember}
-            viewPlayerInfo={viewPlayerInfo}
-            userIsGuildMaster={userIsGuildMaster}
-            removeGuildMember={removeGuildMember}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const GuildMemberListHeader = () => {
-  return (
-    <div className="grid grid-cols-6 gap-1 mb-4 uppercase text-xs font-bold border-b border-gold/10">
-      <div>Rank</div>
-
-      <div className="col-span-2">Name</div>
-
-      <div className="text-right">Points</div>
-
-      <div className="text-right">Age</div>
-      <div></div>
-    </div>
-  );
-};
-
-interface GuildMemberRowProps {
-  guildMember: GuildMemberInfo;
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  userIsGuildMaster: boolean;
-  removeGuildMember: (playerAddress: ContractAddress) => void;
-}
-
-const GuildMemberRow = ({ guildMember, viewPlayerInfo, userIsGuildMaster, removeGuildMember }: GuildMemberRowProps) => {
-  return (
-    <div
-      className={clsx("flex-row grid grid-cols-6 rounded", {
-        "bg-blueish/20": guildMember.isUser,
-      })}
-    >
-      <div
-        className="col-span-5 grid grid-cols-5 gap-1 text-md hover:opacity-70 p-1"
-        onClick={() => {
-          viewPlayerInfo(ContractAddress(guildMember.address));
-        }}
-      >
-        <p>{guildMember.rank}</p>
-        <p className="col-span-2 flex flex-row">
-          <span>{guildMember.isGuildMaster && <Crown className="w-6 fill-gold" />}</span>
-          <span className="truncate">{guildMember.name}</span>
-        </p>
-        <p className="text-right">{currencyIntlFormat(guildMember.points)}</p>
-        <p className="text-right text-sm">{guildMember.joinedSince}</p>
-      </div>
-      {userIsGuildMaster && !guildMember.isUser && (
-        <Trash
-          onClick={() => removeGuildMember(guildMember.address)}
-          className="m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
-        />
-      )}
-    </div>
-  );
-};
-
-const GuildInvitesList = ({
-  invitedPlayers,
-  isLoading,
-  viewPlayerInfo,
-  removePlayerFromWhitelist,
-}: {
-  invitedPlayers: GuildWhitelistInfo[];
-  isLoading: boolean;
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
-}) => {
-  return (
-    <div className="flex flex-col p-2 border rounded-xl border-gold/10">
-      <GuildMemberListHeader />
-      <div className="flex flex-col space-y-2 overflow-y-auto">
-        {invitedPlayers.map((player) => (
-          <InviteRow
-            key={player.address}
-            player={player}
+      <div className="flex-1 min-h-0 ">
+        {viewGuildInvites ? (
+          <GuildInviteList
+            invitedPlayers={invitedPlayers}
             isLoading={isLoading}
             viewPlayerInfo={viewPlayerInfo}
             removePlayerFromWhitelist={removePlayerFromWhitelist}
           />
-        ))}
-      </div>
-      {!invitedPlayers.length && <p className="text-center italic">No Tribe Invites Sent</p>}
-    </div>
-  );
-};
-
-interface InviteRowProps {
-  player: GuildWhitelistInfo;
-  isLoading: boolean;
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
-}
-
-const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelist }: InviteRowProps) => {
-  return (
-    <div className="flex flex-row grid grid-cols-5">
-      <div
-        className={clsx("col-span-4 grid grid-cols-4 gap-1 text-md hover:opacity-70 hover:border p-1 rounded-xl", {})}
-        onClick={() => {
-          viewPlayerInfo(ContractAddress(player.address!));
-        }}
-      >
-        <p>{player.rank}</p>
-        <p className="col-span-2 flex flex-row">
-          <span className="truncate">{player.name}</span>
-        </p>
-        <p className="text-right">{currencyIntlFormat(player.points!)}</p>
+        ) : (
+          <GuildMemberList
+            guildMembers={guildMembers}
+            isLoading={isLoading}
+            viewPlayerInfo={viewPlayerInfo}
+            userIsGuildMaster={userIsGuildMaster}
+            removeGuildMember={removeGuildMember}
+          />
+        )}
       </div>
 
-      <Button className="px-0 py-0" isLoading={isLoading}>
-        <Trash
-          onClick={() => removePlayerFromWhitelist(player.address!)}
-          className="fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
-        />
-      </Button>
+      <div className="mt-4">
+        {userGuild?.entityId === selectedGuildEntityId && (
+          <Button
+            className="w-full"
+            isLoading={isLoading}
+            variant="red"
+            onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
+          >
+            {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
+          </Button>
+        )}
+        {!userGuild?.entityId && (!selectedGuild?.guild.isPublic ? userIsInvited : true) && (
+          <Button
+            className="w-full"
+            isLoading={isLoading}
+            variant="primary"
+            onClick={() => joinGuild(selectedGuildEntityId)}
+          >
+            Join Tribe
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
