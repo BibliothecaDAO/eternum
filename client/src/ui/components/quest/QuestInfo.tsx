@@ -20,6 +20,7 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
 
   const { isMapView } = useQuery();
 
+  const [skipQuest, setSkipQuest] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
 
@@ -33,18 +34,43 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
       });
     } catch (error) {
       console.error(`Failed to claim resources for quest ${quest.name}:`, error);
+    } finally {
+      setIsLoading(false);
+      setSkipQuest(false);
     }
   };
 
   return (
     <>
-      <Button
-        className={clsx("w-6", { "animate-pulse": quest.status === QuestStatus.Claimed })}
-        variant="outline"
-        onClick={() => setSelectedQuest(null)}
-      >
-        ⬅
-      </Button>
+      <div className="flex flex-row justify-around">
+        <Button
+          className={clsx({ "animate-pulse": quest.status === QuestStatus.Claimed })}
+          variant="outline"
+          onClick={() => setSelectedQuest(null)}
+        >
+          ⬅ Back
+        </Button>
+
+        <Button
+          disabled={quest.status === QuestStatus.Claimed}
+          // className={clsx({ "animate-pulse": quest.status === QuestStatus.Claimed })}
+          variant="outline"
+          onClick={() => setSkipQuest(!skipQuest)}
+        >
+          Skip quest
+        </Button>
+      </div>
+
+      {skipQuest && (
+        <>
+          <div className="flex justify-center items-baseline">
+            <p className="mr-2">Are you sure ?</p>
+            <Button variant={"primary"} isLoading={isLoading} onClick={handleAllClaims}>
+              Confirm
+            </Button>
+          </div>
+        </>
+      )}
 
       <div className="p-4 text-gold">
         <div className="flex justify-between">
