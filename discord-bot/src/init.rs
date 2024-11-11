@@ -1,7 +1,8 @@
-use crate::actors::parsed_event_processor::ParsedEventProcessor;
+use crate::actors::discord_message_creator::DiscordMessageCreator;
+use crate::actors::discord_message_sender::DiscordMessageSender;
+use crate::actors::torii_client_subscriber::ToriiClientSubscriber;
 use crate::commands;
-use crate::subscription::ToriiClient;
-use crate::types::{Config, MessageDispatcher};
+use crate::types::Config;
 use serenity::all::{Client, GatewayIntents, Http};
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -15,33 +16,40 @@ pub struct PoiseContextData {
 }
 
 async fn init_inner_services(database: PgPool, config: Config) -> eyre::Result<()> {
-    let (processed_event_sender, mut processed_event_receiver) = mpsc::channel(100);
+    let (processed_event_sender, processed_event_receiver) = mpsc::channel(100);
     let (message_sender, message_receiver) = mpsc::channel(100);
 
-    let mut message_dispatcher = MessageDispatcher {
-        http: Arc::new(Http::new(&config.discord_token.clone())),
-        message_receiver,
-    };
-
+    let config_clone = config.clone();
     tokio::spawn(async move {
         tracing::info!("Starting message dispatcher");
-        message_dispatcher.run().await;
+        let mut discord_message_sender = DiscordMessageSender::new(
+            Arc::new(Http::new(&config_clone.discord_token.clone())),
+            message_receiver,
+        );
+        discord_message_sender.run().await;
     });
 
     let config_clone = config.clone();
     tokio::spawn(async move {
         tracing::info!("Starting event processor");
-        let processor =
-            ParsedEventProcessor::new(&database, &message_sender, config_clone.channel_id);
-        while let Some(event) = processed_event_receiver.recv().await {
-            processor.process_event(event).await;
-        }
+        let mut processor = DiscordMessageCreator::new(
+            &database,
+            &message_sender,
+            config_clone.channel_id,
+            processed_event_receiver,
+        );
+        processor.run().await;
     });
 
-    let torii_client = ToriiClient::new(config).await;
-    torii_client.subscribe(processed_event_sender);
-
-    tracing::info!("Torii client setup task spawned");
+    let config_clone = config.clone();
+    tokio::spawn(async move {
+        tracing::info!("Starting Torii client subscriber");
+        let torii_client_subscriber =
+            ToriiClientSubscriber::new(config_clone, processed_event_sender)
+                .await
+                .expect("Failed to create Torii client subscriber");
+        torii_client_subscriber.subscribe().await;
+    });
 
     Ok(())
 }
@@ -63,9 +71,11 @@ pub async fn init_services(config: Config, pool: PgPool) -> eyre::Result<Client>
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+
                 init_inner_services(pool.clone(), config.clone())
                     .await
-                    .expect("Failed to setup torii client");
+                    .expect("Failed to start inner services");
+
                 Ok(PoiseContextData {
                     database: pool.clone(),
                 })

@@ -11,7 +11,7 @@ use crate::types::{DiscordMessage, DiscordMessageType};
 
 pub const UNKNOWN_USER: &str = "Unknown User";
 
-pub trait ToDiscordMessage {
+pub trait ToDiscordMessage: Send {
     fn to_discord_message(&mut self, msg_type: DiscordMessageType) -> DiscordMessage;
     fn should_send_in_channel_if_no_user_found(&self) -> bool;
 }
