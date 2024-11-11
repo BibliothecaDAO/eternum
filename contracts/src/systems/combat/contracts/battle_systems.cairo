@@ -315,7 +315,7 @@ mod battle_systems {
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::event::{
-        EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
+        EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
         BattlePillageData
     };
 
@@ -801,7 +801,7 @@ mod battle_pillage_systems {
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::event::{
-        EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
+        EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
         BattlePillageData
     };
 

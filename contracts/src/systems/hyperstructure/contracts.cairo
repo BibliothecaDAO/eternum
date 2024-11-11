@@ -57,7 +57,7 @@ mod hyperstructure_systems {
     use super::calculate_total_contributable_amount;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct HyperstructureFinished {
         #[key]
         id: ID,
@@ -68,7 +68,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct HyperstructureCoOwnersChange {
         #[key]
         id: ID,
@@ -79,7 +79,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct HyperstructureContribution {
         #[key]
         id: ID,
@@ -91,7 +91,7 @@ mod hyperstructure_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct GameEnded {
         #[key]
         winner_address: ContractAddress,

@@ -51,7 +51,7 @@ mod map_systems {
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct MapExplored {
         #[key]
         entity_id: ID,
@@ -68,7 +68,7 @@ mod map_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct FragmentMineDiscovered {
         #[key]
         entity_owner_id: ID,
