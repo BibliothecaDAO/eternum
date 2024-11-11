@@ -67,6 +67,7 @@ export const BattleActions = ({
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const currentTimestamp = useUIStore((state) => state.nextBlockTimestamp);
+  const currentArmiesTick = useUIStore((state) => state.currentArmiesTick);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -201,8 +202,8 @@ export const BattleActions = ({
   );
 
   const raidStatus = useMemo(
-    () => battleManager.isRaidable(currentTimestamp!, currentTimestamp!, selectedArmy, structure),
-    [battleManager, currentTimestamp, selectedArmy, structure, currentTimestamp],
+    () => battleManager.isRaidable(currentTimestamp!, currentArmiesTick, selectedArmy, structure),
+    [battleManager, currentTimestamp, selectedArmy, structure, currentArmiesTick],
   );
 
   const battleStartStatus = useMemo(

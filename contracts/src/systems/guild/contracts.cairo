@@ -21,11 +21,11 @@ mod guild_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::alias::ID;
     use eternum::constants::DEFAULT_NS;
+    use eternum::models::event::{CreateGuild, JoinGuild};
     use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
     use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
-
     use eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
@@ -41,7 +41,6 @@ mod guild_systems {
             let guild_member: GuildMember = world.read_model(caller_address);
             guild_member.assert_has_no_guild();
 
-            // Add min name length
             assert(guild_name != 0, 'Guild name cannot be empty');
 
             let guild_uuid: ID = world.dispatcher.uuid();
@@ -51,6 +50,11 @@ mod guild_systems {
             world.write_model(@EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid });
             world.write_model(@EntityName { entity_id: guild_uuid, name: guild_name });
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_uuid });
+
+            let timestamp = starknet::get_block_timestamp();
+            world.emit_event(@CreateGuild { guild_entity_id: guild_uuid, guild_name, timestamp });
+            world
+                .emit_event(@JoinGuild { guild_entity_id: guild_uuid, guild_name, address: caller_address, timestamp });
 
             guild_uuid
         }
@@ -75,6 +79,18 @@ mod guild_systems {
 
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_entity_id });
             world.write_model(@guild);
+
+            let entity_name: EntityName = world.read_model(guild_entity_id);
+
+            world
+                .emit_event(
+                    @JoinGuild {
+                        guild_entity_id,
+                        address: caller_address,
+                        guild_name: entity_name.name,
+                        timestamp: starknet::get_block_timestamp()
+                    }
+                );
         }
 
         fn whitelist_player(
@@ -113,14 +129,9 @@ mod guild_systems {
             if (guild_member.address == guild_owner.address) {
                 assert(guild.member_count == 1, 'Guild not empty');
 
-                guild.member_count = 0;
-                guild_member.guild_entity_id = 0;
-
-                guild_owner.address = contract_address_const::<'0x0'>();
-
-                world.write_model(@guild);
-                world.write_model(@guild_member);
-                world.write_model(@guild_owner);
+                world.erase_model(@guild);
+                world.erase_model(@guild_member);
+                world.erase_model(@guild_owner);
             } else {
                 guild.member_count -= 1;
 
@@ -158,12 +169,10 @@ mod guild_systems {
             let mut guild_member_to_remove: GuildMember = world.read_model(player_address_to_remove);
             assert(guild_member_to_remove.guild_entity_id == guild_entity_id, 'Player not guildmember');
 
-            guild_member_to_remove.guild_entity_id = 0;
-
             let mut guild: Guild = world.read_model(guild_entity_id);
             guild.member_count -= 1;
 
-            world.write_model(@guild_member_to_remove);
+            world.erase_model(@guild_member_to_remove);
             world.write_model(@guild);
         }
 

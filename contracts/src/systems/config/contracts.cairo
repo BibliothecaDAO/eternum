@@ -70,7 +70,7 @@ trait ITravelFoodCostConfig<T> {
 
 #[starknet::interface]
 trait IStaminaRefillConfig<T> {
-    fn set_stamina_refill_config(ref self: T, amount: u16);
+    fn set_stamina_refill_config(ref self: T, amount_per_tick: u16, start_boost_tick_count: u8);
 }
 
 #[starknet::interface]
@@ -198,6 +198,8 @@ trait ISettlementConfig<T> {
 
 #[dojo::contract]
 mod config_systems {
+    use bushido_trophy::components::achievable::AchievableComponent;
+
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -226,6 +228,56 @@ mod config_systems {
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
     use eternum::models::season::SeasonImpl;
+    use eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
+
+    // Components
+
+    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+
+    // Storage
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievable: AchievableComponent::Storage,
+    }
+
+    // Events
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievableEvent: AchievableComponent::Event,
+    }
+
+    // Constuctor
+
+    fn dojo_init(self: @ContractState,) {
+        // [Event] Emit all Trophy events
+        let mut world: WorldStorage = self.world(DEFAULT_NS());
+        let mut trophy_id: u8 = TROPHY_COUNT;
+        while trophy_id > 0 {
+            let trophy: Trophy = trophy_id.into();
+            self
+                .achievable
+                .create(
+                    world,
+                    id: trophy.identifier(),
+                    hidden: trophy.hidden(),
+                    index: trophy.index(),
+                    points: trophy.points(),
+                    group: trophy.group(),
+                    icon: trophy.icon(),
+                    title: trophy.title(),
+                    description: trophy.description(),
+                    tasks: trophy.tasks(),
+                    data: trophy.data(),
+                );
+            trophy_id -= 1;
+        }
+    }
 
 
     fn assert_caller_is_admin(world: WorldStorage) {
@@ -413,11 +465,14 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl StaminaRefillConfigCustomImpl of super::IStaminaRefillConfig<ContractState> {
-        fn set_stamina_refill_config(ref self: ContractState, amount: u16) {
+        fn set_stamina_refill_config(ref self: ContractState, amount_per_tick: u16, start_boost_tick_count: u8) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            world.write_model(@StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick: amount });
+            world
+                .write_model(
+                    @StaminaRefillConfig { config_id: WORLD_CONFIG_ID, amount_per_tick, start_boost_tick_count }
+                );
         }
     }
 

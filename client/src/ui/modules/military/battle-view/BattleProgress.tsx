@@ -127,7 +127,7 @@ export const BattleProgress = ({
   defenderArmies,
   structure,
 }: {
-  battleManager: BattleManager | undefined;
+  battleManager: BattleManager;
   ownArmySide: string;
   attackingHealth: Health | undefined;
   attackerArmies: ArmyInfo[];
@@ -153,7 +153,7 @@ export const BattleProgress = ({
       : "Empty";
 
   const battleStatus = useMemo(() => {
-    if (battleManager) return battleManager.getWinner(currentTimestamp!, ownArmySide);
+    if (!!battleManager.battleEntityId) return battleManager.getWinner(currentTimestamp!, ownArmySide);
   }, [battleManager, currentTimestamp, ownArmySide]);
 
   useEffect(() => {

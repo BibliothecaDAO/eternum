@@ -6,19 +6,20 @@ import { StructureProgress } from "../scenes/constants";
 export type ArmySystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
-  isMine: boolean;
   battleId: ID;
   defender: boolean;
   currentHealth: bigint;
   order: number;
+  owner: { address: bigint };
 };
 
 export type StructureSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
   structureType: StructureType;
-  isMine: boolean;
   stage: StructureProgress;
+  level: number;
+  owner: { address: bigint };
 };
 
 export type TileSystemUpdate = {

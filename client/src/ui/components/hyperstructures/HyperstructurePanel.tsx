@@ -22,6 +22,12 @@ import { ContributionSummary } from "./ContributionSummary";
 import { HyperstructureDetails } from "./HyperstructureDetails";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 
+enum DisplayedAccess {
+  Public = "Public",
+  Private = "Private",
+  GuildOnly = "Tribe Only",
+}
+
 enum Loading {
   None,
   Contribute,
@@ -113,11 +119,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
     return (
       entity.isOwner ||
       (hyperstructure?.access === Access[Access.GuildOnly] &&
-        playerGuild?.guildEntityId !== undefined &&
-        playerGuild.guildEntityId !== 0 &&
-        hyperstructureOwnerGuild?.guildEntityId !== undefined &&
-        hyperstructureOwnerGuild.guildEntityId !== 0 &&
-        hyperstructureOwnerGuild.guildEntityId === playerGuild.guildEntityId) ||
+        playerGuild?.entityId !== undefined &&
+        playerGuild.entityId !== 0 &&
+        hyperstructureOwnerGuild?.entityId !== undefined &&
+        hyperstructureOwnerGuild.entityId !== 0 &&
+        hyperstructureOwnerGuild.entityId === playerGuild.entityId) ||
       hyperstructure?.access === Access[Access.Public]
     );
   }, [newContributions]);
@@ -196,15 +202,17 @@ export const HyperstructurePanel = ({ entity }: any) => {
                       }}
                     >
                       <SelectTrigger className="w-[140px] text-gold h-10 text-lg">
-                        <SelectValue placeholder={separateCamelCase(hyperstructure.access)} />
+                        <SelectValue
+                          placeholder={DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess]}
+                        />
                       </SelectTrigger>
                       <SelectContent className="bg-black/90 text-gold">
                         {Object.keys(Access)
                           .filter((access) => {
                             if (!isNaN(Number(access))) return false;
 
-                            if (access === "GuildOnly") {
-                              return playerGuild?.guildEntityId !== undefined && playerGuild.guildEntityId !== 0;
+                            if (access === Access[Access.GuildOnly]) {
+                              return playerGuild?.entityId !== undefined && playerGuild.entityId !== 0;
                             }
 
                             return access !== hyperstructure!.access;

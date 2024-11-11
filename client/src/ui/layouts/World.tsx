@@ -7,6 +7,7 @@ import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
 import { IS_MOBILE } from "../config";
+import { LoadingScreen } from "../modules/LoadingScreen";
 import { LoadingOroborus } from "../modules/loading-oroborus";
 
 // Lazy load components
@@ -49,11 +50,9 @@ const BattleView = lazy(() =>
 const TopMiddleNavigation = lazy(() =>
   import("../modules/navigation/TopNavigation").then((module) => ({ default: module.TopMiddleNavigation })),
 );
-
 const BottomMiddleContainer = lazy(() =>
   import("../containers/BottomMiddleContainer").then((module) => ({ default: module.BottomMiddleContainer })),
 );
-
 const LeftNavigationModule = lazy(() =>
   import("../modules/navigation/LeftNavigationModule").then((module) => ({ default: module.LeftNavigationModule })),
 );
@@ -63,11 +62,13 @@ const RightNavigationModule = lazy(() =>
 const TopLeftNavigation = lazy(() =>
   import("../modules/navigation/TopLeftNavigation").then((module) => ({ default: module.TopLeftNavigation })),
 );
-const PlayerId = lazy(() => import("../modules/social/PlayerId").then((module) => ({ default: module.PlayerId })));
 const EventStream = lazy(() =>
   import("../modules/stream/EventStream").then((module) => ({ default: module.EventStream })),
 );
 const Onboarding = lazy(() => import("./Onboarding").then((module) => ({ default: module.Onboarding })));
+const OrientationOverlay = lazy(() =>
+  import("../components/overlays/OrientationOverlay").then((module) => ({ default: module.OrientationOverlay })),
+);
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -98,8 +99,10 @@ export const World = () => {
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
     >
       <div className="vignette" />
-      <LoadingOroborus loading={isLoadingScreenEnabled} />
-      <Suspense fallback={<div>Loading...</div>}>
+
+      <Suspense fallback={<LoadingScreen />}>
+        {IS_MOBILE && <OrientationOverlay />}
+        <LoadingOroborus loading={isLoadingScreenEnabled} />
         <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
         <BlankOverlayContainer open={showBlankOverlay}>
           <Onboarding />
@@ -145,8 +148,6 @@ export const World = () => {
             <TopLeftNavigation />
           </TopLeftContainer>
         </div>
-
-        <PlayerId />
 
         <Redirect to="/" />
         <Leva

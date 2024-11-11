@@ -16,7 +16,10 @@ export enum RightView {
 }
 
 export const RightNavigationModule = () => {
-  const { rightNavigationView: view, setRightNavigationView: setView, structureEntityId } = useUIStore();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const view = useUIStore((state) => state.rightNavigationView);
+  const setView = useUIStore((state) => state.setRightNavigationView);
+
   const { questClaimStatus } = useQuestClaimStatus();
 
   const navigation = useMemo(
@@ -64,7 +67,7 @@ export const RightNavigationModule = () => {
 
       <BaseContainer className={`w-full pointer-events-auto overflow-y-scroll h-[60vh]`}>
         <Suspense fallback={<div className="p-8">Loading...</div>}>
-          {structureEntityId && (
+          {!!structureEntityId && (
             <div className="p-2 flex flex-col space-y-1 overflow-y-auto">
               <EntityResourceTable entityId={structureEntityId} />
             </div>

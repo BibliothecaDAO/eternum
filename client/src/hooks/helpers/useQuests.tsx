@@ -311,10 +311,10 @@ export const useUnclaimedQuestsCount = () => {
 const useBuildingQuantities = (structureEntityId: ID | undefined) => {
   const {
     setup: {
-      components: { BuildingQuantityv2, EntityOwner },
+      components: { BuildingQuantityv2 },
     },
   } = useDojo();
-  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: structureEntityId || 0 })]);
+  const entityUpdate = useEntityQuery([HasValue(BuildingQuantityv2, { entity_id: structureEntityId || 0 })]);
   const getBuildingQuantity = (buildingType: BuildingType) =>
     getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(buildingType)]))
       ?.value || 0;

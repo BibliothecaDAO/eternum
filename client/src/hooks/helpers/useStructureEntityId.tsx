@@ -1,5 +1,6 @@
 import { Position as PositionInterface } from "@/types/Position";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
@@ -12,14 +13,15 @@ export const useStructureEntityId = () => {
     setup: {
       components: { Structure, Position, Owner },
     },
-    account: {
-      account: { address },
-    },
+    account: { account },
   } = useDojo();
 
   const { hexPosition, isMapView } = useQuery();
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const address = isSpectatorMode ? ContractAddress("0x0") : ContractAddress(account.address);
 
   const { playerStructures } = useEntities();
 

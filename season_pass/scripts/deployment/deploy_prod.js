@@ -21,6 +21,9 @@ const seasonPassContractAddress = await deploySeasonPassContract(
 
 await setSeasonPassAddressTestLordsContract(BigInt(testLordsContractAddress), BigInt(seasonPassContractAddress));
 
+console.log(`\n\n********** IMPORTANT **********`.bold.red);
+console.log(`** MAKE SURE TO UPDATE THE .ENV.PRODUCTION FILE WITH THESE ADDRESSES **`.bold.red);
+console.log(`*******************************\n\n`.bold.red);
 console.log(`Realms Contract Address: ${testRealmsContractAddress}`);
 console.log(`Lords Contract Address: ${testLordsContractAddress}`);
 console.log(`Season Pass Contract Address: ${seasonPassContractAddress}`);

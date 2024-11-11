@@ -45,7 +45,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     const tx = await this.execute(signer, transactionDetails, NAMESPACE);
-
+    console.log(tx);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
     this.emit("transactionComplete", transactionResult);
@@ -55,9 +55,15 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   // Wrapper function to check for transaction errors
   async waitForTransactionWithCheck(transactionHash: string) {
-    const receipt = await this.provider.waitForTransaction(transactionHash, {
-      retryInterval: 500,
-    });
+    let receipt;
+    try {
+      receipt = await this.provider.waitForTransaction(transactionHash, {
+        retryInterval: 500,
+      });
+    } catch (error) {
+      console.error(`Error waiting for transaction ${transactionHash}`);
+      throw error;
+    }
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {
@@ -678,6 +684,21 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async disband_guild(props: SystemProps.DisbandGuild) {
+    const { calls, signer } = props;
+
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+          entrypoint: "remove_guild_member",
+          calldata: [call.address],
+        };
+      }),
+    );
+  }
+
   public async remove_player_from_whitelist(props: SystemProps.RemovePlayerFromWhitelist) {
     const { player_address_to_remove, guild_entity_id, signer } = props;
 
@@ -1104,11 +1125,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_stamina_refill_config(props: SystemProps.SetStaminaRefillConfigProps) {
-    const { amount_per_tick, signer } = props;
+    const { amount_per_tick, start_boost_tick_count, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_refill_config",
-      calldata: [amount_per_tick],
+      calldata: [amount_per_tick, start_boost_tick_count],
     });
   }
 

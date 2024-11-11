@@ -1,3 +1,4 @@
+import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
@@ -5,8 +6,8 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { Position as PositionType } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
-import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { RealmResourcesIO } from "@/ui/components/resources/RealmResourcesIO";
+import Button from "@/ui/elements/Button";
 import { formatTime, toHexString } from "@/ui/utils/utils";
 import { ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -45,7 +46,15 @@ export const MessageIcon = ({
   );
 };
 
-export const PlayerId = () => {
+export const PlayerId = ({
+  selectedPlayer,
+  selectedGuild,
+  back,
+}: {
+  selectedPlayer: ContractAddress;
+  selectedGuild?: number;
+  back?: () => void;
+}) => {
   const {
     setup: {
       components: {
@@ -58,9 +67,6 @@ export const PlayerId = () => {
   } = useDojo();
 
   const { getEntityName } = useEntitiesUtils();
-
-  const selectedPlayer = useUIStore((state) => state.selectedPlayer);
-  const setSelectedPlayer = useUIStore((state) => state.setSelectedPlayer);
 
   const { getAddressNameFromEntity } = useEntitiesUtils();
 
@@ -118,68 +124,72 @@ export const PlayerId = () => {
 
   return (
     <div className="pointer-events-auto">
-      {selectedPlayer !== null && (
-        <OSWindow width="600px" onClick={() => setSelectedPlayer(null)} show={!!selectedPlayer} title={"Player"}>
-          <div className="p-4 flex flex-row gap-2">
-            <AvatarImage address={toHexString(selectedPlayer!)} />
-            <div className="flex flex-row">
-              <div className="flex flex-col mr-6">
-                <div className="text-2xl font-bold flex flex-row items-center space-x-1 bg-brown/20 p-2 rounded-lg shadow-md">
-                  <span className="text-gold">{playerName || "No player selected"}</span>
-                  {playerName && (
-                    <div className="flex items-center justify-center p-1">
-                      <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs italic">
-                  {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "No player selected"}
-                </div>
-                <div className="text-xs">{playerEntityId ? "Player ID: " + playerEntityId : "No player selected"}</div>
-              </div>
-              <div className="flex flex-row gap-2 w-60 overflow-x-auto no-scrollbar">
-                {playerStructures?.map((structure) => {
-                  if (!structure) return null;
-
-                  let structureSpecificElement: JSX.Element | null;
-                  if (structure?.category === StructureType[StructureType.Realm]) {
-                    structureSpecificElement = (
-                      <div key={structure.entity_id}>
-                        <RealmResourcesIO
-                          className="w-full overflow-x-auto no-scrollbar font-normal"
-                          titleClassName="font-normal text-sm"
-                          realmEntityId={structure.entity_id}
-                        />
-                      </div>
-                    );
-                  } else {
-                    structureSpecificElement = null;
-                  }
-
-                  return (
-                    <div className="flex flex-col gap-2 border-2 border-gold/10 p-2 rounded-md w-24">
-                      <div className="flex flex-col justify-between text-sm font-bold">
-                        {structure.structureName}
-                        <div className="flex flex-row items-center">
-                          <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position.getNormalized()} />
-                          <ViewOnMapIcon className="!w-4 !h-4" position={structure.position.getNormalized()} />
-                        </div>
-                      </div>
-                      {structureSpecificElement}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </OSWindow>
+      {selectedGuild && (
+        <Button variant={"outline"} className={"mt-2 ml-2"} onClick={back}>
+          <ArrowLeft className="w-2 mr-2" /> Back
+        </Button>
       )}
+      <div className="p-4 flex flex-row gap-2">
+        <AvatarImage address={toHexString(selectedPlayer!)} />
+        <div className="flex flex-row">
+          <div className="flex flex-col mr-6">
+            <div className="text-2xl font-bold flex flex-row items-center space-x-1 bg-brown/20 p-2 rounded-lg shadow-md">
+              <span className="text-gold h6">{playerName || "No player selected"}</span>
+              {playerName && (
+                <div className="flex items-center justify-center p-1">
+                  <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />
+                </div>
+              )}
+            </div>
+            <div className="text-xs italic">
+              {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "No player selected"}
+            </div>
+            <div className="text-xs">{playerEntityId ? "Player ID: " + playerEntityId : "No player selected"}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 w-full p-1 max-h-[500px] overflow-y-auto">
+        <div className="grid grid-cols-4 gap-1">
+          {playerStructures?.map((structure) => {
+            if (!structure) return null;
+
+            let structureSpecificElement: JSX.Element | null;
+            if (structure?.category === StructureType[StructureType.Realm]) {
+              structureSpecificElement = (
+                <div key={structure.entity_id}>
+                  <RealmResourcesIO
+                    className="w-full font-normal"
+                    titleClassName="font-normal text-sm"
+                    realmEntityId={structure.entity_id}
+                  />
+                </div>
+              );
+            } else {
+              structureSpecificElement = null;
+            }
+
+            return (
+              <div key={structure.entity_id} className="flex flex-col gap-2 border-2 border-gold/10 p-2 rounded-md">
+                <div className="flex flex-col justify-between text-xs font-bold truncate">
+                  {structure.structureName}
+                  <div className="flex flex-row items-center">
+                    <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position.getNormalized()} />
+                    <ViewOnMapIcon className="!w-4 !h-4" position={structure.position.getNormalized()} />
+                  </div>
+                </div>
+                {structureSpecificElement}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
 
 const AvatarImage = ({ address }: { address: string }) => {
-  const randomAvatarIndex = (parseInt(address.slice(0, 8), 16) % 7) + 1;
+  const randomAvatarIndex = ((parseInt(address.slice(0, 8), 16) % 7) + 1).toString().padStart(2, "0");
   let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
   return (

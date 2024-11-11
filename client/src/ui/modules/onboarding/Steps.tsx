@@ -1,10 +1,11 @@
-import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { configManager } from "@/dojo/setup";
+import { useAccountStore } from "@/hooks/context/accountStore";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useMintedRealms } from "@/hooks/helpers/use-minted-realms";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { useRealm } from "@/hooks/helpers/useRealm";
@@ -12,16 +13,17 @@ import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Position } from "@/types/Position";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
+import { MAX_REALMS } from "@/ui/constants";
 import Button from "@/ui/elements/Button";
+import ListSelect from "@/ui/elements/ListSelect";
 // import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { formatTime, toValidAscii } from "@/ui/utils/utils";
+import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
-import { useAccount, useConnect } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
 
 const ACCOUNT_CHANGE_EVENT = "addressChanged";
@@ -35,7 +37,7 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown/90 rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient  ">
+      <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-gradient  ">
         {children}
       </div>
     </motion.div>
@@ -43,31 +45,48 @@ const StepContainer = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const StepOne = ({ onNext }: { onNext: () => void }) => {
-  const { connect, connectors } = useConnect();
-  const { isConnected } = useAccount();
-  const connectWallet = async () => {
-    connect({ connector: connectors[0] });
+  const setSpactatorMode = useUIStore((state) => state.setSpectatorMode);
+  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const { handleUrlChange } = useQuery();
+
+  const onSpectatorModeClick = () => {
+    setIsLoadingScreenEnabled(true);
+    setSpactatorMode(true);
+    setTimeout(() => {
+      showBlankOverlay(false);
+      handleUrlChange(new Position({ x: 0, y: 0 }).toMapLocationUrl());
+      window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
+    }, 250);
   };
 
   return (
     <StepContainer>
       <div className="w-full text-center pt-6">
         <div className="mx-auto flex mb-8">
-          <img src="/images/eternum-logo.svg" className="w-72 mx-auto" alt="Eternum Logo" />
+          <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
         </div>
       </div>
-      <div className="flex space-x-2 mt-8 justify-center">
-        {!isConnected && (
-          <Button className="px-4 text-[#ffc52a] border-2 border-[#ffc52a]" variant={"default"} onClick={connectWallet}>
-            <CartridgeSmall className="w-6 mr-2 fill-current" /> Controller
-          </Button>
-        )}
-        {isConnected && (
-          <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-            Choose your Leader
+      <div className="flex flex-col space-y-4 mt-8 items-center">
+        <Button size="md" className="mx-auto w-48" variant="primary" onClick={onNext}>
+          Choose your Leader
+          <ArrowRight className="w-2 ml-2 fill-current" />
+        </Button>
+
+        <div className="relative">
+          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+            <div className="text-sm text-gold/60">or</div>
+          </div>
+          <Button
+            size="md"
+            variant="secondary"
+            className="mx-auto mt-4 w-48 border border-gold/30 hover:border-gold/50 transition-colors"
+            onClick={onSpectatorModeClick}
+          >
+            Enter as Spectator
             <ArrowRight className="w-2 ml-2 fill-current" />
           </Button>
-        )}
+        </div>
       </div>
     </StepContainer>
   );
@@ -75,8 +94,7 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
 
 export const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
-    masterAccount,
-    account: { create, isDeploying, list, account, select, clear },
+    account: { create, isDeploying, list, select, clear },
     setup: {
       systemCalls: { set_address_name },
     },
@@ -91,7 +109,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const { getAddressName } = useRealm();
 
-  const name = getAddressName(ContractAddress(account.address));
+  const name = getAddressName(ContractAddress(useAccountStore.getState().account?.address!));
   const { playerRealms } = useEntities();
 
   const input = useRef<string>("");
@@ -99,20 +117,16 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   // @dev: refactor this
   useEffect(() => {
-    if (addressIsMaster) return;
     setAddressName(name);
   }, [name]);
 
-  const addressIsMaster = account.address === masterAccount.address;
-
   const onSetName = async () => {
     setLoading(true);
-    if (input.current && !addressIsMaster) {
+    if (input.current) {
       const inputNameValidAscii = toValidAscii(input.current);
       const inputNameBigInt = shortString.encodeShortString(inputNameValidAscii);
 
-      console.log(account);
-      await set_address_name({ name: inputNameBigInt, signer: account as any });
+      await set_address_name({ name: inputNameBigInt, signer: useAccountStore.getState().account as any });
       setAddressName(input.current);
       setLoading(false);
     }
@@ -121,10 +135,10 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const onCopy = () => {
     const burners = localStorage.getItem("burners");
     if (burners) {
-      const burner = JSON.parse(burners)[account.address];
+      const burner = JSON.parse(burners)[useAccountStore.getState().account?.address!];
       navigator.clipboard.writeText(
         JSON.stringify({
-          address: account.address,
+          address: useAccountStore.getState().account?.address!,
           privateKey: burner.privateKey,
           publicKey: burner.publicKey,
           active: burner.active,
@@ -141,7 +155,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     navigator.clipboard.readText().then((text) => {
       try {
         const burner = JSON.parse(text);
-        let currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
+        const currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
 
         if (currentBurners.hasOwnProperty(burner.address)) {
           throw new Error("Account already imported");
@@ -171,12 +185,16 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         position: "top",
         content: (
           <>
-            <p className="whitespace-nowrap">{copyMessage ? copyMessage : importMessage}</p>
+            <p className="whitespace-nowrap">{copyMessage || importMessage}</p>
           </>
         ),
       });
     }
   }, [copyMessage, importMessage]);
+
+  const mintedRealms = useMintedRealms();
+
+  const numberRealms = Math.max(mintedRealms, playerRealms().length);
 
   return (
     <StepContainer>
@@ -200,7 +218,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                   }}
                 />
                 <Button
-                  isLoading={loading || !account}
+                  isLoading={loading || !useAccountStore.getState().account}
                   onClick={onSetName}
                   variant="primary"
                   disabled={loading || !canSetName}
@@ -210,28 +228,31 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               </div>
             )}
           </div>
-          {/* <div className="flex items-center mb-4">
-            <ListSelect
-              className="flex-grow mr-2"
-              title="Active Account: "
-              options={list().map((account) => {
-                const addressName = getAddressName(ContractAddress(account.address));
-                return {
-                  id: account.address,
-                  label: (
-                    <div className="w-full truncate">{`${addressName || "unknown"} (${displayAddress(
-                      account.address,
-                    )})`}</div>
-                  ),
-                };
-              })}
-              value={account.address}
-              onChange={select}
-            />
-            <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
-              {isDeploying ? "" : "Create New"}
-            </Button>
-          </div> */}
+
+          {import.meta.env.VITE_PUBLIC_DEV === "true" && (
+            <div className="flex items-center mb-4">
+              <ListSelect
+                className="flex-grow mr-2"
+                title="Active Account: "
+                options={list().map((account) => {
+                  const addressName = getAddressName(ContractAddress(account.address));
+                  return {
+                    id: account.address,
+                    label: (
+                      <div className="w-full truncate">{`${addressName || "unknown"} (${displayAddress(
+                        account.address,
+                      )})`}</div>
+                    ),
+                  };
+                })}
+                value={useAccountStore.getState().account?.address}
+                onChange={select}
+              />
+              <Button variant="default" onClick={create} disabled={isDeploying} isLoading={isDeploying}>
+                {isDeploying ? "" : "Create New"}
+              </Button>
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-4 mt-2">
           <Cross
@@ -240,12 +261,12 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               setTooltip(null);
               setCopyMessage(null);
             }}
-            onMouseEnter={() =>
+            onMouseEnter={() => {
               setTooltip({
                 position: "top",
                 content: <p className="whitespace-nowrap">Delete Accounts</p>,
-              })
-            }
+              });
+            }}
             onClick={() => {
               if (window.confirm("Are you sure want to delete all wallets?")) {
                 clear();
@@ -262,12 +283,12 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
           />
           <Import
             onClick={onImportAccount}
-            onMouseEnter={() =>
+            onMouseEnter={() => {
               setTooltip({
                 position: "top",
                 content: <p className="whitespace-nowrap">Import Account</p>,
-              })
-            }
+              });
+            }}
             onMouseLeave={() => {
               setTooltip(null);
               setImportMessage(null);
@@ -278,16 +299,12 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       </div>
 
       <div className="flex space-x-2 mt-8 justify-center">
-        {playerRealms().length > 0 ? (
+        {numberRealms >= MAX_REALMS && playerRealms().length === 0 ? (
+          <div>You have been eliminated. Please try again next Season.</div>
+        ) : playerRealms().length > 1 ? (
           <NavigateToRealm text={"begin"} />
         ) : (
-          <Button
-            disabled={!addressName || addressIsMaster}
-            size="md"
-            className="mx-auto"
-            variant="primary"
-            onClick={onNext}
-          >
+          <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
             Continue <ArrowRight className="w-2 fill-current ml-3" />
           </Button>
         )}
@@ -295,14 +312,15 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     </StepContainer>
   );
 };
-export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
+export const StepTwo = ({ onNext }: { onNext: () => void }) => {
   return (
     <StepContainer>
-      <div>
-        <h3 className="text-center">Select Order</h3>
-      </div>
-
       <SettleRealmComponent />
+      <div className="flex w-full justify-center">
+        <Button size="md" className="mx-auto mt-4" variant="primary" onClick={onNext}>
+          Continue <ArrowRight className="w-2 fill-current ml-3" />
+        </Button>
+      </div>
     </StepContainer>
   );
 };
@@ -357,7 +375,7 @@ const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="gap-10 grid grid-cols-12">
       <div className="rounded-full border  self-center col-span-4">
-        <img src="/images/buildings/thumb/squire.png" className="rounded-full border" alt="" />
+        <img src="/images/squire.png" className="rounded-full border" alt="" />
       </div>
       <div className="col-span-8 flex flex-col">{children}</div>
     </div>
@@ -370,8 +388,8 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
       <ContainerWithSquire>
         <h2 className="mb-4">Days are {formatTime(configManager.getTick(TickIds.Armies))} long</h2>
         <p className="mb-4 text-xl">
-          Each {formatTime(configManager.getTick(TickIds.Armies))} period your Realms and Troops will regain energy and
-          be able to travel again. Don't get caught out in the open.
+          Each {formatTime(configManager.getTick(TickIds.Armies))} period Troops will regain energy and be able to
+          travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
@@ -401,17 +419,24 @@ const NavigateToRealm = ({ text }: { text: string }) => {
   const { handleUrlChange } = useQuery();
   const { playerRealms } = useEntities();
 
-  const url = new Position(playerRealms()[0]?.position).toHexLocationUrl();
+  const realms = playerRealms();
+  const url = useMemo(() => {
+    if (realms.length <= 0) {
+      return;
+    }
+    return new Position(realms[0]?.position).toHexLocationUrl();
+  }, [playerRealms]);
 
   return (
     <Button
       size="md"
       variant="primary"
+      disabled={!url}
       onClick={async () => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
-          handleUrlChange(url);
+          handleUrlChange(url!);
           window.dispatchEvent(new Event(ACCOUNT_CHANGE_EVENT));
         }, 250);
       }}

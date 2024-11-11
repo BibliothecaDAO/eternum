@@ -358,6 +358,10 @@ export interface RemoveGuildMember extends SystemSigner {
   player_address_to_remove: num.BigNumberish;
 }
 
+export interface DisbandGuild extends SystemSigner {
+  calls: { address: num.BigNumberish }[];
+}
+
 export interface RemovePlayerFromWhitelist extends SystemSigner {
   player_address_to_remove: num.BigNumberish;
   guild_entity_id: num.BigNumberish;
@@ -565,6 +569,7 @@ export interface SetStaminaConfigProps extends SystemSigner {
 
 export interface SetStaminaRefillConfigProps extends SystemSigner {
   amount_per_tick: num.BigNumberish;
+  start_boost_tick_count: num.BigNumberish;
 }
 
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;

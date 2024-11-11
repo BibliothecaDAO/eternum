@@ -557,6 +557,7 @@ export const setStaminaRefillConfig = async (config: Config) => {
   const tx = await config.provider.set_stamina_refill_config({
     signer: config.account,
     amount_per_tick: config.config.stamina.refillPerTick,
+    start_boost_tick_count: config.config.stamina.startBoostTickCount,
   });
   console.log(`Configuring stamina refill per tick to ${config.config.stamina.refillPerTick} ${tx.statusReceipt}...`);
 };

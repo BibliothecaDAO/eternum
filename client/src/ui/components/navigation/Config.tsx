@@ -1,5 +1,6 @@
+import { HintSection } from "../hints/HintModal";
+
 type OSWindows =
-  | "Leaderboard"
   | "World Structures"
   | "Settings"
   | "Military"
@@ -17,10 +18,15 @@ export interface OSInterface {
   children: React.ReactNode;
   height?: string;
   width?: string;
-  hintSection?: string;
+  hintSection?: HintSection;
 }
 
-export const leaderboard: OSWindows = "Leaderboard";
+export interface ExpandableOSInterface extends OSInterface {
+  childrenExpanded?: React.ReactNode;
+  widthExpanded?: string;
+  isExpanded?: boolean;
+}
+
 export const worldStructures: OSWindows = "World Structures";
 export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";

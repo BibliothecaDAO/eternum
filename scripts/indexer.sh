@@ -62,7 +62,7 @@ if [[ "$setConfig" == "true" ]]; then
     sed "${SED_INPLACE[@]}" '/{ type = "ERC721", address = "/d' "$TORII_CONFIG_FILE"
 
     # Insert new ERC721 entries before the closing ]
-    sed -i "/contracts = \[/a\\
+    sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
     \ \ { type = \"ERC721\", address = \"$VITE_REALMS_ADDRESS\" },\\
     \ \ { type = \"ERC721\", address = \"$VITE_SEASON_PASS_ADDRESS\" },\\
     " "$TORII_CONFIG_FILE"

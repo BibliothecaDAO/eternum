@@ -15,7 +15,7 @@ import {
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
-import { type SortInterface } from "../elements/SortButton";
+import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -24,7 +24,15 @@ export const toHexString = (num: bigint) => {
 };
 
 export const formatNumber = (num: number, decimals: number): string => {
-  return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+  // Convert to string with max decimals
+  let str = num.toFixed(decimals);
+
+  // Remove trailing zeros after decimal point
+  if (str.includes(".")) {
+    str = str.replace(/\.?0+$/, "");
+  }
+
+  return str;
 };
 
 export const currencyFormat = (num: number, decimals: number): string => {
@@ -63,7 +71,10 @@ export function addressToNumber(address: string) {
   }
 
   // Map the sum to a number between 1 and 10
-  return (sum % 5) + 1;
+  let result = (sum % 5) + 1;
+
+  // Pad with a 0 if the result is less than 10
+  return result < 10 ? `0${result}` : result.toString();
 }
 
 export function calculateDistance(start: Position, destination: Position): number | undefined {
@@ -185,6 +196,7 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.Dragonhide]: ResourceMiningTypes.Dragonhide,
   [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
   [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
+  [ResourcesIds.AncientFragment]: ResourceMiningTypes.Mine,
 };
 
 export enum TimeFormat {
@@ -197,6 +209,7 @@ export enum TimeFormat {
 export const formatTime = (
   seconds: number,
   format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
+  abbreviate: boolean = false,
 ): string => {
   const days = Math.floor(seconds / (3600 * 24));
   const hours = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -209,40 +222,12 @@ export const formatTime = (
   if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}m`);
   if (remainingSeconds > 0 && format & TimeFormat.S) parts.push(`${remainingSeconds}s`);
 
+  if (abbreviate) {
+    return parts[0] || "0s";
+  }
+
   return parts.join(" ");
 };
-
-// Add override
-export function sortItems<T>(items: T[], activeSort: SortInterface): T[] {
-  const sortedItems = [...items];
-
-  if (activeSort.sort !== "none") {
-    return sortedItems.sort((a, b) => {
-      const keyA = getPropertyByPath(a, activeSort.sortKey);
-      const keyB = getPropertyByPath(b, activeSort.sortKey);
-
-      let comparison = 0;
-
-      if (typeof keyA === "string" && typeof keyB === "string") {
-        comparison = keyA.localeCompare(keyB);
-      } else if (typeof keyA === "number" && typeof keyB === "number") {
-        comparison = keyA - keyB;
-      }
-
-      return activeSort.sort === "asc" ? comparison : -comparison;
-    });
-  } else {
-    return sortedItems.sort((a, b) => {
-      const keyA = getPropertyByPath(a, "realmId") as number;
-      const keyB = getPropertyByPath(b, "realmId") as number;
-      return keyB - keyA;
-    });
-  }
-}
-
-function getPropertyByPath<T>(obj: T, path: string): any {
-  return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);
-}
 
 export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
   navigator.clipboard
@@ -430,3 +415,56 @@ export const separateCamelCase = (str: string): string => {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
+
+export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {
+  const compareValues = (a: T, b: T, sortKey: string, sortDirection: "asc" | "desc" | "none"): number => {
+    const valueA = getNestedPropertyValue(a, sortKey);
+    const valueB = getNestedPropertyValue(b, sortKey);
+
+    let comparison = 0;
+
+    if (sortKey === "age" && typeof valueA === "string" && typeof valueB === "string") {
+      comparison = timeStringToSeconds(valueA) - timeStringToSeconds(valueB);
+    } else if (typeof valueA === "string" && typeof valueB === "string") {
+      comparison = valueA.localeCompare(valueB);
+    } else if (typeof valueA === "number" && typeof valueB === "number") {
+      comparison = valueA - valueB;
+    }
+
+    return sortDirection === "asc" ? comparison : -comparison;
+  };
+
+  if (activeSort.sort !== "none") {
+    return items.sort((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
+  } else {
+    return items.sort((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
+  }
+}
+
+function getNestedPropertyValue<T>(item: T, propertyPath: string) {
+  return propertyPath
+    .split(".")
+    .reduce(
+      (currentObject, propertyName) =>
+        currentObject ? (currentObject as Record<string, any>)[propertyName] : undefined,
+      item,
+    );
+}
+
+function timeStringToSeconds(timeStr: string): number {
+  const value = parseInt(timeStr);
+  const unit = timeStr.slice(-1).toLowerCase();
+
+  switch (unit) {
+    case "d":
+      return value * 86400;
+    case "h":
+      return value * 3600;
+    case "m":
+      return value * 60;
+    case "s":
+      return value;
+    default:
+      return 0;
+  }
+}

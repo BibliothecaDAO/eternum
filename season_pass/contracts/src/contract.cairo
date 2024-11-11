@@ -20,7 +20,6 @@ trait ISeasonPass<TState> {
 
 #[starknet::contract]
 mod EternumSeasonPass {
-    use debug::PrintTrait;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -35,6 +34,7 @@ mod EternumSeasonPass {
 
     use starknet::ClassHash;
     use starknet::ContractAddress;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
     use super::{IRealmMetadataEncoded, IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -54,7 +54,7 @@ mod EternumSeasonPass {
     struct Storage {
         realms: IERC721Dispatcher,
         lords: IERC20Dispatcher,
-        lords_balance: LegacyMap<u256, u256>,
+        lords_balance: Map<u256, u256>,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -161,8 +161,8 @@ mod EternumSeasonPass {
             self.lords.read().transfer_from(caller, this, amount);
 
             // update lords balance
-            let lords_balance = self.lords_balance.read(token_id);
-            self.lords_balance.write(token_id, lords_balance + amount);
+            let lords_balance = self.lords_balance.entry(token_id).read();
+            self.lords_balance.entry(token_id).write(lords_balance + amount);
         }
 
         fn detach_lords(ref self: ContractState, token_id: u256, amount: u256) {
@@ -171,18 +171,18 @@ mod EternumSeasonPass {
             assert!(self.erc721.owner_of(token_id) == caller, "ESP: Only season pass owner can detach lords");
 
             // ensure caller has enough lords
-            let lords_balance = self.lords_balance.read(token_id);
+            let lords_balance = self.lords_balance.entry(token_id).read();
             assert!(lords_balance >= amount, "ESP: Insufficient lords balance");
 
             // transfer lords to caller
             self.lords.read().transfer(caller, amount);
- 
+
             // update lords balance
-            self.lords_balance.write(token_id, lords_balance - amount);
+            self.lords_balance.entry(token_id).write(lords_balance - amount);
         }
 
         fn lords_balance(self: @ContractState, token_id: u256) -> u256 {
-            self.lords_balance.read(token_id)
+            self.lords_balance.entry(token_id).read()
         }
     }
 }

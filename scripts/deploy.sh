@@ -1,6 +1,28 @@
 #!/bin/bash
 
-# build and deploy season pass contracts
+# Create a Slot -> if deploying to slot
+slot deployments create -t epic eternum-rc1-1 katana --version v1.0.0-rc.1 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+
+# get accounts 
+# -> update prod env_variables.sh
+# -> update .env.production
+# -> update dojo_prod.toml
+slot deployments accounts eternum-rc1-1 katana 
+
+# get variables
+VITE_PUBLIC_MASTER_ADDRESS=
+VITE_PUBLIC_MASTER_PRIVATE_KEY=
+VITE_PUBLIC_NODE_URL=eternum-rc1-1
+SOZO_WORLD=0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2
+
+# update variables
+# if you have changed the name of the world you will need to update the address 
+sh ./scripts/update_variables.sh 0x304202e63b4db2f125ff900a3423c92a684c21fb86a6036f273c473bb6c5dfa <> eternum-rc1-1 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2
+
+# ------------------------------------------------------------------------------------------------
+# Build and deploy season pass contracts
+# @dev: only run this if deploying to slot
+# ------------------------------------------------------------------------------------------------
 printf "\n\n"
 echo "----- Building Eternum Season Pass Contract ----- "
 
@@ -28,29 +50,25 @@ cd ../../../
 printf "\n\n"
 
 
-# build eternum contracts
+# ------------------------------------------------------------------------------------------------
+# Build and deploy eternum contracts
+# @dev: only run this if deploying to slot
+# ------------------------------------------------------------------------------------------------
+
 cd contracts
 
-
 echo "Build contracts..."
-sozo --profile prod build
+sozo build --profile prod
 
 echo "Deleting previous indexer and network..."
-slot deployments delete eternum-40 torii
-slot deployments delete eternum-40 katana
-
-# If deploying to slot
-echo "Deploying world to Realms L3..."
-slot deployments create -t epic eternum-rc0 katana --version v1.0.0-rc.0 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
-
-# get accounts
-slot deployments accounts eternum-rc0 katana 
+# slot deployments delete eternum-40 torii
+# slot deployments delete eternum-40 katana
 
 echo "Migrating world..."
-sozo --profile prod migrate
+sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-rc0 torii --version v1.0.0-rc.0 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-rc0/katana --start-block 0  --index-pending true
+slot deployments create -t epic eternum-rc1-1 torii --version v1.0.0-rc.1 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-rc1-1/katana --start-block 0  --index-pending true
 
 echo "Setting up config..."
 

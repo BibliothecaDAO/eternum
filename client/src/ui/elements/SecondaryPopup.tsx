@@ -10,15 +10,19 @@ type FilterPopupProps = {
   children: React.ReactNode;
   className?: string;
   name?: string;
+  width?: string;
 };
 
-export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) => {
+export const SecondaryPopup = ({ children, className, name, width = "400px" }: FilterPopupProps) => {
   const nodeRef = useRef<any>(null);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
 
   const handleStop = (_: any, data: any) => {
+    if (data.y < -200 || data.y > window.innerHeight - 220 || data.x < -450 || data.x > window.innerWidth - 520) {
+      return false as false;
+    }
     if (name) {
       localStorage.setItem(name, JSON.stringify({ x: data.x, y: data.y }));
     }
@@ -72,7 +76,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
     <motion.div
       className="flex justify-center text-gold "
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={{ opacity: 1, width }}
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
@@ -90,6 +94,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
             onClick={handleClick}
             ref={nodeRef}
             className={clsx("fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
+            style={{ width: `${width}px` }}
           >
             {children}
           </div>

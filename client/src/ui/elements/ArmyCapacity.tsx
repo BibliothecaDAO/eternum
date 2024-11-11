@@ -1,6 +1,6 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
-import { configManager } from "@/dojo/setup";
 import { getArmyNumberOfTroops } from "@/dojo/modelManager/utils/ArmyMovementUtils";
+import { configManager } from "@/dojo/setup";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useMemo } from "react";
@@ -23,15 +23,16 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
 
   const totalTroops = getArmyNumberOfTroops(army);
   const remainingTroops = totalTroops - deductedTroops;
-  const capacityRatio = Number(remainingTroops) / Number(totalTroops);
-  const armyTotalCapacity = BigInt(Number(army.totalCapacity) * capacityRatio);
+  const capacityRatio = Math.floor(Number(remainingTroops) / Number(totalTroops));
+
+  const armyTotalCapacity = isFinite(capacityRatio) ? BigInt(Number(army.totalCapacity) * capacityRatio) : 0n;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const remainingCapacity = useMemo(() => armyTotalCapacity - army.weight, [army]);
 
   const capacityColor = useMemo(() => {
     if (army.weight >= armyTotalCapacity) return CapacityColor.HEAVY;
-    if (remainingCapacity < BigInt(configManager.getExploreReward())) return CapacityColor.MEDIUM;
+    if (remainingCapacity < BigInt(Math.floor(configManager.getExploreReward()))) return CapacityColor.MEDIUM;
     return CapacityColor.LIGHT;
   }, [remainingCapacity]);
 

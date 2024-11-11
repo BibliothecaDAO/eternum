@@ -252,6 +252,7 @@ export interface Config {
     travelCost: number;
     exploreCost: number;
     refillPerTick: number;
+    startBoostTickCount: number;
   };
   resources: {
     resourcePrecision: number;
@@ -390,7 +391,41 @@ export interface Config {
 }
 
 export interface Player {
-  entity_id: number;
   address: ContractAddress;
   addressName: string;
+  rank?: number;
+  points?: number;
+  isAlive?: boolean;
 }
+
+export type GuildInfo = {
+  entityId: ID;
+  name: string;
+  isOwner: boolean;
+  memberCount: number;
+  rank?: number;
+  points?: number;
+  isPublic?: boolean;
+  age?: string;
+  isMember?: boolean;
+};
+
+export type GuildMemberInfo = {
+  guildEntityId: ID;
+  name: string;
+  rank: number;
+  points: number;
+  address: ContractAddress;
+  age: string;
+  isUser: boolean;
+  isGuildMaster: boolean;
+};
+
+export type GuildWhitelistInfo = {
+  guildEntityId: ID;
+  guildName: string;
+  name?: string;
+  rank?: number;
+  points?: number;
+  address?: ContractAddress;
+};

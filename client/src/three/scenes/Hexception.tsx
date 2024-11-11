@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { SetupResult } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
-import { dir, soundSelector } from "@/hooks/useUISound";
 import { HexPosition, ResourceMiningTypes, SceneName } from "@/types";
 import { Position } from "@/types/Position";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -19,13 +18,13 @@ import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SceneManager } from "../SceneManager";
 import { BIOME_COLORS, Biome, BiomeType } from "../components/Biome";
 import { BuildingPreview } from "../components/BuildingPreview";
-import { LAND_NAME, SMALL_DETAILS_NAME } from "../components/InstancedModel";
+import { SMALL_DETAILS_NAME } from "../components/InstancedModel";
 import { createHexagonShape } from "../geometry/HexagonGeometry";
-import { createPausedLabel } from "../helpers/utils";
+import { createPausedLabel, gltfLoader } from "../helpers/utils";
+import { playBuildingSound } from "../sound/utils";
 import { BuildingSystemUpdate, RealmSystemUpdate } from "../systems/types";
 import { HexagonScene } from "./HexagonScene";
 import {
@@ -37,7 +36,7 @@ import {
   structureTypeToBuildingType,
 } from "./constants";
 
-const loader = new GLTFLoader();
+const loader = gltfLoader;
 
 const generateHexPositions = (center: HexPosition, radius: number) => {
   const color = new THREE.Color("gray");
@@ -195,8 +194,6 @@ export default class HexceptionScene extends HexagonScene {
               if (child instanceof THREE.Mesh) {
                 if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
                   child.castShadow = true;
-                }
-                if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
                   child.receiveShadow = true;
                 }
               }
@@ -301,13 +298,15 @@ export default class HexceptionScene extends HexagonScene {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
 
+      const { isSoundOn, effectsLevel } = useUIStore.getState();
+
       if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
         const building = getComponentValue(
           this.dojo.components.Building,
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType]);
+        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType], isSoundOn, effectsLevel);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -322,7 +321,7 @@ export default class HexceptionScene extends HexagonScene {
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType]);
+        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType], isSoundOn, effectsLevel);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -354,7 +353,7 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview?.resetBuildingColor();
     }
     const building = this.tileManager.getBuilding(normalizedCoords);
-    if (building) {
+    if (building && building.produced_resource_type) {
       this.state.setTooltip({
         content: (
           <div className="flex items-center space-x-1">
@@ -434,7 +433,7 @@ export default class HexceptionScene extends HexagonScene {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
           let buildingType =
-            building.resource && building.resource < 254
+            building.resource && (building.resource < 24 || building.resource === ResourcesIds.AncientFragment)
               ? ResourceIdToMiningType[building.resource as ResourcesIds]
               : (BuildingType[building.category].toString() as any);
 
@@ -446,6 +445,17 @@ export default class HexceptionScene extends HexagonScene {
           if (buildingData) {
             const instance = buildingData.model.clone();
             instance.applyMatrix4(building.matrix);
+            if (buildingType === ResourceMiningTypes.Forge) {
+              instance.traverse((child) => {
+                if (child.name === "Grassland003_8" && child instanceof THREE.Mesh) {
+                  if (!this.minesMaterials.has(building.resource)) {
+                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                    this.minesMaterials.set(building.resource, material);
+                  }
+                  child.material = this.minesMaterials.get(building.resource);
+                }
+              });
+            }
             if (buildingType === ResourceMiningTypes.Mine) {
               const crystalMesh1 = instance.children[1] as THREE.Mesh;
               const crystalMesh2 = instance.children[2] as THREE.Mesh;
@@ -580,10 +590,27 @@ export default class HexceptionScene extends HexagonScene {
           withBuilding = true;
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
+          buildingObj.rotation.y = rotation * 4;
           if (building.category === BuildingType[BuildingType.Castle]) {
             buildingObj.rotation.y = rotation * 2;
-          } else {
-            buildingObj.rotation.y = rotation * 4;
+          }
+          if (
+            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill
+          ) {
+            buildingObj.rotation.y = rotation * 2;
+          }
+          if (
+            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge
+          ) {
+            buildingObj.rotation.y = rotation * 6;
+          }
+          if (building.resource && building.resource === ResourcesIds.Crossbowman) {
+            buildingObj.rotation.y = rotation;
+          }
+          if (building.resource && building.resource === ResourcesIds.Paladin) {
+            buildingObj.rotation.y = rotation * 3;
           }
           buildingObj.updateMatrix();
           this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
@@ -658,29 +685,3 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 }
-
-export const playBuildingSound = (buildingType: BuildingType | undefined) => {
-  const buildingSounds: Partial<Record<BuildingType, string>> = {
-    [BuildingType.Castle]: soundSelector.buildCastle,
-    [BuildingType.WorkersHut]: soundSelector.buildWorkHut,
-    [BuildingType.WatchTower]: soundSelector.buildMageTower,
-    [BuildingType.Storehouse]: soundSelector.buildStorehouse,
-    [BuildingType.Bank]: soundSelector.buildLabor,
-    [BuildingType.FragmentMine]: soundSelector.buildMine,
-    [BuildingType.Barracks]: soundSelector.buildBarracks,
-    [BuildingType.ArcheryRange]: soundSelector.buildArcherRange,
-    [BuildingType.Stable]: soundSelector.buildStables,
-    [BuildingType.Farm]: soundSelector.buildFarm,
-    [BuildingType.FishingVillage]: soundSelector.buildFishingVillage,
-    [BuildingType.Market]: soundSelector.buildMarket,
-  };
-
-  const soundFile =
-    buildingType === undefined
-      ? soundSelector.buildCastle
-      : buildingSounds[buildingType as BuildingType] ?? soundSelector.buildMine;
-
-  const soundPath = dir + soundFile;
-
-  new Audio(soundPath).play();
-};

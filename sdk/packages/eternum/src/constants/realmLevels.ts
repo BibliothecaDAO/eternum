@@ -26,22 +26,22 @@ export const REALM_UPGRADE_COSTS: { [key in RealmLevels]: ResourceCost[] } = {
   ],
 
   [RealmLevels.Kingdom]: [
-    { resource: ResourcesIds.ColdIron, amount: 2000 },
-    { resource: ResourcesIds.Hartwood, amount: 1000 },
-    { resource: ResourcesIds.Diamonds, amount: 750 },
-    { resource: ResourcesIds.Sapphire, amount: 750 },
-    { resource: ResourcesIds.DeepCrystal, amount: 750 },
+    { resource: ResourcesIds.ColdIron, amount: 600 },
+    { resource: ResourcesIds.Hartwood, amount: 600 },
+    { resource: ResourcesIds.Diamonds, amount: 600 },
+    { resource: ResourcesIds.Sapphire, amount: 600 },
+    { resource: ResourcesIds.DeepCrystal, amount: 600 },
     { resource: ResourcesIds.Wheat, amount: 5000 },
     { resource: ResourcesIds.Fish, amount: 5000 },
   ],
 
   [RealmLevels.Empire]: [
-    { resource: ResourcesIds.AlchemicalSilver, amount: 20 },
-    { resource: ResourcesIds.Adamantine, amount: 20 },
-    { resource: ResourcesIds.Mithral, amount: 20 },
-    { resource: ResourcesIds.Dragonhide, amount: 20 },
-    { resource: ResourcesIds.Wheat, amount: 10000 },
-    { resource: ResourcesIds.Fish, amount: 10000 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 50 },
+    { resource: ResourcesIds.Adamantine, amount: 50 },
+    { resource: ResourcesIds.Mithral, amount: 50 },
+    { resource: ResourcesIds.Dragonhide, amount: 50 },
+    { resource: ResourcesIds.Wheat, amount: 9000 },
+    { resource: ResourcesIds.Fish, amount: 9000 },
   ],
 };
 

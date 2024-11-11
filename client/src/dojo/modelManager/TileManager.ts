@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
-import { playBuildingSound } from "@/three/scenes/Hexception";
+import { playBuildingSound } from "@/three/sound/utils";
 import { HexPosition } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -55,7 +56,7 @@ export class TileManager {
   }
 
   getRealmLevel = (): RealmLevels => {
-    const realmEntityId = this._getOwnerEntityId() || 0;
+    const realmEntityId = useUIStore.getState().structureEntityId;
     const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     return (realm?.level || RealmLevels.Settlement) as RealmLevels;
   };
@@ -266,11 +267,12 @@ export class TileManager {
 
     // add optimistic rendering
     const _ = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+    const { isSoundOn, effectsLevel } = useUIStore.getState();
 
-    playBuildingSound(buildingType);
+    playBuildingSound(buildingType, isSoundOn, effectsLevel);
 
     await this.setup.systemCalls.create_building({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       directions: directions,
       building_category: buildingType,
@@ -289,7 +291,7 @@ export class TileManager {
     this._optimisticDestroy(entityId, col, row);
 
     await this.setup.systemCalls.destroy_building({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -305,7 +307,7 @@ export class TileManager {
     this._optimisticPause(col, row);
 
     await this.setup.systemCalls.pause_production({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -321,7 +323,7 @@ export class TileManager {
     this._optimisticResume(col, row);
 
     await this.setup.systemCalls.resume_production({
-      signer: this.account!,
+      signer: useAccountStore.getState().account!,
       entity_id: entityId,
       building_coord: {
         x: col,
@@ -333,7 +335,7 @@ export class TileManager {
   placeStructure = async (entityId: ID, structureType: StructureType, coords: Position) => {
     if (structureType == StructureType.Hyperstructure) {
       await this.setup.systemCalls.create_hyperstructure({
-        signer: this.account!,
+        signer: useAccountStore.getState().account!,
         creator_entity_id: entityId,
         coords,
       });

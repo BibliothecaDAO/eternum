@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Next } from "@/assets/icons/common/fast-forward.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
+import { ReactComponent as Controller } from "@/assets/icons/Controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -14,6 +12,7 @@ import { useMusicPlayer } from "@/hooks/useMusic";
 import useScreenOrientation from "@/hooks/useScreenOrientation";
 import { settings } from "@/ui/components/navigation/Config";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
+import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 import Avatar from "@/ui/elements/Avatar";
 import Button from "@/ui/elements/Button";
 import { Checkbox } from "@/ui/elements/Checkbox";
@@ -21,8 +20,8 @@ import { Headline } from "@/ui/elements/Headline";
 import { RangeInput } from "@/ui/elements/RangeInput";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { ContractAddress } from "@bibliothecadao/eternum";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { IS_LOW_GRAPHICS_ENABLED } from "@/ui/config";
 
 export const SettingsWindow = () => {
   const {
@@ -35,7 +34,6 @@ export const SettingsWindow = () => {
 
   const addressName = getAddressName(ContractAddress(account.address));
 
-  // const addressName = useAddressStore((state) => state.addressName);
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);
@@ -66,7 +64,7 @@ export const SettingsWindow = () => {
   const isLowGraphics = IS_LOW_GRAPHICS_ENABLED;
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
-      <div className="flex p-4">
+      <div className="flex p-4 justify-between">
         <div className="relative">
           <Avatar
             onClick={() => setShowSettings(!showSettings)}
@@ -75,11 +73,16 @@ export const SettingsWindow = () => {
             src={`/images/avatars/${addressToNumber(account.address)}.png`}
           />
         </div>
-        {addressName && <div className="self-center px-4 mx-2 text-xl border rounded border-gold">{addressName}</div>}{" "}
-        <div className="self-center mx-1" onClick={copyToClipBoard}>
-          {displayAddress(account.address)}
+        {addressName && <div className="self-center px-4 mx-2 text-xl border rounded border-gold">{addressName}</div>}
+        <div className="flex flex-col items-center">
+          <Controller className="w-12" />
+          <div className="flex flex-row">
+            <div className="self-center mx-1" onClick={copyToClipBoard}>
+              {displayAddress(account.address)}
+            </div>
+            <Copy className="w-4 mx-1 hover:text-white" onClick={copyToClipBoard} />
+          </div>
         </div>
-        <Copy className="w-4 mx-1" onClick={copyToClipBoard} />
       </div>
       <div className="flex flex-col p-3 space-y-2">
         <Headline>Video</Headline>

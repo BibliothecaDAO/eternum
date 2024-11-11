@@ -15,9 +15,9 @@ import { LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import _, { throttle } from "lodash";
-import { DRACOLoader, GLTFLoader } from "three-stdlib";
 import { BiomeType } from "../components/Biome";
 import InstancedBiome from "../components/InstancedBiome";
+import { gltfLoader } from "../helpers/utils";
 import { SystemManager } from "../systems/SystemManager";
 import { HEX_SIZE, biomeModelPaths } from "./constants";
 
@@ -38,6 +38,8 @@ export abstract class HexagonScene {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private hemisphereLight!: THREE.HemisphereLight;
   private lightHelper!: THREE.DirectionalLightHelper;
+
+  private groundMesh!: THREE.Mesh;
 
   constructor(
     protected sceneName: SceneName,
@@ -87,12 +89,12 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.1);
-    this.scene.add(this.hemisphereLight);
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.3);
+    //this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
@@ -188,8 +190,15 @@ export abstract class HexagonScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.01, -0.0015, 0.01);
+    shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.1, 0.1, 0.0015);
     shadowFolder.close();
+  }
+
+  private setupGroundMeshGUI(): void {
+    const groundMeshFolder = this.GUIFolder.addFolder("Ground Mesh");
+    groundMeshFolder.add(this.groundMesh.material, "metalness", 0, 1, 0.01).name("Metalness");
+    groundMeshFolder.add(this.groundMesh.material, "roughness", 0, 1, 0.01).name("Roughness");
+    groundMeshFolder.close();
   }
 
   public getScene() {
@@ -338,11 +347,7 @@ export abstract class HexagonScene {
   }
 
   loadBiomeModels(maxInstances: number) {
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/");
-    dracoLoader.preload();
-    loader.setDRACOLoader(dracoLoader);
+    const loader = gltfLoader;
 
     for (const [biome, path] of Object.entries(biomeModelPaths)) {
       const loadPromise = new Promise<void>((resolve, reject) => {
@@ -372,8 +377,8 @@ export abstract class HexagonScene {
 
   private createGroundMesh() {
     const scale = 60;
-    const metalness = 0.5;
-    const roughness = 0.7;
+    const metalness = 0;
+    const roughness = 0.1;
 
     const geometry = new THREE.PlaneGeometry(2668, 1390.35);
     const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
@@ -399,6 +404,8 @@ export abstract class HexagonScene {
     mesh.raycast = () => {};
 
     this.scene.add(mesh);
+    this.groundMesh = mesh;
+    this.setupGroundMeshGUI();
   }
 
   update(deltaTime: number): void {

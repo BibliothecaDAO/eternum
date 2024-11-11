@@ -1385,8 +1385,8 @@
       "systems": []
     },
     {
-      "address": "0x2c8e32260ca84dc15a791caf77a5d62b1bca82c7447823967cf1b633f5cd95",
-      "class_hash": "0x1dcb8333cd8a1c2d2bb84b80c5f9ca036455fef623720f4998c80b9c7ed8e39",
+      "address": "0x1d32b91d22600e68a7b02fcd5ad448e9f2b18036dc000d9c1e45e6e98187038",
+      "class_hash": "0xe942b3129f36d721e53003ee6cdef745ecf80a7b48fb2f3febcbc7d1c0d06e",
       "abi": [
         {
           "type": "impl",
@@ -1575,8 +1575,8 @@
       "systems": []
     },
     {
-      "address": "0x4ad04fa3fb9251fbc71cfc33fa031711fc3c88ca86e9ebc375c2456dd95b9fa",
-      "class_hash": "0x1c91ddb43441769a498bae5125ea620d8ba400c00ec4a48689e156636970e57",
+      "address": "0x71bcd513e6c28bb85f0b5278961884ae5907717f620f31cb057fc1a3b958510",
+      "class_hash": "0x664353bbe4444284c9df10d39b913a5ce091e37e216052c8696a92374855bec",
       "abi": [
         {
           "type": "impl",
@@ -2231,8 +2231,8 @@
       "systems": []
     },
     {
-      "address": "0x5a6fb34ec686cc15afa10d7b3bf08128e1b0cce7acfc31a7c203bad8fb27d1f",
-      "class_hash": "0x1fac09a0e4f505f3bbef8031c16ff2812c0f05ef3481d49c97abf5244e0c53",
+      "address": "0x3f218d42319987c2a27eac78647685c5b5cdc681b8c825a3aaad30a7d129a2c",
+      "class_hash": "0x1b742592c53bd5da46a13079178d857b7022a38918fef20beca09d7e4bb9a3c",
       "abi": [
         {
           "type": "impl",
@@ -2273,6 +2273,13 @@
               "state_mutability": "view"
             }
           ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "view"
         },
         {
           "type": "impl",
@@ -2701,8 +2708,12 @@
               "name": "set_stamina_refill_config",
               "inputs": [
                 {
-                  "name": "amount",
+                  "name": "amount_per_tick",
                   "type": "core::integer::u16"
+                },
+                {
+                  "name": "start_boost_tick_count",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -3434,13 +3445,6 @@
           ]
         },
         {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
           "type": "impl",
           "name": "WorldProviderImpl",
           "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
@@ -3532,6 +3536,12 @@
         },
         {
           "type": "event",
+          "name": "bushido_trophy::components::achievable::AchievableComponent::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
           "name": "eternum::systems::config::contracts::config_systems::Event",
           "kind": "enum",
           "variants": [
@@ -3544,6 +3554,11 @@
               "name": "WorldProviderEvent",
               "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
               "kind": "nested"
+            },
+            {
+              "name": "AchievableEvent",
+              "type": "bushido_trophy::components::achievable::AchievableComponent::Event",
+              "kind": "flat"
             }
           ]
         }
@@ -4330,8 +4345,8 @@
       "systems": []
     },
     {
-      "address": "0x266536f1e60bafbac3c6c491b27e7103e7e2d2d0585b7ea9983ddf6be041a5b",
-      "class_hash": "0x7396863f257cdb27ba64a5e59102238e0b5d1601277a0e17d9e68da2f5c3097",
+      "address": "0x369e985f872bdd433ea561510a6509abb451d1d554eca10f56e12ae6a1bd051",
+      "class_hash": "0xf83f37acb70a2e878e2539284633c028ec0c76b74af4929888a797997e03aa",
       "abi": [
         {
           "type": "impl",
@@ -4617,8 +4632,8 @@
       "systems": []
     },
     {
-      "address": "0x3ccbc32b4cbba8f1fb3bf63b44af81de5c18fd1c88678e28b3fa84cf4ff9bfc",
-      "class_hash": "0x1cb67ca77686b76f6a5a435e0c370a627d83983092b3acd712588173f7162fe",
+      "address": "0x2db6494ff56de4de1bf6b120ef838ac2db65a054432d29965bcfedd938790f8",
+      "class_hash": "0x319d7846b71c4c9cca5f36b9c90e3355039a3dfc97c8f2a4aec8d6240ba732f",
       "abi": [
         {
           "type": "impl",
@@ -4951,8 +4966,8 @@
       "systems": []
     },
     {
-      "address": "0x46067f3cc4164e12bce8499ddda99ad46a209d75e96bc8b1255bda5ec3d9920",
-      "class_hash": "0xb0012d039ea397c4fa86bb3b7b2cc15db77a4e78a812b15f1db2be8ca48797",
+      "address": "0x7f5c913a8c7133bfc3252af614c68806819ee79b370efc604173619f421ba90",
+      "class_hash": "0x65fb83c3130610d4949cc2de770f563eef678db0f15ff5fb8ac248da1f7d798",
       "abi": [
         {
           "type": "impl",
@@ -5209,8 +5224,8 @@
       "systems": []
     },
     {
-      "address": "0x77241d3243625aacb1d4899121800db3d2ae7313a104555f7a04f8c84f661aa",
-      "class_hash": "0x69756c885a2912f87380e6bbb478926c0819b5d27713f0496f97ef9f614eb06",
+      "address": "0x71c13503550f7c7affbb85356cf28106a0780be454ae9fb1aa00a6fd2badebb",
+      "class_hash": "0x4d3148ee8985746667b0d341623066b3aa1987242662391dbc3bf8c53b3e072",
       "abi": [
         {
           "type": "impl",
@@ -5821,8 +5836,8 @@
       "systems": []
     },
     {
-      "address": "0x1ee0a10152a7da40d787c4461d8c9246bb1055a95e6ec607baeeba3e93a0954",
-      "class_hash": "0x3f24c4b220dc84f656d3149237770b4adb6bbc33671c5af984d4dd0fdc6cc5e",
+      "address": "0x3c10d290238e239f771eb94268e67eacbc0fbba798011114c91de22bd49a28f",
+      "class_hash": "0x49bb1eb2068df57a78d3d127a23bc0ee3717e4d8db8ee47e8c3adcb4410814e",
       "abi": [
         {
           "type": "impl",
@@ -6047,8 +6062,8 @@
       "systems": []
     },
     {
-      "address": "0x749f220403a6b3a6f4fdf1549224d58798a104be19f79010ba8258c17840f3b",
-      "class_hash": "0x77f20db91c93b1d666007d6cba8d5a4fe46b9413002b6f12dab5079121bc4d8",
+      "address": "0x62b4f713af6b52c9b72de07d50cbbc9f047ecd2494f2dcbc89307b18576e88c",
+      "class_hash": "0x25d992387fd838d01557070ee6840510648c603945b40be34b1074263ab40b5",
       "abi": [
         {
           "type": "impl",
@@ -6339,8 +6354,8 @@
       "systems": []
     },
     {
-      "address": "0x576967a2a5da01bd1a484deb56044c360ac111beb3ed1904bab729bbb0ca4ec",
-      "class_hash": "0x6b672840fbdddf2e8820e06726cc9b9f253772b6b88b77a55c0207b38c98f28",
+      "address": "0x7a7c7e01374a98afcbb339b4e8ab42d7a89f3b88c2038f7e3e351553c57612a",
+      "class_hash": "0x2e0c54ce157bcad95b82808d453813d1ccdc3830ed8c7e2380c420736f1e507",
       "abi": [
         {
           "type": "impl",
@@ -6583,8 +6598,8 @@
       "systems": []
     },
     {
-      "address": "0x66c8fa2cca2afc2fd568c3c13ab38efd69c5ed4f7bc9ef431a2075022336dd8",
-      "class_hash": "0x1f69b6ce87b8cc9393a82429c2092a94670c19d7c9fb176af8bb638607d7b7a",
+      "address": "0x1c670379d2ca9c1613e8fd5159e886ad3934a324e35da440da68a5aafe84291",
+      "class_hash": "0x20ea7f58d679b6fe7736c1c133c4ed1bd02b680ec6e009a97f47264bd54eea1",
       "abi": [
         {
           "type": "impl",
@@ -6813,8 +6828,8 @@
       "systems": []
     },
     {
-      "address": "0x79c02e3374cf6bcb4fd383f5d920949bbf7628ff6bb6188335b94fa27bc06cd",
-      "class_hash": "0x63b86e8e6a8f2fd9dee7c0d00746ccbaa03499bf2eb794159669b1d2cfd7e3",
+      "address": "0x15554bca8028a35f203c8d581f050809adb445e51c115f19d8d181a9cb55864",
+      "class_hash": "0x4e2c42ecb4af9a96bb3680adb3a60aef8d66b440095186f718670b7940ddb26",
       "abi": [
         {
           "type": "impl",
@@ -7097,8 +7112,8 @@
       "systems": []
     },
     {
-      "address": "0x492e89b379f73314a95450b554f17f5bd963b96ad69cadd90d1d11c7e44a171",
-      "class_hash": "0x5028b2646ea31a397df1ff7bb99f5ff5a611fd9b66bc02b8bfbb9536ea8087e",
+      "address": "0xa509688f9999f83063526f58c6a67ae3b9b5be1592bf0d8643dca998655b0f",
+      "class_hash": "0x33978daedf16b363e57a1117351b303bd18ff9a9d8561cba438e96ef4d2e345",
       "abi": [
         {
           "type": "impl",
@@ -7357,8 +7372,8 @@
       "systems": []
     },
     {
-      "address": "0x1135c92a5065e7a7bd2468b89ba6b1e74217102dccf0663aa259b424aa4a878",
-      "class_hash": "0x5f5b592cf7464e68f92b7d57e5ac828d65acc7117d190176a2ae99264281152",
+      "address": "0x1360fd7fbc444495d5a34230e4172af48d6f2cad762b359c50705cd7b792a1e",
+      "class_hash": "0x6d3a6e68c0027f3532e02510afc4b64910e6f2e086cdc20737d20e9c1dabc9d",
       "abi": [
         {
           "type": "impl",
@@ -7983,7 +7998,7 @@
     },
     {
       "members": [],
-      "class_hash": "0xd2bed3f1eaf17f16e918d4f64c34b9038726e2115b532ef2373d5f04640f5f",
+      "class_hash": "0x1a4e09ba72da244929b1baad9bfa54a716960288c148d16fd2d3ef071094558",
       "tag": "StaminaRefillConfig"
     },
     {
@@ -8095,6 +8110,11 @@
     },
     {
       "members": [],
+      "class_hash": "0x42fe39cbb053e4c891950e3dab482de36cc579742ed3398040f3a5c2c3decec",
+      "tag": "CreateGuild"
+    },
+    {
+      "members": [],
       "class_hash": "0x2244758a42c57afbb4867dc214ab7919feba1688da80a7d2b4a1f8bc05978af",
       "tag": "CreateOrder"
     },
@@ -8130,6 +8150,11 @@
     },
     {
       "members": [],
+      "class_hash": "0x478ab378675e1f229797bed47afde99c59f06be11b3a2a558f05059a1fd5f1f",
+      "tag": "JoinGuild"
+    },
+    {
+      "members": [],
       "class_hash": "0x57c4193d3edff82d925bea158ad499d850c0ef19b9a92f96390fe26a4584c8d",
       "tag": "LiquidityEvent"
     },
@@ -8157,6 +8182,16 @@
       "members": [],
       "class_hash": "0x7f074d62eba8b190d51875053a0d609ec991924c5382d94b644430335a32357",
       "tag": "Travel"
+    },
+    {
+      "members": [],
+      "class_hash": "0x4be969e004587c0413a3e2cf329c2e11cf89b1e76401f5ffe7d12f578ea49d8",
+      "tag": "TrophyCreation"
+    },
+    {
+      "members": [],
+      "class_hash": "0x40ef1802df969e831f1b60284cf482243f6715b5eafdeb7ad37e2979fce9cee",
+      "tag": "TrophyProgression"
     }
   ]
 }

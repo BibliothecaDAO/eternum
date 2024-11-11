@@ -1,8 +1,10 @@
+import { useAccountStore } from "@/hooks/context/accountStore";
+import { RenderChunkSize, StructureInfo } from "@/types";
 import { FELT_CENTER } from "@/ui/config";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { ID, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { GLTFLoader } from "three-stdlib";
+import { gltfLoader, isAddressEqualToAccount } from "../helpers/utils";
 import { StructureLabelPaths, StructureModelPaths } from "../scenes/constants";
 import { StructureSystemUpdate } from "../systems/types";
 import InstancedModel from "./InstancedModel";
@@ -25,20 +27,24 @@ export class StructureManager {
   structureHexCoords: Map<number, Set<number>> = new Map();
   totalStructures: number = 0;
   private currentChunk: string = "";
-  private renderChunkSize: { width: number; height: number };
+  private renderChunkSize: RenderChunkSize;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
 
   constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
     this.loadModels();
+
+    useAccountStore.subscribe(() => {
+      this.structures.recheckOwnership();
+    });
   }
 
   public async loadModels() {
-    const loader = new GLTFLoader();
+    const loader = gltfLoader;
 
     for (const [key, modelPaths] of Object.entries(StructureModelPaths)) {
-      const structureType = StructureType[key as keyof typeof StructureType];
+      const structureType = parseInt(key) as StructureType;
 
       if (structureType === undefined) continue;
       if (!modelPaths || modelPaths.length === 0) continue;
@@ -49,13 +55,12 @@ export class StructureManager {
             modelPath,
             (gltf) => {
               const model = gltf.scene as THREE.Group;
-              const instancedModel = new InstancedModel(model, MAX_INSTANCES);
-              instancedModel.setCount(0);
+              const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, StructureType[structureType]);
               resolve(instancedModel);
             },
             undefined,
             (error) => {
-              console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
+              console.error(`An error occurred while loading the ${structureType} model:`, error);
               reject(error);
             },
           );
@@ -82,8 +87,7 @@ export class StructureManager {
 
   async onUpdate(update: StructureSystemUpdate) {
     await Promise.all(this.modelLoadPromises);
-
-    const { entityId, hexCoords, isMine, structureType, stage } = update;
+    const { entityId, hexCoords, structureType, stage, level, owner } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
 
@@ -98,10 +102,9 @@ export class StructureManager {
       this.totalStructures++;
     }
 
-    const key = StructureType[structureType] as unknown as StructureType;
-
+    const key = structureType;
     // Add the structure to the structures map
-    this.structures.addStructure(entityId, key, normalizedCoord, stage, isMine);
+    this.structures.addStructure(entityId, key, normalizedCoord, stage, level, owner);
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -131,7 +134,8 @@ export class StructureManager {
   }
 
   private updateVisibleStructures() {
-    for (const [structureType, structures] of this.structures.getStructures()) {
+    const _structures = this.structures.getStructures();
+    for (const [structureType, structures] of _structures) {
       const visibleStructures = this.getVisibleStructures(structures);
       const models = this.structureModels.get(structureType);
 
@@ -153,9 +157,15 @@ export class StructureManager {
             this.scene.add(label);
           }
           this.dummy.position.copy(position);
-          this.dummy.updateMatrix();
 
-          const modelType = models[structure.stage];
+          if (structureType === StructureType.Bank) {
+            this.dummy.rotation.y = (4 * Math.PI) / 6;
+          }
+          this.dummy.updateMatrix();
+          let modelType = models[structure.stage];
+          if (structureType === StructureType.Realm) {
+            modelType = models[structure.level];
+          }
           const currentCount = modelType.getCount();
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
           modelType.setCount(currentCount + 1);
@@ -200,13 +210,12 @@ export class StructureManager {
     }
     return undefined;
   }
-}
 
-export interface StructureInfo {
-  entityId: ID;
-  hexCoords: { col: number; row: number };
-  stage: number;
-  isMine: boolean;
+  updateAnimations(deltaTime: number) {
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.updateAnimations(deltaTime));
+    });
+  }
 }
 
 class Structures {
@@ -217,15 +226,26 @@ class Structures {
     structureType: StructureType,
     hexCoords: { col: number; row: number },
     stage: number = 0,
-    isMine: boolean,
+    level: number = 0,
+    owner: { address: bigint },
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures.get(structureType)!.set(entityId, { entityId, hexCoords, stage, isMine });
+    this.structures
+      .get(structureType)!
+      .set(entityId, { entityId, hexCoords, stage, level, isMine: isAddressEqualToAccount(owner.address), owner });
   }
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
     return this.structures;
+  }
+
+  recheckOwnership() {
+    this.structures.forEach((structures) => {
+      structures.forEach((structure) => {
+        structure.isMine = isAddressEqualToAccount(structure.owner.address);
+      });
+    });
   }
 }

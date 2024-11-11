@@ -9,7 +9,7 @@ import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, formatNumber, multiplyByPrecision } from "@/ui/utils/utils";
 import { ContractAddress, DONKEY_ENTITY_TYPE, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/TravelInfo";
@@ -268,7 +268,7 @@ export const ResourceSwap = ({
                 <tr className="text-gold">
                   <td>Price</td>
                   <td className="text-left px-8 flex gap-4">
-                    <>{`1 ${chosenResourceName} = ${marketManager.getMarketPrice().toFixed(2)} LORDS`}</>
+                    <>{`1 ${chosenResourceName} = ${formatNumber(marketManager.getMarketPrice(), 4)} LORDS`}</>
                   </td>
                 </tr>
                 <>
@@ -276,14 +276,15 @@ export const ResourceSwap = ({
                     <td>Slippage</td>
                     <td className="text-left text-danger px-8">
                       -
-                      {(
+                      {formatNumber(
                         marketManager.slippage(
                           isBuyResource
                             ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
                             : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
                           isBuyResource,
-                        ) || 0
-                      ).toFixed(2)}{" "}
+                        ) || 0,
+                        2,
+                      )}{" "}
                       %
                     </td>
                   </tr>

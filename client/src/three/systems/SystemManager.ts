@@ -3,7 +3,7 @@ import { configManager, SetupResult } from "@/dojo/setup";
 import { HexPosition } from "@/types";
 import { Position } from "@/types/Position";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ID, StructureType } from "@bibliothecadao/eternum";
+import { ID, RealmLevels, StructureType } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
@@ -90,16 +90,15 @@ export class SystemManager {
               this.setup.components.Owner,
               getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
             );
-            const isMine = this.isOwner(owner);
 
             callback({
               entityId: army.entity_id,
               hexCoords: { col: position.x, row: position.y },
-              isMine,
               battleId: army.battle_id,
               defender: Boolean(protectee),
               currentHealth: health.current / healthMultiplier,
               order: realm.order,
+              owner: { address: owner?.address || 0n },
             });
           }
         });
@@ -115,18 +114,23 @@ export class SystemManager {
           if (!structure) return;
 
           const owner = getComponentValue(this.setup.components.Owner, update.entity);
-          const isMine = this.isOwner(owner);
 
           const categoryKey = structure.category as keyof typeof StructureType;
 
           const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+          let level = 0;
+          if (StructureType[categoryKey] === StructureType.Realm) {
+            const realm = getComponentValue(this.setup.components.Realm, update.entity);
+            level = realm?.level || RealmLevels.Settlement;
+          }
 
           return {
             entityId: structure.entity_id,
             hexCoords: this.getHexCoords(update.value),
             structureType: StructureType[categoryKey],
-            isMine,
             stage,
+            level,
+            owner: { address: owner?.address || 0n },
           };
         });
       },
@@ -234,10 +238,6 @@ export class SystemManager {
         });
       },
     };
-  }
-
-  private isOwner(owner: any): boolean {
-    return owner?.address === BigInt(this.setup.network.burnerManager.account?.address || 0);
   }
 
   private getHexCoords(value: any): { col: number; row: number } {

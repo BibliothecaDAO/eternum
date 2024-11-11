@@ -5,7 +5,7 @@ import { useTravel } from "@/hooks/helpers/useTravel";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { divideByPrecision, formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ContractAddress, EntityType, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -163,7 +163,7 @@ export const LiquidityResourceRow = ({
           onMouseEnter={() => setShowInputResourcesPrice(true)}
           onMouseLeave={() => setShowInputResourcesPrice(false)}
         >
-          {marketManager.getMarketPrice().toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
+          {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource="Lords" size="sm" />
           {showInputResourcesPrice && (
             <div className={`${isFirst ? "top-10" : "bottom-10"} absolute left-0 z-[100] pointer-events-none`}>
               <InputResourcesPrice marketManager={marketManager} />
@@ -272,7 +272,7 @@ const MyLiquidity = ({
         {lordsAmount > 0 && (
           <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({lordsDifferencePercentage > 0 ? "+" : ""}
-            {lordsDifferencePercentage.toFixed(2)}%)
+            {formatNumber(lordsDifferencePercentage, 2)}%)
           </span>
         )}
       </div>
@@ -283,7 +283,7 @@ const MyLiquidity = ({
         {resourceAmount > 0 && (
           <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({resourceDifferencePercentage > 0 ? "+" : ""}
-            {resourceDifferencePercentage.toFixed(2)}%)
+            {formatNumber(resourceDifferencePercentage, 2)}%)
           </span>
         )}
       </div>
@@ -292,7 +292,7 @@ const MyLiquidity = ({
         <div className="flex mt-1">
           <span className={`text-xs ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
             {totalValueDifferenceInLords >= 0 ? "+" : "-"}
-            {Math.abs(totalValueDifferenceInLords).toFixed(2)} Lords (uPNL)
+            {formatNumber(Math.abs(totalValueDifferenceInLords), 2)} Lords (uPNL)
           </span>
         </div>
       )}
@@ -329,7 +329,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
       <div className="flex flex-row text-xxs text-gold w-full items-center justify-between mt-1">
         <span className="mr-1 whitespace-nowrap">production cost:</span>
         <div className="flex items-center space-x-1">
-          <span className="font-semibold ">{totalPrice.toFixed(2)}</span>
+          <span className="font-semibold ">{formatNumber(totalPrice, 4)}</span>
           <ResourceIcon resource="Lords" size="xs" />
         </div>
       </div>

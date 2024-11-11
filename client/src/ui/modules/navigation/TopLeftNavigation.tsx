@@ -20,7 +20,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
+import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
@@ -36,6 +36,7 @@ const structureIcons: Record<string, JSX.Element> = {
   Bank: <Landmark />,
   Hyperstructure: <Sparkles />,
   FragmentMine: <Pickaxe />,
+  SpectatorMode: <EyeIcon />,
 };
 
 const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
@@ -98,6 +99,7 @@ export const TopLeftNavigation = () => {
   const { isMapView, handleUrlChange, hexPosition } = useQuery();
   const { playerStructures } = useEntities();
 
+  const isSpectatorMode = useUIStore((state) => state.isSpectatorMode);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -151,11 +153,12 @@ export const TopLeftNavigation = () => {
       getComponentValue(
         setup.components.BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
-      )?.value || 1;
+      )?.value || 0;
 
     const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
 
-    return { capacityKg: quantity * gramToKg(storehouseCapacity), quantity };
+    // Base capacity is storehouseCapacity, then add storehouseCapacity for each additional storehouse
+    return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
   }, [structureEntityId, nextBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
@@ -195,11 +198,20 @@ export const TopLeftNavigation = () => {
                 </SelectContent>
               </Select>
             ) : (
-              <div>
-                <div className="self-center flex gap-4">
-                  {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
-                  {structure.name}
-                </div>
+              <div className="w-full px-4 py-2">
+                <h5 className="flex items-center gap-4">
+                  {isSpectatorMode ? (
+                    <>
+                      {structureIcons.SpectatorMode}
+                      <span>Spectator Mode</span>
+                    </>
+                  ) : (
+                    <>
+                      {structure.structureCategory ? structureIcons[structure.structureCategory] : structureIcons.None}
+                      <span>{structure.name}</span>
+                    </>
+                  )}
+                </h5>
               </div>
             )}
           </div>
@@ -299,53 +311,77 @@ export const TopLeftNavigation = () => {
 const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  const cycleTime = configManager.getTick(TickIds.Armies);
 
   const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
-  let cycleTime = configManager.getTick(TickIds.Armies);
+  const progress = useMemo(() => {
+    const elapsedTime = nextBlockTimestamp % cycleTime;
+    return (elapsedTime / cycleTime) * 100;
+  }, [nextBlockTimestamp, cycleTime]);
+
+  const updateTooltip = useCallback(() => {
+    if (!isTooltipOpen) return;
+
+    setTooltip({
+      position: "bottom",
+      content: (
+        <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
+          <div>
+            A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+          </div>
+          <div>
+            Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
+          </div>
+        </div>
+      ),
+    });
+  }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
 
   useEffect(() => {
+    if (!isTooltipOpen) return;
+
     const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);
     setTimeUntilNextCycle(initialTime);
 
     const interval = setInterval(() => {
-      setTimeUntilNextCycle((prevTime) => {
-        if (prevTime <= 1) {
-          return initialTime;
-        }
-        return prevTime - 1;
-      });
+      setTimeUntilNextCycle((prevTime) => (prevTime <= 1 ? initialTime : prevTime - 1));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [nextBlockTimestamp]);
+  }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
+  // }, [nextBlockTimestamp]);
+  // }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
 
-  const progress = useMemo(() => {
-    return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
-  }, [timeUntilNextCycle]);
+  //   const progress = useMemo(() => {
+  //     return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
+  //   }, [timeUntilNextCycle]);
 
-  const updateTooltip = useCallback(() => {
-    if (isTooltipOpen) {
-      setTooltip({
-        position: "bottom",
-        content: (
-          <div className="whitespace-nowrap pointer-events-none flex flex-col text-sm capitalize">
-            <div>
-              A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
-            </div>
-            <div>
-              Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
-            </div>
-          </div>
-        ),
-      });
-    }
-  }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
+  //   const updateTooltip = useCallback(() => {
+  //     if (isTooltipOpen) {
+  //       setTooltip({
+  //         position: "bottom",
+  //         content: (
+  //           <div className="whitespace-nowrap pointer-events-none flex flex-col text-sm capitalize">
+  //             <div>
+  //               A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+  //             </div>
+  //             <div>
+  //               Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
+  //             </div>
+  //           </div>
+  //         ),
+  //       });
+  //     }
+  //   // }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
+  // }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
 
   useEffect(() => {
-    updateTooltip();
-  }, [updateTooltip]);
+    if (isTooltipOpen) {
+      updateTooltip();
+    }
+  }, [isTooltipOpen, updateTooltip]);
 
   return (
     <div
