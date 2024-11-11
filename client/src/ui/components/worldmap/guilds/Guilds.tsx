@@ -1,14 +1,12 @@
-import { ReactComponent as LockClosed } from "@/assets/icons/common/lock-closed.svg";
-import { ReactComponent as LockOpen } from "@/assets/icons/common/lock-open.svg";
 import { useGuilds } from "@/hooks/helpers/useGuilds";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyIntlFormat } from "@/ui/utils/utils";
-import { ContractAddress, GuildInfo, ID, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
-import clsx from "clsx";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { CreateGuildButton } from "./CreateGuildButton";
+import { GuildList } from "./GuildList";
 
 export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId: ID) => void }) => {
   const {
@@ -22,7 +20,9 @@ export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId:
 
   const { guilds } = useGuildQuery();
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
-  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
+  const playerGuild = getGuildFromPlayerAddress(ContractAddress(account.address));
+
+  const showGuildButton = playerGuild?.entityId;
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingGuild, setIsCreatingGuild] = useState(false);
@@ -64,195 +64,45 @@ export const Guilds = ({ viewGuildMembers }: { viewGuildMembers: (guildEntityId:
   };
 
   return (
-    <div className="flex flex-col min-h-72 p-2 h-full w-full">
-      <GuildActionButton
-        userGuild={userGuild}
-        isLoading={isLoading}
-        isCreatingGuild={isCreatingGuild}
-        viewGuildMembers={viewGuildMembers}
-        toggleIsCreatingGuild={toggleIsCreatingGuild}
-      />
+    <div className="flex flex-col min-h-72 h-full w-full p-2 overflow-hidden">
+      {showGuildButton ? (
+        <Button
+          className="text-ellipsis uppercase font-sans !bg-blueish/20 hover:!bg-gold"
+          variant="primary"
+          onClick={() => viewGuildMembers(playerGuild.entityId)}
+        >
+          {playerGuild.name}
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      ) : (
+        <Button isLoading={isLoading} variant="primary" onClick={toggleIsCreatingGuild}>
+          {isCreatingGuild ? "Search Tribe" : "Create Tribe"}
+        </Button>
+      )}
 
       <Button className="my-4" variant="primary" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
         {viewGuildInvites ? "Tribe Rankings" : "Tribe Invites"}
       </Button>
 
       <div className="mb-4">
-        <GuildSearchOrCreate
-          isCreatingGuild={isCreatingGuild}
-          handleCreateGuild={handleCreateGuild}
-          guildName={guildName}
-          setGuildName={setGuildName}
-          isPublic={isPublic}
-          setIsPublic={setIsPublic}
-          setGuildSearchTerm={setGuildSearchTerm}
-        />
+        {isCreatingGuild ? (
+          <CreateGuildButton
+            handleCreateGuild={handleCreateGuild}
+            guildName={guildName}
+            setGuildName={setGuildName}
+            isPublic={isPublic}
+            setIsPublic={setIsPublic}
+          />
+        ) : (
+          <TextInput
+            placeholder="Search Tribe . . ."
+            onChange={(guildSearchTerm) => setGuildSearchTerm(guildSearchTerm)}
+          />
+        )}
       </div>
 
-      <GuildList guilds={filteredGuilds} viewGuildInvites={viewGuildInvites} viewGuildMembers={viewGuildMembers} />
-    </div>
-  );
-};
-
-interface GuildActionButtonProps {
-  userGuild: GuildInfo | undefined;
-  isLoading: boolean;
-  isCreatingGuild: boolean;
-  viewGuildMembers: (guildEntityId: ID) => void;
-  toggleIsCreatingGuild: () => void;
-}
-const GuildActionButton = ({
-  userGuild,
-  isLoading,
-  isCreatingGuild,
-  viewGuildMembers,
-  toggleIsCreatingGuild,
-}: GuildActionButtonProps) => {
-  if (userGuild?.entityId) {
-    return (
-      <Button
-        className="text-ellipsis uppercase font-sans"
-        variant="primary"
-        onClick={() => viewGuildMembers(userGuild.entityId)}
-      >
-        {userGuild.name}
-        <ChevronRight className="w-4 h-4" />
-      </Button>
-    );
-  }
-
-  return (
-    <Button isLoading={isLoading} variant="primary" onClick={toggleIsCreatingGuild}>
-      {isCreatingGuild ? "Search Tribe" : "Create Tribe"}
-    </Button>
-  );
-};
-
-interface GuildSearchOrCreateProps {
-  isCreatingGuild: boolean;
-  handleCreateGuild: (guildName: string, isPublic: boolean) => void;
-  guildName: string;
-  setGuildName: (val: string) => void;
-  isPublic: boolean;
-  setIsPublic: (val: boolean) => void;
-  setGuildSearchTerm: (term: string) => void;
-}
-
-const GuildSearchOrCreate = ({
-  isCreatingGuild,
-  handleCreateGuild,
-  guildName,
-  setGuildName,
-  isPublic,
-  setIsPublic,
-  setGuildSearchTerm,
-}: GuildSearchOrCreateProps) => {
-  if (isCreatingGuild) {
-    return (
-      <CreateGuildForm
-        handleCreateGuild={handleCreateGuild}
-        guildName={guildName}
-        setGuildName={setGuildName}
-        isPublic={isPublic}
-        setIsPublic={setIsPublic}
-      />
-    );
-  }
-
-  return (
-    <TextInput placeholder="Search Tribe . . ." onChange={(guildSearchTerm) => setGuildSearchTerm(guildSearchTerm)} />
-  );
-};
-
-interface GuildListProps {
-  guilds: GuildInfo[];
-  viewGuildInvites: boolean;
-  viewGuildMembers: (guildEntityId: ID) => void;
-}
-
-const GuildList = ({ guilds, viewGuildInvites, viewGuildMembers }: GuildListProps) => {
-  return (
-    <div className="flex flex-col p-2 border border-gold/10 rounded h-full">
-      <GuildListHeader />
-      <div className="flex flex-col space-y-2 overflow-y-auto">
-        {guilds.map((guild) => (
-          <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
-        ))}
-      </div>
-      {!guilds.length && viewGuildInvites && <p className="text-center italic">No Tribe Invites Received</p>}
-    </div>
-  );
-};
-
-const GuildListHeader = () => (
-  <div className="grid grid-cols-7 gap-1 mb-4 uppercase text-xs font-bold border-b">
-    <div>Rank</div>
-    <div className="col-span-2">Name</div>
-    <div>Points</div>
-    <div className="text-right">Members</div>
-    <div className="text-right">Age</div>
-  </div>
-);
-
-interface GuildRowProps {
-  guild: GuildInfo;
-  onClick: () => void;
-}
-
-const GuildRow = ({ guild, onClick }: GuildRowProps) => {
-  return (
-    <div
-      className={clsx("grid grid-cols-7  gap-1 text-md hover:opacity-70 p-1 rounded", {
-        "bg-blueish/20": guild.isMember,
-      })}
-      onClick={onClick}
-    >
-      <p>{guild.rank}</p>
-      <p className="col-span-2 truncate">{guild.name}</p>
-      <p>{currencyIntlFormat(guild.points!)}</p>
-      <p className="text-right">{guild.memberCount}</p>
-      <p className="text-right text-sm">{guild.createdSince}</p>
-      <div className="flex justify-end">
-        {guild.isPublic ? <LockOpen className="fill-gold w-4" /> : <LockClosed className="fill-gold w-4" />}
-      </div>
-    </div>
-  );
-};
-
-interface CreateGuildFormProps {
-  handleCreateGuild: (guildName: string, isPublic: boolean) => void;
-  guildName: string;
-  setGuildName: (val: string) => void;
-  isPublic: boolean;
-  setIsPublic: (val: boolean) => void;
-}
-
-const CreateGuildForm = ({
-  handleCreateGuild,
-  guildName,
-  setGuildName,
-  isPublic,
-  setIsPublic,
-}: CreateGuildFormProps) => {
-  const handleSubmit = () => {
-    handleCreateGuild(guildName, isPublic);
-  };
-
-  return (
-    <div className="flex items-center gap-4">
-      <TextInput placeholder="Tribe Name . . ." onChange={setGuildName} maxLength={MAX_NAME_LENGTH} />
-      <div className="flex items-center gap-2">
-        <div className={"flex items-center justify-center h-full"} onClick={() => setIsPublic(!isPublic)}>
-          {isPublic ? (
-            <LockOpen className="fill-gold w-6 h-6 hover:opacity-70" />
-          ) : (
-            <LockClosed className="fill-gold w-6 h-6 hover:opacity-70" />
-          )}
-        </div>
-
-        <Button variant="primary" onClick={handleSubmit} disabled={!guildName}>
-          Confirm
-        </Button>
+      <div className="flex-1 min-h-0">
+        <GuildList guilds={filteredGuilds} viewGuildInvites={viewGuildInvites} viewGuildMembers={viewGuildMembers} />
       </div>
     </div>
   );
