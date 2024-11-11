@@ -1,5 +1,4 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
@@ -21,13 +20,17 @@ export const CoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: I
   const [isChangingCoOwners, setIsChangingCoOwners] = useState(false);
 
   const coOwnersWithTimestamp = useMemo(() => {
-    const latestChangeEvent = LeaderboardManager.instance().getCurrentCoOwners(hyperstructureEntityId);
-    if (!latestChangeEvent) return undefined;
+    // Mock data for co-owners
+    const mockCoOwners = [
+      { address: ContractAddress("0x0"), percentage: 300 },
+      { address: ContractAddress("0x0"), percentage: 300 },
+      { address: ContractAddress("0x0"), percentage: 300 },
+    ];
 
-    const coOwners = latestChangeEvent.coOwners;
-    const timestamp = latestChangeEvent.timestamp;
-
-    return { coOwners, timestamp };
+    return {
+      coOwners: mockCoOwners,
+      timestamp: Date.now() - 86400000, // 1 day ago
+    };
   }, [hyperstructureEntityId]);
 
   return (
@@ -136,7 +139,7 @@ const CoOwnersRows = ({
           </div>
         );
       })}
-      {structure?.isMine && (
+      {true && (
         <div
           onMouseEnter={() => {
             if (!canUpdate)
@@ -218,11 +221,10 @@ const ChangeCoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID
               <AddressSelect
                 className="col-span-8"
                 setSelectedAddress={(val) => {
-                  setNewCoOwners([
-                    ...newCoOwners.slice(0, index),
-                    { ...coOwner, address: val },
-                    ...newCoOwners.slice(index + 1),
-                  ]);
+                  const updatedCoOwners = [...newCoOwners];
+                  updatedCoOwners[index] = { ...coOwner, address: val };
+                  setNewCoOwners(updatedCoOwners);
+                  console.log({ val, newCoOwners, updatedCoOwners });
                 }}
               />
               <NumberInput

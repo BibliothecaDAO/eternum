@@ -4,16 +4,19 @@ import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { ContractAddress } from "@bibliothecadao/eternum";
 import { HasValue, runQuery } from "@dojoengine/recs";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { displayAddress, toHexString } from "../utils/utils";
+import TextInput from "./TextInput";
 
 export const AddressSelect = ({
   addressList,
+  selectedAddress,
   setSelectedAddress,
   search,
   className,
 }: {
   addressList?: ContractAddress[];
+  selectedAddress: ContractAddress;
   setSelectedAddress: (address: ContractAddress) => void;
   search?: boolean;
   className?: string;
@@ -25,9 +28,22 @@ export const AddressSelect = ({
     },
   } = useDojo();
 
+  const [open, setOpen] = useState(false);
+
   const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const getPlayers = useGetAllPlayers();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen && inputRef.current) {
+      setSearchQuery("");
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+    }
+  };
 
   const players = useMemo(() => {
     if (addressList) {
@@ -41,10 +57,37 @@ export const AddressSelect = ({
     }
   }, [account.address, addressList]);
 
+  const filteredPlayers = useMemo(() => {
+    return players.filter((player) => {
+      const searchStr = searchQuery.toLowerCase();
+      return (
+        player.addressName.toLowerCase().includes(searchStr) ||
+        toHexString(player.address).toLowerCase().includes(searchStr)
+      );
+    });
+  }, [players, searchQuery]);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      console.log({ filteredPlayers });
+      if (filteredPlayers.length > 0) {
+        setSelectedAddress(ContractAddress(filteredPlayers[0].address.toString()));
+      }
+      setSearchQuery("");
+    } else {
+      e.stopPropagation();
+    }
+  };
+
   return (
     <div className={`self-center text-gold text-center border border-gold rounded ${className}`}>
       {players.length > 0 && (
         <Select
+          open={open}
+          onOpenChange={handleOpenChange}
+          value={}
           onValueChange={(a) => {
             setSelectedAddress(ContractAddress(a));
           }}
@@ -56,13 +99,22 @@ export const AddressSelect = ({
             />
           </SelectTrigger>
           <SelectContent className="text-[1rem]">
-            {players.map((player, index) => (
-              <SelectItem className="h-10 text-[1rem]" key={index} value={player.address.toString()}>
-                <h5 className="text-[1rem]">{`${player.addressName} (${displayAddress(
-                  toHexString(player.address),
-                )})`}</h5>
-              </SelectItem>
-            ))}
+            <TextInput
+              ref={inputRef}
+              onChange={setSearchQuery}
+              placeholder="Filter channels..."
+              className="w-full"
+              onKeyDown={handleKeyDown}
+            />
+            <div className="max-h-[200px] overflow-y-auto">
+              {filteredPlayers.map((player, index) => (
+                <SelectItem className="h-10 text-[1rem]" key={index} value={player.address.toString()}>
+                  <h5 className="text-[1rem]">{`${player.addressName} (${displayAddress(
+                    toHexString(player.address),
+                  )})`}</h5>
+                </SelectItem>
+              ))}
+            </div>
           </SelectContent>
         </Select>
       )}

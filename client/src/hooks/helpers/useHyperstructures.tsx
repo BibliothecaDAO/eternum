@@ -25,7 +25,7 @@ export const useHyperstructures = () => {
     },
   } = useDojo();
 
-  const hyperstructures = useEntityQuery([Has(Structure), HasValue(Structure, { category: "Hyperstructure" })]).map(
+  const hyperstructures = useEntityQuery([Has(Structure), HasValue(Structure, { category: "Realm" })]).map(
     (hyperstructureEntityId) => {
       const hyperstructure = getComponentValue(Structure, hyperstructureEntityId);
       const position = getComponentValue(Position, hyperstructureEntityId);
