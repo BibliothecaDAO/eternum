@@ -181,7 +181,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Event(trade_systems::e_CancelOrder::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(donkey_systems::e_BurnDonkey::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(travel_systems::e_Travel::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(eternum::models::event::e_EternumEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(eternum::models::event::e_BattleStartData::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(eternum::models::event::e_BattleJoinData::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(eternum::models::event::e_BattleLeaveData::TEST_CLASS_HASH.try_into().unwrap()),
