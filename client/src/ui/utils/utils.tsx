@@ -15,6 +15,7 @@ import {
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
+import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -414,3 +415,56 @@ export const separateCamelCase = (str: string): string => {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
+
+export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {
+  const compareValues = (a: T, b: T, sortKey: string, sortDirection: "asc" | "desc" | "none"): number => {
+    const valueA = getNestedPropertyValue(a, sortKey);
+    const valueB = getNestedPropertyValue(b, sortKey);
+
+    let comparison = 0;
+
+    if (sortKey === "age" && typeof valueA === "string" && typeof valueB === "string") {
+      comparison = timeStringToSeconds(valueA) - timeStringToSeconds(valueB);
+    } else if (typeof valueA === "string" && typeof valueB === "string") {
+      comparison = valueA.localeCompare(valueB);
+    } else if (typeof valueA === "number" && typeof valueB === "number") {
+      comparison = valueA - valueB;
+    }
+
+    return sortDirection === "asc" ? comparison : -comparison;
+  };
+
+  if (activeSort.sort !== "none") {
+    return items.sort((a, b) => compareValues(a, b, activeSort.sortKey, activeSort.sort));
+  } else {
+    return items.sort((a, b) => compareValues(a, b, defaultSortKey.sortKey, defaultSortKey.sort));
+  }
+}
+
+function getNestedPropertyValue<T>(item: T, propertyPath: string) {
+  return propertyPath
+    .split(".")
+    .reduce(
+      (currentObject, propertyName) =>
+        currentObject ? (currentObject as Record<string, any>)[propertyName] : undefined,
+      item,
+    );
+}
+
+function timeStringToSeconds(timeStr: string): number {
+  const value = parseInt(timeStr);
+  const unit = timeStr.slice(-1).toLowerCase();
+
+  switch (unit) {
+    case "d":
+      return value * 86400;
+    case "h":
+      return value * 3600;
+    case "m":
+      return value * 60;
+    case "s":
+      return value;
+    default:
+      return 0;
+  }
+}

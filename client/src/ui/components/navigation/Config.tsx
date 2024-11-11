@@ -22,10 +22,9 @@ export interface OSInterface {
 }
 
 export interface ExpandableOSInterface extends OSInterface {
-  expandedContent?: React.ReactNode;
-  expandedWidth?: string;
+  childrenExpanded?: React.ReactNode;
+  widthExpanded?: string;
   isExpanded?: boolean;
-  minHeight?: string;
 }
 
 export const worldStructures: OSWindows = "World Structures";

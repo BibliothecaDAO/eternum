@@ -14,7 +14,7 @@ mint_all_resources() {
     local resources=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 29 249 250 251 252 253 254 255)
     
     for resource in "${resources[@]}"; do
-        commands+=("sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource,$amount $DEV_RESOURCE_SYSTEMS mint && sleep 0.1")
+        commands+=("sozo execute eternum-dev_resource_systems mint --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource,$amount --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2  && sleep 0.1")
     done
 }
 
@@ -51,7 +51,7 @@ else
 	read -p "Enter resource type: " resource_type
 	read -p "Enter amount: " amount
     commands+=(
-        "sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$((amount * 1000)) $DEV_RESOURCE_SYSTEMS mint"
+        "sozo execute eternum-dev_resource_systems mint --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$((amount * 1000)) --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2
     )
 fi
 
