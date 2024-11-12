@@ -1,0 +1,17 @@
+# SDK
+
+## Compiling
+
+From the root of the project, run:
+
+```bash
+pnpm i && pnpm run build-packages
+```
+
+## Structure
+
+This SDK contains most notably the getter and setter of the configuration of Eternum, the EternumProvider and most of
+the constants/types of the world that needed to be transcribed to Typescript.
+
+Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
+this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.

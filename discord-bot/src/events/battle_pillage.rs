@@ -13,8 +13,7 @@ use crate::{
 
 use super::{ToDiscordMessage, UNKNOWN_USER};
 
-#[allow(dead_code)]
-#[derive(CairoSerde, Debug)]
+#[derive(CairoSerde, Clone)]
 pub struct BattlePillage {
     pub id: u32,
     pub event_id: u32,
