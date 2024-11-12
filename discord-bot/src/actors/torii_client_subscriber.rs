@@ -2,6 +2,7 @@ use cainome_cairo_serde::CairoSerde;
 use dojo_types::schema::Ty;
 use serenity::futures::StreamExt;
 use std::time::Duration;
+use tokio::select;
 use tokio::sync::mpsc;
 use tokio::time::sleep;
 
@@ -70,9 +71,19 @@ impl ToriiClientSubscriber {
                 Ok(mut rcv) => {
                     backoff = Duration::from_secs(1);
 
-                    while let Some(Ok((_, entity))) = rcv.next().await {
-                        tracing::info!("Received event");
-                        self.treat_received_torii_event(entity).await;
+                    loop {
+                        select! {
+                            Some(result) = rcv.next() => {
+                                if let Ok((_, entity)) = result {
+                                    tracing::info!("Received event");
+                                    self.treat_received_torii_event(entity).await;
+                                }
+                            }
+                            _ = sleep(Duration::from_secs(2)) => {
+                                tracing::info!("No events received after 2 seconds");
+                                continue;
+                            }
+                        }
                     }
                 }
                 Err(_) => {
