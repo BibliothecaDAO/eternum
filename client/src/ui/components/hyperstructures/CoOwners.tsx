@@ -1,4 +1,5 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
+import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useRealm } from "@/hooks/helpers/useRealm";
