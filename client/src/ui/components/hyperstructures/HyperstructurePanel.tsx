@@ -262,7 +262,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       </div>
       <div className="overflow-y-scroll no-scrollbar h-[40vh] bg-gold/10  p-2">
         <ContributionSummary hyperstructureEntityId={entity.entity_id} className="mb-1" />
-        {progresses.percentage === 0 ? (
+        {progresses.percentage === 100 ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (
           <div className="">

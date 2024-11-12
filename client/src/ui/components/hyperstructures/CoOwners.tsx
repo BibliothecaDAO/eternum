@@ -21,17 +21,13 @@ export const CoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: I
   const [isChangingCoOwners, setIsChangingCoOwners] = useState(false);
 
   const coOwnersWithTimestamp = useMemo(() => {
-    // Mock data for co-owners
-    const mockCoOwners = [
-      { address: ContractAddress("0x0"), percentage: 300 },
-      { address: ContractAddress("0x0"), percentage: 300 },
-      { address: ContractAddress("0x0"), percentage: 300 },
-    ];
+    const latestChangeEvent = LeaderboardManager.instance().getCurrentCoOwners(hyperstructureEntityId);
+    if (!latestChangeEvent) return undefined;
 
-    return {
-      coOwners: mockCoOwners,
-      timestamp: Date.now() - 86400000, // 1 day ago
-    };
+    const coOwners = latestChangeEvent.coOwners;
+    const timestamp = latestChangeEvent.timestamp;
+
+    return { coOwners, timestamp };
   }, [hyperstructureEntityId]);
 
   return (
@@ -140,7 +136,7 @@ const CoOwnersRows = ({
           </div>
         );
       })}
-      {true && (
+      {structure?.isMine && (
         <div
           onMouseEnter={() => {
             if (!canUpdate)
