@@ -62,7 +62,7 @@ impl ToriiClientSubscriber {
                         pattern_matching: torii_grpc::types::PatternMatching::VariableLen,
                         models: vec![],
                     })],
-                    true,
+                    false,
                 )
                 .await;
 
