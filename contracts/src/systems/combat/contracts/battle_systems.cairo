@@ -1,4 +1,4 @@
-use bushido_trophy::store::{Store, StoreTrait};
+use arcade_trophy::store::{Store, StoreTrait};
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
@@ -295,7 +295,7 @@ trait IBattlePillageContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
-    use bushido_trophy::store::{Store, StoreTrait};
+    use arcade_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;

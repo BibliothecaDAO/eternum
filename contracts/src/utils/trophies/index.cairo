@@ -1,4 +1,4 @@
-use bushido_trophy::types::task::{Task as BushidoTask};
+use arcade_trophy::types::task::{Task as BushidoTask};
 use eternum::utils::trophies;
 
 // Constants

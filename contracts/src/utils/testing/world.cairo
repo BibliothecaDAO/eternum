@@ -190,9 +190,9 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Event(eternum::models::event::e_SettleRealmData::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(eternum::models::event::e_CreateGuild::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(eternum::models::event::e_JoinGuild::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(bushido_trophy::events::index::e_TrophyCreation::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(arcade_trophy::events::index::e_TrophyCreation::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(
-                bushido_trophy::events::index::e_TrophyProgression::TEST_CLASS_HASH.try_into().unwrap()
+                arcade_trophy::events::index::e_TrophyProgression::TEST_CLASS_HASH.try_into().unwrap()
             ),
             TestResource::Contract(
                 ContractDefTrait::new(bank_systems::TEST_CLASS_HASH, "bank_systems")

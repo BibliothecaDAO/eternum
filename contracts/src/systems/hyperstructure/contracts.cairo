@@ -24,7 +24,7 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 mod hyperstructure_systems {
-    use bushido_trophy::store::{Store, StoreTrait};
+    use arcade_trophy::store::{Store, StoreTrait};
     use core::array::ArrayIndex;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;

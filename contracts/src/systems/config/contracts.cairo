@@ -198,7 +198,7 @@ trait ISettlementConfig<T> {
 
 #[dojo::contract]
 mod config_systems {
-    use bushido_trophy::components::achievable::AchievableComponent;
+    use arcade_trophy::components::achievable::AchievableComponent;
 
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -268,6 +268,8 @@ mod config_systems {
                     hidden: trophy.hidden(),
                     index: trophy.index(),
                     points: trophy.points(),
+                    start: 0,
+                    end: 0,
                     group: trophy.group(),
                     icon: trophy.icon(),
                     title: trophy.title(),
