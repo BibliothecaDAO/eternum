@@ -51,7 +51,7 @@ else
 	read -p "Enter resource type: " resource_type
 	read -p "Enter amount: " amount
     commands+=(
-        "sozo execute eternum-dev_resource_systems mint --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$((amount * 1000)) --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2
+        "sozo execute eternum-dev_resource_systems mint --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$((amount * 1000)) --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2"
     )
 fi
 
