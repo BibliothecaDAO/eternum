@@ -1,7 +1,6 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import clsx from "clsx";
-import { useEffect, useState } from "react";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 
 type NumberInputProps = {
@@ -39,11 +38,6 @@ export const NumberInput = ({
   };
 
   const { play: playClick } = useUiSounds(soundSelector.click);
-  const [displayValue, setDisplayValue] = useState(formatNumber(value));
-
-  useEffect(() => {
-    setDisplayValue(formatNumber(value));
-  }, [value]);
 
   const parseNumber = (str: string): number => {
     return parseFloat(str.replace(/,/g, ""));
@@ -64,8 +58,9 @@ export const NumberInput = ({
       )}
       <input
         min={min}
+        max={max}
         className="w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
-        value={displayValue}
+        value={formatNumber(value)}
         onFocus={onFocus}
         onBlur={onBlur}
         disabled={disabled}
@@ -75,10 +70,8 @@ export const NumberInput = ({
             const match = inputValue.match(/[+-]?([0-9,]+([.][0-9]*)?|[.][0-9]+)/);
             if (match) {
               const parsedNumber = Math.min(parseNumber(match[0]), max);
-              setDisplayValue(match[0]);
               onChange(parsedNumber);
             } else {
-              setDisplayValue(formatNumber(min));
               onChange(min);
             }
           } else {
@@ -86,10 +79,8 @@ export const NumberInput = ({
             if (match) {
               const parsedValue = parseNumber(match[0]);
               const maxValue = Math.min(Math.max(Math.floor(parsedValue), min), max);
-              setDisplayValue(match[0]);
               onChange(maxValue);
             } else {
-              setDisplayValue(formatNumber(min));
               onChange(min);
             }
           }
