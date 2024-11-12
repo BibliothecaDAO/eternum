@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create a Slot -> if deploying to slot
-slot deployments create -t epic eternum-rc1-1 katana --version v1.0.0-rc.1 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+slot deployments create -t epic eternum-rc1-1 katana --version v1.0.0 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts 
 # -> update prod env_variables.sh
@@ -68,7 +68,7 @@ echo "Migrating world..."
 sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-rc1-1 torii --version v1.0.0-rc.1 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-rc1-1/katana --start-block 0  --index-pending true
+slot deployments create -t epic eternum-rc1-1 torii --version v1.0.0 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-rc1-1/katana --start-block 0  --index-pending true
 
 echo "Setting up config..."
 

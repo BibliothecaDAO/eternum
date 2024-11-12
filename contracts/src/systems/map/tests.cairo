@@ -45,6 +45,7 @@ use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 use eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
+use eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
 
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
@@ -142,11 +143,11 @@ fn map_test_map_explore__mine_mercenaries_protector() {
 
     let army_position: Position = world.read_model(realm_army_unit_id);
 
-    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
+    let mine_entity_id = InternalMapGenerationSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
     let mine_entity_owner: EntityOwner = world.read_model(mine_entity_id);
     assert_eq!(mine_entity_owner.entity_owner_id, mine_entity_id, "wrong initial owner");
 
-    let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_structure(ref world, mine_entity_id);
+    let mercenary_entity_id = InternalMapGenerationSystemsImpl::add_mercenaries_to_structure(ref world, mine_entity_id);
 
     let battle_entity_id = battle_systems_dispatcher.battle_start(realm_army_unit_id, mercenary_entity_id);
     let battle: Battle = world.read_model(battle_entity_id);
@@ -178,8 +179,8 @@ fn map_test_map_explore__mine_production_deadline() {
     map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
 
     let army_position: Position = world.read_model(realm_army_unit_id);
-    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
-    InternalMapSystemsImpl::add_production_deadline(ref world, mine_entity_id);
+    let mine_entity_id = InternalMapGenerationSystemsImpl::create_shard_mine_structure(ref world, army_position.into());
+    InternalMapGenerationSystemsImpl::add_production_deadline(ref world, mine_entity_id);
     let mine_earthen_shard_production_deadline: ProductionDeadline = world.read_model(mine_entity_id);
 
     let current_ts = starknet::get_block_timestamp();
