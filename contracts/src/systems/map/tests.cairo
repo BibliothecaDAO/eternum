@@ -45,7 +45,7 @@ use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 use eternum::systems::map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
-use eternum::systems::map::map_generation::{InternalMapGenerationSystemsImpl};
+use eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
 
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait

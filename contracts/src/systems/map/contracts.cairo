@@ -42,9 +42,9 @@ mod map_systems {
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
+    use eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
     use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
-    use eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
     use eternum::utils::map::biomes::{Biome, get_biome};
     use eternum::utils::random;
     use eternum::utils::tasks::index::{Task, TaskTrait};
@@ -121,7 +121,9 @@ mod map_systems {
             let current_coord: Coord = current_position.into();
             let next_coord = current_coord.neighbor(direction);
             InternalMapSystemsImpl::explore(ref world, unit_id, next_coord, exploration_reward);
-            let is_shards_mine = InternalMapGenerationSystemsImpl::discover_shards_mine(ref world, unit_entity_owner, next_coord);
+            let is_shards_mine = InternalMapGenerationSystemsImpl::discover_shards_mine(
+                ref world, unit_entity_owner, next_coord
+            );
 
             // travel to explored tile location
             InternalTravelSystemsImpl::travel_hex(ref world, unit_id, current_coord, array![direction].span());
