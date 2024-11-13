@@ -9,7 +9,7 @@ use tokio::time::sleep;
 use starknet_crypto::Felt;
 use torii_grpc::types::schema::Entity;
 
-use torii_grpc::types::{EntityKeysClause, KeysClause};
+use torii_grpc::types::{EntityKeysClause, KeysClause, PatternMatching};
 
 use crate::{
     events::{
@@ -34,6 +34,7 @@ impl ToriiClientSubscriber {
             config.node_url.clone(),
             config.torii_relay_url.clone(),
             Felt::from_hex_unchecked(&config.world_address.clone()),
+            Some(Duration::from_secs(30)),
         )
         .await?;
 
@@ -52,15 +53,12 @@ impl ToriiClientSubscriber {
         let max_backoff = Duration::from_secs(60);
 
         while tries < max_num_tries {
-            let rcv: Result<
-                torii_grpc::client::EntityUpdateStreaming,
-                torii_client::client::error::Error,
-            > = self
+            let rcv = self
                 .client
                 .on_event_message_updated(
                     vec![EntityKeysClause::Keys(KeysClause {
                         keys: vec![],
-                        pattern_matching: torii_grpc::types::PatternMatching::VariableLen,
+                        pattern_matching: PatternMatching::VariableLen,
                         models: vec![],
                     })],
                     false,
@@ -99,8 +97,8 @@ impl ToriiClientSubscriber {
                         }
                     }
                 }
-                Err(_) => {
-                    tracing::warn!("Subscription was lost, attempting to reconnect");
+                Err(e) => {
+                    tracing::warn!("Subscription failed: {:?}", e);
                     tries += 1;
                 }
             }
