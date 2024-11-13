@@ -51,7 +51,7 @@ impl ToriiClientSubscriber {
         let mut backoff = Duration::from_secs(1);
         let max_backoff = Duration::from_secs(60);
 
-        loop {
+        while tries < max_num_tries {
             let rcv: Result<
                 torii_grpc::client::EntityUpdateStreaming,
                 torii_client::client::error::Error,
@@ -104,14 +104,9 @@ impl ToriiClientSubscriber {
 
             sleep(backoff).await;
             backoff = std::cmp::min(backoff * 2, max_backoff);
-
-            if tries >= max_num_tries {
-                tracing::error!("Max number of tries reached, exiting");
-                break;
-            }
         }
 
-        tracing::error!("Torii client disconnected");
+        tracing::error!("Torii client disconnected, reached max number of tries");
     }
 
     async fn treat_received_torii_event(&self, entity: Entity) {

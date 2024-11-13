@@ -58,6 +58,7 @@ pub async fn init_services(config: Config, pool: PgPool) -> eyre::Result<Client>
     let intents = GatewayIntents::non_privileged();
 
     let config_clone = config.clone();
+    let pool_clone = pool.clone();
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -71,17 +72,16 @@ pub async fn init_services(config: Config, pool: PgPool) -> eyre::Result<Client>
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-
-                init_inner_services(pool.clone(), config.clone())
-                    .await
-                    .expect("Failed to start inner services");
-
                 Ok(PoiseContextData {
                     database: pool.clone(),
                 })
             })
         })
         .build();
+
+    init_inner_services(pool_clone, config_clone.clone())
+        .await
+        .expect("Failed to start inner services");
 
     let client = Client::builder(config_clone.discord_token.clone(), intents)
         .framework(framework)
