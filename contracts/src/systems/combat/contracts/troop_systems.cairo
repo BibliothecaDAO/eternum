@@ -173,11 +173,11 @@ mod troop_systems {
             structure.assert_is_structure();
 
             let army_id = if is_defensive_army {
-                InternalTroopImpl::create_defensive_army(ref world, army_owner_id, starknet::get_caller_address())
+                InternalTroopImpl::create_defensive_army(ref world, army_owner_id)
             } else {
                 // ensure only realms can have attacking armies
                 assert!(structure.category == StructureCategory::Realm, "only realms can have attacking armies");
-                InternalTroopImpl::create_attacking_army(ref world, army_owner_id, starknet::get_caller_address())
+                InternalTroopImpl::create_attacking_army(ref world, army_owner_id)
             };
 
             army_id
@@ -330,10 +330,8 @@ mod troop_systems {
 
     #[generate_trait]
     pub impl InternalTroopImpl of InternalBattleTrait {
-        fn create_attacking_army(
-            ref world: WorldStorage, army_owner_id: ID, owner_address: starknet::ContractAddress
-        ) -> ID {
-            let army_id = Self::create_base_army(ref world, army_owner_id, owner_address);
+        fn create_attacking_army(ref world: WorldStorage, army_owner_id: ID) -> ID {
+            let army_id = Self::create_base_army(ref world, army_owner_id);
 
             // ensure owner has enough military buildings to create army
             let owner_armies_key: felt252 = AttackingArmyQuantityTrackerCustomImpl::key(army_owner_id);
@@ -411,10 +409,8 @@ mod troop_systems {
             army_id
         }
 
-        fn create_defensive_army(
-            ref world: WorldStorage, army_owner_id: ID, owner_address: starknet::ContractAddress
-        ) -> ID {
-            let army_id = Self::create_base_army(ref world, army_owner_id, owner_address);
+        fn create_defensive_army(ref world: WorldStorage, army_owner_id: ID) -> ID {
+            let army_id = Self::create_base_army(ref world, army_owner_id);
 
             // Defensive armies can only be assigned as structure protectors
             let structure: Structure = world.read_model(army_owner_id);
@@ -439,9 +435,7 @@ mod troop_systems {
             army_id
         }
 
-        fn create_base_army(
-            ref world: WorldStorage, army_owner_id: ID, owner_address: starknet::ContractAddress
-        ) -> ID {
+        fn create_base_army(ref world: WorldStorage, army_owner_id: ID) -> ID {
             // ensure army owner is a structure
             let structure: Structure = world.read_model(army_owner_id);
             structure.assert_is_structure();

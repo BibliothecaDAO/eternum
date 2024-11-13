@@ -168,9 +168,7 @@ mod map_generation_systems {
         fn add_mercenaries_to_structure(ref world: WorldStorage, structure_entity_id: ID) -> ID {
             let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
 
-            let army_entity_id = InternalTroopImpl::create_defensive_army(
-                ref world, structure_entity_id, starknet::contract_address_const::<0x0>()
-            );
+            let army_entity_id = InternalTroopImpl::create_defensive_army(ref world, structure_entity_id);
 
             let tx_info = starknet::get_tx_info();
             let salt_one: u256 = tx_info.transaction_hash.into();

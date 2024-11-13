@@ -157,7 +157,8 @@ export const useEntities = () => {
 
   const getPlayerStructures = (filterFn?: (structure: PlayerStructure) => boolean) => {
     return useMemo(() => {
-      return filterFn ? playerStructures.filter(filterFn) : playerStructures;
+      const structures = filterFn ? playerStructures.filter(filterFn) : playerStructures;
+      return structures.sort((a, b) => a.name.localeCompare(b.name));
     }, [otherRealms, filterFn]);
   };
 
