@@ -197,7 +197,7 @@ mod troop_systems {
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
 
-                battle_utils_systems.leave_battle_if_ended(ref battle, ref army);
+                battle_utils_systems.leave_battle_if_ended(battle, army);
                 world.write_model(@battle);
             }
 
@@ -247,7 +247,7 @@ mod troop_systems {
                     let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
 
                     // if battle has ended, leave the battle
-                    battle_utils_systems.leave_battle(ref battle, ref army);
+                    battle_utils_systems.leave_battle(battle, army);
                 } else {
                     // if battle has not ended, add the troops to the battle
                     let troop_config = TroopConfigCustomImpl::get(world);
@@ -287,7 +287,7 @@ mod troop_systems {
                 let mut battle = BattleCustomImpl::get(world, from_army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
-                battle_utils_systems.leave_battle_if_ended(ref battle, ref from_army);
+                battle_utils_systems.leave_battle_if_ended(battle, from_army);
             }
             from_army.assert_not_in_battle();
             from_army.troops.deduct(troops);
@@ -327,7 +327,7 @@ mod troop_systems {
                 let mut battle = BattleCustomImpl::get(world, to_army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
-                battle_utils_systems.leave_battle_if_ended(ref battle, ref to_army);
+                battle_utils_systems.leave_battle_if_ended(battle, to_army);
             }
 
             to_army.assert_not_in_battle();

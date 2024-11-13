@@ -396,7 +396,7 @@ mod battle_systems {
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
 
-                battle_utils_systems.leave_battle_if_ended(ref defending_army_battle, ref defending_army);
+                battle_utils_systems.leave_battle_if_ended(defending_army_battle, defending_army);
 
                 world.write_model(@defending_army_battle);
             }
@@ -644,10 +644,9 @@ mod battle_systems {
             let army_left_early = !battle.has_ended();
 
             // leave battle
-            let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
             let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
-            
-            battle_utils_systems.leave_battle(ref battle, ref caller_army);
+            let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
+            battle_utils_systems.leave_battle(battle, caller_army);
 
             // slash army if battle was not concluded before they left
             let leaver = starknet::get_caller_address();
@@ -735,7 +734,7 @@ mod battle_systems {
                     
                     let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                     let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
-                    battle_utils_systems.leave_battle_if_ended(ref battle, ref structure_army);
+                    battle_utils_systems.leave_battle_if_ended(battle, structure_army);
                 }
 
                 // ensure structure army is dead
@@ -799,8 +798,6 @@ mod battle_systems {
 mod battle_pillage_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use eternum::alias::ID;
     use eternum::constants::{
@@ -1258,30 +1255,30 @@ mod battle_utils_systems {
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            Self::leave_battle(world, battle, army);
+            Self::leave_battle(ref world, ref battle, ref army);
         }
 
         fn leave_battle_if_ended(ref self: ContractState, battle: Battle, army: Army) {
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            Self::leave_battle_if_ended(world, battle, army);
+            Self::leave_battle_if_ended(ref world, ref battle, ref army);
         }
     }
 
     #[generate_trait]
     pub impl InternalBattleImpl of InternalBattleTrait {
-        fn leave_battle_if_ended(world: WorldStorage, battle: Battle, army: Army) {
+        fn leave_battle_if_ended(ref world: WorldStorage, ref battle: Battle, ref army: Army) {
             assert!(battle.entity_id == army.battle_id, "army must be in same battle");
             if battle.has_ended() {
                 // leave battle to update structure army's health
-                Self::leave_battle(world, battle, army);
+                Self::leave_battle(ref world, ref battle, ref army);
             }
         }
 
 
         /// Make army leave battle
-        fn leave_battle(world: WorldStorage, battle: Battle, original_army: Army) {
+        fn leave_battle(ref world: WorldStorage, ref battle: Battle, ref original_army: Army) {
             // save battle end status for achievement
             let battle_has_ended = battle.has_ended();
 
