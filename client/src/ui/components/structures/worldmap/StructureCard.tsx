@@ -123,7 +123,7 @@ type MergeTroopsPanelProps = {
   structureEntityId?: ID;
 };
 
-export const StructureMergeTroopsPanel = ({
+const StructureMergeTroopsPanel = ({
   giverArmy,
   setShowMergeTroopsPopup,
   structureEntityId,
