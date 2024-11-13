@@ -1,4 +1,15 @@
 use eternum::alias::ID;
+use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
+use eternum::models::position::{Coord, CoordTrait, Direction, Position};
+
+#[starknet::interface]
+trait IMapGenerationSystems<T> {
+    fn discover_shards_mine(ref self: T, unit_entity_owner: EntityOwner, coord: Coord) -> bool;
+    fn create_shard_mine_structure(ref self: T, coord: Coord) -> ID;
+    fn add_production_deadline(ref self: T, mine_entity_id: ID) -> u64;
+    fn add_mercenaries_to_structure(ref self: T, structure_entity_id: ID) -> ID;
+}
+
 
 #[dojo::contract]
 mod map_generation_systems {
@@ -75,9 +86,11 @@ mod map_generation_systems {
     }
 
 
-    #[generate_trait]
-    pub impl InternalMapGenerationSystemsImpl of InternalMapGenerationSystemsTrait {
-        fn discover_shards_mine(ref world: WorldStorage, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
+    #[abi(embed_v0)]
+    impl MapGenerationSystemsImpl of super::IMapGenerationSystems<ContractState> {
+        fn discover_shards_mine(ref self: ContractState, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
             let exploration_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
 
             let is_shards_mine: bool = *random::choices(
@@ -89,16 +102,16 @@ mod map_generation_systems {
             )[0];
 
             if is_shards_mine {
-                let mine_structure_entity_id = Self::create_shard_mine_structure(ref world, coord);
+                let mine_structure_entity_id = self.create_shard_mine_structure(coord);
 
-                Self::add_mercenaries_to_structure(ref world, mine_structure_entity_id);
+                self.add_mercenaries_to_structure(mine_structure_entity_id);
 
                 let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
                 InternalResourceSystemsImpl::transfer(
                     ref world, 0, mine_structure_entity_id, mercenaries_config.rewards, 0, false, false
                 );
 
-                let deadline = Self::add_production_deadline(ref world, mine_structure_entity_id);
+                let deadline = self.add_production_deadline(mine_structure_entity_id);
 
                 // create shards production building
                 BuildingCustomImpl::create(
@@ -122,7 +135,9 @@ mod map_generation_systems {
             is_shards_mine
         }
 
-        fn create_shard_mine_structure(ref world: WorldStorage, coord: Coord) -> ID {
+        fn create_shard_mine_structure(ref self: ContractState, coord: Coord) -> ID {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
             let entity_id: ID = world.dispatcher.uuid();
             world.write_model(@EntityOwner { entity_id: entity_id, entity_owner_id: entity_id });
             world
@@ -140,7 +155,9 @@ mod map_generation_systems {
             entity_id
         }
 
-        fn add_production_deadline(ref world: WorldStorage, mine_entity_id: ID) -> u64 {
+        fn add_production_deadline(ref self: ContractState, mine_entity_id: ID) -> u64 {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
             let earthen_shard_production_config: ProductionConfig = world.read_model(ResourceTypes::EARTHEN_SHARD);
 
             let earthen_shard_production_amount_per_tick: u128 = earthen_shard_production_config.amount;
@@ -165,7 +182,9 @@ mod map_generation_systems {
             deadline_tick
         }
 
-        fn add_mercenaries_to_structure(ref world: WorldStorage, structure_entity_id: ID) -> ID {
+        fn add_mercenaries_to_structure(ref self: ContractState, structure_entity_id: ID) -> ID {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
             let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
 
             let army_entity_id = InternalTroopImpl::create_defensive_army(

@@ -120,8 +120,7 @@ mod troop_systems {
     use core::num::traits::Bounded;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes};
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
@@ -154,7 +153,7 @@ mod troop_systems {
             AttackingArmyQuantityTrackerCustomTrait, AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::combat::contracts::battle_systems::battle_systems::{InternalBattleImpl};
+    use eternum::systems::combat::contracts::battle_systems::{IBattleUtilsContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};
 
     use super::ITroopContract;
 
@@ -195,7 +194,10 @@ mod troop_systems {
             let mut army: Army = world.read_model(army_id);
             if army.is_in_battle() {
                 let mut battle = BattleCustomImpl::get(world, army.battle_id);
-                InternalBattleImpl::leave_battle_if_ended(ref world, ref battle, ref army);
+                let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
+                let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
+
+                battle_utils_systems.leave_battle_if_ended(ref battle, ref army);
                 world.write_model(@battle);
             }
 
@@ -241,8 +243,11 @@ mod troop_systems {
             if army.is_in_battle() {
                 let mut battle = BattleCustomImpl::get(world, army.battle_id);
                 if battle.has_ended() {
+                    let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
+                    let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
+
                     // if battle has ended, leave the battle
-                    InternalBattleImpl::leave_battle(ref world, ref battle, ref army);
+                    battle_utils_systems.leave_battle(ref battle, ref army);
                 } else {
                     // if battle has not ended, add the troops to the battle
                     let troop_config = TroopConfigCustomImpl::get(world);
@@ -280,7 +285,9 @@ mod troop_systems {
             let mut from_army: Army = world.read_model(from_army_id);
             if from_army.is_in_battle() {
                 let mut battle = BattleCustomImpl::get(world, from_army.battle_id);
-                InternalBattleImpl::leave_battle_if_ended(ref world, ref battle, ref from_army);
+                let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
+                let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
+                battle_utils_systems.leave_battle_if_ended(ref battle, ref from_army);
             }
             from_army.assert_not_in_battle();
             from_army.troops.deduct(troops);
@@ -318,7 +325,9 @@ mod troop_systems {
             let mut to_army: Army = world.read_model(to_army_id);
             if to_army.is_in_battle() {
                 let mut battle = BattleCustomImpl::get(world, to_army.battle_id);
-                InternalBattleImpl::leave_battle_if_ended(ref world, ref battle, ref to_army);
+                let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
+                let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
+                battle_utils_systems.leave_battle_if_ended(ref battle, ref to_army);
             }
 
             to_army.assert_not_in_battle();

@@ -18,6 +18,7 @@ cubit = { git = "https://github.com/dojoengine/cubit", branch = "cairo_2.7" }
 dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.0.0" }
 
 [[target.starknet-contract]]
+casm = true
 build-external-contracts = [
     "dojo::world::world_contract::world",
     "arcade_trophy::events::index::e_TrophyCreation",
