@@ -71,6 +71,8 @@ impl ToriiClientSubscriber {
                 Ok(mut rcv) => {
                     backoff = Duration::from_secs(1);
                     loop {
+                        tracing::info!("Waiting for events");
+                        tracing::info!("rcv is {:?}", rcv);
                         select! {
                             result = rcv.next() => {
                                 match result {
@@ -78,6 +80,7 @@ impl ToriiClientSubscriber {
                                         if let Ok((_, entity)) = result {
                                             tracing::info!("Received event");
                                             self.treat_received_torii_event(entity).await;
+                                            tracing::info!("Finished processing events");
                                         } else {
                                             tracing::warn!("Received invalid data from torii, reconnecting");
                                             break;

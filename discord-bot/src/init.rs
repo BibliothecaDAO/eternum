@@ -4,6 +4,7 @@ use crate::actors::torii_client_subscriber::ToriiClientSubscriber;
 use crate::commands;
 use crate::types::Config;
 use serenity::all::{Client, GatewayIntents, Http};
+use shuttle_serenity::ShuttleSerenity;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -54,7 +55,7 @@ async fn init_inner_services(database: PgPool, config: Config) -> eyre::Result<(
     Ok(())
 }
 
-pub async fn init_services(config: Config, pool: PgPool) -> eyre::Result<Client> {
+pub async fn init_services(config: Config, pool: PgPool) -> ShuttleSerenity {
     let intents = GatewayIntents::non_privileged();
 
     let config_clone = config.clone();
@@ -86,7 +87,7 @@ pub async fn init_services(config: Config, pool: PgPool) -> eyre::Result<Client>
     let client = Client::builder(config_clone.discord_token.clone(), intents)
         .framework(framework)
         .await
-        .expect("Failed to build client");
+        .map_err(shuttle_runtime::CustomError::new)?;
 
-    Ok(client)
+    Ok(client.into())
 }

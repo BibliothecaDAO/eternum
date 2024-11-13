@@ -43,5 +43,5 @@ async fn main(
         .await
         .expect("Failed to setup discord services");
 
-    Ok(client.into())
+    Ok(client)
 }
