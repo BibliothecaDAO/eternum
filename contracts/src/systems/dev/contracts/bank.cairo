@@ -34,7 +34,7 @@ mod dev_bank_systems {
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-    use eternum::systems::map::map_generation::{IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait };
+    use eternum::systems::map::map_generation::{IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait};
     use traits::Into;
 
     const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999;

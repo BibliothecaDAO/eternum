@@ -15,7 +15,7 @@ mod map_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    
+
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
@@ -42,7 +42,7 @@ mod map_systems {
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
-    use eternum::systems::map::map_generation::{IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait };
+    use eternum::systems::map::map_generation::{IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait};
     use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
     use eternum::utils::map::biomes::{Biome, get_biome};
@@ -125,9 +125,7 @@ mod map_systems {
             let (contract_address, _) = world.dns(@"map_generation_systems").unwrap();
             let map_generation_contract = IMapGenerationSystemsDispatcher { contract_address };
 
-            let is_shards_mine = map_generation_contract.discover_shards_mine(
-                unit_entity_owner, next_coord
-            );
+            let is_shards_mine = map_generation_contract.discover_shards_mine(unit_entity_owner, next_coord);
 
             // travel to explored tile location
             InternalTravelSystemsImpl::travel_hex(ref world, unit_id, current_coord, array![direction].span());
