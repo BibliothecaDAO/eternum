@@ -1161,28 +1161,26 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
     const {
-      radius,
-      angle_scaled,
       center,
-      min_distance,
-      max_distance,
-      min_scaling_factor_scaled,
-      min_angle_increase,
-      max_angle_increase,
+      base_distance,
+      min_first_layer_distance,
+      points_placed,
+      current_layer,
+      current_side,
+      current_point_on_side,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
       calldata: [
-        radius,
-        angle_scaled,
         center,
-        min_distance,
-        max_distance,
-        min_scaling_factor_scaled,
-        min_angle_increase,
-        max_angle_increase,
+        base_distance,
+        min_first_layer_distance,
+        points_placed,
+        current_layer,
+        current_side,
+        current_point_on_side,
       ],
     });
   }
