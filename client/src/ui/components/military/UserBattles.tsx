@@ -9,9 +9,11 @@ export const UserBattles = () => {
       {battles.length > 0 && (
         <>
           <h5>Your battles</h5>
-          {battles.map((battle) => (
-            <BattleListItem key={battle.entity_id} battle={battle} ownArmySelected={undefined} showCompass />
-          ))}
+          {battles
+            .sort((a, b) => Number(a.duration_left) - Number(b.duration_left))
+            .map((battle) => (
+              <BattleListItem key={battle.entity_id} battle={battle} ownArmySelected={undefined} showCompass />
+            ))}
         </>
       )}
     </div>
