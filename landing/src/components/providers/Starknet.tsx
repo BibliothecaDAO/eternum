@@ -1,23 +1,25 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 import ControllerConnector from "@cartridge/connector/controller";
+import { ColorMode } from "@cartridge/controller";
 import { sepolia } from "@starknet-react/chains";
-import { StarknetConfig, argent, braavos, useInjectedConnectors, voyager } from "@starknet-react/core";
-import { RpcProvider } from "starknet";
+import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 //import { cartridgeController } from "./cartridge-controller";
-function provider(/*chain: Chain*/) {
-  return new RpcProvider({
-    nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia",
-  });
-}
+
+const theme: string = "eternum";
+const slot: string = "eternum-rc1-1";
+const namespace: string = "eternum";
+const colorMode: ColorMode = "dark";
 
 const cartridgeController = new ControllerConnector({
   policies: [],
   rpc: "https://api.cartridge.gg/x/starknet/sepolia",
-  // Uncomment to use a custom theme
-  // theme: "dope-wars",
-  // colorMode: "light"
+  theme,
+  colorMode,
+  namespace,
+  slot,
 });
+
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const { connectors } = useInjectedConnectors({
     // Show these connectors if the user has no connector installed.
@@ -27,13 +29,17 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     // Randomize the order of the connectors.
     order: "random",
   });
+  const rpc = useCallback(() => {
+    return { nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia" };
+  }, []);
 
   return (
     <StarknetConfig
       chains={[sepolia]}
-      provider={provider}
+      provider={jsonRpcProvider({ rpc })}
       connectors={[...connectors, cartridgeController]}
       explorer={voyager}
+      autoConnect={true}
     >
       {children}
     </StarknetConfig>

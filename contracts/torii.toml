@@ -1,4 +1,4 @@
 contracts = [
-      { type = "ERC721", address = "0x547504e162e8c34c3f35e576302cc57601fb04b06cc2c5bc4b4831c2bdb8cea" },
-      { type = "ERC721", address = "0x67f51abd1acf42557b49903190e818ead0d11a8ba1f71bcb860f90eda6a15c2" },
+  { type = "ERC721", address = "0x61f0d0809b4bac7d25252621e7372b9b5755af07395518b9c4a5e9ad4d4ce02" },
+  { type = "ERC721", address = "0x58621115ef085cd1115d304a57eae922a7c3850d0b2cecad945c2e93da2073e" },
 ]

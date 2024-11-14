@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-//import { useIsCorrectChain } from "./useChain";
-//import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
-//import { bigintEquals } from "../utils/types";
-//import { goToTokenPage } from "../utils/karat";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useDojo } from "./context/DojoContext";
-import useAccountOrBurner from "./useAccountOrBurner";
 
 export const useMintTestRealm = () => {
   const {
@@ -16,21 +11,14 @@ export const useMintTestRealm = () => {
 
   const realms_address = BigInt(import.meta.env.VITE_REALMS_ADDRESS);
 
-  const { account } = useAccountOrBurner();
-
-  //const { contractAddress } = useTokenContract();
-  //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-  //const { isConnected } = useAccount();
-  //const { isCorrectChain } = useIsCorrectChain()
-  // const { totalSupply } = useTotalSupply()
+  const {
+    account: { account },
+  } = useDojo();
 
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(0);
 
-  const canMint = useMemo(
-    () => account /*&& isConnected /*&& isCorrectChain*/ && !isMinting,
-    [account, /*isConnected, /*isCorrectChain,*/ isMinting],
-  );
+  const canMint = useMemo(() => account && !isMinting, [account, isMinting]);
 
   const _mint = useCallback(
     async (token_id: number) => {
@@ -52,14 +40,10 @@ export const useMintTestRealm = () => {
   );
 
   useEffect(() => {
-    if (isMinting /*&& totalSupply >= mintingTokenId*/) {
-      // ...supply changed, to to token!
+    if (isMinting) {
       setIsMinting(false);
-      //goToTokenPage(mintingTokenId);
     }
-  }, [mintingTokenId /*, totalSupply*/]);
-
-  //const { ownerAddress: lastOwnerAddress } = useTokenOwner(totalSupply);
+  }, [mintingTokenId]);
 
   return {
     canMint,

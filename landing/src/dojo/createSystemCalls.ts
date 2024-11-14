@@ -1,5 +1,5 @@
 import type * as SystemProps from "@bibliothecadao/eternum";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { type SetupNetworkResult } from "./setupNetwork";
 
 class PromiseQueue {

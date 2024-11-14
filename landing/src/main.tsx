@@ -1,13 +1,13 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-import "react-toastify/dist/ReactToastify.css";
 import { dojoConfig } from "../dojoConfig";
 import { setup } from "./dojo/setup";
 import "./index.css";
 
 // Import the generated route tree
 //import { ArkProvider } from '@ark-project/react';
+
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { StarknetProvider } from "./components/providers/Starknet";
 import { ThemeProvider } from "./components/providers/theme-provider";

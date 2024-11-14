@@ -3,9 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 //import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
 //import { bigintEquals } from "../utils/types";
 //import { goToTokenPage } from "../utils/karat";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useDojo } from "./context/DojoContext";
-import useAccountOrBurner from "./useAccountOrBurner";
 
 export const useMintSeasonPass = () => {
   const {
@@ -16,7 +15,9 @@ export const useMintSeasonPass = () => {
 
   const season_pass_address = BigInt(import.meta.env.VITE_SEASON_PASS_ADDRESS);
 
-  const { account } = useAccountOrBurner();
+  const {
+    account: { account },
+  } = useDojo();
 
   //const { contractAddress } = useTokenContract();
   //const { isCoolDown, maxSupply, availableSupply } = useConfig();

@@ -1,10 +1,11 @@
 #!/bin/bash
 
 setConfig=""
+external=""
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 [--setConfig]"
+    echo "Usage: $0 [--setConfig] [--external]"
     exit 1
 }
 
@@ -19,11 +20,12 @@ fi
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --setConfig) setConfig="true"; shift 1;;
+        --external) external="true"; shift 1;;
         *) usage;;
     esac
 done
 
-if [[ "$setConfig" == "true" ]]; then
+if [[ "$external" == "true" ]]; then
     printf "\n\n"
     echo "----- Building Eternum Season Pass Contract ----- "
     printf "\n\n"
@@ -81,11 +83,11 @@ sozo build
 echo "----- Migrating World -----"
 sozo migrate
 
-
 if [[ "$setConfig" == "true" ]]; then
     bun --env-file=../client/.env.local ../config/index.ts
 fi
 
 echo "-----  Started indexer ----- "
 rm torii.db
-torii --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --database torii.db --allowed-origins "*" --config torii.toml
+torii --world 0x05013b17c43a2b664ec2a38aa45f6d891db1188622ec7cf320411321c3248fb5 --http.cors_origins "*" --config torii.toml
+

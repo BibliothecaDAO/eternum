@@ -111,6 +111,9 @@ sh scripts/contracts.sh
 ### Terminal 3 - Migrate the contracts and start the indexer
 
 ```
+<!-- to set config & deploy test contracts -->
+sh scripts/indexer.sh --setConfig --external
+
 <!-- to set config -->
 sh scripts/indexer.sh --setConfig
 
