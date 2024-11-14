@@ -49,8 +49,6 @@ function Mint() {
     refetchInterval: 10_000,
   });
 
-  console.log("data", data);
-
   const { data: seasonPassMints } = useSuspenseQuery({
     queryKey: ["ERCMints"],
     queryFn: () => execute(GET_ERC_MINTS),
