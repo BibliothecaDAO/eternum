@@ -28,6 +28,7 @@ website = "https://eternum.realms.world/"
     "eternum-hyperstructure_systems",
     "eternum-liquidity_systems",
     "eternum-map_systems",
+    "eternum-map_generation_systems",
     "eternum-name_systems",
     "eternum-ownership_systems",
     "eternum-realm_systems",

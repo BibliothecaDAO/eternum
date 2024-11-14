@@ -14,8 +14,8 @@ mod map_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
@@ -42,7 +42,7 @@ mod map_systems {
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
-    use eternum::systems::map::map_generation::map_generation_systems::{InternalMapGenerationSystemsImpl};
+    use eternum::systems::map::map_generation::{IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait};
     use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
     use eternum::utils::map::biomes::{Biome, get_biome};
@@ -121,9 +121,11 @@ mod map_systems {
             let current_coord: Coord = current_position.into();
             let next_coord = current_coord.neighbor(direction);
             InternalMapSystemsImpl::explore(ref world, unit_id, next_coord, exploration_reward);
-            let is_shards_mine = InternalMapGenerationSystemsImpl::discover_shards_mine(
-                ref world, unit_entity_owner, next_coord
-            );
+
+            let (contract_address, _) = world.dns(@"map_generation_systems").unwrap();
+            let map_generation_contract = IMapGenerationSystemsDispatcher { contract_address };
+
+            let is_shards_mine = map_generation_contract.discover_shards_mine(unit_entity_owner, next_coord);
 
             // travel to explored tile location
             InternalTravelSystemsImpl::travel_hex(ref world, unit_id, current_coord, array![direction].span());

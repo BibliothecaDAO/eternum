@@ -1,4 +1,13 @@
 use eternum::alias::ID;
+use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
+use eternum::models::position::{Coord, CoordTrait, Direction, Position};
+
+#[starknet::interface]
+trait IMapGenerationSystems<T> {
+    fn discover_shards_mine(ref self: T, unit_entity_owner: EntityOwner, coord: Coord) -> bool;
+    fn add_mercenaries_to_structure(ref self: T, structure_entity_id: ID) -> ID;
+}
+
 
 #[dojo::contract]
 mod map_generation_systems {
@@ -8,9 +17,9 @@ mod map_generation_systems {
     use core::traits::Into;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-
-    use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+    use dojo::world::{WorldStorage, WorldStorageTrait};
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
@@ -75,8 +84,107 @@ mod map_generation_systems {
     }
 
 
+    #[abi(embed_v0)]
+    impl MapGenerationSystemsImpl of super::IMapGenerationSystems<ContractState> {
+        fn discover_shards_mine(ref self: ContractState, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            InternalMapGenerationSystemsImpl::assert_caller_authorized(ref world);
+            InternalMapGenerationSystemsImpl::discover_shards_mine(ref world, unit_entity_owner, coord)
+        }
+
+
+        fn add_mercenaries_to_structure(ref self: ContractState, structure_entity_id: ID) -> ID {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            InternalMapGenerationSystemsImpl::assert_caller_authorized(ref world);
+            InternalMapGenerationSystemsImpl::add_mercenaries_to_structure(ref world, structure_entity_id)
+        }
+    }
+
     #[generate_trait]
     pub impl InternalMapGenerationSystemsImpl of InternalMapGenerationSystemsTrait {
+        fn assert_caller_authorized(ref world: WorldStorage) {
+            let caller_address = starknet::get_caller_address();
+            let (dev_bank_systems_address, _) = world.dns(@"dev_bank_systems").unwrap();
+            let (map_systems_address, _) = world.dns(@"map_systems").unwrap();
+
+            if !(caller_address == dev_bank_systems_address) && !(caller_address == map_systems_address) {
+                panic!("caller must be dev_bank_systems or map_systems");
+            }
+        }
+
+        fn add_mercenaries_to_structure(ref world: WorldStorage, structure_entity_id: ID) -> ID {
+            let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
+
+            let army_entity_id = InternalTroopImpl::create_defensive_army(
+                ref world, structure_entity_id, starknet::contract_address_const::<0x0>()
+            );
+
+            let tx_info = starknet::get_tx_info();
+            let salt_one: u256 = tx_info.transaction_hash.into();
+            let salt_two: u256 = starknet::get_block_timestamp().into();
+            let salt_three: u256 = tx_info.nonce.into();
+
+            let random_knights_amount: u64 = random::random(
+                salt_one.low,
+                mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
+            )
+                .try_into()
+                .unwrap()
+                + mercenaries_config.knights_lower_bound;
+            let random_paladins_amount: u64 = random::random(
+                salt_two.low,
+                mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
+            )
+                .try_into()
+                .unwrap()
+                + mercenaries_config.paladins_lower_bound;
+            let random_crossbowmen_amount: u64 = random::random(
+                salt_three.low,
+                mercenaries_config.crossbowmen_upper_bound.into() - mercenaries_config.crossbowmen_lower_bound.into()
+            )
+                .try_into()
+                .unwrap()
+                + mercenaries_config.crossbowmen_lower_bound;
+
+            let mut troops = Troops {
+                knight_count: random_knights_amount,
+                paladin_count: random_paladins_amount,
+                crossbowman_count: random_crossbowmen_amount
+            };
+
+            troops.normalize_counts();
+
+            InternalTroopImpl::add_troops_to_army(ref world, troops, army_entity_id);
+
+            army_entity_id
+        }
+
+        fn add_production_deadline(ref world: WorldStorage, mine_entity_id: ID) -> u64 {
+            let earthen_shard_production_config: ProductionConfig = world.read_model(ResourceTypes::EARTHEN_SHARD);
+
+            let earthen_shard_production_amount_per_tick: u128 = earthen_shard_production_config.amount;
+
+            let random_multiplier: u128 = *random::choices(
+                array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
+                array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
+                array![].span(),
+                1,
+                true
+            )[0];
+            let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
+            let actual_production_amount: u128 = min_production_amount * random_multiplier;
+            let num_ticks_to_full_production: u64 = (actual_production_amount
+                / earthen_shard_production_amount_per_tick)
+                .try_into()
+                .unwrap();
+            let tick = TickImpl::get_default_tick_config(ref world);
+            let deadline_tick = tick.current() + num_ticks_to_full_production;
+
+            world.write_model(@ProductionDeadline { entity_id: mine_entity_id, deadline_tick });
+            deadline_tick
+        }
+
+
         fn discover_shards_mine(ref world: WorldStorage, unit_entity_owner: EntityOwner, coord: Coord) -> bool {
             let exploration_config: MapConfig = world.read_model(WORLD_CONFIG_ID);
 
@@ -138,78 +246,6 @@ mod map_generation_systems {
             world.write_model(@Position { entity_id: entity_id, x: coord.x, y: coord.y });
 
             entity_id
-        }
-
-        fn add_production_deadline(ref world: WorldStorage, mine_entity_id: ID) -> u64 {
-            let earthen_shard_production_config: ProductionConfig = world.read_model(ResourceTypes::EARTHEN_SHARD);
-
-            let earthen_shard_production_amount_per_tick: u128 = earthen_shard_production_config.amount;
-
-            let random_multiplier: u128 = *random::choices(
-                array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
-                array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
-                array![].span(),
-                1,
-                true
-            )[0];
-            let min_production_amount: u128 = 100_000 * RESOURCE_PRECISION;
-            let actual_production_amount: u128 = min_production_amount * random_multiplier;
-            let num_ticks_to_full_production: u64 = (actual_production_amount
-                / earthen_shard_production_amount_per_tick)
-                .try_into()
-                .unwrap();
-            let tick = TickImpl::get_default_tick_config(ref world);
-            let deadline_tick = tick.current() + num_ticks_to_full_production;
-
-            world.write_model(@ProductionDeadline { entity_id: mine_entity_id, deadline_tick });
-            deadline_tick
-        }
-
-        fn add_mercenaries_to_structure(ref world: WorldStorage, structure_entity_id: ID) -> ID {
-            let mercenaries_config: MercenariesConfig = world.read_model(WORLD_CONFIG_ID);
-
-            let army_entity_id = InternalTroopImpl::create_defensive_army(
-                ref world, structure_entity_id, starknet::contract_address_const::<0x0>()
-            );
-
-            let tx_info = starknet::get_tx_info();
-            let salt_one: u256 = tx_info.transaction_hash.into();
-            let salt_two: u256 = starknet::get_block_timestamp().into();
-            let salt_three: u256 = tx_info.nonce.into();
-
-            let random_knights_amount: u64 = random::random(
-                salt_one.low,
-                mercenaries_config.knights_upper_bound.into() - mercenaries_config.knights_lower_bound.into()
-            )
-                .try_into()
-                .unwrap()
-                + mercenaries_config.knights_lower_bound;
-            let random_paladins_amount: u64 = random::random(
-                salt_two.low,
-                mercenaries_config.paladins_upper_bound.into() - mercenaries_config.paladins_lower_bound.into()
-            )
-                .try_into()
-                .unwrap()
-                + mercenaries_config.paladins_lower_bound;
-            let random_crossbowmen_amount: u64 = random::random(
-                salt_three.low,
-                mercenaries_config.crossbowmen_upper_bound.into() - mercenaries_config.crossbowmen_lower_bound.into()
-            )
-                .try_into()
-                .unwrap()
-                + mercenaries_config.crossbowmen_lower_bound;
-
-            let mut troops = Troops {
-                knight_count: random_knights_amount,
-                paladin_count: random_paladins_amount,
-                crossbowman_count: random_crossbowmen_amount
-            };
-
-            troops.normalize_counts();
-
-            InternalTroopImpl::add_troops_to_army(ref world, troops, army_entity_id);
-
-            army_entity_id
         }
     }
 }
