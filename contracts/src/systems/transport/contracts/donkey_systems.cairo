@@ -26,7 +26,7 @@ mod donkey_systems {
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct BurnDonkey {
         #[key]
         player_address: ContractAddress,
