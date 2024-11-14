@@ -2,7 +2,6 @@ use cainome_cairo_serde::CairoSerde;
 use dojo_types::schema::Ty;
 use serenity::futures::StreamExt;
 use std::time::Duration;
-use tokio::select;
 use tokio::sync::mpsc;
 use tokio::time::sleep;
 
@@ -19,6 +18,15 @@ use crate::{
     types::{Config, Event},
 };
 
+const TORII_SUBSCRIPTION_MODELS: [&str; 6] = [
+    "eternum-BattleClaimData",
+    "eternum-BattleJoinData",
+    "eternum-BattleLeaveData",
+    "eternum-BattlePillageData",
+    "eternum-BattleStartData",
+    "eternum-SettleRealmData",
+];
+
 pub struct ToriiClientSubscriber {
     client: torii_client::client::Client,
     processed_event_sender: mpsc::Sender<Event>,
@@ -34,7 +42,6 @@ impl ToriiClientSubscriber {
             config.node_url.clone(),
             config.torii_relay_url.clone(),
             Felt::from_hex_unchecked(&config.world_address.clone()),
-            Some(Duration::from_secs(30)),
         )
         .await?;
 
@@ -59,7 +66,10 @@ impl ToriiClientSubscriber {
                     vec![EntityKeysClause::Keys(KeysClause {
                         keys: vec![],
                         pattern_matching: PatternMatching::VariableLen,
-                        models: vec![],
+                        models: TORII_SUBSCRIPTION_MODELS
+                            .iter()
+                            .map(|s| s.to_string())
+                            .collect(),
                     })],
                     false,
                 )
@@ -68,31 +78,23 @@ impl ToriiClientSubscriber {
             match rcv {
                 Ok(mut rcv) => {
                     backoff = Duration::from_secs(1);
+
                     loop {
-                        tracing::info!("Waiting for events");
-                        tracing::info!("rcv is {:?}", rcv);
-                        select! {
-                            result = rcv.next() => {
-                                match result {
-                                    Some(result) => {
-                                        if let Ok((_, entity)) = result {
-                                            tracing::info!("Received event");
-                                            self.treat_received_torii_event(entity).await;
-                                            tracing::info!("Finished processing events");
-                                        } else {
-                                            tracing::warn!("Received invalid data from torii, reconnecting");
-                                            break;
-                                        }
-                                    }
-                                    None => {
-                                        tracing::warn!("Stream returned an error, reconnecting");
-                                        break;
-                                    }
+                        match rcv.next().await {
+                            Some(result) => {
+                                if let Ok((_, entity)) = result {
+                                    tracing::info!("Received event");
+                                    self.treat_received_torii_event(entity).await;
+                                } else {
+                                    tracing::warn!(
+                                        "Received invalid data from torii, reconnecting"
+                                    );
+                                    break;
                                 }
                             }
-                            _ = sleep(Duration::from_secs(5)) => {
-                                tracing::info!("No events received after 5 seconds");
-                                continue;
+                            None => {
+                                tracing::warn!("Stream returned an error, reconnecting");
+                                break;
                             }
                         }
                     }
@@ -115,9 +117,6 @@ impl ToriiClientSubscriber {
             let ty = Ty::Struct(model.clone());
 
             let felts = ty.serialize().unwrap();
-
-            tracing::info!("FELTS: {:?}", felts);
-            tracing::info!("MODEL NAME: {:?}", model.name);
 
             let event = match model.name.as_str() {
                 "eternum-BattleStartData" => {
@@ -164,7 +163,7 @@ impl ToriiClientSubscriber {
                     }
                 }
                 _ => {
-                    tracing::info!("Unknown model name: {}", model.name);
+                    tracing::warn!("Unknown model name: {}", model.name);
                     continue;
                 }
             };

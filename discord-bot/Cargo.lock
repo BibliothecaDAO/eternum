@@ -2425,7 +2425,7 @@ dependencies = [
 [[package]]
 name = "dojo-types"
 version = "1.0.0-rc.1"
-source = "git+https://github.com/edisontim/dojo?branch=feat/keep-alive#51894b37610e800f02ad0b8554322a15efcf4870"
+source = "git+https://github.com/edisontim/dojo?rev=756027b#756027bff80ee42e900044df47cadd0025843564"
 dependencies = [
  "anyhow",
  "cainome 0.4.6",
@@ -2446,7 +2446,7 @@ dependencies = [
 [[package]]
 name = "dojo-world"
 version = "1.0.0-rc.1"
-source = "git+https://github.com/edisontim/dojo?branch=feat/keep-alive#51894b37610e800f02ad0b8554322a15efcf4870"
+source = "git+https://github.com/edisontim/dojo?rev=756027b#756027bff80ee42e900044df47cadd0025843564"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9891,7 +9891,7 @@ dependencies = [
 [[package]]
 name = "torii-client"
 version = "1.0.0-rc.1"
-source = "git+https://github.com/edisontim/dojo?branch=feat/keep-alive#51894b37610e800f02ad0b8554322a15efcf4870"
+source = "git+https://github.com/edisontim/dojo?rev=756027b#756027bff80ee42e900044df47cadd0025843564"
 dependencies = [
  "async-trait",
  "crypto-bigint",
@@ -9919,7 +9919,7 @@ dependencies = [
 [[package]]
 name = "torii-core"
 version = "1.0.0-rc.1"
-source = "git+https://github.com/edisontim/dojo?branch=feat/keep-alive#51894b37610e800f02ad0b8554322a15efcf4870"
+source = "git+https://github.com/edisontim/dojo?rev=756027b#756027bff80ee42e900044df47cadd0025843564"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9952,7 +9952,7 @@ dependencies = [
 [[package]]
 name = "torii-grpc"
 version = "1.0.0-rc.1"
-source = "git+https://github.com/edisontim/dojo?branch=feat/keep-alive#51894b37610e800f02ad0b8554322a15efcf4870"
+source = "git+https://github.com/edisontim/dojo?rev=756027b#756027bff80ee42e900044df47cadd0025843564"
 dependencies = [
  "crypto-bigint",
  "dojo-types",
@@ -9991,7 +9991,7 @@ dependencies = [
 [[package]]
 name = "torii-relay"
 version = "1.0.0-rc.1"
-source = "git+https://github.com/edisontim/dojo?branch=feat/keep-alive#51894b37610e800f02ad0b8554322a15efcf4870"
+source = "git+https://github.com/edisontim/dojo?rev=756027b#756027bff80ee42e900044df47cadd0025843564"
 dependencies = [
  "anyhow",
  "cainome 0.4.6",

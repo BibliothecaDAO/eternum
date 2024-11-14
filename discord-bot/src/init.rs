@@ -16,18 +16,24 @@ pub struct PoiseContextData {
     pub database: PgPool,
 }
 
-async fn init_inner_services(database: PgPool, config: Config) -> eyre::Result<()> {
+pub async fn launch_services(config: Config, pool: PgPool) -> ShuttleSerenity {
+    launch_internal_services(pool.clone(), config.clone()).await;
+
+    launch_discord_service(config, pool).await
+}
+
+async fn launch_internal_services(database: PgPool, config: Config) {
     let (processed_event_sender, processed_event_receiver) = mpsc::channel(100);
     let (message_sender, message_receiver) = mpsc::channel(100);
 
     let config_clone = config.clone();
     tokio::spawn(async move {
-        tracing::info!("Starting message dispatcher");
-        let mut discord_message_sender = DiscordMessageSender::new(
-            Arc::new(Http::new(&config_clone.discord_token.clone())),
-            message_receiver,
-        );
-        discord_message_sender.run().await;
+        tracing::info!("Starting Torii client subscriber");
+        let torii_client_subscriber =
+            ToriiClientSubscriber::new(config_clone, processed_event_sender)
+                .await
+                .expect("Failed to create Torii client subscriber");
+        torii_client_subscriber.subscribe().await;
     });
 
     let config_clone = config.clone();
@@ -44,22 +50,17 @@ async fn init_inner_services(database: PgPool, config: Config) -> eyre::Result<(
 
     let config_clone = config.clone();
     tokio::spawn(async move {
-        tracing::info!("Starting Torii client subscriber");
-        let torii_client_subscriber =
-            ToriiClientSubscriber::new(config_clone, processed_event_sender)
-                .await
-                .expect("Failed to create Torii client subscriber");
-        torii_client_subscriber.subscribe().await;
+        tracing::info!("Starting message dispatcher");
+        let mut discord_message_sender = DiscordMessageSender::new(
+            Arc::new(Http::new(&config_clone.discord_token.clone())),
+            message_receiver,
+        );
+        discord_message_sender.run().await;
     });
-
-    Ok(())
 }
 
-pub async fn init_services(config: Config, pool: PgPool) -> ShuttleSerenity {
+async fn launch_discord_service(config: Config, pool: PgPool) -> ShuttleSerenity {
     let intents = GatewayIntents::non_privileged();
-
-    let config_clone = config.clone();
-    let pool_clone = pool.clone();
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -80,11 +81,7 @@ pub async fn init_services(config: Config, pool: PgPool) -> ShuttleSerenity {
         })
         .build();
 
-    init_inner_services(pool_clone, config_clone.clone())
-        .await
-        .expect("Failed to start inner services");
-
-    let client = Client::builder(config_clone.discord_token.clone(), intents)
+    let client = Client::builder(config.discord_token.clone(), intents)
         .framework(framework)
         .await
         .map_err(shuttle_runtime::CustomError::new)?;

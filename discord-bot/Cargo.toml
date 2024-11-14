@@ -20,13 +20,13 @@ strum_macros = "0.26.4"
 starknet = "0.12.0"
 starknet-crypto = "0.7.0"
 starknet-types-core = "~0.1.4"
-dojo-types = { git = "https://github.com/edisontim/dojo", branch = "feat/keep-alive" }
-torii-client = { git = "https://github.com/edisontim/dojo", branch = "feat/keep-alive" }
+dojo-types = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
+torii-client = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
 torii-grpc = { git = "https://github.com/edisontim/dojo", features = [
     "client",
-], branch = "feat/keep-alive" }
-torii-relay = { git = "https://github.com/edisontim/dojo", branch = "feat/keep-alive" }
-dojo-world = { git = "https://github.com/edisontim/dojo", branch = "feat/keep-alive" }
+], rev = "756027b" }
+torii-relay = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
+dojo-world = { git = "https://github.com/edisontim/dojo", rev = "756027b" }
 
 cainome = { git = "https://github.com/cartridge-gg/cainome", tag = "v0.4.7", features = ["abigen-rs"] }
 cainome-cairo-serde = { git = "https://github.com/cartridge-gg/cainome", tag = "v0.4.7" }
