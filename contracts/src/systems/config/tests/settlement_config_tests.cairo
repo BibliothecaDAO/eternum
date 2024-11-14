@@ -1,7 +1,15 @@
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorage;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::models::config::{SettlementConfig, SettlementConfigImpl};
+    use eternum::models::position::{Coord};
+    use eternum::models::structure::{StructureCount};
+    use eternum::systems::realm::contracts::realm_systems::InternalRealmLogicImpl;
+
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_settlement_config};
 
     #[test]
     fn config_test_get_next_settlement_coord() {
@@ -27,5 +35,25 @@ mod tests {
         let coords = SettlementConfigImpl::get_next_settlement_coord(ref settlement_config);
         assert(coords.x == 2147483623, 'x coord');
         assert(coords.y == 2147483633, 'y coord');
+    }
+
+    #[test]
+    fn config_test_settle_on_coords_with_structure() {
+        let mut world = spawn_eternum();
+        let config_systems_address = deploy_system(ref world, "config_systems");
+        set_settlement_config(config_systems_address);
+
+        let structure_coords = Coord { x: 2147483646, y: 2147483671, };
+
+        let mut structure_count: StructureCount = world.read_model(structure_coords);
+        structure_count.count = 1;
+
+        world.write_model(@structure_count);
+
+        // if there's already a structure on the coords, the next settlement should be placed on the next available
+        let coords = InternalRealmLogicImpl::get_new_location(ref world);
+
+        assert(coords.x == 2147483623, 'x coord');
+        assert(coords.y == 2147483658, 'y coord');
     }
 }
