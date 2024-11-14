@@ -44,7 +44,7 @@ mod resource_systems {
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl as travel};
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct Transfer {
         #[key]
         recipient_entity_id: ID,

@@ -3536,7 +3536,7 @@
         },
         {
           "type": "event",
-          "name": "bushido_trophy::components::achievable::AchievableComponent::Event",
+          "name": "arcade_trophy::components::achievable::AchievableComponent::Event",
           "kind": "enum",
           "variants": []
         },
@@ -3557,7 +3557,7 @@
             },
             {
               "name": "AchievableEvent",
-              "type": "bushido_trophy::components::achievable::AchievableComponent::Event",
+              "type": "arcade_trophy::components::achievable::AchievableComponent::Event",
               "kind": "flat"
             }
           ]

@@ -1,4 +1,4 @@
-use bushido_trophy::store::{Store, StoreTrait};
+use arcade_trophy::store::{Store, StoreTrait};
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
@@ -295,7 +295,7 @@ trait IBattlePillageContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
-    use bushido_trophy::store::{Store, StoreTrait};
+    use arcade_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -315,8 +315,7 @@ mod battle_systems {
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::event::{
-        EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
-        BattlePillageData
+        EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
     use eternum::models::movable::{Movable, MovableCustomTrait};
@@ -801,8 +800,7 @@ mod battle_pillage_systems {
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::event::{
-        EternumEvent, EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData,
-        BattlePillageData
+        EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
     use eternum::models::movable::{Movable, MovableCustomTrait};

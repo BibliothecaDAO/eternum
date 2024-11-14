@@ -31,7 +31,7 @@ mod liquidity_systems {
     use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct LiquidityEvent {
         #[key]
         bank_entity_id: ID,
