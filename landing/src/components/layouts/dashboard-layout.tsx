@@ -8,7 +8,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <div className="flex flex-col h-[calc(100vh)] w-full">
-      <div className="p-4">
+      <div className="">
         <TopNavigation />
       </div>
       <div className="flex-grow p-4 border-gold/15 border-t overflow-auto rounded">{children}</div>
