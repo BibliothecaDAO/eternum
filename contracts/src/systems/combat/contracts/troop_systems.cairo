@@ -153,7 +153,9 @@ mod troop_systems {
             AttackingArmyQuantityTrackerCustomTrait, AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::combat::contracts::battle_systems::{IBattleUtilsContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};
+    use eternum::systems::combat::contracts::battle_systems::{
+        IBattleUtilsContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait
+    };
 
     use super::ITroopContract;
 
@@ -197,8 +199,9 @@ mod troop_systems {
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
 
-                battle_utils_systems.leave_battle_if_ended(battle, army);
-                world.write_model(@battle);
+                let (r_battle, r_army) = battle_utils_systems.leave_battle_if_ended(battle, army);
+                battle = r_battle;
+                army = r_army;
             }
 
             // ensure number of troops is 0
@@ -247,7 +250,9 @@ mod troop_systems {
                     let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
 
                     // if battle has ended, leave the battle
-                    battle_utils_systems.leave_battle(battle, army);
+                    let (r_battle, r_army) = battle_utils_systems.leave_battle(battle, army);
+                    battle = r_battle;
+                    army = r_army;
                 } else {
                     // if battle has not ended, add the troops to the battle
                     let troop_config = TroopConfigCustomImpl::get(world);
@@ -287,7 +292,9 @@ mod troop_systems {
                 let mut battle = BattleCustomImpl::get(world, from_army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
-                battle_utils_systems.leave_battle_if_ended(battle, from_army);
+                let (r_battle, r_from_army) = battle_utils_systems.leave_battle_if_ended(battle, from_army);
+                battle = r_battle;
+                from_army = r_from_army;
             }
             from_army.assert_not_in_battle();
             from_army.troops.deduct(troops);
@@ -327,7 +334,9 @@ mod troop_systems {
                 let mut battle = BattleCustomImpl::get(world, to_army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
-                battle_utils_systems.leave_battle_if_ended(battle, to_army);
+                let (r_battle, r_to_army) = battle_utils_systems.leave_battle_if_ended(battle, to_army);
+                battle = r_battle;
+                to_army = r_to_army;
             }
 
             to_army.assert_not_in_battle();
