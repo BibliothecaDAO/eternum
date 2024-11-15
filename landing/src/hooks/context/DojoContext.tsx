@@ -1,7 +1,8 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { displayAddress } from "@/lib/utils";
 import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
-import { ReactNode, createContext, useContext, useMemo } from "react";
+import { useAccount } from "@starknet-react/core";
+import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
 
@@ -28,7 +29,7 @@ export interface DojoResult {
   masterAccount: Account | AccountInterface;
 }
 
-const DojoContext = createContext<DojoContextType | null>(null);
+export const DojoContext = createContext<DojoContextType | null>(null);
 
 const requiredEnvs = ["VITE_PUBLIC_MASTER_ADDRESS", "VITE_PUBLIC_MASTER_PRIVATE_KEY", "VITE_PUBLIC_ACCOUNT_CLASS_HASH"];
 
@@ -103,9 +104,53 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
     [rpcProvider, masterAddress, privateKey],
   );
 
-  const { create, list, get, account, select, isDeploying, clear } = useBurnerManager({
+  const {
+    create,
+    list,
+    get,
+    account: burnerAccount,
+    select,
+    isDeploying,
+    clear,
+  } = useBurnerManager({
     burnerManager: value.network.burnerManager,
   });
+
+  const { account: controllerAccount, isConnected, isConnecting } = useAccount();
+
+  console.log("controllerAccount", controllerAccount);
+
+  const [accountsInitialized, setAccountsInitialized] = useState(false);
+
+  // Determine which account to use based on environment
+  const isDev = import.meta.env.VITE_PUBLIC_DEV === "true";
+  const accountToUse = isDev ? burnerAccount : controllerAccount;
+
+  useEffect(() => {
+    if (isDev) {
+      if (burnerAccount) {
+        console.log("Setting account from burner hook:", burnerAccount);
+        setAccountsInitialized(true);
+      } else {
+        console.log("Burner account is null in development.");
+      }
+    } else {
+      if (controllerAccount) {
+        console.log("Setting account from controllerAccount:", controllerAccount);
+        setAccountsInitialized(true);
+      } else {
+        console.log("ControllerAccount is null in production or not connected.");
+        setAccountsInitialized(true);
+      }
+    }
+  }, [isDev, controllerAccount, burnerAccount, isConnected, isConnecting]);
+
+  if (!accountsInitialized) {
+    return <div>loading...</div>;
+  }
+
+  const activeAccount = accountToUse || masterAccount;
+  const displayAddr = activeAccount ? displayAddress(activeAccount.address) : displayAddress(masterAddress);
 
   return (
     <DojoContext.Provider
@@ -118,9 +163,9 @@ const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
           get,
           select,
           clear,
-          account: account || masterAccount,
+          account: activeAccount,
           isDeploying,
-          accountDisplay: account ? displayAddress(account.address) : displayAddress(masterAddress),
+          accountDisplay: displayAddr,
         },
       }}
     >

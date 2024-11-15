@@ -29,7 +29,7 @@ export class EternumConfig {
 
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await setProductionConfig(config);
+    // await setProductionConfig(config);
     await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
