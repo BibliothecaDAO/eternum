@@ -26,20 +26,20 @@ export const tokens: {
 } = {
   [Chain.MAINNET]: {
     [Token.LORDS]: {
-      address: "0x033edb0e78c0f542976f55a877d228cd32eb5db767472e786e5f67fa4b8b90e5",
+      address: "",
       decimals: 18,
     },
   },
   [Chain.SEPOLIA]: {
     [Token.LORDS]: {
-      address: "0x4a923a8d844846dc34b0ea3d2ec95adf2c5569dd1b755f6a3285328bc5428e9",
+      address: "0x019c92fa87f4d5e3be25c3dd6a284f30282a07e87cd782f5fd387b82c8142017",
       decimals: 18,
     },
     [Token.SEASON_PASS]: {
-      address: "0x58621115ef085cd1115d304a57eae922a7c3850d0b2cecad945c2e93da2073e",
+      address: "0x4454e6466f51f7a2c21e38a99e0219ee259ee3162c33bfe778ae5f89032959d",
     },
     [Token.REALMS]: {
-      address: "0x61f0d0809b4bac7d25252621e7372b9b5755af07395518b9c4a5e9ad4d4ce02",
+      address: "0x3e64aa2c669ffd66a1c78d120812005d8f7e03b75696dd9c0f06e8def143844",
     },
   },
   [Chain.LOCAL]: {
