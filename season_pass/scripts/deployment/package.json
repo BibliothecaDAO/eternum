@@ -6,8 +6,7 @@
   "main": "index.js",
   "scripts": {
     "deploy": "bun --env-file=.env ./deploy_dev",
-    "deploy::prod": "bun --env-file=.env.production ./deploy_prod",
-    "deploy::sepolia": "bun --env-file=.env.sepolia ./deploy_sepolia"
+    "deploy::prod": "bun --env-file=.env.production ./deploy_prod"
   },
   "author": "",
   "license": "ISC",
