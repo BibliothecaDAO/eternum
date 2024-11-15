@@ -38,6 +38,7 @@ pub mod buildings {
 }
 pub mod map {
     pub mod contracts;
+    pub mod map_generation;
     #[cfg(test)]
     mod tests;
 }

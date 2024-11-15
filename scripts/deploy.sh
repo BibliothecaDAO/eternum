@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create a Slot -> if deploying to slot
-slot deployments create -t epic eternum-rc1-1 katana --version v1.0.0-rc.1 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+slot deployments create -t epic eternum-rc1-1 katana --version v1.0.0 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts 
 # -> update prod env_variables.sh
@@ -31,20 +31,20 @@ cd ../scripts/deployment && npm run deploy::prod
 
 # update the .env.production file with the season pass and test realms contracts addresses
 VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/prod/season_pass.json | jq -r '.address')
-VITE_REALMS_ADDRESS=$(cat ./addresses/prod/test_realms.json | jq -r '.address')
-VITE_LORDS_ADDRESS=$(cat ./addresses/prod/test_lords.json | jq -r '.address')
+# VITE_REALMS_ADDRESS=$(cat ./addresses/prod/test_realms.json | jq -r '.address')
+# VITE_LORDS_ADDRESS=$(cat ./addresses/prod/test_lords.json | jq -r '.address')
 
 # remove the old addresses if they exist
 ENV_FILE=../../../client/.env.production
 sed -i '' '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
-sed -i '' '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
-sed -i '' '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
+# sed -i '' '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
+# sed -i '' '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
 
 # add the new addresses to the ENV file
 echo "" >> $ENV_FILE
 echo "VITE_SEASON_PASS_ADDRESS=$VITE_SEASON_PASS_ADDRESS" >> $ENV_FILE
-echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
-echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
+    # echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
+    # echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
 
 cd ../../../
 printf "\n\n"
@@ -68,7 +68,7 @@ echo "Migrating world..."
 sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-rc1-1 torii --version v1.0.0-rc.1 --world 0x073bad29b5c12b09f9023e8d3a5876ea6ebd41fa26cab5035369fec4691067c2 --rpc https://api.cartridge.gg/x/eternum-rc1-1/katana --start-block 0  --index-pending true
+slot deployments create -t epic eternum-rc-sepolia-4 torii --version v1.0.1 --world 0x05013b17c43a2b664ec2a38aa45f6d891db1188622ec7cf320411321c3248fb5 --rpc https://api.cartridge.gg/x/starknet/sepolia --start-block 0  --index-pending true --config-file ./torii.toml
 
 echo "Setting up config..."
 

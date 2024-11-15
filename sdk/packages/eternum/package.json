@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsup",
-    "test": "vitest"
+    "test": "vitest",
+    "gen:docs": "typedoc --plugin typedoc-plugin-markdown"
   },
   "exports": {
     ".": {
@@ -26,6 +27,8 @@
   },
   "devDependencies": {
     "tsup": "^8.0.2",
-    "typescript": "^5.4.4"
+    "typescript": "^5.4.4",
+    "typedoc": "^0.26.11",
+    "typedoc-plugin-markdown": "^4.2.10"
   }
 }

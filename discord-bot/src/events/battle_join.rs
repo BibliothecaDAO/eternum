@@ -12,8 +12,7 @@ use crate::{
 };
 
 use super::{duration_to_string, ToDiscordMessage, UNKNOWN_USER};
-#[allow(dead_code)]
-#[derive(CairoSerde)]
+#[derive(CairoSerde, Clone, Copy)]
 pub struct BattleJoin {
     pub id: u32,
     pub event_id: u32,

@@ -603,3 +603,20 @@ export interface MintSeasonPassesProps extends SystemSigner {
   token_ids: num.BigNumberish[];
   season_pass_address: num.BigNumberish;
 }
+
+export interface AttachLordsProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  amount: num.BigNumberish;
+  season_pass_address: num.BigNumberish;
+  lords_address: num.BigNumberish;
+}
+
+export interface DetachLordsProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  amount: num.BigNumberish;
+  season_pass_address: num.BigNumberish;
+}
+
+export interface MintTestLordsProps extends SystemSigner {
+  lords_address: num.BigNumberish;
+}

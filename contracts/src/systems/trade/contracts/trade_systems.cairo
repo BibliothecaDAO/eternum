@@ -62,7 +62,7 @@ mod trade_systems {
 
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct CreateOrder {
         #[key]
         taker_id: ID,
@@ -73,7 +73,7 @@ mod trade_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct AcceptOrder {
         #[key]
         taker_id: ID,
@@ -86,7 +86,7 @@ mod trade_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct AcceptPartialOrder {
         #[key]
         taker_id: ID,
@@ -97,7 +97,7 @@ mod trade_systems {
     }
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct CancelOrder {
         #[key]
         taker_id: ID,

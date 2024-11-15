@@ -1,22 +1,14 @@
 #!/bin/bash
 
-get_world_address() {
-    local contract_name="dojo-world"
-    awk -v name="$contract_name" '
-    $1 == "address" { last_address = $3 }  # Store the last seen address
-    $1 == "manifest_name" && $3 == "\"" name "\"" { gsub(/"/, "", last_address); print last_address; exit; }  # Remove quotes before printing
-    ' "$KATANA_TOML_PATH"
-}
-
 get_contract_address() {
     local contract_name="$1"
     awk -v name="$contract_name" '
-    $1 == "address" { last_address = $3 }  # Store the last seen address
-    $1 == "tag" && $3 == "\"" name "\"" { print last_address; exit; }  # When name matches, print the last stored address
+    /"address":/ { gsub(/[",]/, "", $2); last_address = $2 }  # Store the last seen address, removing quotes and commas
+    /"tag":/ && $2 ~ name { print last_address; exit; }  # When name matches, print the last stored address
     ' "$KATANA_TOML_PATH"
 }
 
-export DOJO_WORLD_ADDRESS=$(get_world_address)
+export DOJO_WORLD_ADDRESS=$SOZO_WORLD
 
 export CONFIG_SYSTEMS=$(get_contract_address "eternum-config_systems")
 

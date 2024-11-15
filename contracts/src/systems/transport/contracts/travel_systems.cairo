@@ -33,7 +33,7 @@ mod travel_systems {
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct Travel {
         #[key]
         destination_coord_x: u32,

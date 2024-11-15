@@ -21,8 +21,7 @@ use super::{duration_to_string, ToDiscordMessage, UNKNOWN_USER};
 // Dojo world can load local world from manifests and retrieve the abi
 // We can put these files in the target dir
 
-#[allow(dead_code)]
-#[derive(CairoSerde)]
+#[derive(CairoSerde, Clone, Copy)]
 pub struct BattleStart {
     pub id: u32,
     pub event_id: u32,

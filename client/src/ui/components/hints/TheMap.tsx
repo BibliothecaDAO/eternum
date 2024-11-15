@@ -1,5 +1,4 @@
 import { Headline } from "@/ui/elements/Headline";
-import {} from "@/ui/utils/utils";
 import { ExplorationTable } from "./ExplorationTable";
 import { tableOfContents } from "./utils";
 

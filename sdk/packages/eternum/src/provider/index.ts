@@ -44,6 +44,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+    console.log({ signer, transactionDetails });
     const tx = await this.execute(signer, transactionDetails, NAMESPACE);
     console.log(tx);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
@@ -1213,5 +1214,44 @@ export class EternumProvider extends EnhancedDojoProvider {
       };
     });
     return await this.executeAndCheckTransaction(signer, multicall);
+  }
+
+  public async mint_test_lords(props: SystemProps.MintTestLordsProps) {
+    const { signer, lords_address } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: lords_address.toString(),
+      entrypoint: "mint_test_lords",
+      calldata: [],
+    });
+  }
+
+  public async attach_lords(props: SystemProps.AttachLordsProps) {
+    const { amount, signer, token_id, season_pass_address, lords_address } = props;
+
+    // approve lords contract to spend season pass
+
+    const approveTx = {
+      contractAddress: lords_address.toString(),
+      entrypoint: "approve",
+      calldata: [season_pass_address.toString(), uint256.bnToUint256(amount)],
+    };
+
+    return await this.executeAndCheckTransaction(signer, [
+      approveTx,
+      {
+        contractAddress: season_pass_address.toString(),
+        entrypoint: "attach_lords",
+        calldata: [uint256.bnToUint256(token_id), uint256.bnToUint256(amount)],
+      },
+    ]);
+  }
+
+  public async detach_lords(props: SystemProps.DetachLordsProps) {
+    const { amount, signer, token_id, season_pass_address } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: season_pass_address.toString(),
+      entrypoint: "detach_lords",
+      calldata: [uint256.bnToUint256(token_id), uint256.bnToUint256(amount)],
+    });
   }
 }

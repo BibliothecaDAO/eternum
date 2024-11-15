@@ -27,8 +27,11 @@ export async function setupNetwork({ ...config }: DojoConfig) {
 
   try {
     await burnerManager.init();
-    if (burnerManager.list().length === 0) {
-      await burnerManager.create();
+
+    if (import.meta.env.VITE_PUBLIC_DEV === "true") {
+      if (burnerManager.list().length === 0) {
+        await burnerManager.create();
+      }
     }
   } catch (e) {
     console.error(e);

@@ -1,18 +1,22 @@
 import { Switch } from "@/components/ui/switch";
-import { Cat, Dog, Fish, Rabbit, Turtle } from "lucide-react";
 import { useState } from "react";
 import { MultiSelect } from "../ui/multi-select";
 
-const frameworksList = [
-  { value: "react", label: "React", icon: Turtle },
-  { value: "angular", label: "Angular", icon: Cat },
-  { value: "vue", label: "Vue", icon: Dog },
-  { value: "svelte", label: "Svelte", icon: Rabbit },
-  { value: "ember", label: "Ember", icon: Fish },
-];
+import { ResourcesIds } from "@bibliothecadao/eternum";
+
+const frameworksList = Object.values(ResourcesIds)
+  .filter((value) => isNaN(Number(value)))
+  .map((value) => ({
+    value: value.toString(),
+    label: value.toString(),
+  }));
 
 export const AttributeFilters = () => {
-  const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(["react", "angular"]);
+  const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(
+    Object.values(ResourcesIds)
+      .filter((value) => isNaN(Number(value)))
+      .map((value) => value.toString()),
+  );
   return (
     <div className="w-full flex justify-between items-center pb-4 gap-8">
       <MultiSelect

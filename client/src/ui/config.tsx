@@ -26,7 +26,6 @@ const checkIfGameIsRunningOnLaptop = async () => {
 };
 
 export const IS_LOW_GRAPHICS_ENABLED = await checkIfGameIsRunningOnLaptop();
-console.log("IS_LOW_GRAPHICS_ENABLED", IS_LOW_GRAPHICS_ENABLED);
 
 export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 

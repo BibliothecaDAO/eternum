@@ -1,5 +1,5 @@
 import type * as SystemProps from "@bibliothecadao/eternum";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { type SetupNetworkResult } from "./setupNetwork";
 
 class PromiseQueue {
@@ -118,6 +118,18 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.mint_season_passes(props);
   };
 
+  const attach_lords = async (props: SystemProps.AttachLordsProps) => {
+    await provider.attach_lords(props);
+  };
+
+  const detach_lords = async (props: SystemProps.DetachLordsProps) => {
+    await provider.detach_lords(props);
+  };
+
+  const mint_test_lords = async (props: SystemProps.MintTestLordsProps) => {
+    await provider.mint_test_lords(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -138,6 +150,9 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     mint_test_realm: withQueueing(withErrorHandling(mint_test_realm)),
     mint_season_passes: withQueueing(withErrorHandling(mint_season_passes)),
+    attach_lords: withQueueing(withErrorHandling(attach_lords)),
+    detach_lords: withQueueing(withErrorHandling(detach_lords)),
+    mint_test_lords: withQueueing(withErrorHandling(mint_test_lords)),
   };
 
   // TODO: Fix Type

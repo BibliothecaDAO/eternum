@@ -3,7 +3,6 @@ mod commands;
 mod constants;
 mod events;
 mod init;
-pub mod subscription;
 mod types;
 mod utils;
 
