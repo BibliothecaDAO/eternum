@@ -22,7 +22,7 @@ use eternum::systems::{
 };
 use eternum::utils::testing::{
     config::{get_combat_config, set_settlement_config}, world::spawn_eternum, systems::deploy_realm_systems,
-    systems::deploy_troop_systems, general::{mint, get_default_realm_pos, spawn_realm}
+    systems::{deploy_troop_systems, deploy_system}, general::{mint, get_default_realm_pos, spawn_realm}
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
