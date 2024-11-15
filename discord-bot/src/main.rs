@@ -7,10 +7,10 @@ mod types;
 mod utils;
 
 use anyhow::Context as _;
-use init::init_services;
 use shuttle_runtime::SecretStore;
 use sqlx::{Executor, PgPool};
 
+use crate::init::launch_services;
 use crate::types::Config;
 
 async fn check_user_in_database(
@@ -39,9 +39,9 @@ async fn main(
     .await
     .context("failed to run migrations")?;
 
-    let client = init_services(config, pool)
+    let client = launch_services(config, pool)
         .await
         .expect("Failed to setup discord services");
 
-    Ok(client.into())
+    Ok(client)
 }

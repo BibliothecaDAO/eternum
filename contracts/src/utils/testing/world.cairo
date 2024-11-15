@@ -57,7 +57,7 @@ use eternum::systems::bank::contracts::swap::swap_systems;
 
 
 use eternum::systems::buildings::contracts::building_systems;
-use eternum::systems::combat::contracts::battle_systems::{battle_systems, battle_pillage_systems};
+use eternum::systems::combat::contracts::battle_systems::{battle_systems, battle_pillage_systems, battle_utils_systems};
 use eternum::systems::combat::contracts::troop_systems::troop_systems;
 
 use eternum::systems::config::contracts::config_systems;
@@ -67,7 +67,8 @@ use eternum::systems::dev::contracts::resource::dev_resource_systems;
 
 use eternum::systems::guild::contracts::guild_systems;
 use eternum::systems::hyperstructure::contracts::hyperstructure_systems;
-use eternum::systems::map::contracts::map_systems;
+use eternum::systems::map::contracts::{map_systems};
+use eternum::systems::map::map_generation::map_generation_systems;
 use eternum::systems::name::contracts::name_systems;
 use eternum::systems::ownership::contracts::ownership_systems;
 use eternum::systems::realm::contracts::realm_systems;
@@ -173,8 +174,8 @@ fn namespace_def() -> NamespaceDef {
                 hyperstructure_systems::e_HyperstructureContribution::TEST_CLASS_HASH.try_into().unwrap()
             ),
             TestResource::Event(hyperstructure_systems::e_GameEnded::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(map_systems::e_MapExplored::TEST_CLASS_HASH.try_into().unwrap()),
-            TestResource::Event(map_systems::e_FragmentMineDiscovered::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(map_generation_systems::e_MapExplored::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Event(map_generation_systems::e_FragmentMineDiscovered::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(resource_systems::e_Transfer::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(trade_systems::e_CreateOrder::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(trade_systems::e_AcceptOrder::TEST_CLASS_HASH.try_into().unwrap()),
@@ -197,6 +198,7 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(swap_systems::TEST_CLASS_HASH),
             TestResource::Contract(building_systems::TEST_CLASS_HASH),
             TestResource::Contract(battle_systems::TEST_CLASS_HASH),
+            TestResource::Contract(battle_utils_systems::TEST_CLASS_HASH),
             TestResource::Contract(battle_pillage_systems::TEST_CLASS_HASH),
             TestResource::Contract(troop_systems::TEST_CLASS_HASH),
             TestResource::Contract(config_systems::TEST_CLASS_HASH),
@@ -206,6 +208,7 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(guild_systems::TEST_CLASS_HASH),
             TestResource::Contract(hyperstructure_systems::TEST_CLASS_HASH),
             TestResource::Contract(map_systems::TEST_CLASS_HASH),
+            TestResource::Contract(map_generation_systems::TEST_CLASS_HASH),
             TestResource::Contract(name_systems::TEST_CLASS_HASH),
             TestResource::Contract(ownership_systems::TEST_CLASS_HASH),
             TestResource::Contract(realm_systems::TEST_CLASS_HASH),
@@ -232,6 +235,8 @@ fn contract_defs() -> Span<ContractDef> {
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"battle_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"battle_utils_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"battle_pillage_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"troop_systems")
@@ -249,6 +254,8 @@ fn contract_defs() -> Span<ContractDef> {
         ContractDefTrait::new(DEFAULT_NS(), @"hyperstructure_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"map_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"map_generation_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"name_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),

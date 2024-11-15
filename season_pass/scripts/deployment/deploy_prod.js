@@ -12,6 +12,7 @@ console.log(`  |____/|___|  _|_|___|_  |`.red);
 console.log(`            |_|       |___|`.red);
 
 const testRealmsContractAddress = await deployTestRealmsContract();
+
 const testLordsContractAddress = await deployTestLordsContract();
 
 const seasonPassContractAddress = await deploySeasonPassContract(

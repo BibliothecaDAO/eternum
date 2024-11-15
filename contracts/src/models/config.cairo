@@ -18,6 +18,7 @@ use eternum::models::quantity::Quantity;
 
 use eternum::models::resources::{ResourceFoodImpl};
 use eternum::models::weight::Weight;
+use eternum::utils::map::constants::fixed_constants as fc;
 use eternum::utils::math::{max, min};
 use eternum::utils::random;
 
@@ -175,79 +176,80 @@ pub struct MapConfig {
 pub struct SettlementConfig {
     #[key]
     config_id: ID,
-    // starting value radius
-    // starting value angle (precision 100)
-    angle_scaled: u128,
     center: u32,
-    // always positive
-    min_scaling_factor_scaled: u128,
-    // initial radius in precision 100
-    radius: u32,
-    // min/max radius changes in precision 100
-    min_distance: u32,
-    max_distance: u32,
-    // radius incrase in precision 100
-    min_angle_increase: u64,
-    max_angle_increase: u64,
+    base_distance: u32,
+    min_first_layer_distance: u32,
+    points_placed: u32,
+    current_layer: u32,
+    current_side: u32,
+    current_point_on_side: u32,
 }
 
 #[generate_trait]
 impl SettlementConfigImpl of SettlementConfigTrait {
-    fn get_scaling_factor(ref self: SettlementConfig) -> Fixed {
-        let max_radius_fixed = FixedTrait::new_unscaled(self.center.into() * 100, false);
-        let radius_fixed = FixedTrait::new_unscaled(self.radius.into(), false);
-        // very small at first and then grows
-        let scaling_factor_fixed = (max_radius_fixed - radius_fixed) / max_radius_fixed;
-        let min_scaling_factor_fixed = FixedTrait::new(self.min_scaling_factor_scaled, false);
-        fixed_max(scaling_factor_fixed, min_scaling_factor_fixed)
+    fn get_distance_from_center(ref self: SettlementConfig) -> u32 {
+        self.min_first_layer_distance + (self.current_layer - 1) * self.base_distance
     }
 
-    fn get_step_size(ref self: SettlementConfig, scaling_factor: Fixed) -> u32 {
-        let min_distance_fixed = FixedTrait::new_unscaled(self.min_distance.into(), false);
-        let max_distance_fixed = FixedTrait::new_unscaled(self.max_distance.into(), false);
-        let range = max_distance_fixed - min_distance_fixed;
-        let scaled_range = scaling_factor * range;
-        let step_size_fixed = min_distance_fixed + scaled_range;
-        step_size_fixed.try_into().unwrap() + 100
+    fn get_points_on_side(ref self: SettlementConfig) -> u32 {
+        if self.current_side > 0 {
+            self.current_layer
+        } else {
+            self.current_layer - 1
+        }
     }
 
-    fn get_radius_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> u32 {
-        (block_timestamp % (step_size.into() / 100) * 100 + self.min_distance.into()).try_into().unwrap()
+    fn get_pos_percentage(ref self: SettlementConfig, points_on_side: u32) -> Fixed {
+        FixedTrait::new_unscaled(self.current_point_on_side.into() + 1, false)
+            / FixedTrait::new_unscaled(points_on_side.into() + 1, false)
     }
 
-    fn get_angle_increase(ref self: SettlementConfig, step_size: u32, block_timestamp: u64) -> Fixed {
-        FixedTrait::new_unscaled(
-            (block_timestamp % (self.max_angle_increase - self.min_angle_increase) + self.min_angle_increase).into(),
-            false
-        )
-            / FixedTrait::new_unscaled(100, false)
+    fn get_side_coords(ref self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
+        let side_fixed = FixedTrait::new_unscaled(side.into(), false);
+        let angle_fixed = side_fixed * fc::PI() / FixedTrait::new_unscaled(3, false);
+
+        let cos = fixed_cos(angle_fixed);
+        let sin = fixed_sin(angle_fixed);
+
+        let centre_fixed = FixedTrait::new_unscaled(self.center.into(), false);
+        let distance_fixed = FixedTrait::new_unscaled(distance_from_center.into(), false);
+
+        let x_fixed = centre_fixed + distance_fixed * cos;
+        let y_fixed = centre_fixed + distance_fixed * sin;
+        (x_fixed, y_fixed)
     }
 
-    fn increase_angle(ref self: SettlementConfig, angle_increase: Fixed) -> Fixed {
-        self.angle_scaled += angle_increase.mag;
-        FixedTrait::new(self.angle_scaled, false)
-    }
+    fn get_next_settlement_coord(ref self: SettlementConfig) -> Coord {
+        let distance_from_center = Self::get_distance_from_center(ref self);
 
-    fn compute_coords(ref self: SettlementConfig, angle: Fixed) -> Coord {
-        let cos = fixed_cos(angle);
-        let sin = fixed_sin(angle);
+        let (start_x_fixed, start_y_fixed) = Self::get_side_coords(ref self, self.current_side, distance_from_center);
 
-        let x = FixedTrait::new_unscaled(self.center.into(), false)
-            + cos * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
-        let y = FixedTrait::new_unscaled(self.center.into(), false)
-            + sin * FixedTrait::new_unscaled(self.radius.into(), false) / FixedTrait::new_unscaled(100, false);
+        let next_side = (self.current_side + 1) % 6;
 
-        return Coord { x: x.try_into().unwrap(), y: y.try_into().unwrap() };
-    }
+        let (end_x_fixed, end_y_fixed) = Self::get_side_coords(ref self, next_side, distance_from_center);
 
-    fn get_next_settlement_coord(ref self: SettlementConfig, block_timestamp: u64) -> Coord {
-        let scaling_factor = Self::get_scaling_factor(ref self);
-        let step_size = Self::get_step_size(ref self, scaling_factor);
-        let radius_increase = Self::get_radius_increase(ref self, step_size, block_timestamp);
-        self.radius += radius_increase;
-        let angle_increase = Self::get_angle_increase(ref self, step_size, block_timestamp);
-        let new_angle_fixed = Self::increase_angle(ref self, angle_increase);
-        Self::compute_coords(ref self, new_angle_fixed)
+        let points_on_side = Self::get_points_on_side(ref self);
+
+        let pos_percentage_fixed = Self::get_pos_percentage(ref self, points_on_side);
+
+        let x_fixed = start_x_fixed + (end_x_fixed - start_x_fixed) * pos_percentage_fixed;
+        let y_fixed = start_y_fixed + (end_y_fixed - start_y_fixed) * pos_percentage_fixed;
+
+        self.current_point_on_side += 1;
+        self.points_placed += 1;
+
+        if self.current_point_on_side >= points_on_side {
+            self.current_point_on_side = 0;
+            self.current_side += 1;
+
+            // If we've completed all sides, move to next layer
+            if self.current_side >= 6 {
+                self.current_side = 0;
+                self.current_layer += 1;
+            }
+        }
+
+        Coord { x: x_fixed.try_into().unwrap(), y: y_fixed.try_into().unwrap() }
     }
 }
 

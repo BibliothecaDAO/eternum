@@ -1,6 +1,7 @@
 #[starknet::interface]
 trait ITestLords<TContractState> {
     fn mint(ref self: TContractState, token_id: u256);
+    fn mint_test_lords(ref self: TContractState);
     fn set_season_pass(ref self: TContractState, address: starknet::ContractAddress);
 }
 
@@ -69,6 +70,12 @@ mod TestLords {
             let current_season_pass = self.season_pass.read();
             assert!(current_season_pass.contract_address.is_zero(), "TL: season pass address already added");
             self.season_pass.write(ISeasonPassDispatcher { contract_address: address });
+        }
+
+        fn mint_test_lords(ref self: ContractState) {
+            let this = starknet::get_caller_address();
+            let amount = 1_000 * 1000000000000000000; // 10 ^ 18
+            self.erc20.mint(this, amount);
         }
     }
 

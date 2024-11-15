@@ -3777,8 +3777,8 @@
       ]
     },
     {
-      "address": "0x44ab683a24944264cc0e64d8a1f429903ab07156f7dfb560c40f34d73e3068b",
-      "class_hash": "0x7e876d0e3f399ae1b100248bc5467c7957aa9ad54c5fce6fe96bafd887b059c",
+      "address": "0x5c24357d88bd34e80601fe027b1e4e13d6c7f9273d17fde0b21805cc3c53c04",
+      "class_hash": "0xa5df73bf18b52df7223bde6fb0bb01da93e8ed000b16188bdc4c03513f369d",
       "abi": [
         {
           "type": "impl",
@@ -5693,8 +5693,8 @@
       "systems": ["upgrade"]
     },
     {
-      "address": "0x68c1916b910b36953ae33c7442dc3db8b00238eddd892dd24cb89e463cd0665",
-      "class_hash": "0x70b359e460160151dfe593aa26a7b969fa5704b530e8baea88044d89d7156d4",
+      "address": "0xbff77aa3211d8ef1339aad671bbb66e36a60c0e6be5f4b572a9bbd7d4b8d01",
+      "class_hash": "0x1fd779d485fa113e923c23998c6660ef73f74ce7c73376b0407f8d3808890fb",
       "abi": [
         {
           "type": "impl",
@@ -7940,8 +7940,8 @@
       "systems": ["travel", "travel_hex", "upgrade"]
     },
     {
-      "address": "0x4a422aac20b4fe42ac010576db56d58cd973e96c5ff0f5451dfb35b02c5e468",
-      "class_hash": "0x35673880949ef8b67a3cfa39f43a313d4b4071542c1784d3bed6003ba6da993",
+      "address": "0x698873791862f03b52618cbfe5b5086250f2720dc4f0b501eb899ae254bc4f7",
+      "class_hash": "0x151274a9a2b4997ddf0306bb8a2be67bb697e356b80ae41e14abe4be8718196",
       "abi": [
         {
           "type": "impl",

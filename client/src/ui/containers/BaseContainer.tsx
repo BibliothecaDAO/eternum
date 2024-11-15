@@ -9,15 +9,22 @@ interface BaseContainerProps {
   expandable?: boolean;
   expandedClassName?: string;
   collapsedClassName?: string;
+  scrollbarSide?: "left" | "right";
 }
 export const BaseContainer = forwardRef<HTMLDivElement, BaseContainerProps>(
-  ({ children, className, expandable, expandedClassName, collapsedClassName }: BaseContainerProps, ref) => {
+  (
+    { children, className, expandable, expandedClassName, collapsedClassName, scrollbarSide }: BaseContainerProps,
+    ref,
+  ) => {
     const [expanded, setExpanded] = useState(false);
     return (
       <div
         ref={ref}
         className={clsx(
-          " flex relative flex-col transition-all duration-400 bg-brown/90 border-gradient border rounded-lg bg-hex-bg animatedBackground",
+          "flex relative flex-col transition-all duration-400 bg-brown/90 bg-hex-bg animatedBackground",
+          {
+            "[direction:rtl]": scrollbarSide === "left",
+          },
           className,
           expanded ? expandedClassName : collapsedClassName,
         )}
