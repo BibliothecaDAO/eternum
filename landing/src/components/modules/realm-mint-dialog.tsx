@@ -1,3 +1,4 @@
+import { realmsAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { useMintTestRealm } from "@/hooks/useMintTestRealm";
@@ -33,9 +34,11 @@ export const RealmMintDialog = ({
   // Create an array of realm tokenIds
   const filteredRealmTokenIds = useMemo(() => {
     return data?.ercTransfer
-      ?.filter((item) => item?.tokenMetadata.contractAddress.toLowerCase() === import.meta.env.VITE_REALMS_ADDRESS)
+      ?.filter((item) => item?.tokenMetadata.contractAddress.toLowerCase() === realmsAddress.toLowerCase())
       .map((item) => Number(item?.tokenMetadata.tokenId));
   }, [data]);
+
+  console.log("filteredRealmTokenIds", data);
 
   const generateUniqueRandomNumbers = (count: number, min: number, max: number, exclude: number[]): number[] => {
     const uniqueNumbers = new Set<number>();
