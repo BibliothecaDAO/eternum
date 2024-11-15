@@ -23,7 +23,6 @@ impl DiscordMessageSender {
 
     pub async fn run(&mut self) {
         while let Some(message) = self.message_receiver.recv().await {
-            tracing::info!("Received message through channel");
             if let Err(e) = self.send_message(message).await {
                 tracing::warn!("Failed to send message: {:?}", e);
             }
@@ -36,8 +35,6 @@ impl DiscordMessageSender {
                 let user = UserId::new(user_id);
                 match user.create_dm_channel(&self.http).await {
                     Ok(channel) => {
-                        tracing::info!("DM channel created for user {}", user_id);
-
                         channel.send_message(&self.http, content).await?;
 
                         tracing::info!("DM sent to user {}", user_id);
@@ -53,7 +50,6 @@ impl DiscordMessageSender {
                 content,
             } => {
                 channel_id.send_message(&self.http, content).await?;
-                tracing::info!("Message sent to channel {}", channel_id);
             }
         }
         Ok(())
