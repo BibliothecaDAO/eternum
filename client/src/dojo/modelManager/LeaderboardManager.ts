@@ -20,13 +20,12 @@ export class LeaderboardManager {
 
   private eventsCoOwnersChange: HyperstructureCoOwnersChange[] = [];
 
-  private pointsOnCompletionPerPlayer;
+  private pointsOnCompletionPerPlayer: Map<ContractAddress, Map<ID, number>>;
 
-  private configManager: ClientConfigManager;
+  private gameEndedTimestamp: number | undefined;
 
   private constructor() {
     this.pointsOnCompletionPerPlayer = new Map<ContractAddress, Map<ID, number>>();
-    this.configManager = ClientConfigManager.instance();
   }
 
   public static instance() {
@@ -87,7 +86,7 @@ export class LeaderboardManager {
     };
 
     const contributions = getContributions(parsedEvent.hyperstructureEntityId);
-    const pointsOnCompletion = this.configManager.getHyperstructureConfig().pointsOnCompletion;
+    const pointsOnCompletion = ClientConfigManager.instance().getHyperstructureConfig().pointsOnCompletion;
 
     contributions.forEach((contribution) => {
       if (!contribution) return;
@@ -121,6 +120,10 @@ export class LeaderboardManager {
     this.eventsCoOwnersChange.sort((a, b) => a.timestamp - b.timestamp);
 
     return parsedEvent;
+  }
+
+  public processGameEndedEvent(event: ComponentValue<ClientComponents["events"]["GameEnded"]["schema"]>) {
+    this.gameEndedTimestamp = event.timestamp;
   }
 
   private parseCoOwnersChangeEvent(
@@ -170,17 +173,21 @@ export class LeaderboardManager {
 
     coOwnersChangeEvents.sort((a, b) => a.timestamp - b.timestamp);
 
-    coOwnersChangeEvents.map((event) => {
+    coOwnersChangeEvents.forEach((event) => {
       const nextChange = coOwnersChangeEvents.find(
         (nextEvent) =>
           nextEvent.hyperstructureEntityId === event.hyperstructureEntityId && nextEvent.timestamp > event.timestamp,
       );
 
+      if (!nextChange && this.gameEndedTimestamp) {
+        return;
+      }
+
       const timePeriod = nextChange ? nextChange.timestamp - event.timestamp : currentTimestamp - event.timestamp;
 
-      const nbOfCycles = timePeriod / this.configManager.getTick(TickIds.Default);
+      const nbOfCycles = timePeriod / ClientConfigManager.instance().getTick(TickIds.Default);
 
-      const totalPoints = nbOfCycles * this.configManager.getHyperstructureConfig().pointsPerCycle;
+      const totalPoints = nbOfCycles * ClientConfigManager.instance().getHyperstructureConfig().pointsPerCycle;
 
       event.coOwners.forEach((coOwner) => {
         const key = getGuildFromPlayerAddress
