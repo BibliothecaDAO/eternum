@@ -283,7 +283,7 @@ export const ResourceSwap = ({
                             : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
                           isBuyResource,
                         ) || 0,
-                        2,
+                        4,
                       )}{" "}
                       %
                     </td>
@@ -291,21 +291,13 @@ export const ResourceSwap = ({
                   <tr>
                     <td>Bank Owner Fees</td>
                     <td className="text-left text-danger px-8">
-                      {(-ownerFee).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      {"Lords"}
+                      {formatNumber(-ownerFee, 4)} {"Lords"}
                     </td>
                   </tr>
                   <tr>
                     <td>LP Fees</td>
                     <td className="text-left text-danger px-8">
-                      {(-lpFee).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      {isBuyResource ? "Lords" : chosenResourceName}
+                      {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
                     </td>
                   </tr>
                 </>

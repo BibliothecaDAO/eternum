@@ -272,7 +272,7 @@ const MyLiquidity = ({
         {lordsAmount > 0 && (
           <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({lordsDifferencePercentage > 0 ? "+" : ""}
-            {formatNumber(lordsDifferencePercentage, 2)}%)
+            {formatNumber(lordsDifferencePercentage, 4)}%)
           </span>
         )}
       </div>
@@ -283,7 +283,7 @@ const MyLiquidity = ({
         {resourceAmount > 0 && (
           <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({resourceDifferencePercentage > 0 ? "+" : ""}
-            {formatNumber(resourceDifferencePercentage, 2)}%)
+            {formatNumber(resourceDifferencePercentage, 4)}%)
           </span>
         )}
       </div>
@@ -292,7 +292,7 @@ const MyLiquidity = ({
         <div className="flex mt-1">
           <span className={`text-xs ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
             {totalValueDifferenceInLords >= 0 ? "+" : "-"}
-            {formatNumber(Math.abs(totalValueDifferenceInLords), 2)} Lords (uPNL)
+            {formatNumber(Math.abs(totalValueDifferenceInLords), 4)} Lords (uPNL)
           </span>
         </div>
       )}
