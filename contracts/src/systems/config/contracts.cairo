@@ -184,14 +184,13 @@ trait IResourceBridgeConfig<T> {
 trait ISettlementConfig<T> {
     fn set_settlement_config(
         ref self: T,
-        radius: u32,
-        angle_scaled: u128,
         center: u32,
-        min_distance: u32,
-        max_distance: u32,
-        min_scaling_factor_scaled: u128,
-        min_angle_increase: u64,
-        max_angle_increase: u64,
+        base_distance: u32,
+        min_first_layer_distance: u32,
+        points_placed: u32,
+        current_layer: u32,
+        current_side: u32,
+        current_point_on_side: u32
     );
 }
 
@@ -897,14 +896,13 @@ mod config_systems {
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
         fn set_settlement_config(
             ref self: ContractState,
-            radius: u32,
-            angle_scaled: u128,
             center: u32,
-            min_distance: u32,
-            max_distance: u32,
-            min_scaling_factor_scaled: u128,
-            min_angle_increase: u64,
-            max_angle_increase: u64
+            base_distance: u32,
+            min_first_layer_distance: u32,
+            points_placed: u32,
+            current_layer: u32,
+            current_side: u32,
+            current_point_on_side: u32
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -913,14 +911,13 @@ mod config_systems {
                 .write_model(
                     @SettlementConfig {
                         config_id: WORLD_CONFIG_ID,
-                        radius,
-                        angle_scaled,
                         center,
-                        min_distance,
-                        max_distance,
-                        min_scaling_factor_scaled,
-                        min_angle_increase,
-                        max_angle_increase,
+                        base_distance,
+                        min_first_layer_distance,
+                        points_placed,
+                        current_layer,
+                        current_side,
+                        current_point_on_side,
                     }
                 );
         }

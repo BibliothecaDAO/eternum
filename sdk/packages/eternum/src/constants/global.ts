@@ -111,14 +111,13 @@ export const MERCENARIES_WHEAT_REWARD = 100;
 export const MERCENARIES_FISH_REWARD = 200;
 
 // ----- Settlement ----- //
-export const SETTLEMENT_RADIUS = 2000;
-export const SETTLEMENT_ANGLE_SCALED = 0;
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_MIN_DISTANCE = 30;
-export const SETTLEMENT_MAX_DISTANCE = 50;
-export const SETTLEMENT_MIN_SCALING_FACTOR_SCALED = 1844674407370955161n;
-export const SETTLEMENT_MIN_ANGLE_INCREASE = 20;
-export const SETTLEMENT_MAX_ANGLE_INCREASE = 40;
+export const SETTLEMENT_BASE_DISTANCE = 10;
+export const SETTLEMENT_MIN_FIRST_LAYER_DISTANCE = 30;
+export const SETTLEMENT_POINTS_PLACED = 0;
+export const SETTLEMENT_CURRENT_LAYER = 1;
+export const SETTLEMENT_CURRENT_SIDE = 1;
+export const SETTLEMENT_CURRENT_POINT_ON_SIDE = 0;
 
 // ----- Season ----- //
 export const SEASON_PASS_ADDRESS = "0x0"; // set in indexer.sh
@@ -226,14 +225,13 @@ export const EternumGlobalConfig: Config = {
     ],
   },
   settlement: {
-    radius: SETTLEMENT_RADIUS,
-    angle_scaled: SETTLEMENT_ANGLE_SCALED,
     center: SETTLEMENT_CENTER,
-    min_distance: SETTLEMENT_MIN_DISTANCE,
-    max_distance: SETTLEMENT_MAX_DISTANCE,
-    min_scaling_factor_scaled: SETTLEMENT_MIN_SCALING_FACTOR_SCALED,
-    min_angle_increase: SETTLEMENT_MIN_ANGLE_INCREASE,
-    max_angle_increase: SETTLEMENT_MAX_ANGLE_INCREASE,
+    base_distance: SETTLEMENT_BASE_DISTANCE,
+    min_first_layer_distance: SETTLEMENT_MIN_FIRST_LAYER_DISTANCE,
+    points_placed: SETTLEMENT_POINTS_PLACED,
+    current_layer: SETTLEMENT_CURRENT_LAYER,
+    current_side: SETTLEMENT_CURRENT_SIDE,
+    current_point_on_side: SETTLEMENT_CURRENT_POINT_ON_SIDE,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,

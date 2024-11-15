@@ -21,8 +21,8 @@ use eternum::systems::{
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    config::get_combat_config, world::spawn_eternum, systems::deploy_realm_systems, systems::deploy_troop_systems,
-    general::{mint, get_default_realm_pos, spawn_realm}
+    config::{get_combat_config, set_settlement_config}, world::spawn_eternum, systems::deploy_realm_systems,
+    systems::{deploy_troop_systems, deploy_system}, general::{mint, get_default_realm_pos, spawn_realm}
 };
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -41,27 +41,16 @@ fn set_configurations(ref world: WorldStorage) {
         .write_model_test(
             @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
         );
-    world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300000, });
-    world
-        .write_model_test(
-            @SettlementConfig {
-                config_id: WORLD_CONFIG_ID,
-                radius: 50,
-                angle_scaled: 0,
-                center: 2147483646,
-                min_distance: 1,
-                max_distance: 5,
-                min_scaling_factor_scaled: 1844674407370955161,
-                min_angle_increase: 30,
-                max_angle_increase: 100,
-            }
-        );
+    world.write_model_test(@CapacityConfig { category: CapacityConfigCategory::Army, weight_gram: 300_000, });
 }
 
 fn setup() -> (WorldStorage, ITroopContractDispatcher, ID,) {
     let mut world = spawn_eternum();
     set_configurations(ref world);
     let troop_system_dispatcher = deploy_troop_systems(ref world);
+
+    let config_systems_address = deploy_system(ref world, "config_systems");
+    set_settlement_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());

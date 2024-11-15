@@ -585,14 +585,13 @@ export interface SetMercenariesConfigProps extends SystemSigner {
 }
 
 export interface SetSettlementConfigProps extends SystemSigner {
-  radius: num.BigNumberish;
-  angle_scaled: num.BigNumberish;
   center: num.BigNumberish;
-  min_distance: num.BigNumberish;
-  max_distance: num.BigNumberish;
-  min_scaling_factor_scaled: num.BigNumberish;
-  min_angle_increase: num.BigNumberish;
-  max_angle_increase: num.BigNumberish;
+  base_distance: num.BigNumberish;
+  min_first_layer_distance: num.BigNumberish;
+  points_placed: num.BigNumberish;
+  current_layer: num.BigNumberish;
+  current_side: num.BigNumberish;
+  current_point_on_side: num.BigNumberish;
 }
 
 export interface MintTestRealmProps extends SystemSigner {

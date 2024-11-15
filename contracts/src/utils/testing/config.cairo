@@ -204,14 +204,13 @@ fn set_mercenaries_config(config_systems_address: ContractAddress) {
 fn set_settlement_config(config_systems_address: ContractAddress) {
     ISettlementConfigDispatcher { contract_address: config_systems_address }
         .set_settlement_config(
-            radius: 50,
-            angle_scaled: 0,
             center: 2147483646,
-            min_distance: 1,
-            max_distance: 5,
-            min_scaling_factor_scaled: 1844674407370955161,
-            min_angle_increase: 30,
-            max_angle_increase: 100,
+            base_distance: 10,
+            min_first_layer_distance: 30,
+            points_placed: 0,
+            current_layer: 1,
+            current_side: 1,
+            current_point_on_side: 0,
         );
 }
 
