@@ -21,12 +21,14 @@ import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import {
   divideByPrecision,
   getEntityIdFromKeys,
+  gramToKg,
   isResourceProductionBuilding,
   ResourceIdToMiningType,
 } from "@/ui/utils/utils";
 import {
   BuildingEnumToString,
   BuildingType,
+  CapacityConfigCategory,
   findResourceById,
   ID,
   ResourceCost as ResourceCostType,
@@ -532,6 +534,9 @@ export const BuildingInfo = ({
   const population = buildingPopCapacityConfig.population;
   const capacity = buildingPopCapacityConfig.capacity;
 
+  const carryCapacity =
+    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfigCategory.Storehouse) : 0;
+
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   const ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || 0 : 0;
 
@@ -570,6 +575,12 @@ export const BuildingInfo = ({
             </div>
           )}
         </div>
+        {carryCapacity !== 0 && (
+          <div>
+            <span className="w-full font-bold uppercase">Max resource capacity</span>
+            <br />+{gramToKg(carryCapacity).toLocaleString()} kg
+          </div>
+        )}
         {resourceProduced !== 0 && (
           <div className="uppercase">
             <div className="w-full font-bold">Produces</div>
