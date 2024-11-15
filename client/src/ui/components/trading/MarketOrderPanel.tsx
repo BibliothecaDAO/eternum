@@ -25,7 +25,6 @@ import {
   findResourceById,
   type ID,
   type MarketInterface,
-  type Resources,
 } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -33,7 +32,7 @@ import { ConfirmationPopup } from "../bank/ConfirmationPopup";
 
 export const MarketResource = ({
   entityId,
-  resource,
+  resourceId,
   active,
   onClick,
   askPrice,
@@ -41,7 +40,7 @@ export const MarketResource = ({
   ammPrice,
 }: {
   entityId: ID;
-  resource: Resources;
+  resourceId: ResourcesIds;
   active: boolean;
   onClick: (value: number) => void;
   askPrice: number;
@@ -49,7 +48,7 @@ export const MarketResource = ({
   ammPrice: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
-  const productionManager = useProductionManager(entityId, resource.id);
+  const productionManager = useProductionManager(entityId, resourceId);
 
   const production = useMemo(() => {
     return productionManager.getProduction();
@@ -59,18 +58,22 @@ export const MarketResource = ({
     return productionManager.balance(currentDefaultTick);
   }, [productionManager, production, currentDefaultTick]);
 
+  const resource = useMemo(() => {
+    return findResourceById(resourceId);
+  }, [resourceId]);
+
   return (
     <div
       onClick={() => {
-        onClick(resource.id);
+        onClick(resourceId);
       }}
       className={`w-full border-gold/5 rounded-xl h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
         active ? "bg-gold/10" : ""
       }`}
     >
       <div className="flex items-center gap-2 col-span-2">
-        <ResourceIcon size="sm" resource={resource.trait} withTooltip={false} />
-        <div className="truncate text-xs">{resource.trait}</div>
+        <ResourceIcon size="sm" resource={resource?.trait || ""} withTooltip={false} />
+        <div className="truncate text-xs">{resource?.trait || ""}</div>
         <div className="text-xs text-gold/70 group-hover:text-green">
           [{currencyFormat(balance ? Number(balance) : 0, 0)}]
         </div>
