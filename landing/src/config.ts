@@ -61,3 +61,4 @@ const chain = import.meta.env.VITE_PUBLIC_CHAIN as Chain | Chain.LOCAL;
 
 export const seasonPassAddress = tokens[chain][Token.SEASON_PASS]?.address as `0x${string}`;
 export const lordsAddress = tokens[chain][Token.LORDS]?.address as `0x${string}`;
+export const realmsAddress = tokens[chain][Token.REALMS]?.address as `0x${string}`;

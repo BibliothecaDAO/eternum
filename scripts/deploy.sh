@@ -27,7 +27,7 @@ printf "\n\n"
 echo "----- Building Eternum Season Pass Contract ----- "
 
 cd season_pass/contracts && scarb --release build
-cd ../scripts/deployment && npm run deploy::sepolia 
+cd ../scripts/deployment && npm run deploy::prod 
 
 # update the .env.production file with the season pass and test realms contracts addresses
 VITE_SEASON_PASS_ADDRESS=$(cat ./addresses/prod/season_pass.json | jq -r '.address')

@@ -1,3 +1,4 @@
+import { realmsAddress } from "@/config";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useDojo } from "./context/DojoContext";
@@ -7,11 +8,6 @@ export const useMintTestRealm = () => {
     setup: {
       systemCalls: { mint_test_realm },
     },
-  } = useDojo();
-
-  const realms_address = BigInt(import.meta.env.VITE_REALMS_ADDRESS);
-
-  const {
     account: { account },
   } = useDojo();
 
@@ -25,7 +21,7 @@ export const useMintTestRealm = () => {
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_id);
-        await mint_test_realm({ signer: account, token_id, realms_address })
+        await mint_test_realm({ signer: account, token_id, realms_address: realmsAddress })
           .then(() => {
             toast(`Realms #${token_id} Minted`);
           })
@@ -36,7 +32,7 @@ export const useMintTestRealm = () => {
           });
       }
     },
-    [account, canMint, mint_test_realm, realms_address],
+    [account, canMint, mint_test_realm, realmsAddress],
   );
 
   useEffect(() => {

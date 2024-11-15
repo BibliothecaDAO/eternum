@@ -62,7 +62,9 @@ export const RealmMintDialog = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const { mint: mintRealm, isMinting } = useMintTestRealm();
+
   const onMintRealm = async (tokenId?: string) => {
+    setIsOpen(false);
     try {
       setIsLoading(true);
       if (!tokenId) {
