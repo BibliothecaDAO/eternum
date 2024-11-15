@@ -88,22 +88,27 @@ export const useUserBattles = () => {
   const { playerRealms } = useEntities();
   const realms = playerRealms();
 
-  const battleEntityIds = realms
-    .map((realm) => {
-      const userArmiesInBattleEntityIds = runQuery([
-        Has(Army),
-        NotValue(Army, { battle_id: 0 }),
-        HasValue(EntityOwner, { entity_owner_id: realm.entity_id }),
-      ]);
-      const battleEntityIds = Array.from(userArmiesInBattleEntityIds)
-        .map((armyEntityId) => {
-          const army = getComponentValue(Army, armyEntityId);
-          if (!army) return;
-          return getEntityIdFromKeys([BigInt(army.battle_id)]);
-        })
-        .filter((battleEntityId): battleEntityId is Entity => Boolean(battleEntityId));
-      return battleEntityIds;
-    })
-    .flatMap((battleEntityIds) => Array.from(battleEntityIds));
-  return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
+  const battles = useMemo(() => {
+    const battleEntityIds = realms
+      .map((realm) => {
+        const userArmiesInBattleEntityIds = runQuery([
+          Has(Army),
+          NotValue(Army, { battle_id: 0 }),
+          HasValue(EntityOwner, { entity_owner_id: realm.entity_id }),
+        ]);
+        const battleEntityIds = Array.from(userArmiesInBattleEntityIds)
+          .map((armyEntityId) => {
+            const army = getComponentValue(Army, armyEntityId);
+            if (!army) return;
+            return getEntityIdFromKeys([BigInt(army.battle_id)]);
+          })
+          .filter((battleEntityId): battleEntityId is Entity => Boolean(battleEntityId));
+        return battleEntityIds;
+      })
+      .flatMap((battleEntityIds) => Array.from(battleEntityIds));
+
+    return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
+  }, [realms]);
+
+  return battles;
 };
