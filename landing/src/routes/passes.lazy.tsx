@@ -1,8 +1,8 @@
 import { AttributeFilters } from "@/components/modules/filters";
 import { SeasonPass } from "@/components/modules/season-pass";
 import { SeasonPassRow } from "@/components/modules/season-pass-row";
-import { TypeH2 } from "@/components/typography/type-h2";
-import { Button } from "@/components/ui/button";
+import { TypeH1 } from "@/components/typography/type-h1";
+import { seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GET_ERC_MINTS } from "@/hooks/query/realms";
 import { shortenHex } from "@dojoengine/utils";
@@ -28,7 +28,7 @@ function Passes() {
   const seasonPassTokens: SeasonPass[] = useMemo(
     () =>
       seasonPassMints?.ercTransfer
-        ?.filter((token) => token?.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS)
+        ?.filter((token) => token?.tokenMetadata.contractAddress === seasonPassAddress)
         .map((token) => ({
           title: parseTokenId(token?.tokenMetadata.tokenId || ""),
           description: "",
@@ -40,6 +40,8 @@ function Passes() {
 
   return (
     <div className="flex flex-col h-full">
+      <TypeH1>Season Passes</TypeH1>
+
       <div className="sticky top-0 z-10">
         <AttributeFilters />
       </div>
@@ -48,10 +50,10 @@ function Passes() {
           <SeasonPassRow seasonPasses={seasonPassTokens} />
         </div>
       </div>
-      <div className="flex justify-end border border-gold/15 p-4 rounded-xl mt-4 sticky bottom-0 bg-brown gap-8">
+      {/* <div className="flex justify-end border border-gold/15 p-4 rounded-xl mt-4 sticky bottom-0 bg-brown gap-8">
         <TypeH2>10 Selected</TypeH2>
         <Button variant="cta">Buy a Season Pass</Button>
-      </div>
+      </div> */}
     </div>
   );
 }

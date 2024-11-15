@@ -30,7 +30,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     order: "random",
   });
   const rpc = useCallback(() => {
-    return { nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia" };
+    return { nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL };
   }, []);
 
   return (

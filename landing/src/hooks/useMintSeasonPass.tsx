@@ -1,37 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-//import { useIsCorrectChain } from "./useChain";
-//import { useConfig, useTokenContract, useTokenOwner, useTotalSupply } from "./useToken";
-//import { bigintEquals } from "../utils/types";
-//import { goToTokenPage } from "../utils/karat";
+
+import { lordsAddress, seasonPassAddress } from "@/config";
 import { toast } from "sonner";
 import { useDojo } from "./context/DojoContext";
 
 export const useMintSeasonPass = () => {
-  const {
-    setup: {
-      systemCalls: { mint_season_passes },
-    },
-  } = useDojo();
-
-  const season_pass_address = BigInt(import.meta.env.VITE_SEASON_PASS_ADDRESS);
-
-  const {
-    account: { account },
-  } = useDojo();
-
-  //const { contractAddress } = useTokenContract();
-  //const { isCoolDown, maxSupply, availableSupply } = useConfig();
-  //  const { isConnected } = useAccount();
-  //const { isCorrectChain } = useIsCorrectChain()
-  // const { totalSupply } = useTotalSupply()
-
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(["0"]);
 
-  const canMint = useMemo(
-    () => account /*&& isConnected /*&& isCorrectChain*/ && !isMinting,
-    [account, /*isConnected, /*isCorrectChain,*/ isMinting],
-  );
+  const {
+    setup: {
+      systemCalls: { attach_lords, detach_lords, mint_season_passes },
+    },
+    account: { account },
+  } = useDojo();
+
+  const canMint = useMemo(() => account && !isMinting, [account, isMinting]);
 
   const _mint = useCallback(
     async (token_ids: string[]) => {
@@ -43,7 +27,7 @@ export const useMintSeasonPass = () => {
           signer: account,
           recipient: account.address,
           token_ids: tokenIdsNumberArray,
-          season_pass_address,
+          season_pass_address: seasonPassAddress,
         })
           .then(() => {
             toast("Season Passes Minted");
@@ -56,22 +40,42 @@ export const useMintSeasonPass = () => {
           });
       }
     },
-    [account, canMint, season_pass_address, mint_season_passes],
+    [account, canMint],
   );
 
   useEffect(() => {
-    if (isMinting /*&& totalSupply >= mintingTokenId*/) {
-      // ...supply changed, to to token!
+    if (isMinting) {
       setIsMinting(false);
-      //goToTokenPage(mintingTokenId);
     }
-  }, [mintingTokenId /*, totalSupply*/]);
+  }, [mintingTokenId]);
 
-  //const { ownerAddress: lastOwnerAddress } = useTokenOwner(totalSupply);
+  // TODO: use Starknet React in production
+
+  const attachLords = useCallback(
+    async (token_id: number, amount: number) => {
+      await attach_lords({
+        signer: account,
+        token_id,
+        amount,
+        season_pass_address: seasonPassAddress,
+        lords_address: lordsAddress,
+      });
+    },
+    [account, seasonPassAddress],
+  );
+
+  const detachLords = useCallback(
+    async (token_id: number, amount: number) => {
+      await detach_lords({ signer: account, token_id, amount, season_pass_address: seasonPassAddress });
+    },
+    [account, seasonPassAddress],
+  );
 
   return {
     canMint,
     isMinting,
     mint: canMint ? _mint : undefined,
+    attachLords,
+    detachLords,
   };
 };

@@ -54,6 +54,18 @@ if [[ "$external" == "true" ]]; then
     echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
     echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
 
+
+    ENV_FILE=../../../landing/.env.local
+    sed "${SED_INPLACE[@]}" '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
+    sed "${SED_INPLACE[@]}" '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
+    sed "${SED_INPLACE[@]}" '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
+
+    # add the new addresses to the .env.local file
+    echo "" >> $ENV_FILE
+    echo "VITE_SEASON_PASS_ADDRESS=$VITE_SEASON_PASS_ADDRESS" >> $ENV_FILE
+    echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
+    echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
+
     TORII_CONFIG_FILE=../../../contracts/torii.toml
     # Ensure the torii_config_file exists
     if [[ ! -f "$TORII_CONFIG_FILE" ]]; then
@@ -61,12 +73,12 @@ if [[ "$external" == "true" ]]; then
         echo "Created new torii_config_file at $TORII_CONFIG_FILE"
     fi
         # Remove existing ERC721 entries
-    sed "${SED_INPLACE[@]}" '/{ type = "ERC721", address = "/d' "$TORII_CONFIG_FILE"
+    sed "${SED_INPLACE[@]}" '/"erc721": "/d' "$TORII_CONFIG_FILE"
 
     # Insert new ERC721 entries before the closing ]
     sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
-    \ \ { type = \"ERC721\", address = \"$VITE_REALMS_ADDRESS\" },\\
-    \ \ { type = \"ERC721\", address = \"$VITE_SEASON_PASS_ADDRESS\" },\\
+    \ \ \"erc721\": \"$VITE_REALMS_ADDRESS\",\\
+    \ \ \"erc721\": \"$VITE_SEASON_PASS_ADDRESS\",\\
     " "$TORII_CONFIG_FILE"
 
     cd ../../../
