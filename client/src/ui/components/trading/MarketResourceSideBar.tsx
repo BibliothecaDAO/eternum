@@ -1,6 +1,6 @@
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ID, MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ID, MarketInterface, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { MarketResource } from "./MarketOrderPanel";
 
@@ -24,8 +24,8 @@ export const MarketResourceSidebar = ({
   const { setup } = useDojo();
 
   const filteredResources = useMemo(() => {
-    return resources.filter((resource) => {
-      return resource.trait.toLowerCase().includes(search.toLowerCase());
+    return Object.entries(RESOURCE_TIERS).flatMap(([_, resourceIds]) => {
+      return resourceIds;
     });
   }, []);
 
@@ -42,26 +42,26 @@ export const MarketResourceSidebar = ({
 
       <div className="flex flex-col h-full gap-[0.1]">
         {filteredResources
-          .filter((resource) => resource.id !== ResourcesIds.Lords)
-          .map((resource) => {
-            const marketManager = bankEntityId ? new MarketManager(setup, bankEntityId, 0n, resource.id) : undefined;
+          .filter((resourceId) => resourceId !== ResourcesIds.Lords)
+          .map((resourceId) => {
+            const marketManager = bankEntityId ? new MarketManager(setup, bankEntityId, 0n, resourceId) : undefined;
 
             const askPrice = resourceBidOffers
-              .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
+              .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
               .reduce((acc, offer) => (offer.perLords > acc ? offer.perLords : acc), 0);
 
             const bidPrice = resourceAskOffers
-              .filter((offer) => offer.takerGets[0].resourceId === resource.id)
+              .filter((offer) => offer.takerGets[0].resourceId === resourceId)
               .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
 
             const ammPrice = marketManager?.getMarketPrice() || 0;
 
             return (
               <MarketResource
-                key={resource.id}
+                key={resourceId}
                 entityId={entityId || 0}
-                resource={resource}
-                active={selectedResource == resource.id}
+                resourceId={resourceId}
+                active={selectedResource == resourceId}
                 onClick={onClick}
                 askPrice={askPrice === Infinity ? 0 : askPrice}
                 bidPrice={bidPrice === Infinity ? 0 : bidPrice}
