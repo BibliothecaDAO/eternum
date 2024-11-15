@@ -17,6 +17,7 @@ website = "https://eternum.realms.world/"
 "eternum" = [
     "eternum-bank_systems",
     "eternum-battle_pillage_systems",
+    "eternum-battle_utils_systems",
     "eternum-battle_systems",
     "eternum-building_systems",
     "eternum-config_systems",
