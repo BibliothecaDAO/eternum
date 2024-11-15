@@ -20,7 +20,7 @@ use eternum::systems::{
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
 use eternum::utils::testing::{
-    config::{get_combat_config, set_capacity_config}, world::spawn_eternum,
+    config::{get_combat_config, set_capacity_config, set_settlement_config}, world::spawn_eternum,
     systems::{deploy_realm_systems, deploy_troop_systems, deploy_system},
     general::{mint, get_default_realm_pos, spawn_realm}
 };
@@ -45,19 +45,6 @@ fn set_configurations(ref world: WorldStorage) {
         .write_model_test(
             @TickConfig { config_id: WORLD_CONFIG_ID, tick_id: TickIds::ARMIES, tick_interval_in_seconds: 1 }
         );
-    world
-        .write_model_test(
-            @SettlementConfig {
-                config_id: WORLD_CONFIG_ID,
-                center: 2147483646,
-                base_distance: 10,
-                min_first_layer_distance: 30,
-                points_placed: 0,
-                current_layer: 1,
-                current_side: 1,
-                current_point_on_side: 0,
-            }
-        );
 }
 
 fn setup() -> (WorldStorage, ITroopContractDispatcher, ID, ID) {
@@ -67,6 +54,7 @@ fn setup() -> (WorldStorage, ITroopContractDispatcher, ID, ID) {
 
     let config_systems_address = deploy_system(ref world, "config_systems");
     set_capacity_config(config_systems_address);
+    set_settlement_config(config_systems_address);
 
     starknet::testing::set_block_timestamp(DEFAULT_BLOCK_TIMESTAMP);
     starknet::testing::set_contract_address(contract_address_const::<REALMS_OWNER>());
