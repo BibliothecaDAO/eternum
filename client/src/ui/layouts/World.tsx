@@ -43,6 +43,10 @@ const BottomRightContainer = lazy(() =>
 const LeftMiddleContainer = lazy(() => import("../containers/LeftMiddleContainer"));
 const RightMiddleContainer = lazy(() => import("../containers/RightMiddleContainer"));
 const TopLeftContainer = lazy(() => import("../containers/TopLeftContainer"));
+const BottomLeftContainer = lazy(() => import("../containers/BottomLeftContainer"));
+const BottomLeftNavigation = lazy(() =>
+  import("../modules/navigation/BottomLeftNavigation").then((module) => ({ default: module.BottomLeftNavigation })),
+);
 const Tooltip = lazy(() => import("../elements/Tooltip").then((module) => ({ default: module.Tooltip })));
 const BattleView = lazy(() =>
   import("../modules/military/battle-view/BattleView").then((module) => ({ default: module.BattleView })),
@@ -147,6 +151,10 @@ export const World = () => {
           <TopLeftContainer>
             <TopLeftNavigation />
           </TopLeftContainer>
+
+          <BottomLeftContainer>
+            <BottomLeftNavigation />
+          </BottomLeftContainer>
         </div>
 
         <Redirect to="/" />

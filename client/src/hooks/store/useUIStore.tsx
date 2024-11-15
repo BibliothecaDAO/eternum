@@ -58,6 +58,8 @@ interface UIStore {
   setSelectedPlayer: (player: ContractAddress | null) => void;
   isSpectatorMode: boolean;
   setSpectatorMode: (enabled: boolean) => void;
+  eventsLoadingState: boolean;
+  setEventsLoadingState: (enabled: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & BlockchainStore;
@@ -117,6 +119,8 @@ const useUIStore = create(
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
     isSpectatorMode: false,
     setSpectatorMode: (enabled: boolean) => set({ isSpectatorMode: enabled }),
+    eventsLoadingState: true,
+    setEventsLoadingState: (enabled: boolean) => set({ eventsLoadingState: enabled }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
