@@ -63,7 +63,9 @@ export const useSubscriptionToHyperstructureEvents = () => {
   }, []);
 
   useEffect(() => {
-    const query = defineQuery([Has(HyperstructureCoOwnersChange)]);
+    const query = defineQuery([Has(HyperstructureCoOwnersChange)], {
+      runOnInit: true,
+    });
 
     const subscription = query.update$.subscribe((update) => {
       if (isComponentUpdate(update, HyperstructureCoOwnersChange)) {
