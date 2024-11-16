@@ -1,7 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Button } from "../ui/button";
+import { LordsPurchaseDialog } from "./lords-purchase-dialog";
 import { Swap } from "./swap";
 
 export const SwapPanel = () => {
+  const [isLordsPurchaseDialogOpen, setIsLordsPurchaseDialogOpen] = useState(false);
   return (
     <div className="border-2 rounded-xl p-3 bg-brown border-gold/15 round-tr-none rounded-bl-none">
       <Tabs defaultValue="in">
@@ -20,6 +24,9 @@ export const SwapPanel = () => {
           <Swap />
         </TabsContent>
       </Tabs>
+      <Button onClick={() => setIsLordsPurchaseDialogOpen(true)}>Buy Lords</Button>
+      <LordsPurchaseDialog isOpen={isLordsPurchaseDialogOpen} setIsOpen={setIsLordsPurchaseDialogOpen} />
+
     </div>
   );
 };

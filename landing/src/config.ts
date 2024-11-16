@@ -26,7 +26,7 @@ export const tokens: {
 } = {
   [Chain.MAINNET]: {
     [Token.LORDS]: {
-      address: "",
+      address: "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
       decimals: 18,
     },
   },
@@ -57,8 +57,71 @@ export const tokens: {
   },
 };
 
-const chain = import.meta.env.VITE_PUBLIC_CHAIN as Chain | Chain.LOCAL;
+export const chain = import.meta.env.VITE_PUBLIC_CHAIN as Chain | Chain.LOCAL;
 
 export const seasonPassAddress = tokens[chain][Token.SEASON_PASS]?.address as `0x${string}`;
 export const lordsAddress = tokens[chain][Token.LORDS]?.address as `0x${string}`;
 export const realmsAddress = tokens[chain][Token.REALMS]?.address as `0x${string}`;
+
+export enum SupportedToken {
+  ETH = "ETH",
+  WETH = "WETH",
+  USDC = "USDC",
+  USDT = "USDT",
+  STRK = "STRK",
+}
+
+export const supportedTokens: {
+  [key in Chain]: {
+    [key in SupportedToken]?: {
+      address: string;
+      decimals: number;
+      symbol: string;
+      name: string;
+      logoURI: string;
+      isNative?: boolean;
+    };
+  };
+} = {
+  [Chain.MAINNET]: {
+    [SupportedToken.ETH]: {
+      address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+      name: "Ethereum",
+      symbol: "ETH",
+      decimals: 18,
+      logoURI: "https://raw.githubusercontent.com/SetProtocol/uniswap-tokenlist/0d9233eef112388ef7e261cb88413894fd832679/assets/tokensets/coin-icons/eth.svg",
+      isNative: true
+    },
+    [SupportedToken.USDC]: {
+      address: "0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+      name: "USD Coin",
+      symbol: "USDC",
+      decimals: 6,
+      logoURI: "https://raw.githubusercontent.com/SetProtocol/uniswap-tokenlist/0d9233eef112388ef7e261cb88413894fd832679/assets/tokensets/coin-icons/usdc.svg"
+    },
+    [SupportedToken.USDT]: {
+      address: "0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
+      name: "Tether USD",
+      symbol: "USDT",
+      decimals: 6,
+      logoURI: "https://raw.githubusercontent.com/SetProtocol/uniswap-tokenlist/0d9233eef112388ef7e261cb88413894fd832679/assets/tokensets/coin-icons/usdt.svg"
+    },
+    [SupportedToken.STRK]: {
+      address: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      name: "Starknet Token",
+      symbol: "STRK",
+      decimals: 18,
+      logoURI: "https://raw.githubusercontent.com/SetProtocol/uniswap-tokenlist/0d9233eef112388ef7e261cb88413894fd832679/assets/tokensets/coin-icons/eth.svg"
+    }
+  },
+  [Chain.SEPOLIA]: {
+    // Add sepolia tokens here if needed
+  },
+  [Chain.LOCAL]: {
+    
+  }
+};
+
+// Helper exports if needed
+export const getSupportedTokenAddress = (token: SupportedToken) => 
+  supportedTokens[chain][token]?.address as `0x${string}`;

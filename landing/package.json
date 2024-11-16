@@ -15,6 +15,7 @@
   "dependencies": {
     "@ark-project/core": "3.0.0-beta.1",
     "@ark-project/react": "2.0.0-beta.2",
+    "@avnu/avnu-sdk": "2.1.1",
     "@bibliothecadao/eternum": "workspace:^",
     "@cartridge/connector": "^0.5.0-alpha.8",
     "@cartridge/controller": "^0.5.0-alpha.8",
