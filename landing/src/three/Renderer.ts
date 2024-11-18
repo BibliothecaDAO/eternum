@@ -9,7 +9,7 @@ import {
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
-import HexceptionScene from "./HexceptionScene";
+import HexceptionScene from "./LandingHexceptionScene";
 
 export default class Renderer {
   private renderer!: THREE.WebGLRenderer;
@@ -73,12 +73,12 @@ export default class Renderer {
   private setupControls() {
     this.controls = new MapControls(this.camera, this.renderer.domElement);
     this.controls.enableRotate = false;
-    this.controls.enableZoom = true;
-    this.controls.enablePan = true;
+    this.controls.enableZoom = false;
+    this.controls.enablePan = false;
     this.controls.panSpeed = 1;
     this.controls.zoomToCursor = true;
-    this.controls.minDistance = 5;
-    this.controls.maxDistance = 20;
+    this.controls.minDistance = 17;
+    this.controls.maxDistance = 17;
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.1;
     this.controls.target.set(0, 0, 0);

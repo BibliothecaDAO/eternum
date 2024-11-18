@@ -12,7 +12,7 @@ import {
 } from "./constants";
 import { createHexagonShape } from "./geometry/HexagonGeometry";
 import { getWorldPositionForHex, gltfLoader, ResourceIdToMiningType } from "./helpers/utils";
-import { HexagonScene } from "./HexagonScene";
+import { HexagonScene } from "./LandingHexagonScene";
 
 const loader = gltfLoader;
 
@@ -302,7 +302,6 @@ export default class LandingHexceptionScene extends HexagonScene {
 
           if (buildingData) {
             const instance = buildingData.model.clone();
-            console.log("building", building);
             instance.applyMatrix4(building.matrix);
             if (buildingType === ResourceMiningTypes.Forge) {
               instance.traverse((child) => {
@@ -327,7 +326,19 @@ export default class LandingHexceptionScene extends HexagonScene {
               // @ts-ignore
               crystalMesh2.material = this.minesMaterials.get(building.resource);
             }
-            this.addBuildingWithAnimation(key, instance, buildingData);
+            this.scene.add(instance);
+            this.buildingInstances.set(key, instance);
+
+            // Check if the model has animations and start them
+            const animations = buildingData.animations;
+            if (animations && animations.length > 0) {
+              const mixer = new THREE.AnimationMixer(instance);
+              animations.forEach((clip: THREE.AnimationClip) => {
+                mixer.clipAction(clip).play();
+              });
+              // Store the mixer for later use (e.g., updating in the animation loop)
+              this.buildingMixers.set(key, mixer);
+            }
           }
         }
       }
@@ -389,19 +400,11 @@ export default class LandingHexceptionScene extends HexagonScene {
         dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
         dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         dummy.updateMatrix();
-
-        const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
-        if (building) {
-          // If there's a building, scale the biome hex to zero
-          dummy.scale.set(0, 0, 0);
-          dummy.updateMatrix();
-        }
         biomeHexes[buildableAreaBiome].push(dummy.matrix.clone());
-
+        const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
         if (building) {
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
-          buildingObj.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
           buildingObj.rotation.y = rotation * 4;
           if (building.category === BuildingType[BuildingType.Castle]) {
             buildingObj.rotation.y = rotation * 2;
@@ -454,32 +457,6 @@ export default class LandingHexceptionScene extends HexagonScene {
       hash = hash & hash;
     }
     return Math.abs(hash) / 2147483647;
-  }
-
-  private addBuildingWithAnimation(
-    key: string,
-    instance: THREE.Group,
-    buildingData: { animations: THREE.AnimationClip[] },
-  ) {
-    this.scene.add(instance);
-    this.buildingInstances.set(key, instance);
-
-    // Check if the model has animations and start them with random offsets
-    const animations = buildingData.animations;
-    if (animations && animations.length > 0) {
-      const mixer = new THREE.AnimationMixer(instance);
-
-      // Generate a random offset between 0 and the duration of the animation
-      const randomOffset = Math.random() * animations[0].duration;
-
-      animations.forEach((clip: THREE.AnimationClip) => {
-        const action = mixer.clipAction(clip);
-        action.time = randomOffset; // Set random start time
-        action.play();
-      });
-
-      this.buildingMixers.set(key, mixer);
-    }
   }
 
   update(deltaTime: number) {
