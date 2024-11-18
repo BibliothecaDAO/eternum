@@ -9,6 +9,7 @@ import {
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import HexceptionScene from "./HexceptionScene";
 
 export default class Renderer {
   private renderer!: THREE.WebGLRenderer;
@@ -16,7 +17,7 @@ export default class Renderer {
   private controls!: MapControls;
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
-  private scene!: THREE.Scene;
+  private scene!: HexceptionScene;
 
   // Camera settings
   private cameraDistance = Math.sqrt(2 * 7 * 7);
@@ -26,9 +27,9 @@ export default class Renderer {
 
   constructor() {
     this.initializeRenderer();
-    this.initializeScene();
     this.setupCamera();
     this.setupControls();
+    this.initializeScene();
     this.setupPostProcessing();
     this.setupListeners();
     this.applyEnvironment();
@@ -42,7 +43,7 @@ export default class Renderer {
       stencil: false,
       depth: false,
     });
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setPixelRatio(0.75);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -56,13 +57,8 @@ export default class Renderer {
   }
 
   private initializeScene() {
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xffffff);
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const cube = new THREE.Mesh(geometry, material);
-    this.scene.add(cube);
-    document.body.appendChild(this.renderer.domElement);
+    this.scene = new HexceptionScene(this.controls);
+    document.body.prepend(this.renderer.domElement);
   }
 
   private setupCamera() {
@@ -89,7 +85,7 @@ export default class Renderer {
   }
 
   private setupPostProcessing() {
-    this.renderPass = new RenderPass(this.scene, this.camera);
+    this.renderPass = new RenderPass(this.scene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
 
     const BCEffect = new BrightnessContrastEffect({
@@ -119,8 +115,7 @@ export default class Renderer {
     hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
       const envMap = pmremGenerator.fromEquirectangular(texture).texture;
       texture.dispose();
-      this.scene.environment = envMap;
-      this.scene.background = envMap;
+      this.scene.setEnvironment(envMap, 0.7);
     });
   }
 
@@ -144,14 +139,10 @@ export default class Renderer {
     this.lastTime = currentTime;
 
     this.controls.update();
+    this.scene.update(deltaTime);
     this.renderer.clear();
     this.composer.render();
 
     requestAnimationFrame(() => this.animate());
-  }
-
-  // Method to add meshes to the scene
-  addToScene(mesh: THREE.Object3D) {
-    this.scene.add(mesh);
   }
 }

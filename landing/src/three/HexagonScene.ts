@@ -17,6 +17,7 @@ export class HexagonScene {
   private groundMesh!: THREE.Mesh;
 
   constructor(protected controls: MapControls) {
+    this.controls = controls;
     this.initializeScene();
     this.setupLighting();
     this.createGroundMesh();
