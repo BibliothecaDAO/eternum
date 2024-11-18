@@ -62,7 +62,7 @@ setupConfig.season = {
 
 export const config = new EternumConfig(setupConfig);
 
-console.log("Setting up config...", config);
+console.log("Setting up config...");
 await config.setup(account, provider);
 
 // Add a 20-second delay before setting up the bank

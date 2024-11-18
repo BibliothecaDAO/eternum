@@ -1,4 +1,4 @@
-db_dir = "./torii.db"
+db_dir = "./torii-db"
 
 [indexing]
 events_chunk_size = 1024 # Size of events page to fetch
@@ -8,6 +8,6 @@ polling_interval = 500 # Polling interval in milliseconds
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 index_transactions = true
 contracts = [
-  "erc721:0xd2674cc335684896f2b1f942e6929611acab4dc07aa03d0371226812bbc349",
-  "erc721:0x31031b237b196b17179cf30154d03bfa2ed2e74731d6b1f9760b1085457861d",
+    "erc721:0xd2674cc335684896f2b1f942e6929611acab4dc07aa03d0371226812bbc349",
+    "erc721:0x31031b237b196b17179cf30154d03bfa2ed2e74731d6b1f9760b1085457861d",
 ]
