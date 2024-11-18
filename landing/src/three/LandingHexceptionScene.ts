@@ -19,9 +19,8 @@ const loader = gltfLoader;
 const generateHexPositions = (center: HexPosition, radius: number) => {
   const color = new THREE.Color("gray");
   const positions: any[] = [];
-  const positionSet = new Set(); // To track existing positions
+  const positionSet = new Set();
 
-  // Helper function to add position if not already added
   const addPosition = (col: number, row: number, isBorder: boolean) => {
     const key = `${col},${row}`;
     if (!positionSet.has(key)) {
@@ -37,10 +36,8 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
     }
   };
 
-  // Add center position
   addPosition(center.col, center.row, false);
 
-  // Generate positions in expanding hexagonal layers
   let currentLayer = [center];
   for (let i = 0; i < radius; i++) {
     const nextLayer: any = [];
@@ -52,7 +49,7 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
         }
       });
     });
-    currentLayer = nextLayer; // Move to the next layer
+    currentLayer = nextLayer;
   }
 
   return positions;
@@ -64,7 +61,7 @@ export default class LandingHexceptionScene extends HexagonScene {
   private buildingInstances: Map<string, THREE.Group> = new Map();
   private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
-  private buildings: any = []; // Keep empty for landing page
+  private buildings: any = [];
   centerColRow: number[] = [0, 0];
   castleLevel: RealmLevels = RealmLevels.Settlement;
   private biome!: Biome;
@@ -126,7 +123,6 @@ export default class LandingHexceptionScene extends HexagonScene {
   setup() {
     this.centerColRow = [Math.floor(Math.random() * 401) - 200, Math.floor(Math.random() * 401) - 200];
 
-    // Randomly select castle level (0-3)
     const randomCastleLevel = Math.floor(Math.random() * 4);
     this.castleLevel = randomCastleLevel;
 
@@ -135,7 +131,6 @@ export default class LandingHexceptionScene extends HexagonScene {
   }
 
   private generateRandomBuildings() {
-    // Clear existing buildings
     const buildings = [];
 
     const mainBuilding = Math.random() < 0.05 ? BuildingType.Bank : BuildingType.Castle;
@@ -147,17 +142,13 @@ export default class LandingHexceptionScene extends HexagonScene {
       paused: false,
     });
 
-    // Generate 3-7 random buildings
-
-    // Get buildable positions (excluding center castle position)
     const buildablePositions = generateHexPositions(
       { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
       this.castleLevel + 1,
     ).filter((pos) => !(pos.col === BUILDINGS_CENTER[0] && pos.row === BUILDINGS_CENTER[1]));
 
-    const numBuildings = Math.floor(Math.random() * (buildablePositions.length - 3)) + 3; // Random number between 3 and buildablePositions.length
+    const numBuildings = Math.floor(Math.random() * (buildablePositions.length - 3)) + 3;
 
-    // Available building types for random selection
     const availableBuildingTypes = [
       BuildingType.Resource,
       BuildingType.Farm,
@@ -170,7 +161,6 @@ export default class LandingHexceptionScene extends HexagonScene {
       BuildingType.Storehouse,
     ];
 
-    // Available resources for Resource buildings
     const availableResources = [
       ResourcesIds.Wood,
       ResourcesIds.Stone,
@@ -195,14 +185,12 @@ export default class LandingHexceptionScene extends HexagonScene {
       ResourcesIds.EtherealSilica,
     ];
 
-    // Randomly place buildings
     const usedPositions = new Set();
 
     for (let i = 0; i < Math.min(numBuildings, buildablePositions.length); i++) {
       let randomPositionIndex;
       let position;
 
-      // Ensure unique positions are selected
       do {
         randomPositionIndex = Math.floor(Math.random() * buildablePositions.length);
         position = buildablePositions[randomPositionIndex];
@@ -271,7 +259,6 @@ export default class LandingHexceptionScene extends HexagonScene {
         [7, -5], // 1, -1
       ];
 
-      // Compute matrices for each hex
       for (const center of centers) {
         const isMainHex = center[0] === 0 && center[1] === 0;
         const targetHex = { col: center[0] + this.centerColRow[0], row: center[1] + this.centerColRow[1] };
@@ -286,7 +273,6 @@ export default class LandingHexceptionScene extends HexagonScene {
         );
       }
 
-      // Add buildings to the scene
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
@@ -329,21 +315,18 @@ export default class LandingHexceptionScene extends HexagonScene {
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
 
-            // Check if the model has animations and start them
             const animations = buildingData.animations;
             if (animations && animations.length > 0) {
               const mixer = new THREE.AnimationMixer(instance);
               animations.forEach((clip: THREE.AnimationClip) => {
                 mixer.clipAction(clip).play();
               });
-              // Store the mixer for later use (e.g., updating in the animation loop)
               this.buildingMixers.set(key, mixer);
             }
           }
         }
       }
 
-      // Update biome meshes
       let pillarOffset = 0;
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
@@ -384,7 +367,7 @@ export default class LandingHexceptionScene extends HexagonScene {
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
         { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
-        this.castleLevel + 1, // Fixed castle level for landing page
+        this.castleLevel + 1,
       );
 
       positions = positions.filter(
@@ -447,7 +430,6 @@ export default class LandingHexceptionScene extends HexagonScene {
     });
   };
 
-  // Add this helper method if not already present in base class
   private hashCoordinates(x: number, y: number): number {
     const str = `${x},${y}`;
     let hash = 0;

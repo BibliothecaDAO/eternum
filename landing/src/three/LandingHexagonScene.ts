@@ -32,10 +32,8 @@ export class HexagonScene {
   }
 
   private setupLighting(): void {
-    // Setup hemisphere light
     this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.3);
 
-    // Setup directional light
     this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
     this.mainDirectionalLight.castShadow = true;
     this.mainDirectionalLight.shadow.mapSize.width = 1024;
@@ -76,9 +74,8 @@ export class HexagonScene {
 
     const mesh = new THREE.Mesh(geometry, material);
     mesh.rotation.set(Math.PI / 2, 0, Math.PI);
-    mesh.position.set(0, -0.05, 0); // Simplified positioning
+    mesh.position.set(0, -0.05, 0);
     mesh.receiveShadow = true;
-    mesh.raycast = () => {}; // disable raycast
 
     this.scene.add(mesh);
     this.groundMesh = mesh;
@@ -134,7 +131,6 @@ export class HexagonScene {
     const target = this.controls.target;
     const pos = this.controls.object.position;
 
-    // go to new target with but keep same view angle
     const deltaX = newTarget.x - target.x;
     const deltaZ = newTarget.z - target.z;
     target.set(newTarget.x, newTarget.y, newTarget.z);

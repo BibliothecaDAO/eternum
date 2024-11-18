@@ -19,7 +19,6 @@ export default class Renderer {
   private renderPass!: RenderPass;
   private scene!: HexceptionScene;
 
-  // Camera settings
   private cameraDistance = Math.sqrt(2 * 7 * 7);
   private cameraAngle = 60 * (Math.PI / 180);
 
