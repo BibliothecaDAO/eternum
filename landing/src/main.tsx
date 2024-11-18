@@ -13,6 +13,7 @@ import { StarknetProvider } from "./components/providers/Starknet";
 import { ThemeProvider } from "./components/providers/theme-provider";
 import { DojoProvider } from "./hooks/context/DojoContext";
 import { routeTree } from "./routeTree.gen";
+import Renderer from "./three/Renderer";
 // Create a new router instance
 const router = createRouter({ routeTree });
 
@@ -25,6 +26,9 @@ declare module "@tanstack/react-router" {
 
 // Render the app
 const rootElement = document.getElementById("root")!;
+
+const graphic = new Renderer();
+
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   const setupResult = await setup(dojoConfig);
