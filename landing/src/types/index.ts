@@ -355,3 +355,12 @@ export interface LiveAuctions {
   end_timestamp: number;
   metadata?: TokenMetadata;
 }
+
+export enum ResourceMiningTypes {
+  Forge = "forge",
+  Mine = "mine",
+  LumberMill = "lumber_mill",
+  Dragonhide = "dragonhide",
+}
+
+export type HexPosition = { col: number; row: number };
