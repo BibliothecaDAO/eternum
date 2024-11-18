@@ -1112,6 +1112,12 @@ mod battle_pillage_systems {
                 }
             }
 
+
+            // store previous attacking troops to calculate lost troops
+            let mut attacker_lost_troops = attacking_army.troops.clone();
+            // store previous structure troops to calculate lost troops
+            let mut structure_lost_troops = structure_army.troops.clone();
+
             // Deduct health from both armies if structure has an army
             if structure_army_health.is_alive() {
                 let mut mock_battle: Battle = Battle {
@@ -1138,7 +1144,7 @@ mod battle_pillage_systems {
                         ((mock_battle.defence_delta.into() * mock_battle.duration_left.into())
                             / troop_config.pillage_health_divisor.into())
                     );
-
+                
                 attacking_army.troops.reset_count_and_health(ref attacking_army_health, troop_config);
                 let attacking_army_quantity = Quantity {
                     entity_id: attacking_army.entity_id, value: attacking_army.troops.count().into()
@@ -1169,6 +1175,10 @@ mod battle_pillage_systems {
             let structure_owner: Owner = world.read_model(structure_id);
             let structure_owner: starknet::ContractAddress = structure_owner.address;
             let pillager_address_name: AddressName = world.read_model(starknet::get_caller_address());
+
+            attacker_lost_troops.deduct(attacking_army.troops);
+            structure_lost_troops.deduct(structure_army.troops);
+
             world
                 .emit_event(
                     @BattlePillageData {
@@ -1180,6 +1190,8 @@ mod battle_pillage_systems {
                         pillager_army_entity_id: army_id,
                         pillaged_structure_owner: structure_owner,
                         pillaged_structure_entity_id: structure_id,
+                        attacker_lost_troops, 
+                        structure_lost_troops,
                         winner: if *attack_successful {
                             BattleSide::Attack
                         } else {
