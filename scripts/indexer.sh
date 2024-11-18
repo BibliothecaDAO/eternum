@@ -101,5 +101,4 @@ fi
 
 echo "-----  Started indexer ----- "
 rm torii.db
-torii --world 0x05013b17c43a2b664ec2a38aa45f6d891db1188622ec7cf320411321c3248fb5 --http.cors_origins "*" --config torii.toml
-
+torii --world 0x05013b17c43a2b664ec2a38aa45f6d891db1188622ec7cf320411321c3248fb5 --db-dir torii.db --http.cors_origins "*" --config torii.toml

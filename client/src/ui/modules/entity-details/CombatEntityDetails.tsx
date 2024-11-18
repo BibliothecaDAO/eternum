@@ -11,8 +11,7 @@ import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
 import { ID } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
-import { Battles } from "./Battles";
+import { useMemo, useState } from "react";
 import { Entities } from "./Entities";
 
 export const CombatEntityDetails = () => {
@@ -53,16 +52,7 @@ export const CombatEntityDetails = () => {
             <div>Entities</div>
           </div>
         ),
-        component: selectedHex && <Entities position={hexPosition} ownArmy={ownArmy} />,
-      },
-      {
-        key: "battles",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Battles</div>
-          </div>
-        ),
-        component: <Battles ownArmy={ownArmy} battles={battles} />,
+        component: selectedHex && <Entities position={hexPosition} ownArmy={ownArmy} battles={battles} />,
       },
       ...(structure
         ? [
@@ -82,12 +72,6 @@ export const CombatEntityDetails = () => {
   );
 
   const [selectedTab, setSelectedTab] = useState(0);
-
-  useEffect(() => {
-    if (battles.length > 0) {
-      setSelectedTab(1);
-    }
-  }, []);
 
   return (
     hexPosition && (

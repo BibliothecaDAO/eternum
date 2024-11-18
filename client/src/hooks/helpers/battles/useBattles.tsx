@@ -9,12 +9,14 @@ import {
   Entity,
   Has,
   HasValue,
+  NotValue,
   getComponentValue,
   runQuery,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useDojo } from "../../context/DojoContext";
+import { useEntities } from "../useEntities";
 
 export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
   isStructureBattle: boolean;
@@ -74,4 +76,39 @@ export const useBattlesByPosition = ({ x, y }: Position) => {
   } = useDojo();
   const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, { x, y })]);
   return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
+};
+
+export const useUserBattles = () => {
+  const {
+    setup: {
+      components: { Army, Battle, EntityOwner, Position, Structure },
+    },
+  } = useDojo();
+
+  const { playerRealms } = useEntities();
+  const realms = playerRealms();
+
+  const battles = useMemo(() => {
+    const battleEntityIds = realms
+      .map((realm) => {
+        const userArmiesInBattleEntityIds = runQuery([
+          Has(Army),
+          NotValue(Army, { battle_id: 0 }),
+          HasValue(EntityOwner, { entity_owner_id: realm.entity_id }),
+        ]);
+        const battleEntityIds = Array.from(userArmiesInBattleEntityIds)
+          .map((armyEntityId) => {
+            const army = getComponentValue(Army, armyEntityId);
+            if (!army) return;
+            return getEntityIdFromKeys([BigInt(army.battle_id)]);
+          })
+          .filter((battleEntityId): battleEntityId is Entity => Boolean(battleEntityId));
+        return battleEntityIds;
+      })
+      .flatMap((battleEntityIds) => Array.from(battleEntityIds));
+
+    return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
+  }, [realms]);
+
+  return battles;
 };
