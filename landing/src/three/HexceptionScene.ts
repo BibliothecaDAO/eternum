@@ -122,6 +122,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
+    this.centerColRow = [Math.floor(Math.random() * 1001) - 500, Math.floor(Math.random() * 1001) - 500];
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.moveCameraToCenter();
   }
@@ -166,7 +167,7 @@ export default class HexceptionScene extends HexagonScene {
       // Compute matrices for each hex
       for (const center of centers) {
         const isMainHex = center[0] === 0 && center[1] === 0;
-        const targetHex = { col: center[0], row: center[1] };
+        const targetHex = { col: center[0] + this.centerColRow[0], row: center[1] + this.centerColRow[1] };
         this.computeHexMatrices(radius, dummy, center, targetHex, isMainHex, [], biomeHexes);
       }
 
