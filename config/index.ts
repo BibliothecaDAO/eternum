@@ -38,7 +38,7 @@ console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
 const setupConfig: Config =
-  VITE_PUBLIC_DEV === "false"
+  VITE_PUBLIC_DEV === "true"
     ? {
         ...EternumGlobalConfig,
         stamina: {

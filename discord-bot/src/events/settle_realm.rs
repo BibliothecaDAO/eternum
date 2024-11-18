@@ -38,8 +38,9 @@ impl ToDiscordMessage for SettleRealm {
         let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
-                "{} has settled a realm at ({}, {})",
+                "{} has settled {} at ({}, {})",
                 felt_to_string(&self.owner_name).unwrap_or(UNKNOWN_USER.to_string()),
+                felt_to_string(&self.realm_name).unwrap_or("Unknown Realm".to_string()),
                 normalized_position.0,
                 normalized_position.1
             ))

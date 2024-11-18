@@ -1,7 +1,6 @@
 use std::fmt;
 
 use cainome::cairo_serde_derive::CairoSerde;
-use num_enum::FromPrimitive;
 use starknet_crypto::Felt;
 
 const FELT_CENTER: u32 = 2147483646;
@@ -59,41 +58,4 @@ pub fn felt_to_string(felt: &Felt) -> eyre::Result<String> {
     Ok(String::from_utf8(felt.to_bytes_be().to_vec())?
         .trim_start_matches('\0')
         .to_string())
-}
-
-#[derive(FromPrimitive, Debug, Clone, Copy, strum_macros::Display)]
-#[repr(u8)]
-pub enum ResourceIds {
-    #[num_enum(default)]
-    Unknown,
-    Stone = 1,
-    Coal = 2,
-    Wood = 3,
-    Copper = 4,
-    Ironwood = 5,
-    Obsidian = 6,
-    Gold = 7,
-    Silver = 8,
-    Mithral = 9,
-    AlchemicalSilver = 10,
-    ColdIron = 11,
-    DeepCrystal = 12,
-    Ruby = 13,
-    Diamonds = 14,
-    Hartwood = 15,
-    Ignium = 16,
-    TwilightQuartz = 17,
-    TrueIce = 18,
-    Adamantine = 19,
-    Sapphire = 20,
-    EtherealSilica = 21,
-    Dragonhide = 22,
-    AncientFragment = 29,
-    Donkey = 249,
-    Knight = 250,
-    Crossbowman = 251,
-    Paladin = 252,
-    Lords = 253,
-    Wheat = 254,
-    Fish = 255,
 }

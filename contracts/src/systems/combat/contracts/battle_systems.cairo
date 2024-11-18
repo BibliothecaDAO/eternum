@@ -748,7 +748,9 @@ mod battle_systems {
 
             // transfer structure ownership to claimer
             let mut structure_owner: Owner = world.read_model(structure_id);
-            let structure_owner_before_transfer = structure_owner.address;
+            let claimee_address = structure_owner.address;
+			let claimee_address_name: AddressName = world.read_model(claimee_address);
+			
             structure_owner.transfer(claimer);
             world.write_model(@structure_owner);
 
@@ -764,7 +766,8 @@ mod battle_systems {
                         claimer,
                         claimer_name: claimer_name.name,
                         claimer_army_entity_id: army_id,
-                        previous_owner: structure_owner_before_transfer,
+                        claimee_address,
+						claimee_name: claimee_address_name.name,
                         x: structure_position.x,
                         y: structure_position.y,
                         structure_type: structure.category,
@@ -1166,8 +1169,11 @@ mod battle_pillage_systems {
             // emit pillage event
             let army_owner_entity: EntityOwner = world.read_model(army_id);
             let army_owner_entity_id: ID = army_owner_entity.entity_owner_id;
+
             let structure_owner: Owner = world.read_model(structure_id);
             let structure_owner: starknet::ContractAddress = structure_owner.address;
+			let structure_owner_name_address_name: AddressName = world.read_model(structure_owner);
+			
             let pillager_address_name: AddressName = world.read_model(starknet::get_caller_address());
             world
                 .emit_event(
@@ -1180,6 +1186,7 @@ mod battle_pillage_systems {
                         pillager_army_entity_id: army_id,
                         pillaged_structure_owner: structure_owner,
                         pillaged_structure_entity_id: structure_id,
+						pillaged_structure_owner_name: structure_owner_name_address_name.name,
                         winner: if *attack_successful {
                             BattleSide::Attack
                         } else {
