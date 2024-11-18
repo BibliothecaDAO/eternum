@@ -327,19 +327,7 @@ export default class LandingHexceptionScene extends HexagonScene {
               // @ts-ignore
               crystalMesh2.material = this.minesMaterials.get(building.resource);
             }
-            this.scene.add(instance);
-            this.buildingInstances.set(key, instance);
-
-            // Check if the model has animations and start them
-            const animations = buildingData.animations;
-            if (animations && animations.length > 0) {
-              const mixer = new THREE.AnimationMixer(instance);
-              animations.forEach((clip: THREE.AnimationClip) => {
-                mixer.clipAction(clip).play();
-              });
-              // Store the mixer for later use (e.g., updating in the animation loop)
-              this.buildingMixers.set(key, mixer);
-            }
+            this.addBuildingWithAnimation(key, instance, buildingData);
           }
         }
       }
@@ -385,7 +373,7 @@ export default class LandingHexceptionScene extends HexagonScene {
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
         { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
-        this.castleLevel + 1,
+        this.castleLevel + 1, // Fixed castle level for landing page
       );
 
       positions = positions.filter(
@@ -466,6 +454,32 @@ export default class LandingHexceptionScene extends HexagonScene {
       hash = hash & hash;
     }
     return Math.abs(hash) / 2147483647;
+  }
+
+  private addBuildingWithAnimation(
+    key: string,
+    instance: THREE.Group,
+    buildingData: { animations: THREE.AnimationClip[] },
+  ) {
+    this.scene.add(instance);
+    this.buildingInstances.set(key, instance);
+
+    // Check if the model has animations and start them with random offsets
+    const animations = buildingData.animations;
+    if (animations && animations.length > 0) {
+      const mixer = new THREE.AnimationMixer(instance);
+
+      // Generate a random offset between 0 and the duration of the animation
+      const randomOffset = Math.random() * animations[0].duration;
+
+      animations.forEach((clip: THREE.AnimationClip) => {
+        const action = mixer.clipAction(clip);
+        action.time = randomOffset; // Set random start time
+        action.play();
+      });
+
+      this.buildingMixers.set(key, mixer);
+    }
   }
 
   update(deltaTime: number) {
