@@ -385,7 +385,7 @@ export default class LandingHexceptionScene extends HexagonScene {
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
         { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
-        this.castleLevel + 1, // Fixed castle level for landing page
+        this.castleLevel + 1,
       );
 
       positions = positions.filter(
@@ -401,11 +401,19 @@ export default class LandingHexceptionScene extends HexagonScene {
         dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
         dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         dummy.updateMatrix();
-        biomeHexes[buildableAreaBiome].push(dummy.matrix.clone());
+
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+        if (building) {
+          // If there's a building, scale the biome hex to zero
+          dummy.scale.set(0, 0, 0);
+          dummy.updateMatrix();
+        }
+        biomeHexes[buildableAreaBiome].push(dummy.matrix.clone());
+
         if (building) {
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
+          buildingObj.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
           buildingObj.rotation.y = rotation * 4;
           if (building.category === BuildingType[BuildingType.Castle]) {
             buildingObj.rotation.y = rotation * 2;
