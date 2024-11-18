@@ -1,12 +1,11 @@
-import { HexPosition } from "@/types";
-import { getNeighborHexes } from "@bibliothecadao/eternum";
+import { HexPosition, ResourceMiningTypes } from "@/types";
+import { BuildingType, getNeighborHexes, RealmLevels, ResourcesIds } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { Biome, BIOME_COLORS, BiomeType } from "./components/Biome";
-import { buildingModelPaths, BUILDINGS_CENTER, HEX_SIZE } from "./constants";
+import { buildingModelPaths, BUILDINGS_CENTER, castleLevelToRealmCastle, HEX_SIZE } from "./constants";
 import { createHexagonShape } from "./geometry/HexagonGeometry";
-import { getWorldPositionForHex, gltfLoader } from "./helpers/utils";
+import { getWorldPositionForHex, gltfLoader, ResourceIdToMiningType } from "./helpers/utils";
 import { HexagonScene } from "./HexagonScene";
 
 const loader = gltfLoader;
@@ -53,7 +52,7 @@ const generateHexPositions = (center: HexPosition, radius: number) => {
   return positions;
 };
 
-export default class HexceptionScene extends HexagonScene {
+export default class LandingHexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<string, { model: THREE.Group; animations: THREE.AnimationClip[] }> = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
@@ -61,12 +60,8 @@ export default class HexceptionScene extends HexagonScene {
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = []; // Keep empty for landing page
   centerColRow: number[] = [0, 0];
+  castleLevel: RealmLevels = RealmLevels.Settlement;
   private biome!: Biome;
-  private labels: {
-    col: number;
-    row: number;
-    label: CSS2DObject;
-  }[] = [];
 
   constructor(controls: MapControls) {
     super(controls);
@@ -123,8 +118,100 @@ export default class HexceptionScene extends HexagonScene {
 
   setup() {
     this.centerColRow = [Math.floor(Math.random() * 1001) - 500, Math.floor(Math.random() * 1001) - 500];
+
+    // Randomly select castle level (0-3)
+    const randomCastleLevel = Math.floor(Math.random() * 4);
+    this.castleLevel = randomCastleLevel;
+
+    // Generate random buildings
+    this.generateRandomBuildings();
+
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.moveCameraToCenter();
+  }
+
+  private generateRandomBuildings() {
+    // Clear existing buildings
+    this.buildings = [];
+
+    // Add castle at center
+    this.buildings.push({
+      col: BUILDINGS_CENTER[0],
+      row: BUILDINGS_CENTER[1],
+      category: BuildingType[BuildingType.Castle],
+      resource: undefined,
+      paused: false,
+    });
+
+    // Generate 3-7 random buildings
+    const numBuildings = Math.floor(Math.random() * 5) + 5; // Random number between 3 and 7
+
+    // Get buildable positions (excluding center castle position)
+    const buildablePositions = generateHexPositions({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, 2).filter(
+      (pos) => !(pos.col === BUILDINGS_CENTER[0] && pos.row === BUILDINGS_CENTER[1]),
+    );
+
+    // Available building types for random selection
+    const availableBuildingTypes = [
+      BuildingType.Resource,
+      BuildingType.Farm,
+      BuildingType.FishingVillage,
+      BuildingType.Barracks,
+      BuildingType.Market,
+      BuildingType.ArcheryRange,
+      BuildingType.Stable,
+      BuildingType.WorkersHut,
+      BuildingType.Storehouse,
+      BuildingType.Bank,
+    ];
+
+    // Available resources for Resource buildings
+    const availableResources = [
+      ResourcesIds.Wood,
+      ResourcesIds.Stone,
+      ResourcesIds.Coal,
+      ResourcesIds.Copper,
+      ResourcesIds.Ironwood,
+      ResourcesIds.Obsidian,
+      ResourcesIds.Gold,
+      ResourcesIds.Silver,
+      ResourcesIds.Mithral,
+      ResourcesIds.AlchemicalSilver,
+      ResourcesIds.ColdIron,
+      ResourcesIds.DeepCrystal,
+      ResourcesIds.Ruby,
+      ResourcesIds.Diamonds,
+      ResourcesIds.Hartwood,
+      ResourcesIds.Ignium,
+      ResourcesIds.TwilightQuartz,
+      ResourcesIds.TrueIce,
+      ResourcesIds.Adamantine,
+      ResourcesIds.Sapphire,
+      ResourcesIds.EtherealSilica,
+    ];
+
+    // Randomly place buildings
+
+    for (let i = 0; i < Math.min(numBuildings, buildablePositions.length); i++) {
+      console.log("i", i);
+      const randomPositionIndex = Math.floor(Math.random() * buildablePositions.length);
+      const position = buildablePositions[randomPositionIndex];
+      buildablePositions.splice(randomPositionIndex, 1); // Remove used position
+
+      const randomBuildingType = availableBuildingTypes[Math.floor(Math.random() * availableBuildingTypes.length)];
+      console.log("randomBuildingType", randomBuildingType, position);
+
+      this.buildings.push({
+        col: position.col,
+        row: position.row,
+        category: BuildingType[randomBuildingType],
+        resource:
+          randomBuildingType === BuildingType.Resource
+            ? availableResources[Math.floor(Math.random() * availableResources.length)]
+            : undefined,
+        paused: false,
+      });
+    }
   }
 
   public moveCameraToCenter() {
@@ -171,6 +258,58 @@ export default class HexceptionScene extends HexagonScene {
         this.computeHexMatrices(radius, dummy, center, targetHex, isMainHex, [], biomeHexes);
       }
 
+      // Add buildings to the scene
+      for (const building of this.buildings) {
+        const key = `${building.col},${building.row}`;
+        if (!this.buildingInstances.has(key)) {
+          let buildingType = building.resource
+            ? ResourceIdToMiningType[building.resource as ResourcesIds]
+            : (BuildingType[building.category] as any);
+
+          // Handle castle level
+          if (buildingType === BuildingType.Castle) {
+            buildingType = castleLevelToRealmCastle[this.castleLevel];
+          }
+
+          const buildingData = this.buildingModels.get(buildingType);
+
+          if (buildingData) {
+            const instance = buildingData.model.clone();
+
+            // Position the building
+            const worldPos = getWorldPositionForHex({ col: building.col, row: building.row }, false);
+            dummy.position.set(worldPos.x, 0, worldPos.z);
+
+            // Set rotation based on building type
+            const rotation = Math.PI / 3;
+            if (buildingType === BuildingType.Castle) {
+              dummy.rotation.y = rotation * 2;
+            } else if (buildingType === ResourceMiningTypes.LumberMill) {
+              dummy.rotation.y = rotation * 2;
+            } else {
+              dummy.rotation.y = rotation * 4;
+            }
+
+            dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+            dummy.updateMatrix();
+
+            instance.applyMatrix4(dummy.matrix);
+            this.scene.add(instance);
+            this.buildingInstances.set(key, instance);
+
+            // Handle animations if present
+            const animations = buildingData.animations;
+            if (animations && animations.length > 0) {
+              const mixer = new THREE.AnimationMixer(instance);
+              animations.forEach((clip: THREE.AnimationClip) => {
+                mixer.clipAction(clip).play();
+              });
+              this.buildingMixers.set(key, mixer);
+            }
+          }
+        }
+      }
+
       // Update biome meshes
       let pillarOffset = 0;
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
@@ -212,7 +351,7 @@ export default class HexceptionScene extends HexagonScene {
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
         { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
-        2, // Fixed castle level for landing page
+        this.castleLevel + 1, // Fixed castle level for landing page
       );
 
       positions = positions.filter(
