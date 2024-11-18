@@ -124,7 +124,7 @@ export default class LandingHexceptionScene extends HexagonScene {
   }
 
   setup() {
-    this.centerColRow = [Math.floor(Math.random() * 1001) - 500, Math.floor(Math.random() * 1001) - 500];
+    this.centerColRow = [Math.floor(Math.random() * 401) - 200, Math.floor(Math.random() * 401) - 200];
 
     // Randomly select castle level (0-3)
     const randomCastleLevel = Math.floor(Math.random() * 4);
