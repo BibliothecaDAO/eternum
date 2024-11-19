@@ -7,6 +7,7 @@ use starknet_crypto::Felt;
 
 use crate::{
     constants::ETERNUM_URL,
+    eternum_enums::BattleSide,
     types::{DiscordMessage, DiscordMessageType},
     utils::{felt_to_string, Position},
 };
@@ -35,10 +36,11 @@ impl ToDiscordMessage for BattleLeave {
         let normalized_position = self.position.get_normalized();
         let embed = CreateEmbed::new()
             .title(format!(
-                "{} has left the battle at ({}, {})",
+                "{} has left a battle at ({}, {}), he was on the {} side. Wuss",
                 felt_to_string(&self.leaver_name).unwrap_or(UNKNOWN_USER.to_string()),
                 normalized_position.0,
-                normalized_position.1
+                normalized_position.1,
+                BattleSide::from(self.leaver_side.to_bytes_le()[0])
             ))
             .description(format!("Battle will end in {} seconds", duration_string))
             .footer(footer)

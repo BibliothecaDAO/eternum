@@ -38,7 +38,7 @@ console.log("Account set up");
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
 const setupConfig: Config =
-  VITE_PUBLIC_DEV === "false"
+  VITE_PUBLIC_DEV === "true"
     ? {
         ...EternumGlobalConfig,
         stamina: {
@@ -62,7 +62,7 @@ setupConfig.season = {
 
 export const config = new EternumConfig(setupConfig);
 
-console.log("Setting up config...", config);
+console.log("Setting up config...");
 await config.setup(account, provider);
 
 // Add a 20-second delay before setting up the bank

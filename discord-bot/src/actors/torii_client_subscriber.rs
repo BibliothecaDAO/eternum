@@ -144,7 +144,7 @@ impl ToriiClientSubscriber {
                     let event = BattleClaim::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
-                        identifier: event.previous_owner,
+                        identifier: event.claimee_address,
                     }
                 }
                 "eternum-BattlePillageData" => {

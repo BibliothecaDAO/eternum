@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ROOT_DIR=$(pwd)
+
 setConfig=""
 external=""
 
@@ -43,7 +45,7 @@ if [[ "$external" == "true" ]]; then
     VITE_LORDS_ADDRESS=$(cat ./addresses/dev/test_lords.json | jq -r '.address')
 
     # remove the old addresses if they exist
-    ENV_FILE=../../../client/.env.local
+    ENV_FILE=$ROOT_DIR/client/.env.local
     sed "${SED_INPLACE[@]}" '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
     sed "${SED_INPLACE[@]}" '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
     sed "${SED_INPLACE[@]}" '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
@@ -55,7 +57,7 @@ if [[ "$external" == "true" ]]; then
     echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
 
 
-    ENV_FILE=../../../landing/.env.local
+    ENV_FILE=$ROOT_DIR/landing/.env.local
     sed "${SED_INPLACE[@]}" '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
     sed "${SED_INPLACE[@]}" '/VITE_REALMS_ADDRESS=/d' $ENV_FILE
     sed "${SED_INPLACE[@]}" '/VITE_LORDS_ADDRESS=/d' $ENV_FILE
@@ -66,20 +68,22 @@ if [[ "$external" == "true" ]]; then
     echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
     echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
 
-    TORII_CONFIG_FILE=../../../contracts/torii.toml
+    TORII_CONFIG_FILE=$ROOT_DIR/contracts/torii.toml
     # Ensure the torii_config_file exists
     if [[ ! -f "$TORII_CONFIG_FILE" ]]; then
         echo "contracts = []" > "$TORII_CONFIG_FILE"
         echo "Created new torii_config_file at $TORII_CONFIG_FILE"
     fi
-        # Remove existing ERC721 entries
-    sed "${SED_INPLACE[@]}" '/"erc721": "/d' "$TORII_CONFIG_FILE"
+
+	# THIS ISN'T NECESSARY ATM
+    # Remove existing ERC721 entries
+    #sed "${SED_INPLACE[@]}" '/"erc721:/d' "$TORII_CONFIG_FILE"
 
     # Insert new ERC721 entries before the closing ]
-    sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
-    \ \ \"erc721\": \"$VITE_REALMS_ADDRESS\",\\
-    \ \ \"erc721\": \"$VITE_SEASON_PASS_ADDRESS\",\\
-    " "$TORII_CONFIG_FILE"
+    #sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
+    #\ \ \"erc721:$VITE_REALMS_ADDRESS\",\\
+    #\ \ \"erc721:$VITE_SEASON_PASS_ADDRESS\",\\
+    #" "$TORII_CONFIG_FILE"
 
     cd ../../../
     printf "\n\n"
@@ -100,6 +104,6 @@ if [[ "$setConfig" == "true" ]]; then
 fi
 
 echo "-----  Started indexer ----- "
-rm torii.db
+rm -rf torii-db
 torii --world 0x05013b17c43a2b664ec2a38aa45f6d891db1188622ec7cf320411321c3248fb5 --http.cors_origins "*" --config torii.toml
 

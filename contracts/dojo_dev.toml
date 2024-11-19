@@ -38,4 +38,6 @@ website = "https://alpha-eternum.realms.world/"
     "eternum-trade_systems",
     "eternum-travel_systems",
     "eternum-troop_systems",
+    "eternum-map_generation_systems",
+	"eternum-battle_utils_systems"
 ]
