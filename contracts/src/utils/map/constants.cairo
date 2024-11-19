@@ -107,4 +107,9 @@ pub mod fixed_constants {
     pub fn _100() -> Fixed {
         FixedTrait::new_unscaled(100, false)
     }
+
+    #[inline(always)]
+    pub fn PI() -> Fixed {
+        FixedTrait::new(57952155664616982739, false)
+    }
 }

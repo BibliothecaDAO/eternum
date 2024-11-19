@@ -1,3 +1,4 @@
+import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
@@ -123,13 +124,17 @@ export const PlayerId = ({
 
   return (
     <div className="pointer-events-auto">
-      {selectedGuild && <Button onClick={back}>Back</Button>}
+      {selectedGuild && (
+        <Button variant={"outline"} className={"mt-2 ml-2"} onClick={back}>
+          <ArrowLeft className="w-2 mr-2" /> Back
+        </Button>
+      )}
       <div className="p-4 flex flex-row gap-2">
         <AvatarImage address={toHexString(selectedPlayer!)} />
         <div className="flex flex-row">
           <div className="flex flex-col mr-6">
             <div className="text-2xl font-bold flex flex-row items-center space-x-1 bg-brown/20 p-2 rounded-lg shadow-md">
-              <span className="text-gold">{playerName || "No player selected"}</span>
+              <span className="text-gold h6">{playerName || "No player selected"}</span>
               {playerName && (
                 <div className="flex items-center justify-center p-1">
                   <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />

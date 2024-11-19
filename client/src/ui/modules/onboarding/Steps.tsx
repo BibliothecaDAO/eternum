@@ -16,7 +16,6 @@ import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComp
 import { MAX_REALMS } from "@/ui/constants";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
-// import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
@@ -109,7 +108,9 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const { getAddressName } = useRealm();
 
-  const name = getAddressName(ContractAddress(useAccountStore.getState().account?.address!));
+  const accountAddress = useAccountStore.getState().account?.address;
+  const name = getAddressName(ContractAddress(accountAddress!));
+
   const { playerRealms } = useEntities();
 
   const input = useRef<string>("");
@@ -119,6 +120,23 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   useEffect(() => {
     setAddressName(name);
   }, [name]);
+
+  useEffect(() => {
+    if (copyMessage || importMessage) {
+      setTooltip({
+        position: "top",
+        content: (
+          <>
+            <p className="whitespace-nowrap">{copyMessage || importMessage}</p>
+          </>
+        ),
+      });
+    }
+  }, [copyMessage, importMessage]);
+
+  const numberOfMintedRealms = useMintedRealms();
+
+  const numberOfPlayerCurrentRealms = playerRealms().length;
 
   const onSetName = async () => {
     setLoading(true);
@@ -178,23 +196,6 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       }
     });
   };
-
-  useEffect(() => {
-    if (copyMessage || importMessage) {
-      setTooltip({
-        position: "top",
-        content: (
-          <>
-            <p className="whitespace-nowrap">{copyMessage || importMessage}</p>
-          </>
-        ),
-      });
-    }
-  }, [copyMessage, importMessage]);
-
-  const mintedRealms = useMintedRealms();
-
-  const numberRealms = Math.max(mintedRealms, playerRealms().length);
 
   return (
     <StepContainer>
@@ -299,9 +300,9 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       </div>
 
       <div className="flex space-x-2 mt-8 justify-center">
-        {numberRealms >= MAX_REALMS && playerRealms().length === 0 ? (
+        {numberOfMintedRealms >= MAX_REALMS && numberOfPlayerCurrentRealms === 0 ? (
           <div>You have been eliminated. Please try again next Season.</div>
-        ) : playerRealms().length > 1 ? (
+        ) : numberOfPlayerCurrentRealms > 1 ? (
           <NavigateToRealm text={"begin"} />
         ) : (
           <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>

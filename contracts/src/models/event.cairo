@@ -2,17 +2,6 @@ use eternum::models::buildings::BuildingCategory;
 use eternum::{alias::ID, models::combat::BattleSide, models::structure::StructureCategory};
 use starknet::ContractAddress;
 
-#[derive(Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
-pub struct EternumEvent {
-    #[key]
-    id: ID,
-    #[key]
-    event_id: EventType,
-    timestamp: u64,
-    // data: EventData,
-}
-
 #[derive(Introspect, Copy, Drop, Serde)]
 pub enum EventType {
     BattleStart,
@@ -33,7 +22,7 @@ pub enum EventData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct BattleStartData {
     #[key]
     id: ID,
@@ -54,7 +43,7 @@ pub struct BattleStartData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct BattleJoinData {
     #[key]
     id: ID,
@@ -72,7 +61,7 @@ pub struct BattleJoinData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct BattleLeaveData {
     #[key]
     id: ID,
@@ -90,7 +79,7 @@ pub struct BattleLeaveData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct BattleClaimData {
     #[key]
     id: ID,
@@ -100,7 +89,8 @@ pub struct BattleClaimData {
     claimer: ContractAddress,
     claimer_name: felt252,
     claimer_army_entity_id: ID,
-    previous_owner: ContractAddress,
+    claimee_address: ContractAddress,
+    claimee_name: felt252,
     x: u32,
     y: u32,
     structure_type: StructureCategory,
@@ -108,7 +98,7 @@ pub struct BattleClaimData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct BattlePillageData {
     #[key]
     id: ID,
@@ -120,6 +110,7 @@ pub struct BattlePillageData {
     pillager_army_entity_id: ID,
     pillaged_structure_owner: ContractAddress,
     pillaged_structure_entity_id: ID,
+    pillaged_structure_owner_name: felt252,
     winner: BattleSide,
     x: u32,
     y: u32,
@@ -130,7 +121,7 @@ pub struct BattlePillageData {
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct SettleRealmData {
     #[key]
     id: ID,
@@ -153,7 +144,7 @@ pub struct SettleRealmData {
 }
 
 #[derive(Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct CreateGuild {
     #[key]
     guild_entity_id: ID,
@@ -162,7 +153,7 @@ pub struct CreateGuild {
 }
 
 #[derive(Copy, Drop, Serde)]
-#[dojo::event(historical: true)]
+#[dojo::event(historical: false)]
 pub struct JoinGuild {
     #[key]
     guild_entity_id: ID,

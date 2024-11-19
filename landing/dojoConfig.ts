@@ -1,6 +1,6 @@
 import { createDojoConfig } from "@dojoengine/core";
-import devManifest from "../contracts/manifests/dev/deployment/manifest.json";
-import productionManifest from "../contracts/manifests/prod/deployment/manifest.json";
+import devManifest from "../contracts/manifest_dev.json";
+import productionManifest from "../contracts/manifest_prod.json";
 
 const {
   VITE_PUBLIC_NODE_URL,

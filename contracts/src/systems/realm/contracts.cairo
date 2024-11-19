@@ -24,7 +24,7 @@ trait IRealmSystems<T> {
 
 #[dojo::contract]
 mod realm_systems {
-    use bushido_trophy::store::{Store, StoreTrait};
+    use arcade_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -373,19 +373,20 @@ mod realm_systems {
 
         fn get_new_location(ref world: WorldStorage) -> Coord {
             // ensure that the coord is not occupied by any other structure
-            let timestamp = starknet::get_block_timestamp();
             let mut found_coords = false;
             let mut coord: Coord = Coord { x: 0, y: 0 };
             let mut settlement_config: SettlementConfig = world.read_model(WORLD_CONFIG_ID);
             while (!found_coords) {
-                coord = settlement_config.get_next_settlement_coord(timestamp);
-                let structure_count: StructureCount = world.read_model(coord);
+                coord = settlement_config.get_next_settlement_coord();
+                let mut structure_count: StructureCount = world.read_model(coord);
                 if structure_count.is_none() {
                     found_coords = true;
+                    structure_count.count = 1;
+                    world.write_model(@structure_count);
                 }
+                // save the new config so that if there's no already a structure at the coord we can find a new one
+                world.write_model(@settlement_config);
             };
-            // save the new config
-            world.write_model(@settlement_config);
 
             return coord;
         }

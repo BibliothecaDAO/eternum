@@ -7,6 +7,7 @@ use starknet_crypto::Felt;
 
 use crate::{
     constants::ETERNUM_URL,
+    eternum_enums::StructureCategory,
     types::{DiscordMessage, DiscordMessageType},
     utils::{felt_to_string, Position},
 };
@@ -21,8 +22,7 @@ use super::{duration_to_string, ToDiscordMessage, UNKNOWN_USER};
 // Dojo world can load local world from manifests and retrieve the abi
 // We can put these files in the target dir
 
-#[allow(dead_code)]
-#[derive(CairoSerde)]
+#[derive(CairoSerde, Clone, Copy)]
 pub struct BattleStart {
     pub id: u32,
     pub event_id: u32,
@@ -45,11 +45,21 @@ impl ToDiscordMessage for BattleStart {
 
         let footer = CreateEmbedFooter::new(ETERNUM_URL);
         let normalized_position = self.position.get_normalized();
+
+        let structure_string = match StructureCategory::from(self.structure_type.to_bytes_le()[0]) {
+            StructureCategory::NoValue => "".to_string(),
+            _ => format!(
+                "'s {} ",
+                StructureCategory::from(self.structure_type.to_bytes_le()[0])
+            ),
+        };
+
         let embed = CreateEmbed::new()
             .title(format!(
-                "{} has attacked {} at ({}, {})",
+                "{} has attacked {} {}at ({}, {})",
                 felt_to_string(&self.attacker_name).unwrap_or(UNKNOWN_USER.to_string()),
                 felt_to_string(&self.defender_name).unwrap_or(UNKNOWN_USER.to_string()),
+                structure_string,
                 normalized_position.0,
                 normalized_position.1
             ))

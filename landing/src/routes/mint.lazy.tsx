@@ -1,4 +1,3 @@
-import { CartridgeConnectButton } from "@/components/modules/cartridge-connect-button";
 import { AttributeFilters } from "@/components/modules/filters";
 import { RealmMintDialog } from "@/components/modules/realm-mint-dialog";
 import { RealmsGrid } from "@/components/modules/realms-grid";
@@ -10,15 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { execute } from "@/hooks/gql/execute";
 import { GET_ERC_MINTS, GET_REALMS } from "@/hooks/query/realms";
-import useAccountOrBurner from "@/hooks/useAccountOrBurner";
 import useNftSelection from "@/hooks/useNftSelection";
-import { checkCartridgeConnector, displayAddress } from "@/lib/utils";
+import { displayAddress } from "@/lib/utils";
 import { useConnect, useDisconnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
@@ -26,76 +25,75 @@ export const Route = createLazyFileRoute("/mint")({
 
 function Mint() {
   const { connect, connectors, connector } = useConnect();
-  const { account } = useAccountOrBurner();
+  const {
+    account: { account },
+  } = useDojo();
   const { disconnect } = useDisconnect();
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
   const [mintToController, setMintToController] = useState(true);
-
   const [controllerAddress, setControllerAddress] = useState<string>();
 
-  const realms_address = import.meta.env.VITE_REALMS_ADDRESS;
-  //const season_pass_address = import.meta.env.VITE_SEASON_PASS_ADDRESS;
+  const realmsAddress = import.meta.env.VITE_REALMS_ADDRESS;
 
-  useEffect(() => {
-    if (mintToController && checkCartridgeConnector(connector)) {
-      setControllerAddress(account?.address);
-      disconnect();
-    }
-  }, [mintToController, account]);
+  // useEffect(() => {
+  //   if (mintToController && checkCartridgeConnector(connector)) {
+  //     setControllerAddress(account?.address);
+  //     disconnect();
+  //   }
+  // }, [mintToController, account, connector, disconnect]);
 
   const { data } = useSuspenseQuery({
-    queryKey: ["erc721Balance" + account?.address],
+    queryKey: ["erc721Balance", account?.address],
     queryFn: () => (account?.address ? execute(GET_REALMS, { accountAddress: account.address }) : null),
-    //enabled: !!account?.address,
     refetchInterval: 10_000,
   });
+
   const { data: seasonPassMints } = useSuspenseQuery({
     queryKey: ["ERCMints"],
     queryFn: () => execute(GET_ERC_MINTS),
-    //enabled: !!account?.address,
     refetchInterval: 10_000,
   });
 
-  const seasonPassTokenIds = seasonPassMints?.ercTransfer
-    ?.filter((token) => token?.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS)
-    .map((token) => token?.tokenMetadata.tokenId)
-    .filter((id): id is string => id !== undefined);
+  const seasonPassTokenIds = useMemo(
+    () =>
+      seasonPassMints?.ercTransfer
+        ?.filter((token) => token?.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS)
+        .map((token) => token?.tokenMetadata.tokenId)
+        .filter((id): id is string => id !== undefined),
+    [seasonPassMints],
+  );
 
-  const realmsErcBalance = data?.ercBalance?.filter((token) => token?.tokenMetadata.contractAddress === realms_address);
+  const realmsErcBalance = useMemo(
+    () => data?.ercBalance?.filter((token) => token?.tokenMetadata.contractAddress === realmsAddress),
+    [data, realmsAddress],
+  );
 
-  const {
-    deselectAllNfts,
-    isNftSelected,
-    selectBatchNfts,
-    //selectedCollectionAddress,
-    toggleNftSelection,
-    totalSelectedNfts,
-    selectedTokenIds,
-  } = useNftSelection({ userAddress: account?.address as `0x${string}` });
+  const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
+    useNftSelection({ userAddress: account?.address as `0x${string}` });
+
+  console.log("account", account);
 
   return (
     <div className="flex flex-col h-full">
-      {mintToController && !controllerAddress ? (
+      {!account ? (
         <Card className="w-[750px] mx-auto text-center mt-12">
           <CardHeader>
-            <CardTitle>
-              <TypeH2>Choose Mint Method</TypeH2>
-            </CardTitle>
+            <CardTitle>Choose Mint Method</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-x-10">
-              <div>
+              {/* <div>
                 <TypeP>
                   If you will play Eternum, sign in to the Cartridge Controller to mint your Season Pass directly to
                   your game wallet
                 </TypeP>
                 <CartridgeConnectButton className="w-full mt-4" />
-              </div>
+              </div> */}
               <div>
                 <TypeP>If you will trade your Season Passes - mint to the Starknet Wallet that holds your Realms</TypeP>
-                <Button className="mt-4 w-full" onClick={() => setMintToController(false)} variant={"outline"}>
-                  Continue {!account?.address && "to Connect Wallet"}
+                <Button className="mt-4 w-full" onClick={() => setMintToController(false)} variant="outline">
+                  Continue {!account ? "to Connect Wallet" : ""}
                 </Button>
               </div>
             </div>
@@ -106,8 +104,9 @@ function Mint() {
           {controllerAddress && (
             <div className="text-xl py-4 flex items-center">
               Minting to:{" "}
-              <Badge variant={"secondary"} className="text-lg ml-4 py-1.5">
-                <img className="w-6 pr-2" src={connectors[2].icon as string} /> {displayAddress(controllerAddress)}
+              <Badge variant="secondary" className="text-lg ml-4 py-1.5">
+                <img className="w-6 pr-2" src={connectors[2].icon as string} alt="Connector Icon" />
+                {displayAddress(controllerAddress)}
               </Badge>
             </div>
           )}
@@ -134,9 +133,8 @@ function Mint() {
                   Mint Realms
                 </Button>
                 <div className="flex items-center gap-x-4">
-                  {data?.ercBalance ? (
+                  {data?.ercBalance && (
                     <SelectNftActions
-                      //selectedTokenIds={selectedTokenIds}
                       totalSelectedNfts={totalSelectedNfts}
                       selectBatchNfts={selectBatchNfts}
                       deselectAllNfts={deselectAllNfts}
@@ -146,7 +144,7 @@ function Mint() {
                         .map((token) => token?.tokenMetadata?.tokenId ?? "")
                         .filter((tokenId): tokenId is string => tokenId !== "")}
                     />
-                  ) : null}
+                  )}
                   <TypeH2>{totalSelectedNfts} Selected</TypeH2>
 
                   <Button disabled={totalSelectedNfts < 1} onClick={() => setIsOpen(true)} variant="cta">
@@ -159,7 +157,6 @@ function Mint() {
                   deselectAllNfts={deselectAllNfts}
                   isSuccess={status === "success"}
                   realm_ids={selectedTokenIds}
-                  //selectedRealms={}
                 />
                 <RealmMintDialog
                   totalOwnedRealms={realmsErcBalance?.length}
@@ -171,9 +168,7 @@ function Mint() {
           ) : (
             <Card className="w-[400px] mx-auto">
               <CardHeader>
-                <CardTitle>
-                  <TypeH2>Log In</TypeH2>
-                </CardTitle>
+                <CardTitle>Log In</CardTitle>
               </CardHeader>
               <CardContent className="gap-y-4 flex flex-col">
                 <TypeP>Connect to the Starknet wallet that holds your Realms</TypeP>
@@ -182,6 +177,7 @@ function Mint() {
                     <img
                       className="w-5"
                       src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark}
+                      alt={`${connector.name} Icon`}
                     />
                     Connect {connector.name}
                   </Button>

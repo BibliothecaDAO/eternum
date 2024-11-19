@@ -342,14 +342,13 @@ export interface Config {
     rewards: Array<ResourceCost>;
   };
   settlement: {
-    radius: number;
-    angle_scaled: number;
     center: number;
-    min_distance: number;
-    max_distance: number;
-    min_scaling_factor_scaled: bigint;
-    min_angle_increase: number;
-    max_angle_increase: number;
+    base_distance: number;
+    min_first_layer_distance: number;
+    points_placed: number;
+    current_layer: number;
+    current_side: number;
+    current_point_on_side: number;
   };
   season: {
     seasonPassAddress: string;
@@ -391,9 +390,11 @@ export interface Config {
 }
 
 export interface Player {
-  entity_id: number;
   address: ContractAddress;
   addressName: string;
+  rank?: number;
+  points?: number;
+  isAlive?: boolean;
 }
 
 export type GuildInfo = {
@@ -401,20 +402,20 @@ export type GuildInfo = {
   name: string;
   isOwner: boolean;
   memberCount: number;
-  rank?: string;
+  rank?: number;
   points?: number;
   isPublic?: boolean;
-  createdSince?: string;
+  age?: string;
   isMember?: boolean;
 };
 
 export type GuildMemberInfo = {
   guildEntityId: ID;
   name: string;
-  rank: string;
+  rank: number;
   points: number;
   address: ContractAddress;
-  joinedSince: string;
+  age: string;
   isUser: boolean;
   isGuildMaster: boolean;
 };
@@ -423,7 +424,7 @@ export type GuildWhitelistInfo = {
   guildEntityId: ID;
   guildName: string;
   name?: string;
-  rank?: string;
+  rank?: number;
   points?: number;
   address?: ContractAddress;
 };

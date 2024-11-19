@@ -76,7 +76,7 @@ export const useStructureByPosition = () => {
   const {
     account: { account },
     setup: {
-      components: { Position, Structure, EntityOwner, Owner, Protector, EntityName, Realm },
+      components: { Position, Structure, EntityOwner, Owner, Protector },
     },
   } = useDojo();
 
@@ -119,7 +119,7 @@ export const useStructureByEntityId = (entityId: ID) => {
   const {
     account: { account },
     setup: {
-      components: { Structure, EntityOwner, Owner, Protector, EntityName, Realm, Position, AddressName },
+      components: { Structure, EntityOwner, Owner, Protector, Position, AddressName },
     },
   } = useDojo();
 

@@ -4,24 +4,24 @@ import { ReactComponent as Eye } from "@/assets/icons/common/eye.svg";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { BattleInfo } from "@/hooks/helpers/battles/useBattles";
-import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
+import { ViewOnMapIcon } from "../military/ArmyManagementCard";
 import { TroopMenuRow } from "../military/TroopChip";
 import { InventoryResources } from "../resources/InventoryResources";
-import { StructureMergeTroopsPanel } from "../structures/worldmap/StructureCard";
 
 type BattleListItemProps = {
   battle: BattleInfo;
   ownArmySelected: ArmyInfo | undefined;
+  showCompass?: boolean;
 };
 
-export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps) => {
+export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }: BattleListItemProps) => {
   const dojo = useDojo();
 
-  const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState(false);
   const { getAddressNameFromEntity } = useEntitiesUtils();
 
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp);
@@ -30,8 +30,6 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
 
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setTooltip = useUIStore((state) => state.setTooltip);
-
-  const userArmyInBattle = getUserArmyInBattle(battle.entity_id);
 
   const battleManager = useMemo(() => new BattleManager(battle.entity_id, dojo), [battle]);
 
@@ -80,15 +78,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
       />
     );
 
-    if (userArmyInBattle) {
-      if (isBattleOngoing && ownArmySelected) {
-        // check battle and join
-        return [swordButton];
-      } else {
-        // check battle to claim or leave (if battle is finished) or just check
-        return [eyeButton];
-      }
-    } else if (ownArmySelected && isBattleOngoing) {
+    if (ownArmySelected && isBattleOngoing) {
       // join battle
       return [swordButton];
     } else {
@@ -101,16 +91,13 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
     !battleManager.isEmpty() && (
       <React.Fragment>
         <div className="flex flex-row justify-between mt-2">
-          <div
-            className={`flex flex-col w-[27rem] h-full justify-between  bg-red/20 ${
-              userArmyInBattle ? "animate-pulse" : ""
-            } rounded-md border-gold/20 p-2`}
-          >
+          <div className={`flex flex-col w-[27rem] h-full justify-between  bg-red/20 rounded-md border-gold/20 p-2`}>
             <div className="flex w-full justify-between">
               <div className="flex flex-col w-[40%]">
                 <TroopMenuRow troops={updatedBattle?.attack_army?.troops} />
               </div>
-              <div className="flex flex-col font-bold m-auto relative top-2">
+              <div className="flex flex-col font-bold m-auto relative">
+                {showCompass && <ViewOnMapIcon hideTooltip={true} position={battle?.position} />}
                 <div
                   className="font-bold m-auto animate-pulse"
                   onMouseEnter={() =>
@@ -145,17 +132,6 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
           </div>
           {buttons}
         </div>
-        {showMergeTroopsPopup && (
-          <div className="flex flex-col w-[100%]">
-            {ownArmySelected && (
-              <StructureMergeTroopsPanel
-                giverArmy={ownArmySelected}
-                takerArmy={userArmyInBattle}
-                setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-              />
-            )}
-          </div>
-        )}
       </React.Fragment>
     )
   );

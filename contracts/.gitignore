@@ -14,4 +14,6 @@ manifests/prod/base/*
 torii.db-wal
 torii.db-shm
 
-dojo_prod.toml
+dojo_prod.local.toml
+
+.env

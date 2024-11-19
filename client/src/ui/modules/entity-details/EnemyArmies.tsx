@@ -104,11 +104,14 @@ export const EnemyArmies = ({
   return (
     <div className="flex flex-col mt-2 w-[31rem]">
       {armies.length !== 0 && (
-        <React.Fragment>
-          <div className="grid grid-cols-1 gap-2 p-2">
-            {armies.length > 0 && armies.map((army: ArmyInfo, index) => getArmyChip(army, index)).filter(Boolean)}
-          </div>
-        </React.Fragment>
+        <>
+          <h5 className="pl-2 ">Enemy armies</h5>
+          <React.Fragment>
+            <div className="grid grid-cols-1 gap-2 p-2">
+              {armies.length > 0 && armies.map((army: ArmyInfo, index) => getArmyChip(army, index)).filter(Boolean)}
+            </div>
+          </React.Fragment>
+        </>
       )}
     </div>
   );
