@@ -2406,6 +2406,383 @@
       ]
     },
     {
+      "address": "0x3c212b90cc4f236be2c014e0ee0d870277b2cc313217a73d41387e255e806ed",
+      "class_hash": "0x5a28b1a27a5ee44be4fa967f57fad5d765663ed475a6b52d8687e43ee786bad",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "battle_utils_systems__ContractImpl",
+          "interface_name": "dojo::contract::interface::IContract"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::IContract",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "battle_utils_systems__DeployedContractImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "BattleUtilsContractImpl",
+          "interface_name": "eternum::systems::combat::contracts::battle_systems::IBattleUtilsContract"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::combat::Troops",
+          "members": [
+            {
+              "name": "knight_count",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "paladin_count",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "crossbowman_count",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "eternum::models::combat::BattleSide",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "Attack",
+              "type": "()"
+            },
+            {
+              "name": "Defence",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::combat::BattleArmy",
+          "members": [
+            {
+              "name": "troops",
+              "type": "eternum::models::combat::Troops"
+            },
+            {
+              "name": "battle_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "battle_side",
+              "type": "eternum::models::combat::BattleSide"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::combat::BattleHealth",
+          "members": [
+            {
+              "name": "current",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "lifetime",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::combat::Battle",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "attack_army",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
+              "name": "attack_army_lifetime",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
+              "name": "defence_army",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
+              "name": "defence_army_lifetime",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
+              "name": "attackers_resources_escrow_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "defenders_resources_escrow_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "attack_army_health",
+              "type": "eternum::models::combat::BattleHealth"
+            },
+            {
+              "name": "defence_army_health",
+              "type": "eternum::models::combat::BattleHealth"
+            },
+            {
+              "name": "attack_delta",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "defence_delta",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "last_updated",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "duration_left",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "start_at",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::combat::Army",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "troops",
+              "type": "eternum::models::combat::Troops"
+            },
+            {
+              "name": "battle_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "battle_side",
+              "type": "eternum::models::combat::BattleSide"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::combat::contracts::battle_systems::IBattleUtilsContract",
+          "items": [
+            {
+              "type": "function",
+              "name": "leave_battle",
+              "inputs": [
+                {
+                  "name": "battle",
+                  "type": "eternum::models::combat::Battle"
+                },
+                {
+                  "name": "army",
+                  "type": "eternum::models::combat::Army"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "(eternum::models::combat::Battle, eternum::models::combat::Army)"
+                }
+              ],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "leave_battle_if_ended",
+              "inputs": [
+                {
+                  "name": "battle",
+                  "type": "eternum::models::combat::Battle"
+                },
+                {
+                  "name": "army",
+                  "type": "eternum::models::combat::Army"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "(eternum::models::combat::Battle, eternum::models::combat::Army)"
+                }
+              ],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "view"
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradeableImpl",
+          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "name": "constructor",
+          "inputs": []
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::combat::contracts::battle_systems::battle_utils_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "init_calldata": [],
+      "tag": "eternum-battle_utils_systems",
+      "selector": "0x2b03ed939280406b45a1b2c50a50be670795c19643b6157e6e132de5e6d0c99",
+      "systems": ["leave_battle", "leave_battle_if_ended", "upgrade"]
+    },
+    {
       "address": "0x36b82076142f07fbd8bf7b2cabf2e6b190082c0b242c6ecc5e14b2c96d1763c",
       "class_hash": "0x59577a6dc2b323c5530d47bd12977c9f2f04c9db0850e4af72725f565b10506",
       "abi": [
@@ -6199,11 +6576,7 @@
       "init_calldata": [],
       "tag": "eternum-map_generation_systems",
       "selector": "0x1998c9853704d92e53765a2cd301405c88374a84f6ab07211f3e17c41cbf835",
-      "systems": [
-        "discover_shards_mine",
-        "add_mercenaries_to_structure",
-        "upgrade"
-      ]
+      "systems": ["discover_shards_mine", "add_mercenaries_to_structure", "upgrade"]
     },
     {
       "address": "0xcc0c73458864b9e0e884de532b7ebfbe757e7429fb2c736abd5e129e5fb81a",
