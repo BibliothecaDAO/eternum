@@ -1,6 +1,7 @@
 mod actors;
 mod commands;
 mod constants;
+mod eternum_enums;
 mod events;
 mod init;
 mod types;

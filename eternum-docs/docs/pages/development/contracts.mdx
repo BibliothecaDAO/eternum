@@ -43,9 +43,6 @@ pub struct Structure {
 }
 ```
 
-At the moment, you will need to add the model into the `system_models.json` file in the `contracts` directory so the
-authorizations can be made when deploying the world.
-
 To test this model, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
 in the tests.
 
@@ -116,9 +113,6 @@ mod building_systems {
     }
 }
 ```
-
-For every model that your system uses, you will need to add it to the `system_models.json` file in the `contracts`
-directory so the authorizations can be made when deploying the world.
 
 To test this system, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
 in the tests.
