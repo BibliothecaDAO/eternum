@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { throttle } from "lodash";
+import throttle from "lodash/throttle";
 import { useEffect, useRef } from "react";
 import useUIStore from "../../hooks/store/useUIStore";
 

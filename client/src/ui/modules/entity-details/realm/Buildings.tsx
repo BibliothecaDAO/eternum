@@ -1,4 +1,4 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
+import { type ClientComponents } from "@/dojo/createClientComponents";
 import { TileManager } from "@/dojo/modelManager/TileManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -6,11 +6,10 @@ import { useGetRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ResourceIdToMiningType, toHexString } from "@/ui/utils/utils";
+import { capitalize, ResourceIdToMiningType, toHexString } from "@/ui/utils/utils";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { Component, Entity, Has, HasValue, runQuery } from "@dojoengine/recs";
-import { capitalize } from "lodash";
+import { type Component, type Entity, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useState } from "react";
 
 export const Buildings = ({ structure }: { structure: any }) => {
@@ -99,7 +98,7 @@ const BuildingRow = ({
     buildingName = ResourcesIds[building.produced_resource_type] + " ";
 
     if (building.produced_resource_type != ResourcesIds.Dragonhide) {
-      buildingName += capitalize(ResourceIdToMiningType[building.produced_resource_type as ResourcesIds]);
+      buildingName += capitalize(ResourceIdToMiningType[building.produced_resource_type as ResourcesIds] as string);
     }
 
     // Replace underscores with spaces
