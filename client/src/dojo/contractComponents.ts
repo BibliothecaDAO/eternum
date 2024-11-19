@@ -1616,6 +1616,16 @@ const eventsComponents = (world: World) => {
             pillager_army_entity_id: RecsType.Number,
             pillaged_structure_owner: RecsType.BigInt,
             pillaged_structure_entity_id: RecsType.Number,
+            attacker_lost_troops: {
+              knight_count: RecsType.BigInt,
+              paladin_count: RecsType.BigInt,
+              crossbowman_count: RecsType.BigInt,
+            },
+            structure_lost_troops: {
+              knight_count: RecsType.BigInt,
+              paladin_count: RecsType.BigInt,
+              crossbowman_count: RecsType.BigInt,
+            },
             winner: RecsType.String,
             x: RecsType.Number,
             y: RecsType.Number,
@@ -1637,6 +1647,14 @@ const eventsComponents = (world: World) => {
                 "u32",
                 "ContractAddress",
                 "u32",
+                // attacking troops
+                "u64",
+                "u64",
+                "u64",
+                // structure troops
+                "u64",
+                "u64",
+                "u64",
                 "BattleSide",
                 "u32",
                 "u32",
@@ -1645,7 +1663,7 @@ const eventsComponents = (world: World) => {
                 "enum",
                 "u64",
               ],
-              customTypes: ["BuildingCategory"],
+              customTypes: ["Troops", "BuildingCategory"],
             },
           },
         );
