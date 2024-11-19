@@ -749,8 +749,8 @@ mod battle_systems {
             // transfer structure ownership to claimer
             let mut structure_owner: Owner = world.read_model(structure_id);
             let claimee_address = structure_owner.address;
-			let claimee_address_name: AddressName = world.read_model(claimee_address);
-			
+            let claimee_address_name: AddressName = world.read_model(claimee_address);
+
             structure_owner.transfer(claimer);
             world.write_model(@structure_owner);
 
@@ -767,7 +767,7 @@ mod battle_systems {
                         claimer_name: claimer_name.name,
                         claimer_army_entity_id: army_id,
                         claimee_address,
-						claimee_name: claimee_address_name.name,
+                        claimee_name: claimee_address_name.name,
                         x: structure_position.x,
                         y: structure_position.y,
                         structure_type: structure.category,
@@ -1115,7 +1115,6 @@ mod battle_pillage_systems {
                 }
             }
 
-
             // store previous attacking troops to calculate lost troops
             let mut attacker_lost_troops = attacking_army.troops.clone();
             // store previous structure troops to calculate lost troops
@@ -1147,7 +1146,7 @@ mod battle_pillage_systems {
                         ((mock_battle.defence_delta.into() * mock_battle.duration_left.into())
                             / troop_config.pillage_health_divisor.into())
                     );
-                
+
                 attacking_army.troops.reset_count_and_health(ref attacking_army_health, troop_config);
                 let attacking_army_quantity = Quantity {
                     entity_id: attacking_army.entity_id, value: attacking_army.troops.count().into()
@@ -1178,8 +1177,8 @@ mod battle_pillage_systems {
 
             let structure_owner: Owner = world.read_model(structure_id);
             let structure_owner: starknet::ContractAddress = structure_owner.address;
-			let structure_owner_name_address_name: AddressName = world.read_model(structure_owner);
-			
+            let structure_owner_name_address_name: AddressName = world.read_model(structure_owner);
+
             let pillager_address_name: AddressName = world.read_model(starknet::get_caller_address());
 
             attacker_lost_troops.deduct(attacking_army.troops);
@@ -1196,9 +1195,9 @@ mod battle_pillage_systems {
                         pillager_army_entity_id: army_id,
                         pillaged_structure_owner: structure_owner,
                         pillaged_structure_entity_id: structure_id,
-                        attacker_lost_troops, 
+                        attacker_lost_troops,
                         structure_lost_troops,
-						pillaged_structure_owner_name: structure_owner_name_address_name.name,
+                        pillaged_structure_owner_name: structure_owner_name_address_name.name,
                         winner: if *attack_successful {
                             BattleSide::Attack
                         } else {
