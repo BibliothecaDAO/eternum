@@ -1,4 +1,5 @@
 import { HyperstructureFinishedEvent, LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
+import { useEntityQuery } from "@dojoengine/react";
 import { defineQuery, getComponentValue, Has, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useState } from "react";
 import { create } from "zustand";
@@ -22,7 +23,7 @@ export const useSubscriptionToHyperstructureEvents = () => {
   const {
     setup: {
       components: {
-        events: { HyperstructureCoOwnersChange, HyperstructureFinished },
+        events: { HyperstructureCoOwnersChange, HyperstructureFinished, GameEnded },
       },
     },
   } = useDojo();
@@ -77,4 +78,16 @@ export const useSubscriptionToHyperstructureEvents = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const gameEndedEntityId = useEntityQuery([Has(GameEnded)]);
+  useEffect(() => {
+    if (gameEndedEntityId.length === 0) {
+      return;
+    }
+
+    const gameEnded = getComponentValue(GameEnded, gameEndedEntityId[0]);
+    if (!gameEnded) return;
+
+    LeaderboardManager.instance().processGameEndedEvent(gameEnded);
+  }, [gameEndedEntityId]);
 };

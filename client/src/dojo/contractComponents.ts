@@ -1775,6 +1775,24 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
+      GameEnded: (() => {
+        return defineComponent(
+          world,
+          {
+            winner_address: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "eternum",
+              name: "GameEnded",
+              types: ["ContractAddress", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
       FragmentMineDiscovered: (() => {
         return defineComponent(
           world,
