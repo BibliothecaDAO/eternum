@@ -10,7 +10,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { TroopMenuRow } from "../../military/TroopChip";
+import { TroopDisplay } from "../../military/TroopChip";
 import { InventoryResources } from "../../resources/InventoryResources";
 import { RealmResourcesIO } from "../../resources/RealmResourcesIO";
 
@@ -179,7 +179,7 @@ export const StructureListItem = ({
             )}
           </div>
           <div className="flex flex-col content-center w-[55%]">
-            <TroopMenuRow troops={updatedBattle?.defence_army?.troops || structure.protector?.troops} />
+            <TroopDisplay troops={updatedBattle?.defence_army?.troops || structure.protector?.troops} />
             <InventoryResources
               max={maxInventory}
               entityIds={[structure.entity_id]}

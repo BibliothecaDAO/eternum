@@ -3,7 +3,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ComponentValue } from "@dojoengine/recs";
 
-export const TroopMenuRow = ({
+export const TroopDisplay = ({
   troops,
   className,
   direction = "row",

@@ -6,7 +6,7 @@ import { divideByPrecision, formatResources, formatTime } from "@/ui/utils/utils
 import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
-import { TroopMenuRow } from "./TroopChip";
+import { TroopDisplay } from "./TroopChip";
 
 type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData"]["schema"]>;
 
@@ -47,7 +47,7 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
         {/* Pillager Troops Lost */}
         <div className="flex flex-col">
           <div className="text-xs font-semibold mb-2 text-gold/90">Pillagers</div>
-          <TroopMenuRow
+          <TroopDisplay
             troops={history.attacker_lost_troops}
             className="origin-top-left"
             negative
@@ -59,7 +59,7 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
         {/* Structure Troops Lost */}
         <div className="flex flex-col">
           <div className="text-xs font-semibold mb-2 text-gold/90">Structure</div>
-          <TroopMenuRow
+          <TroopDisplay
             troops={history.structure_lost_troops}
             className="origin-top-left"
             negative

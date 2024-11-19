@@ -18,7 +18,7 @@ import { useLocation } from "wouter";
 import { InventoryResources } from "../resources/InventoryResources";
 import { Exchange } from "../structures/worldmap/StructureCard";
 import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
-import { TroopMenuRow } from "./TroopChip";
+import { TroopDisplay } from "./TroopChip";
 
 export const NavigateToPositionIcon = ({
   position,
@@ -186,7 +186,7 @@ export const ArmyChip = ({
                 )}
               </div>
               <div className="flex flex-col content-center w-[55%]">
-                <TroopMenuRow troops={updatedArmy!.troops} />
+                <TroopDisplay troops={updatedArmy!.troops} />
                 {showInventory && (
                   <InventoryResources
                     entityIds={[updatedArmy!.entity_id]}

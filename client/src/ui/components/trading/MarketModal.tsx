@@ -27,7 +27,7 @@ import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { Suspense, lazy, useMemo, useState } from "react";
 import { HintModal } from "../hints/HintModal";
-import { TroopMenuRow } from "../military/TroopChip";
+import { TroopDisplay } from "../military/TroopChip";
 import { ModalContainer } from "../ModalContainer";
 
 const MarketResourceSidebar = lazy(() =>
@@ -320,7 +320,7 @@ export const MarketModal = () => {
                   <h3 className="text-xl font-bold mt-2">Bank Defence</h3>
                   <div className="flex-grow">
                     <div className="flex items-center text-green">
-                      <TroopMenuRow troops={armyInfo.troops} />
+                      <TroopDisplay troops={armyInfo.troops} />
                     </div>
                   </div>
                 </div>
