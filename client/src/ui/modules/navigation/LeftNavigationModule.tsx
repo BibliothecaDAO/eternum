@@ -287,7 +287,7 @@ export const LeftNavigationModule = () => {
           }`}
         >
           <BaseContainer
-            className={`w-full pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh]`}
+            className={`w-full pointer-events-auto rounded-r-2xl overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] border-r-2 border-y-2 border-gold/20`}
           >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === LeftView.EntityView && <EntityDetails />}

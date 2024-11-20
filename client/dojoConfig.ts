@@ -15,8 +15,6 @@ const {
 
 const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 
-console.log(productionManifest);
-
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
   toriiUrl: VITE_PUBLIC_TORII,

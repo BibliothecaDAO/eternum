@@ -1,16 +1,26 @@
 # Contracts
 
-### Models
+## Rules of thumb
 
-#### Entity Key
+- Note that every field you add in a model will raise the storage cost of each transaction that modifies the model.
+- Try to make models as small as possible, and re-use existing models as much as possible, every model and system that
+  you add raises the size of the CASM, and there is a limit to the size of a declared contract on Starknet.
+- Keep systems stateless. Store your game state in models.
+- When implementing a new game logic, you will need to keep in mind that the game already has physics implemented, such
+  as weight, position, movement, speed, etc. If creating something that needs to have any of this logic, re-use
+  components so everything stays logical.
 
-Use the ID
+## Models
 
-#### Model design
+### Keys
+
+Use the `ID` type alias for keys that require a unique identifier.
+
+### Model design
 
 entity_id: u32
 
-#### Implementations
+### Implementations
 
 Where possible make traits for the models so they are stateless for unit testing.
 
@@ -20,13 +30,47 @@ Always use generate trait where possible to minimise code.
 #[generate_trait]
 ```
 
-### Systems
+### Adding a model
+
+```rust
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct Structure {
+    #[key]
+    entity_id: ID,
+    category: StructureCategory,
+    created_at: u64
+}
+```
+
+To test this model, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.
+
+## Event models
+
+If you need some data to be available in the client, but it doesn't need to be stored onchain, you can use an event
+model.
+
+```rust
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
+pub struct ExampleEvent {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
+	my_data_field: u8
+}
+```
+
+## Adding a system
 
 Design systems like this in the directory
 
 - SystemName
-- - system_name.cairo
-- - tests.cairo
+  - system_name.cairo
+  - tests.cairo
 
 `system.cairo` should include the implementation of the system like this.
 
@@ -69,3 +113,6 @@ mod building_systems {
     }
 }
 ```
+
+To test this system, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.

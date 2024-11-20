@@ -1,32 +1,11 @@
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useCallback, useState } from "react";
-import { MAX_REALMS } from "../constants";
+import { useState } from "react";
 import { Naming, StepFive, StepFour, StepOne, StepSix, StepThree, StepTwo } from "../modules/onboarding/Steps";
 
 export const Onboarding = () => {
-  const { playerRealms } = useEntities();
-
   const [currentStep, setCurrentStep] = useState(1);
 
-  const skipOrderSelection = () => setCurrentStep(currentStep + 2);
   const nextStep = () => setCurrentStep(currentStep + 1);
   const prevStep = () => setCurrentStep(currentStep - 1);
-
-  const canSettle = playerRealms().length < MAX_REALMS;
-
-  const handleNamingNext = useCallback(() => {
-    // if (canSettle) {
-    //   nextStep();
-    // } else {
-    // skipOrderSelection();
-    // }
-  }, [canSettle, nextStep, skipOrderSelection]);
-
-  // useEffect(() => {
-  //   if (!canSettle && currentStep === 3) {
-  //     nextStep();
-  //   }
-  // }, [canSettle, currentStep]);
 
   return (
     <div className="relative h-screen w-screen pointer-events-auto">

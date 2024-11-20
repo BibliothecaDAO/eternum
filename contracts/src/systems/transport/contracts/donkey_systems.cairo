@@ -1,6 +1,6 @@
 #[dojo::contract]
 mod donkey_systems {
-    use bushido_trophy::store::{Store, StoreTrait};
+    use arcade_trophy::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -26,7 +26,7 @@ mod donkey_systems {
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct BurnDonkey {
         #[key]
         player_address: ContractAddress,

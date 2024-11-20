@@ -65,7 +65,9 @@ export const RightNavigationModule = () => {
         </div>
       </motion.div>
 
-      <BaseContainer className={`w-full pointer-events-auto overflow-y-scroll h-[60vh]`}>
+      <BaseContainer
+        className={`w-full pointer-events-auto overflow-y-scroll h-[60vh] rounded-l-2xl border-l-2 border-y-2 border-gold/20`}
+      >
         <Suspense fallback={<div className="p-8">Loading...</div>}>
           {!!structureEntityId && (
             <div className="p-2 flex flex-col space-y-1 overflow-y-auto">

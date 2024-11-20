@@ -146,6 +146,33 @@ export class TileManager {
     return bonusPercent;
   };
 
+  private _getProducedResourceType = (buildingType: BuildingType, resourceType: number | undefined) => {
+    let producedResourceType = 0;
+
+    switch (buildingType) {
+      case BuildingType.Farm:
+        producedResourceType = ResourcesIds.Wheat;
+        break;
+      case BuildingType.FishingVillage:
+        producedResourceType = ResourcesIds.Fish;
+        break;
+      case BuildingType.Barracks:
+        producedResourceType = ResourcesIds.Knight;
+        break;
+      case BuildingType.ArcheryRange:
+        producedResourceType = ResourcesIds.Crossbowman;
+        break;
+      case BuildingType.Stable:
+        producedResourceType = ResourcesIds.Paladin;
+        break;
+      case BuildingType.Resource:
+        producedResourceType = resourceType!;
+        break;
+    }
+
+    return producedResourceType;
+  };
+
   private _optimisticBuilding = (
     entityId: ID,
     col: number,
@@ -156,22 +183,6 @@ export class TileManager {
     let overrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
 
-    let produced_resource_type = 0;
-
-    switch (buildingType) {
-      case BuildingType.Farm:
-        produced_resource_type = ResourcesIds.Wheat;
-        break;
-      case BuildingType.FishingVillage:
-        produced_resource_type = ResourcesIds.Fish;
-        break;
-      case BuildingType.Resource:
-        produced_resource_type = resourceType || 0;
-        break;
-    }
-
-    const bonus_percent = this._getBonusFromNeighborBuildings(col, row);
-
     this.setup.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -180,8 +191,8 @@ export class TileManager {
         inner_col: col,
         inner_row: row,
         category: BuildingType[buildingType],
-        produced_resource_type,
-        bonus_percent,
+        produced_resource_type: this._getProducedResourceType(buildingType, resourceType),
+        bonus_percent: this._getBonusFromNeighborBuildings(col, row),
         entity_id: entityId,
         outer_entity_id: entityId,
         paused: false,

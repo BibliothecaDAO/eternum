@@ -583,25 +583,23 @@ export const setMercenariesConfig = async (config: Config) => {
 
 export const setSettlementConfig = async (config: Config) => {
   const {
-    radius,
-    angle_scaled,
     center,
-    min_distance,
-    max_distance,
-    min_scaling_factor_scaled,
-    min_angle_increase,
-    max_angle_increase,
+    base_distance,
+    min_first_layer_distance,
+    points_placed,
+    current_layer,
+    current_side,
+    current_point_on_side,
   } = config.config.settlement;
   const tx = await config.provider.set_settlement_config({
     signer: config.account,
-    radius,
-    angle_scaled,
     center,
-    min_distance,
-    max_distance,
-    min_scaling_factor_scaled,
-    min_angle_increase,
-    max_angle_increase,
+    base_distance,
+    min_first_layer_distance,
+    points_placed,
+    current_layer,
+    current_side,
+    current_point_on_side,
   });
   console.log(`Configuring settlement ${tx.statusReceipt}...`);
 };

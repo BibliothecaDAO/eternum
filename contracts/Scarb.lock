@@ -54,9 +54,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "bushido_trophy"
+name = "arcade_trophy"
 version = "0.0.0"
-source = "git+https://github.com/cartridge-gg/bushido#d6e13c68ec3db8f90a127703e11e23c605f9e0fb"
+source = "git+https://github.com/cartridge-gg/arcade?tag=v1.0.1#7efb540350e03b56b883fb6e87837fd870f58f47"
 dependencies = [
  "dojo",
 ]
@@ -68,8 +68,8 @@ source = "git+https://github.com/dojoengine/cubit?branch=cairo_2.7#53020b6320a10
 
 [[package]]
 name = "dojo"
-version = "1.0.0-rc.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.0-rc.1#c789997f1a7cf5628d6b3fc01ce2851fca7a35bf"
+version = "1.0.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.0.1#d7335e6f5c76a1dda887ec00c594c2c019b4a05f"
 dependencies = [
  "dojo_plugin",
 ]
@@ -77,7 +77,7 @@ dependencies = [
 [[package]]
 name = "dojo_cairo_test"
 version = "1.0.0-rc.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.0-rc.1#c789997f1a7cf5628d6b3fc01ce2851fca7a35bf"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.0.1#d7335e6f5c76a1dda887ec00c594c2c019b4a05f"
 dependencies = [
  "dojo",
 ]
@@ -85,7 +85,7 @@ dependencies = [
 [[package]]
 name = "dojo_plugin"
 version = "2.8.4"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.0.0-rc.1#c789997f1a7cf5628d6b3fc01ce2851fca7a35bf"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.0.1#d7335e6f5c76a1dda887ec00c594c2c019b4a05f"
 
 [[package]]
 name = "eternum"
@@ -93,7 +93,7 @@ version = "1.0.0"
 dependencies = [
  "alexandria_data_structures",
  "alexandria_math",
- "bushido_trophy",
+ "arcade_trophy",
  "cubit",
  "dojo",
  "dojo_cairo_test",

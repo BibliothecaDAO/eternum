@@ -1,12 +1,13 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { LeaderboardManager } from "@/dojo/modelManager/LeaderboardManager";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
-import { AddressSelect } from "@/ui/elements/AddressSelect";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
+import { SelectAddress } from "@/ui/elements/SelectAddress";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import { displayAddress, formatTime, getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -173,31 +174,48 @@ const ChangeCoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID
     },
   } = useDojo();
 
+  const getPlayers = useGetAllPlayers();
   const [isLoading, setIsLoading] = useState(false);
-
   const [newCoOwners, setNewCoOwners] = useState<
     {
       address: ContractAddress;
       percentage: number;
+      id: number;
     }[]
-  >([{ address: ContractAddress(account.address), percentage: 0 }]);
+  >([
+    {
+      address: ContractAddress(account.address),
+      percentage: 100,
+      id: 0,
+    },
+  ]);
+
+  const [nextId, setNextId] = useState(1);
 
   const addCoOwner = () => {
-    setNewCoOwners([...newCoOwners, { address: ContractAddress(account.address), percentage: 0 }]);
+    if (newCoOwners.length >= 10) return;
+    setNewCoOwners([...newCoOwners, { address: ContractAddress(account.address), percentage: 0, id: nextId }]);
+    setNextId(nextId + 1);
   };
 
   const setCoOwners = () => {
     setIsLoading(true);
+    // percentage is in precision 10_000
     set_co_owners({
       signer: account,
       hyperstructure_entity_id: hyperstructureEntityId,
-      co_owners: newCoOwners.map((coOwner) => ({ ...coOwner, percentage: coOwner.percentage * 100 })),
+      co_owners: newCoOwners
+        .filter((owner) => owner.percentage > 0)
+        .map((coOwner) => ({
+          address: coOwner.address,
+          percentage: coOwner.percentage * 100,
+        })),
     });
     setIsLoading(false);
   };
 
-  const removeCoOwner = (index: number) => {
-    setNewCoOwners(newCoOwners.filter((_, i) => i !== index));
+  const removeCoOwner = (id: number) => {
+    setNewCoOwners(newCoOwners.filter((coOwner) => coOwner.id !== id));
   };
 
   const hasDuplicates = useMemo(() => {
@@ -208,57 +226,81 @@ const ChangeCoOwners = ({ hyperstructureEntityId }: { hyperstructureEntityId: ID
     return newCoOwners.reduce((acc, curr) => acc + curr.percentage, 0);
   }, [newCoOwners]);
 
+  const hasCurrentUser = useMemo(() => {
+    return newCoOwners
+      .filter((owner) => owner.percentage > 0)
+      .some((coOwner) => coOwner.address === ContractAddress(account.address));
+  }, [newCoOwners, account.address]);
+
+  const players = useMemo(() => {
+    return getPlayers();
+  }, []);
+
   return (
     <div className="h-full flex flex-col justify-between">
       <div>
-        {newCoOwners.map((coOwner, index) => {
-          const coOwnersExceptForThis = [...newCoOwners.slice(0, index), ...newCoOwners.slice(index + 1)];
+        {newCoOwners.map((coOwner) => {
+          const coOwnersExceptForThis = newCoOwners.filter((co) => co.id !== coOwner.id);
+          const maxValue = 100 - coOwnersExceptForThis.reduce((acc, curr) => acc + curr.percentage, 0);
+          const value = coOwner.percentage;
           return (
-            <div key={index} className="flex flex-row grid grid-cols-12 gap-2 mb-2">
-              <AddressSelect
+            <div key={coOwner.id} className="flex flex-row grid grid-cols-12 gap-2 mb-2">
+              <SelectAddress
                 className="col-span-8"
-                setSelectedAddress={(val) => {
-                  setNewCoOwners([
-                    ...newCoOwners.slice(0, index),
-                    { ...coOwner, address: val },
-                    ...newCoOwners.slice(index + 1),
-                  ]);
+                players={players}
+                initialSelectedAddress={ContractAddress(account.address)}
+                onSelect={(player) => {
+                  if (player) {
+                    setNewCoOwners(
+                      newCoOwners.map((co) => (co.id === coOwner.id ? { ...co, address: player.address } : co)),
+                    );
+                  }
                 }}
               />
               <NumberInput
                 className="max-w-[10rem] col-span-3"
-                key={index}
-                value={newCoOwners[index].percentage}
-                max={100 - coOwnersExceptForThis.reduce((acc, curr) => acc + curr.percentage, 0)}
+                value={value}
+                max={maxValue}
+                min={1}
+                disabled={!coOwner.address}
                 onChange={(value) => {
-                  setNewCoOwners([
-                    ...newCoOwners.slice(0, index),
-                    { ...coOwner, percentage: value },
-                    ...newCoOwners.slice(index + 1),
-                  ]);
+                  setNewCoOwners(newCoOwners.map((co) => (co.id === coOwner.id ? { ...co, percentage: value } : co)));
                 }}
               />
               <Trash
                 className="col-span-1 m-auto self-center w-6 h-6 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
-                onClick={() => removeCoOwner(index)}
+                onClick={() => removeCoOwner(coOwner.id)}
               />
             </div>
           );
         })}
         <div className="flex justify-between">
           <div onClick={addCoOwner} className="flex items-center justify-center">
-            <Plus className="w-6 h-6 fill-gold/70 hover:scale-125 hover:animate-pulse duration-300 transition-all" />
+            <Plus
+              className={`w-6 h-6 fill-gold/70 ${
+                newCoOwners.length >= 10
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:scale-125 hover:animate-pulse duration-300 transition-all"
+              }`}
+            />
           </div>
           <div className={`text-sm ${totalPercentage === 100 ? "text-red" : ""}`}>{totalPercentage}%</div>
         </div>
       </div>
       <Button
-        className="mb-2"
-        disabled={newCoOwners.length === 0 || totalPercentage !== 100 || hasDuplicates}
+        variant="primary"
+        className="my-2"
+        disabled={newCoOwners.length === 0 || totalPercentage !== 100 || hasDuplicates || !hasCurrentUser}
         onClick={setCoOwners}
         isLoading={isLoading}
       >
-        {`${hasDuplicates ? "Can't set the same person twice as co-owner" : "Set co-owners"}`}
+        {hasDuplicates
+          ? "Can't set the same person twice as co-owner"
+          : !hasCurrentUser
+            ? "You must include yourself as a co-owner"
+            : totalPercentage !== 100
+              ? "Total percentage must be 100%"
+              : "Set co-owners"}
       </Button>
     </div>
   );

@@ -1,50 +1,58 @@
 import { useConnect, useDisconnect } from "@starknet-react/core";
 import { Button } from "../ui/button";
 
-import useAccountOrBurner from "@/hooks/useAccountOrBurner";
+import { lordsAddress } from "@/config";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useLords } from "@/hooks/use-lords";
 import { displayAddress } from "@/lib/utils";
-import { TypeH2 } from "../typography/type-h2";
+import { Uint256, uint256 } from "starknet";
+import { formatEther } from "viem";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
 
 export const TopNavigation = () => {
-  const { account } = useAccountOrBurner();
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { mint_test_lords },
+    },
+  } = useDojo();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  /*useEffect(() => {
-    if (status === "disconnected") {
-      // on disconnect
-    } else if (status === "connected") {
-      // on connect
-    }
-  }, [address, status]);*/
 
-  /*const { connectors } = useInjectedConnectors({
-    recommended: [argent(), braavos()],
-    includeRecommended: "onlyIfNoConnectors",
-    order: "random",
-  });*/
+  const { lordsBalance } = useLords();
 
   return (
-    <div className="flex justify-between items-center w-full">
-      <div className="flex items-center gap-2">
+    <div className="flex justify-between items-center w-full p-2">
+      <div className="flex items-center">
         <SidebarTrigger />
-        <TypeH2>Season 0</TypeH2>
       </div>
       <div className="flex gap-2">
         <ModeToggle />
-        {!account?.address ? (
-          <>
-            {connectors.map((connector, index) => (
-              <Button key={index} onClick={() => connect({ connector })} variant="cta">
-                <img className="w-5" src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark} />{" "}
-                Connect {connector.name}
-              </Button>
-            ))}
-          </>
-        ) : (
-          <Button onClick={() => disconnect()}>{displayAddress(account?.address)}</Button>
-        )}
+
+        {lordsBalance ? (
+          <div className="text-sm p-2 rounded border">
+            {formatEther(uint256.uint256ToBN(lordsBalance as Uint256))} Lords
+          </div>
+        ) : null}
+
+        <Button onClick={async () => await mint_test_lords({ signer: account, lords_address: lordsAddress })}>
+          Mint Test Lords
+        </Button>
+
+        <>
+          {connectors.map((connector, index) => (
+            <Button size={"default"} key={index} onClick={() => connect({ connector })} variant="outline">
+              <img className="w-5" src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark} />{" "}
+            </Button>
+          ))}
+        </>
+        {/* // ) : (
+        //   <Button onClick={() => disconnect()}>{displayAddress(account?.address)}</Button>
+        // )} */}
+        <Button size={"default"} onClick={() => disconnect()}>
+          {displayAddress(account?.address)}
+        </Button>
       </div>
     </div>
   );

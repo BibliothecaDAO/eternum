@@ -33,7 +33,7 @@ mod swap_systems {
 
 
     #[derive(Copy, Drop, Serde)]
-    #[dojo::event(historical: true)]
+    #[dojo::event(historical: false)]
     struct SwapEvent {
         #[key]
         bank_entity_id: ID,
