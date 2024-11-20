@@ -25,6 +25,7 @@ import { ReactComponent as Battle } from "@/assets/icons/battle.svg";
 import { ReactComponent as Burn } from "@/assets/icons/burn.svg";
 import { ReactComponent as Castle } from "@/assets/icons/castle.svg";
 import { ReactComponent as Flag } from "@/assets/icons/flag.svg";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getChancesOfSuccess, getMaxResourceAmountStolen, getTroopLossOnRaid } from "./utils";
 
@@ -225,21 +226,33 @@ export const BattleActions = ({
     const maxResourceAmountStolen = getMaxResourceAmountStolen(selectedArmy, defenderArmy, troopConfig);
     const [attackerTroopsLoss, defenseTroopsLoss] = getTroopLossOnRaid(selectedArmy, defenderArmy, troopConfig);
     let content = [
-      <div>Raid outcome:</div>,
-      <div>Your troops loss: {Number(attackerTroopsLoss)}</div>,
-      <div>Defender troops loss: {Number(defenseTroopsLoss)}</div>,
-      <div>Success chance: {raidSuccessPercentage.toFixed(2)}%</div>,
-      <div>Max weight of random resources stolen: {maxResourceAmountStolen}</div>,
+      <div className="text-xs font-bold text-center">Raid outcome:</div>,
+      <div className="flex justify-between py-1">
+        <span>Your troops loss:</span>
+        <span className="font-medium text-red">{currencyFormat(Number(attackerTroopsLoss), 0)}</span>
+      </div>,
+      <div className="flex justify-between py-1">
+        <span>Defender troops loss:</span>
+        <span className="font-medium text-red">{currencyFormat(Number(defenseTroopsLoss), 0)}</span>
+      </div>,
+      <div className="flex justify-between py-1">
+        <span>Success chance:</span>
+        <span className="font-medium text-green">{raidSuccessPercentage.toFixed(2)}%</span>
+      </div>,
+      <div className="flex justify-between py-1">
+        <span>Max resources stolen:</span>
+        <span className="font-medium">{maxResourceAmountStolen}</span>
+      </div>,
     ];
 
     if (raidStatus !== RaidStatus.isRaidable) {
-      setTooltip({ content: <div>{raidStatus}</div>, position: "top" });
+      setTooltip({ content: <div className="">{raidStatus}</div>, position: "top" });
     } else if (selectedArmy?.battle_id !== 0) {
       content.push(<div>Raiding will make you leave and lose 25% of your army</div>);
     }
 
     setTooltip({
-      content: <div>{content}</div>,
+      content: <div className="w-[250px]">{content}</div>,
       position: "top",
     });
   }, [raidStatus, selectedArmy, defenderArmy]);
