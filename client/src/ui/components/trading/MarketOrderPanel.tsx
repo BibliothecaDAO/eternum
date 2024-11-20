@@ -245,7 +245,8 @@ const OrderRow = ({
   const lordsManager = new ResourceManager(dojo.setup, entityId, ResourcesIds.Lords);
   const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [updateBalance]);
 
-  const resourceManager = new ResourceManager(dojo.setup, entityId, offer.makerGets[0].resourceId);
+  const resourceManager = useResourceManager(entityId, offer.makerGets[0].resourceId);
+
   const resourceBalance = useMemo(() => Number(resourceManager.getResource()?.balance || 0n), [updateBalance]);
 
   const { getRealmAddressName } = useRealm();

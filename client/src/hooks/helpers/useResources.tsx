@@ -25,13 +25,15 @@ export function getResourcesUtils() {
   } = useDojo();
 
   const getResourcesFromBalance = (entityId: ID): Resource[] => {
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+
     const ownedResources = getComponentValue(OwnedResourcesTracker, getEntityIdFromKeys([BigInt(entityId)]));
     if (!ownedResources) return [];
     const resourceIds = resources.map((r) => r.id);
     return resourceIds
       .map((id) => {
         const resourceManager = new ResourceManager(useDojo().setup, entityId, id);
-        const balance = resourceManager.balance(useUIStore.getState().nextBlockTimestamp!);
+        const balance = resourceManager.balance(currentDefaultTick);
         return { resourceId: id, amount: balance };
       })
       .filter((r) => r.amount > 0);
@@ -53,14 +55,14 @@ export function getResourcesUtils() {
     minAmount: number,
   ): Array<{ realmEntityId: ID; realmId: ID; amount: number }> => {
     const allRealms = Array.from(runQuery([Has(Realm)]));
-
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
     const realmsWithResource = allRealms
       .map((id: Entity) => {
         const realm = getComponentValue(Realm, id);
         const resourceManager = realm ? new ResourceManager(useDojo().setup, realm.entity_id, resourceId) : undefined;
         const resource = resourceManager
           ? {
-              balance: resourceManager.balance(useUIStore.getState().nextBlockTimestamp!),
+              balance: resourceManager.balance(currentDefaultTick),
             }
           : undefined;
 
