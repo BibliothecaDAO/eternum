@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create a Slot -> if deploying to slot
-slot deployments create -t epic eternum-rc1-1 katana --version v1.0.0 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
+slot deployments create -t epic eternum-rc1-1 katana --version v1.0.1 --invoke-max-steps 10000000 --disable-fee true --block-time 2000
 
 # get accounts 
 # -> update prod env_variables.sh
