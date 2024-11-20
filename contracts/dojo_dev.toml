@@ -28,6 +28,7 @@ website = "https://alpha-eternum.realms.world/"
     "eternum-hyperstructure_systems",
     "eternum-liquidity_systems",
     "eternum-map_systems",
+    "eternum-map_generation_systems",
     "eternum-name_systems",
     "eternum-ownership_systems",
     "eternum-realm_systems",
@@ -37,6 +38,5 @@ website = "https://alpha-eternum.realms.world/"
     "eternum-trade_systems",
     "eternum-travel_systems",
     "eternum-troop_systems",
-    "eternum-map_generation_systems",
 	"eternum-battle_utils_systems"
 ]

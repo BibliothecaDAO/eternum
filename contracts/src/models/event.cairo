@@ -1,5 +1,5 @@
 use eternum::models::buildings::BuildingCategory;
-use eternum::{alias::ID, models::combat::BattleSide, models::structure::StructureCategory};
+use eternum::{alias::ID, models::combat::{BattleSide, Troops}, models::structure::StructureCategory};
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -110,6 +110,8 @@ pub struct BattlePillageData {
     pillager_army_entity_id: ID,
     pillaged_structure_owner: ContractAddress,
     pillaged_structure_entity_id: ID,
+    attacker_lost_troops: Troops,
+    structure_lost_troops: Troops,
     pillaged_structure_owner_name: felt252,
     winner: BattleSide,
     x: u32,

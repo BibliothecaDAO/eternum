@@ -1115,6 +1115,11 @@ mod battle_pillage_systems {
                 }
             }
 
+            // store previous attacking troops to calculate lost troops
+            let mut attacker_lost_troops = attacking_army.troops.clone();
+            // store previous structure troops to calculate lost troops
+            let mut structure_lost_troops = structure_army.troops.clone();
+
             // Deduct health from both armies if structure has an army
             if structure_army_health.is_alive() {
                 let mut mock_battle: Battle = Battle {
@@ -1175,6 +1180,10 @@ mod battle_pillage_systems {
             let structure_owner_name_address_name: AddressName = world.read_model(structure_owner);
 
             let pillager_address_name: AddressName = world.read_model(starknet::get_caller_address());
+
+            attacker_lost_troops.deduct(attacking_army.troops);
+            structure_lost_troops.deduct(structure_army.troops);
+
             world
                 .emit_event(
                     @BattlePillageData {
@@ -1186,6 +1195,8 @@ mod battle_pillage_systems {
                         pillager_army_entity_id: army_id,
                         pillaged_structure_owner: structure_owner,
                         pillaged_structure_entity_id: structure_id,
+                        attacker_lost_troops,
+                        structure_lost_troops,
                         pillaged_structure_owner_name: structure_owner_name_address_name.name,
                         winner: if *attack_successful {
                             BattleSide::Attack

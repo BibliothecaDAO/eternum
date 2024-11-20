@@ -10,7 +10,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 import { ViewOnMapIcon } from "../military/ArmyManagementCard";
-import { TroopMenuRow } from "../military/TroopChip";
+import { TroopDisplay } from "../military/TroopChip";
 import { InventoryResources } from "../resources/InventoryResources";
 
 type BattleListItemProps = {
@@ -94,7 +94,7 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
           <div className={`flex flex-col w-[27rem] h-full justify-between  bg-red/20 rounded-md border-gold/20 p-2`}>
             <div className="flex w-full justify-between">
               <div className="flex flex-col w-[40%]">
-                <TroopMenuRow troops={updatedBattle?.attack_army?.troops} />
+                <TroopDisplay troops={updatedBattle?.attack_army?.troops} />
               </div>
               <div className="flex flex-col font-bold m-auto relative">
                 {showCompass && <ViewOnMapIcon hideTooltip={true} position={battle?.position} />}
@@ -119,7 +119,7 @@ export const BattleListItem = ({ battle, ownArmySelected, showCompass = false }:
                 />
               </div>
               <div className="flex flex-col content-center w-[40%]">
-                <TroopMenuRow troops={updatedBattle?.defence_army?.troops} />
+                <TroopDisplay troops={updatedBattle?.defence_army?.troops} />
               </div>
             </div>
             {showInventory && (
