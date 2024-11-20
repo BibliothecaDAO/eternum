@@ -3,7 +3,7 @@ import { BuildingType, CapacityConfigCategory, ResourcesIds, type ID } from "@bi
 import { getComponentValue } from "@dojoengine/recs";
 import { configManager, type SetupResult } from "../setup";
 
-export class ProductionManager {
+export class ResourceManager {
   entityId: ID;
   resourceId: ResourcesIds;
 
