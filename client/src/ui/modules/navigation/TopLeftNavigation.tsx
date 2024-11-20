@@ -170,7 +170,7 @@ export const TopLeftNavigation = () => {
   return (
     <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
       <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
-        <div className="flex max-w-[150px] md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
           <div className="self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -179,7 +179,7 @@ export const TopLeftNavigation = () => {
                   isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="truncate">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent className="bg-brown/80">
@@ -190,8 +190,8 @@ export const TopLeftNavigation = () => {
                       value={structure.entity_id?.toString() || ""}
                     >
                       <h5 className="self-center flex gap-4">
-                        {structureIcons[structure.category]}
                         {structure.name}
+                        {IS_MOBILE ? structureIcons[structure.category] : ""}
                       </h5>
                     </SelectItem>
                   ))}
@@ -199,7 +199,7 @@ export const TopLeftNavigation = () => {
               </Select>
             ) : (
               <div className="w-full px-4 py-2">
-                <h5 className="flex items-center gap-4">
+                <h5 className="flex items-center gap-4 truncate">
                   {isSpectatorMode ? (
                     <>
                       {structureIcons.SpectatorMode}
