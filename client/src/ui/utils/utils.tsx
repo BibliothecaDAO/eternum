@@ -21,11 +21,6 @@ export { getEntityIdFromKeys };
 
 export const toInteger = (value: number): number => Math.floor(value);
 
-export const capitalize = (str: string): string => {
-  if (!str) return "";
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
-
 export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
 };
