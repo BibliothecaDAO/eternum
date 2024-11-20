@@ -19,6 +19,11 @@ const SelectedArmy = lazy(() =>
 const ActionInfo = lazy(() =>
   import("../components/worldmap/armies/ActionInfo").then((module) => ({ default: module.ActionInfo })),
 );
+
+const ActionInstructions = lazy(() =>
+  import("../components/worldmap/armies/ActionInstructions").then((module) => ({ default: module.ActionInstructions })),
+);
+
 const ArmyInfoLabel = lazy(() =>
   import("../components/worldmap/armies/ArmyInfoLabel").then((module) => ({ default: module.ArmyInfoLabel })),
 );
@@ -107,9 +112,10 @@ export const World = () => {
         <BlankOverlayContainer open={showBlankOverlay}>
           <Onboarding />
         </BlankOverlayContainer>
-        <ActionInfo />
+        <ActionInstructions />
         {!IS_MOBILE && (
           <>
+            <ActionInfo />
             <ArmyInfoLabel />
             <StructureInfoLabel />
             <BattleInfoLabel />
