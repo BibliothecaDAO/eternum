@@ -196,24 +196,24 @@ const DojoContextProvider = ({
       return (
         <div className="relative h-screen w-screen pointer-events-auto">
           <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="Cover" />
-          <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
-            <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient">
-              <div className="w-full text-center pt-6">
-                <div className="mx-auto flex mb-8">
-                  <img src="/images/eternum_with_snake.png" className="w-96 mx-auto" alt="Eternum Logo" />
+          <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
+            <div className="self-center bg-brown rounded-lg border p-4 md:p-8 text-gold w-[90%] md:min-w-[600px] md:max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-white/40 border-gradient mx-4">
+              <div className="w-full text-center pt-2 md:pt-6">
+                <div className="mx-auto flex mb-2 md:mb-8">
+                  <img src="/images/eternum_with_snake.png" className="w-48 md:w-96 mx-auto" alt="Eternum Logo" />
                 </div>
               </div>
-              <div className="flex space-x-2 mt-8 justify-center">
+              <div className="flex space-x-2 mt-2 md:mt-8 justify-center">
                 {!isConnected && (
                   <button
-                    className="px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded text-lg fill-black uppercase leading-6 shadow-md hover:shadow-lg active:shadow-inner hover:scale-105 transition-all duration-300 hover:-translate-y-1"
+                    className="px-3 md:px-4 py-2 bg-[#ffc52a] border-2 border-[#ffc52a] text-black flex font-bold rounded text-base md:text-lg fill-black uppercase leading-6 shadow-md hover:shadow-lg active:shadow-inner hover:scale-105 transition-all duration-300 hover:-translate-y-1"
                     onClick={connectWallet}
                   >
-                    <CartridgeSmall className="w-6 mr-2 fill-current self-center" /> Login
+                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-current self-center" /> Login
                   </button>
                 )}
               </div>
-              <div className="text-center text-sm text-white/50 mt-4">
+              <div className="text-center text-xs md:text-sm text-white/50 mt-1 md:mt-4 px-2 md:px-0">
                 Eternum uses a next generation smart contract wallet -{" "}
                 <a href="https://cartridge.gg/" target="_blank" className="underline">
                   Cartridge Controller

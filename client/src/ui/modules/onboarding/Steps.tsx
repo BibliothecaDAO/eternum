@@ -30,13 +30,13 @@ const ACCOUNT_CHANGE_EVENT = "addressChanged";
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
-      className="flex justify-center z-50"
+      className="flex justify-center z-50 px-4 md:px-0"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, y: 20 }}
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown rounded-lg border p-8 text-gold min-w-[600px] max-w-[800px] b overflow-hidden relative z-50 shadow-2xl border-gradient  ">
+      <div className="self-center bg-brown rounded-lg border p-4 md:p-8 text-gold w-full md:min-w-[600px] md:max-w-[800px] overflow-hidden relative z-50 shadow-2xl border-gradient">
         {children}
       </div>
     </motion.div>
@@ -61,12 +61,12 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <div className="w-full text-center pt-6">
-        <div className="mx-auto flex mb-8">
-          <img src="/images/eternum_with_snake.png" className="w-72 mx-auto" alt="Eternum Logo" />
+      <div className="w-full text-center pt-2 md:pt-6">
+        <div className="mx-auto flex mb-2 md:mb-8">
+          <img src="/images/eternum_with_snake.png" className="w-48 md:w-72 mx-auto" alt="Eternum Logo" />
         </div>
       </div>
-      <div className="flex flex-col space-y-4 mt-8 items-center">
+      <div className="flex flex-col space-y-4 mt-2 md:mt-8 items-center">
         <Button size="md" className="mx-auto w-48" variant="primary" onClick={onNext}>
           Choose your Leader
           <ArrowRight className="w-2 ml-2 fill-current" />
@@ -200,17 +200,17 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   return (
     <StepContainer>
       <div className="flex flex-col items-center p-3 relative z-50">
-        <h3 className="mb-4">Select Account</h3>
+        <h3 className="mb-1 md:mb-4">Select Account</h3>
         <div className="w-full max-w-md">
-          <div className="mb-4">
+          <div className="mb-1 md:mb-4">
             {loading ? (
               <div className="p-2">Loading...</div>
             ) : addressName ? (
               <div className="p-2 text-2xl">{addressName}</div>
             ) : (
-              <div className="flex w-full">
+              <div className="flex flex-col md:flex-row w-full gap-2">
                 <TextInput
-                  className="flex-grow mr-2"
+                  className="flex-grow"
                   placeholder="Your Name... (Max 31 characters)"
                   maxLength={MAX_NAME_LENGTH}
                   onChange={(value) => {
@@ -231,9 +231,9 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
           </div>
 
           {import.meta.env.VITE_PUBLIC_DEV === "true" && (
-            <div className="flex items-center mb-4">
+            <div className="flex flex-col md:flex-row items-center mb-1 md:mb-4 gap-2">
               <ListSelect
-                className="flex-grow mr-2"
+                className="flex-grow"
                 title="Active Account: "
                 options={list().map((account) => {
                   const addressName = getAddressName(ContractAddress(account.address));
@@ -299,7 +299,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         </div>
       </div>
 
-      <div className="flex space-x-2 mt-8 justify-center">
+      <div className="flex space-x-2 mt-2 mb:mt-8 justify-center">
         {numberOfMintedRealms >= MAX_REALMS && numberOfPlayerCurrentRealms === 0 ? (
           <div>You have been eliminated. Please try again next Season.</div>
         ) : numberOfPlayerCurrentRealms > 1 ? (
@@ -337,13 +337,13 @@ export const StepThree = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Welcome {name}...</h2>
-        <p className="mb-4  text-xl">
+        <h2 className="mb-1 md:mb-4">Welcome {name}...</h2>
+        <p className="mb-1 md:mb-4 text-xl">
           Before you begin {name}, here are some important things you need to understand about this world.
         </p>
 
         <div className="mt-auto">
-          <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
+          <Button size="md" className="mt-auto" variant="primary" onClick={onNext}>
             Continue <LucideArrowRight className="w-4 fill-current ml-3" />
           </Button>
         </div>
@@ -356,14 +356,14 @@ export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Resources rule the world...</h2>
+        <h2 className="mb-1 md:mb-4">Resources rule the world...</h2>
 
-        <p className="mb-4 text-xl">
+        <p className="mb-1 md:mb-4 text-xl">
           Resources, Troops, Donkeys all exist and are tradable until you use them. Use them wisely.
         </p>
 
         <div className="mt-auto">
-          <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
+          <Button size="md" className="mt-auto" variant="primary" onClick={onNext}>
             Continue <LucideArrowRight className="w-4 fill-current ml-3" />
           </Button>
         </div>
@@ -374,8 +374,8 @@ export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
 
 const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="gap-10 grid grid-cols-12">
-      <div className="rounded-full border  self-center col-span-4">
+    <div className="gap-4 md:gap-10 grid grid-cols-12">
+      <div className="rounded-full border self-center col-span-4">
         <img src="/images/squire.png" className="rounded-full border" alt="" />
       </div>
       <div className="col-span-8 flex flex-col">{children}</div>
@@ -387,8 +387,8 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Days are {formatTime(configManager.getTick(TickIds.Armies))} long</h2>
-        <p className="mb-4 text-xl">
+        <h2 className="mb-1 md:mb-4">Days are {formatTime(configManager.getTick(TickIds.Armies))} long</h2>
+        <p className="mb-1 md:mb-4 text-xl">
           Each {formatTime(configManager.getTick(TickIds.Armies))} period Troops will regain energy and be able to
           travel again. Don't get caught out in the open.
         </p>
@@ -406,7 +406,7 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
   return (
     <StepContainer>
       <ResourceIcon resource="Ancient Fragment" size="xl" withTooltip={false} />
-      <p className="text-2xl text-center mb-8">Follow the quests and you will survive the day.</p>
+      <p className="text-2xl text-center mb-2 md:mb-8">Follow the quests and you will survive the day.</p>
       <div className="flex w-full justify-center">
         <NavigateToRealm text={"begin"} />
       </div>
