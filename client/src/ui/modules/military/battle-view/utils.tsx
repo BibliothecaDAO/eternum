@@ -1,13 +1,21 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Battle, Health, Percentage, Troops as SdkTroops, TroopConfig } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { getTotalTroops } from "./BattleHistory";
 
+type ArmyBattleInfo = {
+  troops: {
+    knight_count: bigint;
+    paladin_count: bigint;
+    crossbowman_count: bigint;
+  };
+  health: { current: bigint; lifetime: bigint };
+};
+
 export const getChancesOfSuccess = (
-  attackerArmy: ArmyInfo | undefined,
-  defenderArmy: ArmyInfo | undefined,
+  attackerArmy: ArmyBattleInfo | undefined,
+  defenderArmy: ArmyBattleInfo | undefined,
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
 ) => {
   if (!attackerArmy || !defenderArmy) {
@@ -40,7 +48,7 @@ function fullStrength(
   return totalKnightStrength + totalPaladinStrength + totalCrossbowmanStrength;
 }
 
-function percentageLeft(health: ComponentValue<ClientComponents["Health"]["schema"]>): bigint {
+function percentageLeft(health: { current: bigint; lifetime: bigint }): bigint {
   if (health.lifetime === 0n) {
     return 0n;
   }
@@ -48,8 +56,8 @@ function percentageLeft(health: ComponentValue<ClientComponents["Health"]["schem
 }
 
 export const getMaxResourceAmountStolen = (
-  attackerArmy: ArmyInfo | undefined,
-  defenderArmy: ArmyInfo | undefined,
+  attackerArmy: ArmyBattleInfo | undefined,
+  defenderArmy: ArmyBattleInfo | undefined,
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
 ) => {
   if (!attackerArmy) return 0;
@@ -58,11 +66,11 @@ export const getMaxResourceAmountStolen = (
 };
 
 export const getTroopLossOnRaid = (
-  attackerArmy: ArmyInfo | undefined,
-  defenderArmy: ArmyInfo | undefined,
+  attackerArmy: ArmyBattleInfo | undefined,
+  defenderArmy: ArmyBattleInfo | undefined,
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
 ) => {
-  if (!attackerArmy || !defenderArmy) return [0, 0];
+  if (!attackerArmy?.health?.lifetime || !defenderArmy?.health?.lifetime) return [0, 0];
   const battle = new Battle(
     attackerArmy.troops,
     defenderArmy.troops,
@@ -83,18 +91,12 @@ export const getTroopLossOnRaid = (
   const duration = battle.calculateDuration();
 
   const attackerHealthLoss =
-    (defenceDelta * duration) /
-    troopConfig.pillage_health_divisor /
-    configManager.getResourcePrecision() /
-    configManager.getResourceMultiplier();
+    (defenceDelta * duration) / troopConfig.pillage_health_divisor / configManager.getResourcePrecision();
   const attackerTroopsLoss =
     (getTotalTroops(attackerArmy.troops) * attackerHealthLoss) / Number(attackerArmy.health.lifetime);
 
   const defenderHealthLoss =
-    (attackDelta * duration) /
-    troopConfig.pillage_health_divisor /
-    configManager.getResourcePrecision() /
-    configManager.getResourceMultiplier();
+    (attackDelta * duration) / troopConfig.pillage_health_divisor / configManager.getResourcePrecision();
   const defenderTroopsLoss =
     (getTotalTroops(defenderArmy.troops) * defenderHealthLoss) / Number(defenderArmy.health.lifetime);
 
