@@ -37,6 +37,9 @@ export default class InstancedModel {
           tmp.castShadow = true;
           tmp.receiveShadow = true;
         }
+        if (name === "Outline") {
+          tmp.renderOrder = 1;
+        }
         tmp.userData.isInstanceModel = true;
 
         if (!enableRaycast) {
