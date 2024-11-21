@@ -13,6 +13,15 @@ type ArmyBattleInfo = {
   health: { current: bigint; lifetime: bigint };
 };
 
+interface TroopLosses {
+  attackerKnightLost: number;
+  attackerPaladinLost: number;
+  attackerCrossbowmanLost: number;
+  defenderKnightLost: number;
+  defenderPaladinLost: number;
+  defenderCrossbowmanLost: number;
+}
+
 export const getChancesOfSuccess = (
   attackerArmy: ArmyBattleInfo | undefined,
   defenderArmy: ArmyBattleInfo | undefined,
@@ -77,8 +86,15 @@ export const getTroopLossOnRaidPerTroopType = (
   attackerArmy: ArmyBattleInfo | undefined,
   defenderArmy: ArmyBattleInfo | undefined,
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
-) => {
-  if (!attackerArmy?.health?.lifetime || !defenderArmy?.health?.lifetime) return [0, 0];
+): TroopLosses => {
+  if (!attackerArmy?.health?.lifetime || !defenderArmy?.health?.lifetime) return {
+    attackerKnightLost: 0,
+    attackerPaladinLost: 0,
+    attackerCrossbowmanLost: 0,
+    defenderKnightLost: 0,
+    defenderPaladinLost: 0,
+    defenderCrossbowmanLost: 0,
+  };
   const battle = new Battle(
     attackerArmy.troops,
     defenderArmy.troops,
