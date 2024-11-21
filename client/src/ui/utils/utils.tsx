@@ -1,4 +1,4 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
+import { type ClientComponents } from "@/dojo/createClientComponents";
 import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { type HexPosition, ResourceMiningTypes } from "@/types";
@@ -12,12 +12,14 @@ import {
   ResourcesIds,
   TickIds,
 } from "@bibliothecadao/eternum";
-import { ComponentValue } from "@dojoengine/recs";
+import { type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
+
+export const toInteger = (value: number): number => Math.floor(value);
 
 export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
@@ -71,7 +73,7 @@ export function addressToNumber(address: string) {
   }
 
   // Map the sum to a number between 1 and 10
-  let result = (sum % 5) + 1;
+  const result = (sum % 5) + 1;
 
   // Pad with a 0 if the result is less than 10
   return result < 10 ? `0${result}` : result.toString();
