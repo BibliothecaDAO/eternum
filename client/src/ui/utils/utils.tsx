@@ -59,6 +59,14 @@ export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
+export function roundDownToPrecision(value: bigint, precision: Number) {
+  return BigInt(Number(value) - (Number(value) % Number(precision)));
+}
+
+export function roundUpToPrecision(value: bigint, precision: Number) {
+  return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
+}
+
 export function addressToNumber(address: string) {
   // Convert the address to a big integer
   let numericValue = ContractAddress(address);

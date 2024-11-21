@@ -4,10 +4,8 @@ import {
   getChancesOfSuccess,
   getMaxResourceAmountStolen,
   getTroopLossOnRaidPerTroopType,
-  roundDownToPrecision,
-  roundUpToPrecision,
 } from "@/ui/modules/military/battle-view/utils";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
 import {
   ResourcesIds,
   TroopConfig as TroopConfigClass,

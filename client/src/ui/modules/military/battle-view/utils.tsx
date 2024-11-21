@@ -1,5 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
+import { roundUpToPrecision } from "@/ui/utils/utils";
 import { Battle, Health, Percentage, Troops as SdkTroops, TroopConfig } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { getTotalTroops } from "./BattleHistory";
@@ -72,14 +73,6 @@ export const getMaxResourceAmountStolen = (
   if (!attackerArmy) return 0;
   const attackingTroops = getTotalTroops(attackerArmy.troops) / configManager.getResourcePrecision();
   return Math.floor(attackingTroops * getChancesOfSuccess(attackerArmy, defenderArmy, troopConfig));
-};
-
-export const roundDownToPrecision = (value: bigint, precision: Number) => {
-  return BigInt(Number(value) - (Number(value) % Number(precision)));
-};
-
-export const roundUpToPrecision = (value: bigint, precision: Number) => {
-  return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
 };
 
 export const getTroopLossOnRaidPerTroopType = (
