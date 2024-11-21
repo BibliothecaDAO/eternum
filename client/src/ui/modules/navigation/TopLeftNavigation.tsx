@@ -13,7 +13,7 @@ import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { gramToKg, kgToGram } from "@/ui/utils/utils";
+import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -21,7 +21,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
@@ -207,7 +207,7 @@ export const TopLeftNavigation = () => {
                 </SelectTrigger>
                 <SelectContent className="bg-brown/80">
                   {structuresWithFavorites.map((structure, index) => (
-                    <div className="flex flex-row items-center">
+                    <div key={index} className="flex flex-row items-center">
                       <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entity_id)}>
                         {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                       </button>
@@ -336,4 +336,70 @@ export const TopLeftNavigation = () => {
   );
 };
 
-const TickProgress = () => {};
+const TickProgress = () => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
+  const cycleTime = configManager.getTick(TickIds.Armies);
+
+  const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+
+  const progress = useMemo(() => {
+    const elapsedTime = nextBlockTimestamp % cycleTime;
+    return (elapsedTime / cycleTime) * 100;
+  }, [nextBlockTimestamp, cycleTime]);
+
+  const updateTooltip = useCallback(() => {
+    if (!isTooltipOpen) return;
+
+    setTooltip({
+      position: "bottom",
+      content: (
+        <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
+          <div>
+            A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+          </div>
+          <div>
+            Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
+          </div>
+        </div>
+      ),
+    });
+  }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
+
+  useEffect(() => {
+    if (!isTooltipOpen) return;
+
+    const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);
+    setTimeUntilNextCycle(initialTime);
+
+    const interval = setInterval(() => {
+      setTimeUntilNextCycle((prevTime) => (prevTime <= 1 ? initialTime : prevTime - 1));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
+
+  useEffect(() => {
+    if (isTooltipOpen) {
+      updateTooltip();
+    }
+  }, [isTooltipOpen, updateTooltip]);
+
+  return (
+    <div
+      onMouseEnter={() => {
+        setIsTooltipOpen(true);
+        updateTooltip();
+      }}
+      onMouseLeave={() => {
+        setIsTooltipOpen(false);
+        setTooltip(null);
+      }}
+      className="self-center text-center px-1 py-1 flex gap-1"
+    >
+      <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" />
+      {progress.toFixed()}%
+    </div>
+  );
+};
