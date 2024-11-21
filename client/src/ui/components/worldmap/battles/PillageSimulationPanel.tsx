@@ -154,7 +154,7 @@ export const PillageSimulationPanel = () => {
           <div className="grid grid-cols-2 gap-4 text-center mb-8">
             <div className="bg-black rounded-lg p-3">
               <div className="text-sm">Success Chance</div>
-              <div className="text-xl font-bold">{simulationResults.raidSuccessPercentage.toFixed(2)}%</div>
+              <div className="text-xl font-bold text-green">{simulationResults.raidSuccessPercentage.toFixed(2)}%</div>
             </div>
             <div className="bg-black rounded-lg p-3">
               <div className="text-sm">Resources Stolen</div>
@@ -162,11 +162,15 @@ export const PillageSimulationPanel = () => {
             </div>
             <div className="bg-black rounded-lg p-3">
               <div className="text-sm">Raiders Lost</div>
-              <div className="text-xl font-bold">{currencyFormat(Number(simulationResults.attackerTroopsLoss), 0)}</div>
+              <div className="text-xl font-bold text-red">
+                {currencyFormat(Number(simulationResults.attackerTroopsLoss), 0)}
+              </div>
             </div>
             <div className="bg-black rounded-lg p-3">
               <div className="text-sm">Defenders Lost</div>
-              <div className="text-xl font-bold">{currencyFormat(Number(simulationResults.defenseTroopsLoss), 0)}</div>
+              <div className="text-xl font-bold text-red">
+                {currencyFormat(Number(simulationResults.defenseTroopsLoss), 0)}
+              </div>
             </div>
           </div>
 
