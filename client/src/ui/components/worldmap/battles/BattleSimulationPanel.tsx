@@ -1,8 +1,6 @@
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat, formatTime } from "@/ui/utils/utils";
+import { formatTime } from "@/ui/utils/utils";
 import {
   Battle,
   ResourcesIds,
@@ -13,6 +11,7 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
+import { Troops } from "./Troops";
 
 export const BattleSimulationPanel = () => {
   const {
@@ -57,8 +56,8 @@ export const BattleSimulationPanel = () => {
     return new Battle(
       attacker,
       defender,
-      { current: attacker.fullHealth(troopConfigSimulation), lifetime: attacker.fullHealth(troopConfigSimulation) },
-      { current: defender.fullHealth(troopConfigSimulation), lifetime: defender.fullHealth(troopConfigSimulation) },
+      attacker.fullHealth(troopConfigSimulation),
+      defender.fullHealth(troopConfigSimulation),
       troopConfigSimulation,
     );
   }, [attackingTroopsNumber, defendingTroopsNumber, troopConfig]);
@@ -82,59 +81,41 @@ export const BattleSimulationPanel = () => {
   }, [battle]);
 
   return (
-    <div className="w-full mb-2">
-      <div className="p-2 flex flex-row justify-around gap-4 mx-auto">
-        <Troops troops={attackingTroopsNumber} setTroops={setAttackingTroopsNumber} />
-        <Troops troops={defendingTroopsNumber} setTroops={setDefendingTroopsNumber} />
+    <div className="w-full mb-4 p-6 rounded-lg shadow-lg">
+      <div className="grid grid-cols-2 gap-8">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Attackers</h2>
+          <Troops troops={attackingTroopsNumber} setTroops={setAttackingTroopsNumber} />
+        </div>
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Defenders</h2>
+          <Troops troops={defendingTroopsNumber} setTroops={setDefendingTroopsNumber} />
+        </div>
       </div>
-      <div className="h1 text-xl mx-auto text-center">Battle results</div>
-      <div className="p-2 flex flex-row justify-around gap-4 mx-auto">
-        {remainingTroops && <Troops troops={remainingTroops.attackerRemainingTroops} />}
-        {remainingTroops && <Troops troops={remainingTroops.defenderRemainingTroops} />}
-      </div>
-      {battle && <div className="text-center text-lg">⏳ {formatTime(battle?.calculateDuration() ?? 0)}</div>}
-    </div>
-  );
-};
 
-const Troops = ({
-  troops,
-  setTroops,
-}: {
-  troops: Partial<Record<ResourcesIds, bigint>>;
-  setTroops?: React.Dispatch<React.SetStateAction<Partial<Record<ResourcesIds, bigint>>>>;
-}) => {
-  return (
-    <div className={`grid grid-${setTroops ? "rows" : "cols"}-3`}>
-      {Object.entries(troops).map(([resource, count]) => (
-        <div className={`p-2 bg-gold/10 hover:bg-gold/30 `} key={resource}>
-          <div className="font-bold mb-4">
-            <div className="flex justify-between text-center">
-              <div className="text-md">
-                {(ResourcesIds[resource as keyof typeof ResourcesIds] as unknown as string).length > 7
-                  ? (ResourcesIds[resource as keyof typeof ResourcesIds] as unknown as string).slice(0, 7) + "..."
-                  : ResourcesIds[resource as keyof typeof ResourcesIds]}
-              </div>
+      {remainingTroops && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-center mb-4">Battle Results</h2>
+
+          <div className="text-center mb-8">
+            <div className="bg-black rounded-lg p-3">
+              <div className="text-sm">Battle Duration</div>
+              <div className="text-xl font-bold">⏳ {formatTime(battle?.calculateDuration() ?? 0)}</div>
             </div>
-            <div className="py-1 flex flex-row justify-between">
-              <ResourceIcon
-                withTooltip={false}
-                resource={ResourcesIds[resource as keyof typeof ResourcesIds] as unknown as string}
-                size="lg"
-              />
-              {!setTroops && <div className="text-lg w-full">{currencyFormat(Number(count), 0)}</div>}
-              {setTroops && (
-                <NumberInput
-                  min={0}
-                  step={100}
-                  value={Number(count)}
-                  onChange={(amount) => setTroops({ ...troops, [resource]: BigInt(amount) })}
-                />
-              )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-8">
+            <div className="text-center">
+              <h3 className="text-lg font-bold mb-3">Attackers Remaining</h3>
+              <Troops troops={remainingTroops.attackerRemainingTroops} />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-bold mb-3">Defenders Remaining</h3>
+              <Troops troops={remainingTroops.defenderRemainingTroops} />
             </div>
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
 };
