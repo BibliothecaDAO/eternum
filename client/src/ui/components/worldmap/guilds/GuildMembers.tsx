@@ -20,14 +20,7 @@ interface GuildMembersProps {
 export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
   const {
     setup: {
-      systemCalls: {
-        join_guild,
-        remove_guild_member,
-        disband_guild,
-        leave_guild,
-        remove_player_from_whitelist,
-        set_entity_name,
-      },
+      systemCalls: { join_guild, remove_guild_member, disband_guild, remove_player_from_whitelist, set_entity_name },
     },
     account: { account },
   } = useDojo();
@@ -58,15 +51,6 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
       setIsLoading(false);
     });
   }, []);
-
-  const leaveGuild = () => {
-    setIsLoading(true);
-    leave_guild({
-      signer: account,
-    }).finally(() => {
-      setIsLoading(false);
-    });
-  };
 
   const disbandGuild = () => {
     let calldata = [
@@ -169,7 +153,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
             className="w-full"
             isLoading={isLoading}
             variant="red"
-            onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
+            onClick={() => (userGuild.isOwner ? disbandGuild() : removeGuildMember(ContractAddress(account.address)))}
           >
             {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
           </Button>
