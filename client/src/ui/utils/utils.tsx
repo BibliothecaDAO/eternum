@@ -59,11 +59,11 @@ export function divideByPrecision(value: number): number {
   return value / EternumGlobalConfig.resources.resourcePrecision;
 }
 
-export function roundDownToPrecision(value: bigint, precision: Number) {
+export function roundDownToPrecision(value: bigint, precision: number) {
   return BigInt(Number(value) - (Number(value) % Number(precision)));
 }
 
-export function roundUpToPrecision(value: bigint, precision: Number) {
+export function roundUpToPrecision(value: bigint, precision: number) {
   return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
 }
 

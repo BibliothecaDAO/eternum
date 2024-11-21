@@ -1,7 +1,7 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { configManager } from "@/dojo/setup";
-import { roundUpToPrecision } from "@/ui/utils/utils";
-import { Battle, Health, Percentage, Troops as SdkTroops, TroopConfig } from "@bibliothecadao/eternum";
+import { roundDownToPrecision, roundUpToPrecision } from "@/ui/utils/utils";
+import { Battle, Health, Percentage, ResourcesIds, Troops as SdkTroops, TroopConfig } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { getTotalTroops } from "./BattleHistory";
 
@@ -172,4 +172,24 @@ export const getTroopLossOnRaid = (
     roundUpToPrecision(BigInt(defenderCrossbowmanLost), configManager.getResourcePrecision());
 
   return [attackerTroopsLoss, defenseTroopsLoss];
+};
+
+export const calculateRemainingTroops = (
+  armyInfo: { troops: { crossbowman_count: bigint; knight_count: bigint; paladin_count: bigint } },
+  troopLosses: { crossbowmanLost: number; knightLost: number; paladinLost: number },
+) => {
+  return {
+    [ResourcesIds.Crossbowman]: roundDownToPrecision(
+      armyInfo.troops.crossbowman_count - BigInt(troopLosses.crossbowmanLost),
+      configManager.getResourcePrecision(),
+    ),
+    [ResourcesIds.Knight]: roundDownToPrecision(
+      armyInfo.troops.knight_count - BigInt(troopLosses.knightLost),
+      configManager.getResourcePrecision(),
+    ),
+    [ResourcesIds.Paladin]: roundDownToPrecision(
+      armyInfo.troops.paladin_count - BigInt(troopLosses.paladinLost),
+      configManager.getResourcePrecision(),
+    ),
+  };
 };

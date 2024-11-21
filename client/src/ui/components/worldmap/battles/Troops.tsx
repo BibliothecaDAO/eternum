@@ -11,7 +11,7 @@ export const Troops = ({
   setTroops?: React.Dispatch<React.SetStateAction<Partial<Record<ResourcesIds, bigint>>>>;
 }) => {
   return (
-    <div className={`grid grid-${setTroops ? "rows" : "cols"}-3`}>
+    <div className={setTroops ? "grid grid-rows-3" : "grid grid-cols-3"}>
       {Object.entries(troops).map(([resource, count]) => (
         <div className={`p-2 bg-gold/10 hover:bg-gold/30 `} key={resource}>
           <div className="font-bold mb-4">

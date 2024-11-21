@@ -226,20 +226,22 @@ export const BattleActions = ({
     const maxResourceAmountStolen = getMaxResourceAmountStolen(selectedArmy, defenderArmy, troopConfig);
     const [attackerTroopsLoss, defenseTroopsLoss] = getTroopLossOnRaid(selectedArmy, defenderArmy, troopConfig);
     let content = [
-      <div className="text-xs font-bold text-center">Raid outcome:</div>,
-      <div className="flex justify-between py-1">
+      <div key="title" className="text-xs font-bold text-center">
+        Raid outcome:
+      </div>,
+      <div key="attacker-loss" className="flex justify-between py-1">
         <span>Your troops loss:</span>
         <span className="font-medium text-red">{currencyFormat(Number(attackerTroopsLoss), 0)}</span>
       </div>,
-      <div className="flex justify-between py-1">
+      <div key="defender-loss" className="flex justify-between py-1">
         <span>Defender troops loss:</span>
         <span className="font-medium text-red">{currencyFormat(Number(defenseTroopsLoss), 0)}</span>
       </div>,
-      <div className="flex justify-between py-1">
+      <div key="success-chance" className="flex justify-between py-1">
         <span>Success chance:</span>
         <span className="font-medium text-green">{raidSuccessPercentage.toFixed(2)}%</span>
       </div>,
-      <div className="flex justify-between py-1">
+      <div key="max-resources" className="flex justify-between py-1">
         <span>Max resources stolen:</span>
         <span className="font-medium">{maxResourceAmountStolen}</span>
       </div>,
