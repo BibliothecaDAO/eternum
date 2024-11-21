@@ -3,7 +3,9 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import {
   getChancesOfSuccess,
   getMaxResourceAmountStolen,
-  getTroopLossOnRaid,
+  getTroopLossOnRaidPerTroopType,
+  roundDownToPrecision,
+  roundUpToPrecision,
 } from "@/ui/modules/military/battle-view/utils";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
@@ -78,51 +80,52 @@ export const PillageSimulationPanel = () => {
 
     const raidSuccessPercentage = getChancesOfSuccess(attackerArmyInfo, defenderArmyInfo, troopConfig) * 100;
     const maxResourceAmountStolen = getMaxResourceAmountStolen(attackerArmyInfo, defenderArmyInfo, troopConfig);
-    const [attackerTroopsLoss, defenseTroopsLoss] = getTroopLossOnRaid(attackerArmyInfo, defenderArmyInfo, troopConfig);
+    const {
+      attackerKnightLost,
+      attackerPaladinLost,
+      attackerCrossbowmanLost,
+      defenderKnightLost,
+      defenderPaladinLost,
+      defenderCrossbowmanLost,
+    } = getTroopLossOnRaidPerTroopType(attackerArmyInfo, defenderArmyInfo, troopConfig);
 
     const attackerRemainingTroops = {
-      [ResourcesIds.Crossbowman]:
-        attackerArmyInfo.troops.crossbowman_count -
-        BigInt(attackerTroopsLoss) * (attackerArmyInfo.troops.crossbowman_count / attacker.count()),
-      [ResourcesIds.Knight]:
-        attackerArmyInfo.troops.knight_count -
-        BigInt(
-          Math.round(
-            Number(attackerTroopsLoss) * (Number(attackerArmyInfo.troops.knight_count) / Number(attacker.count())),
-          ),
-        ),
-      [ResourcesIds.Paladin]:
-        attackerArmyInfo.troops.paladin_count -
-        BigInt(
-          Math.round(
-            Number(attackerTroopsLoss) * (Number(attackerArmyInfo.troops.paladin_count) / Number(attacker.count())),
-          ),
-        ),
+      [ResourcesIds.Crossbowman]: roundDownToPrecision(
+        attackerArmyInfo.troops.crossbowman_count - BigInt(attackerCrossbowmanLost),
+        configManager.getResourcePrecision(),
+      ),
+      [ResourcesIds.Knight]: roundDownToPrecision(
+        attackerArmyInfo.troops.knight_count - BigInt(attackerKnightLost),
+        configManager.getResourcePrecision(),
+      ),
+      [ResourcesIds.Paladin]: roundDownToPrecision(
+        attackerArmyInfo.troops.paladin_count - BigInt(attackerPaladinLost),
+        configManager.getResourcePrecision(),
+      ),
     };
     const defenderRemainingTroops = {
-      [ResourcesIds.Crossbowman]:
-        defenderArmyInfo.troops.crossbowman_count -
-        BigInt(
-          Math.round(
-            Number(defenseTroopsLoss) * (Number(defenderArmyInfo.troops.crossbowman_count) / Number(defender.count())),
-          ),
-        ),
-      [ResourcesIds.Knight]:
-        defenderArmyInfo.troops.knight_count -
-        BigInt(
-          Math.round(
-            Number(defenseTroopsLoss) * (Number(defenderArmyInfo.troops.knight_count) / Number(defender.count())),
-          ),
-        ),
-      [ResourcesIds.Paladin]:
-        defenderArmyInfo.troops.paladin_count -
-        BigInt(
-          Math.round(
-            Number(defenseTroopsLoss) * (Number(defenderArmyInfo.troops.paladin_count) / Number(defender.count())),
-          ),
-        ),
+      [ResourcesIds.Crossbowman]: roundDownToPrecision(
+        defenderArmyInfo.troops.crossbowman_count - BigInt(defenderCrossbowmanLost),
+        configManager.getResourcePrecision(),
+      ),
+      [ResourcesIds.Knight]: roundDownToPrecision(
+        defenderArmyInfo.troops.knight_count - BigInt(defenderKnightLost),
+        configManager.getResourcePrecision(),
+      ),
+      [ResourcesIds.Paladin]: roundDownToPrecision(
+        defenderArmyInfo.troops.paladin_count - BigInt(defenderPaladinLost),
+        configManager.getResourcePrecision(),
+      ),
     };
 
+    const attackerTroopsLoss =
+      roundUpToPrecision(BigInt(attackerKnightLost), configManager.getResourcePrecision()) +
+      roundUpToPrecision(BigInt(attackerPaladinLost), configManager.getResourcePrecision()) +
+      roundUpToPrecision(BigInt(attackerCrossbowmanLost), configManager.getResourcePrecision());
+    const defenseTroopsLoss =
+      roundUpToPrecision(BigInt(defenderKnightLost), configManager.getResourcePrecision()) +
+      roundUpToPrecision(BigInt(defenderPaladinLost), configManager.getResourcePrecision()) +
+      roundUpToPrecision(BigInt(defenderCrossbowmanLost), configManager.getResourcePrecision());
     return {
       attackerRemainingTroops,
       defenderRemainingTroops,

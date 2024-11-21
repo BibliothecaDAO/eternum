@@ -65,7 +65,15 @@ export const getMaxResourceAmountStolen = (
   return Math.floor(attackingTroops * getChancesOfSuccess(attackerArmy, defenderArmy, troopConfig));
 };
 
-export const getTroopLossOnRaid = (
+export const roundDownToPrecision = (value: bigint, precision: Number) => {
+  return BigInt(Number(value) - (Number(value) % Number(precision)));
+};
+
+export const roundUpToPrecision = (value: bigint, precision: Number) => {
+  return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
+};
+
+export const getTroopLossOnRaidPerTroopType = (
   attackerArmy: ArmyBattleInfo | undefined,
   defenderArmy: ArmyBattleInfo | undefined,
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
@@ -89,19 +97,69 @@ export const getTroopLossOnRaid = (
   );
   const [attackDelta, defenceDelta] = battle.computeDelta();
   const duration = battle.calculateDuration();
+  const attackerHealthLoss = Math.floor(
+    (defenceDelta * duration) /
+      troopConfig.pillage_health_divisor /
+      configManager.getResourcePrecision() /
+      configManager.getResourcePrecision(),
+  );
+  const attackerKnightLost = Math.ceil(
+    (Number(attackerArmy.troops.knight_count) * Number(attackerHealthLoss)) / Number(attackerArmy.health.lifetime),
+  );
+  const attackerPaladinLost = Math.ceil(
+    (Number(attackerArmy.troops.paladin_count) * Number(attackerHealthLoss)) / Number(attackerArmy.health.lifetime),
+  );
+  const attackerCrossbowmanLost = Math.ceil(
+    (Number(attackerArmy.troops.crossbowman_count) * Number(attackerHealthLoss)) / Number(attackerArmy.health.lifetime),
+  );
 
-  const attackerHealthLoss =
-    (defenceDelta * duration) / troopConfig.pillage_health_divisor / configManager.getResourcePrecision();
+  const defenderHealthLoss = Math.floor(
+    (attackDelta * duration) /
+      troopConfig.pillage_health_divisor /
+      configManager.getResourcePrecision() /
+      configManager.getResourcePrecision(),
+  );
+  const defenderKnightLost = Math.ceil(
+    (Number(defenderArmy.troops.knight_count) * Number(defenderHealthLoss)) / Number(defenderArmy.health.lifetime),
+  );
+  const defenderPaladinLost = Math.ceil(
+    (Number(defenderArmy.troops.paladin_count) * Number(defenderHealthLoss)) / Number(defenderArmy.health.lifetime),
+  );
+  const defenderCrossbowmanLost = Math.ceil(
+    (Number(defenderArmy.troops.crossbowman_count) * Number(defenderHealthLoss)) / Number(defenderArmy.health.lifetime),
+  );
+
+  return {
+    attackerKnightLost,
+    attackerPaladinLost,
+    attackerCrossbowmanLost,
+    defenderKnightLost,
+    defenderPaladinLost,
+    defenderCrossbowmanLost,
+  };
+};
+
+export const getTroopLossOnRaid = (
+  attackerArmy: ArmyBattleInfo | undefined,
+  defenderArmy: ArmyBattleInfo | undefined,
+  troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
+) => {
+  const {
+    attackerKnightLost,
+    attackerPaladinLost,
+    attackerCrossbowmanLost,
+    defenderKnightLost,
+    defenderPaladinLost,
+    defenderCrossbowmanLost,
+  } = getTroopLossOnRaidPerTroopType(attackerArmy, defenderArmy, troopConfig);
   const attackerTroopsLoss =
-    (getTotalTroops(attackerArmy.troops) * attackerHealthLoss) / Number(attackerArmy.health.lifetime);
+    roundUpToPrecision(BigInt(attackerKnightLost), configManager.getResourcePrecision()) +
+    roundUpToPrecision(BigInt(attackerPaladinLost), configManager.getResourcePrecision()) +
+    roundUpToPrecision(BigInt(attackerCrossbowmanLost), configManager.getResourcePrecision());
+  const defenseTroopsLoss =
+    roundUpToPrecision(BigInt(defenderKnightLost), configManager.getResourcePrecision()) +
+    roundUpToPrecision(BigInt(defenderPaladinLost), configManager.getResourcePrecision()) +
+    roundUpToPrecision(BigInt(defenderCrossbowmanLost), configManager.getResourcePrecision());
 
-  const defenderHealthLoss =
-    (attackDelta * duration) / troopConfig.pillage_health_divisor / configManager.getResourcePrecision();
-  const defenderTroopsLoss =
-    (getTotalTroops(defenderArmy.troops) * defenderHealthLoss) / Number(defenderArmy.health.lifetime);
-
-  return [
-    Math.max(1, Math.floor(attackerTroopsLoss / configManager.getResourcePrecision())),
-    Math.max(1, Math.floor(defenderTroopsLoss / configManager.getResourcePrecision())),
-  ];
+  return [attackerTroopsLoss, defenseTroopsLoss];
 };
