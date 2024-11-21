@@ -13,15 +13,15 @@ import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { formatTime, gramToKg, kgToGram } from "@/ui/utils/utils";
+import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import { BuildingType, CapacityConfigCategory, ID, ResourcesIds, TickIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
@@ -107,15 +107,38 @@ export const TopLeftNavigation = () => {
 
   const { getEntityInfo } = useEntitiesUtils();
 
+  const structures = playerStructures();
+
+  const [favorites, setFavorites] = useState<number[]>(() => {
+    const saved = localStorage.getItem("favoriteStructures");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const structure = useMemo(() => {
-    return getEntityInfo(structureEntityId);
-  }, [structureEntityId]);
+    const entityInfo = getEntityInfo(structureEntityId);
+    return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
+  }, [structureEntityId, getEntityInfo, favorites]);
 
   const structurePosition = useMemo(() => {
     return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
   }, [structure]);
 
-  const structures = playerStructures();
+  const structuresWithFavorites = useMemo(() => {
+    return structures
+      .map((structure) => ({
+        ...structure,
+        isFavorite: favorites.includes(structure.entity_id),
+      }))
+      .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
+  }, [favorites, structures]);
+
+  const toggleFavorite = useCallback((entityId: number) => {
+    setFavorites((prev) => {
+      const newFavorites = prev.includes(entityId) ? prev.filter((id) => id !== entityId) : [...prev, entityId];
+      localStorage.setItem("favoriteStructures", JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  }, []);
 
   const pointToWorldButton =
     (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
@@ -183,17 +206,22 @@ export const TopLeftNavigation = () => {
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent className="bg-brown/80">
-                  {structures.map((structure, index) => (
-                    <SelectItem
-                      className="flex justify-between"
-                      key={index}
-                      value={structure.entity_id?.toString() || ""}
-                    >
-                      <h5 className="self-center flex gap-4">
-                        {structure.name}
-                        {IS_MOBILE ? structureIcons[structure.category] : ""}
-                      </h5>
-                    </SelectItem>
+                  {structuresWithFavorites.map((structure, index) => (
+                    <div className="flex flex-row items-center">
+                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entity_id)}>
+                        {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
+                      </button>
+                      <SelectItem
+                        className="flex justify-between"
+                        key={index}
+                        value={structure.entity_id?.toString() || ""}
+                      >
+                        <h5 className="self-center flex gap-4">
+                          {structure.name}
+                          {IS_MOBILE ? structureIcons[structure.category] : ""}
+                        </h5>
+                      </SelectItem>
+                    </div>
                   ))}
                 </SelectContent>
               </Select>
@@ -216,7 +244,7 @@ export const TopLeftNavigation = () => {
             )}
           </div>
         </div>
-        <div className=" bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
+        <div className="bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -308,95 +336,4 @@ export const TopLeftNavigation = () => {
   );
 };
 
-const TickProgress = () => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
-  const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
-  const cycleTime = configManager.getTick(TickIds.Armies);
-
-  const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-
-  const progress = useMemo(() => {
-    const elapsedTime = nextBlockTimestamp % cycleTime;
-    return (elapsedTime / cycleTime) * 100;
-  }, [nextBlockTimestamp, cycleTime]);
-
-  const updateTooltip = useCallback(() => {
-    if (!isTooltipOpen) return;
-
-    setTooltip({
-      position: "bottom",
-      content: (
-        <div className="whitespace-nowrap pointer-events-none flex flex-col  text-sm capitalize">
-          <div>
-            A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
-          </div>
-          <div>
-            Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
-          </div>
-        </div>
-      ),
-    });
-  }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
-
-  useEffect(() => {
-    if (!isTooltipOpen) return;
-
-    const initialTime = cycleTime - (nextBlockTimestamp % cycleTime);
-    setTimeUntilNextCycle(initialTime);
-
-    const interval = setInterval(() => {
-      setTimeUntilNextCycle((prevTime) => (prevTime <= 1 ? initialTime : prevTime - 1));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
-  // }, [nextBlockTimestamp]);
-  // }, [isTooltipOpen, cycleTime, nextBlockTimestamp]);
-
-  //   const progress = useMemo(() => {
-  //     return ((cycleTime - timeUntilNextCycle) / cycleTime) * 100;
-  //   }, [timeUntilNextCycle]);
-
-  //   const updateTooltip = useCallback(() => {
-  //     if (isTooltipOpen) {
-  //       setTooltip({
-  //         position: "bottom",
-  //         content: (
-  //           <div className="whitespace-nowrap pointer-events-none flex flex-col text-sm capitalize">
-  //             <div>
-  //               A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
-  //             </div>
-  //             <div>
-  //               Time left until next cycle: <span className="font-bold">{formatTime(timeUntilNextCycle)}</span>
-  //             </div>
-  //           </div>
-  //         ),
-  //       });
-  //     }
-  //   // }, [isTooltipOpen, timeUntilNextCycle, setTooltip]);
-  // }, [isTooltipOpen, cycleTime, timeUntilNextCycle, setTooltip]);
-
-  useEffect(() => {
-    if (isTooltipOpen) {
-      updateTooltip();
-    }
-  }, [isTooltipOpen, updateTooltip]);
-
-  return (
-    <div
-      onMouseEnter={() => {
-        setIsTooltipOpen(true);
-        updateTooltip();
-      }}
-      onMouseLeave={() => {
-        setIsTooltipOpen(false);
-        setTooltip(null);
-      }}
-      className="self-center text-center px-1 py-1 flex gap-1"
-    >
-      <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" />
-      {progress.toFixed()}%
-    </div>
-  );
-};
+const TickProgress = () => {};
