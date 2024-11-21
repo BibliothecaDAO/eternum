@@ -455,9 +455,56 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
+    this.interactiveHexManager.clearHexes();
+
+    let currentIndex = 0;
+    const batchSize = 25;
+
+    const processBatch = () => {
+      const endIndex = Math.min(currentIndex + batchSize, rows * cols);
+
+      for (let i = currentIndex; i < endIndex; i++) {
+        const row = Math.floor(i / cols) - rows / 2;
+        const col = (i % cols) - cols / 2;
+
+        const globalRow = startRow + row;
+        const globalCol = startCol + col;
+
+        const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
+
+        if (!isExplored) {
+          const neighborOffsets = getNeighborOffsets(globalRow);
+          const isBorder = neighborOffsets.some(({ i, j }) => {
+            const neighborCol = globalCol + i;
+            const neighborRow = globalRow + j;
+            return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
+          });
+
+          if (isBorder) {
+            this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+          }
+        } else {
+          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+        }
+      }
+
+      currentIndex = endIndex;
+
+      if (currentIndex < rows * cols) {
+        requestAnimationFrame(processBatch);
+      } else {
+        this.interactiveHexManager.renderHexes();
+      }
+    };
+
+    requestAnimationFrame(processBatch);
+  }
+
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
+      this.computeInteractiveHexes(startRow, startCol, rows, cols);
       return;
     }
 
@@ -536,6 +583,8 @@ export default class WorldmapScene extends HexagonScene {
         if (isExplored) {
           biomeHexes[biome].push(dummy.matrix.clone());
         } else {
+          dummy.position.y = 0.01;
+          dummy.updateMatrix();
           biomeHexes["Outline"].push(dummy.matrix.clone());
         }
       }

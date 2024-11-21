@@ -1,8 +1,8 @@
-import * as THREE from "three";
 import { highlightHexMaterial } from "@/three/shaders/highlightHexMaterial";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { HexPosition } from "@/types";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
+import * as THREE from "three";
+import { createHexagonShape } from "../geometry/HexagonGeometry";
 import { HEX_SIZE } from "../scenes/constants";
 
 export class HighlightHexManager {
@@ -27,7 +27,7 @@ export class HighlightHexManager {
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
       highlightMesh.position.set(position.x, 0.3, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
-      highlightMesh.renderOrder = 2;
+      highlightMesh.renderOrder = 5;
 
       // Disable raycasting for this mesh
       highlightMesh.raycast = () => {};
