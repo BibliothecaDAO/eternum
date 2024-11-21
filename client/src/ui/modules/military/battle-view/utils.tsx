@@ -87,14 +87,15 @@ export const getTroopLossOnRaidPerTroopType = (
   defenderArmy: ArmyBattleInfo | undefined,
   troopConfig: ComponentValue<ClientComponents["TroopConfig"]["schema"]>,
 ): TroopLosses => {
-  if (!attackerArmy?.health?.lifetime || !defenderArmy?.health?.lifetime) return {
-    attackerKnightLost: 0,
-    attackerPaladinLost: 0,
-    attackerCrossbowmanLost: 0,
-    defenderKnightLost: 0,
-    defenderPaladinLost: 0,
-    defenderCrossbowmanLost: 0,
-  };
+  if (!attackerArmy?.health?.lifetime || !defenderArmy?.health?.lifetime)
+    return {
+      attackerKnightLost: 0,
+      attackerPaladinLost: 0,
+      attackerCrossbowmanLost: 0,
+      defenderKnightLost: 0,
+      defenderPaladinLost: 0,
+      defenderCrossbowmanLost: 0,
+    };
   const battle = new Battle(
     attackerArmy.troops,
     defenderArmy.troops,
