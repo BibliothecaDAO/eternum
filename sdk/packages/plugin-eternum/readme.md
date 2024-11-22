@@ -36,4 +36,11 @@ Repeat
 
 1. Create file will all available actions formatted calldata.
 
-- Add TypeDoc
+- Add TypeDoc to all the Providers. In the example of the typedoc include formatted call data.
+- Write a script to extract only the typedoc information and save it to a file. This is what we will cache in the db. We
+  need to be able to run this again so making a helper function is the key
+
+2. Get all graphql models in a cache somehow. The entire generated files are too big. We need to compress the
+   information of the available queries just enough that the model will still understand it.
+
+3. Write Action that runs like the above. We just want everything encapsulated within that one ACTION for gameplay.
