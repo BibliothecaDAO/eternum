@@ -10,6 +10,11 @@ The idea here is that we provide the agent with context about the game:
 
 ### Runtime
 
+Each of these steps could themselves be a few steps, this is very rough.
+
+Look at [eternum/src/provider/index.ts](./eternum/src/provider/index.ts) for rough example of how the messages could
+work.
+
 _Query 1:_
 
 1. Look at goal, state of realm. So resource balances, buildings etc
