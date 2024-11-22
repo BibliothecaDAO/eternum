@@ -1,0 +1,25 @@
+{
+    "name": "@ai16z/plugin-eternum",
+    "version": "0.1.4-alpha.3",
+    "main": "dist/index.js",
+    "type": "module",
+    "types": "dist/index.d.ts",
+    "dependencies": {
+        "@ai16z/eliza": "workspace:*",
+        "@ai16z/plugin-trustdb": "workspace:*",
+        "@avnu/avnu-sdk": "^2.1.1",
+        "@uniswap/sdk-core": "^6.0.0",
+        "@unruggable_starknet/core": "^0.1.0",
+        "starknet": "^6.17.0",
+        "tsup": "^8.3.5",
+        "vitest": "^2.1.4"
+    },
+    "scripts": {
+        "build": "tsup --format esm --dts",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "peerDependencies": {
+        "whatwg-url": "7.1.0"
+    }
+}
