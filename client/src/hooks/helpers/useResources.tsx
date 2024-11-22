@@ -12,7 +12,7 @@ import {
   type Entity,
 } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
+import { ResourceManager } from "../../dojo/modelManager/ResourceManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
@@ -20,20 +20,21 @@ import useUIStore from "../store/useUIStore";
 export function getResourcesUtils() {
   const {
     setup: {
-      components: { Resource, ResourceCost, Realm, OwnedResourcesTracker },
+      components: { ResourceCost, Realm, OwnedResourcesTracker },
     },
   } = useDojo();
 
   const getResourcesFromBalance = (entityId: ID): Resource[] => {
-    // todo: switch back to items_count when working
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
+
     const ownedResources = getComponentValue(OwnedResourcesTracker, getEntityIdFromKeys([BigInt(entityId)]));
     if (!ownedResources) return [];
-    // const resourceIds = getResourceIdsFromPackedNumber(ownedResources.resource_types);
     const resourceIds = resources.map((r) => r.id);
     return resourceIds
       .map((id) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(id)]));
-        return { resourceId: id, amount: Number(resource?.balance) || 0 };
+        const resourceManager = new ResourceManager(useDojo().setup, entityId, id);
+        const balance = resourceManager.balance(currentDefaultTick);
+        return { resourceId: id, amount: balance };
       })
       .filter((r) => r.amount > 0);
   };
@@ -54,12 +55,15 @@ export function getResourcesUtils() {
     minAmount: number,
   ): Array<{ realmEntityId: ID; realmId: ID; amount: number }> => {
     const allRealms = Array.from(runQuery([Has(Realm)]));
-
+    const currentDefaultTick = useUIStore.getState().currentDefaultTick;
     const realmsWithResource = allRealms
       .map((id: Entity) => {
         const realm = getComponentValue(Realm, id);
-        const resource = realm
-          ? getComponentValue(Resource, getEntityIdFromKeys([BigInt(realm?.entity_id), BigInt(resourceId)]))
+        const resourceManager = realm ? new ResourceManager(useDojo().setup, realm.entity_id, resourceId) : undefined;
+        const resource = resourceManager
+          ? {
+              balance: resourceManager.balance(currentDefaultTick),
+            }
           : undefined;
 
         if (resource && resource.balance > minAmount) {
@@ -206,8 +210,8 @@ export function getResourceBalance() {
 
   const getFoodResources = (entityId: ID): Resource[] => {
     const currentDefaultTick = useUIStore.getState().currentDefaultTick;
-    const wheatBalance = new ProductionManager(dojo.setup, entityId, ResourcesIds.Wheat).balance(currentDefaultTick);
-    const fishBalance = new ProductionManager(dojo.setup, entityId, ResourcesIds.Fish).balance(currentDefaultTick);
+    const wheatBalance = new ResourceManager(dojo.setup, entityId, ResourcesIds.Wheat).balance(currentDefaultTick);
+    const fishBalance = new ResourceManager(dojo.setup, entityId, ResourcesIds.Fish).balance(currentDefaultTick);
 
     return [
       { resourceId: ResourcesIds.Wheat, amount: wheatBalance },
@@ -216,14 +220,14 @@ export function getResourceBalance() {
   };
 
   const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds) => {
-    const productionManager = new ProductionManager(dojo.setup, entityId, resourceId);
-    return productionManager.getProduction();
+    const resourceManager = new ResourceManager(dojo.setup, entityId, resourceId);
+    return resourceManager.getProduction();
   };
 
   const getBalance = (entityId: ID, resourceId: ResourcesIds) => {
     const currentDefaultTick = useUIStore.getState().currentDefaultTick;
-    const productionManager = new ProductionManager(dojo.setup, entityId, resourceId);
-    return { balance: productionManager.balance(currentDefaultTick), resourceId };
+    const resourceManager = new ResourceManager(dojo.setup, entityId, resourceId);
+    return { balance: resourceManager.balance(currentDefaultTick), resourceId };
   };
 
   const getResourcesBalance = (entityId: ID) => {
@@ -241,8 +245,8 @@ export function getResourceBalance() {
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
 
     useEffect(() => {
-      const productionManager = new ProductionManager(dojo.setup, entityId, resourceId);
-      setResourceBalance({ amount: productionManager.balance(currentDefaultTick), resourceId });
+      const resourceManager = new ResourceManager(dojo.setup, entityId, resourceId);
+      setResourceBalance({ amount: resourceManager.balance(currentDefaultTick), resourceId });
     }, []);
 
     return resourceBalance;
@@ -257,18 +261,18 @@ export function getResourceBalance() {
   };
 }
 
-export const useProductionManager = (entityId: ID, resourceId: ResourcesIds) => {
+export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
   const dojo = useDojo();
   const production = useComponentValue(
     dojo.setup.components.Production,
     getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]),
   );
 
-  const productionManager = useMemo(() => {
-    return new ProductionManager(dojo.setup, entityId, resourceId);
+  const resourceManager = useMemo(() => {
+    return new ResourceManager(dojo.setup, entityId, resourceId);
   }, [dojo.setup, entityId, resourceId, production]);
 
-  return productionManager;
+  return resourceManager;
 };
 
 export function useOwnedEntitiesOnPosition() {

@@ -18,7 +18,7 @@ import {
 import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import { configManager, type SetupResult } from "../setup";
-import { ProductionManager } from "./ProductionManager";
+import { ResourceManager } from "./ResourceManager";
 import { StaminaManager } from "./StaminaManager";
 import { getRemainingCapacity } from "./utils/ArmyMovementUtils";
 
@@ -75,8 +75,8 @@ export class ArmyMovementManager {
   private readonly entity: Entity;
   private readonly entityId: ID;
   private address: ContractAddress;
-  private readonly fishManager: ProductionManager;
-  private readonly wheatManager: ProductionManager;
+  private readonly fishManager: ResourceManager;
+  private readonly wheatManager: ResourceManager;
   private readonly staminaManager: StaminaManager;
 
   constructor(
@@ -86,8 +86,8 @@ export class ArmyMovementManager {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     const entityOwnerId = getComponentValue(this.setup.components.EntityOwner, this.entity);
-    this.wheatManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
-    this.fishManager = new ProductionManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
+    this.wheatManager = new ResourceManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
+    this.fishManager = new ResourceManager(this.setup, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.setup, entityId);
 
     this.address = BigInt(useAccountStore.getState().account?.address || 0n);
