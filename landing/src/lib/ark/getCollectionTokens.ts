@@ -100,7 +100,7 @@ export function getMediaSrc(
 
   if (mediaKey && width && height) {
     const resolutionParam = `:${width}:${height}`;
-    return `${env.VITE_PUBLIC_IMAGE_PROXY_URL}/_/rs:fit${resolutionParam}/plain/${env.NEXT_PUBLIC_IMAGE_CDN_URL}/${mediaKey}`;
+    return `${env.VITE_PUBLIC_IMAGE_PROXY_URL}/_/rs:fit${resolutionParam}/plain/${env.VITE_PUBLIC_IMAGE_CDN_URL}/${mediaKey}`;
   }
   return src?.replace("ipfs://", env.VITE_PUBLIC_IPFS_GATEWAY);
 }

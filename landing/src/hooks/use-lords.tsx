@@ -21,7 +21,8 @@ export const useLords = () => {
     refetchInterval: 1000,
   });
 
-  const { contract } = useContract({
+  // const { contract } = useContract({
+  useContract({
     abi: lordsAbi.abi as Abi,
     address: lordsAddress,
   });

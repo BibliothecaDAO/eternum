@@ -17,7 +17,7 @@ import { Label } from "../ui/label";
 export const RealmMintDialog = ({
   isOpen,
   setIsOpen,
-  totalOwnedRealms,
+  // totalOwnedRealms,
 }: {
   highestTokenId?: number;
   isOpen: boolean;

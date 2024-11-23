@@ -14,7 +14,7 @@ import { execute } from "@/hooks/gql/execute";
 import { GET_ERC_MINTS, GET_REALMS } from "@/hooks/query/realms";
 import useNftSelection from "@/hooks/useNftSelection";
 import { displayAddress } from "@/lib/utils";
-import { useConnect, useDisconnect } from "@starknet-react/core";
+import { useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, useMemo, useState } from "react";
@@ -25,15 +25,15 @@ export const Route = createLazyFileRoute("/mint")({
 });
 
 function Mint() {
-  const { connect, connectors, connector } = useConnect();
+  const { connect, connectors } = useConnect();
   const {
     account: { account },
   } = useDojo();
-  const { disconnect } = useDisconnect();
+  // const { disconnect } = useDisconnect();
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
-  const [mintToController, setMintToController] = useState(true);
-  const [controllerAddress, setControllerAddress] = useState<string>();
+  const [, setMintToController] = useState(true);
+  const [controllerAddress] = useState<string>();
 
   const realmsAddress = env.VITE_REALMS_ADDRESS;
 
