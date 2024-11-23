@@ -65,20 +65,6 @@ export default {
       return true;
     };
 
-    const handleStepSuccess = (step: string) => {
-      elizaLogger.error(`Error generating ${step} content`);
-      if (callback) {
-        callback({
-          text: "Unable to process transfer request",
-          content: {
-            worldState: state.worldState,
-            error: `Failed during ${step} step`,
-          },
-        });
-      }
-      return true;
-    };
-
     const generateStep = async (
       template: string,
     ): Promise<
@@ -155,7 +141,21 @@ export default {
     // and if it was successful or not. If it was succesful we should store it in memory as an action to do xyz. This way
     // we know this action works for the task.
 
-    return handleStepSuccess("all steps");
+    const handleStepSuccess = () => {
+      elizaLogger.success(`Action completed successfully:` + modelDefinedSteps);
+      if (callback) {
+        callback({
+          text: "Action completed successfully",
+          content: {
+            worldState: state.worldState,
+            steps: modelDefinedSteps,
+          },
+        });
+      }
+      return true;
+    };
+
+    return handleStepSuccess();
   },
 
   examples: [
