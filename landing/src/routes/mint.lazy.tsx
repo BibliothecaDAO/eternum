@@ -18,6 +18,7 @@ import { useConnect, useDisconnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, useMemo, useState } from "react";
+import { env } from "../../env";
 
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
@@ -34,7 +35,7 @@ function Mint() {
   const [mintToController, setMintToController] = useState(true);
   const [controllerAddress, setControllerAddress] = useState<string>();
 
-  const realmsAddress = import.meta.env.VITE_REALMS_ADDRESS;
+  const realmsAddress = env.VITE_REALMS_ADDRESS;
 
   // useEffect(() => {
   //   if (mintToController && checkCartridgeConnector(connector)) {
@@ -58,7 +59,7 @@ function Mint() {
   const seasonPassTokenIds = useMemo(
     () =>
       seasonPassMints?.ercTransfer
-        ?.filter((token) => token?.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS)
+        ?.filter((token) => token?.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS)
         .map((token) => token?.tokenMetadata.tokenId)
         .filter((id): id is string => id !== undefined),
     [seasonPassMints],

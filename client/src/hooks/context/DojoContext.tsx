@@ -6,6 +6,7 @@ import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
+import { Env, env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
 import { displayAddress } from "../../ui/utils/utils";
 import { useAccountStore } from "./accountStore";
@@ -35,11 +36,15 @@ export interface DojoResult {
 
 const DojoContext = createContext<DojoContextType | null>(null);
 
-const requiredEnvs = ["VITE_PUBLIC_MASTER_ADDRESS", "VITE_PUBLIC_MASTER_PRIVATE_KEY", "VITE_PUBLIC_ACCOUNT_CLASS_HASH"];
+const requiredEnvs: (keyof Env)[] = [
+  "VITE_PUBLIC_MASTER_ADDRESS",
+  "VITE_PUBLIC_MASTER_PRIVATE_KEY",
+  "VITE_PUBLIC_ACCOUNT_CLASS_HASH",
+];
 
-for (const env of requiredEnvs) {
-  if (!import.meta.env[env]) {
-    throw new Error(`Environment variable ${env} is not set!`);
+for (const _env of requiredEnvs) {
+  if (!env[_env]) {
+    throw new Error(`Environment variable ${_env} is not set!`);
   }
 }
 
@@ -49,8 +54,8 @@ type DojoProviderProps = {
 };
 
 const useMasterAccount = (rpcProvider: RpcProvider) => {
-  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+  const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
+  const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
   return useMemo(() => new Account(rpcProvider, masterAddress, privateKey), [rpcProvider, masterAddress, privateKey]);
 };
 
@@ -58,7 +63,7 @@ const useRpcProvider = () => {
   return useMemo(
     () =>
       new RpcProvider({
-        nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
+        nodeUrl: env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
       }),
     [],
   );
@@ -94,9 +99,9 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
     <BurnerProvider
       initOptions={{
         masterAccount,
-        accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH,
+        accountClassHash: env.VITE_PUBLIC_ACCOUNT_CLASS_HASH,
         rpcProvider,
-        feeTokenAddress: import.meta.env.VITE_NETWORK_FEE_TOKEN,
+        feeTokenAddress: env.VITE_PUBLIC_FEE_TOKEN_ADDRESS,
       }}
     >
       <DojoContextProvider value={value} masterAccount={masterAccount} controllerAccount={controllerAccount!}>
@@ -155,7 +160,7 @@ const DojoContextProvider = ({
   };
 
   // Determine which account to use based on environment
-  const isDev = import.meta.env.VITE_PUBLIC_DEV === "true";
+  const isDev = env.VITE_PUBLIC_DEV === "true";
   const accountToUse = isDev ? burnerAccount : controllerAccount;
 
   useEffect(() => {

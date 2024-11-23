@@ -8,6 +8,7 @@ import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls";
+import { env } from "../../../env";
 import { type SceneManager } from "../SceneManager";
 import { type BiomeType } from "../components/Biome";
 import { HighlightHexManager } from "../components/HighlightHexManager";
@@ -19,7 +20,6 @@ import { LocationManager } from "../helpers/LocationManager";
 import { gltfLoader } from "../helpers/utils";
 import { SystemManager } from "../systems/SystemManager";
 import { HEX_SIZE, biomeModelPaths } from "./constants";
-
 export abstract class HexagonScene {
   protected scene!: THREE.Scene;
   protected camera!: THREE.PerspectiveCamera;
@@ -116,7 +116,7 @@ export abstract class HexagonScene {
 
   private setupLightHelper(): void {
     this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-    if (import.meta.env.VITE_PUBLIC_DEV == "true") this.scene.add(this.lightHelper);
+    if (env.VITE_PUBLIC_DEV == true) this.scene.add(this.lightHelper);
   }
 
   private setupInputHandlers(): void {

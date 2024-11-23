@@ -1,7 +1,7 @@
 import { /*createSearchParamsCache,*/ parseAsStringLiteral } from "nuqs/server";
 
 import type { CollectionToken, Filters } from "@/types";
-
+import { env } from "../../../env";
 export const itemsPerPage = 50;
 
 export const collectionSortDirectionKey = "direction";
@@ -64,7 +64,7 @@ export async function getCollectionTokens({
   }
 
   const url = `${
-    import.meta.env.VITE_PUBLIC_ARK_MARKETPLACE_API
+    env.VITE_PUBLIC_ARK_MARKETPLACE_API
   }/collections/${collectionAddress}/0x534e5f4d41494e/tokens?${queryParams.join("&")}`;
   const response = await fetch(url, {
     headers: {
@@ -95,14 +95,14 @@ export function getMediaSrc(
   height?: number,
 ) {
   if (thumbnailKey) {
-    return `${import.meta.env.VITE_PUBLIC_IMAGE_CDN_URL}/${thumbnailKey}`;
+    return `${env.VITE_PUBLIC_IMAGE_CDN_URL}/${thumbnailKey}`;
   }
 
   if (mediaKey && width && height) {
     const resolutionParam = `:${width}:${height}`;
-    return `${import.meta.env.VITE_PUBLIC_IMAGE_PROXY_URL}/_/rs:fit${resolutionParam}/plain/${
-      import.meta.env.NEXT_PUBLIC_IMAGE_CDN_URL
+    return `${env.VITE_PUBLIC_IMAGE_PROXY_URL}/_/rs:fit${resolutionParam}/plain/${
+      env.NEXT_PUBLIC_IMAGE_CDN_URL
     }/${mediaKey}`;
   }
-  return src?.replace("ipfs://", import.meta.env.VITE_PUBLIC_IPFS_GATEWAY);
+  return src?.replace("ipfs://", env.VITE_PUBLIC_IPFS_GATEWAY);
 }
