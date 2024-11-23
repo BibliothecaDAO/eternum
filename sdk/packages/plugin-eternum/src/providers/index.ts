@@ -1,49 +1,45 @@
 import { elizaLogger } from "@ai16z/eliza";
 
 interface GraphQLResponse<T> {
-    data?: T;
-    errors?: Array<{
-        message: string;
-        locations?: Array<{
-            line: number;
-            column: number;
-        }>;
-        path?: string[];
+  data?: T;
+  errors?: Array<{
+    message: string;
+    locations?: Array<{
+      line: number;
+      column: number;
     }>;
+    path?: string[];
+  }>;
 }
 
-async function queryGraphQL<T>(
-    endpoint: string,
-    query: string,
-    variables?: Record<string, unknown>
-): Promise<T> {
-    try {
-        const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                query,
-                variables,
-            }),
-        });
+async function queryGraphQL<T>(endpoint: string, query: string, variables?: Record<string, unknown>): Promise<T> {
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+    });
 
-        const result = (await response.json()) as GraphQLResponse<T>;
+    const result = (await response.json()) as GraphQLResponse<T>;
 
-        if (result.errors) {
-            throw new Error(result.errors[0].message);
-        }
-
-        if (!result.data) {
-            throw new Error("No data returned from GraphQL query");
-        }
-
-        return result.data;
-    } catch (error) {
-        elizaLogger.error("GraphQL query failed:", error);
-        throw error;
+    if (result.errors) {
+      throw new Error(result.errors[0].message);
     }
+
+    if (!result.data) {
+      throw new Error("No data returned from GraphQL query");
+    }
+
+    return result.data;
+  } catch (error) {
+    elizaLogger.error("GraphQL query failed:", error);
+    throw error;
+  }
 }
 
 // 1.  fetch graphgl schema from game cache.
@@ -51,28 +47,28 @@ async function queryGraphQL<T>(
 const message = `
 {{goals}}
 
-{{world state}}
+{{worldState}} -> general world state
 
-{{query}}
+{{query}} - all graphql queries possible. 
 
 Based on the above decide what information you need to fetch from the game. Use the schema examples and format the query accordingly to match the schema.
 
 Return the query and parameters as an object like this:
 
+\`\`\`
 {
-  query: \`\`\`graphql
-<query>
-\`\`\`,
+  query: <query>,
   variables: {
     // variables go here
   }
 }
+  \`\`\`
 `;
 
 const fetchData = async (query: string, variables: Record<string, unknown>) => {
-    await queryGraphQL<string>("https://api.eternum.io/graphql", query, {
-        variables,
-    });
+  await queryGraphQL<string>("https://api.eternum.io/graphql", query, {
+    variables,
+  });
 };
 
 const messages = `
@@ -82,7 +78,7 @@ const messages = `
 
 {{fetchedQuery}}
 
-{{availableActions}}
+{{availableActions}} -> all execution functions agailabble. It will be xample of all the calldata.
 
 Based on the above, decide what action to take. If no action to take return false
 

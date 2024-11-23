@@ -96,6 +96,30 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+  /**
+   * Accept a trade order between two realms
+   *
+   * @param props - The properties for accepting an order
+   * @param props.taker_id - The ID of the realm accepting the trade
+   * @param props.trade_id - The ID of the trade being accepted
+   * @param props.maker_gives_resources - Array of resources the maker is giving
+   * @param props.taker_gives_resources - Array of resources the taker is giving
+   * @param props.signer - The signer account executing the transaction
+   *
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Accept a trade where realm 123 trades 100 wood for 50 stone with realm 456
+   * {
+   *   taker_id: 123,
+   *   trade_id: 789,
+   *   maker_gives_resources: [1, 100], // Resource ID 1 (wood), amount 100
+   *   taker_gives_resources: [2, 50],  // Resource ID 2 (stone), amount 50
+   *   signer: account
+   * };
+   * ```
+   */
   public async accept_order(props: SystemProps.AcceptOrderProps) {
     const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, signer } = props;
 
