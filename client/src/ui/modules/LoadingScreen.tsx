@@ -49,7 +49,7 @@ export const LoadingScreen = () => {
             transition={{ duration: 0.5 }}
             className="animatedBackground"
           >
-            New Season is Coming soon... Jump in the Discord to learn more!
+            New Season is Coming soon... Agents and Lords working together world building.
             <br />
             <CircleButton
               tooltipLocation="bottom"
