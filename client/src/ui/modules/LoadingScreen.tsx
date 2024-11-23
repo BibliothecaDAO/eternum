@@ -42,14 +42,15 @@ export const LoadingScreen = () => {
         <div className="p-4 text-center">
           New Season is Coming soon... <br /> Agents and Lords working together world building.
         </div>
-
-        <CircleButton
-          tooltipLocation="bottom"
-          image={BuildingThumbs.discord}
-          label={"Discord"}
-          size="lg"
-          onClick={() => window.open("https://discord.gg/realmsworld")}
-        />
+        <div className="flex justify-center">
+          <CircleButton
+            tooltipLocation="bottom"
+            image={BuildingThumbs.discord}
+            label={"Discord"}
+            size="lg"
+            onClick={() => window.open("https://discord.gg/realmsworld")}
+          />
+        </div>
       </div>
     </div>
   );
