@@ -40,7 +40,7 @@ export const LoadingScreen = () => {
       <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
         <div className="p-4 text-center">
-          New Season is Coming soon... Agents and Lords working together world building.
+          New Season is Coming soon... <br /> Agents and Lords working together world building.
         </div>
 
         <CircleButton
