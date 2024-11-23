@@ -65,9 +65,9 @@ Each of these templates are EXAMPLES. Create your own based on the context.
 
 \`\`\`
 [
-  { name: "step one", template: ${queryTemplate} },
-  { name: "step two", template: ${invokeTemplate} },
-  { name: "step three", template: ${stepThreeTemplate} },
+  { name: "step one", reasoning: "Need to check for resources", template: ${queryTemplate} },
+  { name: "step two", reasoning: "Need to check the base", template: ${invokeTemplate} },
+  { name: "step three", reasoning: "Need to build calldata", template: ${stepThreeTemplate} },
 ]
 \`\`\`
 
