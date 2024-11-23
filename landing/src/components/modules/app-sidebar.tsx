@@ -29,11 +29,11 @@ const items = [
     url: "/trade",
     icon: LoopIcon,
   },
-  {
-    title: "Bridge",
-    url: "/bridge",
-    icon: Ship,
-  },
+  // {
+  //   title: "Bridge",
+  //   url: "/bridge",
+  //   icon: Ship,
+  // },
   {
     title: "Create",
     url: "/mint",
