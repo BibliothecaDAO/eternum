@@ -79,7 +79,15 @@ export default {
       return true;
     };
 
-    const generateStep = async (template: string): Promise<string | boolean> => {
+    const generateStep = async (
+      template: string,
+    ): Promise<
+      | {
+          actionType: "invoke" | "query";
+          data: string;
+        }
+      | boolean
+    > => {
       const context = composeContext({
         state,
         template,
@@ -108,7 +116,6 @@ export default {
     let modelDefinedSteps: Array<{
       name: string;
       template: string;
-      actionType: "query" | "invoke";
     }>;
 
     try {
@@ -124,20 +131,29 @@ export default {
     // Execute each step
     for (const step of modelDefinedSteps) {
       const content = await generateStep(step.template);
-      if (!content) {
+
+      const parsedContent = typeof content === "string" ? JSON.parse(content) : content;
+
+      if (!parsedContent) {
         return handleStepError(step.name);
       }
 
-      if (step.actionType === "invoke") {
-        // TODO: implement actual invoke interface that takes calldata
-        // pass in the content to the invoke function
-      }
+      if (typeof content === "object" && "actionType" in content) {
+        if (content.actionType === "invoke") {
+          // TODO: implement actual invoke interface that takes calldata
+          // pass in the content.data to the invoke function
+        }
 
-      if (step.actionType === "query") {
-        // TODO: implement
-        // pass in the content to the query function
+        if (content.actionType === "query") {
+          // TODO: implement
+          // pass in the content.data to the query function
+        }
       }
     }
+
+    // TODO: After this happens we need to evaluate how the action went
+    // and if it was successful or not. If it was succesful we should store it in memory as an action to do xyz. This way
+    // we know this action works for the task.
 
     return handleStepSuccess("all steps");
   },
