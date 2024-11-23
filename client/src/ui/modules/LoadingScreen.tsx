@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import "../../index.css";
+import { BuildingThumbs } from "../config";
+import CircleButton from "../elements/CircleButton";
 
 export const LoadingScreen = () => {
   const statements = [
@@ -47,7 +49,15 @@ export const LoadingScreen = () => {
             transition={{ duration: 0.5 }}
             className="animatedBackground"
           >
-            {statements[currentStatement]}
+            New Season is Coming soon... Jump in the Discord to learn more!
+            <br />
+            <CircleButton
+              tooltipLocation="bottom"
+              image={BuildingThumbs.discord}
+              label={"Discord"}
+              size="lg"
+              onClick={() => window.open("https://discord.gg/realmsworld")}
+            />
           </motion.div>
         </AnimatePresence>
       </div>
