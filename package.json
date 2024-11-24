@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "pnpm --dir ./client dev",
-    "build-packages": "pnpm --dir sdk/packages/eternum build",
+    "build-packages": "pnpm --dir sdk/packages/eternum build && pnpm --dir sdk/packages/plugin-eternum build",
     "build-client": "pnpm --dir ./client build",
     "build-landing": "pnpm --dir ./landing build",
     "test-client": "pnpm --dir ./client test",

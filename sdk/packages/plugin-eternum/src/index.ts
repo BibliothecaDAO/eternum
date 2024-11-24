@@ -1,7 +1,5 @@
 import { Plugin } from "@ai16z/eliza";
-import transfer from "./actions/generative";
-import { executeSwap } from "./actions/swap";
-import { deployToken } from "./actions/unruggable";
+
 export const PROVIDER_CONFIG = {
   AVNU_API: "https://starknet.impulse.avnu.fi/v1",
   MAX_RETRIES: 3,
@@ -17,12 +15,12 @@ export const PROVIDER_CONFIG = {
   MAIN_WALLET: "",
 };
 
-export const starknetPlugin: Plugin = {
+export const eternumPlugin: Plugin = {
   name: "starknet",
-  description: "Starknet Plugin for Eliza",
-  actions: [transfer, executeSwap, deployToken],
+  description: "Eternum Plugin for Eliza",
+  actions: [],
   evaluators: [],
   providers: [],
 };
 
-export default starknetPlugin;
+export default eternumPlugin;
