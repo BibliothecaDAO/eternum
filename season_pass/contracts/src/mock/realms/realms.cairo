@@ -75,7 +75,7 @@ mod TestRealm {
         }
 
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            ""
+            "https://i.pinimg.com/originals/42/2d/a4/422da4e84ff01d47bf65e142fc81e4a7.jpg"
         }
     }
 
