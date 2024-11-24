@@ -34,6 +34,7 @@ function Mint() {
   const [mintToController, setMintToController] = useState(true);
   const [controllerAddress, setControllerAddress] = useState<string>();
 
+
   const realmsAddress = import.meta.env.VITE_REALMS_ADDRESS;
 
   // useEffect(() => {
