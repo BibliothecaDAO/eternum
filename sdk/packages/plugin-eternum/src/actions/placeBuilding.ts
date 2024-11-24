@@ -23,7 +23,7 @@ import {
 import { gql, GraphQLClient } from "graphql-request";
 import { CairoCustomEnum, Contract } from "starknet";
 
-interface PlaceBuildingContent {
+export interface PlaceBuildingContent {
   buildingCategory: string;
 }
 
@@ -42,7 +42,7 @@ export function isPlaceBuildingContent(content: PlaceBuildingContent): content i
   return validBuildingCategory;
 }
 
-const placeBuildingTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
+export const placeBuildingTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 These are the building categories you can place:
 - None
 - Castle

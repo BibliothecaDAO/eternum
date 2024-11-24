@@ -5,17 +5,22 @@
   "type": "module",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@bibliothecadao/eternum": "workspace:^",
-    "graphql-request": "^7.1.2",
     "@ai16z/eliza": "0.1.4-alpha.3",
-    "@ai16z/plugin-trustdb": "0.1.4-alpha.3",
     "@ai16z/plugin-starknet": "0.1.4-alpha.3",
+    "@ai16z/plugin-trustdb": "0.1.4-alpha.3",
     "@avnu/avnu-sdk": "^2.1.1",
+    "@bibliothecadao/eternum": "workspace:^",
     "@uniswap/sdk-core": "^6.0.0",
     "@unruggable_starknet/core": "^0.1.0",
+    "graphql-request": "^7.1.2",
     "starknet": "^6.17.0",
     "tsup": "^8.3.5",
     "vitest": "^2.1.4"
+  },
+  "devDependencies": {
+    "langsmith": "^0.2.7",
+    "ai": "^3.4.23",
+    "@ai-sdk/anthropic": "^0.0.56"
   },
   "scripts": {
     "build": "tsup --format esm --dts",
