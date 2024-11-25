@@ -24,14 +24,15 @@ export async function setupNetwork({ ...config }: DojoConfig) {
     rpcProvider: provider.provider,
     feeTokenAddress: config.feeTokenAddress,
   });
+  await burnerManager.init();
 
   try {
-    await burnerManager.init();
-
     if (import.meta.env.VITE_PUBLIC_DEV === "true") {
       if (burnerManager.list().length === 0) {
         await burnerManager.create();
       }
+    } else {
+      await burnerManager.clear();
     }
   } catch (e) {
     console.error(e);

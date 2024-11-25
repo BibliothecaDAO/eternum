@@ -8,7 +8,6 @@ import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
 import { checkCartridgeConnector } from "@/lib/utils";
 import { useConnect } from "@starknet-react/core";
 import { Loader } from "lucide-react";
-import { useState } from "react";
 import { StarknetProvider } from "../providers/Starknet";
 import CustomIframe from "../ui/custom-iframe";
 import { CartridgeConnectButton } from "./cartridge-connect-button";
@@ -30,7 +29,6 @@ export default function SeasonPassMintDialog({
 }: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
   const { connector } = useConnect();
-  const [account, setAccount] = useState();
 
   const checkCartridge = checkCartridgeConnector(connector);
 

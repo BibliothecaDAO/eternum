@@ -50,9 +50,11 @@ export const TopNavigation = () => {
         {/* // ) : (
         //   <Button onClick={() => disconnect()}>{displayAddress(account?.address)}</Button>
         // )} */}
-        <Button size={"default"} onClick={() => disconnect()}>
-          {displayAddress(account?.address)}
-        </Button>
+        {account?.address && (
+          <Button size={"default"} onClick={() => disconnect()}>
+            {displayAddress(account?.address)}
+          </Button>
+        )}
       </div>
     </div>
   );

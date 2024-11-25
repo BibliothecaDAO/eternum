@@ -903,6 +903,8 @@ type eternum_Battle {
 }
 
 type eternum_BattleClaimData {
+  claimee_address: ContractAddress
+  claimee_name: felt252
   claimer: ContractAddress
   claimer_army_entity_id: u32
   claimer_name: felt252
@@ -910,7 +912,6 @@ type eternum_BattleClaimData {
   eventMessage: World__EventMessage
   event_id: Enum
   id: u32
-  previous_owner: ContractAddress
   structure_entity_id: u32
   structure_type: Enum
   timestamp: u64
@@ -935,12 +936,13 @@ input eternum_BattleClaimDataOrder {
 }
 
 enum eternum_BattleClaimDataOrderField {
+  CLAIMEE_ADDRESS
+  CLAIMEE_NAME
   CLAIMER
   CLAIMER_ARMY_ENTITY_ID
   CLAIMER_NAME
   EVENT_ID
   ID
-  PREVIOUS_OWNER
   STRUCTURE_ENTITY_ID
   STRUCTURE_TYPE
   TIMESTAMP
@@ -949,6 +951,28 @@ enum eternum_BattleClaimDataOrderField {
 }
 
 input eternum_BattleClaimDataWhereInput {
+  claimee_address: ContractAddress
+  claimee_addressEQ: ContractAddress
+  claimee_addressGT: ContractAddress
+  claimee_addressGTE: ContractAddress
+  claimee_addressIN: [ContractAddress]
+  claimee_addressLIKE: ContractAddress
+  claimee_addressLT: ContractAddress
+  claimee_addressLTE: ContractAddress
+  claimee_addressNEQ: ContractAddress
+  claimee_addressNOTIN: [ContractAddress]
+  claimee_addressNOTLIKE: ContractAddress
+  claimee_name: felt252
+  claimee_nameEQ: felt252
+  claimee_nameGT: felt252
+  claimee_nameGTE: felt252
+  claimee_nameIN: [felt252]
+  claimee_nameLIKE: felt252
+  claimee_nameLT: felt252
+  claimee_nameLTE: felt252
+  claimee_nameNEQ: felt252
+  claimee_nameNOTIN: [felt252]
+  claimee_nameNOTLIKE: felt252
   claimer: ContractAddress
   claimerEQ: ContractAddress
   claimerGT: ContractAddress
@@ -994,17 +1018,6 @@ input eternum_BattleClaimDataWhereInput {
   idNEQ: u32
   idNOTIN: [u32]
   idNOTLIKE: u32
-  previous_owner: ContractAddress
-  previous_ownerEQ: ContractAddress
-  previous_ownerGT: ContractAddress
-  previous_ownerGTE: ContractAddress
-  previous_ownerIN: [ContractAddress]
-  previous_ownerLIKE: ContractAddress
-  previous_ownerLT: ContractAddress
-  previous_ownerLTE: ContractAddress
-  previous_ownerNEQ: ContractAddress
-  previous_ownerNOTIN: [ContractAddress]
-  previous_ownerNOTLIKE: ContractAddress
   structure_entity_id: u32
   structure_entity_idEQ: u32
   structure_entity_idGT: u32
@@ -1452,6 +1465,7 @@ enum eternum_BattleOrderField {
 }
 
 type eternum_BattlePillageData {
+  attacker_lost_troops: eternum_BattlePillageData_Troops
   destroyed_building_category: Enum
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -1460,10 +1474,12 @@ type eternum_BattlePillageData {
   pillaged_resources: [eternum_BattlePillageData_u8u128]
   pillaged_structure_entity_id: u32
   pillaged_structure_owner: ContractAddress
+  pillaged_structure_owner_name: felt252
   pillager: ContractAddress
   pillager_army_entity_id: u32
   pillager_name: felt252
   pillager_realm_entity_id: u32
+  structure_lost_troops: eternum_BattlePillageData_Troops
   structure_type: Enum
   timestamp: u64
   winner: Enum
@@ -1488,16 +1504,19 @@ input eternum_BattlePillageDataOrder {
 }
 
 enum eternum_BattlePillageDataOrderField {
+  ATTACKER_LOST_TROOPS
   DESTROYED_BUILDING_CATEGORY
   EVENT_ID
   ID
   PILLAGED_RESOURCES
   PILLAGED_STRUCTURE_ENTITY_ID
   PILLAGED_STRUCTURE_OWNER
+  PILLAGED_STRUCTURE_OWNER_NAME
   PILLAGER
   PILLAGER_ARMY_ENTITY_ID
   PILLAGER_NAME
   PILLAGER_REALM_ENTITY_ID
+  STRUCTURE_LOST_TROOPS
   STRUCTURE_TYPE
   TIMESTAMP
   WINNER
@@ -1541,6 +1560,17 @@ input eternum_BattlePillageDataWhereInput {
   pillaged_structure_ownerNEQ: ContractAddress
   pillaged_structure_ownerNOTIN: [ContractAddress]
   pillaged_structure_ownerNOTLIKE: ContractAddress
+  pillaged_structure_owner_name: felt252
+  pillaged_structure_owner_nameEQ: felt252
+  pillaged_structure_owner_nameGT: felt252
+  pillaged_structure_owner_nameGTE: felt252
+  pillaged_structure_owner_nameIN: [felt252]
+  pillaged_structure_owner_nameLIKE: felt252
+  pillaged_structure_owner_nameLT: felt252
+  pillaged_structure_owner_nameLTE: felt252
+  pillaged_structure_owner_nameNEQ: felt252
+  pillaged_structure_owner_nameNOTIN: [felt252]
+  pillaged_structure_owner_nameNOTLIKE: felt252
   pillager: ContractAddress
   pillagerEQ: ContractAddress
   pillagerGT: ContractAddress
@@ -1620,6 +1650,12 @@ input eternum_BattlePillageDataWhereInput {
   yNEQ: u32
   yNOTIN: [u32]
   yNOTLIKE: u32
+}
+
+type eternum_BattlePillageData_Troops {
+  crossbowman_count: u64
+  knight_count: u64
+  paladin_count: u64
 }
 
 type eternum_BattlePillageData_u8u128 {
@@ -7334,17 +7370,16 @@ input eternum_SettleRealmDataWhereInput {
 }
 
 type eternum_SettlementConfig {
-  angle_scaled: u128
+  base_distance: u32
   center: u32
   config_id: u32
+  current_layer: u32
+  current_point_on_side: u32
+  current_side: u32
   entity: World__Entity
   eventMessage: World__EventMessage
-  max_angle_increase: u64
-  max_distance: u32
-  min_angle_increase: u64
-  min_distance: u32
-  min_scaling_factor_scaled: u128
-  radius: u32
+  min_first_layer_distance: u32
+  points_placed: u32
 }
 
 type eternum_SettlementConfigConnection {
@@ -7364,29 +7399,28 @@ input eternum_SettlementConfigOrder {
 }
 
 enum eternum_SettlementConfigOrderField {
-  ANGLE_SCALED
+  BASE_DISTANCE
   CENTER
   CONFIG_ID
-  MAX_ANGLE_INCREASE
-  MAX_DISTANCE
-  MIN_ANGLE_INCREASE
-  MIN_DISTANCE
-  MIN_SCALING_FACTOR_SCALED
-  RADIUS
+  CURRENT_LAYER
+  CURRENT_POINT_ON_SIDE
+  CURRENT_SIDE
+  MIN_FIRST_LAYER_DISTANCE
+  POINTS_PLACED
 }
 
 input eternum_SettlementConfigWhereInput {
-  angle_scaled: u128
-  angle_scaledEQ: u128
-  angle_scaledGT: u128
-  angle_scaledGTE: u128
-  angle_scaledIN: [u128]
-  angle_scaledLIKE: u128
-  angle_scaledLT: u128
-  angle_scaledLTE: u128
-  angle_scaledNEQ: u128
-  angle_scaledNOTIN: [u128]
-  angle_scaledNOTLIKE: u128
+  base_distance: u32
+  base_distanceEQ: u32
+  base_distanceGT: u32
+  base_distanceGTE: u32
+  base_distanceIN: [u32]
+  base_distanceLIKE: u32
+  base_distanceLT: u32
+  base_distanceLTE: u32
+  base_distanceNEQ: u32
+  base_distanceNOTIN: [u32]
+  base_distanceNOTLIKE: u32
   center: u32
   centerEQ: u32
   centerGT: u32
@@ -7409,72 +7443,61 @@ input eternum_SettlementConfigWhereInput {
   config_idNEQ: u32
   config_idNOTIN: [u32]
   config_idNOTLIKE: u32
-  max_angle_increase: u64
-  max_angle_increaseEQ: u64
-  max_angle_increaseGT: u64
-  max_angle_increaseGTE: u64
-  max_angle_increaseIN: [u64]
-  max_angle_increaseLIKE: u64
-  max_angle_increaseLT: u64
-  max_angle_increaseLTE: u64
-  max_angle_increaseNEQ: u64
-  max_angle_increaseNOTIN: [u64]
-  max_angle_increaseNOTLIKE: u64
-  max_distance: u32
-  max_distanceEQ: u32
-  max_distanceGT: u32
-  max_distanceGTE: u32
-  max_distanceIN: [u32]
-  max_distanceLIKE: u32
-  max_distanceLT: u32
-  max_distanceLTE: u32
-  max_distanceNEQ: u32
-  max_distanceNOTIN: [u32]
-  max_distanceNOTLIKE: u32
-  min_angle_increase: u64
-  min_angle_increaseEQ: u64
-  min_angle_increaseGT: u64
-  min_angle_increaseGTE: u64
-  min_angle_increaseIN: [u64]
-  min_angle_increaseLIKE: u64
-  min_angle_increaseLT: u64
-  min_angle_increaseLTE: u64
-  min_angle_increaseNEQ: u64
-  min_angle_increaseNOTIN: [u64]
-  min_angle_increaseNOTLIKE: u64
-  min_distance: u32
-  min_distanceEQ: u32
-  min_distanceGT: u32
-  min_distanceGTE: u32
-  min_distanceIN: [u32]
-  min_distanceLIKE: u32
-  min_distanceLT: u32
-  min_distanceLTE: u32
-  min_distanceNEQ: u32
-  min_distanceNOTIN: [u32]
-  min_distanceNOTLIKE: u32
-  min_scaling_factor_scaled: u128
-  min_scaling_factor_scaledEQ: u128
-  min_scaling_factor_scaledGT: u128
-  min_scaling_factor_scaledGTE: u128
-  min_scaling_factor_scaledIN: [u128]
-  min_scaling_factor_scaledLIKE: u128
-  min_scaling_factor_scaledLT: u128
-  min_scaling_factor_scaledLTE: u128
-  min_scaling_factor_scaledNEQ: u128
-  min_scaling_factor_scaledNOTIN: [u128]
-  min_scaling_factor_scaledNOTLIKE: u128
-  radius: u32
-  radiusEQ: u32
-  radiusGT: u32
-  radiusGTE: u32
-  radiusIN: [u32]
-  radiusLIKE: u32
-  radiusLT: u32
-  radiusLTE: u32
-  radiusNEQ: u32
-  radiusNOTIN: [u32]
-  radiusNOTLIKE: u32
+  current_layer: u32
+  current_layerEQ: u32
+  current_layerGT: u32
+  current_layerGTE: u32
+  current_layerIN: [u32]
+  current_layerLIKE: u32
+  current_layerLT: u32
+  current_layerLTE: u32
+  current_layerNEQ: u32
+  current_layerNOTIN: [u32]
+  current_layerNOTLIKE: u32
+  current_point_on_side: u32
+  current_point_on_sideEQ: u32
+  current_point_on_sideGT: u32
+  current_point_on_sideGTE: u32
+  current_point_on_sideIN: [u32]
+  current_point_on_sideLIKE: u32
+  current_point_on_sideLT: u32
+  current_point_on_sideLTE: u32
+  current_point_on_sideNEQ: u32
+  current_point_on_sideNOTIN: [u32]
+  current_point_on_sideNOTLIKE: u32
+  current_side: u32
+  current_sideEQ: u32
+  current_sideGT: u32
+  current_sideGTE: u32
+  current_sideIN: [u32]
+  current_sideLIKE: u32
+  current_sideLT: u32
+  current_sideLTE: u32
+  current_sideNEQ: u32
+  current_sideNOTIN: [u32]
+  current_sideNOTLIKE: u32
+  min_first_layer_distance: u32
+  min_first_layer_distanceEQ: u32
+  min_first_layer_distanceGT: u32
+  min_first_layer_distanceGTE: u32
+  min_first_layer_distanceIN: [u32]
+  min_first_layer_distanceLIKE: u32
+  min_first_layer_distanceLT: u32
+  min_first_layer_distanceLTE: u32
+  min_first_layer_distanceNEQ: u32
+  min_first_layer_distanceNOTIN: [u32]
+  min_first_layer_distanceNOTLIKE: u32
+  points_placed: u32
+  points_placedEQ: u32
+  points_placedGT: u32
+  points_placedGTE: u32
+  points_placedIN: [u32]
+  points_placedLIKE: u32
+  points_placedLT: u32
+  points_placedLTE: u32
+  points_placedNEQ: u32
+  points_placedNOTIN: [u32]
+  points_placedNOTLIKE: u32
 }
 
 type eternum_SpeedConfig {
