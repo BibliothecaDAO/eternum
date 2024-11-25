@@ -1,8 +1,11 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig();
+
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: "http://localhost:8080/graphql",
+  schema: process.env.VITE_PUBLIC_TORII_GRAPHQL,
   documents: "src/**/*.tsx",
   ignoreNoDocuments: true,
   generates: {
