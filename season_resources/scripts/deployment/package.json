@@ -1,0 +1,22 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "bun --env-file=.env ./deploy_dev",
+    "deploy::prod": "bun --env-file=.env.production ./deploy_prod"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@bibliothecadao/eternum": "workspace:^",
+    "colors": "^1.4.0",
+    "dotenv": "^16.3.1",
+    "starknet": "^6.8.0"
+  },
+  "devDependencies": {
+    "prettier": "3.1.1"
+  }
+}
