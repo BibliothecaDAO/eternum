@@ -76,6 +76,32 @@ export class EternumProvider extends EnhancedDojoProvider {
     return receipt;
   }
 
+  public async bridge_resource_into_realm(props: SystemProps.BridgeResourceIntoRealmProps) {
+    const { token, through_bank_id, recipient_realm_entity_id, amount, client_fee_recipient, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: token as string,
+        entrypoint: "approve",
+        calldata: [
+          getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+          amount, 0 // u128, u128
+        ],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        entrypoint: "deposit",
+        calldata: [
+          token,
+          through_bank_id,
+          recipient_realm_entity_id,
+          amount, 0, // u128, u128
+          client_fee_recipient,
+        ],
+      },
+    ]);
+  }
+
   public async create_order(props: SystemProps.CreateOrderProps) {
     const { maker_id, maker_gives_resources, taker_id, taker_gives_resources, signer, expires_at } = props;
 
