@@ -41,7 +41,7 @@ export const BattleHistory = ({ battleId, battleSide }: { battleId: ID; battleSi
   const battleStartTime = battleStartData?.[0]?.timestamp || 0;
 
   return (
-    <div className={`px-4 pt-4 col-span-2 p-2 w-full overflow-y-auto max-h-[35vh] h-full no-scrollbar text-left`}>
+    <div className={`self-center px-4 pt-4 col-span-2 p-2 w-full overflow-y-auto no-scrollbar text-left`}>
       {events.map((event) => {
         if (!event) return null;
         const eventClone = structuredClone(event);
