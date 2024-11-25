@@ -2,8 +2,9 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import TwitterShareButton from "@/ui/elements/TwitterShareButton";
 import { divideByPrecision, formatResources, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ID, Resource } from "@bibliothecadao/eternum";
+import { BattleSide, ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { TroopDisplay } from "./TroopChip";
@@ -14,12 +15,20 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
   const isSuccess = history.winner === BattleSide[BattleSide.Attack];
   const formattedResources = useMemo(() => formatResources(history.pillaged_resources), [history.pillaged_resources]);
 
+  const twitterText = useMemo(() => {
+    if (isSuccess) {
+      return `I, Ser ${addressName}, have just raided ${formattedResources
+        .map((resource) => `${divideByPrecision(resource.amount)} ${ResourcesIds[resource.resourceId]}`)
+        .join(", ")} in @RealmsEternum.💰💰💰\n\nJoin the battle for victory at ${window.location.origin}`;
+    }
+  }, [isSuccess, addressName]);
   return (
     <div className="group relative bg-gold/20 hover:bg-gold/10 rounded-lg p-4 transition-all duration-300">
       <div className="flex items-center justify-between mb-4">
         <div className={`text-base font-semibold uppercase tracking-wider ${isSuccess ? "text-green" : "text-red"}`}>
           {isSuccess ? "Successful Raid" : "Failed Raid"}
         </div>
+        {twitterText && <TwitterShareButton text={twitterText} />}
         <div className="text-gold/80 font-medium">by: {addressName}</div>
       </div>
 
