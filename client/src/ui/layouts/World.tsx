@@ -6,10 +6,10 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { useStructureEntityId } from "@/hooks/helpers/useStructureEntityId";
 import { useFetchBlockchainData } from "@/hooks/store/useBlockchainStore";
 import { useSubscriptionToHyperstructureEvents } from "@/hooks/store/useLeaderBoardStore";
+import { env } from "../../../env";
 import { IS_MOBILE } from "../config";
 import { LoadingScreen } from "../modules/LoadingScreen";
 import { LoadingOroborus } from "../modules/loading-oroborus";
-
 // Lazy load components
 
 const SelectedArmy = lazy(() =>
@@ -157,7 +157,7 @@ export const World = () => {
 
         <Redirect to="/" />
         <Leva
-          hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
+          hidden={!env.VITE_PUBLIC_DEV || env.VITE_PUBLIC_HIDE_THREEJS_MENU}
           collapsed
           titleBar={{ position: { x: 0, y: 50 } }}
         />
@@ -172,7 +172,7 @@ export const World = () => {
 const VersionDisplay = () => (
   <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white">
     <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
-      {import.meta.env.VITE_PUBLIC_GAME_VERSION}
+      {env.VITE_PUBLIC_GAME_VERSION}
     </a>
   </div>
 );

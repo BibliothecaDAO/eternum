@@ -63,7 +63,8 @@
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.21.45",
     "vite-plugin-svgr": "^4.2.0",
-    "vite-plugin-wasm": "^3.3.0"
+    "vite-plugin-wasm": "^3.3.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.16",

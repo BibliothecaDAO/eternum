@@ -4,6 +4,7 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { ColorMode } from "@cartridge/controller";
 import { sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
+import { env } from "../../../env";
 //import { cartridgeController } from "./cartridge-controller";
 
 const theme: string = "eternum";
@@ -30,7 +31,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     order: "random",
   });
   const rpc = useCallback(() => {
-    return { nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL };
+    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
 
   return (
