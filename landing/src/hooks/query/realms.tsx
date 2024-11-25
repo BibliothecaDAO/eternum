@@ -2,12 +2,23 @@ import { graphql } from "../gql";
 
 export const GET_REALMS = graphql(`
   query getRealms($accountAddress: String!) {
-    ercBalance(accountAddress: $accountAddress) {
-      balance
-      type
-      tokenMetadata {
-        tokenId
-        contractAddress
+    tokenBalances(accountAddress: $accountAddress) {
+      edges {
+        node {
+          tokenMetadata {
+            __typename
+            ... on ERC721__Token {
+              tokenId
+              metadataDescription
+              imagePath
+              contractAddress
+              metadata
+            }
+            ... on ERC20__Token {
+              amount
+            }
+          }
+        }
       }
     }
   }
@@ -15,10 +26,20 @@ export const GET_REALMS = graphql(`
 
 export const GET_ERC_MINTS = graphql(`
   query getRealmMints {
-    ercTransfer(accountAddress: "0x0", limit: 8000) {
-      tokenMetadata {
-        tokenId
-        contractAddress
+    tokenTransfers(accountAddress: "0x0", limit: 8000) {
+      edges {
+        node {
+          tokenMetadata {
+            __typename
+            ... on ERC721__Token {
+              tokenId
+              metadataDescription
+              imagePath
+              contractAddress
+              metadata
+            }
+          }
+        }
       }
     }
   }

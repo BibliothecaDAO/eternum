@@ -75,15 +75,15 @@ if [[ "$external" == "true" ]]; then
         echo "Created new torii_config_file at $TORII_CONFIG_FILE"
     fi
 
-	# THIS ISN'T NECESSARY ATM
+	# THIS IS ONL NECESSARY FOR LOCAL BUILDS
     # Remove existing ERC721 entries
-    #sed "${SED_INPLACE[@]}" '/"erc721:/d' "$TORII_CONFIG_FILE"
+    sed "${SED_INPLACE[@]}" '/"erc721:/d' "$TORII_CONFIG_FILE"
 
     # Insert new ERC721 entries before the closing ]
-    #sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
-    #\ \ \"erc721:$VITE_REALMS_ADDRESS\",\\
-    #\ \ \"erc721:$VITE_SEASON_PASS_ADDRESS\",\\
-    #" "$TORII_CONFIG_FILE"
+    sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
+    \ \ \"erc721:$VITE_REALMS_ADDRESS\",\\
+    \ \ \"erc721:$VITE_SEASON_PASS_ADDRESS\",\\
+    " "$TORII_CONFIG_FILE"
 
     cd ../../../
     printf "\n\n"

@@ -75,7 +75,7 @@ mod TestRealm {
         }
 
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            ""
+            "https://ipfs.io/ipfs/bafybeie6fogyl4pfaj6kg5fnosq76sugoqf7rqkjjojmkj5ywah5es5sne/1"
         }
     }
 

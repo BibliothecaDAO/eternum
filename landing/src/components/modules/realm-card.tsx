@@ -4,7 +4,7 @@ import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { TypeP } from "../typography/type-p";
 
 export interface RealmCardProps {
-  realm: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["ercBalance"]>[0]> & { seasonPassMinted?: boolean };
+  realm: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["tokenBalances"]>["edges"]>[0] & { seasonPassMinted?: boolean };
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   isSelected?: boolean;
   seasonPassMinted?: boolean;
@@ -12,7 +12,7 @@ export interface RealmCardProps {
 
 export const RealmCard = ({
   realm: {
-    tokenMetadata: { tokenId, contractAddress },
+    node: { tokenMetadata: { tokenId, contractAddress } },
   },
   isSelected,
   seasonPassMinted,
