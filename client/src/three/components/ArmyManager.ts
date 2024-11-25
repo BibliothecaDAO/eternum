@@ -137,18 +137,18 @@ export class ArmyManager {
     if (currentHealth <= 0) {
       if (this.armies.has(entityId)) {
         this.removeArmy(entityId);
-        return;
+        return true;
       } else {
-        return;
+        return false;
       }
     }
 
     if (battleId !== 0) {
       if (this.armies.has(entityId)) {
         this.removeArmy(entityId);
-        return;
+        return true;
       } else {
-        return;
+        return false;
       }
     }
 
@@ -159,6 +159,7 @@ export class ArmyManager {
     } else {
       this.addArmy(entityId, position, owner, order);
     }
+    return false;
   }
 
   async updateChunk(chunkKey: string) {

@@ -101,9 +101,13 @@ export default class WorldmapScene extends HexagonScene {
     this.battleManager = new BattleManager(this.scene);
 
     this.armySubscription?.unsubscribe();
-    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) =>
-      this.armyManager.onUpdate(update),
-    );
+    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
+      this.armyManager.onUpdate(update).then((needsUpdate) => {
+        if (needsUpdate) {
+          this.updateVisibleChunks();
+        }
+      });
+    });
 
     this.systemManager.Battle.onUpdate((value) => this.battleManager.onUpdate(value));
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
