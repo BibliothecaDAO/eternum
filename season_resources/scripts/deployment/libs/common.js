@@ -159,12 +159,29 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
 
     const fileName = path.join(folderPath, `resource_addresses.json`);
 
-    const data = {
-      resourceAddresses,
-    };
+    const data = resourceAddresses;
 
     const jsonString = JSON.stringify(data);
-    
+
+    await writeFileAsync(fileName, jsonString);
+    console.log(`"${fileName}" has been saved or overwritten`);
+  } catch (err) {
+    console.error("Error writing file", err);
+    throw err; // Re-throw the error so the caller knows something went wrong
+  }
+};
+
+export const saveResourceAddressesToLandingFolder = async (resourceAddresses) => {
+  try {
+    const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
+    await mkdirAsync(folderPath, { recursive: true });
+
+    const fileName = path.join(folderPath, `../../../../../landing/resource_addresses.json`);
+
+    const data = resourceAddresses;
+
+    const jsonString = JSON.stringify(data);
+
     await writeFileAsync(fileName, jsonString);
     console.log(`"${fileName}" has been saved or overwritten`);
   } catch (err) {

@@ -3,7 +3,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import devManifest from "../../../../contracts/manifest_dev.json";
 import productionManifest from "../../../../contracts/manifest_prod.json";
-import { declare, deploy, getContractPath, saveResourceAddressesToFile } from "./common.js";
+import { declare, deploy, getContractPath, saveResourceAddressesToFile, saveResourceAddressesToLandingFolder } from "./common.js";
 
 const VITE_PUBLIC_DEV = process.env.VITE_PUBLIC_DEV;
 const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
@@ -178,11 +178,12 @@ export const deploySeasonResourceContract = async () => {
           resource.symbol,
           resource.symbol.length
     ];
-    let address = await deploy(casualName, class_hash, constructorCalldata);
+    let address = await deploy(`${resource.name.toLowerCase()} resource`, class_hash, constructorCalldata);
     console.log(`\n${resource.name.toUpperCase()} deployed at ${address}\n`);
-    ADDRESSES[resource.name.toUpperCase()] = address;
+    ADDRESSES[resource.name.toUpperCase().replace(/\s+/g, '')] = address;
   }
 
   await saveResourceAddressesToFile(ADDRESSES);
+  await saveResourceAddressesToLandingFolder(ADDRESSES);
   return ADDRESSES;
 };
