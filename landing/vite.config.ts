@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: 5174,
+      port: process.env.PORT as unknown as number ?? 5174,
       proxy: {
         "/api": {
           target: env.VITE_PUBLIC_TORII_GRAPHQL,

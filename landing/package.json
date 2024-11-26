@@ -64,6 +64,7 @@
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.21.45",
     "vite-plugin-svgr": "^4.2.0",
+    "vite-plugin-vercel": "^9.0.3",
     "vite-plugin-wasm": "^3.3.0"
   },
   "devDependencies": {
