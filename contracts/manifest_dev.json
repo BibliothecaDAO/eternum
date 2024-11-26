@@ -9351,7 +9351,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x2db0d981b34d9ca05cff8a89f10ed0798af8b16f9a9b2769f4c62bdddf1a627",
+      "class_hash": "0x5a8487c53fbcfe0a673dc0d5b7773056ff32484e0ffe4cd46023116a950a80e",
       "tag": "eternum-FragmentMineDiscovered",
       "selector": "0x50864feb6e9470197975efffceacf47e2e363448730413848f46c2c42745d5a"
     },
@@ -9393,7 +9393,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x1e4bcc097f27413654a9a63bbc00b18d3d5e5d5b685b70fdadfbfc9d77e1dfc",
+      "class_hash": "0x10354c6b30e2f5e27c513e0199c5e36197216920ca1a94fb3e7787603fe3f8d",
       "tag": "eternum-MapExplored",
       "selector": "0x53a86a9a6bca1a4c8851fb15bb2dc146856fc084b7e55b816695c01f16f3e4e"
     },

@@ -171,7 +171,7 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
   }
 };
 
-export const saveResourceAddressesToLandingFolder = async (resourceAddresses, environment) => {
+export const saveResourceAddressesToLanding = async (resourceAddresses, environment) => {
   try {
     const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
     await mkdirAsync(folderPath, { recursive: true });
