@@ -18,6 +18,8 @@ import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
+import TwitterShareButton from "@/ui/elements/TwitterShareButton";
+import { getRealmNameById } from "@/ui/utils/realms";
 import { displayAddress, formatTime, toValidAscii } from "@/ui/utils/utils";
 import { ContractAddress, MAX_NAME_LENGTH, TickIds } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
@@ -314,13 +316,31 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   );
 };
 export const StepTwo = ({ onNext }: { onNext: () => void }) => {
+  const [settledRealmId, setSettledRealmId] = useState<number | undefined>(undefined);
+
+  const settledComponent = useMemo(() => {
+    if (!settledRealmId) {
+      return;
+    }
+
+    const realmName = getRealmNameById(settledRealmId);
+    return (
+      <TwitterShareButton
+        text={`I've joined the Eternum battle for glory.\nWars will be fought, tears will be shed.\n${realmName} has been settled. ⚔️`}
+      />
+    );
+  }, [settledRealmId]);
+
   return (
     <StepContainer>
-      <SettleRealmComponent />
-      <div className="flex w-full justify-center">
-        <Button size="md" className="mx-auto mt-4" variant="primary" onClick={onNext}>
-          Continue <ArrowRight className="w-2 fill-current ml-3" />
-        </Button>
+      <SettleRealmComponent setSettledRealmId={setSettledRealmId} />
+      <div className="grid grid-cols-3 gap-4 justify-center items-center">
+        <div className="col-start-2 flex justify-center">
+          <Button size="md" className="mt-4" variant="primary" onClick={onNext}>
+            Continue <ArrowRight className="w-2 fill-current ml-3" />
+          </Button>
+        </div>
+        <div className="col-start-3 flex justify-start">{settledComponent && settledComponent}</div>
       </div>
     </StepContainer>
   );

@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/elemen
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ChevronsUpDown } from "lucide-react";
 
-const SettleRealmComponent = () => {
+const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: number) => void }) => {
   const { playerRealms } = useEntities();
 
   const { settleRealm, isLoading, tokenId, setTokenId, errorMessage } = useSettleRealm();
@@ -43,7 +43,10 @@ const SettleRealmComponent = () => {
             <Button
               variant={"primary"}
               onClick={async () => {
-                await settleRealm();
+                const realmId = await settleRealm();
+                if (realmId) {
+                  setSettledRealmId(realmId);
+                }
               }}
             >
               {isLoading ? "Loading..." : "Settle Random Realm"}

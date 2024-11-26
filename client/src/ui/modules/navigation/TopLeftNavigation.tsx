@@ -5,6 +5,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { Position } from "@/types/Position";
 import { NavigateToPositionIcon } from "@/ui/components/military/ArmyChip";
 import { ViewOnMapIcon } from "@/ui/components/military/ArmyManagementCard";
@@ -21,7 +22,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { ArrowLeft, Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SecondaryMenuItems } from "./SecondaryMenuItems";
 
 const slideDown = {
@@ -114,8 +115,8 @@ export const TopLeftNavigation = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const entityInfo = getEntityInfo(structureEntityId);
   const structure = useMemo(() => {
-    const entityInfo = getEntityInfo(structureEntityId);
     return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
   }, [structureEntityId, getEntityInfo, favorites]);
 
@@ -166,6 +167,7 @@ export const TopLeftNavigation = () => {
   };
 
   const setTooltip = useUIStore((state) => state.setTooltip);
+
   const population = useComponentValue(
     setup.components.Population,
     getEntityIdFromKeys([BigInt(structureEntityId || 0)]),
@@ -340,14 +342,26 @@ const TickProgress = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const nextBlockTimestamp = useUIStore((state) => state.nextBlockTimestamp)!;
   const cycleTime = configManager.getTick(TickIds.Armies);
+  const { play } = useUiSounds(soundSelector.gong);
 
   const [timeUntilNextCycle, setTimeUntilNextCycle] = useState(0);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
+  const lastProgressRef = useRef(0);
+
   const progress = useMemo(() => {
     const elapsedTime = nextBlockTimestamp % cycleTime;
-    return (elapsedTime / cycleTime) * 100;
+    const currentProgress = (elapsedTime / cycleTime) * 100;
+
+    return currentProgress;
   }, [nextBlockTimestamp, cycleTime]);
+
+  useEffect(() => {
+    if (lastProgressRef.current > progress) {
+      play();
+    }
+    lastProgressRef.current = progress;
+  }, [progress]);
 
   const updateTooltip = useCallback(() => {
     if (!isTooltipOpen) return;

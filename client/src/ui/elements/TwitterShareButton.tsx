@@ -5,9 +5,10 @@ import Button from "./Button";
 interface Props {
   text: string;
   className?: string;
+  callToActionText?: string;
 }
 
-const TwitterShareButton: React.FC<Props> = ({ text, className }) => {
+const TwitterShareButton: React.FC<Props> = ({ text, className, callToActionText }) => {
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
 
   return (
@@ -16,7 +17,7 @@ const TwitterShareButton: React.FC<Props> = ({ text, className }) => {
         <div className="w-6 h-6 flex items-center justify-center">
           <TwitterIcon className="h-5 sm:h-7" />
         </div>
-        Share to Twitter
+        {callToActionText ? callToActionText : `Share to Twitter`}
       </Button>
     </a>
   );
