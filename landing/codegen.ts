@@ -1,6 +1,6 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
 import { config as dotenvConfig } from 'dotenv';
-dotenvConfig();
+dotenvConfig({ path: './.env.local' }); //Change for production?
 
 
 const config: CodegenConfig = {

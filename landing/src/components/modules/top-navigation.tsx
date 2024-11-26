@@ -36,24 +36,21 @@ export const TopNavigation = () => {
           </div>
         ) : null}
 
-        <Button onClick={async () => await mint_test_lords({ signer: account, lords_address: lordsAddress })}>
-          Mint Test Lords
-        </Button>
-
-        <>
-          {connectors.map((connector, index) => (
+        {!account ? (
+          connectors.map((connector, index) => (
             <Button size={"default"} key={index} onClick={() => connect({ connector })} variant="outline">
               <img className="w-5" src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark} />{" "}
             </Button>
-          ))}
-        </>
-        {/* // ) : (
-        //   <Button onClick={() => disconnect()}>{displayAddress(account?.address)}</Button>
-        // )} */}
-        {account?.address && (
-          <Button size={"default"} onClick={() => disconnect()}>
-            {displayAddress(account?.address)}
-          </Button>
+          ))
+        ) : (
+          <>
+            <Button onClick={async () => await mint_test_lords({ signer: account, lords_address: lordsAddress })}>
+              Mint Test Lords
+            </Button>
+            <Button size={"default"} onClick={() => disconnect()}>
+              {displayAddress(account?.address)}
+            </Button>
+          </>
         )}
       </div>
     </div>
