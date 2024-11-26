@@ -171,12 +171,12 @@ export const saveResourceAddressesToFile = async (resourceAddresses) => {
   }
 };
 
-export const saveResourceAddressesToLandingFolder = async (resourceAddresses) => {
+export const saveResourceAddressesToLandingFolder = async (resourceAddresses, environment) => {
   try {
     const folderPath = process.env.DEPLOYMENT_ADDRESSES_FOLDER;
     await mkdirAsync(folderPath, { recursive: true });
 
-    const fileName = path.join(folderPath, `../../../../../landing/resource_addresses.json`);
+    const fileName = path.join(folderPath, `../../../../../landing/src/data/resource_addresses/${environment}/resource_addresses.json`);
 
     const data = resourceAddresses;
 

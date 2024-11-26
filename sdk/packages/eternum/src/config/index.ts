@@ -33,7 +33,7 @@ export class EternumConfig {
     await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
-    await setResourceBridgeWhitlelistConfig(config);
+    await setResourceBridgeLordsWhitlelistConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
@@ -467,8 +467,8 @@ export const setSeasonConfig = async (config: Config) => {
   console.log(`Configuring season config ${tx.statusReceipt}`);
 };
 
-export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
-  // allow bridging in of lords into the game
+export const setResourceBridgeLordsWhitlelistConfig = async (config: Config) => {
+  // allow ingame bridging of lords
   const tx = await config.provider.set_resource_bridge_whitlelist_config({
     signer: config.account,
     token: config.config.season.lordsAddress,
@@ -477,6 +477,21 @@ export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
 
   console.log(`Configuring whitelist for lords for in-game asset bridge ${tx.statusReceipt}`);
 };
+
+export const setResourceBridgeWhitlelistConfig = async (config: Config, resources: Map<number, string>) => {
+  // allow ingame bridging of resources (any)
+
+  for (const [resourceId, tokenAddress] of resources.entries()) {
+    const tx = await config.provider.set_resource_bridge_whitlelist_config({
+      signer: config.account,
+      token: tokenAddress,
+      resource_type: resourceId,
+    });
+
+    console.log(`Configuring whitelist for ${resourceId} for in-game asset bridge ${tx.statusReceipt}`);
+  } 
+};
+
 
 export const setResourceBridgeFeesConfig = async (config: Config) => {
   // allow bridging in of lords into the game

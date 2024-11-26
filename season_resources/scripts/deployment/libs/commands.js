@@ -184,6 +184,6 @@ export const deploySeasonResourceContract = async () => {
   }
 
   await saveResourceAddressesToFile(ADDRESSES);
-  await saveResourceAddressesToLandingFolder(ADDRESSES);
+  await saveResourceAddressesToLandingFolder(ADDRESSES, process.env.STARKNET_NETWORK.toLowerCase());
   return ADDRESSES;
 };
