@@ -1,0 +1,5 @@
+{
+    "rewrites": [
+        { "source": "/api", "destination": "https://api.cartridge.gg/x/red-eternum-rc-sepolia-4/torii/graphql" }
+    ]
+}
