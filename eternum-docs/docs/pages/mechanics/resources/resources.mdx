@@ -1,0 +1,113 @@
+import ResourceIcon from "../../../../components/ResourceIcon";
+
+# Resources
+
+Eternum features a complex resource system where each resource type serves different purposes in the game economy. All
+resources exist as ERC20 tokens that can be produced, traded, and bridged out of the game.
+
+## Resource Categories
+
+### Food
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Wheat" id="254" />
+  <ResourceIcon name="Fish" id="255" />
+</div>
+
+- Freely producible by all players
+- Used as basic inputs for most production chains
+- Essential for troop maintenance and building construction
+
+### Resources
+
+Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
+
+> Ex: 5015 realms are able to produce wood, but only 23 can produce dragonhide
+
+- Common
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Wood" id="1" />
+  <ResourceIcon name="Stone" id="2" />
+  <ResourceIcon name="Coal" id="3" />
+  <ResourceIcon name="Copper" id="4" />
+  <ResourceIcon name="Obsidian" id="5" />
+</div>
+
+- Uncommon
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Silver" id="6" />
+  <ResourceIcon name="Ironwood" id="7" />
+  <ResourceIcon name="Cold Iron" id="8" />
+  <ResourceIcon name="Gold" id="9" />
+</div>
+
+- Rare
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Hartwood" id="10" />
+  <ResourceIcon name="Diamonds" id="11" />
+  <ResourceIcon name="Sapphire" id="12" />
+  <ResourceIcon name="Ruby" id="13" />
+</div>
+
+- Unique
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Deep Crystal" id="14" />
+  <ResourceIcon name="Ignium" id="15" />
+  <ResourceIcon name="Ethereal Silica" id="16" />
+  <ResourceIcon name="True Ice" id="17" />
+  <ResourceIcon name="Twilight Quartz" id="18" />
+  <ResourceIcon name="Alchemical Silver" id="19" />
+</div>
+
+- Mythic
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Adamantine" id="20" />
+  <ResourceIcon name="Mithral" id="21" />
+  <ResourceIcon name="Dragonhide" id="22" />
+</div>
+
+### Military
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Knights" id="250" />
+  <ResourceIcon name="Crossbowmen" id="251" />
+  <ResourceIcon name="Paladins" id="252" />
+</div>
+
+- Can be traded as resources
+- Once assigned to an army, become permanent units
+- Cannot be converted back to tradeable resources
+
+### Transport
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Donkeys" id="249" />
+</div>
+
+- Required for resource transportation
+- Consumed during transport operations
+- Essential for moving resources between locations
+
+### Currency
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Lords" id="coin" />
+</div>
+
+- The game's primary currency
+- Used in market transactions
+
+### Special
+
+<div className="flex items-baseline gap-1">
+  <ResourceIcon name="Ancient Fragments" id="29" />
+</div>
+
+- Cannot be produced by Realms
+- Found only in mines on the world map
+- Used for Hyperstructure construction
