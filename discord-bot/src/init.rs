@@ -1,6 +1,6 @@
-use crate::actors::discord_message_creator::DiscordMessageCreator;
 use crate::actors::discord_message_sender::DiscordMessageSender;
 use crate::actors::torii_client_subscriber::ToriiClientSubscriber;
+use crate::actors::{discord_message_creator::DiscordMessageCreator, tick_sender::TickSender};
 use crate::commands;
 use crate::types::Config;
 use serenity::all::{Client, GatewayIntents, Http};
@@ -37,11 +37,12 @@ async fn launch_internal_services(database: PgPool, config: Config) {
     });
 
     let config_clone = config.clone();
+    let message_sender_clone = message_sender.clone();
     tokio::spawn(async move {
         tracing::info!("Starting event processor");
         let mut processor = DiscordMessageCreator::new(
             &database,
-            &message_sender,
+            &message_sender_clone,
             config_clone.channel_id,
             processed_event_receiver,
         );
@@ -56,6 +57,19 @@ async fn launch_internal_services(database: PgPool, config: Config) {
             message_receiver,
         );
         discord_message_sender.run().await;
+    });
+
+    let config_clone = config.clone();
+    let message_sender_clone = message_sender.clone();
+    tokio::spawn(async move {
+        tracing::info!("Starting tick sender");
+        let mut tick_sender = TickSender::new(
+            &config_clone,
+            &message_sender_clone,
+        )
+        .await
+        .expect("Failed to create tick sender");
+        tick_sender.run().await;
     });
 }
 
