@@ -63,12 +63,9 @@ async fn launch_internal_services(database: PgPool, config: Config) {
     let message_sender_clone = message_sender.clone();
     tokio::spawn(async move {
         tracing::info!("Starting tick sender");
-        let mut tick_sender = TickSender::new(
-            &config_clone,
-            &message_sender_clone,
-        )
-        .await
-        .expect("Failed to create tick sender");
+        let mut tick_sender = TickSender::new(&config_clone, &message_sender_clone)
+            .await
+            .expect("Failed to create tick sender");
         tick_sender.run().await;
     });
 }

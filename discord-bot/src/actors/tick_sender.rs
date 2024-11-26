@@ -4,10 +4,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serenity::all::{ChannelId, CreateEmbed, CreateEmbedFooter, CreateMessage};
 use starknet_crypto::Felt;
 use tokio::sync::mpsc;
-use torii_grpc::types::{Clause, KeysClause, ModelKeysClause, PatternMatching, Query};
+use torii_grpc::types::{Clause, KeysClause, PatternMatching, Query};
 
 use crate::constants::{ETERNUM_URL, TICK_ARMIES_ID, WORLD_CONFIG_ID};
-use crate::types::{Config, DiscordMessage, DiscordMessageType, Event};
+use crate::types::{Config, DiscordMessage};
 
 pub struct TickSender<'a> {
     message_sender: &'a mpsc::Sender<DiscordMessage>,
