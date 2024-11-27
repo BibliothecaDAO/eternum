@@ -33,8 +33,8 @@ export class ArmyModel {
   private entityModelMap: Map<number, string> = new Map(); // Maps entity IDs to model types
   animationStates: Float32Array;
   timeOffsets: Float32Array;
-  private zeroScale = new THREE.Vector3(0.5, 0.5, 0.5);
-  private normalScale = new THREE.Vector3(1, 1, 1);
+  private zeroScale = new THREE.Vector3(0, 0, 0);
+  private normalScale = new THREE.Vector3(0.3, 0.3, 0.3);
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
 
@@ -150,6 +150,7 @@ export class ArmyModel {
     position: THREE.Vector3,
     scale: THREE.Vector3,
     rotation?: THREE.Euler,
+    color?: THREE.Color,
   ) {
     // Update active model normally, set zero scale for others
     this.models.forEach((modelData, modelType) => {
@@ -167,6 +168,10 @@ export class ArmyModel {
           this.dummyObject.rotation.copy(rotation);
         }
         this.dummyObject.scale.copy(this.zeroScale);
+      }
+      if (color) {
+        modelData.mesh.setColorAt(index, color);
+        modelData.mesh.instanceColor!.needsUpdate = true;
       }
       this.dummyObject.updateMatrix();
       modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);

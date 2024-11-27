@@ -169,13 +169,14 @@ export class ArmyManager {
       this.armyModel.dummyObject.updateMatrix();
 
       // Update the specific model instance for this entity
-      const modelData = this.armyModel.getModelForEntity(army.entityId);
-      if (!modelData) return;
-
-      modelData.mesh.setMatrixAt(currentCount, this.armyModel.dummyObject.matrix);
-      modelData.mesh.setColorAt(currentCount, new THREE.Color(army.color));
-      modelData.mesh.userData.entityIdMap = modelData.mesh.userData.entityIdMap || new Map();
-      modelData.mesh.userData.entityIdMap.set(currentCount, army.entityId);
+      this.armyModel.updateInstance(
+        army.entityId,
+        currentCount,
+        position,
+        this.scale,
+        undefined,
+        new THREE.Color(army.color),
+      );
 
       this.armies.set(army.entityId, { ...army, matrixIndex: currentCount });
 
