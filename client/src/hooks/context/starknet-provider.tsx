@@ -6,6 +6,8 @@ import { mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import { env } from "../../../env";
 import { policies } from "./policies";
+import { signingPolicy } from "./signing-policy";
+
 const theme: string = "eternum";
 const slot: string = "eternum-rc1-1";
 const namespace: string = "eternum";
@@ -15,7 +17,7 @@ const controller = new ControllerConnector({
   rpc: env.VITE_PUBLIC_NODE_URL,
   namespace,
   slot,
-  policies,
+  policies: [...policies, ...signingPolicy],
   theme,
   colorMode,
 });

@@ -80,7 +80,7 @@ const useControllerAccount = () => {
 
   useEffect(() => {
     if (connector) {
-      useAccountStore.getState().setConnector(connector as ControllerConnector);
+      useAccountStore.getState().setConnector(connector as unknown as ControllerConnector);
     }
   }, [connector, isConnected]);
 

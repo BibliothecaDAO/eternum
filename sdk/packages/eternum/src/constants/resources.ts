@@ -1,5 +1,5 @@
-import { ResourcesIds } from ".";
 import { ResourceInputs, ResourceOutputs, Resources } from "../types";
+import { ResourcesIds } from "./index";
 
 export const resources: Array<Resources> = [
   {
