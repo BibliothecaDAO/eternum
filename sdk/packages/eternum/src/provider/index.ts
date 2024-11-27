@@ -774,19 +774,27 @@ export class EternumProvider extends EnhancedDojoProvider {
    *
    * @example
    * ```typescript
-   * // Create a wood production building
+   * // Create a wood production building at coordinates determined by directions [1,2]
    * {
-   *   entity_id: 123,
-   *   directions: [1, 2],
-   *   building_category: 1,
-   *   produce_resource_type: 1,
-   *   signer: account
+   *   contractAddress: "<eternum-building_systems>",
+   *   entrypoint: "create",
+   *   calldata: [
+   *     123,     // entity_id
+   *     [1, 2],  // directions array
+   *     1,       // building_category (e.g. 1 for resource production)
+   *     1        // produce_resource_type (e.g. 1 for wood) for farms and fishing villages use 0
+   *   ]
    * }
    * ```
    */
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, produce_resource_type, signer } = props;
-
+    ["62", "1", "0", "4", "1"];
+    console.log("Create Building Call Data:", {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
+      entrypoint: "create",
+      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
+    });
     return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",
@@ -809,9 +817,13 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```typescript
    * // Destroy building at coordinates (10, 20)
    * {
-   *   entity_id: 123,
-   *   building_coord: { x: 10, y: 20 },
-   *   signer: account
+   *   contractAddress: "<eternum-building_systems>",
+   *   entrypoint: "destroy",
+   *   calldata: [
+   *     123,     // entity_id
+   *     10,      // building_coord.x
+   *     20       // building_coord.y
+   *   ]
    * }
    * ```
    */

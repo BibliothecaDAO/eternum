@@ -11,7 +11,7 @@ interface Example {
   }>;
 }
 
-function extractExamples(filePath: string): void {
+function extractExamples(filePath: string): string {
   try {
     // Read the file content
     const content = fs.readFileSync(filePath, "utf8");
@@ -59,12 +59,14 @@ function extractExamples(filePath: string): void {
     const text = generateText(examples);
 
     // Write to file
-    const outputPath = path.join(path.dirname(filePath), "provider-examples.txt");
-    fs.writeFileSync(outputPath, text);
+    const outputPath = path.join(path.dirname(filePath), "provider-examples.ts");
+    fs.writeFileSync(outputPath, `export const PROVIDER_EXAMPLES = \`${text}\`;`);
 
     console.log(`Examples extracted to ${outputPath}`);
+    return text;
   } catch (error) {
     console.error("Error processing file:", error);
+    return "";
   }
 }
 
