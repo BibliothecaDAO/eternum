@@ -8,7 +8,7 @@ import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
 import { checkCartridgeConnector } from "@/lib/utils";
 import { useConnect } from "@starknet-react/core";
 import { Loader } from "lucide-react";
-import { StarknetProvider } from "../providers/Starknet";
+import { useEffect } from "react";
 import CustomIframe from "../ui/custom-iframe";
 import { CartridgeConnectButton } from "./cartridge-connect-button";
 
@@ -31,6 +31,18 @@ export default function SeasonPassMintDialog({
   const { connector } = useConnect();
 
   const checkCartridge = checkCartridgeConnector(connector);
+  useEffect(() => {
+		if (isOpen) {
+			// Pushing the change to the end of the call stack
+			const timer = setTimeout(() => {
+				document.body.style.pointerEvents = "";
+			}, 0);
+
+			return () => clearTimeout(timer);
+		} else {
+			document.body.style.pointerEvents = "auto";
+		}
+	}, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -67,12 +79,16 @@ export default function SeasonPassMintDialog({
                 <div className="w-full my-4">
                   {!checkCartridge && (
                     <div className="w-full h-full relative">
-                    <CustomIframe style={{ width: "100%", height: "100%", overflow: "auto" }} sandbox="allow-same-origin allow-scripts allow-modal" title="A custom made iframe">
-                      <StarknetProvider>
-                      <CartridgeConnectButton className="w-full" /></StarknetProvider>
-                    </CustomIframe>
+                      <CustomIframe
+                        style={{ width: "100%", height: "100%", overflow: "auto" }}
+                        sandbox="allow-same-origin allow-scripts"
+                        title="A custom made iframe"
+                      >
+                      <CartridgeConnectButton className="w-full">
+                            Connect your Cartridge Wallet
+                          </CartridgeConnectButton>
+                      </CustomIframe>
                     </div>
-
                   )}
                   {realm_ids.map((realm, index) => (
                     <span key={realm}>
@@ -89,6 +105,7 @@ export default function SeasonPassMintDialog({
                       deselectAllNfts();
                       setIsOpen(false);
                     }}
+                    disabled={!checkCartridge}
                     variant="cta"
                   >
                     {isMinting && <Loader className="animate-spin pr-2" />} Mint Season Passes
