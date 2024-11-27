@@ -18,8 +18,8 @@ work.
 _Query 1:_
 
 1. Look at goal, state of realm. So resource balances, buildings etc (this is fetched from a DB right?)
-2. Decide what information is needed for the context. (this is done by an LLM?) Create a graphql query for it, and fetch the information. Keep in
-   context.
+2. Decide what information is needed for the context. (this is done by an LLM?) Create a graphql query for it, and fetch
+   the information. Keep in context.
 3. Decide if you want to take an action or not. (we have a list of actions defined in the same way as eliza?)
 
    - If not, return and ask question again in 1 minute
@@ -28,8 +28,7 @@ _Query 1:_
 _Query 2:_
 
 1. Pass context from Query 1 into another lookup to find how to take that action.
-2. consume the cache of available actions
-(wouldn't this be redundant if we have actions defined in the Eliza way?)
+2. consume the cache of available actions (wouldn't this be redundant if we have actions defined in the Eliza way?)
 
 _Execute 3:_
 

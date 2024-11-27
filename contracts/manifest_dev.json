@@ -1515,12 +1515,7 @@
       "init_calldata": [],
       "tag": "eternum-bank_systems",
       "selector": "0x8503019092f83aabe63743a11c20d92ad36d1493ea32fe85df783beb02118d",
-      "systems": [
-        "create_bank",
-        "change_owner_amm_fee",
-        "change_owner_bridge_fee",
-        "upgrade"
-      ]
+      "systems": ["create_bank", "change_owner_amm_fee", "change_owner_bridge_fee", "upgrade"]
     },
     {
       "address": "0x2754a69d060822b413068dc0fae91a35a398b1803118a7354cdc2c5e3f1f156",
@@ -1721,10 +1716,7 @@
       "init_calldata": [],
       "tag": "eternum-battle_pillage_systems",
       "selector": "0x533864d7ea316db459d99ca61ce0b99e6990fcb1200fb08fe09a0356ccf6ae",
-      "systems": [
-        "battle_pillage",
-        "upgrade"
-      ]
+      "systems": ["battle_pillage", "upgrade"]
     },
     {
       "address": "0x1c5e92f768dbeeff4ec76e77bcad48bfd055ec1fd9522536d5d2b05e4b187a",
@@ -2015,14 +2007,7 @@
       "init_calldata": [],
       "tag": "eternum-battle_systems",
       "selector": "0x318da24fd0426eb8dd15b8f647ca0f7e3dde6218a92edac5f59bd3b27e94da",
-      "systems": [
-        "battle_start",
-        "battle_force_start",
-        "battle_join",
-        "battle_leave",
-        "battle_claim",
-        "upgrade"
-      ]
+      "systems": ["battle_start", "battle_force_start", "battle_join", "battle_leave", "battle_claim", "upgrade"]
     },
     {
       "address": "0x3c212b90cc4f236be2c014e0ee0d870277b2cc313217a73d41387e255e806ed",
@@ -2399,11 +2384,7 @@
       "init_calldata": [],
       "tag": "eternum-battle_utils_systems",
       "selector": "0x2b03ed939280406b45a1b2c50a50be670795c19643b6157e6e132de5e6d0c99",
-      "systems": [
-        "leave_battle",
-        "leave_battle_if_ended",
-        "upgrade"
-      ]
+      "systems": ["leave_battle", "leave_battle_if_ended", "upgrade"]
     },
     {
       "address": "0x36b82076142f07fbd8bf7b2cabf2e6b190082c0b242c6ecc5e14b2c96d1763c",
@@ -2790,13 +2771,7 @@
       "init_calldata": [],
       "tag": "eternum-building_systems",
       "selector": "0x4b0f302684ab1ee4466eba412e62b2f40a8d6a1e56a18c6888aaca12800c2a3",
-      "systems": [
-        "create",
-        "pause_production",
-        "resume_production",
-        "destroy",
-        "upgrade"
-      ]
+      "systems": ["create", "pause_production", "resume_production", "destroy", "upgrade"]
     },
     {
       "address": "0x335d2e09ecdc759473dc5731cc236c2496618c72abe8b5e3a88485e24b9d857",
@@ -4407,10 +4382,7 @@
       "init_calldata": [],
       "tag": "eternum-dev_bank_systems",
       "selector": "0x7a630ec982c14127268c8c2231f6f426a2f1e5bd0d301bb57eb0f1940d126f1",
-      "systems": [
-        "create_admin_bank",
-        "upgrade"
-      ]
+      "systems": ["create_admin_bank", "upgrade"]
     },
     {
       "address": "0x5291e7f4c092a2a5975bd29e9b42cb69cdc831214a27a675d732ad33f4af7c",
@@ -4611,10 +4583,7 @@
       "init_calldata": [],
       "tag": "eternum-dev_realm_systems",
       "selector": "0x7190780767c16e37e32049253be28ecd73cf73a4c34666e5b06bb90ff5b14b5",
-      "systems": [
-        "create",
-        "upgrade"
-      ]
+      "systems": ["create", "upgrade"]
     },
     {
       "address": "0x6b768187dd4d1dd3fe45a2533c6e099c596283f7699d786e40d701334b76bd8",
@@ -4825,10 +4794,7 @@
       "init_calldata": [],
       "tag": "eternum-dev_resource_systems",
       "selector": "0x9f04ac8a4f56ab426d2bff54cd8ef9a4826eba41cf995fa91e5bf124f43a38",
-      "systems": [
-        "mint",
-        "upgrade"
-      ]
+      "systems": ["mint", "upgrade"]
     },
     {
       "address": "0x2d67ef281e57b9d187269bc5522782e10ead76c28b0c1241f2f2866c0465c50",
@@ -5002,9 +4968,7 @@
       "init_calldata": [],
       "tag": "eternum-donkey_systems",
       "selector": "0x4851519d9645482d34b497963fb65fb0fe29710f9ef87566268b971b7df138d",
-      "systems": [
-        "upgrade"
-      ]
+      "systems": ["upgrade"]
     },
     {
       "address": "0x12a0ca4558518d6af296b8f393a917bb89b3e78ba33544814b7d9138ce4816e",
@@ -5656,14 +5620,7 @@
       "init_calldata": [],
       "tag": "eternum-hyperstructure_systems",
       "selector": "0x3660009af6536f664e159eb2af60e6f0f4890658922967a969b30e212ad808e",
-      "systems": [
-        "create",
-        "contribute_to_construction",
-        "set_co_owners",
-        "end_game",
-        "set_access",
-        "upgrade"
-      ]
+      "systems": ["create", "contribute_to_construction", "set_co_owners", "end_game", "set_access", "upgrade"]
     },
     {
       "address": "0x7a5e4dfaba7aced9add65913d44311d74e12f85c55503ebf903103b102847e5",
@@ -5932,11 +5889,7 @@
       "init_calldata": [],
       "tag": "eternum-liquidity_systems",
       "selector": "0x337d668f7da0ec3cf880ea99993e966e626d669b72c180247cbe5128ad86200",
-      "systems": [
-        "add",
-        "remove",
-        "upgrade"
-      ]
+      "systems": ["add", "remove", "upgrade"]
     },
     {
       "address": "0x42b3545b5a607c6bc9beed10cb5d7853d204f6c26c8d0313d3749e0b5841c5b",
@@ -6199,11 +6152,7 @@
       "init_calldata": [],
       "tag": "eternum-map_generation_systems",
       "selector": "0x1998c9853704d92e53765a2cd301405c88374a84f6ab07211f3e17c41cbf835",
-      "systems": [
-        "discover_shards_mine",
-        "add_mercenaries_to_structure",
-        "upgrade"
-      ]
+      "systems": ["discover_shards_mine", "add_mercenaries_to_structure", "upgrade"]
     },
     {
       "address": "0xcc0c73458864b9e0e884de532b7ebfbe757e7429fb2c736abd5e129e5fb81a",
@@ -6434,10 +6383,7 @@
       "init_calldata": [],
       "tag": "eternum-map_systems",
       "selector": "0x5431b1228d908b966ef227bcdceb526b3def07409c4f0715cf6ddce3fec5619",
-      "systems": [
-        "explore",
-        "upgrade"
-      ]
+      "systems": ["explore", "upgrade"]
     },
     {
       "address": "0x27952f3c1c681790a168e5422c21278d925cd1bdd8daf1cde8e63afdfd19e20",
@@ -6650,11 +6596,7 @@
       "init_calldata": [],
       "tag": "eternum-name_systems",
       "selector": "0xbbb2e54372d6d94060a4557e2f13d20b69471e24b55fac93cce607676e9e0d",
-      "systems": [
-        "set_address_name",
-        "set_entity_name",
-        "upgrade"
-      ]
+      "systems": ["set_address_name", "set_entity_name", "upgrade"]
     },
     {
       "address": "0x1bd8e8db3eec84b21f8f55609cad83cea80812bf6ff365dc67d787af818e63e",
@@ -6855,10 +6797,7 @@
       "init_calldata": [],
       "tag": "eternum-ownership_systems",
       "selector": "0x61566ab91b8369028beaa8a615d1c258b4c6e149f181c8b40393d5d891ba820",
-      "systems": [
-        "transfer_ownership",
-        "upgrade"
-      ]
+      "systems": ["transfer_ownership", "upgrade"]
     },
     {
       "address": "0x339b8d5ffaff8b22ef335e8f8479fe61195c30d031614a16480ccb9ee5f5f85",
@@ -7095,12 +7034,7 @@
       "init_calldata": [],
       "tag": "eternum-realm_systems",
       "selector": "0x2b08f0da831b5b65485702339b91ef528a0248d5460ee677e0877a069c9e32",
-      "systems": [
-        "create",
-        "upgrade_level",
-        "quest_claim",
-        "upgrade"
-      ]
+      "systems": ["create", "upgrade_level", "quest_claim", "upgrade"]
     },
     {
       "address": "0x161a4cf2e207359dc7dbf912b21e9099b7729bede2544f849f384fcb166a109",
@@ -7403,13 +7337,7 @@
       "init_calldata": [],
       "tag": "eternum-resource_bridge_systems",
       "selector": "0x5ff4c52e5c2b0c505fc85bafd8df55776339c4eb396eb016bff890715ab9635",
-      "systems": [
-        "deposit_initial",
-        "deposit",
-        "start_withdraw",
-        "finish_withdraw",
-        "upgrade"
-      ]
+      "systems": ["deposit_initial", "deposit", "start_withdraw", "finish_withdraw", "upgrade"]
     },
     {
       "address": "0x6d0c4048d7914be8beddd8ac0809413331e372be92652e864c7937488714455",
@@ -7664,12 +7592,7 @@
       "init_calldata": [],
       "tag": "eternum-resource_systems",
       "selector": "0x59b73d5a93708c70e59d24eb66d4c42700ed60a02bc683e004fa9d10f810a06",
-      "systems": [
-        "approve",
-        "send",
-        "pickup",
-        "upgrade"
-      ]
+      "systems": ["approve", "send", "pickup", "upgrade"]
     },
     {
       "address": "0x30a4a6472ff2bcfc68d709802e5a9f31f5ac01d04fa97e37d32ce7568741262",
@@ -7910,11 +7833,7 @@
       "init_calldata": [],
       "tag": "eternum-swap_systems",
       "selector": "0x216e8d44fb577dc1eaa13d2d12ccd311b33cfab2b8c39d864d3f48b3bcdc00a",
-      "systems": [
-        "buy",
-        "sell",
-        "upgrade"
-      ]
+      "systems": ["buy", "sell", "upgrade"]
     },
     {
       "address": "0x3a6bbb82f9e670c99647f3b0c4aaf1be82be712e1a393336b79b9dab44cc5",
@@ -8209,13 +8128,7 @@
       "init_calldata": [],
       "tag": "eternum-trade_systems",
       "selector": "0x7f6765ddcc9c57e9b4d0cf8f167fff2979816010acf85527b75c75d3e37dd84",
-      "systems": [
-        "create_order",
-        "accept_order",
-        "accept_partial_order",
-        "cancel_order",
-        "upgrade"
-      ]
+      "systems": ["create_order", "accept_order", "accept_partial_order", "cancel_order", "upgrade"]
     },
     {
       "address": "0x119bf067e05955c0f17f1d4900977facbdc10e046e2319fd4d1320f5cc8be38",
@@ -8486,11 +8399,7 @@
       "init_calldata": [],
       "tag": "eternum-travel_systems",
       "selector": "0x4ec72d4cbde683428327674a7f032490a8340b379f9f27d57c3949a94091f",
-      "systems": [
-        "travel",
-        "travel_hex",
-        "upgrade"
-      ]
+      "systems": ["travel", "travel_hex", "upgrade"]
     },
     {
       "address": "0x6ab0f0ef7dc21bd0b1285e41d87debea42d5b3c3820875c760499c4253f4",
@@ -8779,13 +8688,7 @@
       "init_calldata": [],
       "tag": "eternum-troop_systems",
       "selector": "0x54f7aef38740d860d9a4cfbaee1e691f7ca50d3737975a0e420b15dd1543954",
-      "systems": [
-        "army_create",
-        "army_delete",
-        "army_buy_troops",
-        "army_merge_troops",
-        "upgrade"
-      ]
+      "systems": ["army_create", "army_delete", "army_buy_troops", "army_merge_troops", "upgrade"]
     }
   ],
   "models": [
