@@ -8,8 +8,7 @@ import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
 import { checkCartridgeConnector } from "@/lib/utils";
 import { useConnect } from "@starknet-react/core";
 import { Loader } from "lucide-react";
-import { useEffect } from "react";
-import CustomIframe from "../ui/custom-iframe";
+import { useEffect, useState } from "react";
 import { CartridgeConnectButton } from "./cartridge-connect-button";
 
 interface SeasonPassMintDialogProps {
@@ -28,21 +27,23 @@ export default function SeasonPassMintDialog({
   realm_ids,
 }: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
-  const { connector } = useConnect();
+  const { connector, connectors } = useConnect();
+
+  const [cartridgeAddress, setCartridgeAddress] = useState<string>();
 
   const checkCartridge = checkCartridgeConnector(connector);
   useEffect(() => {
-		if (isOpen) {
-			// Pushing the change to the end of the call stack
-			const timer = setTimeout(() => {
-				document.body.style.pointerEvents = "";
-			}, 0);
+    if (isOpen) {
+      // Pushing the change to the end of the call stack
+      const timer = setTimeout(() => {
+        document.body.style.pointerEvents = "";
+      }, 0);
 
-			return () => clearTimeout(timer);
-		} else {
-			document.body.style.pointerEvents = "auto";
-		}
-	}, [isOpen]);
+      return () => clearTimeout(timer);
+    } else {
+      document.body.style.pointerEvents = "auto";
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -79,15 +80,10 @@ export default function SeasonPassMintDialog({
                 <div className="w-full my-4">
                   {!checkCartridge && (
                     <div className="w-full h-full relative">
-                      <CustomIframe
-                        style={{ width: "100%", height: "100%", overflow: "auto" }}
-                        sandbox="allow-same-origin allow-scripts"
-                        title="A custom made iframe"
-                      >
-                      <CartridgeConnectButton className="w-full">
+
+                          <CartridgeConnectButton cartridgeAddress={cartridgeAddress} setCartridgeAddress={setCartridgeAddress} className="w-full">
                             Connect your Cartridge Wallet
                           </CartridgeConnectButton>
-                      </CustomIframe>
                     </div>
                   )}
                   {realm_ids.map((realm, index) => (
