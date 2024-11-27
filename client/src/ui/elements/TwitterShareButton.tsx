@@ -7,7 +7,7 @@ interface Props {
   className?: string;
   callToActionText?: string;
   buttonSize?: "xs" | "md";
-  variant?: "primary" | "secondary" | "opaque";
+  variant?: "primary" | "secondary" | "success" | "red" | "danger" | "default" | "outline" | "opaque";
 }
 
 const TwitterShareButton: React.FC<Props> = ({
@@ -36,7 +36,7 @@ const TwitterShareButton: React.FC<Props> = ({
         variant={variant}
       >
         <div className={`flex items-center justify-center mr-2 ${iconSizeClasses[buttonSize]}`}>
-          <TwitterIcon className={`${hover ? "text-brown" : "text-gold"} transition-all duration-300`} />
+          <TwitterIcon className={`${hover ? "animate-pulse" : ""} transition-all duration-300`} />
         </div>
         <span>{callToActionText ? callToActionText : "Share on X"}</span>
       </Button>

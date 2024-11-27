@@ -305,8 +305,6 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       <div className="flex space-x-2 mt-2 mb:mt-8 justify-center">
         {numberOfMintedRealms >= MAX_REALMS && numberOfPlayerCurrentRealms === 0 ? (
           <div>You have been eliminated. Please try again next Season.</div>
-        ) : numberOfPlayerCurrentRealms > 1 ? (
-          <NavigateToRealm text={"begin"} />
         ) : (
           <Button disabled={!addressName} size="md" className="mx-auto" variant="primary" onClick={onNext}>
             Continue <ArrowRight className="w-2 fill-current ml-3" />
@@ -328,11 +326,18 @@ export const StepTwo = ({ onNext }: { onNext: () => void }) => {
   return (
     <StepContainer>
       <SettleRealmComponent setSettledRealmId={setSettledRealmId} />
-      <div className="flex w-full justify-center space-x-4">
-        <Button size="md" className="mt-4" variant="primary" onClick={onNext}>
+      <div className="grid grid-cols-3 w-full justify-center items-center">
+        <Button size="md" className="mt-4 col-start-2 justify-self-center" variant="primary" onClick={onNext}>
           Continue <ArrowRight className="w-2 fill-current ml-3" />
         </Button>
-        {realmName && <TwitterShareButton buttonSize="md" className="mt-4" text={socialsText} />}
+        {true && (
+          <TwitterShareButton
+            buttonSize="md"
+            variant="default"
+            className="mt-4 col-start-3 justify-self-start hover:text-gold"
+            text={socialsText}
+          />
+        )}
       </div>
     </StepContainer>
   );
