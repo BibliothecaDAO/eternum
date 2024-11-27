@@ -145,7 +145,8 @@ export const useEntities = () => {
 
   const getPlayerRealms = (filterFn?: (realm: RealmWithPosition) => boolean) => {
     return useMemo(() => {
-      return filterFn ? playerRealms.filter(filterFn) : playerRealms;
+      const realms = filterFn ? playerRealms.filter(filterFn) : playerRealms;
+      return realms.sort((a, b) => a.name.localeCompare(b.name));
     }, [playerRealms, filterFn]);
   };
 

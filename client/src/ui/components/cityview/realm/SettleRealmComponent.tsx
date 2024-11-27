@@ -31,7 +31,7 @@ const SettleRealmComponent = ({ setSettledRealmId }: { setSettledRealmId: (id: n
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2 my-1 md:my-3">
+          <div className="flex flex-wrap justify-center gap-2 my-1 md:my-3">
             {playerRealms().map((realm) => (
               <div className="border border-gold/20 rounded p-2" key={realm.realm_id}>
                 {realm.name}
