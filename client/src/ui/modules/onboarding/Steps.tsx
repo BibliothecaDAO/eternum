@@ -320,7 +320,10 @@ export const StepTwo = ({ onNext }: { onNext: () => void }) => {
   const [settledRealmId, setSettledRealmId] = useState<number | undefined>(undefined);
 
   const realmName = settledRealmId ? getRealmNameById(settledRealmId) : undefined;
-  const socialsText = formatSocialText(twitterTemplates.settle, { realmName: realmName || "" });
+  const socialsText = formatSocialText(twitterTemplates.settle, {
+    realmName: realmName || "",
+    url: window.location.origin,
+  });
 
   return (
     <StepContainer>
