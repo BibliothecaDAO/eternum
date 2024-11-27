@@ -9,6 +9,7 @@ import { checkCartridgeConnector } from "@/lib/utils";
 import { useConnect } from "@starknet-react/core";
 import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
+import { TypeH3 } from "../typography/type-h3";
 import { CartridgeConnectButton } from "./cartridge-connect-button";
 
 interface SeasonPassMintDialogProps {
@@ -76,32 +77,41 @@ export default function SeasonPassMintDialog({
           ) : (
             <div className="flex flex-col items-center gap-4 rounded-md bg-card p-5 lg:flex-row lg:gap-5 lg:p-4">
               <div className="text-center">
-                <div className="text-lg font-semibold">Mint your passes to compete in Season 0 of Eternum</div>
+                <div className="text-lg font-semibold">Mint passes to compete in Season 0 of Eternum</div>
                 <div className="w-full my-4">
                   {!checkCartridge && (
                     <div className="w-full h-full relative">
-
-                          <CartridgeConnectButton cartridgeAddress={cartridgeAddress} setCartridgeAddress={setCartridgeAddress} className="w-full">
-                            Connect your Cartridge Wallet
-                          </CartridgeConnectButton>
+                      <CartridgeConnectButton
+                        cartridgeAddress={cartridgeAddress}
+                        setCartridgeAddress={setCartridgeAddress}
+                        className="w-full"
+                      >
+                        Connect your Cartridge Wallet
+                      </CartridgeConnectButton>
                     </div>
                   )}
-                  {realm_ids.map((realm, index) => (
-                    <span key={realm}>
-                      #{Number(realm)}
-                      {index < realm_ids.length - 1 && ", "}
-                    </span>
-                  ))}
+                  <hr className="my-4" />
+                  <div className="text-left gap-2 mt-6">
+                    <TypeH3>Realms</TypeH3>
+                    <div>
+                      {realm_ids.map((realm, index) => (
+                        <span key={realm}>
+                          #{Number(realm)}
+                          {index < realm_ids.length - 1 && ", "}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 {mint && (
                   <Button
                     className="mx-auto"
                     onClick={() => {
-                      mint(realm_ids);
+                      mint(realm_ids, cartridgeAddress);
                       deselectAllNfts();
                       setIsOpen(false);
                     }}
-                    disabled={!checkCartridge}
+                    disabled={!cartridgeAddress}
                     variant="cta"
                   >
                     {isMinting && <Loader className="animate-spin pr-2" />} Mint Season Passes

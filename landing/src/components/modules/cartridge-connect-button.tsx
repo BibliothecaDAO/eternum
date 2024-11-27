@@ -39,6 +39,7 @@ export const CartridgeConnectButton = (
           <div className="flex items-center justify-between">
             <div className="mr-6">Minting to:</div>
             <div className="flex items-center">
+              <div className="mr-4"><img className="w-8" src={connectors[0].icon as string} /></div>
               <div className="flex flex-col mr-4">
                 <span className="text-lg">{username}</span>
                 <span>{displayAddress(controllerAddress)}</span>
