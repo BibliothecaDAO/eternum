@@ -4,7 +4,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { toHexString, toValidAscii } from "@/ui/utils/utils";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo, useRef } from "react";
-import { Signature, TypedData, WeierstrassSignatureType } from "starknet";
+import { Signature } from "starknet";
 import { GLOBAL_CHANNEL, GLOBAL_CHANNEL_KEY } from "./constants";
 import { Tab } from "./types";
 
@@ -64,12 +64,9 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
       const messageInValidAscii = toValidAscii(message);
       const data = generateMessageTypedData(account.address, channel, messageInValidAscii, toHexString(salt));
 
-      const signature: Signature = await account.signMessage(data as TypedData);
+      const signature: Signature = await account.signMessage(data);
 
-      await toriiClient.publishMessage(JSON.stringify(data), [
-        toHexString((signature as WeierstrassSignatureType).r),
-        toHexString((signature as WeierstrassSignatureType).s),
-      ]);
+      await toriiClient.publishMessage(JSON.stringify(data), signature as string[], false);
     },
     [account, salt, toriiClient, currentTab],
   );
@@ -129,7 +126,7 @@ function generateMessageTypedData(
     domain: {
       name: "Eternum",
       version: "1",
-      chainId: "1",
+      chainId: "SN_SEPOLIA",
       revision: "1",
     },
     message: {

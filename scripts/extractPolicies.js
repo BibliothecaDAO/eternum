@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 // Path to the manifest.json file
-const manifestPath = path.join(__dirname, "..", "contracts", "manifest_prod.json");
+const manifestPath = path.join(__dirname, "..", "contracts", "manifest_dev.json");
 
 // Read and parse the manifest.json
 fs.readFile(manifestPath, "utf8", (err, data) => {

@@ -1,5 +1,5 @@
-import { ResourcesIds } from ".";
 import { ResourceInputs } from "../types";
+import { ResourcesIds } from "./index";
 import { BuildingType } from "./structures";
 
 export const BUILDING_INFORMATION: {
@@ -10,7 +10,8 @@ export const BUILDING_INFORMATION: {
   [BuildingType.FragmentMine]: "Fragment Mines, where the earth's magic is harnessed, produce Ancient Fragments.",
   [BuildingType.Resource]: "Resource buildings, harnessing the land's magic, produce essential resources.",
   [BuildingType.Farm]: "Enchanted Farms, blessed by Gaia, yield golden wheat.",
-  [BuildingType.FishingVillage]: "Mystical Fishing Villages, guided by the Moon, harvest the bounty of the seas.",
+  [BuildingType.FishingVillage]:
+    "Mystical Fishing Villages, guided by the Moon, harvest the bounty of the seas of Fish",
   [BuildingType.Barracks]: "Barracks, where valor and magic intertwine, train noble Knights.",
   [BuildingType.Market]: "Markets, bustling with arcane traders, summon Donkeys for mystical trading.",
   [BuildingType.ArcheryRange]: "Archery Ranges, under the watchful eyes of elven masters, train Crossbow men.",

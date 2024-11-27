@@ -24,6 +24,8 @@
     "client/src/ui/modules/chat/ChatTab.tsx",
     "client/src/hooks/helpers/useGetAllPlayers.tsx",
     "client/src/ui/modules/chat/InputField.tsx",
-    "client/src/ui/modules/chat/Chat.tsx"
+    "client/src/ui/modules/chat/Chat.tsx",
+    "sdk/packages/eternum/src/scripts/extract.ts",
+    "sdk/packages/eternum/src/scripts/extractBuildings.ts"
   ]
 }

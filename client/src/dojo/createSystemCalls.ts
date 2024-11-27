@@ -259,10 +259,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.whitelist_player(props);
   };
 
-  const leave_guild = async (props: SystemProps.LeaveGuild) => {
-    await provider.leave_guild(props);
-  };
-
   const transfer_guild_ownership = async (props: SystemProps.TransferGuildOwnership) => {
     await provider.transfer_guild_ownership(props);
   };
@@ -368,7 +364,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_guild: withQueueing(withErrorHandling(create_guild)),
     join_guild: withQueueing(withErrorHandling(join_guild)),
     whitelist_player: withQueueing(withErrorHandling(whitelist_player)),
-    leave_guild: withQueueing(withErrorHandling(leave_guild)),
     transfer_guild_ownership: withQueueing(withErrorHandling(transfer_guild_ownership)),
     remove_guild_member: withQueueing(withErrorHandling(remove_guild_member)),
     disband_guild: withQueueing(withErrorHandling(disband_guild)),
