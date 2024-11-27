@@ -1,13 +1,14 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
 import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { Position } from "@/types/Position";
-import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
-import { ContractAddress, ID, orders } from "@bibliothecadao/eternum";
+import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
+import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GUIManager } from "../helpers/GUIManager";
 import { isAddressEqualToAccount } from "../helpers/utils";
 import { ArmySystemUpdate } from "../systems/types";
 import { ArmyModel } from "./ArmyModel";
+import { Biome } from "./Biome";
 import { LabelManager } from "./LabelManager";
 
 const myColor = new THREE.Color(0, 1.5, 0);
@@ -26,6 +27,7 @@ export class ArmyManager {
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
+  private biome: Biome;
 
   constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
@@ -33,7 +35,7 @@ export class ArmyManager {
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.renderChunkSize = renderChunkSize;
-
+    this.biome = new Biome();
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
 
@@ -329,6 +331,13 @@ export class ArmyManager {
         this.armyModel.setAnimationState(matrixIndex, false); // Set back to idle animation
       } else {
         position = new THREE.Vector3().copy(movement.startPos).lerp(movement.endPos, movement.progress);
+      }
+      const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
+      const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+        this.armyModel.assignModelToEntity(entityId, "knight2");
+      } else {
+        this.armyModel.assignModelToEntity(entityId, "knight");
       }
 
       const direction = new THREE.Vector3().subVectors(movement.endPos, movement.startPos).normalize();

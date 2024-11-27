@@ -49,7 +49,7 @@ export class ArmyModel {
 
   private async loadModels(): Promise<void> {
     // Load all model variants
-    const modelTypes = ["knight"]; // Add more model types as needed
+    const modelTypes = ["knight", "knight2"]; // Add more model types as needed
     const loadPromises = modelTypes.map((type) => this.loadSingleModel(type));
     await Promise.all(loadPromises);
   }
@@ -58,12 +58,14 @@ export class ArmyModel {
     const loader = gltfLoader;
     return new Promise((resolve, reject) => {
       loader.load(
-        `models/${modelType}-opt.glb`,
+        `models/${modelType}.glb`,
         (gltf) => {
           const baseMesh = gltf.scene.children[0];
-          const geometry = (baseMesh as THREE.Mesh).geometry;
+          const geometry = (baseMesh as THREE.Mesh).geometry.clone();
           const material = (baseMesh as THREE.Mesh).material;
-
+          if (modelType === "knight2") {
+            geometry.scale(1.2, 1.2, 1.2);
+          }
           const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
           instancedMesh.frustumCulled = true;
           instancedMesh.castShadow = true;
@@ -85,7 +87,7 @@ export class ArmyModel {
             mixer,
             animations: {
               idle: gltf.animations[0],
-              walk: gltf.animations[1],
+              walk: gltf.animations[1] || gltf.animations[0],
             },
             animationActions: new Map(),
           });
