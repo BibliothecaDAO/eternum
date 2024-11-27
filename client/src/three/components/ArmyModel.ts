@@ -22,6 +22,7 @@ interface ModelData {
       walk: THREE.AnimationAction;
     }
   >;
+  activeInstances: Set<number>;
 }
 
 export class ArmyModel {
@@ -32,6 +33,9 @@ export class ArmyModel {
   private entityModelMap: Map<number, string> = new Map(); // Maps entity IDs to model types
   animationStates: Float32Array;
   timeOffsets: Float32Array;
+  private zeroScale = new THREE.Vector3(0, 0, 0);
+  private instanceCount = 0;
+  private currentVisibleCount: number = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -72,12 +76,13 @@ export class ArmyModel {
           instancedMesh.instanceMatrix.needsUpdate = true;
           this.scene.add(instancedMesh);
 
-          // Initialize morphs
+          // Initialize all instances with zero scale
+          const matrix = new THREE.Matrix4();
+          matrix.makeScale(0, 0, 0);
           for (let i = 0; i < MAX_INSTANCES; i++) {
-            instancedMesh.setMorphAt(i, baseMesh as any);
+            instancedMesh.setMatrixAt(i, matrix);
           }
-          instancedMesh.morphTexture!.needsUpdate = true;
-          instancedMesh.count = 0;
+          instancedMesh.count = MAX_INSTANCES; // Always keep max count
 
           const mixer = new AnimationMixer(gltf.scene);
 
@@ -90,6 +95,7 @@ export class ArmyModel {
               walk: gltf.animations[1] || gltf.animations[0],
             },
             animationActions: new Map(),
+            activeInstances: new Set(),
           });
 
           resolve();
@@ -101,7 +107,32 @@ export class ArmyModel {
   }
 
   assignModelToEntity(entityId: number, modelType: string) {
+    const oldModelType = this.entityModelMap.get(entityId);
+    if (oldModelType === modelType) return;
+
+    // Deactivate instance in old model if it exists
+    if (oldModelType) {
+      const oldModel = this.models.get(oldModelType);
+      if (oldModel) {
+        oldModel.activeInstances.delete(entityId);
+        this.setZeroScale(oldModel.mesh, entityId);
+      }
+    }
+
+    // Activate instance in new model
+    const newModel = this.models.get(modelType);
+    if (newModel) {
+      newModel.activeInstances.add(entityId);
+    }
+
     this.entityModelMap.set(entityId, modelType);
+  }
+
+  private setZeroScale(mesh: THREE.InstancedMesh, index: number) {
+    this.dummyObject.scale.copy(this.zeroScale);
+    this.dummyObject.updateMatrix();
+    mesh.setMatrixAt(index, this.dummyObject.matrix);
+    mesh.instanceMatrix.needsUpdate = true;
   }
 
   getModelForEntity(entityId: number): ModelData | undefined {
@@ -117,17 +148,21 @@ export class ArmyModel {
     scale: THREE.Vector3,
     rotation?: THREE.Euler,
   ) {
-    const modelData = this.getModelForEntity(entityId);
-    if (!modelData) return;
-
-    this.dummyObject.position.copy(position);
-    this.dummyObject.position.y += 0.15;
-    this.dummyObject.scale.copy(scale);
-    if (rotation) {
-      this.dummyObject.rotation.copy(rotation);
-    }
-    this.dummyObject.updateMatrix();
-    modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
+    // Update active model normally, set zero scale for others
+    this.models.forEach((modelData, modelType) => {
+      if (modelType === this.entityModelMap.get(entityId)) {
+        this.dummyObject.position.copy(position);
+        this.dummyObject.position.y += 0.15;
+        this.dummyObject.scale.copy(scale);
+        if (rotation) {
+          this.dummyObject.rotation.copy(rotation);
+        }
+      } else {
+        this.dummyObject.scale.copy(this.zeroScale);
+      }
+      this.dummyObject.updateMatrix();
+      modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
+    });
   }
 
   updateAnimations(deltaTime: number) {
@@ -205,8 +240,10 @@ export class ArmyModel {
   }
 
   resetInstanceCounts() {
+    this.currentVisibleCount = 0;
     this.models.forEach((modelData) => {
       modelData.mesh.count = 0;
+      modelData.activeInstances.clear();
     });
   }
 
@@ -216,7 +253,16 @@ export class ArmyModel {
       if (modelData.mesh.instanceColor) {
         modelData.mesh.instanceColor.needsUpdate = true;
       }
-      modelData.mesh.computeBoundingSphere();
+    });
+  }
+
+  setVisibleCount(count: number) {
+    if (count === this.currentVisibleCount) return; // Skip if count hasn't changed
+
+    this.currentVisibleCount = count;
+    // Update all meshes to have the same count
+    this.models.forEach((modelData) => {
+      modelData.mesh.count = count;
     });
   }
 }

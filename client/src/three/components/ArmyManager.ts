@@ -158,10 +158,11 @@ export class ArmyManager {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
 
-    // Reset all model instance counts
+    // Reset all model instances
     this.armyModel.resetInstanceCounts();
 
-    this.visibleArmies.forEach((army, index) => {
+    let currentCount = 0;
+    this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       this.armyModel.dummyObject.position.copy(position);
       this.armyModel.dummyObject.scale.copy(this.scale);
@@ -171,13 +172,16 @@ export class ArmyManager {
       const modelData = this.armyModel.getModelForEntity(army.entityId);
       if (!modelData) return;
 
-      modelData.mesh.setMatrixAt(index, this.armyModel.dummyObject.matrix);
-      modelData.mesh.setColorAt(index, new THREE.Color(army.color));
+      modelData.mesh.setMatrixAt(currentCount, this.armyModel.dummyObject.matrix);
+      modelData.mesh.setColorAt(currentCount, new THREE.Color(army.color));
       modelData.mesh.userData.entityIdMap = modelData.mesh.userData.entityIdMap || new Map();
-      modelData.mesh.userData.entityIdMap.set(index, army.entityId);
-      modelData.mesh.count++;
+      modelData.mesh.userData.entityIdMap.set(currentCount, army.entityId);
 
-      this.armies.set(army.entityId, { ...army, matrixIndex: index });
+      this.armies.set(army.entityId, { ...army, matrixIndex: currentCount });
+
+      // Increment count and update all meshes
+      currentCount++;
+      this.armyModel.setVisibleCount(currentCount);
     });
 
     // Update all model instances
@@ -249,8 +253,6 @@ export class ArmyManager {
   }
 
   public moveArmy(entityId: ID, hexCoords: Position) {
-    // @ts-ignore
-
     const armyData = this.armies.get(entityId);
     if (!armyData) {
       return;
@@ -270,23 +272,24 @@ export class ArmyManager {
 
     const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
     const currentPosition = new THREE.Vector3();
-    this.armyModel
-      .getModelForEntity(entityId)
-      ?.mesh.getMatrixAt(armyData.matrixIndex, this.armyModel.dummyObject.matrix);
-    currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
-    this.armyModel.setAnimationState(armyData.matrixIndex, true);
-    this.movingArmies.set(entityId, {
-      startPos: currentPosition,
-      endPos: newPosition,
-      progress: 0,
-      matrixIndex: armyData.matrixIndex,
-    });
+    const modelData = this.armyModel.getModelForEntity(entityId);
+    if (modelData) {
+      modelData.mesh.getMatrixAt(armyData.matrixIndex, this.armyModel.dummyObject.matrix);
+      currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
+      this.armyModel.setAnimationState(armyData.matrixIndex, true);
+      this.movingArmies.set(entityId, {
+        startPos: currentPosition,
+        endPos: newPosition,
+        progress: 0,
+        matrixIndex: armyData.matrixIndex,
+      });
 
-    this.movingLabels.set(entityId, {
-      startPos: currentPosition,
-      endPos: newPosition,
-      progress: 0,
-    });
+      this.movingLabels.set(entityId, {
+        startPos: currentPosition,
+        endPos: newPosition,
+        progress: 0,
+      });
+    }
   }
 
   public removeArmy(entityId: ID) {
