@@ -33,7 +33,8 @@ export class ArmyModel {
   private entityModelMap: Map<number, string> = new Map(); // Maps entity IDs to model types
   animationStates: Float32Array;
   timeOffsets: Float32Array;
-  private zeroScale = new THREE.Vector3(0, 0, 0);
+  private zeroScale = new THREE.Vector3(0.5, 0.5, 0.5);
+  private normalScale = new THREE.Vector3(1, 1, 1);
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
 
@@ -81,8 +82,9 @@ export class ArmyModel {
           matrix.makeScale(0, 0, 0);
           for (let i = 0; i < MAX_INSTANCES; i++) {
             instancedMesh.setMatrixAt(i, matrix);
+            instancedMesh.setMorphAt(i, baseMesh as any);
           }
-          instancedMesh.count = MAX_INSTANCES; // Always keep max count
+          instancedMesh.count = 0; // Always keep max count
 
           const mixer = new AnimationMixer(gltf.scene);
 
@@ -115,7 +117,7 @@ export class ArmyModel {
       const oldModel = this.models.get(oldModelType);
       if (oldModel) {
         oldModel.activeInstances.delete(entityId);
-        this.setZeroScale(oldModel.mesh, entityId);
+        this.setScaleForEntity(oldModel.mesh, entityId, this.zeroScale);
       }
     }
 
@@ -123,13 +125,14 @@ export class ArmyModel {
     const newModel = this.models.get(modelType);
     if (newModel) {
       newModel.activeInstances.add(entityId);
+      this.setScaleForEntity(newModel.mesh, entityId, this.normalScale);
     }
 
     this.entityModelMap.set(entityId, modelType);
   }
 
-  private setZeroScale(mesh: THREE.InstancedMesh, index: number) {
-    this.dummyObject.scale.copy(this.zeroScale);
+  private setScaleForEntity(mesh: THREE.InstancedMesh, index: number, scale: THREE.Vector3) {
+    this.dummyObject.scale.copy(scale);
     this.dummyObject.updateMatrix();
     mesh.setMatrixAt(index, this.dummyObject.matrix);
     mesh.instanceMatrix.needsUpdate = true;
@@ -158,6 +161,11 @@ export class ArmyModel {
           this.dummyObject.rotation.copy(rotation);
         }
       } else {
+        this.dummyObject.position.copy(position);
+        this.dummyObject.position.y += 0.15;
+        if (rotation) {
+          this.dummyObject.rotation.copy(rotation);
+        }
         this.dummyObject.scale.copy(this.zeroScale);
       }
       this.dummyObject.updateMatrix();
@@ -194,6 +202,7 @@ export class ArmyModel {
         actions.walk.play();
 
         modelData.mixer.setTime(time + this.timeOffsets[i]);
+
         modelData.mesh.setMorphAt(i, modelData.baseMesh as any);
       }
       modelData.mesh.morphTexture!.needsUpdate = true;
