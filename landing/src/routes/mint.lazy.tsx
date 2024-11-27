@@ -35,7 +35,6 @@ function Mint() {
   const [, setMintToController] = useState(true);
   const [controllerAddress] = useState<string>();
 
-
   const realmsAddress = env.VITE_REALMS_ADDRESS;
 
   // useEffect(() => {
@@ -59,14 +58,24 @@ function Mint() {
 
   const seasonPassTokenIds = useMemo(
     () =>
-      seasonPassMints?.tokenTransfers?.edges?.filter((token) => token?.node?.tokenMetadata.__typename == 'ERC721__Token' && token.node.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS)
+      seasonPassMints?.tokenTransfers?.edges
+        ?.filter(
+          (token) =>
+            token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+            token.node.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS,
+        )
         .map((token) => token?.node?.tokenMetadata.tokenId)
         .filter((id): id is string => id !== undefined),
     [seasonPassMints],
   );
 
   const realmsErcBalance = useMemo(
-    () => data?.tokenBalances?.edges?.filter((token) => token?.node?.tokenMetadata.__typename == 'ERC721__Token' && token.node.tokenMetadata.contractAddress === realmsAddress),
+    () =>
+      data?.tokenBalances?.edges?.filter(
+        (token) =>
+          token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+          token.node.tokenMetadata.contractAddress === realmsAddress,
+      ),
     [data, realmsAddress],
   );
 

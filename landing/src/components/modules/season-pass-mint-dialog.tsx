@@ -69,12 +69,16 @@ export default function SeasonPassMintDialog({
                 <div className="w-full my-4">
                   {!checkCartridge && (
                     <div className="w-full h-full relative">
-                    <CustomIframe style={{ width: "100%", height: "100%", overflow: "auto" }} sandbox="allow-same-origin allow-scripts allow-modal" title="A custom made iframe">
-                      <StarknetProvider>
-                      <CartridgeConnectButton className="w-full" /></StarknetProvider>
-                    </CustomIframe>
+                      <CustomIframe
+                        style={{ width: "100%", height: "100%", overflow: "auto" }}
+                        sandbox="allow-same-origin allow-scripts allow-modal"
+                        title="A custom made iframe"
+                      >
+                        <StarknetProvider>
+                          <CartridgeConnectButton className="w-full" />
+                        </StarknetProvider>
+                      </CustomIframe>
                     </div>
-
                   )}
                   {realm_ids.map((realm, index) => (
                     <span key={realm}>

@@ -1,17 +1,17 @@
 import { divideByPrecision } from "@/lib/utils";
 import {
-    ADMIN_BANK_ENTITY_ID,
-    BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-    BuildingType,
-    CapacityConfigCategory,
-    EternumGlobalConfig,
-    HYPERSTRUCTURE_CONFIG_ID,
-    POPULATION_CONFIG_ID,
-    ResourcesIds,
-    StructureType,
-    TickIds,
-    TravelTypes,
-    WORLD_CONFIG_ID,
+  ADMIN_BANK_ENTITY_ID,
+  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  BuildingType,
+  CapacityConfigCategory,
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_CONFIG_ID,
+  POPULATION_CONFIG_ID,
+  ResourcesIds,
+  StructureType,
+  TickIds,
+  TravelTypes,
+  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

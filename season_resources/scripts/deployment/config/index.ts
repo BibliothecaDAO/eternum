@@ -8,7 +8,7 @@ import { EternumProvider, ResourceWhitelistConfig } from "./provider";
 const getResourceAddresses = () => {
   const network = process.env.STARKNET_NETWORK === "local" ? "dev" : "prod";
   const filePath = join(__dirname, `../addresses/${network}/resource_addresses.json`);
-  return JSON.parse(readFileSync(filePath, 'utf-8'));
+  return JSON.parse(readFileSync(filePath, "utf-8"));
 };
 
 const resourceAddresses = getResourceAddresses();
@@ -19,7 +19,6 @@ interface Config {
 }
 
 export class EternumConfig {
-
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider };
     await setResourceBridgeWhitlelistConfig(config);
@@ -27,7 +26,6 @@ export class EternumConfig {
 }
 
 export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
-
   let resourceWhitelistConfigs: ResourceWhitelistConfig[] = [];
   for (const [resourceName, [resourceId, tokenAddress]] of Object.entries(resourceAddresses)) {
     resourceWhitelistConfigs.push({
@@ -44,11 +42,10 @@ export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
   console.log(`Finished configuring whitelist for in-game asset bridge ${tx.statusReceipt}`);
 };
 
-//////////////////////////////////////////////////////////////  
+//////////////////////////////////////////////////////////////
 
-
-
-const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_DEV, VITE_PUBLIC_NODE_URL } = process.env;
+const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_DEV, VITE_PUBLIC_NODE_URL } =
+  process.env;
 if (!VITE_PUBLIC_MASTER_ADDRESS || !VITE_PUBLIC_MASTER_PRIVATE_KEY || !VITE_PUBLIC_NODE_URL) {
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
@@ -75,6 +72,3 @@ const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_
 console.log("Setting up config...");
 export const config = new EternumConfig();
 await config.setup(account, provider);
-
-
-

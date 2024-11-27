@@ -76,6 +76,28 @@ export class EternumProvider extends EnhancedDojoProvider {
     return receipt;
   }
 
+  public async bridge_start_withdraw_from_realm(props: SystemProps.BridgeStartWithdrawFromRealmProps) {
+    const { token, through_bank_id, from_realm_entity_id, amount, signer } = props;
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        entrypoint: "start_withdraw",
+        calldata: [through_bank_id, from_realm_entity_id, token, amount],
+      },
+    ]);
+  }
+
+  public async bridge_finish_withdraw_from_realm(props: SystemProps.BridgeFinishWithdrawFromRealmProps) {
+    const { token, through_bank_id, from_entity_id, recipient_address, client_fee_recipient, signer } = props;
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        entrypoint: "finish_withdraw",
+        calldata: [through_bank_id, from_entity_id, token, recipient_address, client_fee_recipient],
+      },
+    ]);
+  }
+
   public async bridge_resource_into_realm(props: SystemProps.BridgeResourceIntoRealmProps) {
     const { token, through_bank_id, recipient_realm_entity_id, amount, client_fee_recipient, signer } = props;
 
@@ -85,7 +107,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         entrypoint: "approve",
         calldata: [
           getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-          amount, 0 // u128, u128
+          amount,
+          0, // u128, u128
         ],
       },
       {
@@ -95,7 +118,8 @@ export class EternumProvider extends EnhancedDojoProvider {
           token,
           through_bank_id,
           recipient_realm_entity_id,
-          amount, 0, // u128, u128
+          amount,
+          0, // u128, u128
           client_fee_recipient,
         ],
       },

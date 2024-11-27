@@ -1,15 +1,12 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import style from "../../index.css?inline";
 
 interface CustomIframeProps extends React.IframeHTMLAttributes<HTMLIFrameElement> {
   children: React.ReactNode;
 }
 
-const CustomIframe: React.FC<CustomIframeProps> = ({
-  children,
-  ...props
-}) => {
+const CustomIframe: React.FC<CustomIframeProps> = ({ children, ...props }) => {
   const [contentRef, setContentRef] = useState<HTMLIFrameElement | null>(null);
   const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
 
@@ -36,11 +33,7 @@ const CustomIframe: React.FC<CustomIframeProps> = ({
   }, [mountNode]);
 
   return (
-    <iframe
-      {...props}
-      ref={setContentRef}
-      style={{ width: '100%', height: '100%', border: 'none' }}
-    >
+    <iframe {...props} ref={setContentRef} style={{ width: "100%", height: "100%", border: "none" }}>
       {mountNode && createPortal(children, mountNode)}
     </iframe>
   );

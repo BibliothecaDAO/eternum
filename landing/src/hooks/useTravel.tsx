@@ -1,7 +1,7 @@
-import { calculateDistance } from "@/utils";
 import { ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { calculateDistance } from "../components/ui/utils/utils";
 import { useDojo } from "./context/DojoContext";
 
 export function useTravel() {

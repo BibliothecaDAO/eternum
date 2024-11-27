@@ -33,7 +33,6 @@ export class EternumConfig {
     await setQuestConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
-    await setResourceBridgeLordsWhitlelistConfig(config);
     await setResourceBridgeFeesConfig(config);
     await setBuildingCategoryPopConfig(config);
     await setPopulationConfig(config);
@@ -489,9 +488,8 @@ export const setResourceBridgeWhitlelistConfig = async (config: Config, resource
     });
 
     console.log(`Configuring whitelist for ${resourceId} for in-game asset bridge ${tx.statusReceipt}`);
-  } 
+  }
 };
-
 
 export const setResourceBridgeFeesConfig = async (config: Config) => {
   // allow bridging in of lords into the game

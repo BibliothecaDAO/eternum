@@ -134,6 +134,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.bridge_resource_into_realm(props);
   };
 
+  const bridge_start_withdraw_from_realm = async (props: SystemProps.BridgeStartWithdrawFromRealmProps) => {
+    await provider.bridge_start_withdraw_from_realm(props);
+  };
+
+  const bridge_finish_withdraw_from_realm = async (props: SystemProps.BridgeFinishWithdrawFromRealmProps) => {
+    await provider.bridge_finish_withdraw_from_realm(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -158,6 +166,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     detach_lords: withQueueing(withErrorHandling(detach_lords)),
     mint_test_lords: withQueueing(withErrorHandling(mint_test_lords)),
     bridge_resource_into_realm: withQueueing(withErrorHandling(bridge_resource_into_realm)),
+    bridge_start_withdraw_from_realm: withQueueing(withErrorHandling(bridge_start_withdraw_from_realm)),
+    bridge_finish_withdraw_from_realm: withQueueing(withErrorHandling(bridge_finish_withdraw_from_realm)),
   };
 
   // TODO: Fix Type

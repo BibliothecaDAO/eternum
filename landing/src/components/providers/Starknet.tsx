@@ -21,7 +21,7 @@ const cartridgeController = new ControllerConnector({
   slot,
 });
 
-export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode, onlyCartridge?: boolean }) {
+export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {
   const { connectors } = useInjectedConnectors({
     // Show these connectors if the user has no connector installed.
     recommended: [argent(), braavos()],

@@ -3,7 +3,6 @@ import { DojoConfig } from "@dojoengine/core";
 import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
 
-
 import { BurnerManager } from "@dojoengine/create-burner";
 import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";

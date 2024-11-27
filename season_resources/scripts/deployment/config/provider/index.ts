@@ -88,7 +88,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return receipt;
   }
 
-
   public async set_resource_bridge_whitlelist_config(props: SetResourceBridgeWhitelistConfigProps) {
     const { resource_whitelist_configs, signer } = props;
 
@@ -99,12 +98,5 @@ export class EternumProvider extends EnhancedDojoProvider {
     }));
 
     return await this.executeAndCheckTransaction(signer, calldata);
-
-
-    
-    
-
-
   }
-
 }

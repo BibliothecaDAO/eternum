@@ -14,6 +14,20 @@ export interface BridgeResourceIntoRealmProps extends SystemSigner {
   client_fee_recipient: num.BigNumberish;
 }
 
+export interface BridgeStartWithdrawFromRealmProps extends SystemSigner {
+  through_bank_id: num.BigNumberish;
+  from_realm_entity_id: num.BigNumberish;
+  token: num.BigNumberish;
+  amount: num.BigNumberish;
+}
+
+export interface BridgeFinishWithdrawFromRealmProps extends SystemSigner {
+  through_bank_id: num.BigNumberish;
+  from_entity_id: num.BigNumberish;
+  token: num.BigNumberish;
+  recipient_address: num.BigNumberish;
+  client_fee_recipient: num.BigNumberish;
+}
 export interface CreateSoldiersProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
   quantity: num.BigNumberish;

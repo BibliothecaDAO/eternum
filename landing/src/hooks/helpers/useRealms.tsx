@@ -1,6 +1,4 @@
-import {
-    type ID
-} from "@bibliothecadao/eternum";
+import { type ID } from "@bibliothecadao/eternum";
 import { type Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 
