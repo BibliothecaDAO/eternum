@@ -6,7 +6,6 @@ import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import TwitterShareButton from "@/ui/elements/TwitterShareButton";
 import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
@@ -111,12 +110,6 @@ export const BattleSideView = ({
                 </div>
               );
             }),
-          )}
-          {userArmiesOnThatSide.length > 0 && (
-            <TwitterShareButton
-              callToActionText="Call to Arms!"
-              text={`My army ${userArmiesOnThatSide[0].name} is in a battle on Eternum!\nHelp me destroy my enemies at ${window.location.origin}`}
-            />
           )}
         </div>
 
