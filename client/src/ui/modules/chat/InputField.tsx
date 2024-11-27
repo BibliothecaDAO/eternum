@@ -66,7 +66,7 @@ export const InputField = ({ currentTab, salt }: { currentTab: Tab; salt: bigint
 
       const signature: Signature = await account.signMessage(data);
 
-      await toriiClient.publishMessage(JSON.stringify(data), signature as string[]);
+      await toriiClient.publishMessage(JSON.stringify(data), signature as string[], true);
     },
     [account, salt, toriiClient, currentTab],
   );
