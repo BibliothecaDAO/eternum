@@ -1,8 +1,8 @@
-import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
+import { ResourceManager } from "@/dojo/modelManager/ResourceManager";
 import { configManager } from "@/dojo/setup";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import { useProductionManager } from "@/hooks/helpers/useResources";
+import { useResourceManager } from "@/hooks/helpers/useResources";
 import { useIsResourcesLocked } from "@/hooks/helpers/useStructures";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -48,15 +48,15 @@ export const MarketResource = ({
   ammPrice: number;
 }) => {
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
-  const productionManager = useProductionManager(entityId, resourceId);
+  const resourceManager = useResourceManager(entityId, resourceId);
 
   const production = useMemo(() => {
-    return productionManager.getProduction();
+    return resourceManager.getProduction();
   }, []);
 
   const balance = useMemo(() => {
-    return productionManager.balance(currentDefaultTick);
-  }, [productionManager, production, currentDefaultTick]);
+    return resourceManager.balance(currentDefaultTick);
+  }, [resourceManager, production, currentDefaultTick]);
 
   const resource = useMemo(() => {
     return findResourceById(resourceId);
@@ -242,10 +242,11 @@ const OrderRow = ({
 
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
-  const lordsManager = new ProductionManager(dojo.setup, entityId, ResourcesIds.Lords);
+  const lordsManager = new ResourceManager(dojo.setup, entityId, ResourcesIds.Lords);
   const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [updateBalance]);
 
-  const resourceManager = new ProductionManager(dojo.setup, entityId, offer.makerGets[0].resourceId);
+  const resourceManager = useResourceManager(entityId, offer.makerGets[0].resourceId);
+
   const resourceBalance = useMemo(() => Number(resourceManager.getResource()?.balance || 0n), [updateBalance]);
 
   const { getRealmAddressName } = useRealm();
@@ -331,7 +332,7 @@ const OrderRow = ({
     return calculateDonkeysNeeded(orderWeight);
   }, [orderWeight]);
 
-  const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
+  const donkeyProductionManager = useResourceManager(entityId, ResourcesIds.Donkey);
 
   const donkeyProduction = useMemo(() => {
     return donkeyProductionManager.getProduction();
@@ -550,7 +551,7 @@ const OrderCreation = ({
   }, [orderWeight]);
 
   const currentDefaultTick = useUIStore((state) => state.currentDefaultTick);
-  const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
+  const donkeyProductionManager = useResourceManager(entityId, ResourcesIds.Donkey);
 
   const donkeyProduction = useMemo(() => {
     return donkeyProductionManager.getProduction();
@@ -560,7 +561,7 @@ const OrderCreation = ({
     return donkeyProductionManager.balance(currentDefaultTick);
   }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
 
-  const resourceProductionManager = useProductionManager(entityId, resourceId);
+  const resourceProductionManager = useResourceManager(entityId, resourceId);
 
   const resourceProduction = useMemo(() => {
     return resourceProductionManager.getProduction();
@@ -570,7 +571,7 @@ const OrderCreation = ({
     return resourceProductionManager.balance(currentDefaultTick);
   }, [resourceProduction, currentDefaultTick, resourceId]);
 
-  const lordsProductionManager = useProductionManager(entityId, ResourcesIds.Lords);
+  const lordsProductionManager = useResourceManager(entityId, ResourcesIds.Lords);
 
   const lordsProduction = useMemo(() => {
     return lordsProductionManager.getProduction();

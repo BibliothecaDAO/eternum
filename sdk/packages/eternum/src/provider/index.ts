@@ -1432,16 +1432,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async leave_guild(props: SystemProps.LeaveGuild) {
-    const { signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "leave_guild",
-      calldata: [],
-    });
-  }
-
   public async transfer_guild_ownership(props: SystemProps.TransferGuildOwnership) {
     const { guild_entity_id, to_player_address, signer } = props;
 

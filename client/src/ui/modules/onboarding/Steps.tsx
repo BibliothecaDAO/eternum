@@ -24,7 +24,7 @@ import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { shortString } from "starknet";
-
+import { env } from "../../../../env";
 const ACCOUNT_CHANGE_EVENT = "addressChanged";
 
 const StepContainer = ({ children }: { children: React.ReactNode }) => {
@@ -230,7 +230,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
             )}
           </div>
 
-          {import.meta.env.VITE_PUBLIC_DEV === "true" && (
+          {env.VITE_PUBLIC_DEV === true && (
             <div className="flex flex-col md:flex-row items-center mb-1 md:mb-4 gap-2">
               <ListSelect
                 className="flex-grow"
