@@ -119,7 +119,7 @@ union ModelUnion =
   | eternum_ResourceCost
   | eternum_ResourceTransferLock
   | eternum_Season
-  | eternum_SeasonConfig
+  | eternum_SeasonAddressesConfig
   | eternum_SettleRealmData
   | eternum_SettlementConfig
   | eternum_SpeedConfig
@@ -1147,16 +1147,16 @@ type World__Query {
     order: eternum_ResourceTransferLockOrder
     where: eternum_ResourceTransferLockWhereInput
   ): eternum_ResourceTransferLockConnection
-  eternumSeasonConfigModels(
+  eternumSeasonAddressesConfigModels(
     after: Cursor
     before: Cursor
     first: Int
     last: Int
     limit: Int
     offset: Int
-    order: eternum_SeasonConfigOrder
-    where: eternum_SeasonConfigWhereInput
-  ): eternum_SeasonConfigConnection
+    order: eternum_SeasonAddressesConfigOrder
+    where: eternum_SeasonAddressesConfigWhereInput
+  ): eternum_SeasonAddressesConfigConnection
   eternumSeasonModels(
     after: Cursor
     before: Cursor
@@ -8154,7 +8154,7 @@ type eternum_Season {
   is_over: bool
 }
 
-type eternum_SeasonConfig {
+type eternum_SeasonAddressesConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -8163,30 +8163,30 @@ type eternum_SeasonConfig {
   season_pass_address: ContractAddress
 }
 
-type eternum_SeasonConfigConnection {
-  edges: [eternum_SeasonConfigEdge]
+type eternum_SeasonAddressesConfigConnection {
+  edges: [eternum_SeasonAddressesConfigEdge]
   pageInfo: World__PageInfo!
   totalCount: Int!
 }
 
-type eternum_SeasonConfigEdge {
+type eternum_SeasonAddressesConfigEdge {
   cursor: Cursor
-  node: eternum_SeasonConfig
+  node: eternum_SeasonAddressesConfig
 }
 
-input eternum_SeasonConfigOrder {
+input eternum_SeasonAddressesConfigOrder {
   direction: OrderDirection!
-  field: eternum_SeasonConfigOrderField!
+  field: eternum_SeasonAddressesConfigOrderField!
 }
 
-enum eternum_SeasonConfigOrderField {
+enum eternum_SeasonAddressesConfigOrderField {
   CONFIG_ID
   LORDS_ADDRESS
   REALMS_ADDRESS
   SEASON_PASS_ADDRESS
 }
 
-input eternum_SeasonConfigWhereInput {
+input eternum_SeasonAddressesConfigWhereInput {
   config_id: u32
   config_idEQ: u32
   config_idGT: u32

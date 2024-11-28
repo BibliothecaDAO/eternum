@@ -29,7 +29,7 @@ fn setup() -> (WorldStorage, ContractAddress, Owner) {
     world.write_model_test(@owner);
 
     // set initial season
-    let season = Season { config_id: WORLD_CONFIG_ID, is_over: false };
+    let season = Season { config_id: WORLD_CONFIG_ID, is_over: false, start_at: 0 };
     world.write_model_test(@season);
 
     (world, ownership_systems_address, owner)

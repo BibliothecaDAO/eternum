@@ -35,7 +35,7 @@ mod realm_systems {
     use eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS};
     use eternum::models::capacity::{CapacityCategory};
     use eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
-    use eternum::models::config::{QuestRewardConfig, QuestConfig, SeasonConfig, ProductionConfig};
+    use eternum::models::config::{QuestRewardConfig, QuestConfig, SeasonAddressesConfig, ProductionConfig};
     use eternum::models::event::{SettleRealmData, EventType};
     use eternum::models::map::Tile;
     use eternum::models::movable::Movable;
@@ -82,7 +82,7 @@ mod realm_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // collect season pass
-            let season: SeasonConfig = world.read_model(WORLD_CONFIG_ID);
+            let season: SeasonAddressesConfig = world.read_model(WORLD_CONFIG_ID);
             InternalRealmLogicImpl::collect_season_pass(season.season_pass_address, realm_id);
 
             // retrieve realm metadata

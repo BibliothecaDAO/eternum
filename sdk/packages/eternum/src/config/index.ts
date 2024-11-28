@@ -456,14 +456,19 @@ export const setCapacityConfig = async (config: Config) => {
 };
 
 export const setSeasonConfig = async (config: Config) => {
+  let now = Math.floor(new Date().getTime() / 1000);
+  let startAt = now + config.config.season.startAfterSeconds;
+
   const tx = await config.provider.set_season_config({
     signer: config.account,
     season_pass_address: config.config.season.seasonPassAddress,
     realms_address: config.config.season.realmsAddress,
     lords_address: config.config.season.lordsAddress,
+    start_at: startAt,
   });
 
-  console.log(`Configuring season config ${tx.statusReceipt}`);
+  console.log(`Configuring season ${tx.statusReceipt}`);
+  console.log(`Season starts at ${new Date(startAt * 1000).toISOString()}`);
 };
 
 export const setResourceBridgeLordsWhitlelistConfig = async (config: Config) => {

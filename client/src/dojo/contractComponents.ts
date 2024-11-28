@@ -1119,7 +1119,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    SeasonConfig: (() => {
+    SeasonAddressesConfig: (() => {
       return defineComponent(
         world,
         {
@@ -1131,7 +1131,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "eternum",
-            name: "SeasonConfig",
+            name: "SeasonAddressesConfig",
             types: ["u32", "ContractAddress", "ContractAddress", "ContractAddress"],
             customTypes: [],
           },
