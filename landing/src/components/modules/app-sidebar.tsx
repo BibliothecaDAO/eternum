@@ -12,6 +12,8 @@ import { Link } from "@tanstack/react-router";
 import { Home, Inbox, Ship } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
+import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
+
 // Menu items.
 const items = [
   {
@@ -50,7 +52,10 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
-        <TypeH2 className="p-3">Eternum</TypeH2>
+        <div className="flex flex-col items-center">
+          <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" />
+          <TypeH2 className="p-3">Eternum</TypeH2>
+        </div>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

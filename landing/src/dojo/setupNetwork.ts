@@ -6,7 +6,6 @@ import { world } from "./world";
 import { BurnerManager } from "@dojoengine/create-burner";
 import * as torii from "@dojoengine/torii-client";
 import { Account } from "starknet";
-import { env } from "../../env";
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
@@ -26,14 +25,15 @@ export async function setupNetwork({ ...config }: DojoConfig) {
     rpcProvider: provider.provider,
     feeTokenAddress: config.feeTokenAddress,
   });
+  await burnerManager.init();
 
   try {
-    await burnerManager.init();
-
-    if (env.VITE_PUBLIC_DEV === true) {
+    if (import.meta.env.VITE_PUBLIC_DEV === "true") {
       if (burnerManager.list().length === 0) {
         await burnerManager.create();
       }
+    } else {
+      await burnerManager.clear();
     }
   } catch (e) {
     console.error(e);

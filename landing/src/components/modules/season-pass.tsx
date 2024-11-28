@@ -3,9 +3,11 @@ import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
 import { useCall } from "@starknet-react/core";
 import { useState } from "react";
 import { Uint256, uint256 } from "starknet";
-import { formatEther } from "viem";
-import abi from "../../../../season_pass/contracts/target/release/esp_EternumSeasonPass.contract_class.json";
+
 import { SeasonPassCard } from "./season-pass-card";
+
+import { abi } from "@/abi/SeasonPass";
+import { formatEther } from "viem";
 
 export interface SeasonPass {
   title: string;
@@ -20,8 +22,12 @@ export const SeasonPass = ({ title, description, checked: initialChecked, owner,
   const [isLoading, setIsLoading] = useState(false);
   const { attachLords } = useMintSeasonPass();
 
-  const { data, isLoading: isLordsBalanceLoading } = useCall({
-    abi: abi.abi,
+  const {
+    data,
+    // error,
+    isLoading: isLordsBalanceLoading,
+  } = useCall({
+    abi: abi,
     functionName: "lords_balance",
     address: seasonPassAddress,
     args: [uint256.bnToUint256(name ?? "0")],

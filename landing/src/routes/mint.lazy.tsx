@@ -1,3 +1,4 @@
+import { CartridgeConnectButton } from "@/components/modules/cartridge-connect-button";
 import { AttributeFilters } from "@/components/modules/filters";
 import { RealmMintDialog } from "@/components/modules/realm-mint-dialog";
 import { RealmsGrid } from "@/components/modules/realms-grid";
@@ -29,7 +30,6 @@ function Mint() {
   const {
     account: { account },
   } = useDojo();
-  // const { disconnect } = useDisconnect();
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
   const [, setMintToController] = useState(true);
@@ -59,12 +59,16 @@ function Mint() {
   const seasonPassTokenIds = useMemo(
     () =>
       seasonPassMints?.tokenTransfers?.edges
-        ?.filter(
-          (token) =>
-            token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-            token.node.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS,
-        )
-        .map((token) => token?.node?.tokenMetadata.tokenId)
+        ?.filter((token) => {
+          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
+          return token.node.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS;
+        })
+        .map((token) => {
+          if (token?.node?.tokenMetadata.__typename === "ERC721__Token") {
+            return token.node.tokenMetadata.tokenId;
+          }
+          return undefined;
+        })
         .filter((id): id is string => id !== undefined),
     [seasonPassMints],
   );
@@ -82,8 +86,6 @@ function Mint() {
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: account?.address as `0x${string}` });
 
-  console.log("account", account);
-
   return (
     <div className="flex flex-col h-full">
       {!account ? (
@@ -93,13 +95,13 @@ function Mint() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-x-10">
-              {/* <div>
+              <div>
                 <TypeP>
                   If you will play Eternum, sign in to the Cartridge Controller to mint your Season Pass directly to
                   your game wallet
                 </TypeP>
                 <CartridgeConnectButton className="w-full mt-4" />
-              </div> */}
+              </div>
               <div>
                 <TypeP>If you will trade your Season Passes - mint to the Starknet Wallet that holds your Realms</TypeP>
                 <Button className="mt-4 w-full" onClick={() => setMintToController(false)} variant="outline">
