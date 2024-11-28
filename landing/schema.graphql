@@ -36,7 +36,7 @@ union ERC__Token = ERC20__Token | ERC721__Token
 scalar Enum
 
 union ModelUnion =
-  | eternum_AcceptOrder
+    eternum_AcceptOrder
   | eternum_AcceptPartialOrder
   | eternum_AddressName
   | eternum_Army
