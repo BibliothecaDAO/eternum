@@ -23,6 +23,8 @@ interface ModelData {
     }
   >;
   activeInstances: Set<number>;
+  targetScales: Map<number, THREE.Vector3>;
+  currentScales: Map<number, THREE.Vector3>;
 }
 
 export class ArmyModel {
@@ -37,6 +39,7 @@ export class ArmyModel {
   private normalScale = new THREE.Vector3(0.3, 0.3, 0.3);
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
+  private readonly SCALE_TRANSITION_SPEED = 5.0; // Adjust this value to control transition speed
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -54,7 +57,7 @@ export class ArmyModel {
 
   private async loadModels(): Promise<void> {
     // Load all model variants
-    const modelTypes = ["knight", "knight2"]; // Add more model types as needed
+    const modelTypes = ["knight", "boat"]; // Add more model types as needed
     const loadPromises = modelTypes.map((type) => this.loadSingleModel(type));
     await Promise.all(loadPromises);
   }
@@ -68,9 +71,6 @@ export class ArmyModel {
           const baseMesh = gltf.scene.children[0];
           const geometry = (baseMesh as THREE.Mesh).geometry.clone();
           const material = (baseMesh as THREE.Mesh).material;
-          if (modelType === "knight2") {
-            geometry.scale(1.2, 1.2, 1.2);
-          }
           const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
           instancedMesh.frustumCulled = true;
           instancedMesh.castShadow = true;
@@ -94,10 +94,12 @@ export class ArmyModel {
             mixer,
             animations: {
               idle: gltf.animations[0],
-              walk: gltf.animations[1] || gltf.animations[0],
+              walk: gltf.animations[1] || gltf.animations[0].clone(),
             },
             animationActions: new Map(),
             activeInstances: new Set(),
+            targetScales: new Map(),
+            currentScales: new Map(),
           });
 
           resolve();
@@ -112,30 +114,7 @@ export class ArmyModel {
     const oldModelType = this.entityModelMap.get(entityId);
     if (oldModelType === modelType) return;
 
-    // Deactivate instance in old model if it exists
-    if (oldModelType) {
-      const oldModel = this.models.get(oldModelType);
-      if (oldModel) {
-        oldModel.activeInstances.delete(entityId);
-        this.setScaleForEntity(oldModel.mesh, entityId, this.zeroScale);
-      }
-    }
-
-    // Activate instance in new model
-    const newModel = this.models.get(modelType);
-    if (newModel) {
-      newModel.activeInstances.add(entityId);
-      this.setScaleForEntity(newModel.mesh, entityId, this.normalScale);
-    }
-
     this.entityModelMap.set(entityId, modelType);
-  }
-
-  private setScaleForEntity(mesh: THREE.InstancedMesh, index: number, scale: THREE.Vector3) {
-    this.dummyObject.scale.copy(scale);
-    this.dummyObject.updateMatrix();
-    mesh.setMatrixAt(index, this.dummyObject.matrix);
-    mesh.instanceMatrix.needsUpdate = true;
   }
 
   getModelForEntity(entityId: number): ModelData | undefined {
@@ -152,23 +131,25 @@ export class ArmyModel {
     rotation?: THREE.Euler,
     color?: THREE.Color,
   ) {
-    // Update active model normally, set zero scale for others
     this.models.forEach((modelData, modelType) => {
-      if (modelType === this.entityModelMap.get(entityId)) {
-        this.dummyObject.position.copy(position);
-        this.dummyObject.position.y += 0.15;
-        this.dummyObject.scale.copy(scale);
-        if (rotation) {
-          this.dummyObject.rotation.copy(rotation);
-        }
-      } else {
-        this.dummyObject.position.copy(position);
-        this.dummyObject.position.y += 0.15;
-        if (rotation) {
-          this.dummyObject.rotation.copy(rotation);
-        }
-        this.dummyObject.scale.copy(this.zeroScale);
+      const isActiveModel = modelType === this.entityModelMap.get(entityId);
+      const targetScale = isActiveModel ? scale : this.zeroScale;
+
+      // Store the target scale for smooth transition
+      modelData.targetScales.set(index, targetScale.clone());
+      if (!modelData.currentScales.has(index)) {
+        modelData.currentScales.set(index, targetScale.clone());
       }
+
+      // Use current scale for immediate matrix update
+      const currentScale = modelData.currentScales.get(index)!;
+      this.dummyObject.position.copy(position);
+      this.dummyObject.position.y += 0.15;
+      this.dummyObject.scale.copy(currentScale);
+      if (rotation) {
+        this.dummyObject.rotation.copy(rotation);
+      }
+
       if (color) {
         modelData.mesh.setColorAt(index, color);
         modelData.mesh.instanceColor!.needsUpdate = true;
@@ -182,6 +163,29 @@ export class ArmyModel {
     const time = performance.now() * 0.001;
 
     this.models.forEach((modelData) => {
+      let needsMatrixUpdate = false;
+
+      // Update scales with smooth transition
+      modelData.targetScales.forEach((targetScale, index) => {
+        const currentScale = modelData.currentScales.get(index)!;
+        const matrix = new THREE.Matrix4();
+        modelData.mesh.getMatrixAt(index, matrix);
+
+        // Interpolate scale
+        currentScale.lerp(targetScale, deltaTime * this.SCALE_TRANSITION_SPEED);
+        if (!currentScale.equals(targetScale)) {
+          this.dummyObject.matrix.copy(matrix);
+          this.dummyObject.scale.copy(currentScale);
+          this.dummyObject.updateMatrix();
+          modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
+          needsMatrixUpdate = true;
+        }
+      });
+
+      if (needsMatrixUpdate) {
+        modelData.mesh.instanceMatrix.needsUpdate = true;
+      }
+
       for (let i = 0; i < modelData.mesh.count; i++) {
         const animationState = this.animationStates[i];
         if (IS_LOW_GRAPHICS_ENABLED && animationState === ANIMATION_STATE_IDLE) {

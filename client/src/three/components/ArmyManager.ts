@@ -339,7 +339,7 @@ export class ArmyManager {
       const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
       const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-        this.armyModel.assignModelToEntity(entityId, "knight2");
+        this.armyModel.assignModelToEntity(entityId, "boat");
       } else {
         this.armyModel.assignModelToEntity(entityId, "knight");
       }
