@@ -8,8 +8,8 @@ import { useState } from "react";
 import { Uint256, uint256 } from "starknet";
 import { Button } from "../ui/button";
 
+import { abi } from "@/abi/SeasonPass";
 import { formatEther } from "viem";
-import abi from "../../../../season_pass/contracts/target/release/esp_EternumSeasonPass.contract_class.json";
 
 export interface SeasonPass {
   title: string;
@@ -34,7 +34,7 @@ export const SeasonPass = ({ title, description, checked: initialChecked, owner,
     // error,
     isLoading: isLordsBalanceLoading,
   } = useCall({
-    abi: abi.abi,
+    abi: abi,
     functionName: "lords_balance",
     address: seasonPassAddress,
     args: [uint256.bnToUint256(name ?? "0")],
