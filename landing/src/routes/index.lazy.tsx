@@ -1,5 +1,6 @@
 import { AnimatedGrid } from "@/components/modules/animated-grid";
 import { DataCard } from "@/components/modules/data-card";
+import { Leaderboard } from "@/components/modules/leaderboard";
 import { execute } from "@/hooks/gql/execute";
 import { GET_USERS } from "@/hooks/query/players";
 import { useQuery } from "@tanstack/react-query";
@@ -33,5 +34,10 @@ function Index() {
     [data],
   );
 
-  return <AnimatedGrid items={dataCards} renderItem={(item) => <DataCard {...item} />} />;
+  return (
+    <div className="flex flex-col gap-y-4">
+      <AnimatedGrid items={dataCards} renderItem={(item) => <DataCard {...item} />} />
+      <Leaderboard />
+    </div>
+  );
 }

@@ -1,5 +1,5 @@
 import { ResourcesIds } from "@bibliothecadao/eternum";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { useState } from "react";
 import { TypeH2 } from "../typography/type-h2";
 import { Button } from "../ui/button";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
-interface Player {
+export interface Player {
   name: string;
   points: number;
   percentage: number;
@@ -15,6 +15,7 @@ interface Player {
   realms: number;
   mines: number;
   hyperstructures: number;
+  isAlive: boolean;
 }
 
 interface LeaderboardPanelProps {
@@ -28,6 +29,7 @@ interface LeaderboardPanelProps {
   showRank?: boolean;
   /** Custom points suffix (e.g. "pts", "points", etc) */
   pointsSuffix?: string;
+  icon?: React.ReactNode;
 }
 
 export const LeaderboardPanel = ({
@@ -36,6 +38,7 @@ export const LeaderboardPanel = ({
   className = "border-2 rounded-xl bg-brown border-gold/15 round-tr-none rounded-bl-none",
   showRank = true,
   pointsSuffix = "pts",
+  icon = <Trophy />,
 }: LeaderboardPanelProps) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,7 +53,10 @@ export const LeaderboardPanel = ({
   return (
     <Card className={className}>
       <CardHeader>
-        <TypeH2>{title}</TypeH2>
+        <TypeH2 className="flex items-center gap-2 uppercase">
+          {icon && <span>{icon}</span>}
+          {title}
+        </TypeH2>
         <input
           type="text"
           placeholder="Search player..."
@@ -173,7 +179,10 @@ export const LeaderboardPanel = ({
               } hover:bg-gold/10 transition-colors cursor-pointer`}
             >
               {showRank && <div className="text-xl font-bold text-center w-8">{startIndex + index + 1}</div>}
-              <div className="truncate w-20">{player.name}</div>
+              <div className="truncate w-20 text-left">
+                {!player.isAlive ? <span className="text-sm mr-1">💀</span> : ""}
+                {player.name}
+              </div>
               <div className="text-right w-20 tabular-nums">{player.realms}</div>
               <div className="text-right w-20 tabular-nums">{player.mines}</div>
               <div className="text-right w-20 tabular-nums">{player.hyperstructures}</div>
