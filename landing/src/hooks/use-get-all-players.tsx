@@ -1,4 +1,5 @@
 import { Player } from "@/components/modules/leaderboard-panel";
+import { PRIZE_POOL_AMOUNT } from "@/constants";
 import { LeaderboardManager } from "@/dojo/modelManager/leaderboard/LeaderboardManager";
 import { StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
@@ -75,11 +76,9 @@ const calculatePlayerRank = (
 };
 
 const calculateLordsShare = (points: number, totalPoints: number): number => {
-  const TOTAL_LORDS_PRIZE = 1000000; // 1M LORDS in prize pool
-
   if (totalPoints === 0) return 0;
 
-  const playerShare = (points / totalPoints) * TOTAL_LORDS_PRIZE;
+  const playerShare = (points / totalPoints) * PRIZE_POOL_AMOUNT;
   return Math.floor(playerShare);
 };
 
