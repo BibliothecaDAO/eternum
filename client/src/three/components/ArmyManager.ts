@@ -1,13 +1,14 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
 import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { Position } from "@/types/Position";
-import { calculateOffset, getWorldPositionForHex } from "@/ui/utils/utils";
-import { ContractAddress, ID, orders } from "@bibliothecadao/eternum";
+import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
+import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GUIManager } from "../helpers/GUIManager";
 import { isAddressEqualToAccount } from "../helpers/utils";
 import { ArmySystemUpdate } from "../systems/types";
 import { ArmyModel } from "./ArmyModel";
+import { Biome } from "./Biome";
 import { LabelManager } from "./LabelManager";
 
 const myColor = new THREE.Color(0, 1.5, 0);
@@ -26,6 +27,7 @@ export class ArmyManager {
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
+  private biome: Biome;
 
   constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
     this.scene = scene;
@@ -33,7 +35,7 @@ export class ArmyManager {
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.renderChunkSize = renderChunkSize;
-
+    this.biome = new Biome();
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
 
@@ -87,46 +89,26 @@ export class ArmyManager {
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
-    if (!this.armyModel.mesh) return;
-
-    const intersects = raycaster.intersectObject(this.armyModel.mesh);
-    if (intersects.length > 0) {
-      const instanceId = intersects[0].instanceId;
-      if (instanceId !== undefined) {
-        const entityId = this.armyModel.mesh.userData.entityIdMap.get(instanceId);
-        return entityId;
+    const intersectResults = this.armyModel.raycastAll(raycaster);
+    if (intersectResults.length > 0) {
+      const { instanceId, mesh } = intersectResults[0];
+      if (instanceId !== undefined && mesh.userData.entityIdMap) {
+        return mesh.userData.entityIdMap.get(instanceId);
       }
     }
+    return undefined;
   }
 
   public onRightClick(raycaster: THREE.Raycaster) {
-    if (!this.armyModel.mesh) {
-      return;
-    }
+    const intersectResults = this.armyModel.raycastAll(raycaster);
+    if (intersectResults.length === 0) return;
 
-    const intersects = raycaster.intersectObject(this.armyModel.mesh);
-    if (intersects.length === 0) {
-      return;
-    }
+    const { instanceId, mesh } = intersectResults[0];
+    if (instanceId === undefined || !mesh.userData.entityIdMap) return;
 
-    const clickedObject = intersects[0].object;
-    if (!(clickedObject instanceof THREE.InstancedMesh)) {
-      return;
-    }
-
-    const instanceId = intersects[0].instanceId;
-    if (instanceId === undefined) {
-      return;
-    }
-
-    const entityIdMap = clickedObject.userData.entityIdMap;
-    if (entityIdMap) {
-      const entityId = entityIdMap.get(instanceId);
-
-      // don't return if the army is not mine
-      if (entityId && this.armies.get(entityId)?.isMine) {
-        return entityId;
-      }
+    const entityId = mesh.userData.entityIdMap.get(instanceId);
+    if (entityId && this.armies.get(entityId)?.isMine) {
+      return entityId;
     }
   }
 
@@ -175,33 +157,48 @@ export class ArmyManager {
 
   private renderVisibleArmies(chunkKey: string) {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
-
     this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
 
-    let count = 0;
-    if (!this.armyModel.mesh.userData.entityIdMap) {
-      this.armyModel.mesh.userData.entityIdMap = new Map();
-    }
-    this.visibleArmies.forEach((army, index) => {
+    // Reset all model instances
+    this.armyModel.resetInstanceCounts();
+
+    let currentCount = 0;
+    this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      this.armyModel.dummyObject.position.copy(position);
-      this.armyModel.dummyObject.scale.copy(this.scale);
-      this.armyModel.dummyObject.updateMatrix();
-      this.armyModel.mesh.setMatrixAt(index, this.armyModel.dummyObject.matrix);
-      this.armyModel.mesh.setColorAt(index, new THREE.Color(army.color));
-      count++;
-      this.armyModel.mesh.userData.entityIdMap.set(index, army.entityId);
-      this.armies.set(army.entityId, { ...army, matrixIndex: index });
+      // this.armyModel.dummyObject.position.copy(position);
+      // this.armyModel.dummyObject.scale.copy(this.scale);
+      // this.armyModel.dummyObject.updateMatrix();
+      // Determine model type based on order or other criteria
+      const { x, y } = army.hexCoords.getContract();
+      const biome = this.biome.getBiome(x, y);
+      console.log(biome, army.entityId);
+      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+        this.armyModel.assignModelToEntity(army.entityId, "boat");
+      } else {
+        this.armyModel.assignModelToEntity(army.entityId, "knight");
+      }
+
+      // Update the specific model instance for this entity
+      this.armyModel.updateInstance(
+        army.entityId,
+        currentCount,
+        position,
+        this.scale,
+        undefined,
+        new THREE.Color(army.color),
+      );
+
+      this.armies.set(army.entityId, { ...army, matrixIndex: currentCount });
+
+      // Increment count and update all meshes
+      currentCount++;
+      this.armyModel.setVisibleCount(currentCount);
     });
 
-    this.armyModel.mesh.count = this.visibleArmies.length;
-
-    this.armyModel.mesh.instanceMatrix.needsUpdate = true;
-    if (this.armyModel.mesh.instanceColor) {
-      this.armyModel.mesh.instanceColor.needsUpdate = true;
-    }
-    this.armyModel.mesh.computeBoundingSphere();
+    // Update all model instances
+    this.armyModel.updateAllInstances();
     this.updateLabelsForChunk(chunkKey);
+    this.armyModel.computeBoundingSphere();
   }
 
   private isArmyVisible(
@@ -250,6 +247,16 @@ export class ArmyManager {
 
   public addArmy(entityId: ID, hexCoords: Position, owner: { address: bigint }, order: number) {
     if (this.armies.has(entityId)) return;
+
+    // Determine model type based on order or other criteria
+    const { x, y } = hexCoords.getContract();
+    const biome = this.biome.getBiome(x, y);
+    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+      this.armyModel.assignModelToEntity(entityId, "boat");
+    } else {
+      this.armyModel.assignModelToEntity(entityId, "knight");
+    }
+
     const orderColor = orders.find((_order) => _order.orderId === order)?.color || "#000000";
     this.armies.set(entityId, {
       entityId,
@@ -263,8 +270,6 @@ export class ArmyManager {
   }
 
   public moveArmy(entityId: ID, hexCoords: Position) {
-    // @ts-ignore
-
     const armyData = this.armies.get(entityId);
     if (!armyData) {
       return;
@@ -284,21 +289,24 @@ export class ArmyManager {
 
     const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
     const currentPosition = new THREE.Vector3();
-    this.armyModel.mesh.getMatrixAt(armyData.matrixIndex, this.armyModel.dummyObject.matrix);
-    currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
-    this.armyModel.setAnimationState(armyData.matrixIndex, true);
-    this.movingArmies.set(entityId, {
-      startPos: currentPosition,
-      endPos: newPosition,
-      progress: 0,
-      matrixIndex: armyData.matrixIndex,
-    });
+    const modelData = this.armyModel.getModelForEntity(entityId);
+    if (modelData) {
+      modelData.mesh.getMatrixAt(armyData.matrixIndex, this.armyModel.dummyObject.matrix);
+      currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
+      this.armyModel.setAnimationState(armyData.matrixIndex, true);
+      this.movingArmies.set(entityId, {
+        startPos: currentPosition,
+        endPos: newPosition,
+        progress: 0,
+        matrixIndex: armyData.matrixIndex,
+      });
 
-    this.movingLabels.set(entityId, {
-      startPos: currentPosition,
-      endPos: newPosition,
-      progress: 0,
-    });
+      this.movingLabels.set(entityId, {
+        startPos: currentPosition,
+        endPos: newPosition,
+        progress: 0,
+      });
+    }
   }
 
   public removeArmy(entityId: ID) {
@@ -344,12 +352,19 @@ export class ArmyManager {
       } else {
         position = new THREE.Vector3().copy(movement.startPos).lerp(movement.endPos, movement.progress);
       }
+      const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
+      const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+        this.armyModel.assignModelToEntity(entityId, "boat");
+      } else {
+        this.armyModel.assignModelToEntity(entityId, "knight");
+      }
 
       const direction = new THREE.Vector3().subVectors(movement.endPos, movement.startPos).normalize();
       const angle = Math.atan2(direction.x, direction.z);
       this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 3) / 6, 0);
 
-      this.armyModel.updateInstance(matrixIndex, position, this.scale);
+      this.armyModel.updateInstance(entityId, matrixIndex, position, this.scale);
     });
 
     if (this.movingArmies.size > 0) {
