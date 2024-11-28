@@ -15,6 +15,7 @@ import { BattleProgress } from "./BattleProgress";
 import { BattleSideView } from "./BattleSideView";
 import { LockedResources } from "./LockedResources";
 import { TopScreenView } from "./TopScreenView";
+import { BattleTwitterShareButton } from "./battle-twitter-share-button";
 
 export const Battle = ({
   battleManager,
@@ -59,12 +60,18 @@ export const Battle = ({
         animate="visible"
         exit="hidden"
       >
-        <div className="flex justify-center mb-2">
-          {battleAdjusted && (
-            <Button variant="opaque" onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
-              !showBattleDetails ? "Details" : "Overview"
-            }`}</Button>
-          )}
+        <div className="flex justify-center mb-2 space-x-1 items-center">
+          <Button variant="opaque" onClick={() => setShowBattleDetails(!showBattleDetails)} className="h-10">{`${
+            !showBattleDetails ? "Details" : "Overview"
+          }`}</Button>
+          <BattleTwitterShareButton
+            userArmiesInBattle={userArmiesInBattle}
+            attackerArmies={attackerArmies}
+            defenderArmies={defenderArmies}
+            ownArmySide={ownArmySide}
+            battleAdjusted={battleAdjusted}
+            structure={structure}
+          />
           <HintModalButton className={`relative ${battleAdjusted ? "left-3" : ""}`} section={HintSection.Combat} />
         </div>
 

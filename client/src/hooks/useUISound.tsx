@@ -70,6 +70,7 @@ export const soundSelector = {
   unitSelected3: "units/army_selected3.mp3",
   unitMarching1: "units/marching1.mp3",
   unitMarching2: "units/marching2.mp3",
+  gong: "events/gong.mp3",
 };
 
 export const useUiSounds = (selector: string) => {

@@ -3,8 +3,9 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import TwitterShareButton from "@/ui/elements/TwitterShareButton";
-import { divideByPrecision, formatResources, formatTime } from "@/ui/utils/utils";
-import { BattleSide, ID, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { formatSocialText, twitterTemplates } from "@/ui/socials";
+import { divideByPrecision, formatNumber, formatResources, formatTime } from "@/ui/utils/utils";
+import { BattleSide, ID, Resource, resources } from "@bibliothecadao/eternum";
 import { ComponentValue, defineQuery, getComponentValue, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { TroopDisplay } from "./TroopChip";
@@ -12,14 +13,37 @@ import { TroopDisplay } from "./TroopChip";
 type PillageEvent = ComponentValue<ClientComponents["events"]["BattlePillageData"]["schema"]>;
 
 const PillageHistoryItem = ({ addressName, history }: { addressName: string; history: PillageEvent }) => {
+  const {
+    setup: {
+      account: { account },
+    },
+  } = useDojo();
+
   const isSuccess = history.winner === BattleSide[BattleSide.Attack];
   const formattedResources = useMemo(() => formatResources(history.pillaged_resources), [history.pillaged_resources]);
 
+  const { getPlayerAddressFromEntity, getAddressNameFromEntity } = useEntitiesUtils();
+
+  const attackerIsPlayer = useMemo(
+    () => getPlayerAddressFromEntity(history.pillager_army_entity_id) === BigInt(account.address),
+    [getPlayerAddressFromEntity, history.pillager_army_entity_id, account.address],
+  );
+
   const twitterText = useMemo(() => {
-    if (isSuccess) {
-      return `I, Ser ${addressName}, have just raided ${formattedResources
-        .map((resource) => `${divideByPrecision(resource.amount)} ${ResourcesIds[resource.resourceId]}`)
-        .join(", ")} in @RealmsEternum.💰💰💰\n\nJoin the battle for victory at ${window.location.origin}`;
+    if (isSuccess && formattedResources.length > 0 && attackerIsPlayer) {
+      return formatSocialText(twitterTemplates.pillage, {
+        enemyName: getAddressNameFromEntity(history.pillaged_structure_entity_id) || "Unknown",
+        addressName,
+        resources: formattedResources
+          .map(
+            (pillagedResource) =>
+              `${formatNumber(divideByPrecision(pillagedResource.amount), 0)} ${resources.find(
+                (resource) => resource.id === pillagedResource.resourceId,
+              )?.trait}`,
+          )
+          .join(", "),
+        url: window.location.origin,
+      });
     }
   }, [isSuccess, addressName]);
   return (
@@ -28,8 +52,10 @@ const PillageHistoryItem = ({ addressName, history }: { addressName: string; his
         <div className={`text-base font-semibold uppercase tracking-wider ${isSuccess ? "text-green" : "text-red"}`}>
           {isSuccess ? "Successful Raid" : "Failed Raid"}
         </div>
-        {twitterText && <TwitterShareButton text={twitterText} />}
-        <div className="text-gold/80 font-medium">by: {addressName}</div>
+        {twitterText && <TwitterShareButton text={twitterText} buttonSize={"xs"} />}
+        <div className={`text-gold/80 font-medium ${attackerIsPlayer ? "font-bold" : ""}`}>
+          {attackerIsPlayer ? "You" : `by: ${addressName}`}
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-6 mb-4">
