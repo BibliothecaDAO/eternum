@@ -166,6 +166,9 @@ export const BridgeOutStep1 = () => {
           BigInt(realmEntityId!),
           BigInt(selectedResourceAmount * RESOURCE_PRECISION),
         );
+
+        setSelectedResourceIds([]);
+        setSelectedResourceAmounts({});
       } finally {
         setIsLoading(false);
       }
