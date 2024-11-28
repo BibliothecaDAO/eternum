@@ -58,15 +58,24 @@ function Mint() {
 
   const seasonPassTokenIds = useMemo(
     () =>
-      seasonPassMints?.ercTransfer
-        ?.filter((token) => token?.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS)
-        .map((token) => token?.tokenMetadata.tokenId)
+      seasonPassMints?.tokenTransfers?.edges
+        ?.filter(
+          (token) =>
+            token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+            token.node.tokenMetadata.contractAddress === env.VITE_SEASON_PASS_ADDRESS,
+        )
+        .map((token) => token?.node?.tokenMetadata.tokenId)
         .filter((id): id is string => id !== undefined),
     [seasonPassMints],
   );
 
   const realmsErcBalance = useMemo(
-    () => data?.ercBalance?.filter((token) => token?.tokenMetadata.contractAddress === realmsAddress),
+    () =>
+      data?.tokenBalances?.edges?.filter(
+        (token) =>
+          token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+          token.node.tokenMetadata.contractAddress === realmsAddress,
+      ),
     [data, realmsAddress],
   );
 
@@ -134,15 +143,15 @@ function Mint() {
                   Mint Realms
                 </Button>
                 <div className="flex items-center gap-x-4">
-                  {data?.ercBalance && (
+                  {data?.tokenBalances?.edges && (
                     <SelectNftActions
                       totalSelectedNfts={totalSelectedNfts}
                       selectBatchNfts={selectBatchNfts}
                       deselectAllNfts={deselectAllNfts}
-                      contractAddress={realmsErcBalance?.[0]?.tokenMetadata.contractAddress ?? ""}
+                      contractAddress={realmsErcBalance?.[0]?.node?.tokenMetadata.contractAddress ?? ""}
                       batchTokenIds={realmsErcBalance
-                        ?.filter((token) => !seasonPassTokenIds?.includes(token?.tokenMetadata.tokenId ?? ""))
-                        .map((token) => token?.tokenMetadata?.tokenId ?? "")
+                        ?.filter((token) => !seasonPassTokenIds?.includes(token?.node?.tokenMetadata.tokenId ?? ""))
+                        .map((token) => token?.node?.tokenMetadata?.tokenId ?? "")
                         .filter((tokenId): tokenId is string => tokenId !== "")}
                     />
                   )}

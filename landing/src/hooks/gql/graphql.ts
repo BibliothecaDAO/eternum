@@ -420,12 +420,13 @@ export type Eternum_BattleClaimDataOrder = {
 };
 
 export enum Eternum_BattleClaimDataOrderField {
+  ClaimeeAddress = "CLAIMEE_ADDRESS",
+  ClaimeeName = "CLAIMEE_NAME",
   Claimer = "CLAIMER",
   ClaimerArmyEntityId = "CLAIMER_ARMY_ENTITY_ID",
   ClaimerName = "CLAIMER_NAME",
   EventId = "EVENT_ID",
   Id = "ID",
-  PreviousOwner = "PREVIOUS_OWNER",
   StructureEntityId = "STRUCTURE_ENTITY_ID",
   StructureType = "STRUCTURE_TYPE",
   Timestamp = "TIMESTAMP",
@@ -434,6 +435,28 @@ export enum Eternum_BattleClaimDataOrderField {
 }
 
 export type Eternum_BattleClaimDataWhereInput = {
+  claimee_address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressGTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
+  claimee_addressLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressLT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressLTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressNEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_addressNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
+  claimee_addressNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  claimee_name?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  claimee_nameLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  claimee_nameNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  claimee_nameNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
   claimer?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   claimerEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   claimerGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -479,17 +502,6 @@ export type Eternum_BattleClaimDataWhereInput = {
   idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
   idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
   idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  previous_owner?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerGTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
-  previous_ownerLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerLT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerLTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerNEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
-  previous_ownerNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
-  previous_ownerNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   structure_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
   structure_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   structure_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -858,16 +870,19 @@ export type Eternum_BattlePillageDataOrder = {
 };
 
 export enum Eternum_BattlePillageDataOrderField {
+  AttackerLostTroops = "ATTACKER_LOST_TROOPS",
   DestroyedBuildingCategory = "DESTROYED_BUILDING_CATEGORY",
   EventId = "EVENT_ID",
   Id = "ID",
   PillagedResources = "PILLAGED_RESOURCES",
   PillagedStructureEntityId = "PILLAGED_STRUCTURE_ENTITY_ID",
   PillagedStructureOwner = "PILLAGED_STRUCTURE_OWNER",
+  PillagedStructureOwnerName = "PILLAGED_STRUCTURE_OWNER_NAME",
   Pillager = "PILLAGER",
   PillagerArmyEntityId = "PILLAGER_ARMY_ENTITY_ID",
   PillagerName = "PILLAGER_NAME",
   PillagerRealmEntityId = "PILLAGER_REALM_ENTITY_ID",
+  StructureLostTroops = "STRUCTURE_LOST_TROOPS",
   StructureType = "STRUCTURE_TYPE",
   Timestamp = "TIMESTAMP",
   Winner = "WINNER",
@@ -911,6 +926,17 @@ export type Eternum_BattlePillageDataWhereInput = {
   pillaged_structure_ownerNEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   pillaged_structure_ownerNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
   pillaged_structure_ownerNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  pillaged_structure_owner_name?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  pillaged_structure_owner_nameLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  pillaged_structure_owner_nameNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  pillaged_structure_owner_nameNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
   pillager?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   pillagerEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
   pillagerGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
@@ -1535,6 +1561,65 @@ export type Eternum_BuildingWhereInput = {
   produced_resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
+export type Eternum_BurnDonkeyOrder = {
+  direction: OrderDirection;
+  field: Eternum_BurnDonkeyOrderField;
+};
+
+export enum Eternum_BurnDonkeyOrderField {
+  Amount = "AMOUNT",
+  EntityId = "ENTITY_ID",
+  PlayerAddress = "PLAYER_ADDRESS",
+  Timestamp = "TIMESTAMP",
+}
+
+export type Eternum_BurnDonkeyWhereInput = {
+  amount?: InputMaybe<Scalars["u128"]["input"]>;
+  amountEQ?: InputMaybe<Scalars["u128"]["input"]>;
+  amountGT?: InputMaybe<Scalars["u128"]["input"]>;
+  amountGTE?: InputMaybe<Scalars["u128"]["input"]>;
+  amountIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
+  amountLIKE?: InputMaybe<Scalars["u128"]["input"]>;
+  amountLT?: InputMaybe<Scalars["u128"]["input"]>;
+  amountLTE?: InputMaybe<Scalars["u128"]["input"]>;
+  amountNEQ?: InputMaybe<Scalars["u128"]["input"]>;
+  amountNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
+  amountNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
+  entity_id?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  player_address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressGTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
+  player_addressLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressLT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressLTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressNEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  player_addressNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
+  player_addressNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  timestamp?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampGT?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timestampLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampLT?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+};
+
 export type Eternum_CancelOrderOrder = {
   direction: OrderDirection;
   field: Eternum_CancelOrderOrderField;
@@ -1701,6 +1786,53 @@ export type Eternum_ContributionWhereInput = {
   resource_typeNEQ?: InputMaybe<Scalars["u8"]["input"]>;
   resource_typeNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
+};
+
+export type Eternum_CreateGuildOrder = {
+  direction: OrderDirection;
+  field: Eternum_CreateGuildOrderField;
+};
+
+export enum Eternum_CreateGuildOrderField {
+  GuildEntityId = "GUILD_ENTITY_ID",
+  GuildName = "GUILD_NAME",
+  Timestamp = "TIMESTAMP",
+}
+
+export type Eternum_CreateGuildWhereInput = {
+  guild_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  guild_entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  guild_entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_name?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  guild_nameLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  guild_nameNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  timestamp?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampGT?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timestampLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampLT?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
 export type Eternum_CreateOrderOrder = {
@@ -1937,78 +2069,6 @@ export type Eternum_EpochWhereInput = {
   start_timestampNEQ?: InputMaybe<Scalars["u64"]["input"]>;
   start_timestampNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
   start_timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-};
-
-export type Eternum_EternumEventOrder = {
-  direction: OrderDirection;
-  field: Eternum_EternumEventOrderField;
-};
-
-export enum Eternum_EternumEventOrderField {
-  EventId = "EVENT_ID",
-  Id = "ID",
-  Timestamp = "TIMESTAMP",
-}
-
-export type Eternum_EternumEventWhereInput = {
-  event_id?: InputMaybe<Scalars["Enum"]["input"]>;
-  id?: InputMaybe<Scalars["u32"]["input"]>;
-  idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  timestamp?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampGT?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampGTE?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  timestampLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampLT?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampLTE?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampNEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  timestampNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-};
-
-export type Eternum_ForeignKeyOrder = {
-  direction: OrderDirection;
-  field: Eternum_ForeignKeyOrderField;
-};
-
-export enum Eternum_ForeignKeyOrderField {
-  EntityId = "ENTITY_ID",
-  ForeignKey = "FOREIGN_KEY",
-}
-
-export type Eternum_ForeignKeyWhereInput = {
-  entity_id?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  foreign_key?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyEQ?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyGT?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyGTE?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
-  foreign_keyLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyLT?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyLTE?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
-  foreign_keyNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
-  foreign_keyNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
 };
 
 export type Eternum_FragmentMineDiscoveredOrder = {
@@ -2607,6 +2667,65 @@ export type Eternum_HyperstructureWhereInput = {
   last_updated_timestampNEQ?: InputMaybe<Scalars["u64"]["input"]>;
   last_updated_timestampNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
   last_updated_timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+};
+
+export type Eternum_JoinGuildOrder = {
+  direction: OrderDirection;
+  field: Eternum_JoinGuildOrderField;
+};
+
+export enum Eternum_JoinGuildOrderField {
+  Address = "ADDRESS",
+  GuildEntityId = "GUILD_ENTITY_ID",
+  GuildName = "GUILD_NAME",
+  Timestamp = "TIMESTAMP",
+}
+
+export type Eternum_JoinGuildWhereInput = {
+  address?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressGT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressGTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
+  addressLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressLT?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressLTE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressNEQ?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  addressNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ContractAddress"]["input"]>>>;
+  addressNOTLIKE?: InputMaybe<Scalars["ContractAddress"]["input"]>;
+  guild_entity_id?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idGT?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  guild_entity_idLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idLT?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_entity_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  guild_entity_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  guild_name?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  guild_nameLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  guild_nameNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  guild_nameNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  timestamp?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampGT?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timestampLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampLT?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timestampNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timestampNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
 export type Eternum_LevelingConfigOrder = {
@@ -5105,29 +5224,28 @@ export type Eternum_SettlementConfigOrder = {
 };
 
 export enum Eternum_SettlementConfigOrderField {
-  AngleScaled = "ANGLE_SCALED",
+  BaseDistance = "BASE_DISTANCE",
   Center = "CENTER",
   ConfigId = "CONFIG_ID",
-  MaxAngleIncrease = "MAX_ANGLE_INCREASE",
-  MaxDistance = "MAX_DISTANCE",
-  MinAngleIncrease = "MIN_ANGLE_INCREASE",
-  MinDistance = "MIN_DISTANCE",
-  MinScalingFactorScaled = "MIN_SCALING_FACTOR_SCALED",
-  Radius = "RADIUS",
+  CurrentLayer = "CURRENT_LAYER",
+  CurrentPointOnSide = "CURRENT_POINT_ON_SIDE",
+  CurrentSide = "CURRENT_SIDE",
+  MinFirstLayerDistance = "MIN_FIRST_LAYER_DISTANCE",
+  PointsPlaced = "POINTS_PLACED",
 }
 
 export type Eternum_SettlementConfigWhereInput = {
-  angle_scaled?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledGT?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledGTE?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  angle_scaledLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledLT?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledLTE?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledNEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  angle_scaledNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  angle_scaledNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
+  base_distance?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceGT?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  base_distanceLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceLT?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  base_distanceNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  base_distanceNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
   center?: InputMaybe<Scalars["u32"]["input"]>;
   centerEQ?: InputMaybe<Scalars["u32"]["input"]>;
   centerGT?: InputMaybe<Scalars["u32"]["input"]>;
@@ -5150,72 +5268,61 @@ export type Eternum_SettlementConfigWhereInput = {
   config_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
   config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  max_angle_increase?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseGT?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseGTE?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  max_angle_increaseLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseLT?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseLTE?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseNEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  max_angle_increaseNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  max_angle_increaseNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  max_distance?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceGT?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  max_distanceLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceLT?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  max_distanceNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  max_distanceNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  min_angle_increase?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseGT?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseGTE?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  min_angle_increaseLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseLT?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseLTE?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseNEQ?: InputMaybe<Scalars["u64"]["input"]>;
-  min_angle_increaseNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
-  min_angle_increaseNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
-  min_distance?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceGT?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  min_distanceLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceLT?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  min_distanceNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  min_distanceNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  min_scaling_factor_scaled?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledGT?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledGTE?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  min_scaling_factor_scaledLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledLT?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledLTE?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledNEQ?: InputMaybe<Scalars["u128"]["input"]>;
-  min_scaling_factor_scaledNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u128"]["input"]>>>;
-  min_scaling_factor_scaledNOTLIKE?: InputMaybe<Scalars["u128"]["input"]>;
-  radius?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusGT?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusGTE?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  radiusLIKE?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusLT?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusLTE?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusNEQ?: InputMaybe<Scalars["u32"]["input"]>;
-  radiusNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
-  radiusNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layer?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerGT?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  current_layerLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerLT?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  current_layerNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  current_layerNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_side?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideGT?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  current_point_on_sideLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideLT?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  current_point_on_sideNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  current_point_on_sideNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_side?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideGT?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  current_sideLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideLT?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  current_sideNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  current_sideNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distance?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceGT?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  min_first_layer_distanceLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceLT?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  min_first_layer_distanceNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  min_first_layer_distanceNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placed?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedGT?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  points_placedLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedLT?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  points_placedNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  points_placedNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
 };
 
 export type Eternum_SpeedConfigOrder = {
@@ -5343,6 +5450,7 @@ export type Eternum_StaminaRefillConfigOrder = {
 export enum Eternum_StaminaRefillConfigOrderField {
   AmountPerTick = "AMOUNT_PER_TICK",
   ConfigId = "CONFIG_ID",
+  StartBoostTickCount = "START_BOOST_TICK_COUNT",
 }
 
 export type Eternum_StaminaRefillConfigWhereInput = {
@@ -5368,6 +5476,17 @@ export type Eternum_StaminaRefillConfigWhereInput = {
   config_idNEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
   config_idNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  start_boost_tick_count?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countEQ?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countGT?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countGTE?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
+  start_boost_tick_countLIKE?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countLT?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countLTE?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countNEQ?: InputMaybe<Scalars["u8"]["input"]>;
+  start_boost_tick_countNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
+  start_boost_tick_countNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
 export type Eternum_StaminaWhereInput = {
@@ -6184,6 +6303,7 @@ export enum Eternum_TroopConfigOrderField {
   ArmyMaxPerStructure = "ARMY_MAX_PER_STRUCTURE",
   BattleLeaveSlashDenom = "BATTLE_LEAVE_SLASH_DENOM",
   BattleLeaveSlashNum = "BATTLE_LEAVE_SLASH_NUM",
+  BattleMaxTimeSeconds = "BATTLE_MAX_TIME_SECONDS",
   BattleTimeScale = "BATTLE_TIME_SCALE",
   ConfigId = "CONFIG_ID",
   CrossbowmanStrength = "CROSSBOWMAN_STRENGTH",
@@ -6262,6 +6382,17 @@ export type Eternum_TroopConfigWhereInput = {
   battle_leave_slash_numNEQ?: InputMaybe<Scalars["u8"]["input"]>;
   battle_leave_slash_numNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
   battle_leave_slash_numNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
+  battle_max_time_seconds?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsGT?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  battle_max_time_secondsLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsLT?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  battle_max_time_secondsNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  battle_max_time_secondsNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
   battle_time_scale?: InputMaybe<Scalars["u16"]["input"]>;
   battle_time_scaleEQ?: InputMaybe<Scalars["u16"]["input"]>;
   battle_time_scaleGT?: InputMaybe<Scalars["u16"]["input"]>;
@@ -6361,6 +6492,199 @@ export type Eternum_TroopConfigWhereInput = {
   pillage_health_divisorNEQ?: InputMaybe<Scalars["u8"]["input"]>;
   pillage_health_divisorNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
   pillage_health_divisorNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
+};
+
+export type Eternum_TrophyCreationOrder = {
+  direction: OrderDirection;
+  field: Eternum_TrophyCreationOrderField;
+};
+
+export enum Eternum_TrophyCreationOrderField {
+  Data = "DATA",
+  Description = "DESCRIPTION",
+  End = "END",
+  Group = "GROUP",
+  Hidden = "HIDDEN",
+  Icon = "ICON",
+  Id = "ID",
+  Index = "INDEX",
+  Points = "POINTS",
+  Start = "START",
+  Tasks = "TASKS",
+  Title = "TITLE",
+}
+
+export type Eternum_TrophyCreationWhereInput = {
+  data?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataEQ?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataGT?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataGTE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataIN?: InputMaybe<Array<InputMaybe<Scalars["ByteArray"]["input"]>>>;
+  dataLIKE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataLT?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataLTE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataNEQ?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  dataNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ByteArray"]["input"]>>>;
+  dataNOTLIKE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  description?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionEQ?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionGT?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionGTE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionIN?: InputMaybe<Array<InputMaybe<Scalars["ByteArray"]["input"]>>>;
+  descriptionLIKE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionLT?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionLTE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionNEQ?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  descriptionNOTIN?: InputMaybe<Array<InputMaybe<Scalars["ByteArray"]["input"]>>>;
+  descriptionNOTLIKE?: InputMaybe<Scalars["ByteArray"]["input"]>;
+  end?: InputMaybe<Scalars["u64"]["input"]>;
+  endEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  endGT?: InputMaybe<Scalars["u64"]["input"]>;
+  endGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  endIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  endLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  endLT?: InputMaybe<Scalars["u64"]["input"]>;
+  endLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  endNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  endNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  endNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  group?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  groupLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  groupNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  groupNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  hidden?: InputMaybe<Scalars["bool"]["input"]>;
+  icon?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  iconLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  iconNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  iconNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  id?: InputMaybe<Scalars["felt252"]["input"]>;
+  idEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  idGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  idGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  idIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  idLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  idLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  idLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  idNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  idNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  index?: InputMaybe<Scalars["u8"]["input"]>;
+  indexEQ?: InputMaybe<Scalars["u8"]["input"]>;
+  indexGT?: InputMaybe<Scalars["u8"]["input"]>;
+  indexGTE?: InputMaybe<Scalars["u8"]["input"]>;
+  indexIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
+  indexLIKE?: InputMaybe<Scalars["u8"]["input"]>;
+  indexLT?: InputMaybe<Scalars["u8"]["input"]>;
+  indexLTE?: InputMaybe<Scalars["u8"]["input"]>;
+  indexNEQ?: InputMaybe<Scalars["u8"]["input"]>;
+  indexNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u8"]["input"]>>>;
+  indexNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
+  points?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsEQ?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsGT?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsGTE?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsIN?: InputMaybe<Array<InputMaybe<Scalars["u16"]["input"]>>>;
+  pointsLIKE?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsLT?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsLTE?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsNEQ?: InputMaybe<Scalars["u16"]["input"]>;
+  pointsNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u16"]["input"]>>>;
+  pointsNOTLIKE?: InputMaybe<Scalars["u16"]["input"]>;
+  start?: InputMaybe<Scalars["u64"]["input"]>;
+  startEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  startGT?: InputMaybe<Scalars["u64"]["input"]>;
+  startGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  startIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  startLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  startLT?: InputMaybe<Scalars["u64"]["input"]>;
+  startLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  startNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  startNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  startNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  title?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  titleLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  titleNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  titleNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+};
+
+export type Eternum_TrophyProgressionOrder = {
+  direction: OrderDirection;
+  field: Eternum_TrophyProgressionOrderField;
+};
+
+export enum Eternum_TrophyProgressionOrderField {
+  Count = "COUNT",
+  PlayerId = "PLAYER_ID",
+  TaskId = "TASK_ID",
+  Time = "TIME",
+}
+
+export type Eternum_TrophyProgressionWhereInput = {
+  count?: InputMaybe<Scalars["u32"]["input"]>;
+  countEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  countGT?: InputMaybe<Scalars["u32"]["input"]>;
+  countGTE?: InputMaybe<Scalars["u32"]["input"]>;
+  countIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  countLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  countLT?: InputMaybe<Scalars["u32"]["input"]>;
+  countLTE?: InputMaybe<Scalars["u32"]["input"]>;
+  countNEQ?: InputMaybe<Scalars["u32"]["input"]>;
+  countNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u32"]["input"]>>>;
+  countNOTLIKE?: InputMaybe<Scalars["u32"]["input"]>;
+  player_id?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  player_idLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  player_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  player_idNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_id?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idGT?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idGTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  task_idLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idLT?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idLTE?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idNEQ?: InputMaybe<Scalars["felt252"]["input"]>;
+  task_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars["felt252"]["input"]>>>;
+  task_idNOTLIKE?: InputMaybe<Scalars["felt252"]["input"]>;
+  time?: InputMaybe<Scalars["u64"]["input"]>;
+  timeEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timeGT?: InputMaybe<Scalars["u64"]["input"]>;
+  timeGTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timeIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timeLIKE?: InputMaybe<Scalars["u64"]["input"]>;
+  timeLT?: InputMaybe<Scalars["u64"]["input"]>;
+  timeLTE?: InputMaybe<Scalars["u64"]["input"]>;
+  timeNEQ?: InputMaybe<Scalars["u64"]["input"]>;
+  timeNOTIN?: InputMaybe<Array<InputMaybe<Scalars["u64"]["input"]>>>;
+  timeNOTLIKE?: InputMaybe<Scalars["u64"]["input"]>;
 };
 
 export type Eternum_WeightConfigOrder = {
@@ -6517,22 +6841,50 @@ export type GetRealmsQueryVariables = Exact<{
 
 export type GetRealmsQuery = {
   __typename?: "World__Query";
-  ercBalance?: Array<{
-    __typename?: "ERC__Balance";
-    balance: string;
-    type: string;
-    tokenMetadata: { __typename?: "ERC__Token"; tokenId: string; contractAddress: string };
-  } | null> | null;
+  tokenBalances?: {
+    __typename?: "Token__BalanceConnection";
+    edges?: Array<{
+      __typename?: "Token__BalanceEdge";
+      node?: {
+        __typename?: "Token__Balance";
+        tokenMetadata:
+          | { __typename: "ERC20__Token"; amount: string }
+          | {
+              __typename: "ERC721__Token";
+              tokenId: string;
+              metadataDescription: string;
+              imagePath: string;
+              contractAddress: string;
+              metadata: string;
+            };
+      } | null;
+    } | null> | null;
+  } | null;
 };
 
 export type GetRealmMintsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetRealmMintsQuery = {
   __typename?: "World__Query";
-  ercTransfer?: Array<{
-    __typename?: "ERC__Transfer";
-    tokenMetadata: { __typename?: "ERC__Token"; tokenId: string; contractAddress: string };
-  } | null> | null;
+  tokenTransfers?: {
+    __typename?: "Token__TransferConnection";
+    edges?: Array<{
+      __typename?: "Token__TransferEdge";
+      node?: {
+        __typename?: "Token__Transfer";
+        tokenMetadata:
+          | { __typename: "ERC20__Token" }
+          | {
+              __typename: "ERC721__Token";
+              tokenId: string;
+              metadataDescription: string;
+              imagePath: string;
+              contractAddress: string;
+              metadata: string;
+            };
+      } | null;
+    } | null> | null;
+  } | null;
 };
 
 export class TypedDocumentString<TResult, TVariables>
@@ -6562,22 +6914,43 @@ export const TotalPlayersDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<TotalPlayersQuery, TotalPlayersQueryVariables>;
 export const GetRealmsDocument = new TypedDocumentString(`
     query getRealms($accountAddress: String!) {
-  ercBalance(accountAddress: $accountAddress) {
-    balance
-    type
-    tokenMetadata {
-      tokenId
-      contractAddress
+  tokenBalances(accountAddress: $accountAddress) {
+    edges {
+      node {
+        tokenMetadata {
+          __typename
+          ... on ERC721__Token {
+            tokenId
+            metadataDescription
+            imagePath
+            contractAddress
+            metadata
+          }
+          ... on ERC20__Token {
+            amount
+          }
+        }
+      }
     }
   }
 }
     `) as unknown as TypedDocumentString<GetRealmsQuery, GetRealmsQueryVariables>;
 export const GetRealmMintsDocument = new TypedDocumentString(`
     query getRealmMints {
-  ercTransfer(accountAddress: "0x0", limit: 8000) {
-    tokenMetadata {
-      tokenId
-      contractAddress
+  tokenTransfers(accountAddress: "0x0", limit: 8000) {
+    edges {
+      node {
+        tokenMetadata {
+          __typename
+          ... on ERC721__Token {
+            tokenId
+            metadataDescription
+            imagePath
+            contractAddress
+            metadata
+          }
+        }
+      }
     }
   }
 }

@@ -56,6 +56,23 @@ if [[ "$external" == "true" ]]; then
     echo "VITE_REALMS_ADDRESS=$VITE_REALMS_ADDRESS" >> $ENV_FILE
     echo "VITE_LORDS_ADDRESS=$VITE_LORDS_ADDRESS" >> $ENV_FILE
 
+    # Create directories if they don't exist
+    mkdir -p $ROOT_DIR/common/addresses
+
+    # Set addresses file path
+    ADDRESSES_FILE=$ROOT_DIR/common/addresses/addresses.local.json
+
+    # Replace/create the addresses JSON file
+    if [ -f "$ADDRESSES_FILE" ]; then
+        rm -f $ADDRESSES_FILE
+    fi
+    cat > $ADDRESSES_FILE << EOF
+{
+    "seasonPass": "$VITE_SEASON_PASS_ADDRESS",
+    "realms":     "$VITE_REALMS_ADDRESS",
+    "lords":      "$VITE_LORDS_ADDRESS"
+}
+EOF
 
     ENV_FILE=$ROOT_DIR/landing/.env.local
     sed "${SED_INPLACE[@]}" '/VITE_SEASON_PASS_ADDRESS=/d' $ENV_FILE
@@ -75,15 +92,15 @@ if [[ "$external" == "true" ]]; then
         echo "Created new torii_config_file at $TORII_CONFIG_FILE"
     fi
 
-	# THIS ISN'T NECESSARY ATM
+	# THIS IS ONL NECESSARY FOR LOCAL BUILDS
     # Remove existing ERC721 entries
-    #sed "${SED_INPLACE[@]}" '/"erc721:/d' "$TORII_CONFIG_FILE"
+    sed "${SED_INPLACE[@]}" '/"erc721:/d' "$TORII_CONFIG_FILE"
 
     # Insert new ERC721 entries before the closing ]
-    #sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
-    #\ \ \"erc721:$VITE_REALMS_ADDRESS\",\\
-    #\ \ \"erc721:$VITE_SEASON_PASS_ADDRESS\",\\
-    #" "$TORII_CONFIG_FILE"
+    sed "${SED_INPLACE[@]}" "/contracts = \[/a\\
+    \ \ \"erc721:$VITE_REALMS_ADDRESS\",\\
+    \ \ \"erc721:$VITE_SEASON_PASS_ADDRESS\",\\
+    " "$TORII_CONFIG_FILE"
 
     cd ../../../
     printf "\n\n"
@@ -100,7 +117,25 @@ echo "----- Migrating World -----"
 sozo migrate
 
 if [[ "$setConfig" == "true" ]]; then
-    bun --env-file=../client/.env.local ../config/index.ts
+    bun --env-file=../client/.env.local ../config/index.ts  
+fi
+
+if [[ "$external" == "true" ]]; then
+    printf "\n\n"
+    echo "----- Building Season Resources Contract ----- "
+    printf "\n\n"
+
+    # source .env file in deployment
+    cd ..
+    source ./season_resources/scripts/deployment/.env
+
+    # build and deploy season resources contract
+    cd season_resources/contracts && scarb --release build
+    cd ../scripts/deployment && npm run deploy 
+
+    # return to eternum/contracts directory
+    cd - && cd .. && cd .. && cd contracts
+
 fi
 
 echo "-----  Started indexer ----- "

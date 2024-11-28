@@ -8,6 +8,9 @@ import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
 import { checkCartridgeConnector } from "@/lib/utils";
 import { useConnect } from "@starknet-react/core";
 import { Loader } from "lucide-react";
+import { useState } from "react";
+import { StarknetProvider } from "../providers/Starknet";
+import CustomIframe from "../ui/custom-iframe";
 import { CartridgeConnectButton } from "./cartridge-connect-button";
 
 interface SeasonPassMintDialogProps {
@@ -27,6 +30,7 @@ export default function SeasonPassMintDialog({
 }: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
   const { connector } = useConnect();
+  const [account, setAccount] = useState();
 
   const checkCartridge = checkCartridgeConnector(connector);
 
@@ -63,7 +67,19 @@ export default function SeasonPassMintDialog({
               <div className="text-center">
                 <div className="text-lg font-semibold">Mint your passes to compete in Season 0 of Eternum</div>
                 <div className="w-full my-4">
-                  {!checkCartridge && <CartridgeConnectButton className="w-full" />}
+                  {!checkCartridge && (
+                    <div className="w-full h-full relative">
+                      <CustomIframe
+                        style={{ width: "100%", height: "100%", overflow: "auto" }}
+                        sandbox="allow-same-origin allow-scripts allow-modal"
+                        title="A custom made iframe"
+                      >
+                        <StarknetProvider>
+                          <CartridgeConnectButton className="w-full" />
+                        </StarknetProvider>
+                      </CustomIframe>
+                    </div>
+                  )}
                   {realm_ids.map((realm, index) => (
                     <span key={realm}>
                       #{Number(realm)}

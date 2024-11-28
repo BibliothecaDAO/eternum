@@ -10,6 +10,9 @@ const envSchema = z.object({
   VITE_PUBLIC_ACCOUNT_CLASS_HASH: z.string().startsWith("0x"),
   VITE_PUBLIC_FEE_TOKEN_ADDRESS: z.string().startsWith("0x"),
 
+  // Client fee recipient
+  VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
+
   // External Contracts
   VITE_SEASON_PASS_ADDRESS: z.string().startsWith("0x"),
   VITE_REALMS_ADDRESS: z.string().startsWith("0x"),
@@ -18,7 +21,7 @@ const envSchema = z.object({
   // API endpoints
   VITE_PUBLIC_TORII: z.string().url(),
   VITE_PUBLIC_NODE_URL: z.string().url(),
-  VITE_PUBLIC_TORII_RELAY: z.string().startsWith("/dns4/"),
+  VITE_PUBLIC_TORII_RELAY: z.string(),
 
   // Configuration flags
   VITE_PUBLIC_DEV: z.string().transform((v) => v === "true"),

@@ -1518,8 +1518,8 @@
       "systems": ["create_bank", "change_owner_amm_fee", "change_owner_bridge_fee", "upgrade"]
     },
     {
-      "address": "0x2754a69d060822b413068dc0fae91a35a398b1803118a7354cdc2c5e3f1f156",
-      "class_hash": "0x7368fe6e0f2b38961e80ffb90b34e32d02ac0bd01ed89d83eeb6f6c495069d3",
+      "address": "0x41cd1abd5e28f95785deddcdb0673726f11f88274d5b5eb261f22a57807b05f",
+      "class_hash": "0x46a4aa354717fb6666137f575010e3532dc156ffc8ce0408c587771aaea7baa",
       "abi": [
         {
           "type": "impl",
@@ -2387,8 +2387,8 @@
       "systems": ["leave_battle", "leave_battle_if_ended", "upgrade"]
     },
     {
-      "address": "0x36b82076142f07fbd8bf7b2cabf2e6b190082c0b242c6ecc5e14b2c96d1763c",
-      "class_hash": "0x59577a6dc2b323c5530d47bd12977c9f2f04c9db0850e4af72725f565b10506",
+      "address": "0x2447362969fb31d334ffe454be9b86d166a4757b151186c85d095547cb4192",
+      "class_hash": "0x22a2fdee875dc760bc4f39e2032cbce68f7cc4e8ee14824e39fa8e957efcb6b",
       "abi": [
         {
           "type": "impl",
@@ -4971,8 +4971,8 @@
       "systems": ["upgrade"]
     },
     {
-      "address": "0x12a0ca4558518d6af296b8f393a917bb89b3e78ba33544814b7d9138ce4816e",
-      "class_hash": "0x69e61fd5bb97b22a7a26735fcc56ba74bcdb2be84bd21d4880b48e21e55e209",
+      "address": "0x39b6aeacccd6794791d797c6b814e26431d84fe0781f1b79928f47761a57afb",
+      "class_hash": "0x5c57ad5520d672cee7e49aaf987931e2fa45588861946fdda1fa7ba1d2f158e",
       "abi": [
         {
           "type": "impl",
@@ -5092,13 +5092,6 @@
                   "type": "core::integer::u32"
                 }
               ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "leave_guild",
-              "inputs": [],
               "outputs": [],
               "state_mutability": "external"
             },
@@ -5270,7 +5263,6 @@
         "create_guild",
         "join_guild",
         "whitelist_player",
-        "leave_guild",
         "transfer_guild_ownership",
         "remove_guild_member",
         "remove_player_from_whitelist",
@@ -7037,8 +7029,8 @@
       "systems": ["create", "upgrade_level", "quest_claim", "upgrade"]
     },
     {
-      "address": "0x161a4cf2e207359dc7dbf912b21e9099b7729bede2544f849f384fcb166a109",
-      "class_hash": "0x7318940715983063f4c6739b4896066af3ec5796d4563629bb95b67352881b5",
+      "address": "0x637e708e7d5859f67c3822da1415466e2cd8291cd2b8cc71c0d6398af62769a",
+      "class_hash": "0x54479ab403ddbb74bcb6fc47b523bfe58776d96d422ee119cc10bea1dc1b225",
       "abi": [
         {
           "type": "impl",

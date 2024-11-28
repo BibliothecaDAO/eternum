@@ -18,7 +18,7 @@ const envSchema = z.object({
   // API endpoints
   VITE_PUBLIC_TORII: z.string().url(),
   VITE_PUBLIC_NODE_URL: z.string().url(),
-  VITE_PUBLIC_TORII_RELAY: z.string().startsWith("/dns4/"),
+  VITE_PUBLIC_TORII_RELAY: z.string(),
 
   // Configuration flags
   VITE_PUBLIC_DEV: z.string().transform((v) => v === "true"),

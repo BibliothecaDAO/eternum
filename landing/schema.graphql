@@ -11,29 +11,27 @@ scalar Cursor
 
 scalar DateTime
 
-type ERC__Balance {
-  balance: String!
-  tokenMetadata: ERC__Token!
-  type: String!
-}
-
-type ERC__Token {
+type ERC20__Token {
+  amount: String!
   contractAddress: String!
   decimals: String!
+  name: String!
+  symbol: String!
+}
+
+type ERC721__Token {
+  contractAddress: String!
+  imagePath: String!
+  metadata: String!
+  metadataAttributes: String!
+  metadataDescription: String!
+  metadataName: String!
   name: String!
   symbol: String!
   tokenId: String!
 }
 
-type ERC__Transfer {
-  amount: String!
-  executedAt: String!
-  from: String!
-  to: String!
-  tokenMetadata: ERC__Token!
-  transactionHash: String!
-  type: String!
-}
+union ERC__Token = ERC20__Token | ERC721__Token
 
 scalar Enum
 
@@ -57,17 +55,17 @@ union ModelUnion =
   | eternum_BuildingConfig
   | eternum_BuildingGeneralConfig
   | eternum_BuildingQuantityv2
+  | eternum_BurnDonkey
   | eternum_CancelOrder
   | eternum_CapacityCategory
   | eternum_CapacityConfig
   | eternum_Contribution
+  | eternum_CreateGuild
   | eternum_CreateOrder
   | eternum_DetachedResource
   | eternum_EntityName
   | eternum_EntityOwner
   | eternum_Epoch
-  | eternum_EternumEvent
-  | eternum_ForeignKey
   | eternum_FragmentMineDiscovered
   | eternum_GameEnded
   | eternum_Guild
@@ -80,6 +78,7 @@ union ModelUnion =
   | eternum_HyperstructureContribution
   | eternum_HyperstructureFinished
   | eternum_HyperstructureResourceConfig
+  | eternum_JoinGuild
   | eternum_LevelingConfig
   | eternum_Liquidity
   | eternum_LiquidityEvent
@@ -139,6 +138,8 @@ union ModelUnion =
   | eternum_TravelFoodCostConfig
   | eternum_TravelStaminaCostConfig
   | eternum_TroopConfig
+  | eternum_TrophyCreation
+  | eternum_TrophyProgression
   | eternum_Weight
   | eternum_WeightConfig
   | eternum_WorldConfig
@@ -146,6 +147,40 @@ union ModelUnion =
 enum OrderDirection {
   ASC
   DESC
+}
+
+type Token__Balance {
+  tokenMetadata: ERC__Token!
+}
+
+type Token__BalanceConnection {
+  edges: [Token__BalanceEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type Token__BalanceEdge {
+  cursor: Cursor
+  node: Token__Balance
+}
+
+type Token__Transfer {
+  executedAt: String!
+  from: String!
+  to: String!
+  tokenMetadata: ERC__Token!
+  transactionHash: String!
+}
+
+type Token__TransferConnection {
+  edges: [Token__TransferEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type Token__TransferEdge {
+  cursor: Cursor
+  node: Token__Transfer
 }
 
 type World__Content {
@@ -292,8 +327,6 @@ type World__Query {
     offset: Int
   ): World__EntityConnection
   entity(id: ID!): World__Entity!
-  ercBalance(accountAddress: String!): [ERC__Balance]
-  ercTransfer(accountAddress: String!, limit: Int!): [ERC__Transfer]
   eternumAcceptOrderModels(
     after: Cursor
     before: Cursor
@@ -484,6 +517,16 @@ type World__Query {
     order: eternum_BuildingQuantityv2Order
     where: eternum_BuildingQuantityv2WhereInput
   ): eternum_BuildingQuantityv2Connection
+  eternumBurnDonkeyModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: eternum_BurnDonkeyOrder
+    where: eternum_BurnDonkeyWhereInput
+  ): eternum_BurnDonkeyConnection
   eternumCancelOrderModels(
     after: Cursor
     before: Cursor
@@ -524,6 +567,16 @@ type World__Query {
     order: eternum_ContributionOrder
     where: eternum_ContributionWhereInput
   ): eternum_ContributionConnection
+  eternumCreateGuildModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: eternum_CreateGuildOrder
+    where: eternum_CreateGuildWhereInput
+  ): eternum_CreateGuildConnection
   eternumCreateOrderModels(
     after: Cursor
     before: Cursor
@@ -574,26 +627,6 @@ type World__Query {
     order: eternum_EpochOrder
     where: eternum_EpochWhereInput
   ): eternum_EpochConnection
-  eternumEternumEventModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: eternum_EternumEventOrder
-    where: eternum_EternumEventWhereInput
-  ): eternum_EternumEventConnection
-  eternumForeignKeyModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: eternum_ForeignKeyOrder
-    where: eternum_ForeignKeyWhereInput
-  ): eternum_ForeignKeyConnection
   eternumFragmentMineDiscoveredModels(
     after: Cursor
     before: Cursor
@@ -714,6 +747,16 @@ type World__Query {
     order: eternum_HyperstructureResourceConfigOrder
     where: eternum_HyperstructureResourceConfigWhereInput
   ): eternum_HyperstructureResourceConfigConnection
+  eternumJoinGuildModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: eternum_JoinGuildOrder
+    where: eternum_JoinGuildWhereInput
+  ): eternum_JoinGuildConnection
   eternumLevelingConfigModels(
     after: Cursor
     before: Cursor
@@ -1304,6 +1347,26 @@ type World__Query {
     order: eternum_TroopConfigOrder
     where: eternum_TroopConfigWhereInput
   ): eternum_TroopConfigConnection
+  eternumTrophyCreationModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: eternum_TrophyCreationOrder
+    where: eternum_TrophyCreationWhereInput
+  ): eternum_TrophyCreationConnection
+  eternumTrophyProgressionModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: eternum_TrophyProgressionOrder
+    where: eternum_TrophyProgressionWhereInput
+  ): eternum_TrophyProgressionConnection
   eternumWeightConfigModels(
     after: Cursor
     before: Cursor
@@ -1364,6 +1427,24 @@ type World__Query {
     offset: Int
     order: World__ModelOrder
   ): World__ModelConnection
+  tokenBalances(
+    accountAddress: String!
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): Token__BalanceConnection
+  tokenTransfers(
+    accountAddress: String!
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): Token__TransferConnection
   transaction(transactionHash: ID!): World__Transaction!
   transactions(
     after: Cursor
@@ -1947,6 +2028,8 @@ type eternum_Battle {
 }
 
 type eternum_BattleClaimData {
+  claimee_address: ContractAddress
+  claimee_name: felt252
   claimer: ContractAddress
   claimer_army_entity_id: u32
   claimer_name: felt252
@@ -1954,7 +2037,6 @@ type eternum_BattleClaimData {
   eventMessage: World__EventMessage
   event_id: Enum
   id: u32
-  previous_owner: ContractAddress
   structure_entity_id: u32
   structure_type: Enum
   timestamp: u64
@@ -1979,12 +2061,13 @@ input eternum_BattleClaimDataOrder {
 }
 
 enum eternum_BattleClaimDataOrderField {
+  CLAIMEE_ADDRESS
+  CLAIMEE_NAME
   CLAIMER
   CLAIMER_ARMY_ENTITY_ID
   CLAIMER_NAME
   EVENT_ID
   ID
-  PREVIOUS_OWNER
   STRUCTURE_ENTITY_ID
   STRUCTURE_TYPE
   TIMESTAMP
@@ -1993,6 +2076,28 @@ enum eternum_BattleClaimDataOrderField {
 }
 
 input eternum_BattleClaimDataWhereInput {
+  claimee_address: ContractAddress
+  claimee_addressEQ: ContractAddress
+  claimee_addressGT: ContractAddress
+  claimee_addressGTE: ContractAddress
+  claimee_addressIN: [ContractAddress]
+  claimee_addressLIKE: ContractAddress
+  claimee_addressLT: ContractAddress
+  claimee_addressLTE: ContractAddress
+  claimee_addressNEQ: ContractAddress
+  claimee_addressNOTIN: [ContractAddress]
+  claimee_addressNOTLIKE: ContractAddress
+  claimee_name: felt252
+  claimee_nameEQ: felt252
+  claimee_nameGT: felt252
+  claimee_nameGTE: felt252
+  claimee_nameIN: [felt252]
+  claimee_nameLIKE: felt252
+  claimee_nameLT: felt252
+  claimee_nameLTE: felt252
+  claimee_nameNEQ: felt252
+  claimee_nameNOTIN: [felt252]
+  claimee_nameNOTLIKE: felt252
   claimer: ContractAddress
   claimerEQ: ContractAddress
   claimerGT: ContractAddress
@@ -2038,17 +2143,6 @@ input eternum_BattleClaimDataWhereInput {
   idNEQ: u32
   idNOTIN: [u32]
   idNOTLIKE: u32
-  previous_owner: ContractAddress
-  previous_ownerEQ: ContractAddress
-  previous_ownerGT: ContractAddress
-  previous_ownerGTE: ContractAddress
-  previous_ownerIN: [ContractAddress]
-  previous_ownerLIKE: ContractAddress
-  previous_ownerLT: ContractAddress
-  previous_ownerLTE: ContractAddress
-  previous_ownerNEQ: ContractAddress
-  previous_ownerNOTIN: [ContractAddress]
-  previous_ownerNOTLIKE: ContractAddress
   structure_entity_id: u32
   structure_entity_idEQ: u32
   structure_entity_idGT: u32
@@ -2496,6 +2590,7 @@ enum eternum_BattleOrderField {
 }
 
 type eternum_BattlePillageData {
+  attacker_lost_troops: eternum_BattlePillageData_Troops
   destroyed_building_category: Enum
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -2504,10 +2599,12 @@ type eternum_BattlePillageData {
   pillaged_resources: [eternum_BattlePillageData_u8u128]
   pillaged_structure_entity_id: u32
   pillaged_structure_owner: ContractAddress
+  pillaged_structure_owner_name: felt252
   pillager: ContractAddress
   pillager_army_entity_id: u32
   pillager_name: felt252
   pillager_realm_entity_id: u32
+  structure_lost_troops: eternum_BattlePillageData_Troops
   structure_type: Enum
   timestamp: u64
   winner: Enum
@@ -2532,16 +2629,19 @@ input eternum_BattlePillageDataOrder {
 }
 
 enum eternum_BattlePillageDataOrderField {
+  ATTACKER_LOST_TROOPS
   DESTROYED_BUILDING_CATEGORY
   EVENT_ID
   ID
   PILLAGED_RESOURCES
   PILLAGED_STRUCTURE_ENTITY_ID
   PILLAGED_STRUCTURE_OWNER
+  PILLAGED_STRUCTURE_OWNER_NAME
   PILLAGER
   PILLAGER_ARMY_ENTITY_ID
   PILLAGER_NAME
   PILLAGER_REALM_ENTITY_ID
+  STRUCTURE_LOST_TROOPS
   STRUCTURE_TYPE
   TIMESTAMP
   WINNER
@@ -2585,6 +2685,17 @@ input eternum_BattlePillageDataWhereInput {
   pillaged_structure_ownerNEQ: ContractAddress
   pillaged_structure_ownerNOTIN: [ContractAddress]
   pillaged_structure_ownerNOTLIKE: ContractAddress
+  pillaged_structure_owner_name: felt252
+  pillaged_structure_owner_nameEQ: felt252
+  pillaged_structure_owner_nameGT: felt252
+  pillaged_structure_owner_nameGTE: felt252
+  pillaged_structure_owner_nameIN: [felt252]
+  pillaged_structure_owner_nameLIKE: felt252
+  pillaged_structure_owner_nameLT: felt252
+  pillaged_structure_owner_nameLTE: felt252
+  pillaged_structure_owner_nameNEQ: felt252
+  pillaged_structure_owner_nameNOTIN: [felt252]
+  pillaged_structure_owner_nameNOTLIKE: felt252
   pillager: ContractAddress
   pillagerEQ: ContractAddress
   pillagerGT: ContractAddress
@@ -2664,6 +2775,12 @@ input eternum_BattlePillageDataWhereInput {
   yNEQ: u32
   yNOTIN: [u32]
   yNOTLIKE: u32
+}
+
+type eternum_BattlePillageData_Troops {
+  crossbowman_count: u64
+  knight_count: u64
+  paladin_count: u64
 }
 
 type eternum_BattlePillageData_u8u128 {
@@ -3365,6 +3482,85 @@ input eternum_BuildingWhereInput {
   produced_resource_typeNOTLIKE: u8
 }
 
+type eternum_BurnDonkey {
+  amount: u128
+  entity: World__Entity
+  entity_id: u32
+  eventMessage: World__EventMessage
+  player_address: ContractAddress
+  timestamp: u64
+}
+
+type eternum_BurnDonkeyConnection {
+  edges: [eternum_BurnDonkeyEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_BurnDonkeyEdge {
+  cursor: Cursor
+  node: eternum_BurnDonkey
+}
+
+input eternum_BurnDonkeyOrder {
+  direction: OrderDirection!
+  field: eternum_BurnDonkeyOrderField!
+}
+
+enum eternum_BurnDonkeyOrderField {
+  AMOUNT
+  ENTITY_ID
+  PLAYER_ADDRESS
+  TIMESTAMP
+}
+
+input eternum_BurnDonkeyWhereInput {
+  amount: u128
+  amountEQ: u128
+  amountGT: u128
+  amountGTE: u128
+  amountIN: [u128]
+  amountLIKE: u128
+  amountLT: u128
+  amountLTE: u128
+  amountNEQ: u128
+  amountNOTIN: [u128]
+  amountNOTLIKE: u128
+  entity_id: u32
+  entity_idEQ: u32
+  entity_idGT: u32
+  entity_idGTE: u32
+  entity_idIN: [u32]
+  entity_idLIKE: u32
+  entity_idLT: u32
+  entity_idLTE: u32
+  entity_idNEQ: u32
+  entity_idNOTIN: [u32]
+  entity_idNOTLIKE: u32
+  player_address: ContractAddress
+  player_addressEQ: ContractAddress
+  player_addressGT: ContractAddress
+  player_addressGTE: ContractAddress
+  player_addressIN: [ContractAddress]
+  player_addressLIKE: ContractAddress
+  player_addressLT: ContractAddress
+  player_addressLTE: ContractAddress
+  player_addressNEQ: ContractAddress
+  player_addressNOTIN: [ContractAddress]
+  player_addressNOTLIKE: ContractAddress
+  timestamp: u64
+  timestampEQ: u64
+  timestampGT: u64
+  timestampGTE: u64
+  timestampIN: [u64]
+  timestampLIKE: u64
+  timestampLT: u64
+  timestampLTE: u64
+  timestampNEQ: u64
+  timestampNOTIN: [u64]
+  timestampNOTLIKE: u64
+}
+
 type eternum_CancelOrder {
   entity: World__Entity
   eventMessage: World__EventMessage
@@ -3607,6 +3803,72 @@ input eternum_ContributionWhereInput {
   resource_typeNEQ: u8
   resource_typeNOTIN: [u8]
   resource_typeNOTLIKE: u8
+}
+
+type eternum_CreateGuild {
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  guild_entity_id: u32
+  guild_name: felt252
+  timestamp: u64
+}
+
+type eternum_CreateGuildConnection {
+  edges: [eternum_CreateGuildEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_CreateGuildEdge {
+  cursor: Cursor
+  node: eternum_CreateGuild
+}
+
+input eternum_CreateGuildOrder {
+  direction: OrderDirection!
+  field: eternum_CreateGuildOrderField!
+}
+
+enum eternum_CreateGuildOrderField {
+  GUILD_ENTITY_ID
+  GUILD_NAME
+  TIMESTAMP
+}
+
+input eternum_CreateGuildWhereInput {
+  guild_entity_id: u32
+  guild_entity_idEQ: u32
+  guild_entity_idGT: u32
+  guild_entity_idGTE: u32
+  guild_entity_idIN: [u32]
+  guild_entity_idLIKE: u32
+  guild_entity_idLT: u32
+  guild_entity_idLTE: u32
+  guild_entity_idNEQ: u32
+  guild_entity_idNOTIN: [u32]
+  guild_entity_idNOTLIKE: u32
+  guild_name: felt252
+  guild_nameEQ: felt252
+  guild_nameGT: felt252
+  guild_nameGTE: felt252
+  guild_nameIN: [felt252]
+  guild_nameLIKE: felt252
+  guild_nameLT: felt252
+  guild_nameLTE: felt252
+  guild_nameNEQ: felt252
+  guild_nameNOTIN: [felt252]
+  guild_nameNOTLIKE: felt252
+  timestamp: u64
+  timestampEQ: u64
+  timestampGT: u64
+  timestampGTE: u64
+  timestampIN: [u64]
+  timestampLIKE: u64
+  timestampLT: u64
+  timestampLTE: u64
+  timestampNEQ: u64
+  timestampNOTIN: [u64]
+  timestampNOTLIKE: u64
 }
 
 type eternum_CreateOrder {
@@ -3944,115 +4206,6 @@ input eternum_EpochWhereInput {
 type eternum_Epoch_ContractAddressu16 {
   _0: ContractAddress
   _1: u16
-}
-
-type eternum_EternumEvent {
-  entity: World__Entity
-  eventMessage: World__EventMessage
-  event_id: Enum
-  id: u32
-  timestamp: u64
-}
-
-type eternum_EternumEventConnection {
-  edges: [eternum_EternumEventEdge]
-  pageInfo: World__PageInfo!
-  totalCount: Int!
-}
-
-type eternum_EternumEventEdge {
-  cursor: Cursor
-  node: eternum_EternumEvent
-}
-
-input eternum_EternumEventOrder {
-  direction: OrderDirection!
-  field: eternum_EternumEventOrderField!
-}
-
-enum eternum_EternumEventOrderField {
-  EVENT_ID
-  ID
-  TIMESTAMP
-}
-
-input eternum_EternumEventWhereInput {
-  event_id: Enum
-  id: u32
-  idEQ: u32
-  idGT: u32
-  idGTE: u32
-  idIN: [u32]
-  idLIKE: u32
-  idLT: u32
-  idLTE: u32
-  idNEQ: u32
-  idNOTIN: [u32]
-  idNOTLIKE: u32
-  timestamp: u64
-  timestampEQ: u64
-  timestampGT: u64
-  timestampGTE: u64
-  timestampIN: [u64]
-  timestampLIKE: u64
-  timestampLT: u64
-  timestampLTE: u64
-  timestampNEQ: u64
-  timestampNOTIN: [u64]
-  timestampNOTLIKE: u64
-}
-
-type eternum_ForeignKey {
-  entity: World__Entity
-  entity_id: u32
-  eventMessage: World__EventMessage
-  foreign_key: felt252
-}
-
-type eternum_ForeignKeyConnection {
-  edges: [eternum_ForeignKeyEdge]
-  pageInfo: World__PageInfo!
-  totalCount: Int!
-}
-
-type eternum_ForeignKeyEdge {
-  cursor: Cursor
-  node: eternum_ForeignKey
-}
-
-input eternum_ForeignKeyOrder {
-  direction: OrderDirection!
-  field: eternum_ForeignKeyOrderField!
-}
-
-enum eternum_ForeignKeyOrderField {
-  ENTITY_ID
-  FOREIGN_KEY
-}
-
-input eternum_ForeignKeyWhereInput {
-  entity_id: u32
-  entity_idEQ: u32
-  entity_idGT: u32
-  entity_idGTE: u32
-  entity_idIN: [u32]
-  entity_idLIKE: u32
-  entity_idLT: u32
-  entity_idLTE: u32
-  entity_idNEQ: u32
-  entity_idNOTIN: [u32]
-  entity_idNOTLIKE: u32
-  foreign_key: felt252
-  foreign_keyEQ: felt252
-  foreign_keyGT: felt252
-  foreign_keyGTE: felt252
-  foreign_keyIN: [felt252]
-  foreign_keyLIKE: felt252
-  foreign_keyLT: felt252
-  foreign_keyLTE: felt252
-  foreign_keyNEQ: felt252
-  foreign_keyNOTIN: [felt252]
-  foreign_keyNOTLIKE: felt252
 }
 
 type eternum_FragmentMineDiscovered {
@@ -4897,6 +5050,85 @@ input eternum_HyperstructureWhereInput {
   last_updated_timestampNEQ: u64
   last_updated_timestampNOTIN: [u64]
   last_updated_timestampNOTLIKE: u64
+}
+
+type eternum_JoinGuild {
+  address: ContractAddress
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  guild_entity_id: u32
+  guild_name: felt252
+  timestamp: u64
+}
+
+type eternum_JoinGuildConnection {
+  edges: [eternum_JoinGuildEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_JoinGuildEdge {
+  cursor: Cursor
+  node: eternum_JoinGuild
+}
+
+input eternum_JoinGuildOrder {
+  direction: OrderDirection!
+  field: eternum_JoinGuildOrderField!
+}
+
+enum eternum_JoinGuildOrderField {
+  ADDRESS
+  GUILD_ENTITY_ID
+  GUILD_NAME
+  TIMESTAMP
+}
+
+input eternum_JoinGuildWhereInput {
+  address: ContractAddress
+  addressEQ: ContractAddress
+  addressGT: ContractAddress
+  addressGTE: ContractAddress
+  addressIN: [ContractAddress]
+  addressLIKE: ContractAddress
+  addressLT: ContractAddress
+  addressLTE: ContractAddress
+  addressNEQ: ContractAddress
+  addressNOTIN: [ContractAddress]
+  addressNOTLIKE: ContractAddress
+  guild_entity_id: u32
+  guild_entity_idEQ: u32
+  guild_entity_idGT: u32
+  guild_entity_idGTE: u32
+  guild_entity_idIN: [u32]
+  guild_entity_idLIKE: u32
+  guild_entity_idLT: u32
+  guild_entity_idLTE: u32
+  guild_entity_idNEQ: u32
+  guild_entity_idNOTIN: [u32]
+  guild_entity_idNOTLIKE: u32
+  guild_name: felt252
+  guild_nameEQ: felt252
+  guild_nameGT: felt252
+  guild_nameGTE: felt252
+  guild_nameIN: [felt252]
+  guild_nameLIKE: felt252
+  guild_nameLT: felt252
+  guild_nameLTE: felt252
+  guild_nameNEQ: felt252
+  guild_nameNOTIN: [felt252]
+  guild_nameNOTLIKE: felt252
+  timestamp: u64
+  timestampEQ: u64
+  timestampGT: u64
+  timestampGTE: u64
+  timestampIN: [u64]
+  timestampLIKE: u64
+  timestampLT: u64
+  timestampLTE: u64
+  timestampNEQ: u64
+  timestampNOTIN: [u64]
+  timestampNOTLIKE: u64
 }
 
 type eternum_LevelingConfig {
@@ -8263,17 +8495,16 @@ input eternum_SettleRealmDataWhereInput {
 }
 
 type eternum_SettlementConfig {
-  angle_scaled: u128
+  base_distance: u32
   center: u32
   config_id: u32
+  current_layer: u32
+  current_point_on_side: u32
+  current_side: u32
   entity: World__Entity
   eventMessage: World__EventMessage
-  max_angle_increase: u64
-  max_distance: u32
-  min_angle_increase: u64
-  min_distance: u32
-  min_scaling_factor_scaled: u128
-  radius: u32
+  min_first_layer_distance: u32
+  points_placed: u32
 }
 
 type eternum_SettlementConfigConnection {
@@ -8293,29 +8524,28 @@ input eternum_SettlementConfigOrder {
 }
 
 enum eternum_SettlementConfigOrderField {
-  ANGLE_SCALED
+  BASE_DISTANCE
   CENTER
   CONFIG_ID
-  MAX_ANGLE_INCREASE
-  MAX_DISTANCE
-  MIN_ANGLE_INCREASE
-  MIN_DISTANCE
-  MIN_SCALING_FACTOR_SCALED
-  RADIUS
+  CURRENT_LAYER
+  CURRENT_POINT_ON_SIDE
+  CURRENT_SIDE
+  MIN_FIRST_LAYER_DISTANCE
+  POINTS_PLACED
 }
 
 input eternum_SettlementConfigWhereInput {
-  angle_scaled: u128
-  angle_scaledEQ: u128
-  angle_scaledGT: u128
-  angle_scaledGTE: u128
-  angle_scaledIN: [u128]
-  angle_scaledLIKE: u128
-  angle_scaledLT: u128
-  angle_scaledLTE: u128
-  angle_scaledNEQ: u128
-  angle_scaledNOTIN: [u128]
-  angle_scaledNOTLIKE: u128
+  base_distance: u32
+  base_distanceEQ: u32
+  base_distanceGT: u32
+  base_distanceGTE: u32
+  base_distanceIN: [u32]
+  base_distanceLIKE: u32
+  base_distanceLT: u32
+  base_distanceLTE: u32
+  base_distanceNEQ: u32
+  base_distanceNOTIN: [u32]
+  base_distanceNOTLIKE: u32
   center: u32
   centerEQ: u32
   centerGT: u32
@@ -8338,72 +8568,61 @@ input eternum_SettlementConfigWhereInput {
   config_idNEQ: u32
   config_idNOTIN: [u32]
   config_idNOTLIKE: u32
-  max_angle_increase: u64
-  max_angle_increaseEQ: u64
-  max_angle_increaseGT: u64
-  max_angle_increaseGTE: u64
-  max_angle_increaseIN: [u64]
-  max_angle_increaseLIKE: u64
-  max_angle_increaseLT: u64
-  max_angle_increaseLTE: u64
-  max_angle_increaseNEQ: u64
-  max_angle_increaseNOTIN: [u64]
-  max_angle_increaseNOTLIKE: u64
-  max_distance: u32
-  max_distanceEQ: u32
-  max_distanceGT: u32
-  max_distanceGTE: u32
-  max_distanceIN: [u32]
-  max_distanceLIKE: u32
-  max_distanceLT: u32
-  max_distanceLTE: u32
-  max_distanceNEQ: u32
-  max_distanceNOTIN: [u32]
-  max_distanceNOTLIKE: u32
-  min_angle_increase: u64
-  min_angle_increaseEQ: u64
-  min_angle_increaseGT: u64
-  min_angle_increaseGTE: u64
-  min_angle_increaseIN: [u64]
-  min_angle_increaseLIKE: u64
-  min_angle_increaseLT: u64
-  min_angle_increaseLTE: u64
-  min_angle_increaseNEQ: u64
-  min_angle_increaseNOTIN: [u64]
-  min_angle_increaseNOTLIKE: u64
-  min_distance: u32
-  min_distanceEQ: u32
-  min_distanceGT: u32
-  min_distanceGTE: u32
-  min_distanceIN: [u32]
-  min_distanceLIKE: u32
-  min_distanceLT: u32
-  min_distanceLTE: u32
-  min_distanceNEQ: u32
-  min_distanceNOTIN: [u32]
-  min_distanceNOTLIKE: u32
-  min_scaling_factor_scaled: u128
-  min_scaling_factor_scaledEQ: u128
-  min_scaling_factor_scaledGT: u128
-  min_scaling_factor_scaledGTE: u128
-  min_scaling_factor_scaledIN: [u128]
-  min_scaling_factor_scaledLIKE: u128
-  min_scaling_factor_scaledLT: u128
-  min_scaling_factor_scaledLTE: u128
-  min_scaling_factor_scaledNEQ: u128
-  min_scaling_factor_scaledNOTIN: [u128]
-  min_scaling_factor_scaledNOTLIKE: u128
-  radius: u32
-  radiusEQ: u32
-  radiusGT: u32
-  radiusGTE: u32
-  radiusIN: [u32]
-  radiusLIKE: u32
-  radiusLT: u32
-  radiusLTE: u32
-  radiusNEQ: u32
-  radiusNOTIN: [u32]
-  radiusNOTLIKE: u32
+  current_layer: u32
+  current_layerEQ: u32
+  current_layerGT: u32
+  current_layerGTE: u32
+  current_layerIN: [u32]
+  current_layerLIKE: u32
+  current_layerLT: u32
+  current_layerLTE: u32
+  current_layerNEQ: u32
+  current_layerNOTIN: [u32]
+  current_layerNOTLIKE: u32
+  current_point_on_side: u32
+  current_point_on_sideEQ: u32
+  current_point_on_sideGT: u32
+  current_point_on_sideGTE: u32
+  current_point_on_sideIN: [u32]
+  current_point_on_sideLIKE: u32
+  current_point_on_sideLT: u32
+  current_point_on_sideLTE: u32
+  current_point_on_sideNEQ: u32
+  current_point_on_sideNOTIN: [u32]
+  current_point_on_sideNOTLIKE: u32
+  current_side: u32
+  current_sideEQ: u32
+  current_sideGT: u32
+  current_sideGTE: u32
+  current_sideIN: [u32]
+  current_sideLIKE: u32
+  current_sideLT: u32
+  current_sideLTE: u32
+  current_sideNEQ: u32
+  current_sideNOTIN: [u32]
+  current_sideNOTLIKE: u32
+  min_first_layer_distance: u32
+  min_first_layer_distanceEQ: u32
+  min_first_layer_distanceGT: u32
+  min_first_layer_distanceGTE: u32
+  min_first_layer_distanceIN: [u32]
+  min_first_layer_distanceLIKE: u32
+  min_first_layer_distanceLT: u32
+  min_first_layer_distanceLTE: u32
+  min_first_layer_distanceNEQ: u32
+  min_first_layer_distanceNOTIN: [u32]
+  min_first_layer_distanceNOTLIKE: u32
+  points_placed: u32
+  points_placedEQ: u32
+  points_placedGT: u32
+  points_placedGTE: u32
+  points_placedIN: [u32]
+  points_placedLIKE: u32
+  points_placedLT: u32
+  points_placedLTE: u32
+  points_placedNEQ: u32
+  points_placedNOTIN: [u32]
+  points_placedNOTLIKE: u32
 }
 
 type eternum_SpeedConfig {
@@ -8586,6 +8805,7 @@ type eternum_StaminaRefillConfig {
   config_id: u32
   entity: World__Entity
   eventMessage: World__EventMessage
+  start_boost_tick_count: u8
 }
 
 type eternum_StaminaRefillConfigConnection {
@@ -8607,6 +8827,7 @@ input eternum_StaminaRefillConfigOrder {
 enum eternum_StaminaRefillConfigOrderField {
   AMOUNT_PER_TICK
   CONFIG_ID
+  START_BOOST_TICK_COUNT
 }
 
 input eternum_StaminaRefillConfigWhereInput {
@@ -8632,6 +8853,17 @@ input eternum_StaminaRefillConfigWhereInput {
   config_idNEQ: u32
   config_idNOTIN: [u32]
   config_idNOTLIKE: u32
+  start_boost_tick_count: u8
+  start_boost_tick_countEQ: u8
+  start_boost_tick_countGT: u8
+  start_boost_tick_countGTE: u8
+  start_boost_tick_countIN: [u8]
+  start_boost_tick_countLIKE: u8
+  start_boost_tick_countLT: u8
+  start_boost_tick_countLTE: u8
+  start_boost_tick_countNEQ: u8
+  start_boost_tick_countNOTIN: [u8]
+  start_boost_tick_countNOTLIKE: u8
 }
 
 input eternum_StaminaWhereInput {
@@ -9693,6 +9925,7 @@ type eternum_TroopConfig {
   army_max_per_structure: u8
   battle_leave_slash_denom: u8
   battle_leave_slash_num: u8
+  battle_max_time_seconds: u64
   battle_time_scale: u16
   config_id: u32
   crossbowman_strength: u16
@@ -9729,6 +9962,7 @@ enum eternum_TroopConfigOrderField {
   ARMY_MAX_PER_STRUCTURE
   BATTLE_LEAVE_SLASH_DENOM
   BATTLE_LEAVE_SLASH_NUM
+  BATTLE_MAX_TIME_SECONDS
   BATTLE_TIME_SCALE
   CONFIG_ID
   CROSSBOWMAN_STRENGTH
@@ -9807,6 +10041,17 @@ input eternum_TroopConfigWhereInput {
   battle_leave_slash_numNEQ: u8
   battle_leave_slash_numNOTIN: [u8]
   battle_leave_slash_numNOTLIKE: u8
+  battle_max_time_seconds: u64
+  battle_max_time_secondsEQ: u64
+  battle_max_time_secondsGT: u64
+  battle_max_time_secondsGTE: u64
+  battle_max_time_secondsIN: [u64]
+  battle_max_time_secondsLIKE: u64
+  battle_max_time_secondsLT: u64
+  battle_max_time_secondsLTE: u64
+  battle_max_time_secondsNEQ: u64
+  battle_max_time_secondsNOTIN: [u64]
+  battle_max_time_secondsNOTLIKE: u64
   battle_time_scale: u16
   battle_time_scaleEQ: u16
   battle_time_scaleGT: u16
@@ -9906,6 +10151,253 @@ input eternum_TroopConfigWhereInput {
   pillage_health_divisorNEQ: u8
   pillage_health_divisorNOTIN: [u8]
   pillage_health_divisorNOTLIKE: u8
+}
+
+type eternum_TrophyCreation {
+  data: ByteArray
+  description: ByteArray
+  end: u64
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  group: felt252
+  hidden: bool
+  icon: felt252
+  id: felt252
+  index: u8
+  points: u16
+  start: u64
+  tasks: [eternum_TrophyCreation_Task]
+  title: felt252
+}
+
+type eternum_TrophyCreationConnection {
+  edges: [eternum_TrophyCreationEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_TrophyCreationEdge {
+  cursor: Cursor
+  node: eternum_TrophyCreation
+}
+
+input eternum_TrophyCreationOrder {
+  direction: OrderDirection!
+  field: eternum_TrophyCreationOrderField!
+}
+
+enum eternum_TrophyCreationOrderField {
+  DATA
+  DESCRIPTION
+  END
+  GROUP
+  HIDDEN
+  ICON
+  ID
+  INDEX
+  POINTS
+  START
+  TASKS
+  TITLE
+}
+
+input eternum_TrophyCreationWhereInput {
+  data: ByteArray
+  dataEQ: ByteArray
+  dataGT: ByteArray
+  dataGTE: ByteArray
+  dataIN: [ByteArray]
+  dataLIKE: ByteArray
+  dataLT: ByteArray
+  dataLTE: ByteArray
+  dataNEQ: ByteArray
+  dataNOTIN: [ByteArray]
+  dataNOTLIKE: ByteArray
+  description: ByteArray
+  descriptionEQ: ByteArray
+  descriptionGT: ByteArray
+  descriptionGTE: ByteArray
+  descriptionIN: [ByteArray]
+  descriptionLIKE: ByteArray
+  descriptionLT: ByteArray
+  descriptionLTE: ByteArray
+  descriptionNEQ: ByteArray
+  descriptionNOTIN: [ByteArray]
+  descriptionNOTLIKE: ByteArray
+  end: u64
+  endEQ: u64
+  endGT: u64
+  endGTE: u64
+  endIN: [u64]
+  endLIKE: u64
+  endLT: u64
+  endLTE: u64
+  endNEQ: u64
+  endNOTIN: [u64]
+  endNOTLIKE: u64
+  group: felt252
+  groupEQ: felt252
+  groupGT: felt252
+  groupGTE: felt252
+  groupIN: [felt252]
+  groupLIKE: felt252
+  groupLT: felt252
+  groupLTE: felt252
+  groupNEQ: felt252
+  groupNOTIN: [felt252]
+  groupNOTLIKE: felt252
+  hidden: bool
+  icon: felt252
+  iconEQ: felt252
+  iconGT: felt252
+  iconGTE: felt252
+  iconIN: [felt252]
+  iconLIKE: felt252
+  iconLT: felt252
+  iconLTE: felt252
+  iconNEQ: felt252
+  iconNOTIN: [felt252]
+  iconNOTLIKE: felt252
+  id: felt252
+  idEQ: felt252
+  idGT: felt252
+  idGTE: felt252
+  idIN: [felt252]
+  idLIKE: felt252
+  idLT: felt252
+  idLTE: felt252
+  idNEQ: felt252
+  idNOTIN: [felt252]
+  idNOTLIKE: felt252
+  index: u8
+  indexEQ: u8
+  indexGT: u8
+  indexGTE: u8
+  indexIN: [u8]
+  indexLIKE: u8
+  indexLT: u8
+  indexLTE: u8
+  indexNEQ: u8
+  indexNOTIN: [u8]
+  indexNOTLIKE: u8
+  points: u16
+  pointsEQ: u16
+  pointsGT: u16
+  pointsGTE: u16
+  pointsIN: [u16]
+  pointsLIKE: u16
+  pointsLT: u16
+  pointsLTE: u16
+  pointsNEQ: u16
+  pointsNOTIN: [u16]
+  pointsNOTLIKE: u16
+  start: u64
+  startEQ: u64
+  startGT: u64
+  startGTE: u64
+  startIN: [u64]
+  startLIKE: u64
+  startLT: u64
+  startLTE: u64
+  startNEQ: u64
+  startNOTIN: [u64]
+  startNOTLIKE: u64
+  title: felt252
+  titleEQ: felt252
+  titleGT: felt252
+  titleGTE: felt252
+  titleIN: [felt252]
+  titleLIKE: felt252
+  titleLT: felt252
+  titleLTE: felt252
+  titleNEQ: felt252
+  titleNOTIN: [felt252]
+  titleNOTLIKE: felt252
+}
+
+type eternum_TrophyCreation_Task {
+  description: ByteArray
+  id: felt252
+  total: u32
+}
+
+type eternum_TrophyProgression {
+  count: u32
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  player_id: felt252
+  task_id: felt252
+  time: u64
+}
+
+type eternum_TrophyProgressionConnection {
+  edges: [eternum_TrophyProgressionEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type eternum_TrophyProgressionEdge {
+  cursor: Cursor
+  node: eternum_TrophyProgression
+}
+
+input eternum_TrophyProgressionOrder {
+  direction: OrderDirection!
+  field: eternum_TrophyProgressionOrderField!
+}
+
+enum eternum_TrophyProgressionOrderField {
+  COUNT
+  PLAYER_ID
+  TASK_ID
+  TIME
+}
+
+input eternum_TrophyProgressionWhereInput {
+  count: u32
+  countEQ: u32
+  countGT: u32
+  countGTE: u32
+  countIN: [u32]
+  countLIKE: u32
+  countLT: u32
+  countLTE: u32
+  countNEQ: u32
+  countNOTIN: [u32]
+  countNOTLIKE: u32
+  player_id: felt252
+  player_idEQ: felt252
+  player_idGT: felt252
+  player_idGTE: felt252
+  player_idIN: [felt252]
+  player_idLIKE: felt252
+  player_idLT: felt252
+  player_idLTE: felt252
+  player_idNEQ: felt252
+  player_idNOTIN: [felt252]
+  player_idNOTLIKE: felt252
+  task_id: felt252
+  task_idEQ: felt252
+  task_idGT: felt252
+  task_idGTE: felt252
+  task_idIN: [felt252]
+  task_idLIKE: felt252
+  task_idLT: felt252
+  task_idLTE: felt252
+  task_idNEQ: felt252
+  task_idNOTIN: [felt252]
+  task_idNOTLIKE: felt252
+  time: u64
+  timeEQ: u64
+  timeGT: u64
+  timeGTE: u64
+  timeIN: [u64]
+  timeLIKE: u64
+  timeLT: u64
+  timeLTE: u64
+  timeNEQ: u64
+  timeNOTIN: [u64]
+  timeNOTLIKE: u64
 }
 
 type eternum_Weight {
