@@ -39,7 +39,7 @@ pub struct WorldConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct SeasonConfig {
+pub struct SeasonAddressesConfig {
     #[key]
     config_id: ID,
     season_pass_address: ContractAddress,

@@ -198,6 +198,7 @@ mod resource_bridge_systems {
     use eternum::models::owner::{EntityOwner, Owner, EntityOwnerCustomTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
+    use eternum::models::season::SeasonImpl;
     use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
     use eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
@@ -223,6 +224,9 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_has_started(world);
+            SeasonImpl::assert_season_is_not_over(world);
+
             // ensure this system can only be called by realms systems contract
             let caller = get_caller_address();
             let (realm_systems_address, _namespace_hash) =
@@ -278,6 +282,9 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_has_started(world);
+            SeasonImpl::assert_season_is_not_over(world);
+
             // ensure through bank is a bank
             let through_bank: Structure = world.read_model(through_bank_id);
             through_bank.assert_is_structure();
