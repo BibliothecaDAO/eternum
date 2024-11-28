@@ -17,11 +17,10 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
 import { env } from "../../../env";
-import resourceAddressesLocal from "../../data/resource_addresses/local/resource_addresses.json";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { calculateDonkeysNeeded, getTotalResourceWeight } from "../ui/utils/utils";
+import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 
 function formatFee(fee: number) {
   return fee.toFixed(2);
@@ -153,9 +152,9 @@ export const BridgeIn = () => {
 
   const onBridgeIntoRealm = async () => {
     if (realmEntityId) {
-      const resourceAddresses = resourceAddressesLocal;
+      const resourceAddresses = await getSeasonAddresses();
       let tokenAddress =
-        resourceAddresses[selectedResourceContract.toLocaleUpperCase() as keyof typeof resourceAddressesLocal][1];
+        resourceAddresses[selectedResourceContract.toLocaleUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
         await bridgeIntoRealm(

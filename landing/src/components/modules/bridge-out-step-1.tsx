@@ -18,11 +18,10 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
 import { env } from "../../../env";
-import resourceAddressesLocal from "../../data/resource_addresses/local/resource_addresses.json";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { SelectSingleResource } from "../ui/SelectResources";
-import { calculateDonkeysNeeded, getTotalResourceWeight } from "../ui/utils/utils";
+import { calculateDonkeysNeeded, getSeasonAddresses, getTotalResourceWeight } from "../ui/utils/utils";
 
 function formatFee(fee: number) {
   return fee.toFixed(2);
@@ -155,11 +154,10 @@ export const BridgeOutStep1 = () => {
 
   const onSendToBank = async () => {
     if (realmEntityId) {
-      const resourceAddresses = resourceAddressesLocal;
+      const resourceAddresses = await getSeasonAddresses();
       const selectedResourceName = ResourcesIds[selectedResourceId];
-      console.log({ selectedResourceName, realmEntityId });
-      let tokenAddress =
-        resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddressesLocal][1];
+
+      let tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
         await bridgeStartWithdrawFromRealm(

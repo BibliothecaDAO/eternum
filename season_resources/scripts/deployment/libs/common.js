@@ -177,14 +177,13 @@ export const saveResourceAddressesToLanding = async (resourceAddresses, environm
 
     const fileName = path.join(
       folderPath,
-      `../../../../../landing/src/data/resource_addresses/${environment}/resource_addresses.json`,
+      `../../../../../landing/public/resource_addresses/${environment}/resource_addresses.json`,
     );
 
     const data = resourceAddresses;
-
     const jsonString = JSON.stringify(data);
-
     await writeFileAsync(fileName, jsonString);
+
     console.log(`"${fileName}" has been saved or overwritten`);
   } catch (err) {
     console.error("Error writing file", err);

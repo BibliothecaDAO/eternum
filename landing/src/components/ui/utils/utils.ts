@@ -2,9 +2,8 @@ import { type ClientComponents } from "@/dojo/createClientComponents";
 import { ClientConfigManager } from "@/dojo/modelManager/ConfigManager";
 import { configManager } from "@/dojo/setup";
 import { CapacityConfigCategory } from "@bibliothecadao/eternum";
+import { env } from "../../../../env";
 
-// import { HEX_SIZE } from "@/three/scenes/constants";
-// import { ResourceMiningTypes } from "@/types";
 import {
   BuildingType,
   ContractAddress,
@@ -17,8 +16,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-// import * as THREE from "three";
-// import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -431,4 +428,25 @@ export const separateCamelCase = (str: string): string => {
 
 export const calculateDonkeysNeeded = (orderWeight: number): number => {
   return Math.ceil(divideByPrecision(orderWeight) / configManager.getCapacityConfig(CapacityConfigCategory.Donkey));
+};
+
+export const getSeasonAddressesPath = () => {
+  return `/resource_addresses/${env.VITE_PUBLIC_CHAIN}/resource_addresses.json`;
+};
+export const getJSONFile = async (filePath: string) => {
+  const response = await fetch(filePath);
+  const data = await response.json();
+  return data;
+};
+
+export const getSeasonAddresses = async () => {
+  try {
+    const path = getSeasonAddressesPath();
+    const data = await getJSONFile(path);
+    console.log({ data });
+    return data;
+  } catch (error) {
+    console.error("Error loading season addresses:", error);
+    return {};
+  }
 };

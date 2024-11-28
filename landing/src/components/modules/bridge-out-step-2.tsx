@@ -16,10 +16,10 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useMemo, useState } from "react";
 import { env } from "../../../env";
-import resourceAddressesLocal from "../../data/resource_addresses/local/resource_addresses.json";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { ShowSingleResource } from "../ui/SelectResources";
+import { getSeasonAddresses } from "../ui/utils/utils";
 
 function formatFee(fee: number) {
   return fee.toFixed(2);
@@ -120,10 +120,9 @@ export const BridgeOutStep2 = () => {
 
   const onFinishWithdrawFromBank = async () => {
     if (selectedResourceId) {
-      const resourceAddresses = resourceAddressesLocal;
+      const resourceAddresses = await getSeasonAddresses();
       const selectedResourceName = ResourcesIds[selectedResourceId];
-      let tokenAddress =
-        resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddressesLocal][1];
+      let tokenAddress = resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddresses][1];
       try {
         setIsLoading(true);
         await bridgeFinishWithdrawFromRealm(tokenAddress as string, ADMIN_BANK_ENTITY_ID, donkeyEntityId);
@@ -142,16 +141,12 @@ export const BridgeOutStep2 = () => {
       </div>
       <Select
         onValueChange={(value) => {
+          const currentDonkeyInfo = donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value);
           setDonkeyEntityId(BigInt(value));
-          setSelectedResourceIds([
-            donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value)?.donkeyResources[0].resourceId ??
-              0,
-          ]);
+          setSelectedResourceIds([(currentDonkeyInfo!.donkeyResources[0].resourceId as never) ?? 0]);
           setSelectedResourceAmounts({
-            [donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value)?.donkeyResources[0]
-              .resourceId ?? 0]:
-              donkeyInfos?.find((donkey) => donkey.donkeyEntityId?.toString() === value)?.donkeyResources[0].amount /
-                RESOURCE_PRECISION ?? 0,
+            [currentDonkeyInfo!.donkeyResources[0].resourceId ?? 0]:
+              currentDonkeyInfo!.donkeyResources[0].amount / RESOURCE_PRECISION ?? 0,
           });
         }}
       >
