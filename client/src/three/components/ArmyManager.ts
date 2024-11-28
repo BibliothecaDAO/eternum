@@ -167,6 +167,15 @@ export class ArmyManager {
       // this.armyModel.dummyObject.position.copy(position);
       // this.armyModel.dummyObject.scale.copy(this.scale);
       // this.armyModel.dummyObject.updateMatrix();
+      // Determine model type based on order or other criteria
+      const { x, y } = army.hexCoords.getContract();
+      const biome = this.biome.getBiome(x, y);
+      console.log(biome, army.entityId);
+      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+        this.armyModel.assignModelToEntity(army.entityId, "boat");
+      } else {
+        this.armyModel.assignModelToEntity(army.entityId, "knight");
+      }
 
       // Update the specific model instance for this entity
       this.armyModel.updateInstance(

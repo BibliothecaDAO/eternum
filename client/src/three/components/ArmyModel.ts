@@ -136,8 +136,7 @@ export class ArmyModel {
       //   modelData.currentScales.set(index, targetScale.clone());
       // }
 
-      // Use current scale for immediate matrix update
-      //const currentScale = modelData.currentScales.get(index)!;
+      // const currentScale = modelData.currentScales.get(index)!;
       this.dummyObject.position.copy(position);
       this.dummyObject.position.y += 0.15;
       this.dummyObject.scale.copy(targetScale);
