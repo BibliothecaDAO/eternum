@@ -1600,12 +1600,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
   public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
-    const { season_pass_address, realms_address, lords_address, signer } = props;
+    const { season_pass_address, realms_address, lords_address, start_at, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_season_config",
-      calldata: [season_pass_address, realms_address, lords_address],
+      calldata: [season_pass_address, realms_address, lords_address, start_at],
     });
   }
 

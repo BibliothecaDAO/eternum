@@ -4941,19 +4941,19 @@ export type Eternum_ResourceWhereInput = {
   resource_typeNOTLIKE?: InputMaybe<Scalars["u8"]["input"]>;
 };
 
-export type Eternum_SeasonConfigOrder = {
+export type Eternum_SeasonAddressesConfigOrder = {
   direction: OrderDirection;
-  field: Eternum_SeasonConfigOrderField;
+  field: Eternum_SeasonAddressesConfigOrderField;
 };
 
-export enum Eternum_SeasonConfigOrderField {
+export enum Eternum_SeasonAddressesConfigOrderField {
   ConfigId = "CONFIG_ID",
   LordsAddress = "LORDS_ADDRESS",
   RealmsAddress = "REALMS_ADDRESS",
   SeasonPassAddress = "SEASON_PASS_ADDRESS",
 }
 
-export type Eternum_SeasonConfigWhereInput = {
+export type Eternum_SeasonAddressesConfigWhereInput = {
   config_id?: InputMaybe<Scalars["u32"]["input"]>;
   config_idEQ?: InputMaybe<Scalars["u32"]["input"]>;
   config_idGT?: InputMaybe<Scalars["u32"]["input"]>;

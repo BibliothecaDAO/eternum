@@ -38,7 +38,7 @@ mod dev_realm_systems {
     use eternum::alias::ID;
     use eternum::constants::DEFAULT_NS;
     use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::models::config::SeasonConfig;
+    use eternum::models::config::SeasonAddressesConfig;
     use eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
     use starknet::ContractAddress;
     use super::{
@@ -55,7 +55,7 @@ mod dev_realm_systems {
         fn create(ref self: ContractState, realm_id: ID, frontend: ContractAddress) {
             // mint test realm to this contract
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season: SeasonConfig = world.read_model(WORLD_CONFIG_ID);
+            let season: SeasonAddressesConfig = world.read_model(WORLD_CONFIG_ID);
             ITestRealmMintDispatcher { contract_address: season.realms_address }.mint(realm_id.into());
 
             // mint season pass to this contract

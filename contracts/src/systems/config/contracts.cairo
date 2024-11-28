@@ -4,7 +4,7 @@ use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
 use eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonConfig
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonAddressesConfig
 };
 use eternum::models::position::Coord;
 
@@ -22,7 +22,8 @@ trait ISeasonConfig<T> {
         ref self: T,
         season_pass_address: starknet::ContractAddress,
         realms_address: starknet::ContractAddress,
-        lords_address: starknet::ContractAddress
+        lords_address: starknet::ContractAddress,
+        start_at: u64
     );
 }
 
@@ -220,13 +221,13 @@ mod config_systems {
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig
     };
 
     use eternum::models::position::{Position, PositionCustomTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
-    use eternum::models::season::SeasonImpl;
+    use eternum::models::season::{Season};
     use eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
 
     // Components
@@ -310,15 +311,24 @@ mod config_systems {
             ref self: ContractState,
             season_pass_address: starknet::ContractAddress,
             realms_address: starknet::ContractAddress,
-            lords_address: starknet::ContractAddress
+            lords_address: starknet::ContractAddress,
+            start_at: u64
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             world
                 .write_model(
-                    @SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address }
+                    @SeasonAddressesConfig {
+                        config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address,
+                    }
                 );
+
+            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
+            if !season.is_over {
+                season.start_at = start_at;
+                world.write_model(@season);
+            }
         }
     }
 
