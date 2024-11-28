@@ -33,7 +33,11 @@ export const RealmMintDialog = ({
   // Create an array of realm tokenIds
   const filteredRealmTokenIds = useMemo(() => {
     return data?.tokenTransfers?.edges
-      ?.filter((item) => item?.node?.tokenMetadata.__typename === "ERC721__Token" && item?.node?.tokenMetadata.contractAddress.toLowerCase() === realmsAddress.toLowerCase())
+      ?.filter(
+        (item) =>
+          item?.node?.tokenMetadata.__typename === "ERC721__Token" &&
+          item?.node?.tokenMetadata.contractAddress.toLowerCase() === realmsAddress.toLowerCase(),
+      )
       .map((item) => Number(item?.node?.tokenMetadata.tokenId));
   }, [data]);
 

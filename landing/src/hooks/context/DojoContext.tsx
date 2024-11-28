@@ -72,8 +72,11 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
       </BurnerProvider>
     );
   } else {
-    
-    return <DojoContextProvider value={value} controllerAccount={account}>{children}</DojoContextProvider>;
+    return (
+      <DojoContextProvider value={value} controllerAccount={account}>
+        {children}
+      </DojoContextProvider>
+    );
   }
 };
 
@@ -89,7 +92,11 @@ export const useDojo = (): DojoResult => {
   };
 };
 
-const DojoContextProvider = ({ children, value, controllerAccount }: DojoProviderProps & { controllerAccount: AccountInterface | null }) => {
+const DojoContextProvider = ({
+  children,
+  value,
+  controllerAccount,
+}: DojoProviderProps & { controllerAccount: AccountInterface | null }) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
@@ -132,7 +139,7 @@ const DojoContextProvider = ({ children, value, controllerAccount }: DojoProvide
   console.log("dev " + isDev);
   console.log(accountToUse?.address);
 
- /* useEffect(() => {
+  /* useEffect(() => {
     console.log(controllerAccount);
     if (isDev) {
       if (burnerAccount) {

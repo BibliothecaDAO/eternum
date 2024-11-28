@@ -8,7 +8,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, process.cwd(), "");
 
   return {
     plugins: [mkcert(), svgr(), TanStackRouterVite(), react(), wasm(), topLevelAwait()],
@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: process.env.PORT as unknown as number ?? 5174,
+      port: (process.env.PORT as unknown as number) ?? 5174,
       proxy: {
         "/api": {
           target: env.VITE_PUBLIC_TORII_GRAPHQL,
