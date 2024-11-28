@@ -61,7 +61,8 @@ export class SystemManager {
         return query.update$.subscribe((update) => {
           if (
             isComponentUpdate(update, this.setup.components.Army) ||
-            isComponentUpdate(update, this.setup.components.Position)
+            isComponentUpdate(update, this.setup.components.Position) ||
+            isComponentUpdate(update, this.setup.components.Health)
           ) {
             const army = getComponentValue(this.setup.components.Army, update.entity);
             if (!army) return;

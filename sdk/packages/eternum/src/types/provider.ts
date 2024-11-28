@@ -369,8 +369,6 @@ export interface WhitelistPlayerProps extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 
-export interface LeaveGuild extends SystemSigner {}
-
 export interface TransferGuildOwnership extends SystemSigner {
   guild_entity_id: num.BigNumberish;
   to_player_address: num.BigNumberish;
