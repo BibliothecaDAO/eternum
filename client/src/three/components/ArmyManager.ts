@@ -164,9 +164,9 @@ export class ArmyManager {
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      this.armyModel.dummyObject.position.copy(position);
-      this.armyModel.dummyObject.scale.copy(this.scale);
-      this.armyModel.dummyObject.updateMatrix();
+      // this.armyModel.dummyObject.position.copy(position);
+      // this.armyModel.dummyObject.scale.copy(this.scale);
+      // this.armyModel.dummyObject.updateMatrix();
 
       // Update the specific model instance for this entity
       this.armyModel.updateInstance(
@@ -238,8 +238,13 @@ export class ArmyManager {
     if (this.armies.has(entityId)) return;
 
     // Determine model type based on order or other criteria
-    const modelType = "knight"; // This could be dynamic based on army type
-    this.armyModel.assignModelToEntity(entityId, modelType);
+    const { x, y } = hexCoords.getContract();
+    const biome = this.biome.getBiome(x, y);
+    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+      this.armyModel.assignModelToEntity(entityId, "boat");
+    } else {
+      this.armyModel.assignModelToEntity(entityId, "knight");
+    }
 
     const orderColor = orders.find((_order) => _order.orderId === order)?.color || "#000000";
     this.armies.set(entityId, {

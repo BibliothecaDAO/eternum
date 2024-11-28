@@ -133,19 +133,19 @@ export class ArmyModel {
   ) {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
-      const targetScale = isActiveModel ? scale : this.zeroScale;
-
+      const targetScale = isActiveModel ? this.normalScale : this.zeroScale;
+      console.log(entityId, modelType, targetScale);
       // Store the target scale for smooth transition
-      modelData.targetScales.set(index, targetScale.clone());
-      if (!modelData.currentScales.has(index)) {
-        modelData.currentScales.set(index, targetScale.clone());
-      }
+      // modelData.targetScales.set(index, targetScale.clone());
+      // if (!modelData.currentScales.has(index)) {
+      //   modelData.currentScales.set(index, targetScale.clone());
+      // }
 
       // Use current scale for immediate matrix update
       const currentScale = modelData.currentScales.get(index)!;
       this.dummyObject.position.copy(position);
       this.dummyObject.position.y += 0.15;
-      this.dummyObject.scale.copy(currentScale);
+      this.dummyObject.scale.copy(targetScale);
       if (rotation) {
         this.dummyObject.rotation.copy(rotation);
       }
@@ -166,21 +166,21 @@ export class ArmyModel {
       let needsMatrixUpdate = false;
 
       // Update scales with smooth transition
-      modelData.targetScales.forEach((targetScale, index) => {
-        const currentScale = modelData.currentScales.get(index)!;
-        const matrix = new THREE.Matrix4();
-        modelData.mesh.getMatrixAt(index, matrix);
+      // modelData.targetScales.forEach((targetScale, index) => {
+      //   const currentScale = modelData.currentScales.get(index)!;
+      //   const matrix = new THREE.Matrix4();
+      //   modelData.mesh.getMatrixAt(index, matrix);
 
-        // Interpolate scale
-        currentScale.lerp(targetScale, deltaTime * this.SCALE_TRANSITION_SPEED);
-        if (!currentScale.equals(targetScale)) {
-          this.dummyObject.matrix.copy(matrix);
-          this.dummyObject.scale.copy(currentScale);
-          this.dummyObject.updateMatrix();
-          modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
-          needsMatrixUpdate = true;
-        }
-      });
+      //   // Interpolate scale
+      //   currentScale.lerp(targetScale, deltaTime * this.SCALE_TRANSITION_SPEED);
+      //   if (!currentScale.equals(targetScale)) {
+      //     this.dummyObject.matrix.copy(matrix);
+      //     this.dummyObject.scale.copy(currentScale);
+      //     this.dummyObject.updateMatrix();
+      //     modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
+      //     needsMatrixUpdate = true;
+      //   }
+      // });
 
       if (needsMatrixUpdate) {
         modelData.mesh.instanceMatrix.needsUpdate = true;
