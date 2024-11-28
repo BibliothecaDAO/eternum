@@ -58,12 +58,13 @@ function Mint() {
 
   const seasonPassTokenIds = useMemo(
     () =>
-      seasonPassMints?.tokenTransfers?.edges?.filter((token) => {
-        if (token?.node?.tokenMetadata.__typename !== 'ERC721__Token') return false;
-        return token.node.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS;
-      })
+      seasonPassMints?.tokenTransfers?.edges
+        ?.filter((token) => {
+          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
+          return token.node.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS;
+        })
         .map((token) => {
-          if (token?.node?.tokenMetadata.__typename === 'ERC721__Token') {
+          if (token?.node?.tokenMetadata.__typename === "ERC721__Token") {
             return token.node.tokenMetadata.tokenId;
           }
           return undefined;
@@ -100,7 +101,7 @@ function Mint() {
                   your game wallet
                 </TypeP>
                 <CartridgeConnectButton className="w-full mt-4" />
-              </div> 
+              </div>
               <div>
                 <TypeP>If you will trade your Season Passes - mint to the Starknet Wallet that holds your Realms</TypeP>
                 <Button className="mt-4 w-full" onClick={() => setMintToController(false)} variant="outline">

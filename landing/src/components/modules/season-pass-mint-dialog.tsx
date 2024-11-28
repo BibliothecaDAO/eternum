@@ -63,7 +63,7 @@ export default function SeasonPassMintDialog({
             {isSuccess && (
               <div className="mb-4 text-center text-sm">
                 Your season passes have now been minted - see them at <Link href="/passes">Passes</Link>
-              </div> 
+              </div>
             )}
           </div>
           {/*<TokenActionsTokenOverview
