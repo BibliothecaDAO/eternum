@@ -188,6 +188,7 @@ export class ArmyManager {
     // Update all model instances
     this.armyModel.updateAllInstances();
     this.updateLabelsForChunk(chunkKey);
+    this.armyModel.computeBoundingSphere();
   }
 
   private isArmyVisible(

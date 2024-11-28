@@ -77,11 +77,7 @@ export class ArmyModel {
           instancedMesh.instanceMatrix.needsUpdate = true;
           this.scene.add(instancedMesh);
 
-          // Initialize all instances with zero scale
-          const matrix = new THREE.Matrix4();
-          matrix.makeScale(0, 0, 0);
           for (let i = 0; i < MAX_INSTANCES; i++) {
-            instancedMesh.setMatrixAt(i, matrix);
             instancedMesh.setMorphAt(i, baseMesh as any);
           }
           instancedMesh.count = 0; // Always keep max count
@@ -134,15 +130,14 @@ export class ArmyModel {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
       const targetScale = isActiveModel ? this.normalScale : this.zeroScale;
-      console.log(entityId, modelType, targetScale);
-      // Store the target scale for smooth transition
+
       // modelData.targetScales.set(index, targetScale.clone());
       // if (!modelData.currentScales.has(index)) {
       //   modelData.currentScales.set(index, targetScale.clone());
       // }
 
       // Use current scale for immediate matrix update
-      const currentScale = modelData.currentScales.get(index)!;
+      //const currentScale = modelData.currentScales.get(index)!;
       this.dummyObject.position.copy(position);
       this.dummyObject.position.y += 0.15;
       this.dummyObject.scale.copy(targetScale);
@@ -156,6 +151,7 @@ export class ArmyModel {
       }
       this.dummyObject.updateMatrix();
       modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
+      modelData.mesh.instanceMatrix.needsUpdate = true;
     });
   }
 
@@ -165,7 +161,6 @@ export class ArmyModel {
     this.models.forEach((modelData) => {
       let needsMatrixUpdate = false;
 
-      // Update scales with smooth transition
       // modelData.targetScales.forEach((targetScale, index) => {
       //   const currentScale = modelData.currentScales.get(index)!;
       //   const matrix = new THREE.Matrix4();
