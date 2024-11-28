@@ -25,7 +25,7 @@ fn spawn_realm(ref world: WorldStorage, realm_id: ID, coord: Coord) -> ID {
     let produced_resources = array![];
     let order = 1;
     let (realm_entity_id, _realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
-        ref world, owner, realm_id, produced_resources, order, 0, coord.into()
+        ref world, owner, realm_id, produced_resources, order, 0, 1, coord.into()
     );
 
     realm_entity_id

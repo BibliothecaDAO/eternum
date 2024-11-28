@@ -963,12 +963,13 @@ export function defineContractComponents(world: World) {
           produced_resources: RecsType.BigInt,
           order: RecsType.Number,
           level: RecsType.Number,
+          has_wonder: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8"],
+            types: ["u32", "u32", "u128", "u8", "u8", "bool"],
             customTypes: [],
           },
         },
