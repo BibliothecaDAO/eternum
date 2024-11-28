@@ -7029,7 +7029,7 @@
       "systems": ["create", "upgrade_level", "quest_claim", "upgrade"]
     },
     {
-      "address": "0x637e708e7d5859f67c3822da1415466e2cd8291cd2b8cc71c0d6398af62769a",
+      "address": "0x17658b62347073e66895ce06feb3ed591d702020e031357ef4f5cedf6a927b8",
       "class_hash": "0x54479ab403ddbb74bcb6fc47b523bfe58776d96d422ee119cc10bea1dc1b225",
       "abi": [
         {

@@ -534,7 +534,7 @@ importers:
         specifier: ^6.8.0
         version: 6.11.0(encoding@0.1.13)
       storybook:
-        specifier: ^8.4.5
+        specifier: ^8.3.2
         version: 8.4.5(prettier@3.3.3)
       tailwind-merge:
         specifier: ^2.5.4
@@ -580,31 +580,31 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0(encoding@0.1.13)(graphql@16.9.0)
       '@storybook/addon-essentials':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(storybook@8.4.5(prettier@3.3.3))
       '@storybook/addon-interactions':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(storybook@8.4.5(prettier@3.3.3))
       '@storybook/addon-links':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(react@18.3.1)(storybook@8.4.5(prettier@3.3.3))
       '@storybook/addon-onboarding':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(react@18.3.1)(storybook@8.4.5(prettier@3.3.3))
       '@storybook/blocks':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.4.5(prettier@3.3.3))
       '@storybook/builder-vite':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(storybook@8.4.5(prettier@3.3.3))(typescript@5.6.3)(vite@5.4.10(@types/node@20.17.1)(terser@5.36.0))
       '@storybook/react':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(@storybook/test@8.3.6(storybook@8.4.5(prettier@3.3.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.4.5(prettier@3.3.3))(typescript@5.6.3)
       '@storybook/react-vite':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(@storybook/test@8.3.6(storybook@8.4.5(prettier@3.3.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.24.0)(storybook@8.4.5(prettier@3.3.3))(typescript@5.6.3)(vite@5.4.10(@types/node@20.17.1)(terser@5.36.0))
       '@storybook/test':
-        specifier: ^8.2.6
+        specifier: ^8.3.2
         version: 8.3.6(storybook@8.4.5(prettier@3.3.3))
       '@tanstack/router-devtools':
         specifier: ^1.74.0

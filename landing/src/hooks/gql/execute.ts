@@ -4,7 +4,7 @@ export async function execute<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
 ): Promise<TResult> {
-  const fetchUrl = import.meta.env.PROD ? import.meta.env.VITE_PUBLIC_TORII_GRAPHQL : "/api";
+  const fetchUrl = import.meta.env.PROD ? import.meta.env.VITE_PUBLIC_TORII + "/graphql" : "/api";
   const response = await fetch(fetchUrl, {
     method: "POST",
     headers: {
