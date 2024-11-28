@@ -4,16 +4,50 @@ export default defineConfig({
   title: "Eternum",
   sidebar: [
     {
-      text: "Game",
-      link: "/game",
-      collapsed: true,
+      text: "Overview",
       items: [
-        { text: "Banking", link: "/game/banking" },
-        { text: "Hyperstructures", link: "/game/hyperstructures" },
-        { text: "Hexception", link: "/game/land-hexagons" },
-        { text: "Resources", link: "/game/resources" },
-        { text: "Realms", link: "/game/realms" },
-        { text: "World Map", link: "/game/world-map-hex" },
+        { text: "Welcome", link: "/overview/overview" },
+        { text: "Introduction", link: "/overview/introduction" },
+        { text: "Entry", link: "/overview/entry" },
+        { text: "Quick Links", link: "/overview/links" },
+      ],
+    },
+    {
+      text: "Game Mechanics",
+      items: [
+        {
+          text: "Resources",
+          collapsed: true,
+          items: [
+            { text: "Resources", link: "/mechanics/resources/resources" },
+            { text: "Production", link: "/mechanics/resources/production" },
+            { text: "Storage", link: "/mechanics/resources/storage" },
+          ],
+        },
+
+        {
+          text: "Realm management",
+          collapsed: true,
+          items: [
+            { text: "Realm", link: "/mechanics/realm/realm" },
+            { text: "Buildings", link: "/mechanics/realm/buildings" },
+          ],
+        },
+
+        {
+          text: "Military",
+          collapsed: true,
+          items: [
+            { text: "Units", link: "/mechanics/military/units" },
+            { text: "Combat", link: "/mechanics/military/combat" },
+          ],
+        },
+
+        { text: "Trading", link: "/mechanics/trading" },
+        { text: "World Map", link: "/mechanics/world-map" },
+        { text: "Hyperstructures & Points", link: "/mechanics/hyperstructures" },
+        { text: "Tribes", link: "/mechanics/tribes" },
+        { text: "Seasons", link: "/mechanics/seasons" },
       ],
     },
     {
