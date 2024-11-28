@@ -10,7 +10,7 @@ export const useSettleRealm = () => {
   const [tokenId, setTokenId] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { getNextRealmIdForOrder, getRealmIdForOrderAfter, getRandomUnsettledRealmId } = useRealm();
+  const { getRandomUnsettledRealmId } = useRealm();
 
   const { play: playSign } = useUiSounds(soundSelector.sign);
 
@@ -29,11 +29,7 @@ export const useSettleRealm = () => {
     try {
       setIsLoading(true);
       setErrorMessage(null); // Reset error message before attempting to settle
-      const calldata = [];
-
-      calldata.push(Number(id));
-
-      console.log(calldata);
+      const calldata = [Number(id)];
 
       await create_multiple_realms({
         signer: account,
@@ -41,6 +37,7 @@ export const useSettleRealm = () => {
       });
 
       playSign();
+      return id;
     } catch (error) {
       setErrorMessage("Realm already settled. Please try a different Realm.");
       console.error("Error during minting:", error);
