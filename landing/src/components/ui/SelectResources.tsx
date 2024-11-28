@@ -1,5 +1,4 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
-// import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ID, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo } from "react";
 import { divideByPrecision } from "../ui/utils/utils";
@@ -36,7 +35,6 @@ export const SelectResources = ({
       ...selectedResourceAmounts,
       [unselectedResources[0].id]: 1,
     });
-
   };
 
   return (

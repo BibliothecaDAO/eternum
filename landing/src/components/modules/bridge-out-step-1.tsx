@@ -8,6 +8,7 @@ import { useTravel } from "@/hooks/useTravel";
 import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
+  BRIDGE_FEE_DENOMINATOR,
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
   RESOURCE_PRECISION,
@@ -34,12 +35,9 @@ export const BridgeOutStep1 = () => {
   const { getRealmEntityIdFromRealmId } = useRealm();
   const { computeTravelTime } = useTravel();
 
-  const [fromToken, setFromToken] = useState("");
-
   const [isLoading, setIsLoading] = useState(false);
-
-  const [realm, setRealms] = useState<string>("");
-
+  const [realmId, setRealmId] = useState<string>("");
+  const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
   const selectedResourceId = useMemo(() => selectedResourceIds[0] ?? 0, [selectedResourceIds]);
@@ -48,35 +46,39 @@ export const BridgeOutStep1 = () => {
     [selectedResourceAmounts, selectedResourceId],
   );
 
-  const feeDenominator = 10000;
+  const realmEntityId = useMemo(() => {
+    if (!realmId) {
+      return 0;
+    }
+    return getRealmEntityIdFromRealmId(Number(realmId));
+  }, [realmId]);
+  const bridgeConfig = EternumGlobalConfig.bridge;
+
+  const calculateBridgeFee = (percent: number) => {
+    return (percent * Number(selectedResourceAmount)) / BRIDGE_FEE_DENOMINATOR;
+  };
+
+  const calculateBridgeFeeDisplayPercent = (percent: number) => {
+    return (percent * 100) / BRIDGE_FEE_DENOMINATOR;
+  };
+
   const velordsFeeOnWithdrawal = useMemo(
-    () =>
-      formatFee(
-        (EternumGlobalConfig.bridge.velords_fee_on_wtdr_percent * Number(selectedResourceAmount)) / feeDenominator,
-      ),
+    () => formatFee(calculateBridgeFee(bridgeConfig.velords_fee_on_wtdr_percent)),
     [selectedResourceAmount],
   );
   const seasonPoolFeeOnWithdrawal = useMemo(
-    () =>
-      formatFee(
-        (EternumGlobalConfig.bridge.season_pool_fee_on_wtdr_percent * Number(selectedResourceAmount)) / feeDenominator,
-      ),
+    () => formatFee(calculateBridgeFee(bridgeConfig.season_pool_fee_on_wtdr_percent)),
     [selectedResourceAmount],
   );
   const clientFeeOnWithdrawal = useMemo(
-    () =>
-      formatFee(
-        (EternumGlobalConfig.bridge.client_fee_on_wtdr_percent * Number(selectedResourceAmount)) / feeDenominator,
-      ),
+    () => formatFee(calculateBridgeFee(bridgeConfig.client_fee_on_wtdr_percent)),
     [selectedResourceAmount],
   );
   const bankFeeOnWithdrawal = useMemo(
-    () =>
-      formatFee(
-        (EternumGlobalConfig.bridge.max_bank_fee_wtdr_percent * Number(selectedResourceAmount)) / feeDenominator,
-      ),
+    () => formatFee(calculateBridgeFee(bridgeConfig.max_bank_fee_dpt_percent)),
     [selectedResourceAmount],
   );
+
   const totalFeeOnWithdrawal = useMemo(
     () =>
       formatFee(
@@ -88,18 +90,6 @@ export const BridgeOutStep1 = () => {
     [velordsFeeOnWithdrawal, seasonPoolFeeOnWithdrawal, clientFeeOnWithdrawal, bankFeeOnWithdrawal],
   );
 
-  // const { data } = useSuspenseQuery({
-  //   queryKey: ["erc721Balance", account?.address],
-  //   queryFn: () => (account?.address ? execute(GET_REALMS, { accountAddress: account.address }) : null),
-  //   refetchInterval: 10_000,
-  // });
-  const realmEntityId = useMemo(() => {
-    if (!realm) {
-      return 0;
-    }
-    return getRealmEntityIdFromRealmId(Number(realm));
-  }, [realm]);
-  console.log({ realmEntityId }, "firstttttttttttttytytytytytytytytytyty");
   const { data: seasonPassMints } = useSuspenseQuery({
     queryKey: ["ERCMints"],
     queryFn: () => execute(GET_ERC_MINTS),
@@ -138,10 +128,7 @@ export const BridgeOutStep1 = () => {
     } else {
       return 0;
     }
-  }, [fromToken, realm, selectedResourceAmount]);
-
-  // travel time is always shown in minutes so write a function
-  // to convert to hours and minutes and make it look beautiful
+  }, [selectedResourceId, realmId, selectedResourceAmount]);
 
   const travelTimeInHoursAndMinutes = (travelTime: number) => {
     const hours = Math.floor(travelTime / 60);
@@ -149,15 +136,9 @@ export const BridgeOutStep1 = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  // const timeToTravel = Math.floor(
-  //   ((distanceFromPosition / configManager.getSpeedConfig(DONKEY_ENTITY_TYPE)) * 3600) / 60 / 60,
-  // );
-
   const orderWeight = useMemo(() => {
     if (selectedResourceIds.length > 0) {
-      console.log(selectedResourceId);
       const totalWeight = getTotalResourceWeight([{ resourceId: selectedResourceId, amount: selectedResourceAmount }]);
-      console.log({ resourceId: selectedResourceId, totalWeight, amount: selectedResourceAmount });
       return totalWeight;
     } else {
       return 0;
@@ -172,25 +153,21 @@ export const BridgeOutStep1 = () => {
     }
   }, [orderWeight]);
 
-  const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
-
   const onSendToBank = async () => {
     if (realmEntityId) {
       const resourceAddresses = resourceAddressesLocal;
       const selectedResourceName = ResourcesIds[selectedResourceId];
       console.log({ selectedResourceName, realmEntityId });
-      let tokenAddress = resourceAddresses[selectedResourceName.toUpperCase()][1];
+      let tokenAddress =
+        resourceAddresses[selectedResourceName.toUpperCase() as keyof typeof resourceAddressesLocal][1];
       try {
         setIsLoading(true);
         await bridgeStartWithdrawFromRealm(
-          tokenAddress,
+          tokenAddress as string,
           ADMIN_BANK_ENTITY_ID,
           BigInt(realmEntityId!),
           BigInt(selectedResourceAmount * RESOURCE_PRECISION),
         );
-        // setselectedResourceAmount("");
-        // setFromToken("");
-        // setRealm("");
       } finally {
         setIsLoading(false);
       }
@@ -206,7 +183,7 @@ export const BridgeOutStep1 = () => {
 
         <div>{displayAddress(account?.address)}</div>
       </div>
-      <Select onValueChange={(value) => setRealms(value)}>
+      <Select onValueChange={(value) => setRealmId(value)}>
         <SelectTrigger className="w-full border-gold/15">
           <SelectValue placeholder="Select Realm" />
         </SelectTrigger>
@@ -220,10 +197,10 @@ export const BridgeOutStep1 = () => {
       </Select>
 
       {Boolean(realmEntityId) && (
-        <SwapRow
+        <SelectResourceRow
           realmEntityId={Number(realmEntityId)}
           selectedResourceIds={selectedResourceIds}
-          setSelectedResourceIds={setSelectedResourceIds}
+          setSelectedResourceIds={(value: number[]) => setSelectedResourceIds(value as unknown as never[])}
           selectedResourceAmounts={selectedResourceAmounts}
           setSelectedResourceAmounts={setSelectedResourceAmounts}
         />
@@ -243,21 +220,21 @@ export const BridgeOutStep1 = () => {
           <div>{totalFeeOnWithdrawal}</div>
         </div>
         <div className="flex justify-between text-xs">
-          <div>Bank Fees ({(EternumGlobalConfig.bridge.max_bank_fee_wtdr_percent * 100) / feeDenominator}%)</div>
+          <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_wtdr_percent)}%)</div>
           <div>{bankFeeOnWithdrawal}</div>
         </div>
         <div className="flex justify-between text-xs">
-          <div>Velords Fees ({(EternumGlobalConfig.bridge.velords_fee_on_wtdr_percent * 100) / feeDenominator}%)</div>
+          <div>Velords Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.velords_fee_on_wtdr_percent)}%)</div>
           <div>{velordsFeeOnWithdrawal}</div>
         </div>
         <div className="flex justify-between text-xs">
           <div>
-            Season Pool Fees ({(EternumGlobalConfig.bridge.season_pool_fee_on_wtdr_percent * 100) / feeDenominator}%)
+            Season Pool Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.season_pool_fee_on_wtdr_percent)}%)
           </div>
           <div>{seasonPoolFeeOnWithdrawal}</div>
         </div>
         <div className="flex justify-between text-xs">
-          <div>Client Fees ({(EternumGlobalConfig.bridge.client_fee_on_wtdr_percent * 100) / feeDenominator}%)</div>
+          <div>Client Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.client_fee_on_wtdr_percent)}%)</div>
           <div>{clientFeeOnWithdrawal}</div>
         </div>
         <div className="flex justify-between font-bold mt-5 mb-5">
@@ -265,7 +242,10 @@ export const BridgeOutStep1 = () => {
           <div>{formatFee(Number(selectedResourceAmount) - Number(totalFeeOnWithdrawal))}</div>
         </div>
       </div>
-      <Button disabled={(!selectedResourceAmount && !fromToken && !realm) || isLoading} onClick={() => onSendToBank()}>
+      <Button
+        disabled={(!selectedResourceAmount && !selectedResourceId && !realmId) || isLoading}
+        onClick={() => onSendToBank()}
+      >
         {isLoading && <Loader className="animate-spin pr-2" />}
         {isLoading ? "Sending to Bank..." : "Send to Bank (Step 1)"}
       </Button>
@@ -273,7 +253,7 @@ export const BridgeOutStep1 = () => {
   );
 };
 
-export const SwapRow = ({
+export const SelectResourceRow = ({
   realmEntityId,
   selectedResourceIds,
   setSelectedResourceIds,
@@ -286,10 +266,7 @@ export const SwapRow = ({
   selectedResourceAmounts: { [key: string]: number };
   setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
 }) => {
-  console.log(selectedResourceIds, selectedResourceAmounts);
   return (
-    // <div className="rounded-lg p-3 border border-gold/15 shadow-lg bg-dark-brown flex gap-3">
-
     <div className="grid grid-cols-0 gap-8 px-8 h-full">
       <div className=" bg-gold/10  h-auto border border-gold/40">
         <SelectSingleResource

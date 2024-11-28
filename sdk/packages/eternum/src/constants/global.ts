@@ -125,6 +125,7 @@ export const REALMS_ADDRESS = "0x0"; // set in indexer.sh
 export const LORDS_ADDRESS = "0x0"; // set in indexer.sh
 
 // Bridge Fees (using 10_000 precision)
+export const BRIDGE_FEE_DENOMINATOR = 10_000;
 export const VELORDS_FEE_ON_DEPOSIT = 500; // 5%
 export const VELORDS_FEE_ON_WITHDRAWAL = 500; // 5%
 export const SEASON_POOL_FEE_ON_DEPOSIT = 250; // 2.5%
