@@ -6,6 +6,28 @@ interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
+export interface BridgeResourceIntoRealmProps extends SystemSigner {
+  token: num.BigNumberish;
+  through_bank_id: num.BigNumberish;
+  recipient_realm_entity_id: num.BigNumberish;
+  amount: num.BigNumberish;
+  client_fee_recipient: num.BigNumberish;
+}
+
+export interface BridgeStartWithdrawFromRealmProps extends SystemSigner {
+  through_bank_id: num.BigNumberish;
+  from_realm_entity_id: num.BigNumberish;
+  token: num.BigNumberish;
+  amount: num.BigNumberish;
+}
+
+export interface BridgeFinishWithdrawFromRealmProps extends SystemSigner {
+  through_bank_id: num.BigNumberish;
+  from_entity_id: num.BigNumberish;
+  token: num.BigNumberish;
+  recipient_address: num.BigNumberish;
+  client_fee_recipient: num.BigNumberish;
+}
 export interface CreateSoldiersProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
   quantity: num.BigNumberish;
@@ -346,8 +368,6 @@ export interface WhitelistPlayerProps extends SystemSigner {
   player_address_to_whitelist: num.BigNumberish;
   guild_entity_id: num.BigNumberish;
 }
-
-export interface LeaveGuild extends SystemSigner {}
 
 export interface TransferGuildOwnership extends SystemSigner {
   guild_entity_id: num.BigNumberish;

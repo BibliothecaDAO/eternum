@@ -1,5 +1,5 @@
-import { ResourcesIds } from ".";
 import { ResourceCost } from "../types";
+import { ResourcesIds } from "./index";
 
 export const HYPERSTRUCTURE_CREATION_COSTS: ResourceCost[] = [
   {

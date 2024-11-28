@@ -1,0 +1,23 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "bun --env-file=.env ./deploy && bun --env-file=.env ./config/index.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "dotenv": "^16.3.1",
+    "starknet": "^6.8.0",
+    "@dojoengine/core": "1.0.0-alpha.24",
+    "eventemitter3": "^5.0.1",
+    "vitest": "^2.0.5"
+  },
+  "devDependencies": {
+    "prettier": "3.1.1"
+  }
+}

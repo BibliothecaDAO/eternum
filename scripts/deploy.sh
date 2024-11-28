@@ -74,3 +74,14 @@ echo "Setting up config..."
 
 # NOTE: THE SEASON PASS MUST BE SETUP BEFORE THE CONFIG IS SETUP
 bun --env-file=../client/.env.production ../config/index.ts
+
+# ------------------------------------------------------------------------------------------------
+# Build and deploy season resources (ERC20) contracts
+# @dev: only run this if deploying to slot
+# ------------------------------------------------------------------------------------------------
+printf "\n\n"
+echo "----- Building Season Resources Contract ----- "
+# build and deploy season resources contract
+cd ..
+cd season_resources/contracts && scarb --release build
+cd ../scripts/deployment && npm run deploy 

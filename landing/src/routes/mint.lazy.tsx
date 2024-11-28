@@ -19,23 +19,23 @@ import { useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, useMemo, useState } from "react";
+import { env } from "../../env";
 
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
 
 function Mint() {
-  const { connect, connectors, connector } = useConnect();
+  const { connect, connectors } = useConnect();
   const {
     account: { account },
   } = useDojo();
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
-  const [mintToController, setMintToController] = useState(true);
-  const [controllerAddress, setControllerAddress] = useState<string>();
+  const [, setMintToController] = useState(true);
+  const [controllerAddress] = useState<string>();
 
-
-  const realmsAddress = import.meta.env.VITE_REALMS_ADDRESS;
+  const realmsAddress = env.VITE_REALMS_ADDRESS;
 
   // useEffect(() => {
   //   if (mintToController && checkCartridgeConnector(connector)) {
@@ -73,7 +73,12 @@ function Mint() {
   );
 
   const realmsErcBalance = useMemo(
-    () => data?.tokenBalances?.edges?.filter((token) => token?.node?.tokenMetadata.__typename == 'ERC721__Token' && token.node.tokenMetadata.contractAddress === realmsAddress),
+    () =>
+      data?.tokenBalances?.edges?.filter(
+        (token) =>
+          token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+          token.node.tokenMetadata.contractAddress === realmsAddress,
+      ),
     [data, realmsAddress],
   );
 

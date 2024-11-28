@@ -50,6 +50,18 @@ const setupConfig: Config =
           graceTickCount: 0,
           delaySeconds: 0,
         },
+        // make it easier to build hyperstructures in dev mode
+        hyperstructures: {
+          ...EternumGlobalConfig.hyperstructures,
+          hyperstructureCreationCosts: EternumGlobalConfig.hyperstructures.hyperstructureCreationCosts.map((cost) => ({
+            resource: cost.resource,
+            amount: 1,
+          })),
+          hyperstructureTotalCosts: EternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
+            resource: cost.resource,
+            amount: 0.1,
+          })),
+        },
       }
     : EternumGlobalConfig;
 

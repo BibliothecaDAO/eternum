@@ -260,8 +260,6 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
             // take back bonuses given to surrounding buildings if this building is a bonus supplier
             self.update_bonuses_supplied(ref world, delete: true);
         }
-
-        world.write_model(@self);
     }
 
     fn production_amount(self: @Building, ref world: WorldStorage) -> u128 {

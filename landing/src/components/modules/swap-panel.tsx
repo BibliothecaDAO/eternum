@@ -1,5 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Swap } from "./swap";
+import { BridgeIn } from "./bridge-in";
+import { BridgeOutStep1 } from "./bridge-out-step-1";
+import { BridgeOutStep2 } from "./bridge-out-step-2";
 
 export const SwapPanel = () => {
   return (
@@ -9,15 +11,21 @@ export const SwapPanel = () => {
           <TabsTrigger className="w-full" value="in">
             Bridge In
           </TabsTrigger>
-          <TabsTrigger className="w-full" value="out">
+          <TabsTrigger className="w-full" value="out-start">
             Bridge Out
+          </TabsTrigger>
+          <TabsTrigger className="w-full" value="out-finish">
+            Bridge Out (Finish)
           </TabsTrigger>
         </TabsList>
         <TabsContent value="in">
-          <Swap />
+          <BridgeIn />
         </TabsContent>
-        <TabsContent value="out">
-          <Swap />
+        <TabsContent value="out-start">
+          <BridgeOutStep1 />
+        </TabsContent>
+        <TabsContent value="out-finish">
+          <BridgeOutStep2 />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,3 +1,9 @@
+/**
+ * Provider class for interacting with the Eternum game contracts
+ *
+ * @param katana - The katana manifest containing contract addresses and ABIs
+ * @param url - Optional RPC URL for the provider
+ */
 import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
@@ -5,6 +11,14 @@ import * as SystemProps from "../types/provider";
 
 export const NAMESPACE = "eternum";
 
+/**
+ * Gets a contract address from the manifest by name
+ *
+ * @param manifest - The manifest containing contract information
+ * @param name - The name/tag of the contract to find
+ * @returns The contract address
+ * @throws Error if contract not found
+ */
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.tag === name);
   if (!contract) {
@@ -13,18 +27,39 @@ export const getContractByName = (manifest: any, name: string) => {
   return contract.address;
 };
 
+/**
+ * Higher order function that adds event emitter functionality to a class
+ *
+ * @param Base - The base class to extend
+ * @returns A new class with event emitter capabilities
+ */
 function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
   return class extends Base {
     eventEmitter = new EventEmitter();
 
+    /**
+     * Emit an event
+     * @param event - The event name
+     * @param args - Arguments to pass to event handlers
+     */
     emit(event: string, ...args: any[]) {
       this.eventEmitter.emit(event, ...args);
     }
 
+    /**
+     * Subscribe to an event
+     * @param event - The event name to listen for
+     * @param listener - Callback function when event occurs
+     */
     on(event: string, listener: (...args: any[]) => void) {
       this.eventEmitter.on(event, listener);
     }
 
+    /**
+     * Unsubscribe from an event
+     * @param event - The event name to stop listening to
+     * @param listener - The callback function to remove
+     */
     off(event: string, listener: (...args: any[]) => void) {
       this.eventEmitter.off(event, listener);
     }
@@ -33,6 +68,12 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
 
 export class EternumProvider extends EnhancedDojoProvider {
+  /**
+   * Create a new EternumProvider instance
+   *
+   * @param katana - The katana manifest containing contract info
+   * @param url - Optional RPC URL
+   */
   constructor(katana: any, url?: string) {
     super(katana, url);
     this.manifest = katana;
@@ -43,6 +84,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     };
   }
 
+  /**
+   * Execute a transaction and check its result
+   *
+   * @param signer - Account that will sign the transaction
+   * @param transactionDetails - Transaction call data
+   * @returns Transaction receipt
+   */
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
@@ -55,7 +103,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     return transactionResult;
   }
 
-  // Wrapper function to check for transaction errors
+  /**
+   * Wait for a transaction to complete and check for errors
+   *
+   * @param transactionHash - Hash of transaction to wait for
+   * @returns Transaction receipt
+   * @throws Error if transaction fails or is reverted
+   */
   async waitForTransactionWithCheck(transactionHash: string) {
     let receipt;
     try {
@@ -76,6 +130,88 @@ export class EternumProvider extends EnhancedDojoProvider {
     return receipt;
   }
 
+  public async bridge_start_withdraw_from_realm(props: SystemProps.BridgeStartWithdrawFromRealmProps) {
+    const { token, through_bank_id, from_realm_entity_id, amount, signer } = props;
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        entrypoint: "start_withdraw",
+        calldata: [through_bank_id, from_realm_entity_id, token, amount],
+      },
+    ]);
+  }
+
+  public async bridge_finish_withdraw_from_realm(props: SystemProps.BridgeFinishWithdrawFromRealmProps) {
+    const { token, through_bank_id, from_entity_id, recipient_address, client_fee_recipient, signer } = props;
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        entrypoint: "finish_withdraw",
+        calldata: [through_bank_id, from_entity_id, token, recipient_address, client_fee_recipient],
+      },
+    ]);
+  }
+
+  public async bridge_resource_into_realm(props: SystemProps.BridgeResourceIntoRealmProps) {
+    const { token, through_bank_id, recipient_realm_entity_id, amount, client_fee_recipient, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: token as string,
+        entrypoint: "approve",
+        calldata: [
+          getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+          amount,
+          0, // u128, u128
+        ],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
+        entrypoint: "deposit",
+        calldata: [
+          token,
+          through_bank_id,
+          recipient_realm_entity_id,
+          amount,
+          0, // u128, u128
+          client_fee_recipient,
+        ],
+      },
+    ]);
+  }
+
+  /**
+   * Create a new trade order
+   *
+   * @param props - Properties for creating the order
+   * @param props.maker_id - ID of the realm creating the trade
+   * @param props.maker_gives_resources - Resources the maker is offering
+   * @param props.taker_id - ID of the realm that can accept the trade
+   * @param props.taker_gives_resources - Resources requested from the taker
+   * @param props.signer - Account executing the transaction
+   * @param props.expires_at - When the trade expires
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Use realm 123 to create a trade offering 100 wood for 50 stone. Expires at timestamp 1704067200 (example timestamp). Maker is realm 123, taker is realm 456.
+   * {
+   *   contractAddress: "<eternum-trade_systems>",
+   *   entrypoint: "create_order",
+   *   calldata: [
+   *     123, // maker_id
+   *     1,   // maker_gives_resources.length / 2 (1 resource type)
+   *     1,   // resource type (wood)
+   *     100, // amount
+   *     456, // taker_id
+   *     1,   // taker_gives_resources.length / 2 (1 resource type)
+   *     2,   // resource type (stone)
+   *     50,  // amount
+   *     1704067200 // expires_at (example timestamp)
+   *   ]
+   * }
+   * ```
+   */
   public async create_order(props: SystemProps.CreateOrderProps) {
     const { maker_id, maker_gives_resources, taker_id, taker_gives_resources, signer, expires_at } = props;
 
@@ -96,6 +232,35 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+  /**
+   * Accept a trade order
+   *
+   * @param props - Properties for accepting the order
+   * @param props.taker_id - ID of the realm accepting the trade
+   * @param props.trade_id - ID of the trade being accepted
+   * @param props.maker_gives_resources - Resources the maker is offering
+   * @param props.taker_gives_resources - Resources requested from the taker
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * {
+   *   contractAddress: "<eternum-trade_systems>",
+   *   entrypoint: "accept_order",
+   *   calldata: [
+   *     123, // taker_id
+   *     789, // trade_id
+   *     1,   // maker_gives_resources.length / 2 (1 resource type)
+   *     1,   // resource type (wood)
+   *     100, // amount
+   *     1,   // taker_gives_resources.length / 2 (1 resource type)
+   *     2,   // resource type (stone)
+   *     50   // amount
+   *   ]
+   * }
+   * ```
+   */
   public async accept_order(props: SystemProps.AcceptOrderProps) {
     const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, signer } = props;
 
@@ -115,6 +280,37 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+  /**
+   * Accept part of a trade order
+   *
+   * @param props - Properties for accepting the partial order
+   * @param props.taker_id - ID of the realm accepting the trade
+   * @param props.trade_id - ID of the trade being accepted
+   * @param props.maker_gives_resources - Resources the maker is offering
+   * @param props.taker_gives_resources - Resources requested from the taker
+   * @param props.taker_gives_actual_amount - Actual amount taker will give
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * {
+   *   contractAddress: "<eternum-trade_systems>",
+   *   entrypoint: "accept_partial_order",
+   *   calldata: [
+   *     123, // taker_id
+   *     789, // trade_id
+   *     1,   // maker_gives_resources.length / 2 (1 resource type)
+   *     1,   // resource type (wood)
+   *     100, // amount
+   *     1,   // taker_gives_resources.length / 2 (1 resource type)
+   *     2,   // resource type (stone)
+   *     50,  // amount
+   *     25   // taker_gives_actual_amount
+   *   ]
+   * }
+   * ```
+   */
   public async accept_partial_order(props: SystemProps.AcceptPartialOrderProps) {
     const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, taker_gives_actual_amount, signer } =
       props;
@@ -136,6 +332,29 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+  /**
+   * Cancel a trade order
+   *
+   * @param props - Properties for canceling the order
+   * @param props.trade_id - ID of the trade to cancel
+   * @param props.return_resources - Resources to return
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * {
+   *   contractAddress: "<eternum-trade_systems>",
+   *   entrypoint: "cancel_order",
+   *   calldata: [
+   *     789, // trade_id
+   *     1,   // return_resources.length / 2 (1 resource type)
+   *     1,   // resource type (wood)
+   *     100  // amount
+   *   ]
+   * }
+   * ```
+   */
   public async cancel_order(props: SystemProps.CancelOrderProps) {
     const { trade_id, return_resources, signer } = props;
 
@@ -146,6 +365,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Mint resources for development/testing
+   *
+   * @param props - Properties for minting resources
+   * @param props.receiver_id - ID of realm receiving resources
+   * @param props.resources - Resources to mint
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Mint 100 wood and 50 stone
+   * {
+   *   receiver_id: 123,
+   *   resources: [1, 100, 2, 50], // [wood ID, wood amount, stone ID, stone amount]
+   *   signer: account
+   * }
+   * ```
+   */
   public async mint_resources(props: SystemProps.MintResourcesProps) {
     const { receiver_id, resources } = props;
 
@@ -156,6 +394,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Claim completed quests
+   *
+   * @param props - Properties for claiming quests
+   * @param props.receiver_id - ID of realm claiming rewards
+   * @param props.quest_ids - IDs of quests to claim
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Claim rewards for quests 1 and 2
+   * {
+   *   receiver_id: 123,
+   *   quest_ids: [1, 2],
+   *   signer: account
+   * }
+   * ```
+   */
   public async claim_quest(props: SystemProps.ClaimQuestProps) {
     const { receiver_id, quest_ids, signer } = props;
 
@@ -170,6 +427,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, calldata);
   }
 
+  /**
+   * Create a new realm
+   *
+   * @param props - Properties for creating realm
+   * @param props.realm_id - ID for the new realm
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create realm with ID 123
+   * {
+   *   realm_id: 123,
+   *   signer: account
+   * }
+   * ```
+   */
   public async create_realm(props: SystemProps.CreateRealmProps) {
     const { realm_id, signer } = props;
 
@@ -187,6 +461,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
+  /**
+   * Upgrade a realm's level
+   *
+   * @param props - Properties for upgrading realm
+   * @param props.realm_entity_id - ID of realm to upgrade
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Upgrade realm 123
+   * {
+   *   realm_entity_id: 123,
+   *   signer: account
+   * }
+   * ```
+   */
   public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
     const { realm_entity_id, signer } = props;
 
@@ -197,7 +488,24 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
+  /**
+   * Create multiple realms at once
+   *
+   * @param props - Properties for creating realms
+   * @param props.realm_ids - Array of realm IDs to create
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create realms with IDs 123, 456, 789
+   * {
+   *   realm_ids: [123, 456, 789],
+   *   signer: account
+   * }
+   * ```
+   */
+  public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
     let { realm_ids, signer } = props;
 
     let calldata = realm_ids.flatMap((realm_id) => {
@@ -212,8 +520,29 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return await this.executeAndCheckTransaction(signer, calldata);
-  };
+  }
 
+  /**
+   * Transfer resources between entities
+   *
+   * @param props - Properties for transferring resources
+   * @param props.sending_entity_id - ID of the entity sending resources
+   * @param props.receiving_entity_id - ID of the entity receiving resources
+   * @param props.resources - Array of resource amounts to transfer
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Transfer 100 wood and 50 stone from entity 123 to entity 456
+   * {
+   *   sending_entity_id: 123,
+   *   receiving_entity_id: 456,
+   *   resources: [1, 100, 2, 50], // [resourceId, amount, resourceId, amount]
+   *   signer: account
+   * }
+   * ```
+   */
   public async transfer_resources(props: SystemProps.TransferResourcesProps) {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
 
@@ -224,6 +553,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Send resources from one entity to another
+   *
+   * @param props - Properties for sending resources
+   * @param props.sender_entity_id - ID of the entity sending resources
+   * @param props.recipient_entity_id - ID of the entity receiving resources
+   * @param props.resources - Array of resource amounts to send
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Send 100 wood and 50 stone from entity 123 to entity 456
+   * {
+   *   sender_entity_id: 123,
+   *   recipient_entity_id: 456,
+   *   resources: [1, 100, 2, 50], // [resourceId, amount, resourceId, amount]
+   *   signer: account
+   * }
+   * ```
+   */
   public async send_resources(props: SystemProps.SendResourcesProps) {
     const { sender_entity_id, recipient_entity_id, resources, signer } = props;
 
@@ -234,6 +584,37 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Send resources from multiple entities
+   *
+   * @param props - Properties for sending multiple resources
+   * @param props.calls - Array of send resource calls
+   * @param props.calls[].sender_entity_id - ID of the entity sending resources
+   * @param props.calls[].recipient_entity_id - ID of the entity receiving resources
+   * @param props.calls[].resources - Array of resource amounts to send
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Send resources from multiple entities
+   * {
+   *   calls: [
+   *     {
+   *       sender_entity_id: 123,
+   *       recipient_entity_id: 456,
+   *       resources: [1, 100, 2, 50]
+   *     },
+   *     {
+   *       sender_entity_id: 789,
+   *       recipient_entity_id: 101,
+   *       resources: [3, 75, 4, 25]
+   *     }
+   *   ],
+   *   signer: account
+   * }
+   * ```
+   */
   public async send_resources_multiple(props: SystemProps.SendResourcesMultipleProps) {
     const { calls, signer } = props;
 
@@ -247,6 +628,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     );
   }
 
+  /**
+   * Pickup resources from an entity after approval
+   *
+   * @param props - Properties for picking up resources
+   * @param props.recipient_entity_id - ID of the entity receiving resources
+   * @param props.owner_entity_id - ID of the entity that owns the resources
+   * @param props.resources - Array of resource amounts to pickup
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Pickup 100 wood and 50 stone from entity 123 to entity 456
+   * {
+   *   recipient_entity_id: 456,
+   *   owner_entity_id: 123,
+   *   resources: [1, 100, 2, 50], // [resourceId, amount, resourceId, amount]
+   *   signer: account
+   * }
+   * ```
+   */
   public async pickup_resources(props: SystemProps.PickupResourcesProps) {
     const { recipient_entity_id, owner_entity_id, resources, signer } = props;
 
@@ -264,6 +666,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+  /**
+   * Move an entity to a specific coordinate
+   *
+   * @param props - Properties for traveling
+   * @param props.travelling_entity_id - ID of the entity that is traveling
+   * @param props.destination_coord_x - X coordinate of the destination
+   * @param props.destination_coord_y - Y coordinate of the destination
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Move entity 123 to coordinates (10, 20)
+   * {
+   *   travelling_entity_id: 123,
+   *   destination_coord_x: 10,
+   *   destination_coord_y: 20,
+   *   signer: account
+   * }
+   * ```
+   */
   public async travel(props: SystemProps.TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
 
@@ -274,6 +697,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Move an entity in a hex direction
+   *
+   * @param props - Properties for hex traveling
+   * @param props.travelling_entity_id - ID of the entity that is traveling
+   * @param props.directions - Array of hex directions to travel
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Move entity 123 in hex directions [1, 2, 3]
+   * {
+   *   travelling_entity_id: 123,
+   *   directions: [1, 2, 3],
+   *   signer: account
+   * }
+   * ```
+   */
   public async travel_hex(props: SystemProps.TravelHexProps) {
     const { travelling_entity_id, directions, signer } = props;
 
@@ -284,6 +726,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Set a name for an address
+   *
+   * @param props - Properties for setting address name
+   * @param props.name - Name to set for the address
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Set name "Player1" for address
+   * {
+   *   name: "Player1",
+   *   signer: account
+   * }
+   * ```
+   */
   public async set_address_name(props: SystemProps.SetAddressNameProps) {
     const { name, signer } = props;
 
@@ -294,6 +753,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Set a name for an entity
+   *
+   * @param props - Properties for setting entity name
+   * @param props.entity_id - ID of the entity to name
+   * @param props.name - Name to set for the entity
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Set name "Castle1" for entity 123
+   * {
+   *   entity_id: 123,
+   *   name: "Castle1",
+   *   signer: account
+   * }
+   * ```
+   */
   public async set_entity_name(props: SystemProps.SetEntityNameProps) {
     const { entity_id, name, signer } = props;
 
@@ -304,6 +782,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Explore in a direction from a unit's position
+   *
+   * @param props - Properties for exploring
+   * @param props.unit_id - ID of the unit doing the exploration
+   * @param props.direction - Direction to explore in
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Explore in direction 1 with unit 123
+   * {
+   *   unit_id: 123,
+   *   direction: 1,
+   *   signer: account
+   * }
+   * ```
+   */
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
@@ -314,9 +811,40 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Create a new building
+   *
+   * @param props - Properties for creating building
+   * @param props.entity_id - ID of the entity creating the building
+   * @param props.directions - Array of directions for building placement
+   * @param props.building_category - Category of building to create
+   * @param props.produce_resource_type - Type of resource the building will produce
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create a wood production building at coordinates determined by directions [1,2]
+   * {
+   *   contractAddress: "<eternum-building_systems>",
+   *   entrypoint: "create",
+   *   calldata: [
+   *     123,     // entity_id
+   *     [1, 2],  // directions array
+   *     1,       // building_category (e.g. 1 for resource production)
+   *     1        // produce_resource_type (e.g. 1 for wood) for farms and fishing villages use 0
+   *   ]
+   * }
+   * ```
+   */
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, produce_resource_type, signer } = props;
-
+    ["62", "1", "0", "4", "1"];
+    console.log("Create Building Call Data:", {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
+      entrypoint: "create",
+      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
+    });
     return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",
@@ -324,6 +852,31 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Destroy an existing building
+   *
+   * @param props - Properties for destroying building
+   * @param props.entity_id - ID of the entity destroying the building
+   * @param props.building_coord - Coordinates of building to destroy
+   * @param props.building_coord.x - X coordinate of building
+   * @param props.building_coord.y - Y coordinate of building
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Destroy building at coordinates (10, 20)
+   * {
+   *   contractAddress: "<eternum-building_systems>",
+   *   entrypoint: "destroy",
+   *   calldata: [
+   *     123,     // entity_id
+   *     10,      // building_coord.x
+   *     20       // building_coord.y
+   *   ]
+   * }
+   * ```
+   */
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     const { entity_id, building_coord, signer } = props;
 
@@ -334,6 +887,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Pause production at a building
+   *
+   * @param props - Properties for pausing production
+   * @param props.entity_id - ID of the entity that owns the building
+   * @param props.building_coord - Coordinates of the building
+   * @param props.building_coord.x - X coordinate of the building
+   * @param props.building_coord.y - Y coordinate of the building
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Pause production at building at coordinates (10, 20)
+   * {
+   *   entity_id: 123,
+   *   building_coord: { x: 10, y: 20 },
+   *   signer: account
+   * }
+   * ```
+   */
   public async pause_production(props: SystemProps.PauseProductionProps) {
     const { entity_id, building_coord, signer } = props;
 
@@ -344,6 +918,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Resume production at a building
+   *
+   * @param props - Properties for resuming production
+   * @param props.entity_id - ID of the entity that owns the building
+   * @param props.building_coord - Coordinates of the building
+   * @param props.building_coord.x - X coordinate of the building
+   * @param props.building_coord.y - Y coordinate of the building
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Resume production at building at coordinates (10, 20)
+   * {
+   *   entity_id: 123,
+   *   building_coord: { x: 10, y: 20 },
+   *   signer: account
+   * }
+   * ```
+   */
   public async resume_production(props: SystemProps.ResumeProductionProps) {
     const { entity_id, building_coord, signer } = props;
 
@@ -354,6 +949,33 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Create a new bank
+   *
+   * @param props - Properties for creating a bank
+   * @param props.realm_entity_id - ID of the realm entity creating the bank
+   * @param props.coord - Coordinates for the bank location
+   * @param props.owner_fee_num - Numerator for owner fee calculation
+   * @param props.owner_fee_denom - Denominator for owner fee calculation
+   * @param props.owner_bridge_fee_dpt_percent - Owner bridge fee percentage for deposits
+   * @param props.owner_bridge_fee_wtdr_percent - Owner bridge fee percentage for withdrawals
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create a bank with 1% fees
+   * {
+   *   realm_entity_id: 123,
+   *   coord: 456,
+   *   owner_fee_num: 1,
+   *   owner_fee_denom: 100,
+   *   owner_bridge_fee_dpt_percent: 100,
+   *   owner_bridge_fee_wtdr_percent: 100,
+   *   signer: account
+   * }
+   * ```
+   */
   public async create_bank(props: SystemProps.CreateBankProps) {
     const {
       realm_entity_id,
@@ -379,6 +1001,33 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Create an admin bank
+   *
+   * @param props - Properties for creating an admin bank
+   * @param props.name - Name of the admin bank
+   * @param props.coord - Coordinates for the bank location
+   * @param props.owner_fee_num - Numerator for owner fee calculation
+   * @param props.owner_fee_denom - Denominator for owner fee calculation
+   * @param props.owner_bridge_fee_dpt_percent - Owner bridge fee percentage for deposits
+   * @param props.owner_bridge_fee_wtdr_percent - Owner bridge fee percentage for withdrawals
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create an admin bank with 1% fees
+   * {
+   *   name: "Admin Bank 1",
+   *   coord: 456,
+   *   owner_fee_num: 1,
+   *   owner_fee_denom: 100,
+   *   owner_bridge_fee_dpt_percent: 100,
+   *   owner_bridge_fee_wtdr_percent: 100,
+   *   signer: account
+   * }
+   * ```
+   */
   public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
     const {
       name,
@@ -404,6 +1053,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Open a new bank account
+   *
+   * @param props - Properties for opening an account
+   * @param props.realm_entity_id - ID of the realm entity opening the account
+   * @param props.bank_entity_id - ID of the bank where account will be opened
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Open account at bank 456 for realm 123
+   * {
+   *   realm_entity_id: 123,
+   *   bank_entity_id: 456,
+   *   signer: account
+   * }
+   * ```
+   */
   public async open_account(props: SystemProps.OpenAccountProps) {
     const { realm_entity_id, bank_entity_id, signer } = props;
 
@@ -414,6 +1082,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Change the owner fee for a bank
+   *
+   * @param props - Properties for changing bank owner fee
+   * @param props.bank_entity_id - ID of the bank to modify
+   * @param props.new_swap_fee_num - New numerator for swap fee calculation
+   * @param props.new_swap_fee_denom - New denominator for swap fee calculation
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Change bank 123's owner fee to 1/100 (1%)
+   * {
+   *   bank_entity_id: 123,
+   *   new_swap_fee_num: 1,
+   *   new_swap_fee_denom: 100,
+   *   signer: account
+   * }
+   * ```
+   */
   public async change_bank_owner_fee(props: SystemProps.ChangeBankOwnerFeeProps) {
     const { bank_entity_id, new_swap_fee_num, new_swap_fee_denom, signer } = props;
 
@@ -424,6 +1113,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Change the bridge fees for a bank
+   *
+   * @param props - Properties for changing bank bridge fees
+   * @param props.bank_entity_id - ID of the bank to modify
+   * @param props.new_bridge_fee_dpt_percent - New deposit fee percentage
+   * @param props.new_bridge_fee_wtdr_percent - New withdrawal fee percentage
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Change bank 123's bridge fees to 2% for deposits and 3% for withdrawals
+   * {
+   *   bank_entity_id: 123,
+   *   new_bridge_fee_dpt_percent: 2,
+   *   new_bridge_fee_wtdr_percent: 3,
+   *   signer: account
+   * }
+   * ```
+   */
   public async change_bank_bridge_fee(props: SystemProps.ChangeBankBridgeFeeProps) {
     const { bank_entity_id, new_bridge_fee_dpt_percent, new_bridge_fee_wtdr_percent, signer } = props;
 
@@ -434,6 +1144,29 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Buy resources from a bank
+   *
+   * @param props - Properties for buying resources
+   * @param props.bank_entity_id - ID of the bank to buy from
+   * @param props.entity_id - ID of the entity buying resources
+   * @param props.resource_type - Type of resource to buy
+   * @param props.amount - Amount of resource to buy
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Buy 100 units of resource type 1 from bank 456
+   * {
+   *   bank_entity_id: 456,
+   *   entity_id: 123,
+   *   resource_type: 1,
+   *   amount: 100,
+   *   signer: account
+   * }
+   * ```
+   */
   public async buy_resources(props: SystemProps.BuyResourcesProps) {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
@@ -444,6 +1177,29 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Sell resources to a bank
+   *
+   * @param props - Properties for selling resources
+   * @param props.bank_entity_id - ID of the bank to sell to
+   * @param props.entity_id - ID of the entity selling resources
+   * @param props.resource_type - Type of resource to sell
+   * @param props.amount - Amount of resource to sell
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Sell 50 units of resource type 2 to bank 456
+   * {
+   *   bank_entity_id: 456,
+   *   entity_id: 123,
+   *   resource_type: 2,
+   *   amount: 50,
+   *   signer: account
+   * }
+   * ```
+   */
   public async sell_resources(props: SystemProps.SellResourcesProps) {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
@@ -454,6 +1210,34 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Add liquidity to a bank's pool
+   *
+   * @param props - Properties for adding liquidity
+   * @param props.bank_entity_id - ID of the bank to add liquidity to
+   * @param props.entity_id - ID of the entity providing liquidity
+   * @param props.calls - Array of liquidity addition calls
+   * @param props.calls[].resource_type - Type of resource to add
+   * @param props.calls[].resource_amount - Amount of resource to add
+   * @param props.calls[].lords_amount - Amount of LORDS tokens to add
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Add liquidity with 100 units of resource type 1 and 200 LORDS
+   * {
+   *   bank_entity_id: 456,
+   *   entity_id: 123,
+   *   calls: [{
+   *     resource_type: 1,
+   *     resource_amount: 100,
+   *     lords_amount: 200
+   *   }],
+   *   signer: account
+   * }
+   * ```
+   */
   public async add_liquidity(props: SystemProps.AddLiquidityProps) {
     const { bank_entity_id, entity_id, calls, signer } = props;
 
@@ -467,6 +1251,29 @@ export class EternumProvider extends EnhancedDojoProvider {
     );
   }
 
+  /**
+   * Remove liquidity from a bank's pool
+   *
+   * @param props - Properties for removing liquidity
+   * @param props.bank_entity_id - ID of the bank to remove liquidity from
+   * @param props.entity_id - ID of the entity removing liquidity
+   * @param props.resource_type - Type of resource to remove
+   * @param props.shares - Amount of liquidity shares to remove
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Remove 50 shares of liquidity for resource type 1
+   * {
+   *   bank_entity_id: 456,
+   *   entity_id: 123,
+   *   resource_type: 1,
+   *   shares: 50,
+   *   signer: account
+   * }
+   * ```
+   */
   public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
     const { bank_entity_id, entity_id, resource_type, shares, signer } = props;
 
@@ -477,6 +1284,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  /**
+   * Create a new army
+   *
+   * @param props - Properties for creating an army
+   * @param props.army_owner_id - ID of the entity that will own the army
+   * @param props.is_defensive_army - Whether this is a defensive army
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create a defensive army for entity 123
+   * {
+   *   army_owner_id: 123,
+   *   is_defensive_army: true,
+   *   signer: account
+   * }
+   * ```
+   */
   public async create_army(props: SystemProps.ArmyCreateProps) {
     const { army_owner_id, is_defensive_army, signer } = props;
 
@@ -653,16 +1479,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "whitelist_player",
       calldata: [player_address_to_whitelist, guild_entity_id],
-    });
-  }
-
-  public async leave_guild(props: SystemProps.LeaveGuild) {
-    const { signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "leave_guild",
-      calldata: [],
     });
   }
 

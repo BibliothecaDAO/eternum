@@ -31,7 +31,7 @@ export const SeasonPass = ({ title, description, checked: initialChecked, owner,
 
   const {
     data,
-    error,
+    // error,
     isLoading: isLordsBalanceLoading,
   } = useCall({
     abi: abi,

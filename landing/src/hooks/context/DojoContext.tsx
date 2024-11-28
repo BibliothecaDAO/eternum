@@ -4,6 +4,7 @@ import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
+import { env } from "../../../env";
 import { SetupResult } from "../../dojo/setup";
 
 interface DojoAccount {
@@ -31,11 +32,15 @@ export interface DojoResult {
 
 export const DojoContext = createContext<DojoContextType | null>(null);
 
-const requiredEnvs = ["VITE_PUBLIC_MASTER_ADDRESS", "VITE_PUBLIC_MASTER_PRIVATE_KEY", "VITE_PUBLIC_ACCOUNT_CLASS_HASH"];
+const requiredEnvs: (keyof typeof env)[] = [
+  "VITE_PUBLIC_MASTER_ADDRESS",
+  "VITE_PUBLIC_MASTER_PRIVATE_KEY",
+  "VITE_PUBLIC_ACCOUNT_CLASS_HASH",
+];
 
-for (const env of requiredEnvs) {
-  if (!import.meta.env[env]) {
-    throw new Error(`Environment variable ${env} is not set!`);
+for (const _env of requiredEnvs) {
+  if (!env[_env]) {
+    throw new Error(`Environment variable ${_env} is not set!`);
   }
 }
 
@@ -91,13 +96,13 @@ const DojoContextProvider = ({ children, value, controllerAccount }: DojoProvide
   const rpcProvider = useMemo(
     () =>
       new RpcProvider({
-        nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
+        nodeUrl: env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
       }),
     [],
   );
 
-  const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
-  const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+  const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
+  const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
 
   const masterAccount = useMemo(
     () => new Account(rpcProvider, masterAddress, privateKey),
@@ -121,7 +126,7 @@ const DojoContextProvider = ({ children, value, controllerAccount }: DojoProvide
   //const [accountsInitialized, setAccountsInitialized] = useState(false);
 
   // Determine which account to use based on environment
-  const isDev = import.meta.env.VITE_PUBLIC_DEV === "true";
+  const isDev = env.VITE_PUBLIC_DEV === true;
   const accountToUse = isDev ? burnerAccount : controllerAccount;
 
   console.log("dev " + isDev);

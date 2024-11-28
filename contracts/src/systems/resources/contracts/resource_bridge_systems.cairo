@@ -178,6 +178,12 @@ pub trait ERC20ABI<TState> {
     fn transferFrom(ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
 }
 
+#[starknet::interface]
+pub trait ERC20MintableABI<TState> {
+    fn mint(ref self: TState, recipient: ContractAddress, amount: u256);
+}
+
+
 #[dojo::contract]
 mod resource_bridge_systems {
     use dojo::model::ModelStorage;
@@ -188,6 +194,7 @@ mod resource_bridge_systems {
     use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
     use eternum::models::bank::bank::Bank;
     use eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
+    use eternum::models::movable::{ArrivalTime, ArrivalTimeCustomImpl};
     use eternum::models::owner::{EntityOwner, Owner, EntityOwnerCustomTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
@@ -196,7 +203,9 @@ mod resource_bridge_systems {
     use eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
-    use super::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
+    use super::{
+        ERC20ABIDispatcher, ERC20ABIDispatcherTrait, ERC20MintableABIDispatcher, ERC20MintableABIDispatcherTrait
+    };
 
     #[derive(Copy, Drop, Serde)]
     enum TxType {
@@ -380,6 +389,9 @@ mod resource_bridge_systems {
             let through_bank_position: Position = world.read_model(through_bank_id);
             let through_bank_coord: Coord = through_bank_position.into();
             assert!(from_entity_coord == through_bank_coord, "from entity and bank are not at the same location");
+            // ensure from_entity is not travelling
+            let arrival_time: ArrivalTime = world.read_model(from_entity_id);
+            arrival_time.assert_not_travelling();
 
             // ensure bridge withdrawal is not paused
             InternalBridgeImpl::assert_withdraw_not_paused(world);
@@ -411,11 +423,7 @@ mod resource_bridge_systems {
 
             // transfer withdrawm amount to recipient
             let withdrawal_amount_less_all_fees = token_amount - bank_token_fee_amount - non_bank_token_fee_amount;
-            assert!(
-                ERC20ABIDispatcher { contract_address: token }
-                    .transfer(recipient_address, withdrawal_amount_less_all_fees),
-                "Bridge: transfer failed"
-            );
+            InternalBridgeImpl::transfer_or_mint(token, recipient_address, withdrawal_amount_less_all_fees);
         }
     }
 
@@ -424,6 +432,16 @@ mod resource_bridge_systems {
         fn one_token(token: ContractAddress) -> u256 {
             let token_decimal: u8 = ERC20ABIDispatcher { contract_address: token }.decimals();
             return pow(10, token_decimal.into()).into();
+        }
+
+        fn transfer_or_mint(token: ContractAddress, recipient: ContractAddress, amount: u256) {
+            let erc20 = ERC20ABIDispatcher { contract_address: token };
+            if erc20.balance_of(starknet::get_contract_address()) < amount {
+                let erc20mintable = ERC20MintableABIDispatcher { contract_address: token };
+                erc20mintable.mint(recipient, amount);
+            } else {
+                assert!(erc20.transfer(recipient, amount), "Bridge: transfer failed");
+            }
         }
 
 
@@ -518,15 +536,14 @@ mod resource_bridge_systems {
             );
 
             // send fees to recipients
-            let erc20 = ERC20ABIDispatcher { contract_address: token };
             if velords_fee_amount.is_non_zero() {
-                erc20.transfer(fee_split_config.velords_fee_recipient, velords_fee_amount);
+                Self::transfer_or_mint(token, fee_split_config.velords_fee_recipient, velords_fee_amount);
             }
             if season_pool_fee_amount.is_non_zero() {
-                erc20.transfer(fee_split_config.season_pool_fee_recipient, season_pool_fee_amount);
+                Self::transfer_or_mint(token, fee_split_config.season_pool_fee_recipient, season_pool_fee_amount);
             }
             if client_fee_amount.is_non_zero() {
-                erc20.transfer(client_fee_recipient, client_fee_amount);
+                Self::transfer_or_mint(token, client_fee_recipient, client_fee_amount);
             }
 
             // return the total fees sent
