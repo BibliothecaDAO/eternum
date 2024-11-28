@@ -14,9 +14,6 @@ export const GET_REALMS = graphql(`
               contractAddress
               metadata
             }
-            ... on ERC20__Token {
-              amount
-            }
           }
         }
       }

@@ -6926,9 +6926,6 @@ export const GetRealmsDocument = new TypedDocumentString(`
             contractAddress
             metadata
           }
-          ... on ERC20__Token {
-            amount
-          }
         }
       }
     }

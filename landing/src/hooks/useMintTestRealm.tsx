@@ -32,7 +32,7 @@ export const useMintTestRealm = () => {
           });
       }
     },
-    [account, canMint, mint_test_realm, realmsAddress],
+    [account, canMint, mint_test_realm],
   );
 
   useEffect(() => {

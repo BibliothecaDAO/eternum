@@ -2,7 +2,7 @@ import { lordsAddress } from "@/config";
 import { useCall } from "@starknet-react/core";
 import { useDojo } from "./context/DojoContext";
 
-import lordsAbi from "../../../season_pass/contracts/target/release/esp_TestLords.contract_class.json";
+import { abi } from "@/abi/Lords";
 
 import { useContract } from "@starknet-react/core";
 import { Abi } from "starknet";
@@ -13,7 +13,7 @@ export const useLords = () => {
   } = useDojo();
 
   const { data } = useCall({
-    abi: lordsAbi.abi as Abi,
+    abi: abi as Abi,
     functionName: "balance_of",
     address: lordsAddress,
     args: [(account?.address as `0x${string}`) ?? "0"],
@@ -21,9 +21,8 @@ export const useLords = () => {
     refetchInterval: 1000,
   });
 
-  // const { contract } = useContract({
-  useContract({
-    abi: lordsAbi.abi as Abi,
+  const { contract } = useContract({
+    abi: abi as Abi,
     address: lordsAddress,
   });
 
