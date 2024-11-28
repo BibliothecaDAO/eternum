@@ -194,6 +194,7 @@ mod resource_bridge_systems {
     use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
     use eternum::models::bank::bank::Bank;
     use eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
+    use eternum::models::movable::{ArrivalTime, ArrivalTimeCustomImpl};
     use eternum::models::owner::{EntityOwner, Owner, EntityOwnerCustomTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
@@ -388,6 +389,9 @@ mod resource_bridge_systems {
             let through_bank_position: Position = world.read_model(through_bank_id);
             let through_bank_coord: Coord = through_bank_position.into();
             assert!(from_entity_coord == through_bank_coord, "from entity and bank are not at the same location");
+            // ensure from_entity is not travelling
+            let arrival_time: ArrivalTime = world.read_model(from_entity_id);
+            arrival_time.assert_not_travelling();
 
             // ensure bridge withdrawal is not paused
             InternalBridgeImpl::assert_withdraw_not_paused(world);
