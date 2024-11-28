@@ -24,7 +24,13 @@ pub impl SeasonImpl of SeasonTrait {
     fn assert_has_started(world: WorldStorage) {
         let season: Season = world.read_model(WORLD_CONFIG_ID);
         let now = starknet::get_block_timestamp();
-        assert!(season.start_at <= now, "Season starts in {} hours {} minutes, {} seconds", (season.start_at - now) / 60 / 60, ((season.start_at - now) / 60) % 60, (season.start_at - now) % 60);
+        assert!(
+            season.start_at <= now,
+            "Season starts in {} hours {} minutes, {} seconds",
+            (season.start_at - now) / 60 / 60,
+            ((season.start_at - now) / 60) % 60,
+            (season.start_at - now) % 60
+        );
     }
 
 
