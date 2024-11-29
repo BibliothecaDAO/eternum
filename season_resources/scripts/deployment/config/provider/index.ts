@@ -15,7 +15,7 @@ export interface ResourceWhitelistConfig {
   resource_type: num.BigNumberish;
 }
 
-export const NAMESPACE = "eternum";
+export const NAMESPACE = "s0_eternum";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.tag === name);

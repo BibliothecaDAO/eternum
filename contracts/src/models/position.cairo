@@ -1,9 +1,9 @@
 use core::fmt::{Display, Formatter, Error};
 use core::zeroable::Zeroable;
-use eternum::alias::ID;
-
-use eternum::utils::number::{NumberTrait};
 use option::OptionTrait;
+use s0_eternum::alias::ID;
+
+use s0_eternum::utils::number::{NumberTrait};
 use traits::Into;
 use traits::TryInto;
 
@@ -255,7 +255,7 @@ impl PositionCustomImpl of PositionCustomTrait {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
     use super::{Position, PositionCustomTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;

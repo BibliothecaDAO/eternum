@@ -1,5 +1,5 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 use starknet::ContractAddress;
 
 // Used as helper struct throughout the world

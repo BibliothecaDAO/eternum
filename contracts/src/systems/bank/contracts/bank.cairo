@@ -1,6 +1,6 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
-use eternum::models::position::{Coord};
+use s0_eternum::alias::ID;
+use s0_eternum::models::position::{Coord};
 
 #[starknet::interface]
 trait IBankSystems<T> {
@@ -26,18 +26,18 @@ mod bank_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
-    use eternum::models::bank::bank::{Bank};
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::config::{BankConfig, CapacityConfigCategory};
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, ResourceCustomImpl};
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
+    use s0_eternum::models::bank::bank::{Bank};
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::config::{BankConfig, CapacityConfigCategory};
+    use s0_eternum::models::owner::{Owner, EntityOwner};
+    use s0_eternum::models::position::{Position, Coord};
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
     use traits::Into;
 

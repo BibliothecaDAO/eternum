@@ -1,6 +1,6 @@
-use eternum::alias::ID;
-use eternum::models::position::Coord;
-use eternum::utils::map::biomes::Biome;
+use s0_eternum::alias::ID;
+use s0_eternum::models::position::Coord;
+use s0_eternum::utils::map::biomes::Biome;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]

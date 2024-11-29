@@ -4,29 +4,29 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
-use eternum::constants::DONKEY_ENTITY_TYPE;
+use s0_eternum::alias::ID;
+use s0_eternum::constants::DONKEY_ENTITY_TYPE;
 
-use eternum::constants::ResourceTypes;
-use eternum::models::config::CapacityConfig;
-use eternum::models::config::CapacityConfigCategory;
-use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::owner::Owner;
-use eternum::models::position::{Position};
-use eternum::models::resources::Resource;
-use eternum::models::trade::{Trade, Status, TradeStatus};
-use eternum::models::weight::Weight;
+use s0_eternum::constants::ResourceTypes;
+use s0_eternum::models::config::CapacityConfig;
+use s0_eternum::models::config::CapacityConfigCategory;
+use s0_eternum::models::movable::{Movable, ArrivalTime};
+use s0_eternum::models::owner::Owner;
+use s0_eternum::models::position::{Position};
+use s0_eternum::models::resources::Resource;
+use s0_eternum::models::trade::{Trade, Status, TradeStatus};
+use s0_eternum::models::weight::Weight;
 
-use eternum::systems::config::contracts::{
+use s0_eternum::systems::config::contracts::{
     config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
     IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait
 };
 
-use eternum::systems::trade::contracts::trade_systems::{
+use s0_eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{
+use s0_eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm},
     config::{set_capacity_config, set_settlement_config}
 };

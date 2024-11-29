@@ -1,6 +1,6 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use eternum::{alias::ID, models::config::{CapacityConfig, CapacityConfigCategory}, constants::RESOURCE_PRECISION};
+use s0_eternum::{alias::ID, models::config::{CapacityConfig, CapacityConfigCategory}, constants::RESOURCE_PRECISION};
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]

@@ -6,24 +6,24 @@ mod resource_bridge_system_tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use eternum::models::bank::{bank::Bank};
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::config::{CapacityConfigCategory, WeightConfig};
-    use eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
-    use eternum::models::movable::{ArrivalTime};
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, RESOURCE_PRECISION};
-    use eternum::models::structure::{Structure, StructureCategory};
-    use eternum::systems::config::contracts::config_systems;
-    use eternum::systems::resources::contracts::resource_bridge_systems::{
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s0_eternum::models::bank::{bank::Bank};
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::config::{CapacityConfigCategory, WeightConfig};
+    use s0_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
+    use s0_eternum::models::movable::{ArrivalTime};
+    use s0_eternum::models::owner::{Owner, EntityOwner};
+    use s0_eternum::models::position::{Position, Coord};
+    use s0_eternum::models::resources::{Resource, RESOURCE_PRECISION};
+    use s0_eternum::models::structure::{Structure, StructureCategory};
+    use s0_eternum::systems::config::contracts::config_systems;
+    use s0_eternum::systems::resources::contracts::resource_bridge_systems::{
         resource_bridge_systems, resource_bridge_systems::InternalBridgeImpl, IResourceBridgeSystemsDispatcher,
         IResourceBridgeSystemsDispatcherTrait, ERC20ABIDispatcher, ERC20ABIDispatcherTrait
     };
-    use eternum::utils::testing::mock::erc20mock::MockERC20;
-    use eternum::utils::testing::{
+    use s0_eternum::utils::testing::mock::erc20mock::MockERC20;
+    use s0_eternum::utils::testing::{
         world::spawn_eternum, systems::{deploy_system, deploy_contract}, config::set_capacity_config
     };
     use starknet::testing::set_contract_address;

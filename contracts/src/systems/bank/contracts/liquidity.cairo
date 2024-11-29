@@ -1,6 +1,6 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[starknet::interface]
 trait ILiquiditySystems<T> {
@@ -20,15 +20,15 @@ mod liquidity_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     // Eternum imports
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::constants::ResourceTypes;
-    use eternum::models::bank::liquidity::{Liquidity};
-    use eternum::models::bank::market::{Market, MarketCustomTrait};
-    use eternum::models::owner::{Owner, OwnerCustomTrait};
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
-    use eternum::models::season::SeasonImpl;
-    use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::ResourceTypes;
+    use s0_eternum::models::bank::liquidity::{Liquidity};
+    use s0_eternum::models::bank::market::{Market, MarketCustomTrait};
+    use s0_eternum::models::owner::{Owner, OwnerCustomTrait};
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]

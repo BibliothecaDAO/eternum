@@ -68,7 +68,7 @@ echo "Migrating world..."
 sozo migrate --profile prod 
 
 echo "Setting up remote indexer on slot..."
-slot deployments create -t epic eternum-rc-sepolia-4 torii --version v1.0.1 --world 0x05013b17c43a2b664ec2a38aa45f6d891db1188622ec7cf320411321c3248fb5 --rpc https://api.cartridge.gg/x/starknet/sepolia --start-block 0  --index-pending true --config-file ./torii.toml
+slot deployments create -t epic eternum-rc-sepolia-4 torii --version v1.0.1 --world 0x0659152b85ef0cc4741d7264dae2fd1c220b41453fb5e68e6b01d291a09602f3 --rpc https://api.cartridge.gg/x/starknet/sepolia --start-block 0  --index-pending true --config-file ./torii.toml
 
 echo "Setting up config..."
 

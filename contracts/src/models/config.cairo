@@ -4,23 +4,23 @@ use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use eternum::alias::ID;
-use eternum::constants::{
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds,
     split_resources_and_probs, ResourceTypes
 };
-use eternum::models::buildings::BuildingCategory;
-use eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
-use eternum::models::combat::Troops;
-use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
-use eternum::models::position::{Coord};
-use eternum::models::quantity::Quantity;
+use s0_eternum::models::buildings::BuildingCategory;
+use s0_eternum::models::capacity::{CapacityCategory, CapacityCategoryCustomImpl, CapacityCategoryCustomTrait};
+use s0_eternum::models::combat::Troops;
+use s0_eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
+use s0_eternum::models::position::{Coord};
+use s0_eternum::models::quantity::Quantity;
 
-use eternum::models::resources::{ResourceFoodImpl};
-use eternum::models::weight::Weight;
-use eternum::utils::map::constants::fixed_constants as fc;
-use eternum::utils::math::{max, min};
-use eternum::utils::random;
+use s0_eternum::models::resources::{ResourceFoodImpl};
+use s0_eternum::models::weight::Weight;
+use s0_eternum::utils::map::constants::fixed_constants as fc;
+use s0_eternum::utils::math::{max, min};
+use s0_eternum::utils::random;
 
 use starknet::ContractAddress;
 

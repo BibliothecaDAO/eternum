@@ -5,18 +5,18 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
-use eternum::constants::ResourceTypes;
-use eternum::models::config::LevelingConfig;
-use eternum::models::position::{Position, Coord};
-use eternum::models::resources::ResourceCost;
-use eternum::systems::config::contracts::config_systems;
+use s0_eternum::constants::ResourceTypes;
+use s0_eternum::models::config::LevelingConfig;
+use s0_eternum::models::position::{Position, Coord};
+use s0_eternum::models::resources::ResourceCost;
+use s0_eternum::systems::config::contracts::config_systems;
 
-use eternum::systems::config::contracts::{
+use s0_eternum::systems::config::contracts::{
     IHyperstructureConfigDispatcher, IHyperstructureConfigDispatcherTrait, ILevelingConfigDispatcher,
     ILevelingConfigDispatcherTrait,
 };
 
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
 use starknet::contract_address::contract_address_const;
 

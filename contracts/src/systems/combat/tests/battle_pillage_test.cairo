@@ -5,7 +5,7 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::{
+use s0_eternum::{
     alias::ID,
     models::{
         position::{Coord, Position}, weight::Weight, resources::{ResourceTypes, RESOURCE_PRECISION}, combat::{Troops},

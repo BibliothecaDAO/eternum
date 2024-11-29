@@ -3,20 +3,20 @@ use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::alias::ID;
-use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
+use s0_eternum::alias::ID;
+use s0_eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
 
 
-use eternum::models::movable::{Movable, MovableCustomTrait};
-use eternum::models::quantity::{Quantity};
-use eternum::models::{
+use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+use s0_eternum::models::quantity::{Quantity};
+use s0_eternum::models::{
     combat::{
         Army, ArmyCustomTrait, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, BattleCustomImpl,
         BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait, BattleHealthCustomTrait, BattleEscrowImpl,
     },
 };
-use eternum::models::{combat::{Troops, Battle, BattleSide}};
-use eternum::utils::tasks::index::{Task, TaskTrait};
+use s0_eternum::models::{combat::{Troops, Battle, BattleSide}};
+use s0_eternum::utils::tasks::index::{Task, TaskTrait};
 
 #[starknet::interface]
 trait IBattleContract<T> {
@@ -305,39 +305,41 @@ mod battle_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
-    use eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
-    use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
-    use eternum::models::config::{
+    use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
+    use s0_eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
+    use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
         BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,
         CapacityConfigCategory
     };
-    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-    use eternum::models::event::{
+    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use s0_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use eternum::models::movable::{Movable, MovableCustomTrait};
-    use eternum::models::name::{AddressName};
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
-    use eternum::models::position::CoordTrait;
-    use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTracker};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-    use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::name::{AddressName};
+    use s0_eternum::models::owner::{
+        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
+    };
+    use s0_eternum::models::position::CoordTrait;
+    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
 
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
-    use eternum::models::weight::Weight;
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
+    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::weight::Weight;
 
-    use eternum::models::{
+    use s0_eternum::models::{
         combat::{
             Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
             BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
@@ -345,12 +347,12 @@ mod battle_systems {
             AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
-    use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
-    use eternum::utils::math::{min, max};
-    use eternum::utils::random;
-    use eternum::utils::tasks::index::{Task, TaskTrait};
+    use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
+    use s0_eternum::utils::math::{min, max};
+    use s0_eternum::utils::random;
+    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use super::{IBattleContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};
 
@@ -806,39 +808,41 @@ mod battle_pillage_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
-    use eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
-    use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
-    use eternum::models::config::{
+    use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
+    use s0_eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
+    use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
         BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,
         CapacityConfigCategory
     };
-    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-    use eternum::models::event::{
+    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use s0_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use eternum::models::movable::{Movable, MovableCustomTrait};
-    use eternum::models::name::{AddressName};
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
-    use eternum::models::position::CoordTrait;
-    use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTracker};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-    use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::name::{AddressName};
+    use s0_eternum::models::owner::{
+        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
+    };
+    use s0_eternum::models::position::CoordTrait;
+    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
 
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
-    use eternum::models::weight::Weight;
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
+    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::weight::Weight;
 
-    use eternum::models::{
+    use s0_eternum::models::{
         combat::{
             Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
             BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
@@ -846,11 +850,11 @@ mod battle_pillage_systems {
             AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
-    use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
-    use eternum::utils::math::{min, max};
-    use eternum::utils::random;
+    use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
+    use s0_eternum::utils::math::{min, max};
+    use s0_eternum::utils::random;
 
     use super::{IBattlePillageContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait};
 
@@ -1221,39 +1225,41 @@ mod battle_utils_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
-    use eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
-    use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
-    use eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
-    use eternum::models::config::{
+    use s0_eternum::constants::{MAX_PILLAGE_TRIAL_COUNT, RESOURCE_PRECISION, DEFAULT_NS};
+    use s0_eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorCustomTrait};
+    use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
         BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl,
         CapacityConfigCategory
     };
-    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-    use eternum::models::event::{
+    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use s0_eternum::models::event::{
         EventType, EventData, BattleStartData, BattleJoinData, BattleLeaveData, BattleClaimData, BattlePillageData
     };
 
-    use eternum::models::movable::{Movable, MovableCustomTrait};
-    use eternum::models::name::{AddressName};
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
-    use eternum::models::position::CoordTrait;
-    use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTracker};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-    use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::name::{AddressName};
+    use s0_eternum::models::owner::{
+        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
+    };
+    use s0_eternum::models::position::CoordTrait;
+    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
 
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
-    use eternum::models::weight::Weight;
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
+    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::weight::Weight;
 
-    use eternum::models::{
+    use s0_eternum::models::{
         combat::{
             Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
             BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
@@ -1261,12 +1267,12 @@ mod battle_utils_systems {
             AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
 
-    use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
-    use eternum::utils::math::{min, max};
-    use eternum::utils::random;
-    use eternum::utils::tasks::index::{Task, TaskTrait};
+    use s0_eternum::utils::math::{PercentageValueImpl, PercentageImpl};
+    use s0_eternum::utils::math::{min, max};
+    use s0_eternum::utils::random;
+    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use super::{IBattlePillageContract};
 

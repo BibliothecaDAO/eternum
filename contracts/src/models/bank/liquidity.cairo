@@ -1,6 +1,6 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::meta::introspect::{Struct, Ty, Introspect, Member};
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 use starknet::ContractAddress;
 
 impl IntrospectFixed of Introspect<Fixed> {

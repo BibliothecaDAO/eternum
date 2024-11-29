@@ -45,7 +45,7 @@ impl<'a> TickSender<'a> {
                         Some(Felt::from_hex(TICK_ARMIES_ID).unwrap()),
                     ],
                     pattern_matching: PatternMatching::FixedLen,
-                    models: vec!["eternum-TickConfig".to_string()],
+                    models: vec!["s0_eternum-TickConfig".to_string()],
                 })),
                 limit: 1,
                 offset: 0,
@@ -61,7 +61,7 @@ impl<'a> TickSender<'a> {
         let tick_interval_in_seconds = entity
             .models
             .iter()
-            .find(|model| model.name == "eternum-TickConfig")
+            .find(|model| model.name == "s0_eternum-TickConfig")
             .expect("Tick interval in seconds not found")
             .children
             .iter()

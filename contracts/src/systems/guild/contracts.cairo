@@ -1,4 +1,4 @@
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -18,14 +18,16 @@ mod guild_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::models::event::{CreateGuild, JoinGuild};
-    use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
-    use eternum::models::name::AddressName;
-    use eternum::models::name::EntityName;
-    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
-    use eternum::models::season::SeasonImpl;
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::models::event::{CreateGuild, JoinGuild};
+    use s0_eternum::models::guild::{
+        Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait
+    };
+    use s0_eternum::models::name::AddressName;
+    use s0_eternum::models::name::EntityName;
+    use s0_eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
+    use s0_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
 

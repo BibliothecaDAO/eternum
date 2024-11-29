@@ -4,7 +4,7 @@ use arcade_trophy::types::task::{Task as BushidoTask, TaskTrait as BushidoTaskTr
 
 // Internal imports
 
-use eternum::utils::tasks;
+use s0_eternum::utils::tasks;
 
 // Types
 

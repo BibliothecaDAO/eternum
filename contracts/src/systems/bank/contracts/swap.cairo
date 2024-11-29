@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[starknet::interface]
 trait ISwapSystems<T> {
@@ -17,18 +17,18 @@ mod swap_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use eternum::models::bank::bank::{Bank};
-    use eternum::models::bank::market::{Market, MarketCustomTrait};
-    use eternum::models::config::{BankConfig};
-    use eternum::models::config::{TickImpl, TickTrait};
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
-    use eternum::models::season::SeasonImpl;
-    use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-
     use option::OptionTrait;
+
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s0_eternum::models::bank::bank::{Bank};
+    use s0_eternum::models::bank::market::{Market, MarketCustomTrait};
+    use s0_eternum::models::config::{BankConfig};
+    use s0_eternum::models::config::{TickImpl, TickTrait};
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use traits::{Into, TryInto};
 
 

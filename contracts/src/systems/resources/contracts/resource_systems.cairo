@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[starknet::interface]
 trait IResourceSystems<T> {
@@ -21,28 +21,32 @@ mod resource_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
-    use eternum::models::config::{
+    use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
+    use s0_eternum::models::config::{
         WeightConfig, WeightConfigCustomImpl, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory
     };
-    use eternum::models::movable::{ArrivalTime, ArrivalTimeCustomTrait};
-    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::quantity::{Quantity,};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{
+    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeCustomTrait};
+    use s0_eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
+    use s0_eternum::models::position::{Position, Coord};
+    use s0_eternum::models::quantity::{Quantity,};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{
         Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceAllowance, ResourceTransferLock,
         ResourceTransferLockCustomTrait
     };
-    use eternum::models::resources::{DetachedResource};
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
-    use eternum::models::weight::Weight;
-    use eternum::models::weight::WeightCustomTrait;
-    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl as travel};
+    use s0_eternum::models::resources::{DetachedResource};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::weight::Weight;
+    use s0_eternum::models::weight::WeightCustomTrait;
+    use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
+        InternalDonkeySystemsImpl as donkey
+    };
+    use s0_eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl as travel
+    };
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
