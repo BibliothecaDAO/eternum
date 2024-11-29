@@ -38,10 +38,9 @@ export const useCartridgeAddress = () => {
         const data = await response.json();
         const controllerAddress = data?.data?.account?.controllers?.edges?.[0]?.node?.address;
         setAddress(controllerAddress);
-        return controllerAddress;
       } catch (error) {
         console.error("Error fetching address:", error);
-        return null;
+        setAddress(null);
       }
     };
 
