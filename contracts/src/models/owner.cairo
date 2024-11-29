@@ -75,7 +75,10 @@ mod tests {
     fn owner_test_entity_owner_get_realm_id() {
         let mut world = spawn_eternum();
 
-        world.write_model_test(@Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0 });
+        world
+            .write_model_test(
+                @Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0, has_wonder: false }
+            );
         world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });
 
         let entity_owner: EntityOwner = world.read_model(2);

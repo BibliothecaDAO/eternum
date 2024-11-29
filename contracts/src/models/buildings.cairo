@@ -15,6 +15,7 @@ use s0_eternum::models::position::{Coord, Position, Direction, PositionCustomTra
 use s0_eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputCustomImpl, ProductionInputCustomTrait
 };
+use s0_eternum::models::realm::Realm;
 use s0_eternum::models::resources::ResourceCustomTrait;
 use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 use s0_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
@@ -171,6 +172,19 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
+
+                /// lords will not be consumed during production of donkey
+                /// if the realm has a wonder
+                if input_resource_type == ResourceTypes::LORDS {
+                    if resource_production.resource_type == ResourceTypes::DONKEY {
+                        let realm: Realm = world.read_model(self.outer_entity_id);
+                        if realm.has_wonder {
+                            count += 1;
+                            continue;
+                        }
+                    }
+                }
+
                 let mut input_resource: Resource = ResourceCustomImpl::get(
                     ref world, (self.outer_entity_id, input_resource_type)
                 );
@@ -235,6 +249,19 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
+
+                /// lords will not be consumed during production of donkey
+                /// if the realm has a wonder
+                if input_resource_type == ResourceTypes::LORDS {
+                    if resource_production.resource_type == ResourceTypes::DONKEY {
+                        let realm: Realm = world.read_model(self.outer_entity_id);
+                        if realm.has_wonder {
+                            count += 1;
+                            continue;
+                        }
+                    }
+                }
+
                 let mut input_resource: Resource = ResourceCustomImpl::get(
                     ref world, (self.outer_entity_id, input_resource_type)
                 );

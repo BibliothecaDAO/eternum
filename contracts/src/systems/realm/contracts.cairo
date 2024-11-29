@@ -47,7 +47,7 @@ mod realm_systems {
     use s0_eternum::models::quest::{Quest, QuestBonus};
     use s0_eternum::models::realm::{
         Realm, RealmCustomTrait, RealmCustomImpl, RealmResourcesTrait, RealmResourcesImpl,
-        RealmNameAndAttrsDecodingTrait, RealmNameAndAttrsDecodingImpl
+        RealmNameAndAttrsDecodingTrait, RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
     use s0_eternum::models::resources::{
         DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceFoodImpl, ResourceFoodTrait
@@ -94,7 +94,7 @@ mod realm_systems {
             // create realm
             let mut coord: Coord = InternalRealmLogicImpl::get_new_location(ref world);
             let (entity_id, realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
-                ref world, owner, realm_id, resources, order, 0, coord
+                ref world, owner, realm_id, resources, order, 0, wonder, coord
             );
 
             // collect lords attached to season pass and bridge into the realm
@@ -278,9 +278,12 @@ mod realm_systems {
             resources: Array<u8>,
             order: u8,
             level: u8,
+            wonder: u8,
             coord: Coord
         ) -> (ID, u128) {
             // create realm
+
+            let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
             let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
             let entity_id = world.dispatcher.uuid();
             let now = starknet::get_block_timestamp();
@@ -302,7 +305,8 @@ mod realm_systems {
                         realm_id,
                         produced_resources: realm_produced_resources_packed,
                         order,
-                        level
+                        level,
+                        has_wonder
                     }
                 );
             world.write_model(@Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, });
