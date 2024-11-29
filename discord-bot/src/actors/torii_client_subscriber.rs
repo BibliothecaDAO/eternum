@@ -19,12 +19,12 @@ use crate::{
 };
 
 const TORII_SUBSCRIPTION_MODELS: [&str; 6] = [
-    "eternum-BattleClaimData",
-    "eternum-BattleJoinData",
-    "eternum-BattleLeaveData",
-    "eternum-BattlePillageData",
-    "eternum-BattleStartData",
-    "eternum-SettleRealmData",
+    "s0_eternum-BattleClaimData",
+    "s0_eternum-BattleJoinData",
+    "s0_eternum-BattleLeaveData",
+    "s0_eternum-BattlePillageData",
+    "s0_eternum-BattleStartData",
+    "s0_eternum-SettleRealmData",
 ];
 
 pub struct ToriiClientSubscriber {
@@ -119,35 +119,35 @@ impl ToriiClientSubscriber {
             let felts = ty.serialize().unwrap();
 
             let event = match model.name.as_str() {
-                "eternum-BattleStartData" => {
+                "s0_eternum-BattleStartData" => {
                     let event = BattleStart::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.defender,
                     }
                 }
-                "eternum-BattleJoinData" => {
+                "s0_eternum-BattleJoinData" => {
                     let event = BattleJoin::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.joiner,
                     }
                 }
-                "eternum-BattleLeaveData" => {
+                "s0_eternum-BattleLeaveData" => {
                     let event = BattleLeave::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.leaver,
                     }
                 }
-                "eternum-BattleClaimData" => {
+                "s0_eternum-BattleClaimData" => {
                     let event = BattleClaim::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),
                         identifier: event.claimee_address,
                     }
                 }
-                "eternum-BattlePillageData" => {
+                "s0_eternum-BattlePillageData" => {
                     let event = BattlePillage::cairo_deserialize(&felts, 0).unwrap();
                     let event_clone = event.clone();
                     Event {
@@ -155,7 +155,7 @@ impl ToriiClientSubscriber {
                         identifier: event.pillaged_structure_owner,
                     }
                 }
-                "eternum-SettleRealmData" => {
+                "s0_eternum-SettleRealmData" => {
                     let event = SettleRealm::cairo_deserialize(&felts, 0).unwrap();
                     Event {
                         event: Box::new(event),

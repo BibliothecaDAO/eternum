@@ -44,7 +44,7 @@ export const getContractByName = (name) => {
   return contract.address;
 };
 
-const NAMESPACE = "eternum";
+const NAMESPACE = "s0_eternum";
 const RESOURCE_BRIDGE_SYSTEMS_CONTRACT = getContractByName(`${NAMESPACE}-resource_bridge_systems`);
 const RESOURCE_NAMES = resourceNames;
 

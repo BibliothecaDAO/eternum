@@ -1,7 +1,7 @@
-use eternum::constants::{ResourceTypes, RESOURCE_PRECISION};
+use s0_eternum::constants::{ResourceTypes, RESOURCE_PRECISION};
 
 
-use eternum::models::owner::{Owner, OwnerCustomImpl, OwnerCustomTrait};
+use s0_eternum::models::owner::{Owner, OwnerCustomImpl, OwnerCustomTrait};
 
 const MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT: u128 = 1;
 const MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT: u128 = 1;

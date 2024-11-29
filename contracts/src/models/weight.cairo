@@ -1,6 +1,6 @@
-use eternum::alias::ID;
-use eternum::models::config::{CapacityConfig, CapacityConfigCustomTrait};
-use eternum::models::quantity::{Quantity};
+use s0_eternum::alias::ID;
+use s0_eternum::models::config::{CapacityConfig, CapacityConfigCustomTrait};
+use s0_eternum::models::quantity::{Quantity};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

@@ -1,4 +1,4 @@
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

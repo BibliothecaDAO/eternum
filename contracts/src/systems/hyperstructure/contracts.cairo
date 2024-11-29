@@ -1,8 +1,8 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::alias::ID;
-use eternum::{
+use s0_eternum::alias::ID;
+use s0_eternum::{
     models::{position::Coord, config::HyperstructureResourceConfigCustomTrait, hyperstructure::Access},
     constants::{get_contributable_resources_with_rarity, RESOURCE_PRECISION}
 };
@@ -31,10 +31,10 @@ mod hyperstructure_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::constants::DEFAULT_NS;
-    use eternum::models::season::SeasonImpl;
-    use eternum::utils::tasks::index::{Task, TaskTrait};
-    use eternum::{
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s0_eternum::{
         alias::ID,
         constants::{
             HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,

@@ -6,21 +6,21 @@ mod resource_approval_system_tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::ResourceTypes;
-    use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::models::config::WeightConfig;
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::Position;
-    use eternum::models::quantity::Quantity;
-    use eternum::models::resources::{Resource, ResourceAllowance};
+    use s0_eternum::constants::ResourceTypes;
+    use s0_eternum::constants::WORLD_CONFIG_ID;
+    use s0_eternum::models::config::WeightConfig;
+    use s0_eternum::models::owner::{Owner, EntityOwner};
+    use s0_eternum::models::position::Position;
+    use s0_eternum::models::quantity::Quantity;
+    use s0_eternum::models::resources::{Resource, ResourceAllowance};
 
-    use eternum::systems::resources::contracts::resource_systems::{
+    use s0_eternum::systems::resources::contracts::resource_systems::{
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
 
-    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+    use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use starknet::contract_address_const;
 
 

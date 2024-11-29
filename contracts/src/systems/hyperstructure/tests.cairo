@@ -2,25 +2,25 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
-use eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
-use eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
-use eternum::models::owner::Owner;
-use eternum::models::position::{Position, Coord};
-use eternum::models::resources::Resource;
-use eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
+use s0_eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure};
+use s0_eternum::models::owner::Owner;
+use s0_eternum::models::position::{Position, Coord};
+use s0_eternum::models::resources::Resource;
+use s0_eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
 
-use eternum::systems::config::contracts::{
+use s0_eternum::systems::config::contracts::{
     config_systems, config_systems::HyperstructureConfigCustomImpl, IHyperstructureConfigDispatcher,
     IHyperstructureConfig, IHyperstructureConfigDispatcherTrait
 };
 
-use eternum::systems::hyperstructure::contracts::{
+use s0_eternum::systems::hyperstructure::contracts::{
     hyperstructure_systems, IHyperstructureSystems, IHyperstructureSystemsDispatcher,
     IHyperstructureSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{
+use s0_eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_hyperstructure_systems},
     general::{spawn_realm, get_default_realm_pos, spawn_hyperstructure, get_default_hyperstructure_coord},
     config::{set_capacity_config, set_settlement_config}

@@ -1,8 +1,8 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use eternum::alias::ID;
-use eternum::constants::ErrorMessages;
-use eternum::models::realm::Realm;
+use s0_eternum::alias::ID;
+use s0_eternum::constants::ErrorMessages;
+use s0_eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 // contract address owning an entity
@@ -65,10 +65,10 @@ mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use eternum::alias::ID;
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
-    use eternum::models::realm::Realm;
-    use eternum::utils::testing::world::spawn_eternum;
+    use s0_eternum::alias::ID;
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::utils::testing::world::spawn_eternum;
     use starknet::contract_address_const;
 
     #[test]

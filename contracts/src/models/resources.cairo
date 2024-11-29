@@ -3,21 +3,21 @@ use core::num::traits::Bounded;
 use dojo::model::ModelStorage;
 
 use dojo::world::WorldStorage;
-use eternum::alias::ID;
-use eternum::constants::{
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{
     get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
 };
-use eternum::models::buildings::{Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2};
-use eternum::models::config::{
+use s0_eternum::models::buildings::{Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2};
+use s0_eternum::models::config::{
     ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigCustomTrait
 };
-use eternum::models::config::{WeightConfigCustomImpl, WeightConfig};
+use s0_eternum::models::config::{WeightConfigCustomImpl, WeightConfig};
 
-use eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
-use eternum::models::realm::Realm;
-use eternum::models::structure::StructureCustomTrait;
-use eternum::models::structure::{Structure, StructureCategory};
-use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
+use s0_eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
+use s0_eternum::models::realm::Realm;
+use s0_eternum::models::structure::StructureCustomTrait;
+use s0_eternum::models::structure::{Structure, StructureCategory};
+use s0_eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -325,15 +325,15 @@ mod tests_resource_traits {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
-    use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-    use eternum::models::production::ProductionRateTrait;
-    use eternum::models::resources::ResourceCustomTrait;
-    use eternum::models::structure::{Structure, StructureCategory};
-    use eternum::systems::config::contracts::config_systems;
-    use eternum::systems::config::contracts::{IProductionConfigDispatcher, IProductionConfigDispatcherTrait};
-    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
+    use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
+    use s0_eternum::models::production::ProductionRateTrait;
+    use s0_eternum::models::resources::ResourceCustomTrait;
+    use s0_eternum::models::structure::{Structure, StructureCategory};
+    use s0_eternum::systems::config::contracts::config_systems;
+    use s0_eternum::systems::config::contracts::{IProductionConfigDispatcher, IProductionConfigDispatcherTrait};
+    use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
     use super::{Production, ProductionOutputCustomImpl, Resource, ResourceCustomImpl};
     use traits::Into;
     use traits::TryInto;
@@ -489,11 +489,11 @@ mod owned_resources_tracker_tests {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
-    use eternum::constants::ResourceTypes;
-    use eternum::models::resources::{Resource, ResourceCustomImpl};
-    use eternum::models::structure::{Structure, StructureCategory};
-    use eternum::systems::config::contracts::config_systems;
-    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
+    use s0_eternum::constants::ResourceTypes;
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+    use s0_eternum::models::structure::{Structure, StructureCategory};
+    use s0_eternum::systems::config::contracts::config_systems;
+    use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
     use super::{OwnedResourcesTracker, OwnedResourcesTrackerCustomTrait};
 
 

@@ -1,4 +1,4 @@
-use eternum::utils::tasks::interface::TaskTrait;
+use s0_eternum::utils::tasks::interface::TaskTrait;
 
 impl Warlord of TaskTrait {
     #[inline]

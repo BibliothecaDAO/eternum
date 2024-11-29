@@ -1,5 +1,5 @@
 [namespace]
-default = "eternum"
+default = "s0_eternum"
 
 [env]
 account_address = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
@@ -7,36 +7,36 @@ private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e6
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
 
 [world]
-seed = "eternum"
+seed = "s0_eternum"
 name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
 website = "https://eternum.realms.world/"
 
 [writers]
-"eternum" = [
-    "eternum-bank_systems",
-    "eternum-battle_pillage_systems",
-    "eternum-battle_utils_systems",
-    "eternum-battle_systems",
-    "eternum-building_systems",
-    "eternum-config_systems",
-    "eternum-dev_bank_systems",
-    "eternum-dev_realm_systems",
-    "eternum-dev_resource_systems",
-    "eternum-donkey_systems",
-    "eternum-guild_systems",
-    "eternum-hyperstructure_systems",
-    "eternum-liquidity_systems",
-    "eternum-map_systems",
-    "eternum-map_generation_systems",
-    "eternum-name_systems",
-    "eternum-ownership_systems",
-    "eternum-realm_systems",
-    "eternum-resource_bridge_systems",
-    "eternum-resource_systems",
-    "eternum-swap_systems",
-    "eternum-trade_systems",
-    "eternum-travel_systems",
-    "eternum-troop_systems",
+"s0_eternum" = [
+    "s0_eternum-bank_systems",
+    "s0_eternum-battle_pillage_systems",
+    "s0_eternum-battle_utils_systems",
+    "s0_eternum-battle_systems",
+    "s0_eternum-building_systems",
+    "s0_eternum-config_systems",
+    "s0_eternum-dev_bank_systems",
+    "s0_eternum-dev_realm_systems",
+    "s0_eternum-dev_resource_systems",
+    "s0_eternum-donkey_systems",
+    "s0_eternum-guild_systems",
+    "s0_eternum-hyperstructure_systems",
+    "s0_eternum-liquidity_systems",
+    "s0_eternum-map_systems",
+    "s0_eternum-map_generation_systems",
+    "s0_eternum-name_systems",
+    "s0_eternum-ownership_systems",
+    "s0_eternum-realm_systems",
+    "s0_eternum-resource_bridge_systems",
+    "s0_eternum-resource_systems",
+    "s0_eternum-swap_systems",
+    "s0_eternum-trade_systems",
+    "s0_eternum-travel_systems",
+    "s0_eternum-troop_systems",
 ]
