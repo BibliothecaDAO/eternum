@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccount, useContract, useNetwork, useSendTransaction } from "@starknet-react/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { validateChecksumAddress } from "starknet";
 import { TypeH2 } from "../typography/type-h2";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -12,6 +13,7 @@ import { RealmMetadata } from "./realms-grid";
 import { abi } from "@/abi/SeasonPass";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
+import { AlertCircle } from "lucide-react";
 
 export type SeasonPassMint = {
   __typename?: "Token__Transfer";
@@ -32,7 +34,9 @@ interface TransferRealmDialogProps {
 }
 
 export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints }: TransferRealmDialogProps) {
-  const [transferTo, setTransferTo] = useState<string>("");
+  const [input, setInput] = useState<string>("");
+
+  const [transferTo, setTransferTo] = useState<string | null>(null);
   const [selectedRealms, setSelectedRealms] = useState<string[]>([]);
 
   const toggleRealmSelection = (tokenId: string) => {
@@ -58,18 +62,48 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
 
   const { send, error } = useSendTransaction({
     calls:
-      contract && address && transferTo
+      contract && address && input
         ? selectedRealms.map((tokenId) =>
-            contract.populate("transfer_from", [account.account?.address, transferTo || BigInt("0x"), tokenId]),
+            contract.populate("transfer_from", [account.account?.address, transferTo, tokenId]),
           )
         : undefined,
   });
 
   const handleTransfer = () => {
-    if (!transferTo || selectedRealms.length === 0) return;
+    if (!input || selectedRealms.length === 0) return;
 
     send();
   };
+
+  useEffect(() => {
+    const validateAndSetTransferAddress = async () => {
+      if (!input) {
+        setTransferTo(null);
+        return;
+      }
+
+      try {
+        if (validateChecksumAddress(input)) {
+          setTransferTo(input);
+          return;
+        }
+
+        await fetchAddress(input);
+
+        if (cartridgeAddress) {
+          setTransferTo(cartridgeAddress);
+          return;
+        }
+
+        setTransferTo(null);
+      } catch (error) {
+        console.error("Error validating address:", error);
+        setTransferTo(null);
+      }
+    };
+
+    validateAndSetTransferAddress();
+  }, [input, cartridgeAddress, fetchAddress]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -120,23 +154,25 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
             </TableBody>
           </Table>
         </div>
-        <div className="bottom-0 pt-4 mt-auto flex justify-end border-t bg-background gap-4">
+        <div className="bottom-0 pt-4 mt-auto flex flex-col border-t bg-background gap-4">
           {cartridgeAddress}
-          <Input
-            placeholder="Enter the address or StarknetID to transfer to"
-            value={cartridgeAddress || ""}
-            className="text-gold"
-            onChange={(e) => fetchAddress(e.target.value)}
-          />
-          <Input
-            placeholder="Enter the address or StarknetID to transfer to"
-            value={transferTo}
-            className="text-gold"
-            onChange={(e) => setTransferTo(e.target.value)}
-          />
-          <Button variant="cta" onClick={handleTransfer} disabled={!transferTo || selectedRealms.length === 0}>
-            Transfer {selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""}
-          </Button>
+          <div className="flex gap-4">
+            <Input
+              placeholder="Enter the address or StarknetID to transfer to"
+              value={input}
+              className="text-gold"
+              onChange={(e) => setInput(e.target.value)}
+            />
+            <Button variant="cta" onClick={handleTransfer} disabled={!transferTo || selectedRealms.length === 0}>
+              Transfer {selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""}
+            </Button>
+          </div>
+          {!transferTo && (
+            <div className="text-gold text-sm flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Please enter a valid Starknet address or Cartridge ID
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
