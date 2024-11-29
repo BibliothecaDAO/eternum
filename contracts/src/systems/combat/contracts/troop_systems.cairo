@@ -343,6 +343,22 @@ mod troop_systems {
 
             to_army.assert_not_in_battle();
 
+            // give the receiving army the stamina of the donating army
+            // when the donating army_stamina is less than the receiving army_stamina
+            // This is to ensure that troops don't gain stamina by just swithcing armies.
+
+            let mut from_army_stamina: Stamina = world.read_model(from_army_id);
+            from_army_stamina.refill_if_next_tick(ref world);
+
+            let mut to_army_stamina: Stamina = world.read_model(to_army_id);
+            to_army_stamina.refill_if_next_tick(ref world);
+
+            if from_army_stamina.amount < to_army_stamina.amount {
+                to_army_stamina.amount = from_army_stamina.amount;
+            }
+            world.write_model(@from_army_stamina);
+            world.write_model(@to_army_stamina);
+
             InternalTroopImpl::add_troops_to_army(ref world, troops, to_army_id);
         }
     }
