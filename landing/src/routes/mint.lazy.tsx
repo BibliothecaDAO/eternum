@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { realmsAddress } from "@/config";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { execute } from "@/hooks/gql/execute";
 import { GET_ERC_MINTS, GET_REALMS } from "@/hooks/query/realms";
@@ -19,7 +20,6 @@ import { useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, useMemo, useState } from "react";
-import { env } from "../../env";
 
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
@@ -35,15 +35,6 @@ function Mint() {
   const [isTransferRealmOpen, setIsTransferRealmOpen] = useState(false);
   const [, setMintToController] = useState(true);
   const [controllerAddress] = useState<string>();
-
-  const realmsAddress = env.VITE_REALMS_ADDRESS;
-
-  // useEffect(() => {
-  //   if (mintToController && checkCartridgeConnector(connector)) {
-  //     setControllerAddress(account?.address);
-  //     disconnect();
-  //   }
-  // }, [mintToController, account, connector, disconnect]);
 
   const { data } = useSuspenseQuery({
     queryKey: ["erc721Balance", account?.address],
@@ -74,6 +65,16 @@ function Mint() {
     [seasonPassMints],
   );
 
+  const realmsErcBalance = useMemo(
+    () =>
+      data?.tokenBalances?.edges?.filter(
+        (token) =>
+          token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
+          token.node.tokenMetadata.contractAddress === realmsAddress,
+      ),
+    [data, realmsAddress],
+  );
+
   const seasonPassNfts = useMemo(
     () =>
       seasonPassMints?.tokenTransfers?.edges
@@ -89,16 +90,6 @@ function Mint() {
         })
         .filter((id) => id !== undefined),
     [seasonPassMints],
-  );
-
-  const realmsErcBalance = useMemo(
-    () =>
-      data?.tokenBalances?.edges?.filter(
-        (token) =>
-          token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-          token.node.tokenMetadata.contractAddress === realmsAddress,
-      ),
-    [data, realmsAddress],
   );
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
@@ -146,7 +137,7 @@ function Mint() {
                 <AttributeFilters />
               </div> */}
 
-              <div className="flex-grow overflow-y-auto">
+              <div className="flex-grow overflow-y-auto p-4">
                 <div className="flex flex-col gap-2">
                   <Suspense fallback={<Skeleton>Loading</Skeleton>}>
                     <RealmsGrid
@@ -158,7 +149,7 @@ function Mint() {
                   </Suspense>
                 </div>
               </div>
-              <div className="flex justify-between border border-gold/15 p-4 rounded-xl sticky bottom-0 bg-brown gap-8">
+              <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
                 <Button onClick={() => setIsTransferRealmOpen(true)} variant="cta">
                   Transfer Season Passes
                 </Button>

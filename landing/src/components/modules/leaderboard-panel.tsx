@@ -52,7 +52,7 @@ export const LeaderboardPanel = ({
   const displayedPlayers = filteredPlayers.slice(startIndex, startIndex + playersPerPage);
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <TypeH2 className="flex items-center gap-2 uppercase">
           {icon && <span>{icon}</span>}
