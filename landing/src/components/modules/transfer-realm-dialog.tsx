@@ -10,6 +10,7 @@ import { Input } from "../ui/input";
 import { RealmMetadata } from "./realms-grid";
 
 import { abi } from "@/abi/SeasonPass";
+import { useDojo } from "@/hooks/context/DojoContext";
 
 export type SeasonPassMint = {
   __typename?: "Token__Transfer";
@@ -50,10 +51,14 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
     address: chain.nativeCurrency.address,
   });
 
+  const { account } = useDojo();
+
   const { send, error } = useSendTransaction({
     calls:
-      contract && address
-        ? selectedRealms.map((tokenId) => contract.populate("transfer_from", [address, transferTo, tokenId]))
+      contract && address && transferTo
+        ? selectedRealms.map((tokenId) =>
+            contract.populate("transfer_from", [account.account?.address, transferTo || BigInt("0x"), tokenId]),
+          )
         : undefined,
   });
 
@@ -116,12 +121,12 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
           <Input
             placeholder="Enter the address or StarknetID to transfer to"
             value={transferTo}
+            className="text-gold"
             onChange={(e) => setTransferTo(e.target.value)}
           />
           <Button variant="cta" onClick={handleTransfer} disabled={!transferTo || selectedRealms.length === 0}>
             Transfer {selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""}
           </Button>
-          {error && <p className="text-red-500">{error.message}</p>}
         </div>
       </DialogContent>
     </Dialog>
