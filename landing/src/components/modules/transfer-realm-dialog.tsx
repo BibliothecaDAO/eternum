@@ -58,7 +58,7 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
 
   const { account } = useDojo();
 
-  const { address: cartridgeAddress, fetchAddress } = useCartridgeAddress();
+  const { address: cartridgeAddress, fetchAddress, loading: cartridgeLoading } = useCartridgeAddress();
 
   const { send, error } = useSendTransaction({
     calls:
@@ -155,10 +155,11 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
           </Table>
         </div>
         <div className="bottom-0 pt-4 mt-auto flex flex-col border-t bg-background gap-4">
-          {cartridgeAddress}
+          <div className="text-gold text-sm">Found: {cartridgeLoading ? "loading" : cartridgeAddress}</div>
+
           <div className="flex gap-4">
             <Input
-              placeholder="Enter the address or StarknetID to transfer to"
+              placeholder="Enter the Controller ID to transfer to"
               value={input}
               className="text-gold"
               onChange={(e) => setInput(e.target.value)}
@@ -170,7 +171,7 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
           {!transferTo && (
             <div className="text-gold text-sm flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
-              Please enter a valid Starknet address or Cartridge ID
+              Please enter a Controller ID
             </div>
           )}
         </div>

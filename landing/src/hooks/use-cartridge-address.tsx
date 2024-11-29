@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 export const useCartridgeAddress = () => {
   const [address, setAddress] = useState<string | null>(null);
   const [searchId, setSearchId] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const fetchAddress = useCallback(async (id: string) => {
     setSearchId(id);
@@ -12,6 +13,7 @@ export const useCartridgeAddress = () => {
     const getAddress = async () => {
       if (!searchId) return;
 
+      setLoading(true);
       try {
         const response = await fetch("https://api.cartridge.gg/query", {
           method: "POST",
@@ -41,11 +43,13 @@ export const useCartridgeAddress = () => {
       } catch (error) {
         console.error("Error fetching address:", error);
         setAddress(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     getAddress();
   }, [searchId]);
 
-  return { address, fetchAddress };
+  return { address, fetchAddress, loading };
 };
