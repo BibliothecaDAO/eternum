@@ -378,13 +378,13 @@ mod battle_systems {
 
             let defending_army_owner_structure: Structure = world.read_model(defending_army_owner_entity_id);
             if defending_army_owner_structure.category != StructureCategory::None {
-                defending_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
+                defending_army_owner_structure.assert_no_initial_attack_immunity(battle_config, armies_tick_config);
             }
 
             let attacking_army_owner_entity_id = attacking_army_entity_owner.entity_owner_id;
             let attacking_army_owner_structure: Structure = world.read_model(attacking_army_owner_entity_id);
             if attacking_army_owner_structure.category != StructureCategory::None {
-                attacking_army_owner_structure.assert_can_be_attacked(battle_config, armies_tick_config);
+                attacking_army_owner_structure.assert_no_initial_attack_immunity(battle_config, armies_tick_config);
             }
 
             if defending_army.battle_id.is_non_zero() {
@@ -467,9 +467,12 @@ mod battle_systems {
             battle.last_updated = now;
             battle.start_at = now;
             // add battle start time delay when a structure is being attacked.
-            // if the structure is the attacker, the battle starts immediately
-            if defending_army_protectee.is_other() {
-                battle.start_at = now + battle_config.battle_delay_seconds;
+            // if the structure is the attacker, the battle starts immediately.
+            // hyperstructures do not however benefit from this delay
+            if defending_army_owner_structure.category != StructureCategory::Hyperstructure {
+                if defending_army_protectee.is_other() {
+                    battle.start_at = now + battle_config.battle_delay_seconds;
+                }
             }
 
             // deposit resources protected by armies into battle escrow pots/boxes
@@ -532,8 +535,13 @@ mod battle_systems {
             assert!(defending_army.battle_side == BattleSide::Defence, "army is not on defensive");
 
             let mut defending_army_protectee: Protectee = world.read_model(defending_army_id);
-            // this condition should not be possible unless there is a bug in `battle_start`
+            let defending_army_owner_structure: Structure = world.read_model(defending_army_protectee.protectee_id);
+            // these conditions below should not be possible unless there is a bug in `battle_start`
             assert!(defending_army_protectee.is_other(), "only structures can force start");
+            assert!(
+                defending_army_owner_structure.category != StructureCategory::Hyperstructure,
+                "hyperstructures cannot force start because there is no delay"
+            );
 
             let now = starknet::get_block_timestamp();
             let mut battle = BattleCustomImpl::get(world, battle_id);
@@ -715,7 +723,7 @@ mod battle_systems {
 
             let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
             let battle_config = BattleConfigCustomImpl::get(world);
-            structure.assert_can_be_attacked(battle_config, armies_tick_config);
+            structure.assert_no_initial_attack_immunity(battle_config, armies_tick_config);
 
             // ensure claimer army is not in battle
             let claimer_army: Army = world.read_model(army_id);
@@ -873,7 +881,7 @@ mod battle_pillage_systems {
             structure.assert_is_structure();
             let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
             let battle_config = BattleConfigCustomImpl::get(world);
-            structure.assert_can_be_attacked(battle_config, armies_tick_config);
+            structure.assert_no_initial_attack_immunity(battle_config, armies_tick_config);
 
             // ensure attacking army is not in a battle
             let mut attacking_army: Army = world.read_model(army_id);
