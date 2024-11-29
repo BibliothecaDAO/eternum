@@ -41,8 +41,6 @@ export const RealmMintDialog = ({
       .map((item) => Number(item?.node?.tokenMetadata.tokenId));
   }, [data]);
 
-  console.log("filteredRealmTokenIds", data);
-
   const generateUniqueRandomNumbers = (count: number, min: number, max: number, exclude: number[]): number[] => {
     const uniqueNumbers = new Set<number>();
     const excludeSet = new Set(exclude);

@@ -7,9 +7,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { LoopIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
-import { Home, Inbox, Ship } from "lucide-react";
+import { Home, Ship } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 import { ReactComponent as EternumLogo } from "@/assets/icons/eternum_new_logo.svg";
@@ -21,23 +20,23 @@ const items = [
     url: "/",
     icon: Home,
   },
-  {
-    title: "Passes",
-    url: "/passes",
-    icon: Inbox,
-  },
-  {
-    title: "Trade",
-    url: "/trade",
-    icon: LoopIcon,
-  },
+  // {
+  //   title: "Passes",
+  //   url: "/passes",
+  //   icon: Inbox,
+  // },
+  // {
+  //   title: "Trade",
+  //   url: "/trade",
+  //   icon: LoopIcon,
+  // },
   // {
   //   title: "Bridge",
   //   url: "/bridge",
   //   icon: Ship,
   // },
   {
-    title: "Create",
+    title: "Season Passes",
     url: "/mint",
     icon: Ship,
   },

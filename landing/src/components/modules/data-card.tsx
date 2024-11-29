@@ -20,7 +20,7 @@ export const DataCard = ({ title, value, description, icon }: DataCardProps) => 
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <TypeH1 className="text-cta">{value}</TypeH1>
+        <TypeH1 className="">{value}</TypeH1>
         {description && (
           <CardDescription>
             <TypeP>{description}</TypeP>

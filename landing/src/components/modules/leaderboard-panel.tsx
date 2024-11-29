@@ -5,6 +5,7 @@ import { TypeH2 } from "../typography/type-h2";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
+import { Input } from "../ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 export interface Player {
@@ -35,7 +36,7 @@ interface LeaderboardPanelProps {
 export const LeaderboardPanel = ({
   title = "Leaderboard",
   players,
-  className = "border-2 rounded-xl bg-brown border-gold/15 round-tr-none rounded-bl-none",
+
   showRank = true,
   pointsSuffix = "pts",
   icon = <Trophy />,
@@ -51,13 +52,13 @@ export const LeaderboardPanel = ({
   const displayedPlayers = filteredPlayers.slice(startIndex, startIndex + playersPerPage);
 
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader>
         <TypeH2 className="flex items-center gap-2 uppercase">
           {icon && <span>{icon}</span>}
           {title}
         </TypeH2>
-        <input
+        <Input
           type="text"
           placeholder="Search player..."
           value={searchTerm}
@@ -65,7 +66,6 @@ export const LeaderboardPanel = ({
             setSearchTerm(e.target.value);
             setCurrentPage(0);
           }}
-          className="w-full px-3 py-2 bg-transparent border border-gold/15 rounded focus:outline-none focus:border-gold/30 placeholder:text-gold/50 text-gold"
         />
       </CardHeader>
       <CardContent>

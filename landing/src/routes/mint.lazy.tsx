@@ -1,10 +1,10 @@
 import { CartridgeConnectButton } from "@/components/modules/cartridge-connect-button";
-import { AttributeFilters } from "@/components/modules/filters";
 import { RealmMintDialog } from "@/components/modules/realm-mint-dialog";
 import { RealmsGrid } from "@/components/modules/realms-grid";
 import SeasonPassMintDialog from "@/components/modules/season-pass-mint-dialog";
 import { SelectNftActions } from "@/components/modules/select-nft-actions";
-import { TypeH2 } from "@/components/typography/type-h2";
+import TransferRealmDialog, { SeasonPassMint } from "@/components/modules/transfer-realm-dialog";
+import { TypeH3 } from "@/components/typography/type-h3";
 import { TypeP } from "@/components/typography/type-p";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ function Mint() {
   } = useDojo();
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
+  const [isTransferRealmOpen, setIsTransferRealmOpen] = useState(false);
   const [, setMintToController] = useState(true);
   const [controllerAddress] = useState<string>();
 
@@ -70,6 +71,23 @@ function Mint() {
           return undefined;
         })
         .filter((id): id is string => id !== undefined),
+    [seasonPassMints],
+  );
+
+  const seasonPassNfts = useMemo(
+    () =>
+      seasonPassMints?.tokenTransfers?.edges
+        ?.filter((token) => {
+          if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
+          return token.node.tokenMetadata.contractAddress === import.meta.env.VITE_SEASON_PASS_ADDRESS;
+        })
+        .map((token) => {
+          if (token?.node?.tokenMetadata.__typename === "ERC721__Token") {
+            return token.node;
+          }
+          return undefined;
+        })
+        .filter((id) => id !== undefined),
     [seasonPassMints],
   );
 
@@ -124,9 +142,9 @@ function Mint() {
           )}
           {account?.address ? (
             <>
-              <div className="sticky top-0 z-10">
+              {/* <div className="sticky top-0 z-10">
                 <AttributeFilters />
-              </div>
+              </div> */}
 
               <div className="flex-grow overflow-y-auto">
                 <div className="flex flex-col gap-2">
@@ -141,10 +159,15 @@ function Mint() {
                 </div>
               </div>
               <div className="flex justify-between border border-gold/15 p-4 rounded-xl mt-4 sticky bottom-0 bg-brown gap-8">
-                <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
-                  Mint Realms
+                <Button onClick={() => setIsTransferRealmOpen(true)} variant="cta">
+                  Transfer Season Passes
                 </Button>
-                <div className="flex items-center gap-x-4">
+                {import.meta.env.VITE_PUBLIC_CHAIN === "local" && (
+                  <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
+                    Mint Realms
+                  </Button>
+                )}
+                <div className="flex items-center gap-8">
                   {data?.tokenBalances?.edges && (
                     <SelectNftActions
                       totalSelectedNfts={totalSelectedNfts}
@@ -157,7 +180,7 @@ function Mint() {
                         .filter((tokenId): tokenId is string => tokenId !== "")}
                     />
                   )}
-                  <TypeH2>{totalSelectedNfts} Selected</TypeH2>
+                  <TypeH3>{totalSelectedNfts} Selected</TypeH3>
 
                   <Button disabled={totalSelectedNfts < 1} onClick={() => setIsOpen(true)} variant="cta">
                     Mint Season Passes
@@ -174,6 +197,11 @@ function Mint() {
                   totalOwnedRealms={realmsErcBalance?.length}
                   isOpen={isRealmMintOpen}
                   setIsOpen={setIsRealmMintIsOpen}
+                />
+                <TransferRealmDialog
+                  isOpen={isTransferRealmOpen}
+                  setIsOpen={setIsTransferRealmOpen}
+                  seasonPassMints={seasonPassNfts as SeasonPassMint[]}
                 />
               </div>
             </>

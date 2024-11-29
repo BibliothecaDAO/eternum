@@ -1,6 +1,17 @@
 import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { AnimatedGrid } from "./animated-grid";
 import { RealmCard } from "./realm-card";
+
+export type RealmMetadata = {
+  name: string;
+  description: string;
+  image: string;
+  attributes: {
+    trait_type: string;
+    value: string | number;
+  }[];
+};
+
 interface SeasonPassRowProps {
   realms?: NonNullable<GetRealmsQuery["tokenBalances"]>["edges"];
   seasonPassTokenIds?: string[];
