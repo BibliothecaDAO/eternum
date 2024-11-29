@@ -62,9 +62,9 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
 
   const { send, error } = useSendTransaction({
     calls:
-      contract && address && input
+      contract && address && transferTo
         ? selectedRealms.map((tokenId) =>
-            contract.populate("transfer_from", [account.account?.address, transferTo, tokenId]),
+            contract.populate("transfer_from", [account.account?.address, BigInt(transferTo || ""), tokenId]),
           )
         : undefined,
   });
