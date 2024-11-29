@@ -1,10 +1,12 @@
 import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
+import { displayAddress } from "@/lib/utils";
 import { useAccount } from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";
-import { Loader } from "lucide-react";
+import { AlertCircle, Loader } from "lucide-react";
 import { useEffect } from "react";
 import { TypeH2 } from "../typography/type-h2";
 import { TypeH3 } from "../typography/type-h3";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 
@@ -25,7 +27,7 @@ export default function SeasonPassMintDialog({
 }: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
 
-  const { address } = useAccount();
+  const { address, connector } = useAccount();
 
   useEffect(() => {
     if (isOpen) {
@@ -82,18 +84,37 @@ export default function SeasonPassMintDialog({
                   </div>
                 </div>
                 {mint && (
-                  <Button
-                    className="mx-auto"
-                    onClick={() => {
-                      mint(realm_ids, address);
-                      deselectAllNfts();
-                      setIsOpen(false);
-                    }}
-                    disabled={!address}
-                    variant="cta"
-                  >
-                    {isMinting && <Loader className="animate-spin pr-2" />} Mint Season Passes
-                  </Button>
+                  <>
+                    {!address ? (
+                      <div className="text-yellow-500 mb-2 flex items-center justify-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Connect wallet to mint
+                      </div>
+                    ) : (
+                      <div className="text-sm mb-2 flex flex-col items-center justify-center gap-2">
+                        Minting to:
+                        <Badge variant="secondary" className="flex items-center gap-2 py-1">
+                          {connector?.icon && typeof connector.icon === "string" ? (
+                            <img className="h-4 w-4" src={connector.icon} alt="Wallet Icon" />
+                          ) : null}
+                          <span className="truncate">{displayAddress(address)}</span>
+                        </Badge>
+                      </div>
+                    )}
+                    <Button
+                      className="mx-auto"
+                      onClick={() => {
+                        mint(realm_ids, address);
+                        deselectAllNfts();
+                        setIsOpen(false);
+                      }}
+                      disabled={!address}
+                      variant="cta"
+                    >
+                      {isMinting && <Loader className="animate-spin pr-2" />}
+                      Mint Season Pass
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
