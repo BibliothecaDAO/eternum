@@ -5,7 +5,6 @@ import { Link } from "@tanstack/react-router";
 import { AlertCircle, Loader } from "lucide-react";
 import { useEffect } from "react";
 import { TypeH2 } from "../typography/type-h2";
-import { TypeH3 } from "../typography/type-h3";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
@@ -66,22 +65,15 @@ export default function SeasonPassMintDialog({
               Continue to explore Realms
             </Button>
           ) : (
-            <div className="flex flex-col items-center gap-4 rounded-md bg-card p-5 lg:flex-row lg:gap-5 lg:p-4">
+            <div className="flex flex-col items-center gap-4 rounded-md p-5 lg:flex-row lg:gap-5 lg:p-4 w-fill">
               <div className="text-center">
-                <div className="text-lg font-semibold">Mint passes to compete in Season 0 of Eternum</div>
-                <div className="w-full my-4">
-                  <hr className="my-4" />
-                  <div className="text-left gap-2 mt-6">
-                    <TypeH3>Realms</TypeH3>
-                    <div>
-                      {realm_ids.map((realm, index) => (
-                        <span key={realm}>
-                          #{Number(realm)}
-                          {index < realm_ids.length - 1 && ", "}
-                        </span>
-                      ))}
+                <div className="w-full grid grid-cols-3 p-4">
+                  {realm_ids.map((realm, index) => (
+                    <div className="text-sm p-2 border rounded-md" key={realm}>
+                      #{Number(realm)}
+                      {index < realm_ids.length - 1 && ", "}
                     </div>
-                  </div>
+                  ))}
                 </div>
                 {mint && (
                   <>
@@ -91,8 +83,8 @@ export default function SeasonPassMintDialog({
                         Connect wallet to mint
                       </div>
                     ) : (
-                      <div className="text-sm mb-2 flex flex-col items-center justify-center gap-2">
-                        Minting to:
+                      <div className="text-sm mb-2 flex items-center justify-center gap-2 mt-8">
+                        Passes will be minted to:
                         <Badge variant="secondary" className="flex items-center gap-2 py-1">
                           {connector?.icon && typeof connector.icon === "string" ? (
                             <img className="h-4 w-4" src={connector.icon} alt="Wallet Icon" />
@@ -102,7 +94,7 @@ export default function SeasonPassMintDialog({
                       </div>
                     )}
                     <Button
-                      className="mx-auto"
+                      className="mx-auto mt-8"
                       onClick={() => {
                         mint(realm_ids, address);
                         deselectAllNfts();
