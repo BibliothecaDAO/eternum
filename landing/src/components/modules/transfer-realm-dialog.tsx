@@ -70,7 +70,7 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
   });
 
   const handleTransfer = () => {
-    if (!input || selectedRealms.length === 0) return;
+    if (!transferTo || selectedRealms.length === 0) return;
 
     send();
   };
