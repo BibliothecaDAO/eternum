@@ -11,6 +11,7 @@ import { RealmMetadata } from "./realms-grid";
 
 import { abi } from "@/abi/SeasonPass";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 
 export type SeasonPassMint = {
   __typename?: "Token__Transfer";
@@ -52,6 +53,8 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
   });
 
   const { account } = useDojo();
+
+  const { address: cartridgeAddress, fetchAddress } = useCartridgeAddress();
 
   const { send, error } = useSendTransaction({
     calls:
@@ -118,6 +121,13 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
           </Table>
         </div>
         <div className="bottom-0 pt-4 mt-auto flex justify-end border-t bg-background gap-4">
+          {cartridgeAddress}
+          <Input
+            placeholder="Enter the address or StarknetID to transfer to"
+            value={cartridgeAddress || ""}
+            className="text-gold"
+            onChange={(e) => fetchAddress(e.target.value)}
+          />
           <Input
             placeholder="Enter the address or StarknetID to transfer to"
             value={transferTo}

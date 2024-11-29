@@ -1,16 +1,12 @@
+import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
+import { useAccount } from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";
+import { Loader } from "lucide-react";
+import { useEffect } from "react";
 import { TypeH2 } from "../typography/type-h2";
+import { TypeH3 } from "../typography/type-h3";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
-//import TokenActionsTokenOverview from "~/app/token/[contractAddress]/[tokenId]/components/token-actions-token-overview";
-//import type { CollectionToken, Token } from "~/types";
-import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
-import { checkCartridgeConnector } from "@/lib/utils";
-import { useConnect } from "@starknet-react/core";
-import { Loader } from "lucide-react";
-import { useEffect, useState } from "react";
-import { TypeH3 } from "../typography/type-h3";
-import { CartridgeConnectButton } from "./cartridge-connect-button";
 
 interface SeasonPassMintDialogProps {
   isOpen: boolean;
@@ -28,14 +24,11 @@ export default function SeasonPassMintDialog({
   realm_ids,
 }: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
-  const { connector, connectors } = useConnect();
 
-  const [cartridgeAddress, setCartridgeAddress] = useState<string>();
+  const { address } = useAccount();
 
-  const checkCartridge = checkCartridgeConnector(connector);
   useEffect(() => {
     if (isOpen) {
-      // Pushing the change to the end of the call stack
       const timer = setTimeout(() => {
         document.body.style.pointerEvents = "";
       }, 0);
@@ -66,10 +59,6 @@ export default function SeasonPassMintDialog({
               </div>
             )}
           </div>
-          {/*<TokenActionsTokenOverview
-            token={token}
-            amount={formatEther(BigInt(price ?? 0))}
-        />*/}
           {isSuccess ? (
             <Button onClick={() => setIsOpen(false)} className="mx-auto w-full lg:w-fit">
               Continue to explore Realms
@@ -79,17 +68,6 @@ export default function SeasonPassMintDialog({
               <div className="text-center">
                 <div className="text-lg font-semibold">Mint passes to compete in Season 0 of Eternum</div>
                 <div className="w-full my-4">
-                  {!checkCartridge && (
-                    <div className="w-full h-full relative">
-                      <CartridgeConnectButton
-                        cartridgeAddress={cartridgeAddress}
-                        setCartridgeAddress={setCartridgeAddress}
-                        className="w-full"
-                      >
-                        Connect your Cartridge Wallet
-                      </CartridgeConnectButton>
-                    </div>
-                  )}
                   <hr className="my-4" />
                   <div className="text-left gap-2 mt-6">
                     <TypeH3>Realms</TypeH3>
@@ -107,11 +85,11 @@ export default function SeasonPassMintDialog({
                   <Button
                     className="mx-auto"
                     onClick={() => {
-                      mint(realm_ids, cartridgeAddress);
+                      mint(realm_ids, address);
                       deselectAllNfts();
                       setIsOpen(false);
                     }}
-                    disabled={!cartridgeAddress}
+                    disabled={!address}
                     variant="cta"
                   >
                     {isMinting && <Loader className="animate-spin pr-2" />} Mint Season Passes

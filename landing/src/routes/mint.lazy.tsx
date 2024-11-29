@@ -158,7 +158,7 @@ function Mint() {
                   </Suspense>
                 </div>
               </div>
-              <div className="flex justify-between border border-gold/15 p-4 rounded-xl mt-4 sticky bottom-0 bg-brown gap-8">
+              <div className="flex justify-between border border-gold/15 p-4 rounded-xl sticky bottom-0 bg-brown gap-8">
                 <Button onClick={() => setIsTransferRealmOpen(true)} variant="cta">
                   Transfer Season Passes
                 </Button>

@@ -26,8 +26,6 @@ export const RealmCard = ({ realm, isSelected, seasonPassMinted, toggleNftSelect
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
   const { attributes, name, image } = parsedMetadata ?? {};
 
-  console.log(parsedMetadata);
-
   return (
     <Card
       onClick={handleCardClick}

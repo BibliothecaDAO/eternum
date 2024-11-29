@@ -53,7 +53,7 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
-  const { account, connector, isConnected } = useAccount();
+  const { account } = useAccount();
 
   if (import.meta.env.VITE_PUBLIC_DEV == "true") {
     const rpcProvider = new RpcProvider({
@@ -130,38 +130,12 @@ const DojoContextProvider = ({
 
   console.log("controllerAccount", controllerAccount);
 
-  //const [accountsInitialized, setAccountsInitialized] = useState(false);
-
   // Determine which account to use based on environment
   const isDev = env.VITE_PUBLIC_DEV === true;
   const accountToUse = isDev ? burnerAccount : controllerAccount;
 
   console.log("dev " + isDev);
   console.log(accountToUse?.address);
-
-  /* useEffect(() => {
-    console.log(controllerAccount);
-    if (isDev) {
-      if (burnerAccount) {
-        console.log("Setting account from burner hook:", burnerAccount);
-        setAccountsInitialized(true);
-      } else {
-        console.log("Burner account is null in development.");
-      }
-    } else {
-      if (controllerAccount) {
-        console.log("Setting account from controllerAccount:", controllerAccount);
-        setAccountsInitialized(true);
-      } else {
-        console.log("ControllerAccount is null in production or not connected.");
-        setAccountsInitialized(true);
-      }
-    }
-  }, [isDev, controllerAccount, burnerAccount]);
-
-  if (!accountsInitialized) {
-    return <div>loading...</div>;
-  }*/
 
   const activeAccount = accountToUse || (isDev ? masterAccount : null);
   const displayAddr = activeAccount ? displayAddress(activeAccount.address) : displayAddress(masterAddress);
