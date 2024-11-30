@@ -88,10 +88,10 @@ mod season_systems {
 
             assert!(entry.points > 0, "No points to claim");
 
-            let percentage_scaled: u256 = (entry.points.into() * SCALING_FACTOR / leaderboard.total_points.into())
+            let percentage_scaled: u256 = ((entry.points.into() * SCALING_FACTOR) / leaderboard.total_points.into())
                 .into();
 
-            let player_reward: u256 = leaderboard.total_price_pool.unwrap() * percentage_scaled / SCALING_FACTOR;
+            let player_reward: u256 = (leaderboard.total_price_pool.unwrap() * percentage_scaled) / SCALING_FACTOR;
             let resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
 
             ERC20ABIDispatcher { contract_address: token }
