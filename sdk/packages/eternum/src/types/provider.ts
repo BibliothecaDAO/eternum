@@ -461,7 +461,8 @@ export interface SetBankConfigProps extends SystemSigner {
 
 export interface SetBattleConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
-  battle_grace_tick_count: num.BigNumberish;
+  regular_immunity_ticks: num.BigNumberish;
+  hyperstructure_immunity_ticks: num.BigNumberish;
   battle_delay_seconds: num.BigNumberish;
 }
 export interface SetTroopConfigProps extends SystemSigner {

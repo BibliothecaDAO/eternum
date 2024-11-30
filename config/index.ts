@@ -48,6 +48,7 @@ const setupConfig: Config =
         },
         battle: {
           graceTickCount: 0,
+          graceTickCountHyp: 0,
           delaySeconds: 0,
         },
         // make it easier to build hyperstructures in dev mode

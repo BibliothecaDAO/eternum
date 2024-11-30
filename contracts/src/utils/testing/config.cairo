@@ -121,7 +121,12 @@ fn get_combat_config() -> TroopConfig {
 }
 
 fn get_battle_config() -> BattleConfig {
-    return BattleConfig { config_id: WORLD_CONFIG_ID, battle_grace_tick_count: 1, battle_delay_seconds: 1, };
+    return BattleConfig {
+        config_id: WORLD_CONFIG_ID,
+        regular_immunity_ticks: 1,
+        hyperstructure_immunity_ticks: 1,
+        battle_delay_seconds: 1,
+    };
 }
 
 fn set_combat_config(config_systems_address: ContractAddress) {

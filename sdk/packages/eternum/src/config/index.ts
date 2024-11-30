@@ -326,12 +326,17 @@ export const setWeightConfig = async (config: Config) => {
 };
 
 export const setBattleConfig = async (config: Config) => {
-  const { graceTickCount: battle_grace_tick_count, delaySeconds: battle_delay_seconds } = config.config.battle;
+  const {
+    graceTickCount: regular_immunity_ticks,
+    graceTickCountHyp: hyperstructure_immunity_ticks,
+    delaySeconds: battle_delay_seconds,
+  } = config.config.battle;
 
   const tx = await config.provider.set_battle_config({
     signer: config.account,
     config_id: 0,
-    battle_grace_tick_count,
+    regular_immunity_ticks,
+    hyperstructure_immunity_ticks,
     battle_delay_seconds,
   });
 

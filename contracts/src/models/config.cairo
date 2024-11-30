@@ -601,7 +601,8 @@ impl TroopConfigCustomImpl of TroopConfigCustomTrait {
 pub struct BattleConfig {
     #[key]
     config_id: ID,
-    battle_grace_tick_count: u8,
+    regular_immunity_ticks: u8,
+    hyperstructure_immunity_ticks: u8, // hyperstucture immunity
     battle_delay_seconds: u64,
 }
 

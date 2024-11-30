@@ -320,7 +320,7 @@ export class ClientConfigManager {
   getBattleGraceTickCount() {
     return this.getValueOrDefault(() => {
       const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-      return Number(battleConfig?.battle_grace_tick_count ?? 0);
+      return Number(battleConfig?.regular_immunity_ticks ?? 0);
     }, 0);
   }
 
