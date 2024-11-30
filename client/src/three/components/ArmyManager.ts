@@ -368,10 +368,10 @@ export class ArmyManager {
         // Check if there are more hexes in the path
         const path = this.armyPaths.get(entityId);
         if (path && movement.currentPathIndex < path.length - 1) {
-          // Move to next hex in path
           movement.currentPathIndex++;
           const nextHex = path[movement.currentPathIndex];
-          const nextPosition = this.getArmyWorldPosition(entityId, nextHex);
+          const isLastPosition = movement.currentPathIndex === path.length - 1;
+          const nextPosition = this.getArmyWorldPosition(entityId, nextHex, !isLastPosition);
 
           movement.startPos = movement.endPos;
           movement.endPos = nextPosition;
@@ -428,15 +428,17 @@ export class ArmyManager {
     this.armyModel.updateAnimations(deltaTime);
   }
 
-  private getArmyWorldPosition = (armyEntityId: ID, hexCoords: Position) => {
+  private getArmyWorldPosition = (armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
     const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
+    const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
+
+    if (isIntermediatePosition) return basePosition;
 
     const totalOnSameHex = Array.from(this.armies.values()).filter((army) => {
       const { x, y } = army.hexCoords.getNormalized();
       return x === hexCoordsX && y === hexCoordsY;
     }).length;
 
-    const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
     if (totalOnSameHex === 1) return basePosition;
 
     const { x, z } = calculateOffset(armyEntityId, totalOnSameHex, RADIUS_OFFSET);
