@@ -332,6 +332,43 @@ export class ClientConfigManager {
     }, 0);
   }
 
+  getResourceBridgeFeeSplitConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const resourceBridgeFeeSplitConfig = getComponentValue(
+          this.components.ResourceBridgeFeeSplitConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        );
+        return {
+          config_id: Number(resourceBridgeFeeSplitConfig?.config_id ?? WORLD_CONFIG_ID),
+          velords_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_dpt_percent ?? 0),
+          velords_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_wtdr_percent ?? 0),
+          season_pool_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.season_pool_fee_on_dpt_percent ?? 0),
+          season_pool_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.season_pool_fee_on_wtdr_percent ?? 0),
+          client_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.client_fee_on_dpt_percent ?? 0),
+          client_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.client_fee_on_wtdr_percent ?? 0),
+          velords_fee_recipient: resourceBridgeFeeSplitConfig?.velords_fee_recipient ?? BigInt(0),
+          season_pool_fee_recipient: resourceBridgeFeeSplitConfig?.season_pool_fee_recipient ?? BigInt(0),
+          max_bank_fee_dpt_percent: Number(resourceBridgeFeeSplitConfig?.max_bank_fee_dpt_percent ?? 0),
+          max_bank_fee_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.max_bank_fee_wtdr_percent ?? 0),
+        };
+      },
+      {
+        config_id: Number(WORLD_CONFIG_ID),
+        velords_fee_on_dpt_percent: 0,
+        velords_fee_on_wtdr_percent: 0,
+        season_pool_fee_on_dpt_percent: 0,
+        season_pool_fee_on_wtdr_percent: 0,
+        client_fee_on_dpt_percent: 0,
+        client_fee_on_wtdr_percent: 0,
+        velords_fee_recipient: BigInt(0),
+        season_pool_fee_recipient: BigInt(0),
+        max_bank_fee_dpt_percent: 0,
+        max_bank_fee_wtdr_percent: 0,
+      },
+    );
+  }
+
   getTick(tickId: TickIds) {
     return this.getValueOrDefault(() => {
       const tickConfig = getComponentValue(

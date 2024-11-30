@@ -13,7 +13,7 @@ mint_all_resources() {
     local amount=$2
     local resources=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 29 249 250 251 252 253 254 255)
     for resource in "${resources[@]}"; do
-        commands+=("sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource,$amount eternum:dev_resource_systems mint")
+        commands+=("sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource,$amount dev_resource_systems mint")
     done
 }
 
@@ -50,7 +50,7 @@ else
 	read -p "Enter resource type: " resource_type
 	read -p "Enter amount: " amount
     commands+=(
-        "sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$((amount * 1000)) eternum:dev_resource_systems mint"
+        "sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$((amount * 1000)) dev_resource_systems mint"
     )
 fi
 

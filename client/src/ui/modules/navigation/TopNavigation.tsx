@@ -1,6 +1,7 @@
 import { useGetAllPlayers } from "@/hooks/helpers/useGetAllPlayers";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Questing } from "../questing/Questing";
+import { Rewards } from "../rewards/Rewards";
 import { SettingsWindow } from "../settings/Settings";
 import { Social } from "../social/Social";
 
@@ -15,6 +16,7 @@ export const TopMiddleNavigation = () => {
       <div className="pointer-events-auto">
         <Questing entityId={structureEntityId} />
         <Social players={players} />
+        <Rewards />
         <SettingsWindow />
       </div>
     </>

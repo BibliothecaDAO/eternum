@@ -1924,6 +1924,24 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async register_to_leaderboard(props: SystemProps.RegisterToLeaderboardProps) {
+    const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
+      entrypoint: "register_to_leaderboard",
+      calldata: [hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
+    });
+  }
+
+  public async claim_leaderboard_rewards(props: SystemProps.ClaimLeaderboardRewardsProps) {
+    const { signer, token } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
+      entrypoint: "claim_leaderboard_rewards",
+      calldata: [token],
+    });
+  }
+
   public async set_co_owners(props: SystemProps.SetCoOwnersProps) {
     const { hyperstructure_entity_id, co_owners, signer } = props;
     return await this.executeAndCheckTransaction(signer, {

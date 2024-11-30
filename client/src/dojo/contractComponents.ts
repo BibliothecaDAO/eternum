@@ -538,6 +538,81 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Leaderboard: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.Number,
+          registration_end_timestamp: RecsType.Number,
+          total_points: RecsType.BigInt,
+          total_price_pool: RecsType.OptionalBigInt,
+          distribution_started: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "Leaderboard",
+            types: ["u32", "u64", "u128", "u256", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardEntry: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          points: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardEntry",
+            types: ["contractaddress", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardRewardClaimed: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          claimed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRewardClaimed",
+            types: ["contractaddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    LeaderboardRegistered: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s0_eternum",
+            name: "LeaderboardRegistered",
+            types: ["contractaddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     Liquidity: (() => {
       return defineComponent(
         world,
@@ -557,6 +632,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+
     MapConfig: (() => {
       return defineComponent(
         world,
