@@ -1248,7 +1248,9 @@ mod tests {
     }
 
     fn mock_battle_config() -> BattleConfig {
-        BattleConfig { config_id: 0, battle_grace_tick_count: 0, battle_delay_seconds: 0, }
+        BattleConfig {
+            config_id: 0, regular_immunity_ticks: 0, hyperstructure_immunity_ticks: 0, battle_delay_seconds: 0,
+        }
     }
 
     fn mock_troops(a: u64, b: u64, c: u64) -> Troops {

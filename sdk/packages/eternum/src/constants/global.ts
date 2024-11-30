@@ -81,6 +81,7 @@ export const ARMY_SPEED = 1;
 
 // ----- Battle ----- //
 export const BATTLE_GRACE_TICK_COUNT = 24;
+export const BATTLE_GRACE_TICK_COUNT_HYPERSTRUCTURES = 1;
 export const BATTLE_DELAY_SECONDS = 8 * 60 * 60;
 
 // ----- Troops ----- //
@@ -193,6 +194,7 @@ export const EternumGlobalConfig: Config = {
   },
   battle: {
     graceTickCount: BATTLE_GRACE_TICK_COUNT,
+    graceTickCountHyp: BATTLE_GRACE_TICK_COUNT_HYPERSTRUCTURES,
     delaySeconds: BATTLE_DELAY_SECONDS,
   },
   troop: {

@@ -41,6 +41,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
       },
       battle: {
         graceTickCount: 2,
+        graceTickCountHyp: 3,
       },
     },
   };

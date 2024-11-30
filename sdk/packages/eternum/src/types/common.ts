@@ -296,6 +296,7 @@ export interface Config {
   };
   battle: {
     graceTickCount: number;
+    graceTickCountHyp: number;
     delaySeconds: number;
   };
   troop: {

@@ -34,7 +34,12 @@ impl StructureCustomImpl of StructureCustomTrait {
         self: Structure, battle_config: BattleConfig, tick_config: TickConfig
     ) -> (bool, ByteArray) {
         let current_tick = tick_config.current();
-        let allow_attack_tick = tick_config.at(self.created_at) + battle_config.battle_grace_tick_count.into();
+        let mut allow_attack_tick: u64 = 0;
+        if self.category == StructureCategory::Hyperstructure {
+            allow_attack_tick = tick_config.at(self.created_at) + battle_config.hyperstructure_immunity_ticks.into();
+        } else {
+            allow_attack_tick = tick_config.at(self.created_at) + battle_config.regular_immunity_ticks.into();
+        }
 
         if current_tick < allow_attack_tick {
             let remaining_ticks = allow_attack_tick - current_tick;

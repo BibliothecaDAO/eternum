@@ -205,12 +205,17 @@ export function defineContractComponents(world: World) {
     BattleConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.Number, battle_grace_tick_count: RecsType.Number, battle_delay_seconds: RecsType.Number },
+        {
+          config_id: RecsType.Number,
+          regular_immunity_ticks: RecsType.Number,
+          hyperstructure_immunity_ticks: RecsType.Number,
+          battle_delay_seconds: RecsType.Number,
+        },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "BattleConfig",
-            types: ["u32", "u8", "u64"],
+            types: ["u32", "u8", "u8", "u64"],
             customTypes: [],
           },
         },
