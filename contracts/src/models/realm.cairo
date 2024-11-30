@@ -18,7 +18,8 @@ pub struct Realm {
     produced_resources: u128,
     order: u8,
     level: u8,
-    has_wonder: bool
+    has_wonder: bool,
+    settler_address: ContractAddress,
 }
 
 
@@ -331,7 +332,15 @@ mod test_realm_resources_impl {
     use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
 
     fn mock_realm() -> Realm {
-        Realm { entity_id: 1, realm_id: 1, order: 0, level: 0, produced_resources: 0, has_wonder: false }
+        Realm {
+            entity_id: 1,
+            realm_id: 1,
+            order: 0,
+            level: 0,
+            produced_resources: 0,
+            has_wonder: false,
+            settler_address: 0x1
+        }
     }
 
 

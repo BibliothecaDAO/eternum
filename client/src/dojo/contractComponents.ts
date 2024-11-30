@@ -969,12 +969,13 @@ export function defineContractComponents(world: World) {
           order: RecsType.Number,
           level: RecsType.Number,
           has_wonder: RecsType.Boolean,
+          settler_address: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s0_eternum",
             name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "bool"],
+            types: ["u32", "u32", "u128", "u8", "u8", "bool", "contractaddress"],
             customTypes: [],
           },
         },
