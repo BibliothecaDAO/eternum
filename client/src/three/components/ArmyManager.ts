@@ -2,6 +2,7 @@ import { useAccountStore } from "@/hooks/context/accountStore";
 import { ArmyData, MovingArmyData, MovingLabelData, RenderChunkSize } from "@/types";
 import { Position } from "@/types/Position";
 import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "@/ui/utils/utils";
+import { findShortestPath } from "@/utils/pathfinding";
 import { BiomeType, ContractAddress, FELT_CENTER, ID, orders } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { GUIManager } from "../helpers/GUIManager";
@@ -28,14 +29,21 @@ export class ArmyManager {
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
   private biome: Biome;
+  private armyPaths: Map<ID, Position[]> = new Map();
+  private exploredTiles: Map<number, Set<number>>;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
+  constructor(
+    scene: THREE.Scene,
+    renderChunkSize: { width: number; height: number },
+    exploredTiles: Map<number, Set<number>>,
+  ) {
     this.scene = scene;
     this.armyModel = new ArmyModel(scene);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.renderChunkSize = renderChunkSize;
     this.biome = new Biome();
+    this.exploredTiles = exploredTiles;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
 
@@ -271,34 +279,42 @@ export class ArmyManager {
 
   public moveArmy(entityId: ID, hexCoords: Position) {
     const armyData = this.armies.get(entityId);
-    if (!armyData) {
-      return;
-    }
+    if (!armyData) return;
 
-    const { x, y } = hexCoords.getNormalized();
-    const { x: armyDataX, y: armyDataY } = armyData.hexCoords.getNormalized();
-    if (armyDataX === x && armyDataY === y) {
-      return;
-    }
+    const { x: startX, y: startY } = armyData.hexCoords.getNormalized();
+    const { x: targetX, y: targetY } = hexCoords.getNormalized();
+
+    if (startX === targetX && startY === targetY) return;
+
+    // Get path of hexes to follow
+    const path = findShortestPath(
+      armyData.hexCoords,
+      hexCoords,
+      this.exploredTiles, // You'll need to pass this from WorldmapScene
+    );
+
+    if (!path || path.length === 0) return;
 
     this.armies.set(entityId, { ...armyData, hexCoords });
+    this.armyPaths.set(entityId, path);
 
-    if (!this.visibleArmies.some((army) => army.entityId === entityId)) {
-      return;
-    }
-
-    const newPosition = this.getArmyWorldPosition(entityId, hexCoords);
+    // Start movement with first hex in path
+    const nextHex = path[0];
+    const newPosition = this.getArmyWorldPosition(entityId, nextHex);
     const currentPosition = new THREE.Vector3();
+
     const modelData = this.armyModel.getModelForEntity(entityId);
     if (modelData) {
       modelData.mesh.getMatrixAt(armyData.matrixIndex, this.armyModel.dummyObject.matrix);
       currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
       this.armyModel.setAnimationState(armyData.matrixIndex, true);
+
       this.movingArmies.set(entityId, {
         startPos: currentPosition,
         endPos: newPosition,
         progress: 0,
         matrixIndex: armyData.matrixIndex,
+        currentPathIndex: 0,
       });
 
       this.movingLabels.set(entityId, {
@@ -327,13 +343,12 @@ export class ArmyManager {
 
   update(deltaTime: number) {
     let needsBoundingUpdate = false;
-    const movementSpeed = 1.25; // Constant movement speed
+    const movementSpeed = 1.25;
 
     this.movingArmies.forEach((movement, entityId) => {
       const armyData = this.visibleArmies.find((army) => army.entityId === entityId);
       if (!armyData) {
-        // delete the movement from the map
-        this.armyModel.setAnimationState(movement.matrixIndex, false); // Set back to idle animation
+        this.armyModel.setAnimationState(movement.matrixIndex, false);
         this.movingArmies.delete(entityId);
         return;
       }
@@ -347,11 +362,28 @@ export class ArmyManager {
 
       if (movement.progress >= 1) {
         position = movement.endPos;
-        this.movingArmies.delete(entityId);
-        this.armyModel.setAnimationState(matrixIndex, false); // Set back to idle animation
+
+        // Check if there are more hexes in the path
+        const path = this.armyPaths.get(entityId);
+        if (path && movement.currentPathIndex < path.length - 1) {
+          // Move to next hex in path
+          movement.currentPathIndex++;
+          const nextHex = path[movement.currentPathIndex];
+          const nextPosition = this.getArmyWorldPosition(entityId, nextHex);
+
+          movement.startPos = movement.endPos;
+          movement.endPos = nextPosition;
+          movement.progress = 0;
+        } else {
+          // Path complete
+          this.movingArmies.delete(entityId);
+          this.armyPaths.delete(entityId);
+          this.armyModel.setAnimationState(matrixIndex, false);
+        }
       } else {
         position = new THREE.Vector3().copy(movement.startPos).lerp(movement.endPos, movement.progress);
       }
+
       const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
       const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
