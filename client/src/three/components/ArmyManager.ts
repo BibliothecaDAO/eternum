@@ -286,27 +286,29 @@ export class ArmyManager {
 
     if (startX === targetX && startY === targetY) return;
 
-    // Get path of hexes to follow
-    const path = findShortestPath(
-      armyData.hexCoords,
-      hexCoords,
-      this.exploredTiles, // You'll need to pass this from WorldmapScene
-    );
+    const path = findShortestPath(armyData.hexCoords, hexCoords, this.exploredTiles);
 
     if (!path || path.length === 0) return;
+
+    // Set initial direction before movement starts
+    const firstHex = path[0];
+    const direction = new THREE.Vector3()
+      .subVectors(
+        this.getArmyWorldPosition(entityId, firstHex),
+        this.getArmyWorldPosition(entityId, armyData.hexCoords),
+      )
+      .normalize();
+    const angle = Math.atan2(direction.x, direction.z);
+    this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 3) / 6, 0);
 
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
 
-    // Start movement with first hex in path
-    const nextHex = path[0];
-    const newPosition = this.getArmyWorldPosition(entityId, nextHex);
-    const currentPosition = new THREE.Vector3();
+    const currentPosition = this.getArmyWorldPosition(entityId, armyData.hexCoords);
+    const newPosition = this.getArmyWorldPosition(entityId, firstHex);
 
     const modelData = this.armyModel.getModelForEntity(entityId);
     if (modelData) {
-      modelData.mesh.getMatrixAt(armyData.matrixIndex, this.armyModel.dummyObject.matrix);
-      currentPosition.setFromMatrixPosition(this.armyModel.dummyObject.matrix);
       this.armyModel.setAnimationState(armyData.matrixIndex, true);
 
       this.movingArmies.set(entityId, {
@@ -317,11 +319,15 @@ export class ArmyManager {
         currentPathIndex: 0,
       });
 
-      this.movingLabels.set(entityId, {
-        startPos: currentPosition,
-        endPos: newPosition,
-        progress: 0,
-      });
+      // Sync label movement with army movement
+      const label = this.labels.get(entityId);
+      if (label) {
+        this.movingLabels.set(entityId, {
+          startPos: currentPosition.clone(),
+          endPos: newPosition.clone(),
+          progress: 0,
+        });
+      }
     }
   }
 
@@ -406,19 +412,15 @@ export class ArmyManager {
     this.movingLabels.forEach((movement, entityId) => {
       const label = this.labels.get(entityId);
       if (label) {
-        const distance = movement.startPos.distanceTo(movement.endPos);
-        const travelTime = distance / movementSpeed;
-        movement.progress += deltaTime / travelTime;
-
-        if (movement.progress >= 1) {
-          this.labelManager.updateLabelPosition(label, movement.endPos);
-          this.movingLabels.delete(entityId);
-          needsBoundingUpdate = true;
+        // Get the current army position from moving armies
+        const armyMovement = this.movingArmies.get(entityId);
+        if (armyMovement) {
+          const currentPos = new THREE.Vector3()
+            .copy(armyMovement.startPos)
+            .lerp(armyMovement.endPos, armyMovement.progress);
+          this.labelManager.updateLabelPosition(label, currentPos);
         } else {
-          const newPosition = this.armyModel.dummyObject.position
-            .copy(movement.startPos)
-            .lerp(movement.endPos, movement.progress);
-          this.labelManager.updateLabelPosition(label, newPosition);
+          this.movingLabels.delete(entityId);
         }
       }
     });
