@@ -21,16 +21,18 @@ impl StructureCustomImpl of StructureCustomTrait {
         assert!(self.is_structure(), "entity {} is not a structure", self.entity_id)
     }
 
-    fn assert_can_be_attacked(self: Structure, battle_config: BattleConfig, tick_config: TickConfig) {
-        let (can_be_attacked, reason) = self.can_be_attacked(battle_config, tick_config);
-        assert!(can_be_attacked, "{}", reason);
+    fn assert_no_initial_attack_immunity(self: Structure, battle_config: BattleConfig, tick_config: TickConfig) {
+        let (no_initial_attack_immunity, reason) = self.no_initial_attack_immunity(battle_config, tick_config);
+        assert!(no_initial_attack_immunity, "{}", reason);
     }
 
     fn is_structure(self: Structure) -> bool {
         self.category != StructureCategory::None
     }
 
-    fn can_be_attacked(self: Structure, battle_config: BattleConfig, tick_config: TickConfig) -> (bool, ByteArray) {
+    fn no_initial_attack_immunity(
+        self: Structure, battle_config: BattleConfig, tick_config: TickConfig
+    ) -> (bool, ByteArray) {
         let current_tick = tick_config.current();
         let allow_attack_tick = tick_config.at(self.created_at) + battle_config.battle_grace_tick_count.into();
 
