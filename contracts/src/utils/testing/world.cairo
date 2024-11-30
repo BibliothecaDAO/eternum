@@ -45,6 +45,8 @@ use eternum::models::resources::m_ResourceTransferLock;
 use eternum::models::resources::{m_ResourceCost};
 use eternum::models::resources::{m_Resource};
 use eternum::models::season::m_Season;
+use eternum::models::season::m_Leaderboard;
+use eternum::models::season::m_LeaderboardEntry;
 use eternum::models::stamina::m_Stamina;
 use eternum::models::structure::m_Structure;
 use eternum::models::structure::m_StructureCount;
@@ -78,6 +80,7 @@ use eternum::systems::resources::contracts::{
 use eternum::systems::trade::contracts::trade_systems::trade_systems;
 use eternum::systems::transport::contracts::donkey_systems::donkey_systems;
 use eternum::systems::transport::contracts::travel_systems::travel_systems;
+use eternum::systems::season::contracts::season_systems;
 use starknet::ContractAddress;
 
 use starknet::contract_address_const;
@@ -164,6 +167,8 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Status::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Trade::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Weight::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Leaderboard::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardEntry::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(liquidity_systems::e_LiquidityEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(swap_systems::e_SwapEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(hyperstructure_systems::e_HyperstructureFinished::TEST_CLASS_HASH.try_into().unwrap()),
@@ -217,6 +222,7 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(trade_systems::TEST_CLASS_HASH),
             TestResource::Contract(travel_systems::TEST_CLASS_HASH),
             TestResource::Contract(donkey_systems::TEST_CLASS_HASH),
+            TestResource::Contract(season_systems::TEST_CLASS_HASH),
         ].span()
     };
 
@@ -272,6 +278,8 @@ fn contract_defs() -> Span<ContractDef> {
         ContractDefTrait::new(DEFAULT_NS(), @"travel_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"donkey_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"season_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
     ].span()
 }

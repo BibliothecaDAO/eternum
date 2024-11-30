@@ -69,3 +69,8 @@ pub mod ownership {
     #[cfg(test)]
     mod tests;
 }
+pub mod season {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}

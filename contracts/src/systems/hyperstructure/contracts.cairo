@@ -8,6 +8,8 @@ use eternum::{
 };
 use starknet::ContractAddress;
 
+const LEADERBOARD_REGISTRATION_PERIOD: u64 = 604800; // one week
+
 #[starknet::interface]
 trait IHyperstructureSystems<T> {
     fn create(ref self: T, creator_entity_id: ID, coord: Coord) -> ID;
@@ -37,14 +39,14 @@ mod hyperstructure_systems {
     use eternum::{
         alias::ID,
         constants::{
-            HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
+            WORLD_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
             get_contributable_resources_with_rarity, RESOURCE_PRECISION
         },
         models::{
             config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig, CapacityConfigCategory},
             capacity::{CapacityCategory},
             hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureCustomImpl, Epoch, Access},
-            owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
+            owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait}, season::{Leaderboard},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceCustomImpl, ResourceCost},
             structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}, guild::{GuildMember}
@@ -54,7 +56,7 @@ mod hyperstructure_systems {
 
     use starknet::{ContractAddress, contract_address_const};
 
-    use super::calculate_total_contributable_amount;
+    use super::{calculate_total_contributable_amount, LEADERBOARD_REGISTRATION_PERIOD};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -344,6 +346,10 @@ mod hyperstructure_systems {
 
             let winner_address = starknet::get_caller_address();
             world.emit_event(@GameEnded { winner_address, timestamp: starknet::get_block_timestamp() });
+
+            let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+            leaderboard.registration_end_timestamp = starknet::get_block_timestamp() + LEADERBOARD_REGISTRATION_PERIOD;
+            world.write_model(@leaderboard);
 
             // [Achievement] Win the game
             let player_id: felt252 = winner_address.into();
