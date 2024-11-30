@@ -2,6 +2,7 @@ import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum_words_logo.svg";
 import { configManager } from "@/dojo/setup";
 import { useAccountStore } from "@/hooks/context/accountStore";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -66,7 +67,7 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
     <StepContainer>
       <div className="w-full text-center pt-2 md:pt-6">
         <div className="mx-auto flex mb-2 md:mb-8">
-          <img src="/images/eternum_with_snake.png" className="w-48 md:w-72 mx-auto" alt="Eternum Logo" />
+          <EternumWordsLogo className="fill-current w-64 stroke-current mx-auto" />
         </div>
       </div>
       <div className="flex flex-col space-y-4 mt-2 md:mt-8 items-center">
@@ -75,20 +76,18 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
           <ArrowRight className="w-2 ml-2 fill-current" />
         </Button>
 
-        <div className="relative">
-          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-            <div className="text-sm text-gold/60">or</div>
-          </div>
-          <Button
-            size="md"
-            variant="secondary"
-            className="mx-auto mt-4 w-48 border border-gold/30 hover:border-gold/50 transition-colors"
-            onClick={onSpectatorModeClick}
-          >
-            Enter as Spectator
-            <ArrowRight className="w-2 ml-2 fill-current" />
-          </Button>
+        <div className="flex justify-center">
+          <div className="text-sm text-gold/60">or</div>
         </div>
+        <Button
+          size="md"
+          variant="secondary"
+          className="mx-auto mt-4 w-48 border border-gold/30 hover:border-gold/50 transition-colors"
+          onClick={onSpectatorModeClick}
+        >
+          Enter as Spectator
+          <ArrowRight className="w-2 ml-2 fill-current" />
+        </Button>
       </div>
     </StepContainer>
   );

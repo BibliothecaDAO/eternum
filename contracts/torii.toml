@@ -8,6 +8,6 @@ polling_interval = 500 # Polling interval in milliseconds
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 index_transactions = true
 contracts = [
-      "erc721:0x70d03087d06717eda8719b49df96745b9897d650b04210d77897ad75fff1710",
-      "erc721:0x323196c1460dbfdba3dfa922f6bd4deafc8a6edb605cb72d5b56e7e6eeae46d",
-                        ]
+      "erc721:0x2f7e39daa52f3244534946f4e4a3f6812008413f3027377e0b1ec955ae079a5",
+      "erc721:0xe23fe70d8b1ce414231bce5a51d971416cc75a6d0ed0910773254b0be902e7",
+        ]
