@@ -292,20 +292,16 @@ export class ArmyManager {
 
     // Set initial direction before movement starts
     const firstHex = path[0];
-    const direction = new THREE.Vector3()
-      .subVectors(
-        this.getArmyWorldPosition(entityId, firstHex),
-        this.getArmyWorldPosition(entityId, armyData.hexCoords),
-      )
-      .normalize();
+    const currentPosition = this.getArmyWorldPosition(entityId, armyData.hexCoords);
+    const newPosition = this.getArmyWorldPosition(entityId, firstHex);
+
+    const direction = new THREE.Vector3().subVectors(newPosition, currentPosition).normalize();
     const angle = Math.atan2(direction.x, direction.z);
     this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 3) / 6, 0);
 
+    // Update army position immediately to avoid starting from a "back" position
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
-
-    const currentPosition = this.getArmyWorldPosition(entityId, armyData.hexCoords);
-    const newPosition = this.getArmyWorldPosition(entityId, firstHex);
 
     const modelData = this.armyModel.getModelForEntity(entityId);
     if (modelData) {
