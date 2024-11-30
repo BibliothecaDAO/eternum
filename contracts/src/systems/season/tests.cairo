@@ -296,6 +296,7 @@ fn season_test_register_with_no_points() {
 }
 
 #[test]
+#[should_panic(expected: ("No points to claim", 'ENTRYPOINT_FAILED'))]
 fn season_test_claim_with_no_points() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
         setup();
