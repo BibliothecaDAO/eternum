@@ -77,7 +77,6 @@ use s0_eternum::systems::realm::contracts::realm_systems;
 use s0_eternum::systems::resources::contracts::{
     resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems
 };
-use s0_eternum::systems::season::contracts::season_systems;
 use s0_eternum::systems::trade::contracts::trade_systems::trade_systems;
 use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems;
 use s0_eternum::systems::transport::contracts::travel_systems::travel_systems;
@@ -220,7 +219,6 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(trade_systems::TEST_CLASS_HASH),
             TestResource::Contract(travel_systems::TEST_CLASS_HASH),
             TestResource::Contract(donkey_systems::TEST_CLASS_HASH),
-            TestResource::Contract(season_systems::TEST_CLASS_HASH),
         ].span()
     };
 
