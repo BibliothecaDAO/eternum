@@ -20,10 +20,10 @@ mod season_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use eternum::{
-        constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS}, alias::ID,
+        constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS}, alias::ID, ResourceTypes,
         models::{
-            config::{HyperstructureConfig, ResourceBridgeFeeSplitConfig},
-            season::{Leaderboard, LeaderboardEntryCustomImpl, LeaderboardEntry}
+            config::{HyperstructureConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig},
+            season::{Leaderboard, LeaderboardEntryCustomImpl, LeaderboardEntry, LeaderboardRewardClaimed}
         },
         systems::{
             hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl,
@@ -64,25 +64,35 @@ mod season_systems {
 
         fn claim_leaderboard_rewards(ref self: ContractState, token: ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
 
+            // ensure token is whitelisted and it is the lords token
+            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(WORLD_CONFIG_ID);
+            assert!(
+                resource_bridge_token_whitelist.resource_type == ResourceTypes::LORDS, "Token is not the reward token"
+            );
+
+            // ensure caller has not already claimed their reward
+            let caller_address = starknet::get_caller_address();
+            let mut leaderboard_reward_claimed: LeaderboardRewardClaimed = world.read_model(caller_address);
+            assert!(leaderboard_reward_claimed.claimed == false, "Reward already claimed by caller");
+
+            // ensure claiming period has started
+            let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
             assert!(
                 leaderboard.registration_end_timestamp < starknet::get_block_timestamp(),
                 "Claiming period hasn't started yet"
             );
 
-            if leaderboard.total_price_pool.is_none() {
+            // set total price pool if it hasn't been set yet
+            if !leaderboard.distribution_started {
                 let resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
                 let total_price_pool: u256 = ERC20ABIDispatcher { contract_address: token }
                     .balance_of(resource_bridge_fee_split_config.season_pool_fee_recipient);
                 leaderboard.total_price_pool = Option::Some(total_price_pool);
+                leaderboard.distribution_started = true;
             }
 
-            assert!(
-                leaderboard.total_price_pool.is_some(), "If that happens, no one has registered to the leaderboard"
-            );
-
-            let caller_address = starknet::get_caller_address();
+            assert!(leaderboard.total_points > 0, "If that happens, no one has registered to the leaderboard");
 
             let entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(ref world, caller_address);
 
@@ -94,10 +104,17 @@ mod season_systems {
             let player_reward: u256 = (leaderboard.total_price_pool.unwrap() * percentage_scaled) / SCALING_FACTOR;
             let resource_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = world.read_model(WORLD_CONFIG_ID);
 
-            ERC20ABIDispatcher { contract_address: token }
-                .transfer_from(
-                    resource_bridge_fee_split_config.season_pool_fee_recipient, caller_address, player_reward
-                );
+            assert!(
+                ERC20ABIDispatcher { contract_address: token }
+                    .transfer_from(
+                        resource_bridge_fee_split_config.season_pool_fee_recipient, caller_address, player_reward
+                    ),
+                "Failed to transfer reward"
+            );
+
+            // set claimed to true
+            leaderboard_reward_claimed.claimed = true;
+            world.write_model(@leaderboard_reward_claimed);
         }
     }
 }

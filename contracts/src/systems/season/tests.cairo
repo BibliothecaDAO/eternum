@@ -58,7 +58,6 @@ fn setup() -> (
     let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(ref world);
     let (season_systems_dispatcher, season_systems_address) = deploy_season_systems(ref world);
 
-    let resource_bridge_systems_dispatcher = SetupImpl::deploy_resource_bridge_systems(ref world);
     let mock_erc20_address = SetupImpl::deploy_mock_erc20(ref world);
     SetupImpl::setup_bridge_config(ref world, mock_erc20_address);
 
@@ -138,6 +137,22 @@ fn season_test_register_to_leaderboard_success() {
 }
 
 #[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ("Address already registered points", 'ENTRYPOINT_FAILED'))]
+fn season_test_register_to_leaderboard_multiple_times() {
+    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _) = setup();
+
+    let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
+        ref world, realm_entity_id, hyperstructure_systems_dispatcher
+    );
+
+    season_systems_dispatcher
+        .register_to_leaderboard(hyperstructures_contributed_to, hyperstructure_shareholder_epochs);
+    season_systems_dispatcher
+        .register_to_leaderboard(hyperstructures_contributed_to, hyperstructure_shareholder_epochs);
+}
+
+#[test]
 #[should_panic(expected: ("Claiming period hasn't started yet", 'ENTRYPOINT_FAILED'))]
 fn season_test_claim_too_early() {
     let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
@@ -204,9 +219,45 @@ fn season_test_claim_success() {
 
 
 #[test]
+#[should_panic(expected: ("Reward already claimed by caller", 'ENTRYPOINT_FAILED'))]
+fn season_test_claim_twice() {
+    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+        setup();
+
+    let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
+        ref world, realm_entity_id, hyperstructure_systems_dispatcher
+    );
+
+    season_systems_dispatcher
+        .register_to_leaderboard(hyperstructures_contributed_to, hyperstructure_shareholder_epochs);
+
+    let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+    assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
+
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+        ref world, contract_address_const::<'player1'>()
+    );
+    assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
+
+    assert!(
+        leaderboard_entry.points == leaderboard.total_points,
+        "Leaderboard entry points should be equal to leaderboard total points"
+    );
+
+    starknet::testing::set_block_timestamp((1001 + SCALING_FACTOR + 1).try_into().unwrap());
+
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+
+    season_systems_dispatcher.claim_leaderboard_rewards(mock_erc20_address);
+    season_systems_dispatcher.claim_leaderboard_rewards(mock_erc20_address);
+}
+
+#[test]
 #[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
 fn season_test_register_too_late() {
-    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+    let (
+        mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
+    ) =
         setup();
 
     let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
@@ -221,7 +272,9 @@ fn season_test_register_too_late() {
 
 #[test]
 fn season_test_register_with_no_points() {
-    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+    let (
+        mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
+    ) =
         setup();
 
     let (_, _) = finish_season(ref world, realm_entity_id, hyperstructure_systems_dispatcher);

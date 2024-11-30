@@ -32,7 +32,24 @@ pub struct Leaderboard {
     config_id: ID,
     registration_end_timestamp: u64,
     total_points: u128,
-    total_price_pool: Option<u256>
+    total_price_pool: Option<u256>,
+    distribution_started: bool
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct LeaderboardRegistered {
+    #[key]
+    address: starknet::ContractAddress,
+    registered: bool
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct LeaderboardRewardClaimed {
+    #[key]
+    address: starknet::ContractAddress,
+    claimed: bool
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -51,6 +68,13 @@ pub impl LeaderboardEntryCustomImpl of LeaderboardEntryCustomTrait {
     }
 
     fn append(ref self: Leaderboard, ref world: WorldStorage, address: starknet::ContractAddress, points: u128) {
+        // allow single registration per address to prevent `self.total_points` inflation
+        let mut leaderboard_registered: LeaderboardRegistered = world.read_model(address);
+        assert!(leaderboard_registered.registered == false, "Address already registered points");
+
+        leaderboard_registered.registered = true;
+        world.write_model(@leaderboard_registered);
+
         let mut leaderboard_entry = LeaderboardEntry { address, points };
         world.write_model(@leaderboard_entry);
         self.total_points += points;

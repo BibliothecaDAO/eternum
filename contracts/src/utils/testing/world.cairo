@@ -46,6 +46,8 @@ use eternum::models::resources::{m_ResourceCost};
 use eternum::models::resources::{m_Resource};
 use eternum::models::season::m_Leaderboard;
 use eternum::models::season::m_LeaderboardEntry;
+use eternum::models::season::m_LeaderboardRegistered;
+use eternum::models::season::m_LeaderboardRewardClaimed;
 use eternum::models::season::m_Season;
 use eternum::models::stamina::m_Stamina;
 use eternum::models::structure::m_Structure;
@@ -169,6 +171,8 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Weight::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Leaderboard::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_LeaderboardEntry::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardRegistered::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardRewardClaimed::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(liquidity_systems::e_LiquidityEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(swap_systems::e_SwapEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(hyperstructure_systems::e_HyperstructureFinished::TEST_CLASS_HASH.try_into().unwrap()),
