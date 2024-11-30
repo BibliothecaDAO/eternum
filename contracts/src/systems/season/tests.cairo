@@ -260,8 +260,7 @@ fn season_test_register_too_early() {
     ) =
         setup();
 
-    season_systems_dispatcher
-        .register_to_leaderboard(array![].span(), array![].span());
+    season_systems_dispatcher.register_to_leaderboard(array![].span(), array![].span());
 }
 
 #[test]

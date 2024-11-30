@@ -82,7 +82,7 @@ pub impl LeaderboardEntryCustomImpl of LeaderboardEntryCustomTrait {
         entry
     }
 
-    fn append(ref self: Leaderboard, ref world: WorldStorage, address: starknet::ContractAddress, points: u128) {
+    fn register(ref self: Leaderboard, ref world: WorldStorage, address: starknet::ContractAddress, points: u128) {
         // allow single registration per address to prevent `self.total_points` inflation
         let mut leaderboard_registered: LeaderboardRegistered = world.read_model(address);
         assert!(leaderboard_registered.registered == false, "Address already registered points");

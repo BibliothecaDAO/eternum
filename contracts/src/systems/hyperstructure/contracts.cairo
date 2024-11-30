@@ -58,7 +58,7 @@ mod hyperstructure_systems {
 
     use super::{calculate_total_contributable_amount, LEADERBOARD_REGISTRATION_PERIOD};
 
-	const SCALE_FACTOR: u128 = 1_000_000;
+    const SCALE_FACTOR: u128 = 1_000_000;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]

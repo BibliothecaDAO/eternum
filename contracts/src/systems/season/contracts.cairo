@@ -59,7 +59,7 @@ mod season_systems {
             total_points +=
                 InternalHyperstructureSystemsImpl::compute_total_share_points(world, hyperstructure_shareholder_epochs);
 
-            leaderboard.append(ref world, starknet::get_caller_address(), total_points);
+            leaderboard.register(ref world, starknet::get_caller_address(), total_points);
         }
 
         fn claim_leaderboard_rewards(ref self: ContractState, token: ContractAddress) {
