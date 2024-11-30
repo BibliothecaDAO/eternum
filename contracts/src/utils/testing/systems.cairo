@@ -16,9 +16,7 @@ use eternum::systems::{
     hyperstructure::contracts::{
         hyperstructure_systems, IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait
     },
-    season::contracts::{
-        season_systems, ISeasonSystemsDispatcher, ISeasonSystemsDispatcherTrait
-    },
+    season::contracts::{season_systems, ISeasonSystemsDispatcher, ISeasonSystemsDispatcherTrait},
     map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait},
     dev::contracts::resource::{dev_resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait},
 };
@@ -48,9 +46,7 @@ fn deploy_hyperstructure_systems(ref world: WorldStorage) -> IHyperstructureSyst
 
 fn deploy_season_systems(ref world: WorldStorage) -> (ISeasonSystemsDispatcher, starknet::ContractAddress) {
     let season_systems_address = deploy_system(ref world, "season_systems");
-    let season_systems_dispatcher = ISeasonSystemsDispatcher {
-        contract_address: season_systems_address
-    };
+    let season_systems_dispatcher = ISeasonSystemsDispatcher { contract_address: season_systems_address };
 
     (season_systems_dispatcher, season_systems_address)
 }
