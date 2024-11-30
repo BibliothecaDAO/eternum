@@ -20,7 +20,7 @@ mod season_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use s0_eternum::{
-        constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS}, alias::ID, ResourceTypes,
+        constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS, ResourceTypes}, alias::ID,
         models::{
             config::{HyperstructureConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig},
             season::{Leaderboard, LeaderboardEntryCustomImpl, LeaderboardEntry, LeaderboardRewardClaimed}

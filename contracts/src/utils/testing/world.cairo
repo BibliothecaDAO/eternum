@@ -81,9 +81,6 @@ use s0_eternum::systems::realm::contracts::realm_systems;
 use s0_eternum::systems::resources::contracts::{
     resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems
 };
-use s0_eternum::systems::trade::contracts::trade_systems::trade_systems;
-use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems;
-use s0_eternum::systems::transport::contracts::travel_systems::travel_systems;
 use s0_eternum::systems::season::contracts::season_systems;
 use s0_eternum::systems::trade::contracts::trade_systems::trade_systems;
 use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems;
