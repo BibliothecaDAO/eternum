@@ -25,18 +25,33 @@ export const LoadingScreen = () => {
   ];
 
   const [currentStatement, setCurrentStatement] = useState(0);
+  const [backgroundImage, setBackgroundImage] = useState("01");
 
   useEffect(() => {
+    // Get current timestamp in minutes
+    const timestamp = Math.floor(Date.now() / (1000 * 60));
+    // Get a number between 1-7 based on current minute
+    const imageNumber = (timestamp % 7) + 1;
+    // Pad with leading zero if needed
+    const paddedNumber = imageNumber.toString().padStart(2, "0");
+    setBackgroundImage(paddedNumber);
+
+    // Get statement index based on current minute
+    const statementIndex = timestamp % statements.length;
+    setCurrentStatement(statementIndex);
+
+    // Update statement every minute
     const interval = setInterval(() => {
-      setCurrentStatement((prev) => (prev + 1) % statements.length);
-    }, 3000); // Change statement every 3 seconds
+      const newTimestamp = Math.floor(Date.now() / (1000 * 60));
+      setCurrentStatement(newTimestamp % statements.length);
+    }, 60000); // Check every minute
 
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="relative h-screen w-screen bg-brown">
-      <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
+      <img className="absolute h-screen w-screen object-cover" src={`/images/covers/${backgroundImage}.png`} alt="" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown/90 rounded-xl p-10 border border-gradient bg-hex-bg min-w-96 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
