@@ -8,12 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress } from "@/config";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { execute } from "@/hooks/gql/execute";
 import { GET_ERC_MINTS, GET_REALMS } from "@/hooks/query/realms";
 import useNftSelection from "@/hooks/useNftSelection";
 import { displayAddress } from "@/lib/utils";
-import { useConnect } from "@starknet-react/core";
+import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
@@ -25,9 +24,7 @@ export const Route = createLazyFileRoute("/mint")({
 
 function Mint() {
   const { connectors } = useConnect();
-  const {
-    account: { account },
-  } = useDojo();
+  const { account } = useAccount();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);

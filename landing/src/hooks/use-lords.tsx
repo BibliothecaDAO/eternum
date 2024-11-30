@@ -1,6 +1,5 @@
 import { lordsAddress } from "@/config";
-import { useCall } from "@starknet-react/core";
-import { useDojo } from "./context/DojoContext";
+import { useAccount, useCall } from "@starknet-react/core";
 
 import { abi } from "@/abi/Lords";
 
@@ -8,9 +7,7 @@ import { useContract } from "@starknet-react/core";
 import { Abi } from "starknet";
 
 export const useLords = () => {
-  const {
-    account: { account },
-  } = useDojo();
+  const { account } = useAccount();
 
   const { data } = useCall({
     abi: abi as Abi,

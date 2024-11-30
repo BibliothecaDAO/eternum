@@ -12,7 +12,6 @@ import { RealmMetadata } from "./realms-grid";
 
 import { abi } from "@/abi/SeasonPass";
 import { seasonPassAddress } from "@/config";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import { AlertCircle } from "lucide-react";
 
@@ -56,15 +55,13 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
     address: seasonPassAddress,
   });
 
-  const { account } = useDojo();
-
   const { address: cartridgeAddress, fetchAddress, loading: cartridgeLoading } = useCartridgeAddress();
 
   const { send, error } = useSendTransaction({
     calls:
       contract && address && transferTo
         ? selectedRealms.map((tokenId) =>
-            contract.populate("transfer_from", [account.account?.address, BigInt(transferTo || ""), tokenId]),
+            contract.populate("transfer_from", [address, BigInt(transferTo || ""), tokenId]),
           )
         : undefined,
   });
