@@ -92,7 +92,7 @@ mod season_systems {
                 leaderboard.distribution_started = true;
             }
 
-            assert!(leaderboard.total_points > 0, "If that happens, no one has registered to the leaderboard");
+            assert!(leaderboard.total_price_pool > 0, "If that happens, no one has registered to the leaderboard");
 
             let entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(ref world, caller_address);
 
