@@ -137,7 +137,7 @@ function Mint() {
             <Button onClick={() => setIsTransferRealmOpen(true)} variant="cta">
               Transfer Season Passes
             </Button>
-            {import.meta.env.VITE_PUBLIC_CHAIN === "local" && (
+            {import.meta.env.VITE_PUBLIC_DEV === "true" && (
               <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
                 Mint Realms
               </Button>

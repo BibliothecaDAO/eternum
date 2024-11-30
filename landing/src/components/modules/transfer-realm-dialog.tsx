@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAccount, useContract, useNetwork, useSendTransaction } from "@starknet-react/core";
+import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
 import { useEffect, useState } from "react";
 import { validateChecksumAddress } from "starknet";
 import { TypeH2 } from "../typography/type-h2";
@@ -11,6 +11,7 @@ import { Input } from "../ui/input";
 import { RealmMetadata } from "./realms-grid";
 
 import { abi } from "@/abi/SeasonPass";
+import { seasonPassAddress } from "@/config";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import { AlertCircle } from "lucide-react";
@@ -50,10 +51,9 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
   };
 
   const { address } = useAccount();
-  const { chain } = useNetwork();
   const { contract } = useContract({
     abi,
-    address: chain.nativeCurrency.address,
+    address: seasonPassAddress,
   });
 
   const { account } = useDojo();
