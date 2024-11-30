@@ -16,14 +16,16 @@ import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import { AlertCircle } from "lucide-react";
 
 export type SeasonPassMint = {
-  __typename?: "Token__Transfer";
-  tokenMetadata: {
-    __typename: "ERC721__Token";
-    tokenId: string;
-    metadataDescription: string;
-    imagePath: string;
-    contractAddress: string;
-    metadata: string;
+  node: {
+    __typename?: "Token__Balance";
+    tokenMetadata: {
+      __typename: "ERC721__Token";
+      tokenId: string;
+      metadataDescription: string;
+      imagePath: string;
+      contractAddress: string;
+      metadata: string;
+    };
   };
 } | null;
 
@@ -117,12 +119,12 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
               </TableRow>
             </TableHeader>
             <TableBody className="text-gold">
-              {seasonPassMints.map((seasonPassMint) => {
-                const parsedMetadata: RealmMetadata | null = seasonPassMint?.tokenMetadata.metadata
-                  ? JSON.parse(seasonPassMint?.tokenMetadata.metadata)
+              {seasonPassMints?.map((seasonPassMint) => {
+                const parsedMetadata: RealmMetadata | null = seasonPassMint?.node.tokenMetadata.metadata
+                  ? JSON.parse(seasonPassMint?.node.tokenMetadata.metadata)
                   : null;
                 const { attributes, name } = parsedMetadata ?? {};
-                const tokenId = seasonPassMint?.tokenMetadata.tokenId;
+                const tokenId = seasonPassMint?.node.tokenMetadata.tokenId;
 
                 return (
                   <TableRow key={tokenId}>

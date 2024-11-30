@@ -1,30 +1,29 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GetRealmsQuery } from "@/hooks/gql/graphql";
-import { Checkbox } from "../ui/checkbox";
+import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { RealmMetadata } from "./realms-grid";
 
 export interface RealmCardProps {
-  realm: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["tokenBalances"]>["edges"]>[0] & {
-    seasonPassMinted?: boolean;
-  };
+  pass: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["tokenBalances"]>["edges"]>[0];
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   isSelected?: boolean;
-  seasonPassMinted?: boolean;
   metadata?: RealmMetadata;
 }
 
-export const RealmCard = ({ realm, isSelected, seasonPassMinted, toggleNftSelection }: RealmCardProps) => {
-  const { tokenId, contractAddress, metadata } = realm.node?.tokenMetadata ?? {};
+export const PassCard = ({ pass, isSelected, toggleNftSelection }: RealmCardProps) => {
+  const { tokenId, contractAddress, metadata } = pass!.node?.tokenMetadata ?? {};
 
   const handleCardClick = () => {
-    if (toggleNftSelection && !seasonPassMinted) {
+    if (toggleNftSelection) {
       toggleNftSelection(tokenId.toString(), contractAddress ?? "0x");
     }
   };
 
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
   const { attributes, name, image } = parsedMetadata ?? {};
+
+  const realmSettled = true;
 
   return (
     <Card
@@ -35,22 +34,20 @@ export const RealmCard = ({ realm, isSelected, seasonPassMinted, toggleNftSelect
       <CardHeader>
         <CardTitle className=" items-center gap-2">
           <div className="uppercase text-sm mb-2 flex justify-between">
-            Realm
-            <div className="flex items-center gap-2 text-sm">
-              {seasonPassMinted ? (
-                <div className="text-green">Pass Minted!</div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  Mint: <Checkbox checked={isSelected} disabled={seasonPassMinted} />
-                </div>
-              )}
-            </div>
+            Season 0 Pass
+            <div className="flex items-center gap-2 text-sm"></div>
+            {realmSettled ? (
+              <div className="text-green">Realm Settled!</div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button disabled={true}>Settle</Button>
+              </div>
+            )}
           </div>
           <div className="flex justify-between gap-2">
             <div className=" text-3xl">{name}</div>
           </div>
         </CardTitle>
-        <CardDescription>{/*description*/}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-2">
@@ -60,7 +57,6 @@ export const RealmCard = ({ realm, isSelected, seasonPassMinted, toggleNftSelect
               <ResourceIcon resource={attribute.value as string} size="lg" key={`${attribute.trait_type}-${index}`} />
             ))}
         </div>
-        {/* {Number(tokenId)} */}
       </CardContent>
     </Card>
   );
