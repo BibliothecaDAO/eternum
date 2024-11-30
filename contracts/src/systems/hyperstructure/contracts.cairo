@@ -58,6 +58,8 @@ mod hyperstructure_systems {
 
     use super::{calculate_total_contributable_amount, LEADERBOARD_REGISTRATION_PERIOD};
 
+	const SCALE_FACTOR: u128 = 1_000_000;
+
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
     struct HyperstructureFinished {
@@ -567,7 +569,7 @@ mod hyperstructure_systems {
             let percentage = Self::get_total_points_percentage(
                 total_contributable_amount, resource_rarity, resource_quantity
             );
-            (percentage * points_on_completion) / 1_000_000
+            percentage * points_on_completion / SCALE_FACTOR
         }
 
         fn get_total_points_percentage(
@@ -575,7 +577,7 @@ mod hyperstructure_systems {
         ) -> u128 {
             // resource rarity already has a x100 factor in
             let effective_contribution = (resource_quantity * resource_rarity) / RESOURCE_PRECISION;
-            (effective_contribution * 1_000_000) / total_contributable_amount
+            (effective_contribution * SCALE_FACTOR) / total_contributable_amount
         }
     }
 }

@@ -254,10 +254,20 @@ fn season_test_claim_twice() {
 
 #[test]
 #[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
-fn season_test_register_too_late() {
+fn season_test_register_too_early() {
     let (
         mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
     ) =
+        setup();
+
+    season_systems_dispatcher
+        .register_to_leaderboard(array![].span(), array![].span());
+}
+
+#[test]
+#[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
+fn season_test_register_too_late() {
+    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
         setup();
 
     let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
