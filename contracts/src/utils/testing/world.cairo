@@ -275,8 +275,6 @@ fn contract_defs() -> Span<ContractDef> {
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"donkey_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
-        ContractDefTrait::new(DEFAULT_NS(), @"season_systems")
-            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
     ].span()
 }
 
