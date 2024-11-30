@@ -66,7 +66,7 @@ mod season_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure token is whitelisted and it is the lords token
-            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(WORLD_CONFIG_ID);
+            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
             assert!(
                 resource_bridge_token_whitelist.resource_type == ResourceTypes::LORDS, "Token is not the reward token"
             );
