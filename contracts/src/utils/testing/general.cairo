@@ -5,18 +5,18 @@ use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
-use eternum::constants::{MAX_REALMS_PER_ADDRESS};
-use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
-use eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
-use eternum::systems::{
+use s0_eternum::constants::{MAX_REALMS_PER_ADDRESS};
+use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
+use s0_eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
+use s0_eternum::systems::{
     hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},
     realm::contracts::realm_systems::InternalRealmLogicImpl,
     combat::contracts::battle_systems::{battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait},
     combat::contracts::troop_systems::{troop_systems, ITroopContractDispatcher, ITroopContractDispatcherTrait},
 };
-use eternum::utils::map::biomes::Biome;
+use s0_eternum::utils::map::biomes::Biome;
 
 
 fn spawn_realm(ref world: WorldStorage, realm_id: ID, coord: Coord) -> ID {
@@ -25,7 +25,7 @@ fn spawn_realm(ref world: WorldStorage, realm_id: ID, coord: Coord) -> ID {
     let produced_resources = array![];
     let order = 1;
     let (realm_entity_id, _realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
-        ref world, owner, realm_id, produced_resources, order, 0, coord.into()
+        ref world, owner, realm_id, produced_resources, order, 0, 1, coord.into()
     );
 
     realm_entity_id

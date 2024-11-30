@@ -5,23 +5,23 @@ mod donkey_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
 
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCategory, CapacityConfigCustomImpl};
-    use eternum::models::movable::{Movable, MovableCustomImpl, ArrivalTime};
-    use eternum::models::order::{Orders, OrdersCustomTrait};
-    use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait};
-    use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionCustomTrait};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceCustomImpl};
-    use eternum::models::weight::Weight;
+    use s0_eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION};
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCategory, CapacityConfigCustomImpl};
+    use s0_eternum::models::movable::{Movable, MovableCustomImpl, ArrivalTime};
+    use s0_eternum::models::order::{Orders, OrdersCustomTrait};
+    use s0_eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait};
+    use s0_eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction, PositionCustomTrait};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+    use s0_eternum::models::weight::Weight;
 
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{
         ResourceSystemsImpl, InternalResourceSystemsImpl
     };
-    use eternum::utils::tasks::index::{Task, TaskTrait};
+    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
 

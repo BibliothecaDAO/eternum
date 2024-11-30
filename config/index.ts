@@ -70,6 +70,7 @@ setupConfig.season = {
   seasonPassAddress: process.env.VITE_SEASON_PASS_ADDRESS!,
   realmsAddress: process.env.VITE_REALMS_ADDRESS!,
   lordsAddress: process.env.VITE_LORDS_ADDRESS!,
+  startAfterSeconds: 60 * 5, // 5 minutes
 };
 
 export const config = new EternumConfig(setupConfig);

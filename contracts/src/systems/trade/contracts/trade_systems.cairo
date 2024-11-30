@@ -1,5 +1,5 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
 #[starknet::interface]
 trait ITradeSystems<T> {
@@ -37,28 +37,30 @@ mod trade_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::{DEFAULT_NS, REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
-    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-    use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigCustomImpl};
-    use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::owner::Owner;
-    use eternum::models::position::{Position, PositionCustomTrait, Coord, TravelTrait};
-    use eternum::models::quantity::{Quantity, QuantityTracker};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{DetachedResource};
+    use s0_eternum::constants::{DEFAULT_NS, REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
+    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+    use s0_eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigCustomImpl};
+    use s0_eternum::models::movable::{Movable, ArrivalTime};
+    use s0_eternum::models::owner::Owner;
+    use s0_eternum::models::position::{Position, PositionCustomTrait, Coord, TravelTrait};
+    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{DetachedResource};
 
-    use eternum::models::resources::{Resource, ResourceCustomImpl};
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
 
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::trade::{Trade, Status, TradeStatus};
-    use eternum::models::weight::{Weight, WeightCustomTrait};
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::trade::{Trade, Status, TradeStatus};
+    use s0_eternum::models::weight::{Weight, WeightCustomTrait};
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{
         InternalResourceSystemsImpl as internal_resources,
     };
 
-    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{InternalDonkeySystemsImpl as donkey};
+    use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
+        InternalDonkeySystemsImpl as donkey
+    };
 
 
     #[derive(Copy, Drop, Serde)]

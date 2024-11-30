@@ -354,6 +354,7 @@ export interface Config {
     seasonPassAddress: string;
     realmsAddress: string;
     lordsAddress: string;
+    startAfterSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;

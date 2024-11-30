@@ -119,6 +119,7 @@ export const generateMockArmyInfo = (
       produced_resources: 1n,
       level: 1,
       order: 1,
+      has_wonder: false,
     },
     homePosition: { entity_id: ARMY_ENTITY_ID, x: 0, y: 0 },
   };

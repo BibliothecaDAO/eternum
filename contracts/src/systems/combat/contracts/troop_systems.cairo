@@ -1,5 +1,5 @@
-use eternum::alias::ID;
-use eternum::models::{combat::{Troops, Battle, BattleSide}};
+use s0_eternum::alias::ID;
+use s0_eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[starknet::interface]
 trait ITroopContract<TContractState> {
@@ -121,39 +121,41 @@ mod troop_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{ResourceTypes};
-    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
-    use eternum::models::buildings::{BuildingCategory, BuildingQuantityv2,};
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::combat::{ProtectorCustomTrait};
-    use eternum::models::config::{
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{ResourceTypes};
+    use s0_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
+    use s0_eternum::models::buildings::{BuildingCategory, BuildingQuantityv2,};
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::combat::{ProtectorCustomTrait};
+    use s0_eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
         BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory, StaminaRefillConfig
     };
-    use eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
 
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
-    use eternum::models::position::CoordTrait;
-    use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTracker};
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{ResourceCustomImpl, ResourceCost};
-    use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::owner::{
+        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
+    };
+    use s0_eternum::models::position::CoordTrait;
+    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::quantity::{Quantity, QuantityTracker};
+    use s0_eternum::models::realm::Realm;
+    use s0_eternum::models::resources::{ResourceCustomImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
 
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
-    use eternum::models::weight::Weight;
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
+    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::weight::Weight;
 
-    use eternum::models::{
+    use s0_eternum::models::{
         combat::{
             Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
             BattleCustomImpl, BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait, BattleHealthCustomTrait,
             AttackingArmyQuantityTrackerCustomTrait, AttackingArmyQuantityTrackerCustomImpl,
         },
     };
-    use eternum::systems::combat::contracts::battle_systems::{
+    use s0_eternum::systems::combat::contracts::battle_systems::{
         IBattleUtilsContract, IBattleUtilsContractDispatcher, IBattleUtilsContractDispatcherTrait
     };
 
@@ -340,6 +342,22 @@ mod troop_systems {
             }
 
             to_army.assert_not_in_battle();
+
+            // give the receiving army the stamina of the donating army
+            // when the donating army_stamina is less than the receiving army_stamina
+            // This is to ensure that troops don't gain stamina by just swithcing armies.
+
+            let mut from_army_stamina: Stamina = world.read_model(from_army_id);
+            from_army_stamina.refill_if_next_tick(ref world);
+
+            let mut to_army_stamina: Stamina = world.read_model(to_army_id);
+            to_army_stamina.refill_if_next_tick(ref world);
+
+            if from_army_stamina.amount < to_army_stamina.amount {
+                to_army_stamina.amount = from_army_stamina.amount;
+            }
+            world.write_model(@from_army_stamina);
+            world.write_model(@to_army_stamina);
 
             InternalTroopImpl::add_troops_to_army(ref world, troops, to_army_id);
         }

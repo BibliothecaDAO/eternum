@@ -1,6 +1,6 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
-use eternum::models::position::{Coord};
+use s0_eternum::alias::ID;
+use s0_eternum::models::position::{Coord};
 
 #[starknet::interface]
 trait IBankSystems<T> {
@@ -21,20 +21,22 @@ mod dev_bank_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use eternum::alias::ID;
-    use eternum::constants::DEFAULT_NS;
-    use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
-    use eternum::models::bank::bank::{Bank};
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
-    use eternum::models::name::{EntityName};
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, ResourceCustomImpl};
-    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
-    use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
-    use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-    use eternum::systems::map::map_generation::{IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait};
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::DEFAULT_NS;
+    use s0_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
+    use s0_eternum::models::bank::bank::{Bank};
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::config::{BankConfig, CapacityConfigCategory, MercenariesConfig};
+    use s0_eternum::models::name::{EntityName};
+    use s0_eternum::models::owner::{Owner, EntityOwner};
+    use s0_eternum::models::position::{Position, Coord};
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use s0_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
+    use s0_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+    use s0_eternum::systems::map::map_generation::{
+        IMapGenerationSystemsDispatcher, IMapGenerationSystemsDispatcherTrait
+    };
     use traits::Into;
 
     const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999;

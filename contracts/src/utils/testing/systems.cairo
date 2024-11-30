@@ -4,9 +4,9 @@ use dojo::world::WorldStorage;
 use dojo::world::WorldStorageTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo_cairo_test::deploy_contract;
-use eternum::systems::config::contracts::config_systems;
+use s0_eternum::systems::config::contracts::config_systems;
 
-use eternum::systems::{
+use s0_eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::battle_systems::{
         battle_systems, IBattleContractDispatcher, IBattleContractDispatcherTrait, battle_pillage_systems,

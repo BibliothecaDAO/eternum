@@ -528,6 +528,7 @@ export interface SetSeasonConfigProps extends SystemSigner {
   season_pass_address: num.BigNumberish;
   realms_address: num.BigNumberish;
   lords_address: num.BigNumberish;
+  start_at: num.BigNumberish;
 }
 
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {

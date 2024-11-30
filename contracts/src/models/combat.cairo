@@ -5,28 +5,28 @@ use core::poseidon::poseidon_hash_span;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::alias::ID;
-use eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
-use eternum::models::config::{
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
+use s0_eternum::models::config::{
     BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCategory,
     CapacityConfigCustomImpl, CapacityConfigCustomTrait
 };
-use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
-use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType};
-use eternum::models::resources::OwnedResourcesTrackerCustomTrait;
-use eternum::models::resources::ResourceCustomTrait;
-use eternum::models::resources::ResourceTransferLockCustomTrait;
-use eternum::models::resources::{
+use s0_eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
+use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+use s0_eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType};
+use s0_eternum::models::resources::OwnedResourcesTrackerCustomTrait;
+use s0_eternum::models::resources::ResourceCustomTrait;
+use s0_eternum::models::resources::ResourceTransferLockCustomTrait;
+use s0_eternum::models::resources::{
     Resource, ResourceCustomImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker,
     OwnedResourcesTrackerCustomImpl
 };
-use eternum::models::structure::{Structure, StructureCustomImpl};
-use eternum::models::weight::Weight;
-use eternum::models::weight::WeightCustomTrait;
-use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
-use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max, cap_minus};
-use eternum::utils::number::NumberTrait;
+use s0_eternum::models::structure::{Structure, StructureCustomImpl};
+use s0_eternum::models::weight::Weight;
+use s0_eternum::models::weight::WeightCustomTrait;
+use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+use s0_eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max, cap_minus};
+use s0_eternum::utils::number::NumberTrait;
 
 
 const STRENGTH_PRECISION: u256 = 10_000;
@@ -1123,8 +1123,8 @@ impl BattleCustomImpl of BattleCustomTrait {
 
 #[cfg(test)]
 mod health_model_tests {
-    use eternum::models::combat::{Health, HealthCustomTrait, TroopsImpl};
-    use eternum::models::config::{TroopConfig};
+    use s0_eternum::models::combat::{Health, HealthCustomTrait, TroopsImpl};
+    use s0_eternum::models::config::{TroopConfig};
 
     fn mock_troop_config() -> TroopConfig {
         TroopConfig {
@@ -1209,21 +1209,21 @@ mod tests {
     use dojo::world::IWorldDispatcherTrait;
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use eternum::constants::ID;
-    use eternum::constants::ResourceTypes;
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::combat::BattleCustomTrait;
-    use eternum::models::combat::BattleEscrowTrait;
-    use eternum::models::combat::BattleHealthCustomTrait;
-    use eternum::models::combat::TroopsTrait;
-    use eternum::models::config::BattleConfig;
-    use eternum::models::config::BattleConfigCustomTrait;
-    use eternum::models::config::CapacityConfigCategory;
-    use eternum::models::quantity::{Quantity};
-    use eternum::models::resources::ResourceCustomTrait;
-    use eternum::models::resources::ResourceTransferLockCustomTrait;
-    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
-    use eternum::utils::testing::world::spawn_eternum;
+    use s0_eternum::constants::ID;
+    use s0_eternum::constants::ResourceTypes;
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::combat::BattleCustomTrait;
+    use s0_eternum::models::combat::BattleEscrowTrait;
+    use s0_eternum::models::combat::BattleHealthCustomTrait;
+    use s0_eternum::models::combat::TroopsTrait;
+    use s0_eternum::models::config::BattleConfig;
+    use s0_eternum::models::config::BattleConfigCustomTrait;
+    use s0_eternum::models::config::CapacityConfigCategory;
+    use s0_eternum::models::quantity::{Quantity};
+    use s0_eternum::models::resources::ResourceCustomTrait;
+    use s0_eternum::models::resources::ResourceTransferLockCustomTrait;
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
+    use s0_eternum::utils::testing::world::spawn_eternum;
     use super::{Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyCustomImpl, Protectee};
 
     fn mock_troop_config() -> TroopConfig {

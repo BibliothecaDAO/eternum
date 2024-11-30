@@ -1,4 +1,3 @@
-import { AttributeFilters } from "@/components/modules/filters";
 import { SeasonPass } from "@/components/modules/season-pass";
 import { SeasonPassRow } from "@/components/modules/season-pass-row";
 import { TypeH1 } from "@/components/typography/type-h1";
@@ -38,13 +37,15 @@ function Passes() {
     [seasonPassMints],
   );
 
+  console.log(seasonPassTokens);
+
   return (
     <div className="flex flex-col h-full">
       <TypeH1>Season Passes</TypeH1>
 
-      <div className="sticky top-0 z-10">
+      {/* <div className="sticky top-0 z-10">
         <AttributeFilters />
-      </div>
+      </div> */}
       <div className="flex-grow overflow-y-auto">
         <div className="flex flex-col gap-2">
           <SeasonPassRow seasonPasses={seasonPassTokens} />

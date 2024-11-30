@@ -1,16 +1,16 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::integer::BoundedU128;
 use core::ops::index::IndexView;
-use eternum::constants::{
+use s0_eternum::constants::{
     ResourceTypes, RESOURCE_PRECISION, WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds, TravelTypes
 };
 
-use eternum::models::{
+use s0_eternum::models::{
     config::{TroopConfig, BattleConfig, CapacityConfig, CapacityConfigCategory, MapConfig, TravelFoodCostConfig},
     combat::Troops,
 };
 
-use eternum::systems::config::contracts::{
+use s0_eternum::systems::config::contracts::{
     ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
     IStaminaRefillConfigDispatcher, IStaminaRefillConfigDispatcherTrait, ICapacityConfigDispatcher,
     ICapacityConfigDispatcherTrait, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
@@ -23,7 +23,7 @@ use eternum::systems::config::contracts::{
     IRealmLevelConfigDispatcher, IRealmLevelConfigDispatcherTrait
 };
 
-use eternum::utils::testing::constants::{
+use s0_eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_EXPLORATION_WHEAT_BURN_AMOUNT, MAP_EXPLORE_EXPLORATION_FISH_BURN_AMOUNT,
     MAP_EXPLORE_TRAVEL_WHEAT_BURN_AMOUNT, MAP_EXPLORE_TRAVEL_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
     SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM, STOREHOUSE_CAPACITY_GRAMS,

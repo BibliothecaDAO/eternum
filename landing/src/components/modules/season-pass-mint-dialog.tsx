@@ -1,17 +1,13 @@
+import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
+import { displayAddress } from "@/lib/utils";
+import { useAccount } from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";
+import { AlertCircle, Loader } from "lucide-react";
+import { useEffect } from "react";
 import { TypeH2 } from "../typography/type-h2";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
-//import TokenActionsTokenOverview from "~/app/token/[contractAddress]/[tokenId]/components/token-actions-token-overview";
-//import type { CollectionToken, Token } from "~/types";
-import { useMintSeasonPass } from "@/hooks/useMintSeasonPass";
-import { checkCartridgeConnector } from "@/lib/utils";
-import { useConnect } from "@starknet-react/core";
-import { Loader } from "lucide-react";
-import { useState } from "react";
-import { StarknetProvider } from "../providers/Starknet";
-import CustomIframe from "../ui/custom-iframe";
-import { CartridgeConnectButton } from "./cartridge-connect-button";
 
 interface SeasonPassMintDialogProps {
   isOpen: boolean;
@@ -29,10 +25,20 @@ export default function SeasonPassMintDialog({
   realm_ids,
 }: SeasonPassMintDialogProps) {
   const { mint, isMinting } = useMintSeasonPass();
-  const { connector } = useConnect();
-  const [account, setAccount] = useState();
 
-  const checkCartridge = checkCartridgeConnector(connector);
+  const { address, connector } = useAccount();
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        document.body.style.pointerEvents = "";
+      }, 0);
+
+      return () => clearTimeout(timer);
+    } else {
+      document.body.style.pointerEvents = "auto";
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -54,51 +60,53 @@ export default function SeasonPassMintDialog({
               </div>
             )}
           </div>
-          {/*<TokenActionsTokenOverview
-            token={token}
-            amount={formatEther(BigInt(price ?? 0))}
-        />*/}
           {isSuccess ? (
             <Button onClick={() => setIsOpen(false)} className="mx-auto w-full lg:w-fit">
               Continue to explore Realms
             </Button>
           ) : (
-            <div className="flex flex-col items-center gap-4 rounded-md bg-card p-5 lg:flex-row lg:gap-5 lg:p-4">
+            <div className="flex flex-col items-center gap-4 rounded-md p-5 lg:flex-row lg:gap-5 lg:p-4 w-fill">
               <div className="text-center">
-                <div className="text-lg font-semibold">Mint your passes to compete in Season 0 of Eternum</div>
-                <div className="w-full my-4">
-                  {!checkCartridge && (
-                    <div className="w-full h-full relative">
-                      <CustomIframe
-                        style={{ width: "100%", height: "100%", overflow: "auto" }}
-                        sandbox="allow-same-origin allow-scripts allow-modal"
-                        title="A custom made iframe"
-                      >
-                        <StarknetProvider>
-                          <CartridgeConnectButton className="w-full" />
-                        </StarknetProvider>
-                      </CustomIframe>
-                    </div>
-                  )}
+                <div className="w-full grid grid-cols-3 p-4">
                   {realm_ids.map((realm, index) => (
-                    <span key={realm}>
+                    <div className="text-sm p-2 border rounded-md" key={realm}>
                       #{Number(realm)}
                       {index < realm_ids.length - 1 && ", "}
-                    </span>
+                    </div>
                   ))}
                 </div>
                 {mint && (
-                  <Button
-                    className="mx-auto"
-                    onClick={() => {
-                      mint(realm_ids);
-                      deselectAllNfts();
-                      setIsOpen(false);
-                    }}
-                    variant="cta"
-                  >
-                    {isMinting && <Loader className="animate-spin pr-2" />} Mint Season Passes
-                  </Button>
+                  <>
+                    {!address ? (
+                      <div className="text-yellow-500 mb-2 flex items-center justify-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Connect wallet to mint
+                      </div>
+                    ) : (
+                      <div className="text-sm mb-2 flex items-center justify-center gap-2 mt-8">
+                        Passes will be minted to:
+                        <Badge variant="secondary" className="flex items-center gap-2 py-1">
+                          {connector?.icon && typeof connector.icon === "string" ? (
+                            <img className="h-4 w-4" src={connector.icon} alt="Wallet Icon" />
+                          ) : null}
+                          <span className="truncate">{displayAddress(address)}</span>
+                        </Badge>
+                      </div>
+                    )}
+                    <Button
+                      className="mx-auto mt-8"
+                      onClick={() => {
+                        mint(realm_ids, address);
+                        deselectAllNfts();
+                        setIsOpen(false);
+                      }}
+                      disabled={!address}
+                      variant="cta"
+                    >
+                      {isMinting && <Loader className="animate-spin pr-2" />}
+                      Mint Season Pass
+                    </Button>
+                  </>
                 )}
               </div>
             </div>

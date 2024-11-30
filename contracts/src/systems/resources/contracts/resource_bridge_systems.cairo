@@ -1,4 +1,4 @@
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -190,17 +190,18 @@ mod resource_bridge_systems {
 
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
-    use eternum::models::bank::bank::Bank;
-    use eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
-    use eternum::models::movable::{ArrivalTime, ArrivalTimeCustomImpl};
-    use eternum::models::owner::{EntityOwner, Owner, EntityOwnerCustomTrait};
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
-    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
-    use eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
+    use s0_eternum::models::bank::bank::Bank;
+    use s0_eternum::models::config::{ResourceBridgeWhitelistConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig};
+    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeCustomImpl};
+    use s0_eternum::models::owner::{EntityOwner, Owner, EntityOwnerCustomTrait};
+    use s0_eternum::models::position::{Position, Coord};
+    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, RESOURCE_PRECISION};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s0_eternum::utils::math::{pow, PercentageImpl, PercentageValueImpl, min};
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
     use super::{
@@ -223,10 +224,13 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_has_started(world);
+            SeasonImpl::assert_season_is_not_over(world);
+
             // ensure this system can only be called by realms systems contract
             let caller = get_caller_address();
             let (realm_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("eternum-realm_systems")) {
+                match world.dispatcher.resource(selector_from_tag!("s0_eternum-realm_systems")) {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash
                 )) => (contract_address, namespace_hash),
@@ -278,6 +282,9 @@ mod resource_bridge_systems {
             client_fee_recipient: ContractAddress
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_has_started(world);
+            SeasonImpl::assert_season_is_not_over(world);
+
             // ensure through bank is a bank
             let through_bank: Structure = world.read_model(through_bank_id);
             through_bank.assert_is_structure();

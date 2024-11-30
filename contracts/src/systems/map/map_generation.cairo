@@ -1,6 +1,6 @@
-use eternum::alias::ID;
-use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
-use eternum::models::position::{Coord, CoordTrait, Direction, Position};
+use s0_eternum::alias::ID;
+use s0_eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
+use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
 
 #[starknet::interface]
 trait IMapGenerationSystems<T> {
@@ -20,37 +20,37 @@ mod map_generation_systems {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use eternum::alias::ID;
-    use eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
-    use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
-    use eternum::models::capacity::{CapacityCategory};
-    use eternum::models::combat::{
+    use s0_eternum::alias::ID;
+    use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE};
+    use s0_eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
+    use s0_eternum::models::capacity::{CapacityCategory};
+    use s0_eternum::models::combat::{
         Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
-    use eternum::models::config::{
+    use s0_eternum::models::config::{
         ProductionConfig, CapacityConfigCategory, MapConfig, MapConfigImpl, MercenariesConfig, TroopConfigCustomImpl,
         TickImpl, TickTrait, TravelStaminaCostConfig, TravelFoodCostConfig, TravelFoodCostConfigImpl
     };
-    use eternum::models::map::Tile;
-    use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
-    use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
-    use eternum::models::position::{Coord, CoordTrait, Direction, Position};
-    use eternum::models::production::ProductionDeadline;
-    use eternum::models::quantity::Quantity;
-    use eternum::models::realm::{Realm};
-    use eternum::models::resources::{
+    use s0_eternum::models::map::Tile;
+    use s0_eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
+    use s0_eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
+    use s0_eternum::models::position::{Coord, CoordTrait, Direction, Position};
+    use s0_eternum::models::production::ProductionDeadline;
+    use s0_eternum::models::quantity::Quantity;
+    use s0_eternum::models::realm::{Realm};
+    use s0_eternum::models::resources::{
         Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock, RESOURCE_PRECISION
     };
 
-    use eternum::models::season::SeasonImpl;
-    use eternum::models::stamina::StaminaCustomImpl;
-    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
-    use eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
-    use eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
-    use eternum::utils::map::biomes::{Biome, get_biome};
-    use eternum::utils::random;
-    use eternum::utils::tasks::index::{Task, TaskTrait};
+    use s0_eternum::models::season::SeasonImpl;
+    use s0_eternum::models::stamina::StaminaCustomImpl;
+    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use s0_eternum::systems::combat::contracts::troop_systems::troop_systems::{InternalTroopImpl};
+    use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s0_eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
+    use s0_eternum::utils::map::biomes::{Biome, get_biome};
+    use s0_eternum::utils::random;
+    use s0_eternum::utils::tasks::index::{Task, TaskTrait};
 
     use starknet::ContractAddress;
 

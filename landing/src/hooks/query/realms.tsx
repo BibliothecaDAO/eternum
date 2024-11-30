@@ -2,7 +2,7 @@ import { graphql } from "../gql";
 
 export const GET_REALMS = graphql(`
   query getRealms($accountAddress: String!) {
-    tokenBalances(accountAddress: $accountAddress) {
+    tokenBalances(accountAddress: $accountAddress, limit: 8000) {
       edges {
         node {
           tokenMetadata {
@@ -13,9 +13,6 @@ export const GET_REALMS = graphql(`
               imagePath
               contractAddress
               metadata
-            }
-            ... on ERC20__Token {
-              amount
             }
           }
         }

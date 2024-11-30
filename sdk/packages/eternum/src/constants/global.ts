@@ -136,6 +136,7 @@ export const VELORDS_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da25607
 export const SEASON_POOL_FEE_RECIPIENT = "0x1a3e37c77be7de91a9177c6b57956faa6da25607e567b10a25cf64fea5e533b";
 export const MAX_BANK_FEE_ON_DEPOSIT = 1000; // 10%
 export const MAX_BANK_FEE_ON_WITHDRAWAL = 1000; // 10%
+export const SEASON_START_AFTER_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 export const EternumGlobalConfig: Config = {
   stamina: {
@@ -254,6 +255,7 @@ export const EternumGlobalConfig: Config = {
     seasonPassAddress: SEASON_PASS_ADDRESS,
     realmsAddress: REALMS_ADDRESS,
     lordsAddress: LORDS_ADDRESS,
+    startAfterSeconds: SEASON_START_AFTER_SECONDS,
   },
   bridge: {
     velords_fee_on_dpt_percent: VELORDS_FEE_ON_DEPOSIT,

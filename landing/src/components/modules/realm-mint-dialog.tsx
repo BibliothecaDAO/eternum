@@ -17,7 +17,6 @@ import { Label } from "../ui/label";
 export const RealmMintDialog = ({
   isOpen,
   setIsOpen,
-  // totalOwnedRealms,
 }: {
   highestTokenId?: number;
   isOpen: boolean;
@@ -33,12 +32,14 @@ export const RealmMintDialog = ({
 
   // Create an array of realm tokenIds
   const filteredRealmTokenIds = useMemo(() => {
-    return data?.ercTransfer
-      ?.filter((item) => item?.tokenMetadata.contractAddress.toLowerCase() === realmsAddress.toLowerCase())
-      .map((item) => Number(item?.tokenMetadata.tokenId));
+    return data?.tokenTransfers?.edges
+      ?.filter(
+        (item) =>
+          item?.node?.tokenMetadata.__typename === "ERC721__Token" &&
+          item?.node?.tokenMetadata.contractAddress.toLowerCase() === realmsAddress.toLowerCase(),
+      )
+      .map((item) => Number(item?.node?.tokenMetadata.tokenId));
   }, [data]);
-
-  console.log("filteredRealmTokenIds", data);
 
   const generateUniqueRandomNumbers = (count: number, min: number, max: number, exclude: number[]): number[] => {
     const uniqueNumbers = new Set<number>();

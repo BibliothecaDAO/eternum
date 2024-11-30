@@ -1,8 +1,8 @@
 use alexandria_data_structures::array_ext::ArrayTraitExt;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use eternum::alias::ID;
-use eternum::{
+use s0_eternum::alias::ID;
+use s0_eternum::{
     models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
     constants::{ResourceTypes, TravelTypes, WORLD_CONFIG_ID}
 };

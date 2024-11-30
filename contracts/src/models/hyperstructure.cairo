@@ -1,7 +1,7 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::{
+use s0_eternum::{
     alias::ID,
     constants::{
         HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
@@ -15,7 +15,7 @@ use eternum::{
     systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
 };
 
-use eternum::{constants::WORLD_CONFIG_ID};
+use s0_eternum::{constants::WORLD_CONFIG_ID};
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

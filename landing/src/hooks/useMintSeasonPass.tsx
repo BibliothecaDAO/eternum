@@ -18,14 +18,14 @@ export const useMintSeasonPass = () => {
   const canMint = useMemo(() => account && !isMinting, [account, isMinting]);
 
   const _mint = useCallback(
-    async (token_ids: string[]) => {
+    async (token_ids: string[], recipient?: string) => {
       const tokenIdsNumberArray: number[] = token_ids.map((tokenId) => parseInt(tokenId, 16));
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_ids);
         await mint_season_passes({
           signer: account,
-          recipient: account.address,
+          recipient: recipient ?? account.address,
           token_ids: tokenIdsNumberArray,
           season_pass_address: seasonPassAddress,
         })

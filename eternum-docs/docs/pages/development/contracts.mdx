@@ -84,16 +84,16 @@ Things to note:
 trait IBuildingContract<TContractState> {
     fn create(
         entity_id: ID,
-        building_coord: eternum::models::position::Coord,
-        building_category: eternum::models::buildings::BuildingCategory,
+        building_coord: s0_eternum::models::position::Coord,
+        building_category: s0_eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
     );
 }
 
 #[dojo::contract]
 mod building_systems {
-    use eternum::alias::ID;
-    use eternum::models::{
+    use s0_eternum::alias::ID;
+    use s0_eternum::models::{
         resources::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
         order::Orders, position::{Coord, Position, PositionCustomTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingCustomImpl},

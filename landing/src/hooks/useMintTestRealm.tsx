@@ -21,6 +21,7 @@ export const useMintTestRealm = () => {
       if (account && canMint) {
         setIsMinting(true);
         setMintingTokenId(token_id);
+        console.log("account", { signer: account, token_id, realms_address: realmsAddress });
         await mint_test_realm({ signer: account, token_id, realms_address: realmsAddress })
           .then(() => {
             toast(`Realms #${token_id} Minted`);
@@ -32,7 +33,7 @@ export const useMintTestRealm = () => {
           });
       }
     },
-    [account, canMint, mint_test_realm, realmsAddress],
+    [account, canMint, mint_test_realm],
   );
 
   useEffect(() => {

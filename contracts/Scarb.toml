@@ -1,6 +1,6 @@
 [package]
 cairo-version = "=2.8.4"
-name = "eternum"
+name = "s0_eternum"
 version = "1.0.0"
 
 [cairo]

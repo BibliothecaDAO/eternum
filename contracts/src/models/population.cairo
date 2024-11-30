@@ -1,5 +1,5 @@
-use eternum::alias::ID;
-use eternum::models::buildings::{BuildingCategory};
+use s0_eternum::alias::ID;
+use s0_eternum::models::buildings::{BuildingCategory};
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

@@ -3,16 +3,16 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
-use eternum::alias::ID;
+use s0_eternum::alias::ID;
 
-use eternum::models::position::{Coord};
+use s0_eternum::models::position::{Coord};
 
-use eternum::systems::bank::contracts::bank::bank_systems;
-use eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
+use s0_eternum::systems::bank::contracts::bank::bank_systems;
+use s0_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use s0_eternum::systems::config::contracts::config_systems;
+use s0_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
 use starknet::contract_address_const;
 

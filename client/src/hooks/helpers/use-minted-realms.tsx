@@ -18,7 +18,7 @@ export const useMintedRealms = () => {
           dont_include_hashed_keys: false,
           clause: {
             Member: {
-              model: "eternum-SettleRealmData",
+              model: "s0_eternum-SettleRealmData",
               member: "owner_address",
               operator: "Eq",
               value: { Primitive: { ContractAddress: account.address } },

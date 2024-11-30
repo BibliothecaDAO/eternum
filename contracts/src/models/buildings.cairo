@@ -3,21 +3,22 @@ use core::zeroable::Zeroable;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::alias::ID;
-use eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID, WORLD_CONFIG_ID};
-use eternum::models::config::{
+use s0_eternum::alias::ID;
+use s0_eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID, WORLD_CONFIG_ID};
+use s0_eternum::models::config::{
     TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigCustomImpl,
     BuildingCategoryPopConfigCustomTrait, PopulationConfig, BuildingGeneralConfig
 };
-use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
-use eternum::models::population::{Population, PopulationCustomTrait};
-use eternum::models::position::{Coord, Position, Direction, PositionCustomTrait, CoordTrait};
-use eternum::models::production::{
+use s0_eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
+use s0_eternum::models::population::{Population, PopulationCustomTrait};
+use s0_eternum::models::position::{Coord, Position, Direction, PositionCustomTrait, CoordTrait};
+use s0_eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputCustomImpl, ProductionInputCustomTrait
 };
-use eternum::models::resources::ResourceCustomTrait;
-use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
-use eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use s0_eternum::models::realm::Realm;
+use s0_eternum::models::resources::ResourceCustomTrait;
+use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+use s0_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //todo we need to define border of innner hexes
 
@@ -171,6 +172,19 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
+
+                /// lords will not be consumed during production of donkey
+                /// if the realm has a wonder
+                if input_resource_type == ResourceTypes::LORDS {
+                    if resource_production.resource_type == ResourceTypes::DONKEY {
+                        let realm: Realm = world.read_model(self.outer_entity_id);
+                        if realm.has_wonder {
+                            count += 1;
+                            continue;
+                        }
+                    }
+                }
+
                 let mut input_resource: Resource = ResourceCustomImpl::get(
                     ref world, (self.outer_entity_id, input_resource_type)
                 );
@@ -235,6 +249,19 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
+
+                /// lords will not be consumed during production of donkey
+                /// if the realm has a wonder
+                if input_resource_type == ResourceTypes::LORDS {
+                    if resource_production.resource_type == ResourceTypes::DONKEY {
+                        let realm: Realm = world.read_model(self.outer_entity_id);
+                        if realm.has_wonder {
+                            count += 1;
+                            continue;
+                        }
+                    }
+                }
+
                 let mut input_resource: Resource = ResourceCustomImpl::get(
                     ref world, (self.outer_entity_id, input_resource_type)
                 );

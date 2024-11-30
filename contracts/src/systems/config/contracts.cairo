@@ -1,12 +1,12 @@
 use dojo::world::IWorldDispatcher;
-use eternum::alias::ID;
-use eternum::models::buildings::BuildingCategory;
-use eternum::models::combat::{Troops};
-use eternum::models::config::{
+use s0_eternum::alias::ID;
+use s0_eternum::models::buildings::BuildingCategory;
+use s0_eternum::models::combat::{Troops};
+use s0_eternum::models::config::{
     TroopConfig, MapConfig, BattleConfig, MercenariesConfig, CapacityConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonConfig
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TravelFoodCostConfig, SeasonAddressesConfig
 };
-use eternum::models::position::Coord;
+use s0_eternum::models::position::Coord;
 
 #[starknet::interface]
 trait IWorldConfig<T> {
@@ -22,7 +22,8 @@ trait ISeasonConfig<T> {
         ref self: T,
         season_pass_address: starknet::ContractAddress,
         realms_address: starknet::ContractAddress,
-        lords_address: starknet::ContractAddress
+        lords_address: starknet::ContractAddress,
+        start_at: u64
     );
 }
 
@@ -203,31 +204,31 @@ mod config_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    use eternum::alias::ID;
+    use s0_eternum::alias::ID;
 
-    use eternum::constants::{
+    use s0_eternum::constants::{
         ResourceTypes, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
         HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID,
         POPULATION_CONFIG_ID, DEFAULT_NS
     };
-    use eternum::models::bank::bank::{Bank};
-    use eternum::models::buildings::{BuildingCategory};
-    use eternum::models::combat::{Troops};
+    use s0_eternum::models::bank::bank::{Bank};
+    use s0_eternum::models::buildings::{BuildingCategory};
+    use s0_eternum::models::combat::{Troops};
 
-    use eternum::models::config::{
+    use s0_eternum::models::config::{
         CapacityConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig, QuestConfig, QuestRewardConfig,
         MapConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig, BuildingConfig, BuildingCategoryPopConfig,
         PopulationConfig, HyperstructureResourceConfig, HyperstructureConfig, StaminaConfig, StaminaRefillConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, BuildingGeneralConfig,
         MercenariesConfig, BattleConfig, TravelStaminaCostConfig, SettlementConfig, RealmLevelConfig,
-        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonConfig
+        RealmMaxLevelConfig, TravelFoodCostConfig, SeasonAddressesConfig
     };
 
-    use eternum::models::position::{Position, PositionCustomTrait, Coord};
-    use eternum::models::production::{ProductionInput, ProductionOutput};
-    use eternum::models::resources::{ResourceCost, DetachedResource};
-    use eternum::models::season::SeasonImpl;
-    use eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
+    use s0_eternum::models::position::{Position, PositionCustomTrait, Coord};
+    use s0_eternum::models::production::{ProductionInput, ProductionOutput};
+    use s0_eternum::models::resources::{ResourceCost, DetachedResource};
+    use s0_eternum::models::season::{Season};
+    use s0_eternum::utils::trophies::index::{Trophy, TrophyTrait, TROPHY_COUNT};
 
     // Components
 
@@ -310,15 +311,24 @@ mod config_systems {
             ref self: ContractState,
             season_pass_address: starknet::ContractAddress,
             realms_address: starknet::ContractAddress,
-            lords_address: starknet::ContractAddress
+            lords_address: starknet::ContractAddress,
+            start_at: u64
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             world
                 .write_model(
-                    @SeasonConfig { config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address }
+                    @SeasonAddressesConfig {
+                        config_id: WORLD_CONFIG_ID, season_pass_address, realms_address, lords_address,
+                    }
                 );
+
+            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
+            if !season.is_over {
+                season.start_at = start_at;
+                world.write_model(@season);
+            }
         }
     }
 
@@ -838,7 +848,7 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             // note: if we are whitelisting a NEW resource type, we WILL need to
-            // update several functions related to resources in `eternum::constants`
+            // update several functions related to resources in `s0_eternum::constants`
             // so the new resource type is recognized throughout the contract.
 
             assert!(resource_bridge_whitelist_config.resource_type > 0, "resource type should be non zero");
