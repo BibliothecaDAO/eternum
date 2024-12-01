@@ -2,12 +2,10 @@ import { AnimatedGrid } from "@/components/modules/animated-grid";
 import { DataCard, DataCardProps } from "@/components/modules/data-card";
 import { Leaderboard } from "@/components/modules/leaderboard";
 import { PRIZE_POOL_AMOUNT } from "@/constants";
-import { execute } from "@/hooks/gql/execute";
-import { GET_USERS } from "@/hooks/query/players";
 import { useDonkeysBurned } from "@/hooks/use-donkeys-burned";
+import { usePlayerCount } from "@/hooks/use-player-count";
 import { useRealmsSettled } from "@/hooks/use-realms-settled";
 import { currencyFormat, formatNumber } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Castle, Coins, Flame, UsersIcon } from "lucide-react";
 import React, { useMemo } from "react";
@@ -26,13 +24,9 @@ interface GridItemType {
 }
 
 function Index() {
-  const { data } = useQuery({
-    queryKey: ["number-of-players"],
-    queryFn: () => execute(GET_USERS),
-  });
-
   const donkeysBurned = useDonkeysBurned();
   const realmsSettled = useRealmsSettled();
+  const playerCount = usePlayerCount();
 
   const dataCards: GridItemType[] = useMemo(
     () => [
@@ -41,7 +35,7 @@ function Index() {
         rowSpan: { sm: 1, md: 1, lg: 2 },
         data: {
           title: "players",
-          value: formatNumber(data?.eternumOwnerModels?.totalCount ?? 0, 0),
+          value: formatNumber(playerCount, 0),
           icon: <UsersIcon />,
           backgroundImage: "/images/avatars/Armor.png",
         },
@@ -83,7 +77,7 @@ function Index() {
         },
       },
     ],
-    [data, donkeysBurned, realmsSettled],
+    [playerCount, donkeysBurned, realmsSettled],
   );
 
   return (

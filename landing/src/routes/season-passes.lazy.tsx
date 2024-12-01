@@ -1,26 +1,27 @@
-import { PassesGrid } from "@/components/modules/passes-grid";
-import TransferRealmDialog, { SeasonPassMint } from "@/components/modules/transfer-realm-dialog";
+import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
+import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GET_REALMS } from "@/hooks/query/realms";
 import { displayAddress } from "@/lib/utils";
+import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Loader2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 
-export const Route = createLazyFileRoute("/passes")({
-  component: Passes,
+export const Route = createLazyFileRoute("/season-passes")({
+  component: SeasonPasses,
 });
 
-function Passes() {
+function SeasonPasses() {
   const { connectors } = useConnect();
   const { account } = useAccount();
 
-  const [isTransferRealmOpen, setIsTransferRealmOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
 
   const [controllerAddress] = useState<string>();
 
@@ -64,18 +65,18 @@ function Passes() {
           <div className="flex-grow overflow-y-auto p-4">
             <div className="flex flex-col gap-2">
               <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-                <PassesGrid seasonPasses={seasonPassNfts} />
+                <SeasonPassesGrid seasonPasses={seasonPassNfts} />
               </Suspense>
             </div>
           </div>
           <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-            <Button onClick={() => setIsTransferRealmOpen(true)} variant="cta">
+            <Button onClick={() => setIsTransferOpen(true)} variant="cta">
               Transfer Season Passes
             </Button>
             {seasonPassNfts && (
-              <TransferRealmDialog
-                isOpen={isTransferRealmOpen}
-                setIsOpen={setIsTransferRealmOpen}
+              <TransferSeasonPassDialog
+                isOpen={isTransferOpen}
+                setIsOpen={setIsTransferOpen}
                 seasonPassMints={seasonPassNfts as SeasonPassMint[]}
               />
             )}
