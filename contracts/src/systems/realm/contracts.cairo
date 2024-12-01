@@ -199,6 +199,8 @@ mod realm_systems {
             let mut quest: Quest = world.read_model((entity_id, quest_id));
             assert(!quest.completed, 'quest already completed');
 
+            assert(realm.settler_address == starknet::get_caller_address(), 'Caller not settler');
+
             // ensure quest has rewards
             let quest_config: QuestConfig = world.read_model(WORLD_CONFIG_ID);
             let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
@@ -306,7 +308,8 @@ mod realm_systems {
                         produced_resources: realm_produced_resources_packed,
                         order,
                         level,
-                        has_wonder
+                        has_wonder,
+                        settler_address: owner,
                     }
                 );
             world.write_model(@Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, });

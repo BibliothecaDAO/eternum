@@ -1,6 +1,8 @@
 {
   "entry": ["eternum-docs/**/*.mdx", "eternum-docs/**/*.tsx"],
   "ignore": [
+    "eliza/**",
+
     ".trunk/**",
     "**/*.js",
     "bot/**",
@@ -12,6 +14,9 @@
     "config/bank/index.ts",
     "**/**__test__**/**",
     "**/**__tests__**/**",
+
+    "season_resources/scripts/deployment/config/index.ts",
+    "season_resources/scripts/deployment/config/provider/index.ts",
 
     "client/src/three/components/FogManager.ts",
     "client/src/hooks/useUISound.tsx",
