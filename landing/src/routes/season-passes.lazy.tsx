@@ -1,5 +1,5 @@
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
-import TransferRealmDialog from "@/components/modules/transfer-realm-dialog";
+import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { seasonPassAddress } from "@/config";
@@ -21,7 +21,7 @@ function SeasonPasses() {
   const { connectors } = useConnect();
   const { account } = useAccount();
 
-  const [isTransferRealmOpen, setIsTransferRealmOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
 
   const [controllerAddress] = useState<string>();
 
@@ -70,13 +70,13 @@ function SeasonPasses() {
             </div>
           </div>
           <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-            <Button onClick={() => setIsTransferRealmOpen(true)} variant="cta">
+            <Button onClick={() => setIsTransferOpen(true)} variant="cta">
               Transfer Season Passes
             </Button>
             {seasonPassNfts && (
-              <TransferRealmDialog
-                isOpen={isTransferRealmOpen}
-                setIsOpen={setIsTransferRealmOpen}
+              <TransferSeasonPassDialog
+                isOpen={isTransferOpen}
+                setIsOpen={setIsTransferOpen}
                 seasonPassMints={seasonPassNfts as SeasonPassMint[]}
               />
             )}

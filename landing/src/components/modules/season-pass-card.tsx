@@ -23,7 +23,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
   const { attributes, name, image } = parsedMetadata ?? {};
 
-  const realmSettled = true;
+  const realmSettled = false;
 
   return (
     <Card
@@ -40,7 +40,9 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
               <div className="text-green">Realm Settled!</div>
             ) : (
               <div className="flex items-center gap-2">
-                <Button disabled={true}>Settle</Button>
+                <Button variant={"link"} disabled={true}>
+                  Settle (coming soon)
+                </Button>
               </div>
             )}
           </div>

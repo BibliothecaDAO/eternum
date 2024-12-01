@@ -15,13 +15,13 @@ import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import { RealmMetadata, SeasonPassMint } from "@/types";
 import { AlertCircle } from "lucide-react";
 
-interface TransferRealmDialogProps {
+interface TransferSeasonPassProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   seasonPassMints: SeasonPassMint[];
 }
 
-export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints }: TransferRealmDialogProps) {
+export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPassMints }: TransferSeasonPassProps) {
   const [input, setInput] = useState<string>("");
 
   const [transferTo, setTransferTo] = useState<string | null>(null);
