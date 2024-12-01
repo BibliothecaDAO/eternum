@@ -1,27 +1,24 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { StepOptions } from "shepherd.js";
-import { STYLES, waitForElement } from "./utils";
+import { waitForElement } from "./utils";
 
 export const settleSteps: StepOptions[] = [
   {
     title: "Welcome to Eternum",
     text: "The gods have blessed you with food to begin your journey",
-    classes: STYLES.defaultStepPlacement,
     buttons: [
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
   {
     title: "Claim Resources",
     text: "Claim your resources.",
-    classes: STYLES.defaultStepPlacement,
     attachTo: {
       element: ".claim-selector",
     },
@@ -29,6 +26,7 @@ export const settleSteps: StepOptions[] = [
       selector: ".claim-selector",
       event: "click",
     },
+    modalOverlayOpeningPadding: 10,
     showOn: function () {
       const element = document.querySelector(".claim-selector");
       return Boolean(element);
@@ -39,7 +37,6 @@ export const settleSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -61,7 +58,6 @@ export const settleSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -84,14 +80,12 @@ export const settleSteps: StepOptions[] = [
 
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Finish",
         action: function () {
           return this.complete();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },

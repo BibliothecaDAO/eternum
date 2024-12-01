@@ -3,6 +3,7 @@ import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ShepherdJourneyProvider } from "react-shepherd";
+import "shepherd.js/dist/css/shepherd.css";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
 import App from "./App";

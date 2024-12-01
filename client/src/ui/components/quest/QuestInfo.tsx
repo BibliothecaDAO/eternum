@@ -194,9 +194,9 @@ export const StartTourButton = ({ steps }: { steps: StepOptions[] | undefined })
   const shepherd = useShepherd();
   const tour = new shepherd.Tour({
     defaultStepOptions: {
-      classes: "z-[9999] bg-brown max-w-sm p-2 border border-gold/40 border-gradient rounded-xl text-gold shadow-3xl",
       scrollTo: false,
       modalOverlayOpeningPadding: 5,
+      cancelIcon: { enabled: true },
     },
     useModalOverlay: true,
     steps,

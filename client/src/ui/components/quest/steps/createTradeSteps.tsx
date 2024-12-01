@@ -1,18 +1,16 @@
 import { StepOptions } from "shepherd.js";
-import { STYLES, waitForElement } from "./utils";
+import { waitForElement } from "./utils";
 
 export const createTradeSteps: StepOptions[] = [
   {
     title: "Trading in Eternum",
     text: "Trading is the lifeblood of Eternum. Learn how to create trades to grow your economy.",
-    classes: STYLES.defaultStepPlacement,
     buttons: [
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -33,7 +31,6 @@ export const createTradeSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -53,14 +50,12 @@ export const createTradeSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -77,14 +72,12 @@ export const createTradeSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -101,14 +94,12 @@ export const createTradeSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -126,14 +117,12 @@ export const createTradeSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -150,14 +139,12 @@ export const createTradeSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Finish",
         action: function () {
           return this.complete();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },

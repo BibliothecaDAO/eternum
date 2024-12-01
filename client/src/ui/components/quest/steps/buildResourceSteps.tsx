@@ -1,6 +1,6 @@
-import { StepOptions } from "shepherd.js";
-import { STYLES, waitForElement } from "./utils";
 import useUIStore from "@/hooks/store/useUIStore";
+import { StepOptions } from "shepherd.js";
+import { waitForElement } from "./utils";
 
 export const buildResourceSteps: StepOptions[] = [
   {
@@ -11,14 +11,12 @@ export const buildResourceSteps: StepOptions[] = [
     //     <div>For each farm next to your resource facility you gain a <span class="font-bold text-order-brilliance">10%</span> boost in production.</div>
     //   </div>`,
 
-    classes: STYLES.defaultStepPlacement,
     buttons: [
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -40,7 +38,6 @@ export const buildResourceSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -67,7 +64,6 @@ export const buildResourceSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -78,8 +74,6 @@ export const buildResourceSteps: StepOptions[] = [
     attachTo: {
       element: ".resource-cards-selector",
     },
-
-    classes: STYLES.defaultStepPlacement,
 
     advanceOn: {
       selector: ".resource-cards-selector",
@@ -99,7 +93,6 @@ export const buildResourceSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -107,7 +100,6 @@ export const buildResourceSteps: StepOptions[] = [
   {
     title: "Build it",
     text: "Place your building on any available hex. use right-click to cancel",
-    classes: STYLES.defaultStepPlacement,
 
     beforeShowPromise: function () {
       const overlay = document.querySelector(".shepherd-modal-overlay-container");
@@ -124,14 +116,12 @@ export const buildResourceSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Finish",
         action: function () {
           return this.complete();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },

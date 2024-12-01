@@ -1,19 +1,16 @@
-import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
-import { STYLES, waitForElement } from "./utils";
+import { waitForElement } from "./utils";
 
 export const createAttackArmySteps: StepOptions[] = [
   {
     title: "Conquest in Eternum",
     text: "Create an attacking army to conquer your enemies and expand your influence across the realm.",
-    classes: STYLES.defaultStepPlacement,
     buttons: [
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -34,7 +31,6 @@ export const createAttackArmySteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -58,7 +54,6 @@ export const createAttackArmySteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -78,14 +73,12 @@ export const createAttackArmySteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Finish",
         action: function () {
           return this.complete();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },

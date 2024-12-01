@@ -190,16 +190,42 @@ canvas {
   pointer-events: none;
 }
 
-.shepherd-modal-overlay-container {
-  height: 100vh;
-  left: 0;
-  position: fixed;
-  top: 0;
-  width: 100vw;
-  z-index: 9998;
-  pointer-events: none;
+.shepherd-element {
+  @apply bg-brown;
 }
 
-.shepherd-modal-overlay-container.shepherd-modal-is-visible {
-  opacity: 0.8;
+.shepherd-has-title .shepherd-content .shepherd-header {
+  @apply bg-enemy;
+}
+
+.shepherd-title {
+  @apply text-gold text-2xl;
+}
+
+.shepherd-text {
+  @apply text-gold;
+}
+
+.shepherd-button {
+  @apply cursor-fancy bg-enemy text-gold;
+}
+
+.shepherd-button:not(:disabled):hover {
+  @apply bg-enemy/50 text-gold;
+}
+
+.shepherd-cancel-icon:hover {
+  @apply text-gold;
+}
+
+.shepherd-arrow {
+  @apply bg-transparent !important;
+}
+
+.shepherd-arrow:before {
+  @apply bg-enemy !important;
+}
+
+.shepherd-has-title .shepherd-content .shepherd-header .shepherd-arrow:before {
+  @apply bg-enemy !important;
 }

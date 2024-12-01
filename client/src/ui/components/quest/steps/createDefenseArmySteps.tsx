@@ -1,19 +1,16 @@
-import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
-import { STYLES, waitForElement } from "./utils";
+import { waitForElement } from "./utils";
 
 export const createDefenseArmySteps: StepOptions[] = [
   {
     title: "Realm Defense",
     text: "Your realm is always at risk. Learn how to create a defensive army to protect it.",
-    classes: STYLES.defaultStepPlacement,
     buttons: [
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -34,7 +31,6 @@ export const createDefenseArmySteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -58,7 +54,6 @@ export const createDefenseArmySteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -78,14 +73,12 @@ export const createDefenseArmySteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Finish",
         action: function () {
           return this.complete();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },

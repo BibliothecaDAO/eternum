@@ -1,10 +1,6 @@
-import { configManager } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { CapacityConfigCategory, ResourcesIds } from "@bibliothecadao/eternum";
 import { StepOptions } from "shepherd.js";
-import { STYLES, waitForElement } from "./utils";
-import { ResourceWeight } from "../../resources/TravelInfo";
+import { waitForElement } from "./utils";
 
 export const marketSteps: StepOptions[] = [
   {
@@ -23,14 +19,12 @@ export const marketSteps: StepOptions[] = [
         <ResourceWeight className="mt-2" />
       </div>
     ), */
-    classes: STYLES.defaultStepPlacement,
     buttons: [
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -51,7 +45,6 @@ export const marketSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -77,14 +70,12 @@ export const marketSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
   {
     title: "Build It",
     text: "Place your Market on any available hex. Use right-click to cancel",
-    classes: STYLES.defaultStepPlacement,
     beforeShowPromise: function () {
       const overlay = document.querySelector(".shepherd-modal-overlay-container");
       if (overlay) {
@@ -98,14 +89,12 @@ export const marketSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Finish",
         action: function () {
           return this.complete();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },

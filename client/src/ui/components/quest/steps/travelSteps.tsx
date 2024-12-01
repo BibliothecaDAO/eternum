@@ -1,7 +1,6 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
-import { STYLES, waitForElement } from "./utils";
-import { ExplorationTable } from "../../hints/ExplorationTable";
+import { waitForElement } from "./utils";
 
 export const travelSteps: StepOptions[] = [
   {
@@ -15,14 +14,12 @@ export const travelSteps: StepOptions[] = [
     //     <ExplorationTable />
     //   </div>
     // ),
-    classes: STYLES.defaultStepPlacement,
     buttons: [
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -42,14 +39,12 @@ export const travelSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -69,14 +64,12 @@ export const travelSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Next",
         action: function () {
           return this.next();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -100,7 +93,6 @@ export const travelSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
@@ -131,14 +123,12 @@ export const travelSteps: StepOptions[] = [
         action: function () {
           return this.back();
         },
-        classes: STYLES.defaultButton,
       },
       {
         text: "Finish",
         action: function () {
           return this.complete();
         },
-        classes: STYLES.defaultButton,
       },
     ],
   },
