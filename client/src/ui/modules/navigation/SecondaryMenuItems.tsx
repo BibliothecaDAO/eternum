@@ -48,6 +48,7 @@ export const SecondaryMenuItems = () => {
         button: (
           <div className="relative">
             <CircleButton
+              className="quest-selector"
               tooltipLocation="bottom"
               image={BuildingThumbs.squire}
               label={questsWindow}
@@ -73,6 +74,7 @@ export const SecondaryMenuItems = () => {
       {
         button: (
           <CircleButton
+            className="social-selector"
             tooltipLocation="bottom"
             image={BuildingThumbs.guild}
             label={social}
@@ -87,11 +89,12 @@ export const SecondaryMenuItems = () => {
 
   return (
     <div className="flex gap-1 md:gap-3">
-      <div className="self-center px-1 md:px-3 flex space-x-1 md:space-x-2 my-1">
+      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-1 md:space-x-2 my-1">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
         <CircleButton
+          className="trophies-selector"
           image={BuildingThumbs.trophy}
           label={"Trophies"}
           // active={isPopupOpen(quests)}
@@ -99,12 +102,14 @@ export const SecondaryMenuItems = () => {
           onClick={handleTrophyClick}
         />
         <CircleButton
+          className="hints-selector"
           image={BuildingThumbs.question}
           label={"Hints"}
           size="lg"
           onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
+          className="discord-selector"
           tooltipLocation="bottom"
           image={BuildingThumbs.discord}
           label={"Discord"}
@@ -112,6 +117,7 @@ export const SecondaryMenuItems = () => {
           onClick={() => window.open("https://discord.gg/realmsworld")}
         />
         <CircleButton
+          className="settings-selector"
           tooltipLocation="bottom"
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}

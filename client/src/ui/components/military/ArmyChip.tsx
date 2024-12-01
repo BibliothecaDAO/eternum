@@ -88,8 +88,8 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs px-2 hover:bg-gold/20 ${
-        army.isMine ? "bg-blueish/20" : "bg-red/20"
+      className={`items-center text-xs px-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/20" : "bg-red/20"} ${
+        army.protectee ? "defensive-army-selector" : "attacking-army-selector"
       } rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (

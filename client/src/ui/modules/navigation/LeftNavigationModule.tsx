@@ -121,6 +121,7 @@ export const LeftNavigationModule = () => {
         button: (
           <div className="relative">
             <CircleButton
+              className="entity-details-selector"
               image={BuildingThumbs.hex}
               tooltipLocation="top"
               label="Details"
@@ -139,7 +140,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({
+            className={clsx("military-selector", {
               "animate-pulse":
                 view !== LeftView.ConstructionView &&
                 selectedQuest?.id === QuestId.CreateAttackArmy &&
@@ -160,7 +161,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine || !isRealm}
-            className={clsx({
+            className={clsx("construction-selector", {
               "animate-pulse": view !== LeftView.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: !questClaimStatus[QuestId.Settle] && isRealm,
             })}
@@ -218,7 +219,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!structureIsMine}
-            className={clsx({
+            className={clsx("trade-selector", {
               "animate-pulse":
                 selectedQuest?.id === QuestId.CreateTrade &&
                 selectedQuest.status !== QuestStatus.Completed &&

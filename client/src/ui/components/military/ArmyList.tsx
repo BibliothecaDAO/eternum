@@ -135,7 +135,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
               handleCreateArmy(false);
             }}
             disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
-            className={clsx({
+            className={clsx("attack-army-selector", {
               "animate-pulse": selectedQuest?.id === QuestId.CreateAttackArmy,
             })}
           >
@@ -144,6 +144,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </div>
 
         <Button
+          className="defense-army-selector"
           isLoading={loading === Loading.CreateDefensive}
           variant="primary"
           onClick={() => {

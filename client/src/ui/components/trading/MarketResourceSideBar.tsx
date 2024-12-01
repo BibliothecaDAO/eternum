@@ -30,13 +30,13 @@ export const MarketResourceSidebar = ({
   }, []);
 
   return (
-    <div className=" px-1 bg-brown rounded-2xl p-1">
+    <div className="market-resource-bar-selector px-1 bg-brown rounded-2xl p-1">
       <div className="w-full mb-1">
-        <div className="grid grid-cols-5 text-xs font-bold uppercase py-2">
+        <div className="market-resource-bar-header-selector grid grid-cols-5 text-xs font-bold uppercase py-2">
           <div className="col-span-2 px-2">Resource</div>
-          <div className="flex items-center justify-center">Buy</div>
-          <div className="flex items-center justify-center">Sell</div>
-          <div className="flex items-center justify-center">AMM</div>
+          <div className="market-resource-bar-buy-selector flex items-center justify-center">Buy</div>
+          <div className="market-resource-bar-sell-selector flex items-center justify-center">Sell</div>
+          <div className="market-resource-bar-amm-selector flex items-center justify-center">AMM</div>
         </div>
       </div>
 

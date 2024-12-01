@@ -119,7 +119,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group items-center gap-2">
+          <div className="order-book-selector flex relative group items-center gap-2">
             <Scroll className="w-6 fill-current" />
             <div className="self-center">Order Book</div>
           </div>
@@ -138,7 +138,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group items-center gap-2">
+          <div className="amm-selector flex relative group items-center gap-2">
             <Swap className="w-6 fill-current" />
             <div className="self-center">AMM</div>
           </div>
@@ -170,7 +170,7 @@ export const MarketModal = () => {
       {
         key: "all",
         label: (
-          <div className="flex relative group items-center gap-2">
+          <div className="transfer-selector flex relative group items-center gap-2">
             <Coins className="w-6 fill-current" />
             <div className="self-center">Transfer</div>
           </div>
@@ -184,7 +184,7 @@ export const MarketModal = () => {
       {
         key: "resourceProd",
         label: (
-          <div className="flex relative group items-center gap-2">
+          <div className="realm-prod-selector flex relative group items-center gap-2">
             <Crown className="w-6 fill-current" />
             <div className="self-center">Realm Production</div>
           </div>
@@ -201,9 +201,9 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-dark border-gold/30  h-full row-span-12 rounded-2xl ">
+      <div className="market-modal-selector container border mx-auto  grid grid-cols-12 bg-dark border-gold/30  h-full row-span-12 rounded-2xl ">
         <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
-          <div className="self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
+          <div className="market-realm-selector self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
             <div className="">
               <Select
                 value={structureEntityId.toString()}

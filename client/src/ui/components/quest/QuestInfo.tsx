@@ -9,6 +9,36 @@ import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { Check, ShieldQuestion } from "lucide-react";
 import { useState } from "react";
+import { useShepherd } from "react-shepherd";
+import { StepOptions } from "shepherd.js";
+import { QuestId } from "./questDetails";
+import { buildFoodSteps } from "./steps/buildFoodSteps";
+import { buildResourceSteps } from "./steps/buildResourceSteps";
+import { buildWorkersHutSteps } from "./steps/buildWorkersHutSteps";
+import { createAttackArmySteps } from "./steps/createAttackArmy";
+import { createDefenseArmySteps } from "./steps/createDefenseArmySteps";
+import { createTradeSteps } from "./steps/createTradeSteps";
+import { marketSteps } from "./steps/marketSteps";
+import { pauseProductionSteps } from "./steps/pauseProductionSteps";
+import { settleSteps } from "./steps/settleSteps";
+import { travelSteps } from "./steps/travelSteps";
+
+export const questSteps = new Map<QuestId, StepOptions[]>([
+  [QuestId.Settle, settleSteps],
+  [QuestId.BuildFood, buildFoodSteps],
+  [QuestId.BuildResource, buildResourceSteps],
+  [QuestId.PauseProduction, pauseProductionSteps],
+  [QuestId.CreateTrade, createTradeSteps],
+  [QuestId.CreateDefenseArmy, createDefenseArmySteps],
+  [QuestId.CreateAttackArmy, createAttackArmySteps],
+  [QuestId.Travel, travelSteps],
+  [QuestId.BuildWorkersHut, buildWorkersHutSteps],
+  [QuestId.Market, marketSteps],
+  // [QuestId.Pillage, pillageSteps],
+  // [QuestId.Mine, mineSteps],
+  // [QuestId.Contribution, contributionSteps],
+  // [QuestId.Hyperstructure, hyperstructureSteps],
+]);
 
 export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) => {
   const {
@@ -109,10 +139,18 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) =
 
         <QuestRewards prizes={quest?.prizes} />
 
+        <StartTourButton steps={questSteps.get(quest.id)} />
+
         <div className="my-2 grid grid-cols-3 gap-2">
           {quest.status !== QuestStatus.Claimed ? (
             quest.status === QuestStatus.Completed && (
-              <Button isPulsing={true} isLoading={isLoading} variant="primary" onClick={handleAllClaims}>
+              <Button
+                className="claim-selector"
+                isPulsing={true}
+                isLoading={isLoading}
+                variant="primary"
+                onClick={handleAllClaims}
+              >
                 Claim Rewards
               </Button>
             )
@@ -149,5 +187,30 @@ const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
           </div>
         ))}
     </div>
+  );
+};
+
+export const StartTourButton = ({ steps }: { steps: StepOptions[] | undefined }) => {
+  const shepherd = useShepherd();
+  const tour = new shepherd.Tour({
+    defaultStepOptions: {
+      classes: "z-[9999] bg-brown max-w-sm p-2 border border-gold/40 border-gradient rounded-xl text-gold shadow-3xl",
+      scrollTo: false,
+      modalOverlayOpeningPadding: 5,
+    },
+    useModalOverlay: true,
+    steps,
+    exitOnEsc: true,
+  });
+
+  const handleStart = () => {
+    if (!tour) return;
+    tour.start();
+  };
+
+  return (
+    <Button variant="primary" onClick={() => handleStart()}>
+      Tutorial
+    </Button>
   );
 };

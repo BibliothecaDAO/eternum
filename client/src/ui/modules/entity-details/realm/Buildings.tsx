@@ -57,7 +57,7 @@ export const Buildings = ({ structure }: { structure: any }) => {
   };
 
   return (
-    <div className="w-full text-sm p-3">
+    <div className="buildings-selector w-full text-sm p-3">
       <BuildingsHeader />
 
       {/* Economy Section */}
@@ -192,7 +192,7 @@ const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction
             }
             variant="outline"
             withoutSound
-            className="mt-3"
+            className="pause-building-button-selector mt-3"
           >
             {building.paused ? "Resume Production" : "Pause Production"}
           </Button>

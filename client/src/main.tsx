@@ -2,6 +2,7 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { ShepherdJourneyProvider } from "react-shepherd";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
 import App from "./App";
@@ -11,6 +12,7 @@ import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
 import GameRenderer from "./three/GameRenderer";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
+
 declare global {
   interface Window {
     Buffer: typeof Buffer;
@@ -43,11 +45,13 @@ async function init() {
   inject();
   root.render(
     <React.StrictMode>
-      <StarknetProvider>
-        <DojoProvider value={setupResult}>
-          <App />
-        </DojoProvider>
-      </StarknetProvider>
+      <ShepherdJourneyProvider>
+        <StarknetProvider>
+          <DojoProvider value={setupResult}>
+            <App />
+          </DojoProvider>
+        </StarknetProvider>
+      </ShepherdJourneyProvider>
     </React.StrictMode>,
   );
 }

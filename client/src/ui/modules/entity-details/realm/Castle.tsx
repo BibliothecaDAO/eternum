@@ -55,7 +55,7 @@ export const Castle = () => {
 
   return (
     structure && (
-      <div className="w-full text-sm">
+      <div className="castle-selector w-full text-sm">
         <div className="my-3">
           <div className="flex justify-between py-2 gap-4">
             <div>

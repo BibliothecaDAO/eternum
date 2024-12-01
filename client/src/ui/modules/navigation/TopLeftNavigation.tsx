@@ -194,9 +194,14 @@ export const TopLeftNavigation = () => {
 
   return (
     <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
-      <motion.div className="flex flex-wrap  gap-2" variants={slideDown} initial="hidden" animate="visible">
+      <motion.div
+        className="top-left-navigation-selector flex flex-wrap  gap-2"
+        variants={slideDown}
+        initial="hidden"
+        animate="visible"
+      >
         <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold bg-hex-bg justify-center border text-center rounded-b-xl bg-brown/90 border-gold/10 relative">
-          <div className="self-center flex justify-between w-full">
+          <div className="structure-name-selector self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
                 value={structureEntityId.toString()}
@@ -246,7 +251,7 @@ export const TopLeftNavigation = () => {
             )}
           </div>
         </div>
-        <div className="bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
+        <div className="storage-selector bg-brown/90 rounded-b-xl py-1 flex flex-col md:flex-row gap-1">
           {storehouses && (
             <div
               onMouseEnter={() => {
@@ -258,7 +263,7 @@ export const TopLeftNavigation = () => {
               onMouseLeave={() => {
                 setTooltip(null);
               }}
-              className="px-3 flex gap-2 justify-start items-center text-xxs md:text-sm"
+              className="storehouse-selector px-3 flex gap-2 justify-start items-center text-xxs md:text-sm"
             >
               <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
               {IS_MOBILE ? (
@@ -279,7 +284,7 @@ export const TopLeftNavigation = () => {
             onMouseLeave={() => {
               setTooltip(null);
             }}
-            className="px-3 flex gap-2 justify-start items-center text-xs md:text-sm"
+            className="population-selector px-3 flex gap-2 justify-start items-center text-xs md:text-sm"
           >
             <ResourceIcon withTooltip={false} resource="House" size="sm" />
             <div className="self-center">
@@ -287,11 +292,11 @@ export const TopLeftNavigation = () => {
             </div>
           </div>
         </div>
-        <div className="bg-brown/90 bg-hex-bg rounded-b-xl text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-2 md:px-4 relative">
-          <div className="flex justify-center md:justify-start">
+        <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-xl text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-2 md:px-4 relative">
+          <div className="cycle-selector flex justify-center md:justify-start">
             <TickProgress />
           </div>
-          <div className="flex justify-center md:justify-start">
+          <div className="map-button-selector flex justify-center md:justify-start">
             <Button
               variant="outline"
               size="xs"

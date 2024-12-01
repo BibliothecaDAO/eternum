@@ -28,6 +28,7 @@ export const RightNavigationModule = () => {
         name: MenuEnum.resourceTable,
         button: (
           <CircleButton
+            className="resource-table-selector"
             image={BuildingThumbs.resources}
             size="xl"
             tooltipLocation="top"
@@ -70,7 +71,7 @@ export const RightNavigationModule = () => {
       >
         <Suspense fallback={<div className="p-8">Loading...</div>}>
           {!!structureEntityId && (
-            <div className="p-2 flex flex-col space-y-1 overflow-y-auto">
+            <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
               <EntityResourceTable entityId={structureEntityId} />
             </div>
           )}

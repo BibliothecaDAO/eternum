@@ -94,7 +94,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         label: (
           <div className="flex relative group flex-col items-center">
             <div
-              className={clsx({
+              className={clsx("resource-tab-selector", {
                 "animate-pulse  border-b border-gold": selectedTab !== 0 && selectedQuest?.id === QuestId.BuildResource,
               })}
             >
@@ -103,7 +103,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           </div>
         ),
         component: (
-          <div className="grid grid-cols-2 gap-2 p-2">
+          <div className="resource-cards-selector grid grid-cols-2 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
@@ -154,12 +154,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       {
         key: "economic",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div className="economy-tab-selector flex relative group flex-col items-center">
             <div>Economic</div>
           </div>
         ),
         component: (
-          <div className="grid grid-cols-2 gap-2 p-2">
+          <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
               .filter(
                 (a) =>
@@ -194,6 +194,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         ((isFarm || isFishingVillage) && selectedQuest?.id === QuestId.BuildFood) ||
                         (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
                         (isMarket && selectedQuest?.id === QuestId.Market),
+                      "farm-card-selector": isFarm,
+                      "fish-card-selector": isFishingVillage,
+                      "workershut-card-selector": isWorkersHut,
+                      "market-card-selector": isMarket,
+                      "storehouse-card-selector": isMarket,
                     })}
                     key={index}
                     buildingId={building}
@@ -228,7 +233,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       {
         key: "military",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div className="military-tab-selector flex relative group flex-col items-center">
             <div>Military</div>
           </div>
         ),
