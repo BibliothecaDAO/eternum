@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAccount, useContract, useNetwork, useSendTransaction } from "@starknet-react/core";
+import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
 import { useEffect, useState } from "react";
 import { validateChecksumAddress } from "starknet";
 import { TypeH2 } from "../typography/type-h2";
@@ -11,19 +11,21 @@ import { Input } from "../ui/input";
 import { RealmMetadata } from "./realms-grid";
 
 import { abi } from "@/abi/SeasonPass";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { seasonPassAddress } from "@/config";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import { AlertCircle } from "lucide-react";
 
 export type SeasonPassMint = {
-  __typename?: "Token__Transfer";
-  tokenMetadata: {
-    __typename: "ERC721__Token";
-    tokenId: string;
-    metadataDescription: string;
-    imagePath: string;
-    contractAddress: string;
-    metadata: string;
+  node: {
+    __typename?: "Token__Balance";
+    tokenMetadata: {
+      __typename: "ERC721__Token";
+      tokenId: string;
+      metadataDescription: string;
+      imagePath: string;
+      contractAddress: string;
+      metadata: string;
+    };
   };
 } | null;
 
@@ -50,13 +52,10 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
   };
 
   const { address } = useAccount();
-  const { chain } = useNetwork();
   const { contract } = useContract({
     abi,
-    address: chain.nativeCurrency.address,
+    address: seasonPassAddress,
   });
-
-  const { account } = useDojo();
 
   const { address: cartridgeAddress, fetchAddress, loading: cartridgeLoading } = useCartridgeAddress();
 
@@ -64,7 +63,7 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
     calls:
       contract && address && transferTo
         ? selectedRealms.map((tokenId) =>
-            contract.populate("transfer_from", [account.account?.address, BigInt(transferTo || ""), tokenId]),
+            contract.populate("transfer_from", [address, BigInt(transferTo || ""), tokenId]),
           )
         : undefined,
   });
@@ -120,12 +119,12 @@ export default function TransferRealmDialog({ isOpen, setIsOpen, seasonPassMints
               </TableRow>
             </TableHeader>
             <TableBody className="text-gold">
-              {seasonPassMints.map((seasonPassMint) => {
-                const parsedMetadata: RealmMetadata | null = seasonPassMint?.tokenMetadata.metadata
-                  ? JSON.parse(seasonPassMint?.tokenMetadata.metadata)
+              {seasonPassMints?.map((seasonPassMint) => {
+                const parsedMetadata: RealmMetadata | null = seasonPassMint?.node.tokenMetadata.metadata
+                  ? JSON.parse(seasonPassMint?.node.tokenMetadata.metadata)
                   : null;
                 const { attributes, name } = parsedMetadata ?? {};
-                const tokenId = seasonPassMint?.tokenMetadata.tokenId;
+                const tokenId = seasonPassMint?.node.tokenMetadata.tokenId;
 
                 return (
                   <TableRow key={tokenId}>

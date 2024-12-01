@@ -1,16 +1,19 @@
 import { realmsAddress } from "@/config";
+import { useAccount } from "@starknet-react/core";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { env } from "../../env";
 import { useDojo } from "./context/DojoContext";
 
 export const useBridgeAsset = () => {
+  // todo; use starknet-react
   const {
     setup: {
       systemCalls: { bridge_resource_into_realm, bridge_start_withdraw_from_realm, bridge_finish_withdraw_from_realm },
     },
-    account: { account },
   } = useDojo();
+
+  const { account } = useAccount();
 
   const _bridgeIntoRealm = useCallback(
     async (tokenAddress: string, throughBankId: bigint, recipientRealmEntityId: bigint, amount: bigint) => {

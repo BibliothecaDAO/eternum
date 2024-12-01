@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { lordsAddress, seasonPassAddress } from "@/config";
+import { useAccount } from "@starknet-react/core";
 import { toast } from "sonner";
 import { useDojo } from "./context/DojoContext";
 
@@ -8,12 +9,14 @@ export const useMintSeasonPass = () => {
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(["0"]);
 
+  // todo; use starknet-react
   const {
     setup: {
       systemCalls: { attach_lords, detach_lords, mint_season_passes },
     },
-    account: { account },
   } = useDojo();
+
+  const { account } = useAccount();
 
   const canMint = useMemo(() => account && !isMinting, [account, isMinting]);
 
@@ -53,6 +56,7 @@ export const useMintSeasonPass = () => {
 
   const attachLords = useCallback(
     async (token_id: number, amount: number) => {
+      if (!account) return;
       await attach_lords({
         signer: account,
         token_id,
@@ -66,6 +70,7 @@ export const useMintSeasonPass = () => {
 
   const detachLords = useCallback(
     async (token_id: number, amount: number) => {
+      if (!account) return;
       await detach_lords({ signer: account, token_id, amount, season_pass_address: seasonPassAddress });
     },
     [account, seasonPassAddress],

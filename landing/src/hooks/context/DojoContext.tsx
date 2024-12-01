@@ -1,6 +1,6 @@
 import { SetupNetworkResult } from "@/dojo/setupNetwork";
 import { displayAddress } from "@/lib/utils";
-import { BurnerProvider, useBurnerManager } from "@dojoengine/create-burner";
+import { useBurnerManager } from "@dojoengine/create-burner";
 import { useAccount } from "@starknet-react/core";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
@@ -55,7 +55,7 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
 
   const { account } = useAccount();
 
-  if (import.meta.env.VITE_PUBLIC_DEV == "true") {
+  if (import.meta.env.VITE_PUBLIC_DEV == "local") {
     const rpcProvider = new RpcProvider({
       nodeUrl: import.meta.env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
     });
@@ -128,16 +128,11 @@ const DojoContextProvider = ({
     burnerManager: value.network.burnerManager,
   });
 
-  console.log("controllerAccount", controllerAccount);
-
   // Determine which account to use based on environment
-  const isDev = env.VITE_PUBLIC_DEV === true;
-  const accountToUse = isDev ? burnerAccount : controllerAccount;
+  const isLocal = env.VITE_PUBLIC_CHAIN === "local";
+  const accountToUse = isLocal ? burnerAccount : controllerAccount;
 
-  console.log("dev " + isDev);
-  console.log(accountToUse?.address);
-
-  const activeAccount = accountToUse || (isDev ? masterAccount : null);
+  const activeAccount = accountToUse || (isLocal ? masterAccount : null);
   const displayAddr = activeAccount ? displayAddress(activeAccount.address) : displayAddress(masterAddress);
 
   return (

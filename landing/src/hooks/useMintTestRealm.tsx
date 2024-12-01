@@ -1,4 +1,5 @@
 import { realmsAddress } from "@/config";
+import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useDojo } from "./context/DojoContext";
@@ -8,8 +9,9 @@ export const useMintTestRealm = () => {
     setup: {
       systemCalls: { mint_test_realm },
     },
-    account: { account },
   } = useDojo();
+
+  const { account } = useAccount();
 
   const [isMinting, setIsMinting] = useState(false);
   const [mintingTokenId, setMintingTokenId] = useState(0);
