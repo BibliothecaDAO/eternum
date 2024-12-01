@@ -3,6 +3,7 @@ name: knip
 on:
   pull_request:
     paths-ignore:
+      - "eliza/**"
       - "contracts/**"
       - "**/manifest.json"
       - "discord-bot/**"

@@ -120,6 +120,7 @@ export const generateMockArmyInfo = (
       level: 1,
       order: 1,
       has_wonder: false,
+      settler_address: 0n,
     },
     homePosition: { entity_id: ARMY_ENTITY_ID, x: 0, y: 0 },
   };
