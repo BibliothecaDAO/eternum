@@ -10,6 +10,9 @@ import { getAccount, getNetwork } from "./network.js";
 import resourceNames from "./resources.json";
 
 const VITE_PUBLIC_DEV = process.env.VITE_PUBLIC_DEV;
+if (VITE_PUBLIC_DEV === undefined) {
+  throw new Error("VITE_PUBLIC_DEV environment variable is not defined");
+}
 const manifest = VITE_PUBLIC_DEV === "true" ? devManifest : productionManifest;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
