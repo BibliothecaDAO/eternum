@@ -243,6 +243,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.end_game(props);
   };
 
+  const register_to_leaderboard = async (props: SystemProps.RegisterToLeaderboardProps) => {
+    await provider.register_to_leaderboard(props);
+  };
+
+  const claim_leaderboard_rewards = async (props: SystemProps.ClaimLeaderboardRewardsProps) => {
+    await provider.claim_leaderboard_rewards(props);
+  };
+
   const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
     await provider.set_co_owners(props);
   };
@@ -354,6 +362,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     set_access: withQueueing(withErrorHandling(set_access)),
     set_co_owners: withQueueing(withErrorHandling(set_co_owners)),
     end_game: withQueueing(withErrorHandling(end_game)),
+    register_to_leaderboard: withQueueing(withErrorHandling(register_to_leaderboard)),
+    claim_leaderboard_rewards: withQueueing(withErrorHandling(claim_leaderboard_rewards)),
 
     claim_quest: withQueueing(withErrorHandling(claim_quest)),
     mint_resources: withQueueing(withErrorHandling(mint_resources)),

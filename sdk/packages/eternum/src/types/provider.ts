@@ -579,6 +579,15 @@ export interface EndGameProps extends SystemSigner {
   hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
 }
 
+export interface RegisterToLeaderboardProps extends SystemSigner {
+  hyperstructure_contributed_to: number[];
+  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
+}
+
+export interface ClaimLeaderboardRewardsProps extends SystemSigner {
+  token: num.BigNumberish;
+}
+
 export interface SetCoOwnersProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
   co_owners: Record<number, BigNumberish>[];

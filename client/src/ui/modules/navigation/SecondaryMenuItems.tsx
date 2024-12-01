@@ -1,19 +1,30 @@
 import { useAccountStore } from "@/hooks/context/accountStore";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { QuestStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { HintModal } from "@/ui/components/hints/HintModal";
-import { settings } from "@/ui/components/navigation/Config";
+import { rewards, settings } from "@/ui/components/navigation/Config";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has } from "@dojoengine/recs";
 import { ArrowUp } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { quests as questsWindow, social } from "../../components/navigation/Config";
+import { Rewards } from "../rewards/Rewards";
 
 export const SecondaryMenuItems = () => {
+  const {
+    setup: {
+      components: {
+        events: { GameEnded },
+      },
+    },
+  } = useDojo();
+
   const { toggleModal } = useModalStore();
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -30,6 +41,8 @@ export const SecondaryMenuItems = () => {
 
   const completedQuests = quests?.filter((quest: any) => quest.status === QuestStatus.Claimed);
 
+  const gameEnded = useEntityQuery([Has(GameEnded)]);
+
   const realmSelected = useMemo(() => {
     return isRealmSelected(structureEntityId, structures) ? true : false;
   }, [structureEntityId, structures]);
@@ -43,7 +56,7 @@ export const SecondaryMenuItems = () => {
   }, [connector]);
 
   const secondaryNavigation = useMemo(() => {
-    return [
+    const buttons = [
       {
         button: (
           <div className="relative">
@@ -83,7 +96,22 @@ export const SecondaryMenuItems = () => {
         ),
       },
     ];
-  }, [unclaimedQuestsCount, quests, structureEntityId]);
+    if (gameEnded.length !== 0) {
+      buttons.push({
+        button: (
+          <CircleButton
+            tooltipLocation="bottom"
+            image={BuildingThumbs.rewards}
+            label={rewards}
+            active={isPopupOpen(rewards)}
+            size="lg"
+            onClick={() => togglePopup(rewards)}
+          />
+        ),
+      });
+    }
+    return buttons;
+  }, [unclaimedQuestsCount, quests, structureEntityId, gameEnded]);
 
   return (
     <div className="flex gap-1 md:gap-3">
@@ -100,9 +128,9 @@ export const SecondaryMenuItems = () => {
         />
         <CircleButton
           image={BuildingThumbs.question}
-          label={"Hints"}
+          label={"Rewards"}
           size="lg"
-          onClick={() => toggleModal(<HintModal />)}
+          onClick={() => toggleModal(<Rewards />)}
         />
         <CircleButton
           tooltipLocation="bottom"

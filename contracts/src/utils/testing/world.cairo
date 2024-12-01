@@ -44,6 +44,10 @@ use s0_eternum::models::resources::m_ResourceAllowance;
 use s0_eternum::models::resources::m_ResourceTransferLock;
 use s0_eternum::models::resources::{m_ResourceCost};
 use s0_eternum::models::resources::{m_Resource};
+use s0_eternum::models::season::m_Leaderboard;
+use s0_eternum::models::season::m_LeaderboardEntry;
+use s0_eternum::models::season::m_LeaderboardRegistered;
+use s0_eternum::models::season::m_LeaderboardRewardClaimed;
 use s0_eternum::models::season::m_Season;
 use s0_eternum::models::stamina::m_Stamina;
 use s0_eternum::models::structure::m_Structure;
@@ -77,6 +81,7 @@ use s0_eternum::systems::realm::contracts::realm_systems;
 use s0_eternum::systems::resources::contracts::{
     resource_bridge_systems::resource_bridge_systems, resource_systems::resource_systems
 };
+use s0_eternum::systems::season::contracts::season_systems;
 use s0_eternum::systems::trade::contracts::trade_systems::trade_systems;
 use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems;
 use s0_eternum::systems::transport::contracts::travel_systems::travel_systems;
@@ -166,6 +171,10 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_Status::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Trade::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Model(m_Weight::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_Leaderboard::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardEntry::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardRegistered::TEST_CLASS_HASH.try_into().unwrap()),
+            TestResource::Model(m_LeaderboardRewardClaimed::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(liquidity_systems::e_LiquidityEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(swap_systems::e_SwapEvent::TEST_CLASS_HASH.try_into().unwrap()),
             TestResource::Event(hyperstructure_systems::e_HyperstructureFinished::TEST_CLASS_HASH.try_into().unwrap()),
@@ -219,6 +228,7 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Contract(trade_systems::TEST_CLASS_HASH),
             TestResource::Contract(travel_systems::TEST_CLASS_HASH),
             TestResource::Contract(donkey_systems::TEST_CLASS_HASH),
+            TestResource::Contract(season_systems::TEST_CLASS_HASH),
         ].span()
     };
 
@@ -274,6 +284,8 @@ fn contract_defs() -> Span<ContractDef> {
         ContractDefTrait::new(DEFAULT_NS(), @"travel_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"donkey_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"season_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
     ].span()
 }

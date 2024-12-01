@@ -38,5 +38,6 @@ website = "https://alpha-eternum.realms.world/"
     "s0_eternum-trade_systems",
     "s0_eternum-travel_systems",
     "s0_eternum-troop_systems",
-	"s0_eternum-battle_utils_systems"
+	"s0_eternum-battle_utils_systems",
+	"s0_eternum-season_systems"
 ]

@@ -1,3 +1,4 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { social } from "@/ui/components/navigation/Config";
@@ -7,11 +8,20 @@ import { Guilds } from "@/ui/components/worldmap/guilds/Guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/PlayersPanel";
 import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, ID, Player } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { EndSeasonButton } from "./EndSeasonButton";
 import { PlayerId } from "./PlayerId";
 
 export const Social = ({ players }: { players: Player[] }) => {
+  const {
+    setup: {
+      components: {
+        events: { GameEnded },
+      },
+    },
+  } = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -20,6 +30,8 @@ export const Social = ({ players }: { players: Player[] }) => {
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
+
+  const gameEnded = useEntityQuery([Has(GameEnded)]);
 
   const viewGuildMembers = (guildEntityId: ID) => {
     if (selectedGuild === guildEntityId) {
@@ -94,7 +106,7 @@ export const Social = ({ players }: { players: Player[] }) => {
           ))}
         </Tabs.List>
 
-        <EndSeasonButton />
+        {gameEnded.length === 0 && <EndSeasonButton />}
 
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab) => (

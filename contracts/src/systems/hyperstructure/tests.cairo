@@ -343,6 +343,29 @@ fn hyperstructure_test_end_game_failure_completion_and_shares() {
         .end_game(array![hyperstructure_entity_id_0].span(), array![(hyperstructure_entity_id_0, 0)].span());
 }
 
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ("Not enough points to end the game", 'ENTRYPOINT_FAILED'))]
+fn hyperstructure_test_end_game_failure_other_account() {
+    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    starknet::testing::set_account_contract_address(contract_address_const::<'player1'>());
+
+    let hyperstructure_entity_id_0 = spawn_and_finish_hyperstructure(
+        ref world, hyperstructure_systems_dispatcher, realm_entity_id, Coord { x: 0, y: 0 }
+    );
+
+    hyperstructure_systems_dispatcher
+        .set_co_owners(hyperstructure_entity_id_0, array![(contract_address_const::<'player1'>(), 10_000)].span());
+
+    starknet::testing::set_block_timestamp(1001);
+
+    starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    hyperstructure_systems_dispatcher
+        .end_game(array![hyperstructure_entity_id_0].span(), array![(hyperstructure_entity_id_0, 0)].span());
+}
+
 fn spawn_and_finish_hyperstructure(
     ref world: WorldStorage,
     hyperstructure_systems_dispatcher: IHyperstructureSystemsDispatcher,

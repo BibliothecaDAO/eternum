@@ -8,6 +8,8 @@ use s0_eternum::{
 };
 use starknet::ContractAddress;
 
+const LEADERBOARD_REGISTRATION_PERIOD: u64 = 604800; // one week
+
 #[starknet::interface]
 trait IHyperstructureSystems<T> {
     fn create(ref self: T, creator_entity_id: ID, coord: Coord) -> ID;
@@ -37,14 +39,14 @@ mod hyperstructure_systems {
     use s0_eternum::{
         alias::ID,
         constants::{
-            HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
+            WORLD_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards,
             get_contributable_resources_with_rarity, RESOURCE_PRECISION
         },
         models::{
             config::{HyperstructureResourceConfigCustomTrait, HyperstructureConfig, CapacityConfigCategory},
             capacity::{CapacityCategory},
             hyperstructure::{Progress, Contribution, Hyperstructure, HyperstructureCustomImpl, Epoch, Access},
-            owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait},
+            owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait}, season::{Leaderboard},
             position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
             resources::{Resource, ResourceCustomImpl, ResourceCost},
             structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory}, guild::{GuildMember}
@@ -54,7 +56,9 @@ mod hyperstructure_systems {
 
     use starknet::{ContractAddress, contract_address_const};
 
-    use super::calculate_total_contributable_amount;
+    use super::{calculate_total_contributable_amount, LEADERBOARD_REGISTRATION_PERIOD};
+
+    const SCALE_FACTOR: u128 = 1_000_000;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -345,6 +349,10 @@ mod hyperstructure_systems {
             let winner_address = starknet::get_caller_address();
             world.emit_event(@GameEnded { winner_address, timestamp: starknet::get_block_timestamp() });
 
+            let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+            leaderboard.registration_end_timestamp = starknet::get_block_timestamp() + LEADERBOARD_REGISTRATION_PERIOD;
+            world.write_model(@leaderboard);
+
             // [Achievement] Win the game
             let player_id: felt252 = winner_address.into();
             let task_id: felt252 = Task::Warlord.identifier();
@@ -561,15 +569,15 @@ mod hyperstructure_systems {
             let percentage = Self::get_total_points_percentage(
                 total_contributable_amount, resource_rarity, resource_quantity
             );
-            percentage * points_on_completion / 1_000_000
+            percentage * points_on_completion / SCALE_FACTOR
         }
 
         fn get_total_points_percentage(
             total_contributable_amount: u128, resource_rarity: u128, resource_quantity: u128,
         ) -> u128 {
             // resource rarity already has a x100 factor in
-            let effective_contribution = (resource_quantity / RESOURCE_PRECISION) * (resource_rarity);
-            effective_contribution * 1_000_000 / total_contributable_amount
+            let effective_contribution = (resource_quantity * resource_rarity) / RESOURCE_PRECISION;
+            (effective_contribution * SCALE_FACTOR) / total_contributable_amount
         }
     }
 }
@@ -587,7 +595,7 @@ fn calculate_total_contributable_amount(world: WorldStorage) -> u128 {
         let hyperstructure_resource_config = HyperstructureResourceConfigCustomTrait::get(world, resource_type);
         let amount = hyperstructure_resource_config.amount_for_completion;
 
-        total += (amount / RESOURCE_PRECISION) * rarity.into();
+        total += (amount * rarity) / RESOURCE_PRECISION;
 
         i += 1;
     };
