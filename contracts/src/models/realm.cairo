@@ -329,6 +329,7 @@ mod test_realm_name_and_attrs_decode_impl {
 
 #[cfg(test)]
 mod test_realm_resources_impl {
+    use starknet::contract_address_const;
     use super::{RealmResourcesImpl, RealmResourcesTrait, Realm};
 
     fn mock_realm() -> Realm {
@@ -339,7 +340,7 @@ mod test_realm_resources_impl {
             level: 0,
             produced_resources: 0,
             has_wonder: false,
-            settler_address: 0x1
+            settler_address: contract_address_const::<'Settler'>(),
         }
     }
 
