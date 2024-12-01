@@ -21,11 +21,6 @@ const items = [
     icon: Home,
   },
   // {
-  //   title: "Passes",
-  //   url: "/passes",
-  //   icon: Inbox,
-  // },
-  // {
   //   title: "Trade",
   //   url: "/trade",
   //   icon: LoopIcon,
@@ -42,7 +37,7 @@ const items = [
   },
   {
     title: "Season Passes",
-    url: "/passes",
+    url: "/season-passes",
     icon: Gamepad2,
   },
 ];

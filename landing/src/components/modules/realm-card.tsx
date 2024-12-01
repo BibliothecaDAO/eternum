@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GetRealmsQuery } from "@/hooks/gql/graphql";
+import { RealmMetadata } from "@/types";
 import { Checkbox } from "../ui/checkbox";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
-import { RealmMetadata } from "./realms-grid";
 
 export interface RealmCardProps {
   realm: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["tokenBalances"]>["edges"]>[0] & {

@@ -8,26 +8,12 @@ import { Checkbox } from "../ui/checkbox";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { ResourceIcon } from "../ui/elements/ResourceIcon";
 import { Input } from "../ui/input";
-import { RealmMetadata } from "./realms-grid";
 
 import { abi } from "@/abi/SeasonPass";
 import { seasonPassAddress } from "@/config";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
+import { RealmMetadata, SeasonPassMint } from "@/types";
 import { AlertCircle } from "lucide-react";
-
-export type SeasonPassMint = {
-  node: {
-    __typename?: "Token__Balance";
-    tokenMetadata: {
-      __typename: "ERC721__Token";
-      tokenId: string;
-      metadataDescription: string;
-      imagePath: string;
-      contractAddress: string;
-      metadata: string;
-    };
-  };
-} | null;
 
 interface TransferRealmDialogProps {
   isOpen: boolean;

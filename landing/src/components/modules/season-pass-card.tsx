@@ -1,81 +1,62 @@
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@radix-ui/react-dialog";
-import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GetRealmsQuery } from "@/hooks/gql/graphql";
+import { RealmMetadata } from "@/types";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Input } from "../ui/input";
+import { ResourceIcon } from "../ui/elements/ResourceIcon";
 
-export interface SeasonPassCardProps {
-  title: string;
-  description: string;
-  checked?: boolean;
-  owner?: string;
-  name?: string;
-  isChecked: boolean;
-  onCardClick: () => void;
-  lordsBalance?: string;
-  isLordsBalanceLoading: boolean;
-  onAttachLords: (amount: number) => Promise<void>;
-  isAttachLoading: boolean;
+interface SeasonPassCardProps {
+  pass: NonNullable<NonNullable<NonNullable<GetRealmsQuery>["tokenBalances"]>["edges"]>[0];
+  toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
+  isSelected?: boolean;
+  metadata?: RealmMetadata;
 }
 
-export const SeasonPassCard = ({
-  title,
-  description,
-  owner,
-  isChecked,
-  onCardClick,
-  lordsBalance,
-  isLordsBalanceLoading,
-  onAttachLords,
-  isAttachLoading,
-}: SeasonPassCardProps) => {
-  const [input, setInput] = useState("0");
+export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonPassCardProps) => {
+  const { tokenId, contractAddress, metadata } = pass!.node?.tokenMetadata ?? {};
 
-  const handleAttachLords = () => {
-    onAttachLords(Number(input));
+  const handleCardClick = () => {
+    if (toggleNftSelection) {
+      toggleNftSelection(tokenId.toString(), contractAddress ?? "0x");
+    }
   };
+
+  const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
+  const { attributes, name, image } = parsedMetadata ?? {};
+
+  const realmSettled = true;
 
   return (
     <Card
-      onClick={onCardClick}
-      className={`cursor-pointer transition-all duration-200 hover:border-gold ${isChecked ? "border-gold" : ""}`}
+      onClick={handleCardClick}
+      className={`cursor-pointer transition-all duration-200 hover:border-gold ${isSelected ? "border-gold" : ""}`}
     >
+      <img src={image} alt={name} className="w-full object-cover h-24 p-2 rounded-2xl" />
       <CardHeader>
-        <CardTitle className="flex justify-between items-center gap-2 text-2xl">
-          <span>#{title}</span>
-          <span>{owner}</span>
+        <CardTitle className=" items-center gap-2">
+          <div className="uppercase text-sm mb-2 flex justify-between">
+            Season 0 Pass
+            <div className="flex items-center gap-2 text-sm"></div>
+            {realmSettled ? (
+              <div className="text-green">Realm Settled!</div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button disabled={true}>Settle</Button>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-between gap-2">
+            <div className=" text-3xl">{name}</div>
+          </div>
         </CardTitle>
-        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-2 mb-4">
-          Balance {isLordsBalanceLoading ? <div>loading</div> : <div>{lordsBalance}</div>}
+        <div className="flex flex-wrap gap-2">
+          {attributes
+            ?.filter((attribute) => attribute.trait_type === "Resource")
+            .map((attribute, index) => (
+              <ResourceIcon resource={attribute.value as string} size="lg" key={`${attribute.trait_type}-${index}`} />
+            ))}
         </div>
-
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>Attach Lords</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogTitle className="text-gold text-3xl text-center">Attach Lords to Realm #{title}</DialogTitle>
-            <DialogDescription className="text-center">
-              These will become the starting balance for your season pass. You can sell the Season Pass NFT at any time
-              which will include these lords.
-            </DialogDescription>
-
-            <div className="flex items-center gap-2">
-              {isAttachLoading ? (
-                <div>loading</div>
-              ) : (
-                <>
-                  {" "}
-                  <Input type="text" placeholder="0.0" value={input} onChange={(e) => setInput(e.target.value)} />
-                  <Button onClick={handleAttachLords}>Attach Lords</Button>
-                </>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </CardContent>
     </Card>
   );

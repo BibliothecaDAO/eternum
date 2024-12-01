@@ -1,6 +1,8 @@
 {
   "entry": ["eternum-docs/**/*.mdx", "eternum-docs/**/*.tsx"],
   "ignore": [
+    "eliza/**",
+
     ".trunk/**",
     "**/*.js",
     "bot/**",

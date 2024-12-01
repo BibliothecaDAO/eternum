@@ -1,16 +1,6 @@
 import { GetRealmsQuery } from "@/hooks/gql/graphql";
 import { AnimatedGrid } from "./animated-grid";
-import { PassCard } from "./pass-card";
-
-export type RealmMetadata = {
-  name: string;
-  description: string;
-  image: string;
-  attributes: {
-    trait_type: string;
-    value: string | number;
-  }[];
-};
+import { SeasonPassCard } from "./season-pass-card";
 
 interface RealmGridItem {
   colSpan?: {
@@ -27,7 +17,7 @@ interface SeasonPassRowProps {
   isNftSelected?: (tokenId: string, contractAddress: string) => boolean;
 }
 
-export const PassesGrid = ({ toggleNftSelection, isNftSelected, seasonPasses }: SeasonPassRowProps) => {
+export const SeasonPassesGrid = ({ toggleNftSelection, isNftSelected, seasonPasses }: SeasonPassRowProps) => {
   if (!seasonPasses?.length) return <div>No Season Pass Found</div>;
 
   const gridItems: RealmGridItem[] = seasonPasses.map((pass) => ({
@@ -43,7 +33,11 @@ export const PassesGrid = ({ toggleNftSelection, isNftSelected, seasonPasses }: 
         if (!pass?.node) return null;
 
         return (
-          <PassCard toggleNftSelection={toggleNftSelection} key={`${pass.node.tokenMetadata.tokenId}`} pass={pass} />
+          <SeasonPassCard
+            toggleNftSelection={toggleNftSelection}
+            key={`${pass.node.tokenMetadata.tokenId}`}
+            pass={pass}
+          />
         );
       }}
     />
