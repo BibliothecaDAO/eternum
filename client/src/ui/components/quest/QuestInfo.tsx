@@ -193,14 +193,15 @@ const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
 export const StartTourButton = ({ steps }: { steps: StepOptions[] | undefined }) => {
   const shepherd = useShepherd();
   const tour = new shepherd.Tour({
+    useModalOverlay: true,
+    exitOnEsc: true,
+    keyboardNavigation: false,
     defaultStepOptions: {
-      scrollTo: false,
       modalOverlayOpeningPadding: 5,
+      arrow: true,
       cancelIcon: { enabled: true },
     },
-    useModalOverlay: true,
     steps,
-    exitOnEsc: true,
   });
 
   const handleStart = () => {

@@ -1,20 +1,13 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { BUILDINGS_CENTER } from "@/three/scenes/constants";
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const pauseProductionSteps: StepOptions[] = [
   {
     title: "Pause Production",
     text: "Resource facilities will produce resources automatically. Learn how to pause production to stop resource consumption.",
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
 
   {
@@ -35,14 +28,7 @@ export const pauseProductionSteps: StepOptions[] = [
       selector: ".entity-details-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -61,14 +47,7 @@ export const pauseProductionSteps: StepOptions[] = [
       return waitForElement(".buildings-tab-selector");
     },
 
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -80,20 +59,7 @@ export const pauseProductionSteps: StepOptions[] = [
     beforeShowPromise: function () {
       return waitForElement(".buildings-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.next],
   },
 
   {
@@ -108,12 +74,7 @@ export const pauseProductionSteps: StepOptions[] = [
       event: "click",
     },
     buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
+      StepButton.prev,
       //   {
       //     text: "Finish",
       //     action: function () {

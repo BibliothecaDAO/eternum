@@ -1,20 +1,13 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const settleSteps: StepOptions[] = [
   {
     title: "Welcome to Eternum",
     text: "The gods have blessed you with food to begin your journey",
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Claim Resources",
@@ -31,14 +24,7 @@ export const settleSteps: StepOptions[] = [
       const element = document.querySelector(".claim-selector");
       return Boolean(element);
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -52,14 +38,7 @@ export const settleSteps: StepOptions[] = [
       selector: ".resource-table-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Resource Management",
@@ -81,12 +60,7 @@ export const settleSteps: StepOptions[] = [
           return this.back();
         },
       },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
+      StepButton.finish,
     ],
   },
 ];

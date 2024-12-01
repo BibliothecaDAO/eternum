@@ -2,7 +2,7 @@ import { configManager } from "@/dojo/setup";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BuildingType } from "@bibliothecadao/eternum";
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const buildWorkersHutSteps: StepOptions[] = [
   {
@@ -10,39 +10,19 @@ export const buildWorkersHutSteps: StepOptions[] = [
     text: `Each building takes up population in your realm. Your realm starts with a population of ${configManager.getBasePopulationCapacity()}. Build worker huts to extend your population capacity by ${
       configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity
     }.`,
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Population Overview",
     text: "Monitor your realm's population capacity and usage here",
     attachTo: {
       element: ".population-selector",
-      on: "center",
+      on: "auto",
     },
     beforeShowPromise: function () {
       return waitForElement(".population-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.next],
   },
   {
     title: "Construction Menu",
@@ -55,14 +35,7 @@ export const buildWorkersHutSteps: StepOptions[] = [
       selector: ".construction-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Select Workers Hut",
@@ -81,14 +54,7 @@ export const buildWorkersHutSteps: StepOptions[] = [
       selector: ".workershut-card-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Build It",
@@ -103,19 +69,6 @@ export const buildWorkersHutSteps: StepOptions[] = [
 
       return new Promise<void>((resolve) => resolve());
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];

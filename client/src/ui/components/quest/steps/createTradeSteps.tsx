@@ -1,18 +1,11 @@
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const createTradeSteps: StepOptions[] = [
   {
     title: "Trading in Eternum",
     text: "Trading is the lifeblood of Eternum. Learn how to create trades to grow your economy.",
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Trade Menu",
@@ -25,14 +18,7 @@ export const createTradeSteps: StepOptions[] = [
       selector: ".trade-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Market Overview",
@@ -44,20 +30,7 @@ export const createTradeSteps: StepOptions[] = [
     beforeShowPromise: function () {
       return waitForElement(".market-modal-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.next],
   },
   {
     title: "Resource Overview",
@@ -66,20 +39,7 @@ export const createTradeSteps: StepOptions[] = [
       element: ".market-resource-bar-selector",
       on: "right",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.next],
   },
   {
     title: "Trading Options",
@@ -88,20 +48,7 @@ export const createTradeSteps: StepOptions[] = [
       element: ".market-resource-bar-header-selector",
       on: "right",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.next],
   },
   {
     title: "Create Order",
@@ -111,20 +58,7 @@ export const createTradeSteps: StepOptions[] = [
       on: "right",
     },
     scrollTo: true,
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.next],
   },
   {
     title: "Order Book",
@@ -133,19 +67,6 @@ export const createTradeSteps: StepOptions[] = [
       element: ".order-book-selector",
       on: "right",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];

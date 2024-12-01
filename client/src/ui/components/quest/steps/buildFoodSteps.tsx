@@ -1,19 +1,12 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const buildFoodSteps: StepOptions[] = [
   {
     title: "Food",
     text: "Wheat and Fish are the lifeblood of your people.",
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Construction tab",
@@ -26,14 +19,7 @@ export const buildFoodSteps: StepOptions[] = [
       selector: ".construction-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -55,14 +41,7 @@ export const buildFoodSteps: StepOptions[] = [
       return waitForElement(".economy-selector");
     },
 
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -78,20 +57,7 @@ export const buildFoodSteps: StepOptions[] = [
       return new Promise<void>((resolve) => resolve());
     },
 
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
   // advance on click
   // open quest log

@@ -1,6 +1,6 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const buildResourceSteps: StepOptions[] = [
   {
@@ -11,14 +11,7 @@ export const buildResourceSteps: StepOptions[] = [
     //     <div>For each farm next to your resource facility you gain a <span class="font-bold text-order-brilliance">10%</span> boost in production.</div>
     //   </div>`,
 
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
 
   {
@@ -32,14 +25,7 @@ export const buildResourceSteps: StepOptions[] = [
       selector: ".construction-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -58,14 +44,7 @@ export const buildResourceSteps: StepOptions[] = [
       return waitForElement(".resource-tab-selector");
     },
 
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -87,14 +66,7 @@ export const buildResourceSteps: StepOptions[] = [
       return waitForElement(".resource-cards-selector");
     },
 
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
 
   {
@@ -110,19 +82,6 @@ export const buildResourceSteps: StepOptions[] = [
       return new Promise<void>((resolve) => resolve());
     },
 
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];

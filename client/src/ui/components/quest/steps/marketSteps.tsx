@@ -1,6 +1,6 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const marketSteps: StepOptions[] = [
   {
@@ -19,14 +19,7 @@ export const marketSteps: StepOptions[] = [
         <ResourceWeight className="mt-2" />
       </div>
     ), */
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Construction Menu",
@@ -39,14 +32,7 @@ export const marketSteps: StepOptions[] = [
       selector: ".construction-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Select Market",
@@ -64,14 +50,7 @@ export const marketSteps: StepOptions[] = [
       selector: ".market-card-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Build It",
@@ -83,19 +62,6 @@ export const marketSteps: StepOptions[] = [
       }
       return new Promise<void>((resolve) => resolve());
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];

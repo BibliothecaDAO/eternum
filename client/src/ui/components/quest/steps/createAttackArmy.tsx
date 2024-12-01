@@ -1,18 +1,11 @@
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const createAttackArmySteps: StepOptions[] = [
   {
     title: "Conquest in Eternum",
     text: "Create an attacking army to conquer your enemies and expand your influence across the realm.",
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Military Menu",
@@ -25,14 +18,7 @@ export const createAttackArmySteps: StepOptions[] = [
       selector: ".military-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Create Attack Army",
@@ -48,14 +34,7 @@ export const createAttackArmySteps: StepOptions[] = [
       selector: ".attack-army-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Assign Troops",
@@ -67,19 +46,6 @@ export const createAttackArmySteps: StepOptions[] = [
     beforeShowPromise: function () {
       return waitForElement(".attacking-army-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];

@@ -1,18 +1,11 @@
 import { StepOptions } from "shepherd.js";
-import { waitForElement } from "./utils";
+import { StepButton, waitForElement } from "./utils";
 
 export const createDefenseArmySteps: StepOptions[] = [
   {
     title: "Realm Defense",
     text: "Your realm is always at risk. Learn how to create a defensive army to protect it.",
-    buttons: [
-      {
-        text: "Next",
-        action: function () {
-          return this.next();
-        },
-      },
-    ],
+    buttons: [StepButton.next],
   },
   {
     title: "Military Menu",
@@ -25,14 +18,7 @@ export const createDefenseArmySteps: StepOptions[] = [
       selector: ".military-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Create Defense Army",
@@ -48,14 +34,7 @@ export const createDefenseArmySteps: StepOptions[] = [
       selector: ".defense-army-selector",
       event: "click",
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-    ],
+    buttons: [StepButton.prev],
   },
   {
     title: "Assign Troops",
@@ -67,19 +46,6 @@ export const createDefenseArmySteps: StepOptions[] = [
     beforeShowPromise: function () {
       return waitForElement(".defensive-army-selector");
     },
-    buttons: [
-      {
-        text: "Prev",
-        action: function () {
-          return this.back();
-        },
-      },
-      {
-        text: "Finish",
-        action: function () {
-          return this.complete();
-        },
-      },
-    ],
+    buttons: [StepButton.prev, StepButton.finish],
   },
 ];
