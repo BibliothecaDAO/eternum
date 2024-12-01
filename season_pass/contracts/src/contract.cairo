@@ -85,7 +85,7 @@ mod EternumSeasonPass {
         realms_contract_address: ContractAddress,
         lords_contract_address: ContractAddress
     ) {
-        self.erc721.initializer("Eternum Season 0 Pass", "ES0P", "");
+        self.erc721.initializer("Eternum Season 0 Pass", "ESP0", "");
         self.ownable.initializer(owner);
         self.realms.write(IERC721Dispatcher { contract_address: realms_contract_address });
         self.lords.write(IERC20Dispatcher { contract_address: lords_contract_address });
@@ -158,7 +158,7 @@ mod EternumSeasonPass {
             let caller = starknet::get_caller_address();
             let this = starknet::get_contract_address();
 
-            self.lords.read().transfer_from(caller, this, amount);
+            assert!(self.lords.read().transfer_from(caller, this, amount), "ESP: Failed to transfer lords");
 
             // update lords balance
             let lords_balance = self.lords_balance.entry(token_id).read();
@@ -175,7 +175,7 @@ mod EternumSeasonPass {
             assert!(lords_balance >= amount, "ESP: Insufficient lords balance");
 
             // transfer lords to caller
-            self.lords.read().transfer(caller, amount);
+            assert!(self.lords.read().transfer(caller, amount), "ESP: Failed to transfer lords");
 
             // update lords balance
             self.lords_balance.entry(token_id).write(lords_balance - amount);
