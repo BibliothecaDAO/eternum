@@ -1,18 +1,22 @@
-import { Player } from "@/components/modules/leaderboard-panel";
-import { PRIZE_POOL_AMOUNT } from "@/constants";
+import { PRIZE_POOL_PLAYERS } from "@/constants";
 import { LeaderboardManager } from "@/dojo/modelManager/leaderboard/LeaderboardManager";
+import { Player } from "@/types";
+import { calculateLordsShare, calculatePlayerSharePercentage } from "@/utils/leaderboard";
 import { StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "./context/DojoContext";
+import { useEntitiesUtils } from "./use-entities-utils";
 
 export const useGetAllPlayers = () => {
   const {
     setup: {
-      components: { Realm, Owner, AddressName, Hyperstructure, Structure },
+      components: { Realm, Owner, GuildMember, AddressName, Hyperstructure, Structure },
     },
   } = useDojo();
   const nextBlockTimestamp = Math.floor(Date.now() / 1000);
+
+  const { getEntityName } = useEntitiesUtils();
 
   const playerEntities = runQuery([Has(AddressName)]);
   const playersByRank = LeaderboardManager.instance().getPlayersByRank(nextBlockTimestamp || 0);
@@ -27,15 +31,18 @@ export const useGetAllPlayers = () => {
 
         const isAlive = !!runQuery([HasValue(Owner, { address: addressName.address })]).size;
 
+        const guildMember = getComponentValue(GuildMember, id);
+        const guildName = guildMember ? getEntityName(guildMember.guild_entity_id) : "";
+
         return {
           address: addressName.address,
           addressName: shortString.decodeShortString(addressName.name.toString()),
           isAlive,
+          guildName,
         };
       })
       .filter((player) => player !== undefined);
 
-    const lastRankedPosition = playersByRank.length;
     let unrankedCount = 0;
 
     return players.map((player) => {
@@ -46,10 +53,9 @@ export const useGetAllPlayers = () => {
 
       return {
         name: player.addressName,
-        rank: calculatePlayerRank(player.isAlive, rankIndex, lastRankedPosition, unrankedCount),
         points,
         percentage: calculatePlayerSharePercentage(points, totalPoints),
-        lords: calculateLordsShare(points, totalPoints),
+        lords: calculateLordsShare(points, totalPoints, PRIZE_POOL_PLAYERS),
         realms: runQuery([Has(Realm), HasValue(Owner, { address: player.address })]).size,
         mines: runQuery([
           HasValue(Structure, { category: StructureType[StructureType.FragmentMine] }),
@@ -57,33 +63,10 @@ export const useGetAllPlayers = () => {
         ]).size,
         hyperstructures: runQuery([Has(Hyperstructure), HasValue(Owner, { address: player.address })]).size,
         isAlive: player.isAlive,
+        guildName: player.guildName,
       };
     });
   };
 
   return getPlayers;
-};
-
-const calculatePlayerRank = (
-  isAlive: boolean,
-  rankIndex: number,
-  lastRankedPosition: number,
-  unrankedCount: number,
-): number => {
-  if (!isAlive) return Number.MAX_SAFE_INTEGER;
-  if (rankIndex === -1) return lastRankedPosition + unrankedCount;
-  return rankIndex + 1;
-};
-
-const calculateLordsShare = (points: number, totalPoints: number): number => {
-  if (totalPoints === 0) return 0;
-
-  const playerShare = (points / totalPoints) * PRIZE_POOL_AMOUNT;
-  return Math.floor(playerShare);
-};
-
-const calculatePlayerSharePercentage = (points: number, totalPoints: number): number => {
-  if (totalPoints === 0) return 0;
-
-  return Math.floor((points / totalPoints) * 100);
 };

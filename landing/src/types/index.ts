@@ -1,3 +1,27 @@
+export interface Player {
+  name: string;
+  points: number;
+  percentage: number;
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  isAlive: boolean;
+  guildName: string;
+}
+
+export interface Guild {
+  name: string;
+  points: number;
+  percentage: number;
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  isAlive: boolean;
+  playerCount: number;
+}
+
 export interface SeasonPass {
   realm: string;
 }
