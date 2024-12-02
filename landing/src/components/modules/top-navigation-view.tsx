@@ -23,7 +23,6 @@ export const TopNavigationView = ({
   onDisconnect,
   //accountAddress,
 }: TopNavigationViewProps) => {
-
   const { address, connector, isConnected } = useAccount();
 
   return (

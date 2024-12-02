@@ -9,7 +9,7 @@
 
 # ignore manifests
 **/*/manifests
+**/*/manifest*.json
 
 # ignore eliza folder
 **/eliza
-

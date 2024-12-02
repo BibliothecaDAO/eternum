@@ -19,15 +19,15 @@ export const Route = createLazyFileRoute("/season-passes")({
 
 function SeasonPasses() {
   const { connectors } = useConnect();
-  const { account } = useAccount();
+  const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
 
   const [controllerAddress] = useState<string>();
 
   const { data, isLoading: isPassesLoading } = useSuspenseQuery({
-    queryKey: ["erc721Balance", account?.address],
-    queryFn: () => (account?.address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: account.address }) : null),
+    queryKey: ["erc721Balance", address],
+    queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
     refetchInterval: 10_000,
   });
 

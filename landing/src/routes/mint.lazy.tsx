@@ -23,7 +23,7 @@ export const Route = createLazyFileRoute("/mint")({
 
 function Mint() {
   const { connectors } = useConnect();
-  const { account } = useAccount();
+  const { address } = useAccount();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
@@ -31,8 +31,8 @@ function Mint() {
   const [controllerAddress] = useState<string>();
 
   const { data, isLoading: isRealmsLoading } = useSuspenseQuery({
-    queryKey: ["erc721Balance", account?.address],
-    queryFn: () => (account?.address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: account.address }) : null),
+    queryKey: ["erc721Balance", address],
+    queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
     refetchInterval: 10_000,
   });
 
@@ -70,7 +70,7 @@ function Mint() {
   );
 
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
-    useNftSelection({ userAddress: account?.address as `0x${string}` });
+    useNftSelection({ userAddress: address as `0x${string}` });
 
   const loading = isRealmsLoading || isSeasonPassMintsLoading;
 
