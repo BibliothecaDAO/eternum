@@ -5,14 +5,13 @@ import { StepButton, waitForElement } from "./utils";
 
 export const pauseProductionSteps: StepOptions[] = [
   {
-    title: "Pause Production",
-    text: "Resource facilities will produce resources automatically. Learn how to pause production to stop resource consumption.",
+    title: "Production",
+    text: "Your buildings automatically produce resources over time. Let's learn how to manage your production efficiently.",
     buttons: [StepButton.next],
   },
-
   {
-    title: "Details tab",
-    text: "Open the details tab",
+    title: "Building Details",
+    text: "First, let's check your building information. Click the Details tab to continue.",
     attachTo: {
       element: ".entity-details-selector",
       on: "right",
@@ -21,7 +20,6 @@ export const pauseProductionSteps: StepOptions[] = [
       const selectedBuildingHex = useUIStore.getState().selectedBuildingHex;
       const setSelectedBuildingHex = useUIStore.getState().setSelectedBuildingHex;
       setSelectedBuildingHex({ ...selectedBuildingHex, innerCol: BUILDINGS_CENTER[0], innerRow: BUILDINGS_CENTER[1] });
-
       return new Promise<void>((resolve) => resolve());
     },
     advanceOn: {
@@ -30,9 +28,32 @@ export const pauseProductionSteps: StepOptions[] = [
     },
     buttons: [StepButton.prev],
   },
+  {
+    title: "Building Information",
+    text: "This panel shows you everything you need to know about your selected building, including its production rates and resource requirements.",
+    attachTo: {
+      element: ".building-entity-details-selector",
+      on: "right",
+    },
+    canClickTarget: false,
+    beforeShowPromise: function () {
+      return waitForElement(".building-entity-details-selector");
+    },
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Your Realm Overview",
+    text: "Your realm's details are displayed here, including its current level, available upgrades, and production capacity.",
+    attachTo: {
+      element: ".building-entity-details-selector",
+      on: "right",
+    },
+    canClickTarget: false,
+    buttons: [StepButton.prev, StepButton.next],
+  },
 
   {
-    title: "buildings buildings",
+    title: "Buildings Management",
     text: "Open the buildings tab",
     attachTo: {
       element: ".buildings-tab-selector",
@@ -42,20 +63,17 @@ export const pauseProductionSteps: StepOptions[] = [
       selector: ".buildings-tab-selector",
       event: "click",
     },
-
-    beforeShowPromise: function () {
-      return waitForElement(".buildings-tab-selector");
-    },
-
     buttons: [StepButton.prev],
   },
 
   {
-    title: "Pause Production",
-    text: "Click the pause button to stop resource production and consumption",
+    title: "Production Control",
+    text: "Here you can see all your active production buildings. Each one can be managed individually.",
     attachTo: {
       element: ".buildings-selector",
+      on: "right",
     },
+    canClickTarget: false,
     beforeShowPromise: function () {
       return waitForElement(".buildings-selector");
     },
@@ -64,7 +82,7 @@ export const pauseProductionSteps: StepOptions[] = [
 
   {
     title: "Pause Production",
-    text: "Click the pause button to stop resource production and consumption",
+    text: "Click the pause button to stop its production and resource consumption.",
     attachTo: {
       element: ".pause-building-button-selector",
       on: "bottom",
@@ -73,15 +91,35 @@ export const pauseProductionSteps: StepOptions[] = [
       selector: ".pause-building-button-selector",
       event: "click",
     },
-    buttons: [
-      StepButton.prev,
-      //   {
-      //     text: "Finish",
-      //     action: function () {
-      //       return this.complete();
-      //     },
-      //
-      //   },
-    ],
+    buttons: [StepButton.prev],
+  },
+
+  {
+    title: "Storage Limits",
+    text: "Your storehouse can hold a limited amount of each resource, measured by weight (Kg). Plan your storage capacity carefully!",
+    attachTo: {
+      element: ".storehouse-selector",
+      on: "right",
+    },
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Storage Management",
+    text: "When your storage is full, any additional resources produced will be lost. Keep an eye on your storage levels!",
+    attachTo: {
+      element: ".storehouse-selector",
+      on: "right",
+    },
+
+    buttons: [StepButton.prev, StepButton.next],
+  },
+  {
+    title: "Resource Efficiency",
+    text: "Pro tip: Production requires all three input resources. If one runs out, the other two will still be consumed without producing anything. Pause production to prevent wasting resources!",
+    attachTo: {
+      element: ".storehouse-selector",
+      on: "right",
+    },
+    buttons: [StepButton.prev, StepButton.complete],
   },
 ];

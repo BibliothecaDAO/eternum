@@ -255,6 +255,11 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    const overlay = document.querySelector(".shepherd-modal-overlay-container");
+    const overlayClick = document.querySelector(".allow-modal-click");
+    if (overlay && !overlayClick) {
+      return;
+    }
     if (!hexCoords) return;
 
     const buildingType = this.structurePreview?.getPreviewStructure();

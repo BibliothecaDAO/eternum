@@ -107,7 +107,7 @@ export const BuildingEntityDetails = () => {
     setLeftNavigationView(LeftView.None);
   }, [selectedBuildingHex, buildingState]);
   return (
-    <div className="flex flex-col h-full">
+    <div className="building-entity-details-selector flex flex-col h-full">
       {isCastleSelected ? (
         <RealmDetails />
       ) : (

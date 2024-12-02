@@ -93,13 +93,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         key: "resources",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div
-              className={clsx("resource-tab-selector", {
-                "animate-pulse  border-b border-gold": selectedTab !== 0 && selectedQuest?.id === QuestId.BuildResource,
-              })}
-            >
-              Resources
-            </div>
+            <div className="resource-tab-selector">Resources</div>
           </div>
         ),
         component: (
@@ -303,9 +297,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         onChange={(index: any) => {
           setSelectedTab(index);
         }}
-        className="h-full"
+        className="construction-panel-selector h-full"
       >
-        <Tabs.List>
+        <Tabs.List className="construction-tabs-selector">
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}

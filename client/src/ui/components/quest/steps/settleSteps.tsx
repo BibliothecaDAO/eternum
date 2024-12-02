@@ -7,7 +7,6 @@ export const settleSteps: StepOptions[] = [
   {
     title: "Welcome to Eternum",
     text: "Follow these tutorials to quickly learn all the game mechanics and get started on your journey!",
-    classes: "!top-1/4",
     buttons: [StepButton.next],
   },
   {
@@ -16,10 +15,6 @@ export const settleSteps: StepOptions[] = [
     attachTo: {
       element: ".discord-selector",
       on: "bottom",
-    },
-    advanceOn: {
-      selector: ".discord-selector",
-      event: "click",
     },
     buttons: [StepButton.prev, StepButton.next],
   },
@@ -67,9 +62,7 @@ export const settleSteps: StepOptions[] = [
       {
         text: "Prev",
         action: function () {
-          const setRightNavigationView = useUIStore.getState().setRightNavigationView;
-          setRightNavigationView(RightView.None);
-
+          useUIStore.getState().setRightNavigationView(RightView.None);
           return this.back();
         },
       },
@@ -88,7 +81,6 @@ export const settleSteps: StepOptions[] = [
   {
     title: "Continue Your Journey",
     text: "Complete more quests to unlock new features and discover everything Eternum has to offer!",
-    classes: "!top-1/4",
     buttons: [StepButton.prev, StepButton.finish],
   },
 ];
