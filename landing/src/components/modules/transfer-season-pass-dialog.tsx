@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
 import { useEffect, useState } from "react";
-import { validateChecksumAddress } from "starknet";
+import { getChecksumAddress, validateChecksumAddress } from "starknet";
 import { TypeH2 } from "../typography/type-h2";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -12,6 +12,8 @@ import { Input } from "../ui/input";
 import { abi } from "@/abi/SeasonPass";
 import { seasonPassAddress } from "@/config";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
+import useDebounce from "@/hooks/use-debounce";
+import { displayAddress } from "@/lib/utils";
 import { RealmMetadata, SeasonPassMint } from "@/types";
 import { AlertCircle } from "lucide-react";
 
@@ -23,6 +25,7 @@ interface TransferSeasonPassProps {
 
 export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPassMints }: TransferSeasonPassProps) {
   const [input, setInput] = useState<string>("");
+  const debouncedInput = useDebounce(input, 500); // 500ms delay
 
   const [transferTo, setTransferTo] = useState<string | null>(null);
   const [selectedRealms, setSelectedRealms] = useState<string[]>([]);
@@ -62,33 +65,31 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
 
   useEffect(() => {
     const validateAndSetTransferAddress = async () => {
-      if (!input) {
+      if (!debouncedInput) {
         setTransferTo(null);
         return;
       }
 
       try {
-        if (validateChecksumAddress(input)) {
-          setTransferTo(input);
+        if (validateChecksumAddress(getChecksumAddress(debouncedInput))) {
+          setTransferTo(debouncedInput);
           return;
         }
-
-        setTransferTo(null);
       } catch (error) {
-        await fetchAddress(input);
-
-        if (cartridgeAddress) {
-          setTransferTo(cartridgeAddress);
-          return;
-        }
-
         console.error("Error validating address:", error);
-        setTransferTo(null);
       }
+
+      await fetchAddress(debouncedInput);
+      if (cartridgeAddress) {
+        setTransferTo(cartridgeAddress);
+        return;
+      }
+
+      setTransferTo(null);
     };
 
     validateAndSetTransferAddress();
-  }, [input, cartridgeAddress, fetchAddress]);
+  }, [debouncedInput, cartridgeAddress, fetchAddress]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -140,11 +141,11 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           </Table>
         </div>
         <div className="bottom-0 pt-4 mt-auto flex flex-col border-t bg-background gap-4">
-          <div className="text-gold text-sm">Found: {cartridgeLoading ? "loading" : cartridgeAddress}</div>
+        
 
           <div className="flex gap-4">
             <Input
-              placeholder="Enter the Controller ID to transfer to"
+              placeholder="Enter Controller ID or address for transfer"
               value={input}
               className="text-gold"
               onChange={(e) => setInput(e.target.value)}
@@ -156,9 +157,14 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           {!transferTo && (
             <div className="text-gold text-sm flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
-              Please enter a Controller ID
+              Please enter a valid Controller ID or address
             </div>
           )}
+            <div className="text-gold text-sm">
+            {cartridgeLoading
+              ? "loading"
+              : cartridgeAddress && <>Controller Address: {displayAddress(cartridgeAddress)}</>}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
