@@ -73,6 +73,8 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           return;
         }
 
+        setTransferTo(null);
+      } catch (error) {
         await fetchAddress(input);
 
         if (cartridgeAddress) {
@@ -80,8 +82,6 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           return;
         }
 
-        setTransferTo(null);
-      } catch (error) {
         console.error("Error validating address:", error);
         setTransferTo(null);
       }

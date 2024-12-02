@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
-import { GET_REALMS } from "@/hooks/query/realms";
+import { GET_ACCOUNT_TOKENS } from "@/hooks/query/realms";
 import { displayAddress } from "@/lib/utils";
 import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -27,7 +27,7 @@ function SeasonPasses() {
 
   const { data, isLoading: isPassesLoading } = useSuspenseQuery({
     queryKey: ["erc721Balance", account?.address],
-    queryFn: () => (account?.address ? execute(GET_REALMS, { accountAddress: account.address }) : null),
+    queryFn: () => (account?.address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: account.address }) : null),
     refetchInterval: 10_000,
   });
 
