@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
 import { useEffect, useState } from "react";
+import { validateChecksumAddress } from "starknet";
 import { TypeH2 } from "../typography/type-h2";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -13,7 +14,6 @@ import { seasonPassAddress } from "@/config";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import { RealmMetadata, SeasonPassMint } from "@/types";
 import { AlertCircle } from "lucide-react";
-import { validateChecksumAddress } from "starknet";
 
 interface TransferSeasonPassProps {
   isOpen: boolean;
@@ -72,12 +72,9 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           setTransferTo(input);
           return;
         }
-      } catch (error) {
-        console.error("Error in validateAndParseAddress:", error);
-      }
 
-      try {
-        console.log("Fetching address");
+        setTransferTo(null);
+      } catch (error) {
         await fetchAddress(input);
 
         if (cartridgeAddress) {
@@ -85,9 +82,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           return;
         }
 
-        setTransferTo(null);
-      } catch (error) {
-        console.error("Error fetching address:", error);
+        console.error("Error validating address:", error);
         setTransferTo(null);
       }
     };
