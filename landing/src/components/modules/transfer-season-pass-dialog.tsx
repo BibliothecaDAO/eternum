@@ -91,10 +91,27 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
     validateAndSetTransferAddress();
   }, [debouncedInput, cartridgeAddress, fetchAddress]);
 
+  const toggleAllRealms = () => {
+    if (selectedRealms.length === seasonPassMints.length) {
+      // If all realms are selected, deselect all
+      setSelectedRealms([]);
+    } else {
+      // Select all realms
+      setSelectedRealms(seasonPassMints.map(mint => mint.node.tokenMetadata.tokenId || ""));
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="flex flex-col h-[80vh]">
-        <TypeH2 className="text-gold">Transfer Season Pass</TypeH2>
+        <TypeH2 className="text-gold justify-between flex">Transfer Season Pas  <Button 
+              variant="secondary" 
+              onClick={toggleAllRealms}
+              className="text-gold"
+              size={'sm'}
+            >
+              {selectedRealms.length === seasonPassMints.length ? 'Deselect All' : 'Select All'}
+            </Button></TypeH2>
         <div className="flex-1 overflow-y-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-background">
@@ -140,7 +157,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
             </TableBody>
           </Table>
         </div>
-        <div className="bottom-0 pt-4 mt-auto flex flex-col border-t bg-background gap-4">
+        <div className="bottom-0 pt-4 mt-auto flex flex-col border-t bg-background">
         
 
           <div className="flex gap-4">
@@ -154,8 +171,8 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
               Transfer {selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""}
             </Button>
           </div>
-          {!transferTo && (
-            <div className="text-gold text-sm flex items-center gap-2">
+          {!transferTo && !cartridgeLoading && (
+            <div className="text-gold text-sm mt-3 flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
               Please enter a valid Controller ID or address
             </div>
