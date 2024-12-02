@@ -44,6 +44,7 @@ export const marketSteps: StepOptions[] = [
     beforeShowPromise: function () {
       const closeAllPopups = useUIStore.getState().closeAllPopups;
       closeAllPopups();
+
       return waitForElement(".market-card-selector");
     },
     advanceOn: {

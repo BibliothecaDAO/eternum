@@ -223,9 +223,22 @@ canvas {
 }
 
 .shepherd-arrow:before {
-  @apply bg-enemy !important;
+  @apply bg-brown !important;
 }
 
 .shepherd-has-title .shepherd-content .shepherd-header .shepherd-arrow:before {
   @apply bg-enemy !important;
+}
+
+.shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
+  @apply bg-brown !important;
+}
+
+.shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
+  @apply bg-enemy !important;
+}
+
+.shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
+.shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
+  @apply bg-brown !important;
 }

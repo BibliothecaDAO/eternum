@@ -7,9 +7,46 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ID } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
+import { useShepherd } from "react-shepherd";
+import { StepOptions } from "shepherd.js";
+import { QuestId } from "./questDetails";
+import { buildFoodSteps } from "./steps/buildFoodSteps";
+import { buildResourceSteps } from "./steps/buildResourceSteps";
+import { buildWorkersHutSteps } from "./steps/buildWorkersHutSteps";
+import { createAttackArmySteps } from "./steps/createAttackArmy";
+import { createDefenseArmySteps } from "./steps/createDefenseArmySteps";
+import { createTradeSteps } from "./steps/createTradeSteps";
+import { marketSteps } from "./steps/marketSteps";
+import { pauseProductionSteps } from "./steps/pauseProductionSteps";
+import { settleSteps } from "./steps/settleSteps";
+import { travelSteps } from "./steps/travelSteps";
 import { areAllQuestsClaimed, groupQuestsByDepth } from "./utils";
 
+export const questSteps = new Map<QuestId, StepOptions[]>([
+  [QuestId.Settle, settleSteps],
+  [QuestId.BuildFood, buildFoodSteps],
+  [QuestId.BuildResource, buildResourceSteps],
+  [QuestId.PauseProduction, pauseProductionSteps],
+  [QuestId.CreateTrade, createTradeSteps],
+  [QuestId.CreateDefenseArmy, createDefenseArmySteps],
+  [QuestId.CreateAttackArmy, createAttackArmySteps],
+  [QuestId.Travel, travelSteps],
+  [QuestId.BuildWorkersHut, buildWorkersHutSteps],
+  [QuestId.Market, marketSteps],
+  // [QuestId.Pillage, pillageSteps],
+  // [QuestId.Mine, mineSteps],
+  // [QuestId.Contribution, contributionSteps],
+  // [QuestId.Hyperstructure, hyperstructureSteps],
+]);
+
 export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID | undefined }) => {
+  const {
+    setup: {
+      systemCalls: { claim_quest },
+    },
+    account: { account },
+  } = useDojo();
+
   const showCompletedQuests = useQuestStore((state) => state.showCompletedQuests);
   const setShowCompletedQuests = useQuestStore((state) => state.setShowCompletedQuests);
 
@@ -30,6 +67,26 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
       }, 0);
     setMaxDepthToShow(newMaxDepth);
   }, [quests, groupedQuests]);
+
+  const handleAllClaims = async (
+    quest: Quest,
+    setIsLoading: (isLoading: boolean) => void,
+    setSkipQuest: (skipQuest: boolean) => void,
+  ) => {
+    setIsLoading(true);
+    try {
+      await claim_quest({
+        signer: account,
+        quest_ids: quest.prizes.map((prize) => BigInt(prize.id)),
+        receiver_id: entityId || 0,
+      });
+    } catch (error) {
+      console.error(`Failed to claim resources for quest ${quest.name}:`, error);
+    } finally {
+      setIsLoading(false);
+      setSkipQuest(false);
+    }
+  };
 
   return (
     <>
@@ -61,28 +118,50 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID 
               (quest) => quest.status !== QuestStatus.Claimed || showCompletedQuests,
             );
             if (shownQuests.length === 0) return null;
-            return <QuestDepthGroup key={depth} depthQuests={shownQuests} />;
+            return <QuestDepthGroup key={depth} depthQuests={shownQuests} handleAllClaims={handleAllClaims} />;
           })}
       </div>
     </>
   );
 };
 
-const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
+const QuestDepthGroup = ({
+  depthQuests,
+  handleAllClaims,
+}: {
+  depthQuests: Quest[];
+  handleAllClaims: (
+    quest: Quest,
+    setIsLoading: (isLoading: boolean) => void,
+    setSkipQuest: (skipQuest: boolean) => void,
+  ) => void;
+}) => (
   <>
     {depthQuests
       ?.slice()
       .reverse()
-      .map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
+      .map((quest: Quest) => <QuestCard quest={quest} key={quest.name} handleAllClaims={handleAllClaims} />)}
   </>
 );
 
-const QuestCard = ({ quest }: { quest: Quest }) => {
-  const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
-
+const QuestCard = ({
+  quest,
+  handleAllClaims,
+}: {
+  quest: Quest;
+  handleAllClaims: (
+    quest: Quest,
+    setIsLoading: (isLoading: boolean) => void,
+    setSkipQuest: (skipQuest: boolean) => void,
+  ) => void;
+}) => {
   const { getQuestResources } = useRealm();
 
+  const [skipQuest, setSkipQuest] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const isClaimed = quest.status === QuestStatus.Claimed;
+  const isInProgress = quest.status === QuestStatus.InProgress;
 
   return (
     <div
@@ -103,10 +182,39 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
           </div>
         ))}
 
-      <div className="my-4">
-        <Button isPulsing={!isClaimed} disabled={isClaimed} variant="primary" onClick={() => setSelectedQuest(quest)}>
-          {isClaimed ? "Claimed" : quest.status === QuestStatus.Completed ? "Claim" : "Start"}
-        </Button>
+      <div className="grid grid-cols-5 my-4">
+        <div className="col-span-2 flex gap-4">
+          <TutorialButton isPulsing={!isClaimed} steps={questSteps.get(quest.id)} />
+          <Button
+            className={quest.id === QuestId.Settle && !isClaimed ? "claim-selector" : ""}
+            isLoading={isLoading && !skipQuest}
+            disabled={isClaimed || isInProgress}
+            variant="primary"
+            onClick={() => {
+              setSkipQuest(false);
+              handleAllClaims(quest, setIsLoading, setSkipQuest);
+            }}
+          >
+            {isClaimed ? "Claimed" : "Claim"}
+          </Button>
+        </div>
+
+        <div className="col-start-4 col-span-2 grid grid-cols-2 gap-2">
+          <Button variant="primary" onClick={() => setSkipQuest(!skipQuest)}>
+            {skipQuest ? "Sure ?" : " Skip quest"}
+          </Button>
+          {skipQuest && (
+            <Button
+              isLoading={isLoading && skipQuest}
+              variant="red"
+              onClick={() => {
+                handleAllClaims(quest, setIsLoading, setSkipQuest);
+              }}
+            >
+              Confirm
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -155,5 +263,31 @@ const SkipTutorial = ({
         Confirm
       </Button>
     </div>
+  );
+};
+
+const TutorialButton = ({ isPulsing, steps }: { isPulsing: boolean; steps: StepOptions[] | undefined }) => {
+  const shepherd = useShepherd();
+  const tour = new shepherd.Tour({
+    useModalOverlay: true,
+    exitOnEsc: true,
+    keyboardNavigation: false,
+    defaultStepOptions: {
+      modalOverlayOpeningPadding: 5,
+      arrow: true,
+      cancelIcon: { enabled: true },
+    },
+    steps,
+  });
+
+  const handleStart = () => {
+    if (!tour) return;
+    tour.start();
+  };
+
+  return (
+    <Button isPulsing={isPulsing} variant="primary" onClick={() => handleStart()}>
+      Tutorial
+    </Button>
   );
 };

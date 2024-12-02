@@ -60,7 +60,7 @@ export const SecondaryMenuItems = () => {
               disabled={!realmSelected}
             />
 
-            {completedQuests.length < 8 && !isMapView && realmSelected && (
+            {completedQuests.length < 8 && !isMapView && realmSelected && !isPopupOpen(questsWindow) && (
               <div className="absolute bg-brown/90 text-gold border border-gold/30 mt-3 rounded-md shadow-lg left-1/2 transform -translate-x-1/2 w-48 p-3 flex flex-col items-center animate-pulse">
                 <ArrowUp className="text-gold w-5 h-5 mb-2" />
                 <div className="text-sm font-semibold mb-2 text-center leading-tight">
