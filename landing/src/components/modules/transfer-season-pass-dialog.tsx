@@ -97,21 +97,19 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
       setSelectedRealms([]);
     } else {
       // Select all realms
-      setSelectedRealms(seasonPassMints.map(mint => mint.node.tokenMetadata.tokenId || ""));
+      setSelectedRealms(seasonPassMints.map((mint) => mint.node.tokenMetadata.tokenId || ""));
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="flex flex-col h-[80vh]">
-        <TypeH2 className="text-gold justify-between flex">Transfer Season Pas  <Button 
-              variant="secondary" 
-              onClick={toggleAllRealms}
-              className="text-gold"
-              size={'sm'}
-            >
-              {selectedRealms.length === seasonPassMints.length ? 'Deselect All' : 'Select All'}
-            </Button></TypeH2>
+        <TypeH2 className="text-gold justify-between flex">
+          Transfer Season Pas{" "}
+          <Button variant="secondary" onClick={toggleAllRealms} className="text-gold" size={"sm"}>
+            {selectedRealms.length === seasonPassMints.length ? "Deselect All" : "Select All"}
+          </Button>
+        </TypeH2>
         <div className="flex-1 overflow-y-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-background">
@@ -158,8 +156,6 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           </Table>
         </div>
         <div className="bottom-0 pt-4 mt-auto flex flex-col border-t bg-background">
-        
-
           <div className="flex gap-4">
             <Input
               placeholder="Enter Controller ID or address for transfer"
@@ -177,7 +173,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
               Please enter a valid Controller ID or address
             </div>
           )}
-            <div className="text-gold text-sm">
+          <div className="text-gold text-sm">
             {cartridgeLoading
               ? "loading"
               : cartridgeAddress && <>Controller Address: {displayAddress(cartridgeAddress)}</>}
