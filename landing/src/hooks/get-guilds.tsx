@@ -34,9 +34,8 @@ export const getGuilds = (players: Player[]): Guild[] => {
 
   const totalPoints = Array.from(guildMap.values()).reduce((sum, guild) => sum + guild.points, 0);
 
-  return Array.from(guildMap.values()).map((guild, index) => ({
+  return Array.from(guildMap.values()).map((guild) => ({
     ...guild,
-    rank: index + 1,
     percentage: (guild.points / totalPoints) * 100,
     lords: calculateLordsShare(guild.points, totalPoints, PRIZE_POOL_GUILDS),
   }));
