@@ -10,7 +10,7 @@ use s0_eternum::constants::ResourceTypes;
 use s0_eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
 use s0_eternum::models::config::{CapacityConfig, CapacityConfigCategory};
 use s0_eternum::models::movable::{Movable, ArrivalTime};
-use s0_eternum::models::order::{Orders, OrdersCustomTrait};
+use s0_eternum::models::order::{Orders, OrdersTrait};
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position, Coord};
 use s0_eternum::models::realm::Realm;

@@ -76,7 +76,7 @@ pub struct LeaderboardEntry {
 }
 
 #[generate_trait]
-pub impl LeaderboardEntryCustomImpl of LeaderboardEntryCustomTrait {
+pub impl LeaderboardEntryImpl of LeaderboardEntryTrait {
     fn get(ref world: WorldStorage, address: starknet::ContractAddress) -> LeaderboardEntry {
         let entry: LeaderboardEntry = world.read_model(address);
         entry

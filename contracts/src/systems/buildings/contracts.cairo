@@ -24,10 +24,10 @@ mod building_systems {
     use s0_eternum::constants::DEFAULT_NS;
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::{
-        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
-        position::{Coord, CoordTrait, Position, PositionCustomTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingCustomImpl}, production::{Production, ProductionRateTrait},
-        realm::{Realm, RealmCustomImpl, RealmResourcesTrait}
+        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
+        position::{Coord, CoordTrait, Position, PositionTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingImpl}, production::{Production, ProductionRateTrait},
+        realm::{Realm, RealmImpl, RealmResourcesTrait}
     };
 
     #[abi(embed_v0)]
@@ -64,7 +64,7 @@ mod building_systems {
             // check if season is over
             SeasonImpl::assert_season_is_not_over(world);
 
-            let mut building_coord: Coord = BuildingCustomImpl::center();
+            let mut building_coord: Coord = BuildingImpl::center();
             loop {
                 match directions.pop_front() {
                     Option::Some(direction) => { building_coord = building_coord.neighbor(*direction); },
@@ -73,7 +73,7 @@ mod building_systems {
             };
 
             // todo: check that entity is a realm
-            let (building, building_quantity) = BuildingCustomImpl::create(
+            let (building, building_quantity) = BuildingImpl::create(
                 ref world, entity_id, building_category, produce_resource_type, building_coord
             );
 
@@ -85,21 +85,21 @@ mod building_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            BuildingCustomImpl::pause_production(ref world, entity_id, building_coord);
+            BuildingImpl::pause_production(ref world, entity_id, building_coord);
         }
 
         fn resume_production(ref self: ContractState, entity_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            BuildingCustomImpl::resume_production(ref world, entity_id, building_coord);
+            BuildingImpl::resume_production(ref world, entity_id, building_coord);
         }
 
         fn destroy(ref self: ContractState, entity_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            BuildingCustomImpl::destroy(ref world, entity_id, building_coord);
+            BuildingImpl::destroy(ref world, entity_id, building_coord);
         }
     }
 }

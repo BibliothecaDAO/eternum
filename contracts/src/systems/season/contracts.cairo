@@ -23,7 +23,7 @@ mod season_systems {
         constants::{HYPERSTRUCTURE_CONFIG_ID, WORLD_CONFIG_ID, DEFAULT_NS, ResourceTypes}, alias::ID,
         models::{
             config::{HyperstructureConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig},
-            season::{Leaderboard, LeaderboardEntryCustomImpl, LeaderboardEntry, LeaderboardRewardClaimed}
+            season::{Leaderboard, LeaderboardEntryImpl, LeaderboardEntry, LeaderboardRewardClaimed}
         },
         systems::{
             hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl,
@@ -96,7 +96,7 @@ mod season_systems {
                 leaderboard.total_price_pool.unwrap() > 0, "If that happens, no one has registered to the leaderboard"
             );
 
-            let entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(ref world, caller_address);
+            let entry: LeaderboardEntry = LeaderboardEntryImpl::get(ref world, caller_address);
 
             assert!(entry.points > 0, "No points to claim");
 

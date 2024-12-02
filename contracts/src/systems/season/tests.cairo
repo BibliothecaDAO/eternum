@@ -8,11 +8,11 @@ use s0_eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure}
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position, Coord};
 use s0_eternum::models::resources::Resource;
-use s0_eternum::models::season::{Leaderboard, LeaderboardEntry, LeaderboardEntryCustomImpl};
-use s0_eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
+use s0_eternum::models::season::{Leaderboard, LeaderboardEntry, LeaderboardEntryImpl};
+use s0_eternum::models::structure::{Structure, StructureCount, StructureCountTrait, StructureCategory};
 use s0_eternum::systems::config::contracts::{
-    config_systems, config_systems::HyperstructureConfigCustomImpl, IHyperstructureConfigDispatcher,
-    IHyperstructureConfig, IHyperstructureConfigDispatcherTrait
+    config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher, IHyperstructureConfig,
+    IHyperstructureConfigDispatcherTrait
 };
 
 use s0_eternum::systems::hyperstructure::contracts::{
@@ -125,7 +125,7 @@ fn season_test_register_to_leaderboard_success() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -168,7 +168,7 @@ fn season_test_claim_too_early() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -196,7 +196,7 @@ fn season_test_claim_success() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -234,7 +234,7 @@ fn season_test_claim_twice() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -256,7 +256,7 @@ fn season_test_claim_twice() {
 #[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
 fn season_test_register_too_early() {
     let (
-        mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
+        mut _world, _realm_entity_id, _hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
     ) =
         setup();
 
@@ -266,7 +266,9 @@ fn season_test_register_too_early() {
 #[test]
 #[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
 fn season_test_register_too_late() {
-    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+    let (
+        mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
+    ) =
         setup();
 
     let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(
@@ -293,7 +295,7 @@ fn season_test_register_with_no_points() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points == 0, "Leaderboard total points should be 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points == 0, "Leaderboard entry points should be 0");
@@ -317,7 +319,7 @@ fn season_test_claim_with_no_points() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points == 0, "Leaderboard total points should be 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points == 0, "Leaderboard entry points should be 0");

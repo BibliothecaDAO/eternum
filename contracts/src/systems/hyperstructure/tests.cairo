@@ -8,11 +8,11 @@ use s0_eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure}
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position, Coord};
 use s0_eternum::models::resources::Resource;
-use s0_eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
+use s0_eternum::models::structure::{Structure, StructureCount, StructureCountTrait, StructureCategory};
 
 use s0_eternum::systems::config::contracts::{
-    config_systems, config_systems::HyperstructureConfigCustomImpl, IHyperstructureConfigDispatcher,
-    IHyperstructureConfig, IHyperstructureConfigDispatcherTrait
+    config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher, IHyperstructureConfig,
+    IHyperstructureConfigDispatcherTrait
 };
 
 use s0_eternum::systems::hyperstructure::contracts::{

@@ -126,33 +126,31 @@ mod troop_systems {
     use s0_eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, DEFAULT_NS};
     use s0_eternum::models::buildings::{BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::combat::{ProtectorCustomTrait};
+    use s0_eternum::models::combat::{ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
-        BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory, StaminaRefillConfig
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfigTrait,
+        CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, StaminaRefillConfig
     };
-    use s0_eternum::models::movable::{Movable, MovableCustomTrait};
+    use s0_eternum::models::movable::{Movable, MovableTrait};
 
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
-    use s0_eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
-    use s0_eternum::models::resources::{ResourceCustomImpl, ResourceCost};
-    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
+    use s0_eternum::models::resources::{ResourceImpl, ResourceCost};
+    use s0_eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
 
     use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::stamina::{Stamina, StaminaCustomTrait};
-    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::stamina::{Stamina, StaminaTrait};
+    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::models::weight::Weight;
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
-            BattleCustomImpl, BattleCustomTrait, Protector, Protectee, ProtecteeCustomTrait, BattleHealthCustomTrait,
-            AttackingArmyQuantityTrackerCustomTrait, AttackingArmyQuantityTrackerCustomImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, AttackingArmyQuantityTrackerTrait,
+            AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::combat::contracts::battle_systems::{
@@ -197,7 +195,7 @@ mod troop_systems {
             // ensure army is dead
             let mut army: Army = world.read_model(army_id);
             if army.is_in_battle() {
-                let mut battle = BattleCustomImpl::get(world, army.battle_id);
+                let mut battle = BattleImpl::get(world, army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
 
@@ -235,9 +233,9 @@ mod troop_systems {
             payer_position.assert_same_location(army_position.into());
 
             // make payment for troops
-            let knight_resource = ResourceCustomImpl::get(ref world, (payer_id, ResourceTypes::KNIGHT));
-            let paladin_resource = ResourceCustomImpl::get(ref world, (payer_id, ResourceTypes::PALADIN));
-            let crossbowman_resource = ResourceCustomImpl::get(ref world, (payer_id, ResourceTypes::CROSSBOWMAN));
+            let knight_resource = ResourceImpl::get(ref world, (payer_id, ResourceTypes::KNIGHT));
+            let paladin_resource = ResourceImpl::get(ref world, (payer_id, ResourceTypes::PALADIN));
+            let crossbowman_resource = ResourceImpl::get(ref world, (payer_id, ResourceTypes::CROSSBOWMAN));
             let (mut knight_resource, mut paladin_resource, mut crossbowman_resource) = troops
                 .purchase(payer_id, (knight_resource, paladin_resource, crossbowman_resource));
             knight_resource.save(ref world);
@@ -246,7 +244,7 @@ mod troop_systems {
 
             let mut army: Army = world.read_model(army_id);
             if army.is_in_battle() {
-                let mut battle = BattleCustomImpl::get(world, army.battle_id);
+                let mut battle = BattleImpl::get(world, army.battle_id);
                 if battle.has_ended() {
                     let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                     let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
@@ -257,7 +255,7 @@ mod troop_systems {
                     army = r_army;
                 } else {
                     // if battle has not ended, add the troops to the battle
-                    let troop_config = TroopConfigCustomImpl::get(world);
+                    let troop_config = TroopConfigImpl::get(world);
                     let troops_full_health = troops.full_health(troop_config);
 
                     battle.join(army.battle_side, troops, troops_full_health);
@@ -286,12 +284,12 @@ mod troop_systems {
             let to_army_position: Position = world.read_model(to_army_id);
             from_army_position.assert_same_location(to_army_position.into());
 
-            let troop_config = TroopConfigCustomImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
 
             // decrease from army troops
             let mut from_army: Army = world.read_model(from_army_id);
             if from_army.is_in_battle() {
-                let mut battle = BattleCustomImpl::get(world, from_army.battle_id);
+                let mut battle = BattleImpl::get(world, from_army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
                 let (r_battle, r_from_army) = battle_utils_systems.leave_battle_if_ended(battle, from_army);
@@ -333,7 +331,7 @@ mod troop_systems {
             // increase to army troops
             let mut to_army: Army = world.read_model(to_army_id);
             if to_army.is_in_battle() {
-                let mut battle = BattleCustomImpl::get(world, to_army.battle_id);
+                let mut battle = BattleImpl::get(world, to_army.battle_id);
                 let (contract_address, _) = world.dns(@"battle_utils_systems").unwrap();
                 let battle_utils_systems = IBattleUtilsContractDispatcher { contract_address };
                 let (r_battle, r_to_army) = battle_utils_systems.leave_battle_if_ended(battle, to_army);
@@ -370,10 +368,10 @@ mod troop_systems {
             let army_id = Self::create_base_army(ref world, army_owner_id);
 
             // ensure owner has enough military buildings to create army
-            let owner_armies_key: felt252 = AttackingArmyQuantityTrackerCustomImpl::key(army_owner_id);
+            let owner_armies_key: felt252 = AttackingArmyQuantityTrackerImpl::key(army_owner_id);
             let mut owner_armies_quantity: QuantityTracker = world.read_model(owner_armies_key);
 
-            let troop_config = TroopConfigCustomImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
             if owner_armies_quantity.count >= troop_config.army_free_per_structure.into() {
                 let archery_range_building_count: BuildingQuantityv2 = world
                     .read_model((army_owner_id, BuildingCategory::ArcheryRange));
@@ -500,13 +498,13 @@ mod troop_systems {
             let army_protectee: Protectee = world.read_model(army_id);
             let army_not_defensive = army_protectee.is_none();
             if army_not_defensive {
-                let troop_config = TroopConfigCustomImpl::get(world);
+                let troop_config = TroopConfigImpl::get(world);
                 army.assert_within_limit(troop_config);
             }
 
             // increase army health
             let mut army_health: Health = world.read_model(army_id);
-            army_health.increase_by(troops.full_health(TroopConfigCustomImpl::get(world)));
+            army_health.increase_by(troops.full_health(TroopConfigImpl::get(world)));
             world.write_model(@army_health);
 
             // set troop quantity (for capacity calculation)
@@ -517,7 +515,7 @@ mod troop_systems {
 
         fn delete_army(ref world: WorldStorage, ref entity_owner: EntityOwner, ref army: Army) {
             // decrement attack army count
-            let owner_armies_key: felt252 = AttackingArmyQuantityTrackerCustomImpl::key(entity_owner.entity_owner_id);
+            let owner_armies_key: felt252 = AttackingArmyQuantityTrackerImpl::key(entity_owner.entity_owner_id);
             let mut owner_armies_quantity: QuantityTracker = world.read_model(owner_armies_key);
             owner_armies_quantity.count -= 1;
             world.write_model(@owner_armies_quantity);

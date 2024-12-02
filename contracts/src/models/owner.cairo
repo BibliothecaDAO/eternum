@@ -24,7 +24,7 @@ pub struct EntityOwner {
 }
 
 #[generate_trait]
-impl OwnerCustomImpl of OwnerCustomTrait {
+impl OwnerImpl of OwnerTrait {
     fn assert_caller_owner(self: Owner) {
         assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
@@ -42,7 +42,7 @@ impl OwnerCustomImpl of OwnerCustomTrait {
 }
 
 #[generate_trait]
-impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
+impl EntityOwnerImpl of EntityOwnerTrait {
     fn assert_caller_owner(self: EntityOwner, world: WorldStorage) {
         let owner: Owner = world.read_model(self.entity_owner_id);
         owner.assert_caller_owner();
@@ -66,7 +66,7 @@ mod tests {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
     use s0_eternum::alias::ID;
-    use s0_eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::realm::Realm;
     use s0_eternum::utils::testing::world::spawn_eternum;
     use starknet::contract_address_const;

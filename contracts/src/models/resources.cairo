@@ -7,15 +7,15 @@ use s0_eternum::alias::ID;
 use s0_eternum::constants::{
     get_resource_probabilities, RESOURCE_PRECISION, GRAMS_PER_KG, ResourceTypes, resource_type_name, WORLD_CONFIG_ID
 };
-use s0_eternum::models::buildings::{Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2};
+use s0_eternum::models::buildings::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
 use s0_eternum::models::config::{
-    ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigCustomTrait
+    ProductionConfig, TickConfig, TickImpl, TickTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigTrait
 };
-use s0_eternum::models::config::{WeightConfigCustomImpl, WeightConfig};
+use s0_eternum::models::config::{WeightConfigImpl, WeightConfig};
 
-use s0_eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
+use s0_eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use s0_eternum::models::realm::Realm;
-use s0_eternum::models::structure::StructureCustomTrait;
+use s0_eternum::models::structure::StructureTrait;
 use s0_eternum::models::structure::{Structure, StructureCategory};
 use s0_eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
@@ -98,7 +98,7 @@ pub struct ResourceTransferLock {
 
 
 #[generate_trait]
-impl ResourceTransferLockCustomImpl of ResourceTransferLockCustomTrait {
+impl ResourceTransferLockImpl of ResourceTransferLockTrait {
     fn assert_not_locked(self: ResourceTransferLock) {
         assert!(self.is_open(), "resource locked for entity {}", self.entity_id);
     }
@@ -126,8 +126,8 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     }
 
     fn get(ref world: WorldStorage, entity_id: ID) -> (Resource, Resource) {
-        let wheat = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::WHEAT));
-        let fish = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::FISH));
+        let wheat = ResourceImpl::get(ref world, (entity_id, ResourceTypes::WHEAT));
+        let fish = ResourceImpl::get(ref world, (entity_id, ResourceTypes::FISH));
         (wheat, fish)
     }
 
@@ -150,8 +150,8 @@ impl ResourceFoodImpl of ResourceFoodTrait {
 
     /// Does not fail even if amount is insufficient
     fn burn(ref world: WorldStorage, entity_id: ID, mut wheat_amount: u128, mut fish_amount: u128,) {
-        let mut wheat: Resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::WHEAT));
-        let mut fish: Resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::FISH));
+        let mut wheat: Resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::WHEAT));
+        let mut fish: Resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::FISH));
 
         if wheat_amount > wheat.balance {
             wheat_amount = wheat.balance
@@ -168,7 +168,7 @@ impl ResourceFoodImpl of ResourceFoodTrait {
 }
 
 #[generate_trait]
-impl ResourceCustomImpl of ResourceCustomTrait {
+impl ResourceImpl of ResourceTrait {
     fn get(ref world: WorldStorage, key: (ID, u8)) -> Resource {
         let mut resource: Resource = world.read_model(key);
         assert!(resource.resource_type.is_non_zero(), "resource type not found");
@@ -218,7 +218,7 @@ impl ResourceCustomImpl of ResourceCustomTrait {
             // sync end ticks of resources that use this resource in their production
             // e.g `self` may be wheat resource and is stone, coal and gold are used
             // in production of wheat, we update their exhaustion ticks
-            ProductionOutputCustomImpl::sync_all_inputs_exhaustion_ticks_for(@self, ref world);
+            ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@self, ref world);
         }
 
         // Update the entity's owned resources tracker
@@ -258,7 +258,7 @@ impl ResourceCustomImpl of ResourceCustomTrait {
             return;
         }
 
-        let resource_weight_grams_with_precision = WeightConfigCustomImpl::get_weight_grams_with_precision(
+        let resource_weight_grams_with_precision = WeightConfigImpl::get_weight_grams_with_precision(
             ref world, self.resource_type, self.balance
         );
 
@@ -285,7 +285,7 @@ impl ResourceCustomImpl of ResourceCustomTrait {
 
 
 #[generate_trait]
-impl OwnedResourcesTrackerCustomImpl of OwnedResourcesTrackerCustomTrait {
+impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
     /// Check whether an entity owns a resource
     ///
     /// # Arguments
@@ -329,12 +329,12 @@ mod tests_resource_traits {
     use s0_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
     use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
     use s0_eternum::models::production::ProductionRateTrait;
-    use s0_eternum::models::resources::ResourceCustomTrait;
+    use s0_eternum::models::resources::ResourceTrait;
     use s0_eternum::models::structure::{Structure, StructureCategory};
     use s0_eternum::systems::config::contracts::config_systems;
     use s0_eternum::systems::config::contracts::{IProductionConfigDispatcher, IProductionConfigDispatcherTrait};
     use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
-    use super::{Production, ProductionOutputCustomImpl, Resource, ResourceCustomImpl};
+    use super::{Production, ProductionOutputImpl, Resource, ResourceImpl};
     use traits::Into;
     use traits::TryInto;
 
@@ -412,7 +412,7 @@ mod tests_resource_traits {
             .set_production_config(ResourceTypes::WOOD, wood_production_rate, wood_cost.span());
 
         // update wood end tick
-        ProductionOutputCustomImpl::sync_all_inputs_exhaustion_ticks_for(@gold_resource, ref world);
+        ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@gold_resource, ref world);
 
         return (world, entity_id, wood_production_rate, wood_cost.span());
     }
@@ -420,7 +420,7 @@ mod tests_resource_traits {
     #[test]
     fn resources_test_resource_get_while_gold_is_available() {
         // Ensure production is harvested and added to the
-        // resource's balance when ResourceCustomImpl::get is called
+        // resource's balance when ResourceImpl::get is called
         //
         let (mut world, entity_id, _, _) = setup();
 
@@ -431,7 +431,7 @@ mod tests_resource_traits {
         starknet::testing::set_block_timestamp(tick_passed * tick_config.tick_interval_in_seconds);
 
         // check wood balance after 3 ticks
-        let wood_resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::WOOD));
+        let wood_resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::WOOD));
         // wood production = 50
         // wood consumption = 3
         assert_eq!(wood_resource.balance, (50 - 2) * tick_passed.into());
@@ -447,7 +447,7 @@ mod tests_resource_traits {
     #[test]
     fn resources_test_resource_get_after_gold_has_finished() {
         // Ensure production is harvested and added to the
-        // resource's balance when ResourceCustomImpl::get is called
+        // resource's balance when ResourceImpl::get is called
         //
         let (mut world, entity_id, _, _) = setup();
 
@@ -456,7 +456,7 @@ mod tests_resource_traits {
         // advance time by 900 ticks (way after 33 ticks when gold finishes)
         starknet::testing::set_block_timestamp(900 * tick_config.tick_interval_in_seconds);
 
-        let wood_resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::WOOD));
+        let wood_resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::WOOD));
         assert_eq!(wood_resource.balance, (50 - 2) * 33);
     }
 
@@ -467,7 +467,7 @@ mod tests_resource_traits {
         // gold's balance gets updated
         //
         let (mut world, entity_id, _, _) = setup();
-        let mut gold_resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::GOLD));
+        let mut gold_resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::GOLD));
         gold_resource.balance += 4; // makes balance 104
         gold_resource.save(ref world);
         assert_eq!(gold_resource.balance, 104); // sanity check
@@ -490,11 +490,11 @@ mod owned_resources_tracker_tests {
     use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
     use s0_eternum::constants::ResourceTypes;
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+    use s0_eternum::models::resources::{Resource, ResourceImpl};
     use s0_eternum::models::structure::{Structure, StructureCategory};
     use s0_eternum::systems::config::contracts::config_systems;
     use s0_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system, config::set_capacity_config};
-    use super::{OwnedResourcesTracker, OwnedResourcesTrackerCustomTrait};
+    use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
 
     #[test]
@@ -530,7 +530,7 @@ mod owned_resources_tracker_tests {
                     entity_id, category: StructureCategory::Realm, created_at: starknet::get_block_timestamp()
                 }
             );
-        let mut entity_gold_resource = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::GOLD));
+        let mut entity_gold_resource = ResourceImpl::get(ref world, (entity_id, ResourceTypes::GOLD));
         entity_gold_resource.balance += 300;
         entity_gold_resource.save(ref world);
 

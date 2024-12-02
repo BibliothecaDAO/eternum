@@ -49,7 +49,7 @@ pub struct Market {
 }
 
 #[generate_trait]
-impl MarketCustomImpl of MarketCustomTrait {
+impl MarketImpl of MarketTrait {
     fn get_input_price(
         fee_rate_num: u128, fee_rate_denom: u128, input_amount: u128, input_reserve: u128, output_reserve: u128
     ) -> u128 {
@@ -267,7 +267,7 @@ mod tests {
     use super::{Fixed, FixedTrait};
     // Local imports
 
-    use super::{Market, MarketCustomTrait};
+    use super::{Market, MarketTrait};
 
     // Constants
 

@@ -12,7 +12,7 @@ pub struct Population {
 }
 
 #[generate_trait]
-impl PopulationCustomImpl of PopulationCustomTrait {
+impl PopulationImpl of PopulationTrait {
     fn increase_population(ref self: Population, amount: u32, base_population: u32) -> u32 {
         self.population += amount;
         self.assert_within_capacity(base_population);
