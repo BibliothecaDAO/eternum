@@ -1,29 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Naming, StepFive, StepFour, StepOne, StepSix, StepThree, StepTwo } from "../modules/onboarding/Steps";
 
-export const Onboarding = () => {
+export const Onboarding = ({ backgroundImage }: { backgroundImage: string }) => {
   const [currentStep, setCurrentStep] = useState(1);
 
   const nextStep = () => setCurrentStep(currentStep + 1);
   const prevStep = () => setCurrentStep(currentStep - 1);
-
-  const [backgroundImage, setBackgroundImage] = useState("01");
-
-  useEffect(() => {
-    // Get current timestamp in seconds
-    const timestamp = Math.floor(Date.now() / 1000);
-    // Get a number between 1-7 based on timestamp
-    const imageNumber = (timestamp % 7) + 1;
-    // Pad with leading zero if needed
-    const paddedNumber = imageNumber.toString().padStart(2, "0");
-    setBackgroundImage(paddedNumber);
-
-    // const interval = setInterval(() => {
-    //   setBackgroundImage((prev) => (prev === "07" ? "01" : (parseInt(prev) + 1).toString().padStart(2, "0")));
-    // }, 3000); // Change statement every 3 seconds
-
-    // return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="relative min-h-screen w-full pointer-events-auto">

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { DEFAULT_TAB } from "./ChatTab";
+import { DEFAULT_TAB, EVENT_STREAM_TAB } from "./ChatTab";
 import { CHAT_STORAGE_KEY } from "./constants";
 import { Tab } from "./types";
 
@@ -18,7 +18,7 @@ interface ChatState {
 export const useChatStore = create<ChatState>()(
   persist(
     (set, get) => ({
-      tabs: [DEFAULT_TAB],
+      tabs: [DEFAULT_TAB, EVENT_STREAM_TAB],
       currentTab: DEFAULT_TAB,
       setCurrentTab: (tab: Tab) => {
         set({ currentTab: tab });
