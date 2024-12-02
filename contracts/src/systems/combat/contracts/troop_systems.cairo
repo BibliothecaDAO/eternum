@@ -128,14 +128,12 @@ mod troop_systems {
     use s0_eternum::models::capacity::{CapacityCategory};
     use s0_eternum::models::combat::{ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait,
-        BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, StaminaRefillConfig
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfigTrait,
+        CapacityConfig, CapacityConfigImpl, CapacityConfigCategory, StaminaRefillConfig
     };
     use s0_eternum::models::movable::{Movable, MovableTrait};
 
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
@@ -150,9 +148,9 @@ mod troop_systems {
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
-            BattleImpl, BattleTrait, Protector, Protectee, ProtecteeTrait, BattleHealthTrait,
-            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, AttackingArmyQuantityTrackerTrait,
+            AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::combat::contracts::battle_systems::{

@@ -46,8 +46,8 @@ mod realm_systems {
     use s0_eternum::models::quantity::QuantityTracker;
     use s0_eternum::models::quest::{Quest, QuestBonus};
     use s0_eternum::models::realm::{
-        Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl,
-        RealmNameAndAttrsDecodingTrait, RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
+        Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
+        RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
     };
     use s0_eternum::models::resources::{
         DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
@@ -165,9 +165,7 @@ mod realm_systems {
                 let mut required_resource: DetachedResource = world.read_model((required_resources_id, index));
 
                 // burn resource from realm
-                let mut realm_resource = ResourceImpl::get(
-                    ref world, (realm_id, required_resource.resource_type)
-                );
+                let mut realm_resource = ResourceImpl::get(ref world, (realm_id, required_resource.resource_type));
                 realm_resource.burn(required_resource.resource_amount);
                 realm_resource.save(ref world);
                 index += 1;

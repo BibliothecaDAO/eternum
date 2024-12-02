@@ -154,9 +154,7 @@ mod bank_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(
-                            ref world, (bank_entity_id, resource_type)
-                        );
+                        let mut recipient_resource = ResourceImpl::get(ref world, (bank_entity_id, resource_type));
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(ref world);
                     },

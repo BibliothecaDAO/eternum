@@ -8,8 +8,8 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s0_eternum::alias::ID;
 use s0_eternum::constants::{all_resource_ids, RESOURCE_PRECISION};
 use s0_eternum::models::config::{
-    BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigCategory,
-    CapacityConfigImpl, CapacityConfigTrait
+    BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigCategory, CapacityConfigImpl,
+    CapacityConfigTrait
 };
 use s0_eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
@@ -18,8 +18,7 @@ use s0_eternum::models::resources::OwnedResourcesTrackerTrait;
 use s0_eternum::models::resources::ResourceTrait;
 use s0_eternum::models::resources::ResourceTransferLockTrait;
 use s0_eternum::models::resources::{
-    Resource, ResourceImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker,
-    OwnedResourcesTrackerImpl
+    Resource, ResourceImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker, OwnedResourcesTrackerImpl
 };
 use s0_eternum::models::structure::{Structure, StructureImpl};
 use s0_eternum::models::weight::Weight;
@@ -799,15 +798,11 @@ impl BattleEscrowImpl of BattleEscrowTrait {
             match all_resources.pop_front() {
                 Option::Some(resource_type) => {
                     if to_army_protectee_is_self && to_army_owned_resources.owns_resource_type(resource_type) {
-                        let mut to_army_resource = ResourceImpl::get(
-                            ref world, (to_army_protectee_id, resource_type)
-                        );
+                        let mut to_army_resource = ResourceImpl::get(ref world, (to_army_protectee_id, resource_type));
                         if to_army_lost_or_battle_not_ended {
                             // update army's subtracted weight
                             subtracted_resources_weight +=
-                                WeightConfigImpl::get_weight_grams(
-                                    ref world, resource_type, to_army_resource.balance
-                                );
+                                WeightConfigImpl::get_weight_grams(ref world, resource_type, to_army_resource.balance);
 
                             // army forfeits resources
                             to_army_resource.burn((to_army_resource.balance));
@@ -1212,9 +1207,9 @@ mod tests {
     use s0_eternum::constants::ID;
     use s0_eternum::constants::ResourceTypes;
     use s0_eternum::models::capacity::{CapacityCategory};
-    use s0_eternum::models::combat::BattleTrait;
     use s0_eternum::models::combat::BattleEscrowTrait;
     use s0_eternum::models::combat::BattleHealthTrait;
+    use s0_eternum::models::combat::BattleTrait;
     use s0_eternum::models::combat::TroopsTrait;
     use s0_eternum::models::config::BattleConfig;
     use s0_eternum::models::config::BattleConfigTrait;

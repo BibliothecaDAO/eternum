@@ -11,8 +11,8 @@ use s0_eternum::models::resources::Resource;
 use s0_eternum::models::season::{Leaderboard, LeaderboardEntry, LeaderboardEntryImpl};
 use s0_eternum::models::structure::{Structure, StructureCount, StructureCountTrait, StructureCategory};
 use s0_eternum::systems::config::contracts::{
-    config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher,
-    IHyperstructureConfig, IHyperstructureConfigDispatcherTrait
+    config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher, IHyperstructureConfig,
+    IHyperstructureConfigDispatcherTrait
 };
 
 use s0_eternum::systems::hyperstructure::contracts::{
@@ -256,7 +256,7 @@ fn season_test_claim_twice() {
 #[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
 fn season_test_register_too_early() {
     let (
-        mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
+        mut _world, _realm_entity_id, _hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
     ) =
         setup();
 
@@ -266,7 +266,9 @@ fn season_test_register_too_early() {
 #[test]
 #[should_panic(expected: ("Registration period is over", 'ENTRYPOINT_FAILED'))]
 fn season_test_register_too_late() {
-    let (mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, mock_erc20_address) =
+    let (
+        mut world, realm_entity_id, hyperstructure_systems_dispatcher, season_systems_dispatcher, _mock_erc20_address
+    ) =
         setup();
 
     let (hyperstructures_contributed_to, hyperstructure_shareholder_epochs) = finish_season(

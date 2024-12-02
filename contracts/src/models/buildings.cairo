@@ -199,9 +199,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             };
 
             // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(
-                @resource_production, ref world
-            );
+            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(@resource_production, ref world);
             resource_production.set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
             produced_resource.save(ref world);
 
@@ -275,9 +273,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             };
 
             // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(
-                @resource_production, ref world
-            );
+            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(@resource_production, ref world);
             resource_production.set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
             produced_resource.save(ref world);
             world.write_model(@resource_production);
@@ -467,9 +463,7 @@ impl BuildingImpl of BuildingTrait {
         world.write_model(@building_quantity);
 
         let mut population: Population = world.read_model(outer_entity_id);
-        let building_category_population_config = BuildingCategoryPopConfigTrait::get(
-            ref world, building.category
-        );
+        let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
         let population_config: PopulationConfig = world.read_model(POPULATION_CONFIG_ID);
 
         // increase population
@@ -569,9 +563,7 @@ impl BuildingImpl of BuildingTrait {
 
         // decrease population
         let mut population: Population = world.read_model(outer_entity_id);
-        let building_category_population_config = BuildingCategoryPopConfigTrait::get(
-            ref world, building.category
-        );
+        let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
 
         // [check] If Workers hut
         // You cannot delete a workers hut unless you have capacity

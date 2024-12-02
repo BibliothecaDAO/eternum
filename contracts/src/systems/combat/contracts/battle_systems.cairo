@@ -11,8 +11,8 @@ use s0_eternum::models::movable::{Movable, MovableTrait};
 use s0_eternum::models::quantity::{Quantity};
 use s0_eternum::models::{
     combat::{
-        Army, ArmyTrait, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, BattleImpl,
-        BattleTrait, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
+        Army, ArmyTrait, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, BattleImpl, BattleTrait, Protector,
+        Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
     },
 };
 use s0_eternum::models::{combat::{Troops, Battle, BattleSide}};
@@ -313,9 +313,8 @@ mod battle_systems {
     use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait,
-        BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl,
-        CapacityConfigCategory
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
     use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
@@ -324,9 +323,7 @@ mod battle_systems {
 
     use s0_eternum::models::movable::{Movable, MovableTrait};
     use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
@@ -341,10 +338,9 @@ mod battle_systems {
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
-            BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait, BattleEscrowImpl, AttackingArmyQuantityTrackerTrait,
-            AttackingArmyQuantityTrackerImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
+            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
@@ -824,9 +820,8 @@ mod battle_pillage_systems {
     use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait,
-        BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl,
-        CapacityConfigCategory
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
     use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
@@ -835,9 +830,7 @@ mod battle_pillage_systems {
 
     use s0_eternum::models::movable::{Movable, MovableTrait};
     use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
@@ -852,10 +845,9 @@ mod battle_pillage_systems {
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
-            BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait, BattleEscrowImpl, AttackingArmyQuantityTrackerTrait,
-            AttackingArmyQuantityTrackerImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
+            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
@@ -984,10 +976,7 @@ mod battle_pillage_systems {
                                 let max_carriable = if army_total_capacity > army_weight.value {
                                     (army_total_capacity - (army_weight.value))
                                         / max(
-                                            (WeightConfigImpl::get_weight_grams(
-                                                ref world, *chosen_resource_type, 1
-                                            )),
-                                            1
+                                            (WeightConfigImpl::get_weight_grams(ref world, *chosen_resource_type, 1)), 1
                                         )
                                 } else {
                                     0
@@ -1241,9 +1230,8 @@ mod battle_utils_systems {
     use s0_eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
     use s0_eternum::models::combat::{BattleEscrowTrait, ProtectorTrait};
     use s0_eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait,
-        BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl,
-        CapacityConfigCategory
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl, TroopConfigTrait, BattleConfig,
+        BattleConfigImpl, BattleConfigTrait, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
     use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
     use s0_eternum::models::event::{
@@ -1252,9 +1240,7 @@ mod battle_utils_systems {
 
     use s0_eternum::models::movable::{Movable, MovableTrait};
     use s0_eternum::models::name::{AddressName};
-    use s0_eternum::models::owner::{
-        EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait
-    };
+    use s0_eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use s0_eternum::models::position::CoordTrait;
     use s0_eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
@@ -1269,10 +1255,9 @@ mod battle_utils_systems {
 
     use s0_eternum::models::{
         combat::{
-            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
-            BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait, BattleEscrowImpl, AttackingArmyQuantityTrackerTrait,
-            AttackingArmyQuantityTrackerImpl,
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle, BattleImpl,
+            BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait, BattleHealthTrait, BattleEscrowImpl,
+            AttackingArmyQuantityTrackerTrait, AttackingArmyQuantityTrackerImpl,
         },
     };
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};

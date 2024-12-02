@@ -122,9 +122,7 @@ mod hyperstructure_systems {
                 world, ResourceTypes::EARTHEN_SHARD
             );
 
-            let mut creator_resources = ResourceImpl::get(
-                ref world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD)
-            );
+            let mut creator_resources = ResourceImpl::get(ref world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD));
 
             creator_resources.burn(hyperstructure_shards_config.amount_for_completion);
             creator_resources.save(ref world);

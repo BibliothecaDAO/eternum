@@ -33,8 +33,7 @@ mod resource_systems {
     use s0_eternum::models::quantity::{Quantity,};
     use s0_eternum::models::realm::Realm;
     use s0_eternum::models::resources::{
-        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock,
-        ResourceTransferLockTrait
+        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock, ResourceTransferLockTrait
     };
     use s0_eternum::models::resources::{DetachedResource};
     use s0_eternum::models::season::SeasonImpl;
@@ -304,9 +303,7 @@ mod resource_systems {
                         }
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(
-                            ref world, (actual_recipient_id, resource_type)
-                        );
+                        let mut recipient_resource = ResourceImpl::get(ref world, (actual_recipient_id, resource_type));
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(ref world);
 
@@ -375,8 +372,7 @@ mod resource_systems {
             // only add to balance if receiver can carry weight
             let (resource_type, resource_amount) = resource;
             let mut total_resources_weight = 0;
-            total_resources_weight +=
-                WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
+            total_resources_weight += WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
             let mut recipient_weight: Weight = world.read_model(recipient_id);
             let recipient_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, recipient_id);
             let recipient_quantity: Quantity = world.read_model(recipient_id);

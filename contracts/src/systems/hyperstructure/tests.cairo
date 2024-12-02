@@ -11,8 +11,8 @@ use s0_eternum::models::resources::Resource;
 use s0_eternum::models::structure::{Structure, StructureCount, StructureCountTrait, StructureCategory};
 
 use s0_eternum::systems::config::contracts::{
-    config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher,
-    IHyperstructureConfig, IHyperstructureConfigDispatcherTrait
+    config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher, IHyperstructureConfig,
+    IHyperstructureConfigDispatcherTrait
 };
 
 use s0_eternum::systems::hyperstructure::contracts::{
