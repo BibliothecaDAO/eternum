@@ -1,7 +1,7 @@
 import { graphql } from "../gql";
 
-export const GET_REALMS = graphql(`
-  query getRealms($accountAddress: String!) {
+export const GET_ACCOUNT_TOKENS = graphql(`
+  query getAccountTokens($accountAddress: String!) {
     tokenBalances(accountAddress: $accountAddress, limit: 8000) {
       edges {
         node {

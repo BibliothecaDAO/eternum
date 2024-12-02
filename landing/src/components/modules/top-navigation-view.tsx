@@ -21,9 +21,8 @@ export const TopNavigationView = ({
   connectors,
   onConnect,
   onDisconnect,
-  accountAddress,
+  //accountAddress,
 }: TopNavigationViewProps) => {
-  console.log(accountAddress);
 
   const { address, connector, isConnected } = useAccount();
 
