@@ -1,0 +1,37 @@
+
+> scripts@1.0.0 deploy::prod
+> bun --env-file=.env.production ./deploy_prod
+
+   ____          _         
+  |    \ ___ ___| |___ _ _ 
+  |  |  | -_| . | | . | | |
+  |____/|___|  _|_|___|_  |
+            |_|       |___|
+
+Found contract path at esp_EternumSeasonPass.contract_class.json...
+
+
+Declaring season_pass...
+
+
+- Class Hash:  0x724a510da9e334f57c60bfae54e3a9ae7cee42087dbc878f7f9b3c717dc7b7d
+- Tx Hash:  https://voyager.online/tx/0x5c32c919deaec747429d33dc66ac993a8d8ab8070ebcf18ee54299465f8e77c)
+
+Deploying season_pass ... 
+
+
+Tx hash:  https://voyager.online/tx/0x47db3ec1c3a4c8335e86c1fa1eb4211d5f58ac014d4675e35103c6d61328619)
+Contract Address:  0x57675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80 
+
+
+"addresses/prod/season_pass.json" has been saved or overwritten
+
+
+********** IMPORTANT **********
+** MAKE SURE TO UPDATE THE .ENV.PRODUCTION FILE WITH THESE ADDRESSES **
+*******************************
+
+
+Realms Contract Address: 0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809
+Lords Contract Address: 0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49
+Season Pass Contract Address: 0x57675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80
