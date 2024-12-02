@@ -2836,7 +2836,7 @@
         },
         {
           "type": "impl",
-          "name": "WorldConfigCustomImpl",
+          "name": "WorldConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IWorldConfig"
         },
         {
@@ -2863,7 +2863,7 @@
         },
         {
           "type": "impl",
-          "name": "SeasonConfigCustomImpl",
+          "name": "SeasonConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::ISeasonConfig"
         },
         {
@@ -2898,7 +2898,7 @@
         },
         {
           "type": "impl",
-          "name": "QuestConfigCustomImpl",
+          "name": "QuestConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IQuestConfig"
         },
         {
@@ -2947,7 +2947,7 @@
         },
         {
           "type": "impl",
-          "name": "MapConfigCustomImpl",
+          "name": "MapConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IMapConfig"
         },
         {
@@ -2988,7 +2988,7 @@
         },
         {
           "type": "impl",
-          "name": "CapacityConfigCustomImpl",
+          "name": "CapacityConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::ICapacityConfig"
         },
         {
@@ -3078,7 +3078,7 @@
         },
         {
           "type": "impl",
-          "name": "WeightConfigCustomImpl",
+          "name": "WeightConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IWeightConfig"
         },
         {
@@ -3105,7 +3105,7 @@
         },
         {
           "type": "impl",
-          "name": "BattleConfigCustomImpl",
+          "name": "BattleConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IBattleConfig"
         },
         {
@@ -3146,7 +3146,7 @@
         },
         {
           "type": "impl",
-          "name": "TickConfigCustomImpl",
+          "name": "TickConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::ITickConfig"
         },
         {
@@ -3173,7 +3173,7 @@
         },
         {
           "type": "impl",
-          "name": "StaminaConfigCustomImpl",
+          "name": "StaminaConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IStaminaConfig"
         },
         {
@@ -3200,7 +3200,7 @@
         },
         {
           "type": "impl",
-          "name": "TravelFoodCostConfigCustomImpl",
+          "name": "TravelFoodCostConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::ITravelFoodCostConfig"
         },
         {
@@ -3253,7 +3253,7 @@
         },
         {
           "type": "impl",
-          "name": "StaminaRefillConfigCustomImpl",
+          "name": "StaminaRefillConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IStaminaRefillConfig"
         },
         {
@@ -3280,7 +3280,7 @@
         },
         {
           "type": "impl",
-          "name": "LevelingConfigCustomImpl",
+          "name": "LevelingConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::ILevelingConfig"
         },
         {
@@ -3343,7 +3343,7 @@
         },
         {
           "type": "impl",
-          "name": "ProductionConfigCustomImpl",
+          "name": "ProductionConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IProductionConfig"
         },
         {
@@ -3374,7 +3374,7 @@
         },
         {
           "type": "impl",
-          "name": "TransportConfigCustomImpl",
+          "name": "TransportConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::ITransportConfig"
         },
         {
@@ -3401,7 +3401,7 @@
         },
         {
           "type": "impl",
-          "name": "HyperstructureConfigCustomImpl",
+          "name": "HyperstructureConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IHyperstructureConfig"
         },
         {
@@ -3440,7 +3440,7 @@
         },
         {
           "type": "impl",
-          "name": "BankConfigCustomImpl",
+          "name": "BankConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IBankConfig"
         },
         {
@@ -3471,7 +3471,7 @@
         },
         {
           "type": "impl",
-          "name": "TroopConfigCustomImpl",
+          "name": "TroopConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::ITroopConfig"
         },
         {
@@ -3564,7 +3564,7 @@
         },
         {
           "type": "impl",
-          "name": "BuildingCategoryPopulationConfigCustomImpl",
+          "name": "BuildingCategoryPopulationConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IBuildingCategoryPopConfig"
         },
         {
@@ -3657,7 +3657,7 @@
         },
         {
           "type": "impl",
-          "name": "PopulationConfigCustomImpl",
+          "name": "PopulationConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IPopulationConfig"
         },
         {
@@ -3680,7 +3680,7 @@
         },
         {
           "type": "impl",
-          "name": "BuildingConfigCustomImpl",
+          "name": "BuildingConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IBuildingConfig"
         },
         {
@@ -3913,7 +3913,7 @@
         },
         {
           "type": "impl",
-          "name": "RealmLevelConfigCustomImpl",
+          "name": "RealmLevelConfigImpl",
           "interface_name": "s0_eternum::systems::config::contracts::IRealmLevelConfig"
         },
         {

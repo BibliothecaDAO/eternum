@@ -25,22 +25,22 @@ mod resource_systems {
 
     use s0_eternum::constants::{WORLD_CONFIG_ID, DEFAULT_NS};
     use s0_eternum::models::config::{
-        WeightConfig, WeightConfigCustomImpl, CapacityConfig, CapacityConfigCustomImpl, CapacityConfigCategory
+        WeightConfig, WeightConfigImpl, CapacityConfig, CapacityConfigImpl, CapacityConfigCategory
     };
-    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeCustomTrait};
-    use s0_eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
+    use s0_eternum::models::movable::{ArrivalTime, ArrivalTimeTrait};
+    use s0_eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
     use s0_eternum::models::position::{Position, Coord};
     use s0_eternum::models::quantity::{Quantity,};
     use s0_eternum::models::realm::Realm;
     use s0_eternum::models::resources::{
-        Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceAllowance, ResourceTransferLock,
-        ResourceTransferLockCustomTrait
+        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock,
+        ResourceTransferLockTrait
     };
     use s0_eternum::models::resources::{DetachedResource};
     use s0_eternum::models::season::SeasonImpl;
-    use s0_eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
+    use s0_eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use s0_eternum::models::weight::Weight;
-    use s0_eternum::models::weight::WeightCustomTrait;
+    use s0_eternum::models::weight::WeightTrait;
     use s0_eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
     };
@@ -217,18 +217,18 @@ mod resource_systems {
 
             // burn resources from sender's balance
             let (resource_type, resource_amount) = resource;
-            let mut owner_resource = ResourceCustomImpl::get(ref world, (owner_id, resource_type));
+            let mut owner_resource = ResourceImpl::get(ref world, (owner_id, resource_type));
             owner_resource.burn(resource_amount);
             world.write_model(@owner_resource);
 
             // add resources to donkey going to bank
             let donkey_to_bank_id = world.dispatcher.uuid();
-            let mut donkey_to_bank_resource = ResourceCustomImpl::get(ref world, (donkey_to_bank_id, resource_type));
+            let mut donkey_to_bank_resource = ResourceImpl::get(ref world, (donkey_to_bank_id, resource_type));
             donkey_to_bank_resource.add(resource_amount);
             donkey_to_bank_resource.save(ref world);
 
             // update total weight
-            let mut total_resources_weight = WeightConfigCustomImpl::get_weight_grams(
+            let mut total_resources_weight = WeightConfigImpl::get_weight_grams(
                 ref world, resource_type, resource_amount
             );
 
@@ -239,7 +239,7 @@ mod resource_systems {
 
             // decrease owner's weight
             let mut owner_weight: Weight = world.read_model(owner_id);
-            let owner_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(ref world, owner_id);
+            let owner_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, owner_id);
             owner_weight.deduct(owner_capacity, total_resources_weight);
             world.write_model(@owner_weight);
 
@@ -298,13 +298,13 @@ mod resource_systems {
 
                         if enforce_owner_payment {
                             // burn resources from sender's balance
-                            let mut owner_resource = ResourceCustomImpl::get(ref world, (owner_id, resource_type));
+                            let mut owner_resource = ResourceImpl::get(ref world, (owner_id, resource_type));
                             owner_resource.burn(resource_amount);
                             owner_resource.save(ref world);
                         }
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceCustomImpl::get(
+                        let mut recipient_resource = ResourceImpl::get(
                             ref world, (actual_recipient_id, resource_type)
                         );
                         recipient_resource.add(resource_amount);
@@ -312,7 +312,7 @@ mod resource_systems {
 
                         // update total weight
                         total_resources_weight +=
-                            WeightConfigCustomImpl::get_weight_grams(ref world, resource_type, resource_amount);
+                            WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());
@@ -325,7 +325,7 @@ mod resource_systems {
             // increase recipient weight
             let mut recipient_weight: Weight = world.read_model(actual_recipient_id);
             let recipient_capacity: CapacityConfig = if !transport_is_needed {
-                CapacityConfigCustomImpl::get_from_entity(ref world, actual_recipient_id)
+                CapacityConfigImpl::get_from_entity(ref world, actual_recipient_id)
             } else {
                 world.read_model(CapacityConfigCategory::Donkey)
             };
@@ -341,7 +341,7 @@ mod resource_systems {
             if enforce_owner_payment {
                 // decrease sender weight
                 let mut owner_weight: Weight = world.read_model(owner_id);
-                let owner_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(ref world, owner_id);
+                let owner_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, owner_id);
                 owner_weight.deduct(owner_capacity, total_resources_weight);
                 world.write_model(@owner_weight);
             }
@@ -376,9 +376,9 @@ mod resource_systems {
             let (resource_type, resource_amount) = resource;
             let mut total_resources_weight = 0;
             total_resources_weight +=
-                WeightConfigCustomImpl::get_weight_grams(ref world, resource_type, resource_amount);
+                WeightConfigImpl::get_weight_grams(ref world, resource_type, resource_amount);
             let mut recipient_weight: Weight = world.read_model(recipient_id);
-            let recipient_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(ref world, recipient_id);
+            let recipient_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, recipient_id);
             let recipient_quantity: Quantity = world.read_model(recipient_id);
 
             recipient_weight.value += total_resources_weight;
@@ -394,7 +394,7 @@ mod resource_systems {
                 }
 
                 // add resource to recipient's balance
-                let mut recipient_resource = ResourceCustomImpl::get(ref world, (recipient_id, resource_type));
+                let mut recipient_resource = ResourceImpl::get(ref world, (recipient_id, resource_type));
                 recipient_resource.add(resource_amount);
                 recipient_resource.save(ref world);
 

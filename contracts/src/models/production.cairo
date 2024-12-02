@@ -7,7 +7,7 @@ use dojo::world::WorldStorage;
 use s0_eternum::alias::ID;
 use s0_eternum::models::config::{ProductionConfig};
 use s0_eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+use s0_eternum::models::resources::{Resource, ResourceImpl};
 use starknet::get_block_timestamp;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -181,7 +181,7 @@ pub struct ProductionInput {
 }
 
 #[generate_trait]
-impl ProductionInputCustomImpl of ProductionInputCustomTrait {
+impl ProductionInputImpl of ProductionInputTrait {
     /// Production ends when any input material runs out of balance so what this
     /// function does is that it finds the first input resource to run out of balance that
     /// returns the tick it runs out
@@ -197,7 +197,7 @@ impl ProductionInputCustomImpl of ProductionInputCustomTrait {
                 break;
             }
             let production_input: ProductionInput = world.read_model((*production.resource_type, count));
-            let mut input_resource: Resource = ResourceCustomImpl::get(
+            let mut input_resource: Resource = ResourceImpl::get(
                 ref world, (*production.entity_id, production_input.input_resource_type)
             );
 
@@ -232,7 +232,7 @@ pub struct ProductionOutput {
 }
 
 #[generate_trait]
-impl ProductionOutputCustomImpl of ProductionOutputCustomTrait {
+impl ProductionOutputImpl of ProductionOutputTrait {
     /// Updates end ticks for dependent resources based
     /// on changes in this resource's balance.
     fn sync_all_inputs_exhaustion_ticks_for(resource: @Resource, ref world: WorldStorage) {
@@ -261,7 +261,7 @@ impl ProductionOutputCustomImpl of ProductionOutputCustomTrait {
 
             if output_resource_production.building_count > 0 {
                 // Update the end tick for the output resource
-                let output_resource_production_finish_tick = ProductionInputCustomImpl::first_input_finish_tick(
+                let output_resource_production_finish_tick = ProductionInputImpl::first_input_finish_tick(
                     @output_resource_production, ref world
                 );
 

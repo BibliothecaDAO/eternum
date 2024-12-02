@@ -40,20 +40,20 @@ mod trade_systems {
     use s0_eternum::alias::ID;
 
     use s0_eternum::constants::{DEFAULT_NS, REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
-    use s0_eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-    use s0_eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigCustomImpl};
+    use s0_eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use s0_eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig, CapacityConfigImpl};
     use s0_eternum::models::movable::{Movable, ArrivalTime};
     use s0_eternum::models::owner::Owner;
-    use s0_eternum::models::position::{Position, PositionCustomTrait, Coord, TravelTrait};
+    use s0_eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
     use s0_eternum::models::quantity::{Quantity, QuantityTracker};
     use s0_eternum::models::realm::Realm;
     use s0_eternum::models::resources::{DetachedResource};
 
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
+    use s0_eternum::models::resources::{Resource, ResourceImpl};
 
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::models::trade::{Trade, Status, TradeStatus};
-    use s0_eternum::models::weight::{Weight, WeightCustomTrait};
+    use s0_eternum::models::weight::{Weight, WeightTrait};
     use s0_eternum::systems::resources::contracts::resource_systems::resource_systems::{
         InternalResourceSystemsImpl as internal_resources,
     };
@@ -139,7 +139,7 @@ mod trade_systems {
                     )) => {
                         assert(*resource_amount != 0, 'maker resource amount is 0');
                         // burn offered resource from maker balance
-                        let mut maker_resource: Resource = ResourceCustomImpl::get(
+                        let mut maker_resource: Resource = ResourceImpl::get(
                             ref world, (maker_id, *resource_type)
                         );
                         maker_resource.burn(*resource_amount);
@@ -160,7 +160,7 @@ mod trade_systems {
 
                         // update maker resources weight
                         maker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight_grams(ref world, *resource_type, *resource_amount);
+                            WeightConfigImpl::get_weight_grams(ref world, *resource_type, *resource_amount);
 
                         maker_gives_resources_felt_arr.append((*resource_type).into());
                         maker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -171,7 +171,7 @@ mod trade_systems {
 
             // deduct weight from maker
             let mut maker_weight: Weight = world.read_model(maker_id);
-            let mut maker_capacity: CapacityConfig = CapacityConfigCustomImpl::get_from_entity(ref world, maker_id);
+            let mut maker_capacity: CapacityConfig = CapacityConfigImpl::get_from_entity(ref world, maker_id);
 
             maker_weight.deduct(maker_capacity, maker_gives_resources_weight);
             world.write_model(@maker_weight);
@@ -201,7 +201,7 @@ mod trade_systems {
 
                         // update taker resources weight
                         taker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight_grams(ref world, *resource_type, *resource_amount);
+                            WeightConfigImpl::get_weight_grams(ref world, *resource_type, *resource_amount);
 
                         taker_gives_resources_felt_arr.append((*resource_type).into());
                         taker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -324,11 +324,11 @@ mod trade_systems {
                 * taker_gives_actual_amount
                 / taker_gives_resource_amount;
             let maker_gives_resources_actual = array![(maker_gives_resource_type, maker_gives_actual_amount)].span();
-            let maker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight_grams(
+            let maker_gives_resources_actual_weight = WeightConfigImpl::get_weight_grams(
                 ref world, maker_gives_resource_type, maker_gives_actual_amount
             );
             let taker_gives_resources_actual = array![(taker_gives_resource_type, taker_gives_actual_amount)].span();
-            let taker_gives_resources_actual_weight = WeightConfigCustomImpl::get_weight_grams(
+            let taker_gives_resources_actual_weight = WeightConfigImpl::get_weight_grams(
                 ref world, taker_gives_resource_type, taker_gives_actual_amount
             );
 

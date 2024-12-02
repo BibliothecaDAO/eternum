@@ -8,10 +8,10 @@ use s0_eternum::models::hyperstructure::{Progress, Contribution, Hyperstructure}
 use s0_eternum::models::owner::Owner;
 use s0_eternum::models::position::{Position, Coord};
 use s0_eternum::models::resources::Resource;
-use s0_eternum::models::season::{Leaderboard, LeaderboardEntry, LeaderboardEntryCustomImpl};
-use s0_eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
+use s0_eternum::models::season::{Leaderboard, LeaderboardEntry, LeaderboardEntryImpl};
+use s0_eternum::models::structure::{Structure, StructureCount, StructureCountTrait, StructureCategory};
 use s0_eternum::systems::config::contracts::{
-    config_systems, config_systems::HyperstructureConfigCustomImpl, IHyperstructureConfigDispatcher,
+    config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher,
     IHyperstructureConfig, IHyperstructureConfigDispatcherTrait
 };
 
@@ -125,7 +125,7 @@ fn season_test_register_to_leaderboard_success() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -168,7 +168,7 @@ fn season_test_claim_too_early() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -196,7 +196,7 @@ fn season_test_claim_success() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -234,7 +234,7 @@ fn season_test_claim_twice() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points > 0, "Leaderboard entry points should be greater than 0");
@@ -293,7 +293,7 @@ fn season_test_register_with_no_points() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points == 0, "Leaderboard total points should be 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points == 0, "Leaderboard entry points should be 0");
@@ -317,7 +317,7 @@ fn season_test_claim_with_no_points() {
     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
     assert!(leaderboard.total_points == 0, "Leaderboard total points should be 0");
 
-    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryCustomImpl::get(
+    let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
         ref world, contract_address_const::<'player1'>()
     );
     assert!(leaderboard_entry.points == 0, "Leaderboard entry points should be 0");

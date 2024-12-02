@@ -24,9 +24,9 @@ mod liquidity_systems {
     use s0_eternum::constants::DEFAULT_NS;
     use s0_eternum::constants::ResourceTypes;
     use s0_eternum::models::bank::liquidity::{Liquidity};
-    use s0_eternum::models::bank::market::{Market, MarketCustomTrait};
-    use s0_eternum::models::owner::{Owner, OwnerCustomTrait};
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use s0_eternum::models::bank::market::{Market, MarketTrait};
+    use s0_eternum::models::owner::{Owner, OwnerTrait};
+    use s0_eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
     use s0_eternum::models::season::SeasonImpl;
     use s0_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
@@ -61,10 +61,10 @@ mod liquidity_systems {
 
             let owner: Owner = world.read_model(entity_id);
             owner.assert_caller_owner();
-            let mut resource = ResourceCustomImpl::get(ref world, (entity_id, resource_type));
+            let mut resource = ResourceImpl::get(ref world, (entity_id, resource_type));
             assert(resource.balance >= resource_amount, 'not enough resources');
 
-            let mut player_lords = ResourceCustomImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let mut market: Market = world.read_model((bank_entity_id, resource_type));

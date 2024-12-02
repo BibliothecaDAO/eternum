@@ -14,7 +14,7 @@ use s0_eternum::models::combat::{Army, BattleSide, Troops};
 use s0_eternum::models::config::{TickConfig, MapConfig, StaminaConfig, StaminaRefillConfig, LevelingConfig, TickImpl};
 use s0_eternum::models::map::Tile;
 use s0_eternum::models::movable::{Movable, ArrivalTime};
-use s0_eternum::models::order::{Orders, OrdersCustomTrait};
+use s0_eternum::models::order::{Orders, OrdersTrait};
 use s0_eternum::models::owner::{Owner, EntityOwner};
 use s0_eternum::models::position::CoordTrait;
 use s0_eternum::models::position::{Coord, Position, Direction};

@@ -30,8 +30,8 @@ mod dev_bank_systems {
     use s0_eternum::models::name::{EntityName};
     use s0_eternum::models::owner::{Owner, EntityOwner};
     use s0_eternum::models::position::{Position, Coord};
-    use s0_eternum::models::resources::{Resource, ResourceCustomImpl};
-    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
+    use s0_eternum::models::resources::{Resource, ResourceImpl};
+    use s0_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
     use s0_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s0_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
     use s0_eternum::systems::map::map_generation::{

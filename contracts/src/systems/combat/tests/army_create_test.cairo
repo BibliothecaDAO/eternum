@@ -14,7 +14,7 @@ use s0_eternum::models::owner::{Owner, EntityOwner};
 use s0_eternum::models::position::{Coord, Position};
 
 use s0_eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, RESOURCE_PRECISION
+    Resource, ResourceImpl, ResourceTrait, ResourceTypes, RESOURCE_PRECISION
 };
 use s0_eternum::models::stamina::Stamina;
 use s0_eternum::systems::config::contracts::config_systems;
