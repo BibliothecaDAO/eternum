@@ -1,4 +1,4 @@
-use arcade_trophy::store::{Store, StoreTrait};
+use achievement::store::{Store, StoreTrait};
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
@@ -300,7 +300,7 @@ trait IBattleUtilsContract<T> {
 
 #[dojo::contract]
 mod battle_systems {
-    use arcade_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
@@ -1229,7 +1229,7 @@ mod battle_pillage_systems {
 
 #[dojo::contract]
 mod battle_utils_systems {
-    use arcade_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};

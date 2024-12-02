@@ -1,6 +1,6 @@
 // External imports
 
-use arcade_trophy::types::task::{Task as BushidoTask, TaskTrait as BushidoTaskTrait};
+use achievement::types::task::{Task as BushidoTask, TaskTrait as BushidoTaskTrait};
 
 // Internal imports
 

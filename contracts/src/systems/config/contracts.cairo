@@ -198,7 +198,7 @@ trait ISettlementConfig<T> {
 
 #[dojo::contract]
 mod config_systems {
-    use arcade_trophy::components::achievable::AchievableComponent;
+    use achievement::components::achievable::AchievableComponent;
 
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
