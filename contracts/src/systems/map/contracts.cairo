@@ -7,7 +7,7 @@ trait IMapSystems<T> {
 
 #[dojo::contract]
 mod map_systems {
-    use arcade_trophy::store::{Store, StoreTrait};
+    use achievement::store::{Store, StoreTrait};
     use core::num::traits::Bounded;
     use core::option::OptionTrait;
     use core::traits::Into;

@@ -4089,7 +4089,7 @@
         },
         {
           "type": "event",
-          "name": "arcade_trophy::components::achievable::AchievableComponent::Event",
+          "name": "achievement::components::achievable::AchievableComponent::Event",
           "kind": "enum",
           "variants": []
         },
@@ -4110,7 +4110,7 @@
             },
             {
               "name": "AchievableEvent",
-              "type": "arcade_trophy::components::achievable::AchievableComponent::Event",
+              "type": "achievement::components::achievable::AchievableComponent::Event",
               "kind": "flat"
             }
           ]
