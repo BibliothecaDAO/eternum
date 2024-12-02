@@ -86,7 +86,7 @@ function Index() {
         items={[
           ...dataCards,
           {
-            colSpan: { sm: 2, md: 3, lg: 9 },
+            colSpan: { sm: 2, md: 6, lg: 12 },
             rowSpan: { sm: 1, md: 1, lg: 2 },
             data: <Leaderboard />,
           },
