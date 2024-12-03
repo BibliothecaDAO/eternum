@@ -142,11 +142,11 @@ function Mint() {
                 realm_ids={selectedTokenIds}
               />
             )}
-            <RealmMintDialog
+            {isRealmMintOpen &&<RealmMintDialog
               totalOwnedRealms={realmsErcBalance?.length}
               isOpen={isRealmMintOpen}
               setIsOpen={setIsRealmMintIsOpen}
-            />
+            />}
           </div>
         </>
       </>

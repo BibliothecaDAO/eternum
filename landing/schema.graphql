@@ -33,18 +33,7 @@ union ERC__Token = ERC20__Token | ERC721__Token
 
 scalar Enum
 
-union ModelUnion =
-    darkshuffle_Battle
-  | darkshuffle_BattleEffects
-  | darkshuffle_Board
-  | darkshuffle_Donation
-  | darkshuffle_Draft
-  | darkshuffle_Game
-  | darkshuffle_GameEffects
-  | darkshuffle_Leaderboard
-  | darkshuffle_Map
-  | darkshuffle_PlayerReward
-  | darkshuffle_Season
+union ModelUnion = darkshuffle_Battle | darkshuffle_BattleEffects | darkshuffle_Board | darkshuffle_Donation | darkshuffle_Draft | darkshuffle_Game | darkshuffle_GameEffects | darkshuffle_Leaderboard | darkshuffle_Map | darkshuffle_PlayerReward | darkshuffle_Season
 
 enum OrderDirection {
   ASC
@@ -219,183 +208,29 @@ type World__PageInfo {
 }
 
 type World__Query {
-  darkshuffleBattleEffectsModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_BattleEffectsOrder
-    where: darkshuffle_BattleEffectsWhereInput
-  ): darkshuffle_BattleEffectsConnection
-  darkshuffleBattleModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_BattleOrder
-    where: darkshuffle_BattleWhereInput
-  ): darkshuffle_BattleConnection
-  darkshuffleBoardModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_BoardOrder
-    where: darkshuffle_BoardWhereInput
-  ): darkshuffle_BoardConnection
-  darkshuffleDonationModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_DonationOrder
-    where: darkshuffle_DonationWhereInput
-  ): darkshuffle_DonationConnection
-  darkshuffleDraftModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_DraftOrder
-    where: darkshuffle_DraftWhereInput
-  ): darkshuffle_DraftConnection
-  darkshuffleGameEffectsModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_GameEffectsOrder
-    where: darkshuffle_GameEffectsWhereInput
-  ): darkshuffle_GameEffectsConnection
-  darkshuffleGameModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_GameOrder
-    where: darkshuffle_GameWhereInput
-  ): darkshuffle_GameConnection
-  darkshuffleLeaderboardModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_LeaderboardOrder
-    where: darkshuffle_LeaderboardWhereInput
-  ): darkshuffle_LeaderboardConnection
-  darkshuffleMapModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_MapOrder
-    where: darkshuffle_MapWhereInput
-  ): darkshuffle_MapConnection
-  darkshufflePlayerRewardModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_PlayerRewardOrder
-    where: darkshuffle_PlayerRewardWhereInput
-  ): darkshuffle_PlayerRewardConnection
-  darkshuffleSeasonModels(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: darkshuffle_SeasonOrder
-    where: darkshuffle_SeasonWhereInput
-  ): darkshuffle_SeasonConnection
-  entities(
-    after: Cursor
-    before: Cursor
-    first: Int
-    keys: [String]
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__EntityConnection
+  darkshuffleBattleEffectsModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_BattleEffectsOrder, where: darkshuffle_BattleEffectsWhereInput): darkshuffle_BattleEffectsConnection
+  darkshuffleBattleModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_BattleOrder, where: darkshuffle_BattleWhereInput): darkshuffle_BattleConnection
+  darkshuffleBoardModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_BoardOrder, where: darkshuffle_BoardWhereInput): darkshuffle_BoardConnection
+  darkshuffleDonationModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_DonationOrder, where: darkshuffle_DonationWhereInput): darkshuffle_DonationConnection
+  darkshuffleDraftModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_DraftOrder, where: darkshuffle_DraftWhereInput): darkshuffle_DraftConnection
+  darkshuffleGameEffectsModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_GameEffectsOrder, where: darkshuffle_GameEffectsWhereInput): darkshuffle_GameEffectsConnection
+  darkshuffleGameModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_GameOrder, where: darkshuffle_GameWhereInput): darkshuffle_GameConnection
+  darkshuffleLeaderboardModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_LeaderboardOrder, where: darkshuffle_LeaderboardWhereInput): darkshuffle_LeaderboardConnection
+  darkshuffleMapModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_MapOrder, where: darkshuffle_MapWhereInput): darkshuffle_MapConnection
+  darkshufflePlayerRewardModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_PlayerRewardOrder, where: darkshuffle_PlayerRewardWhereInput): darkshuffle_PlayerRewardConnection
+  darkshuffleSeasonModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: darkshuffle_SeasonOrder, where: darkshuffle_SeasonWhereInput): darkshuffle_SeasonConnection
+  entities(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EntityConnection
   entity(id: ID!): World__Entity!
   eventMessage(id: ID!): World__EventMessage!
-  eventMessages(
-    after: Cursor
-    before: Cursor
-    first: Int
-    keys: [String]
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__EventMessageConnection
-  events(
-    after: Cursor
-    before: Cursor
-    first: Int
-    keys: [String]
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__EventConnection
+  eventMessages(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EventMessageConnection
+  events(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EventConnection
   metadatas(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__MetadataConnection
   model(id: ID!): World__Model!
-  models(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-    order: World__ModelOrder
-  ): World__ModelConnection
-  tokenBalances(
-    accountAddress: String!
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-  ): Token__BalanceConnection
-  tokenTransfers(
-    accountAddress: String!
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-  ): Token__TransferConnection
+  models(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: World__ModelOrder): World__ModelConnection
+  tokenBalances(accountAddress: String!, after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): Token__BalanceConnection
+  tokenTransfers(accountAddress: String!, after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): Token__TransferConnection
   transaction(transactionHash: ID!): World__Transaction!
-  transactions(
-    after: Cursor
-    before: Cursor
-    first: Int
-    last: Int
-    limit: Int
-    offset: Int
-  ): World__TransactionConnection
+  transactions(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__TransactionConnection
 }
 
 type World__Social {
