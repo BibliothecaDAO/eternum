@@ -254,6 +254,10 @@ mod hyperstructure_systems {
 
             assert!(co_owners.len() <= 10, "too many co-owners");
 
+            // ensure the structure is a hyperstructure
+            let structure: Structure = world.read_model(hyperstructure_entity_id);
+            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
+
             let caller = starknet::get_caller_address();
 
             let owner: Owner = world.read_model(hyperstructure_entity_id);
@@ -308,6 +312,10 @@ mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let owner: Owner = world.read_model(hyperstructure_entity_id);
             owner.assert_caller_owner();
+
+            // ensure the structure is a hyperstructure
+            let structure: Structure = world.read_model(hyperstructure_entity_id);
+            assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
 
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
             hyperstructure.access = access;
@@ -511,6 +519,9 @@ mod hyperstructure_systems {
 
             while (i < hyperstructures_contributed_to.len()) {
                 let hyperstructure_entity_id = *hyperstructures_contributed_to.at(i);
+                // ensure the structure is a hyperstructure
+                let structure: Structure = world.read_model(hyperstructure_entity_id);
+                assert!(structure.category == StructureCategory::Hyperstructure, "not a hyperstructure");
 
                 let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
 
