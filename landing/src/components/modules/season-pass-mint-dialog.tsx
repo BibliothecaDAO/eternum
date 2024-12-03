@@ -42,12 +42,11 @@ export default function SeasonPassMintDialog({
 
   useEffect(() => {
     if (isMintSuccess) {
-        setIsOpen(false);
-        deselectAllNfts();
-
+      setIsOpen(false);
+      deselectAllNfts();
     }
   }, [isMintSuccess, setIsOpen, deselectAllNfts]);
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent

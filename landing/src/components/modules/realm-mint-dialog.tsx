@@ -30,7 +30,7 @@ export const RealmMintDialog = ({
   });
 
   // Create an array of realm tokenIds
-  const filteredRealmTokenIds = []
+  const filteredRealmTokenIds = [];
 
   const generateUniqueRandomNumbers = (count: number, min: number, max: number, exclude: number[]): number[] => {
     const uniqueNumbers = new Set<number>();

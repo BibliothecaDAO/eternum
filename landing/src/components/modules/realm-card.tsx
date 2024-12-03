@@ -18,7 +18,7 @@ export interface RealmCardProps {
 
 export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSelection }: RealmCardProps) => {
   const { tokenId, contractAddress, metadata } = realm.node?.tokenMetadata ?? {};
-  const [isError, setIsError] = useState(true)
+  const [isError, setIsError] = useState(true);
   const { data, error, isSuccess, refetch } = useReadContract({
     abi: [
       {
@@ -45,7 +45,7 @@ export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSe
     if (isSuccess) {
       setIsError(false);
     }
-  }, [ isSuccess, refetch]);
+  }, [isSuccess, refetch]);
 
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
   const { attributes, name, image } = parsedMetadata ?? {};
@@ -62,12 +62,12 @@ export const RealmCard = ({ realm, isSelected, /*seasonPassMinted,*/ toggleNftSe
             Realm
             <div className="flex items-center gap-2 text-sm">
               {error ? (
-                  <div className="flex items-center gap-2">
-                    Mint: <Checkbox checked={isSelected} disabled={isSuccess} />
-                  </div>
-                ) : isSuccess && (
-                  <div className="text-green">Pass Minted!</div>
-                )}
+                <div className="flex items-center gap-2">
+                  Mint: <Checkbox checked={isSelected} disabled={isSuccess} />
+                </div>
+              ) : (
+                isSuccess && <div className="text-green">Pass Minted!</div>
+              )}
             </div>
           </div>
           <div className="flex justify-between gap-2">

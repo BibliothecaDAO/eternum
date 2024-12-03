@@ -37,9 +37,7 @@ function Mint() {
     refetchInterval: 10_000,
   });
 
-
-
-/*  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
+  /*  const { data: seasonPassMints, isLoading: isSeasonPassMintsLoading } = useSuspenseQuery({
     queryKey: ["ERCMints"],
     queryFn: () => execute(GET_ERC_MINTS),
     refetchInterval: 10_000,
@@ -67,7 +65,8 @@ function Mint() {
       data?.tokenBalances?.edges?.filter(
         (token) =>
           token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
-        addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") === addAddressPadding(realmsAddress ?? "0x0"),
+          addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
+            addAddressPadding(realmsAddress ?? "0x0"),
       ),
     [data, realmsAddress],
   );
@@ -75,7 +74,7 @@ function Mint() {
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });
 
-  const loading = isRealmsLoading /*|| isSeasonPassMintsLoading*/;
+  const loading = isRealmsLoading; /*|| isSeasonPassMintsLoading*/
 
   return (
     <div className="flex flex-col h-full">
@@ -113,7 +112,9 @@ function Mint() {
               <Button onClick={() => setIsRealmMintIsOpen(true)} variant="cta">
                 Mint Realms
               </Button>
-            ): <div />}
+            ) : (
+              <div />
+            )}
             <div className="flex items-center gap-8">
               {data?.tokenBalances?.edges && (
                 <SelectNftActions
@@ -132,13 +133,15 @@ function Mint() {
                 Mint Season Passes
               </Button>
             </div>
-            {isOpen && <SeasonPassMintDialog
-              isOpen={isOpen}
-              setIsOpen={setIsOpen}
-              deselectAllNfts={deselectAllNfts}
-              isSuccess={status === "success"}
-              realm_ids={selectedTokenIds}
-            />}
+            {isOpen && (
+              <SeasonPassMintDialog
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                deselectAllNfts={deselectAllNfts}
+                isSuccess={status === "success"}
+                realm_ids={selectedTokenIds}
+              />
+            )}
             <RealmMintDialog
               totalOwnedRealms={realmsErcBalance?.length}
               isOpen={isRealmMintOpen}
