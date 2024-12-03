@@ -2,31 +2,32 @@ import ResourceIcon from "../../../../components/ResourceIcon";
 
 # Resources
 
-> Eternum features a complex resource system where each resource type serves different purposes in the game economy.
->
-> Resources exist as in-game assets that can be produced and traded, and can be converted to ERC20 tokens when bridged
-> out of the game through the central bank.
+Resources are the foundation of **Eternum**'s economy. Each resource type plays a vital role in the game's ecosystem,
+from basic production to advanced military operations. All in-game resources can be traded freely and bridged out as
+ERC20 tokens through the central bank.
 
 ## Resource Categories
 
-### Food
+### Basic Resources
+
+#### Food
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Wheat" id="254" />
   <ResourceIcon name="Fish" id="255" />
 </div>
 
-- Freely producible by all players
-- Used as basic inputs for most production chains
-- Essential for troop maintenance and building construction
+Food is the cornerstone of your realm's economy:
 
-### Resources
+- Produced without additional resource inputs
+- Required for most production chains
+- Essential for maintaining troops and construction
 
-Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
+#### Resource Tiers
 
-> Ex: 5015 realms are able to produce wood, but only 23 can produce dragonhide
+Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
 
-- Common
+**Common** (Widely Available)
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Wood" id="1" />
@@ -36,7 +37,7 @@ Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
   <ResourceIcon name="Obsidian" id="5" />
 </div>
 
-- Uncommon
+**Uncommon** (Limited Availability)
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Silver" id="6" />
@@ -45,7 +46,7 @@ Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
   <ResourceIcon name="Gold" id="9" />
 </div>
 
-- Rare
+**Rare** (Scarce)
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Hartwood" id="10" />
@@ -54,7 +55,7 @@ Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
   <ResourceIcon name="Ruby" id="13" />
 </div>
 
-- Unique
+**Unique** (Very Scarce)
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Deep Crystal" id="14" />
@@ -65,7 +66,7 @@ Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
   <ResourceIcon name="Alchemical Silver" id="19" />
 </div>
 
-- Mythic
+**Mythic** (Extremely Rare)
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Adamantine" id="20" />
@@ -73,7 +74,9 @@ Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
   <ResourceIcon name="Dragonhide" id="22" />
 </div>
 
-### Military
+### Strategic Resources
+
+#### Military
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Knights" id="250" />
@@ -81,36 +84,46 @@ Resources are divided into tiers based on their rarity among the 8000 Realm NFTs
   <ResourceIcon name="Paladins" id="252" />
 </div>
 
-- Can be traded as resources
-- Once assigned to an army, become permanent units
-- Cannot be converted back to tradeable resources
+Military units have unique properties:
 
-### Transport
+- Can be traded as resources
+- Become permanent once assigned to armies
+- Cannot be converted back to tradeable form
+
+#### Transport
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Donkeys" id="249" />
 </div>
 
-- Required for resource transportation
-- Consumed during transport operations
-- Essential for moving resources between locations
+Essential for logistics:
 
-### Currency
+- Required for moving resources
+- Consumed during transport
+- Critical for trade and supply chains
+
+### Special Resources
+
+#### $LORDS Currency
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Lords" id="coin" />
 </div>
 
-- The game's primary currency ($LORDS)
-- Can be traded on exchanges and bridged to other networks
-- Used for in-game market transactions and fees
+The game's economic backbone:
 
-### Ancient Fragment
+- Used for all market transactions
+- Bridgeable to external networks
+- Required for game fees and operations
+
+#### Ancient Fragments
 
 <div className="flex items-baseline gap-1">
   <ResourceIcon name="Ancient Fragments" id="29" />
 </div>
 
+Strategic end-game resource:
+
+- Only found in world map mines
+- Required for Hyperstructures
 - Cannot be produced by Realms
-- Found only in mines on the world map
-- Used for Hyperstructure construction
