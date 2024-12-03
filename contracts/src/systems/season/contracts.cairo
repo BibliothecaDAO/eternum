@@ -37,6 +37,7 @@ mod season_systems {
 
     #[abi(embed_v0)]
     impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
+        /// Note: This function can only be called once per address
         fn register_to_leaderboard(
             ref self: ContractState,
             hyperstructures_contributed_to: Span<ID>,
@@ -94,7 +95,8 @@ mod season_systems {
             }
 
             assert!(
-                leaderboard.total_price_pool.unwrap() > 0, "If that happens, no one has registered to the leaderboard"
+                leaderboard.total_price_pool.unwrap() > 0,
+                "distribution finished or no one registered to the leaderboard"
             );
 
             let entry: LeaderboardEntry = LeaderboardEntryImpl::get(ref world, caller_address);
