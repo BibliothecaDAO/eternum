@@ -4,9 +4,6 @@ export default defineConfig({
   description: "Eternum Documentation",
   iconUrl: "/eternum_new_logo.svg",
   logoUrl: "/eternum_new_logo.svg",
-  ogImageUrl:
-    "https://og-image.preview.cartridge.gg/api/cartridge?logo=%https://www.dojoengine.org/dojo-icon.svg&title=%title&description=%description",
-
   theme: {
     colorScheme: "dark",
     variables: {
