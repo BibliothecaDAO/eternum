@@ -1,9 +1,8 @@
-import React, { useCallback } from "react";
-
 import ControllerConnector from "@cartridge/connector/controller";
 import { ColorMode } from "@cartridge/controller";
 import { sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
+import React, { useCallback } from "react";
 import { env } from "../../../env";
 //import { cartridgeController } from "./cartridge-controller";
 

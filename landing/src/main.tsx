@@ -10,7 +10,7 @@ import "./index.css";
 //import { ArkProvider } from '@ark-project/react';
 
 import { NuqsAdapter } from "nuqs/adapters/react";
-import { StarknetProvider } from "./components/providers/Starknet";
+import { StarknetProvider } from "./components/providers/starknet-provider";
 import { ThemeProvider } from "./components/providers/theme-provider";
 import { TypeH1 } from "./components/typography/type-h1";
 import { DojoProvider } from "./hooks/context/DojoContext";
